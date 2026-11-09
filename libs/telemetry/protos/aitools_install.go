@@ -1,8 +1,10 @@
 package protos
 
 // AitoolsAgentType mirrors AitoolsAgentType.Type in the databricks_cli
-// lumberjack proto. AitoolsAgentTypeUnspecified absorbs agents a newer CLI
-// knows about but the server proto does not yet.
+// lumberjack proto. It names both the agents `aitools install` targets and the
+// agent calling the CLI (the calling_agent field of the aitools events).
+// AitoolsAgentTypeUnspecified absorbs agents a newer CLI knows about but the
+// server proto does not yet.
 type AitoolsAgentType string
 
 const (
@@ -17,6 +19,25 @@ const (
 	AitoolsAgentTypeGemini      AitoolsAgentType = "GEMINI_CLI"
 	AitoolsAgentTypeGoose       AitoolsAgentType = "GOOSE"
 	AitoolsAgentTypeKiro        AitoolsAgentType = "KIRO"
+
+	// Agents the SDK detects but the aitools registry cannot install into.
+	// They only appear as a calling agent.
+	AitoolsAgentTypeAmp         AitoolsAgentType = "AMP"
+	AitoolsAgentTypeAugment     AitoolsAgentType = "AUGMENT"
+	AitoolsAgentTypeCline       AitoolsAgentType = "CLINE"
+	AitoolsAgentTypeOpenClaw    AitoolsAgentType = "OPENCLAW"
+	AitoolsAgentTypeVSCodeAgent AitoolsAgentType = "VSCODE_AGENT"
+	AitoolsAgentTypeWindsurf    AitoolsAgentType = "WINDSURF"
+
+	// AitoolsAgentTypeUnknown is an agent reported only through the free-text
+	// AGENT / AI_AGENT env vars, or a product a newer SDK detects. The text
+	// itself is never sent.
+	AitoolsAgentTypeUnknown AitoolsAgentType = "UNKNOWN"
+	// AitoolsAgentTypeMultiple means more than one agent env var matched,
+	// typically an agent running another agent as a subprocess.
+	AitoolsAgentTypeMultiple AitoolsAgentType = "MULTIPLE"
+	// AitoolsAgentTypeNone means no agent was detected: a human or a script.
+	AitoolsAgentTypeNone AitoolsAgentType = "NONE"
 )
 
 // AitoolsInstallScope mirrors AitoolsInstallScope.Type in the databricks_cli
@@ -104,4 +125,7 @@ type AitoolsInstallEvent struct {
 	// AgentResults records the per-agent failure/skip categories, one entry per
 	// non-successful agent. Empty when every targeted agent succeeded.
 	AgentResults []AitoolsAgentResult `json:"agent_results,omitempty"`
+
+	// Agent calling the CLI. Always set (NONE for humans), so no omitempty.
+	CallingAgent AitoolsAgentType `json:"calling_agent"`
 }

@@ -1,13 +1,81 @@
 package aitools
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/agents/agenttest"
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// uploadInstallEvent runs logInstallEvent, uploads the buffered log to a local
+// /telemetry-ext and returns the install event as the server received it.
+func uploadInstallEvent(t *testing.T) map[string]any {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var protoLogs []string
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		var body telemetry.RequestBody
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		protoLogs = append(protoLogs, body.ProtoLogs...)
+		return telemetry.ResponseBody{NumProtoSuccess: int64(len(body.ProtoLogs))}
+	})
+
+	// Upload honours these from the host env; an empty value restores the
+	// defaults (enabled, 3s timeout) so the test does not depend on the runner.
+	ctx := env.Set(t.Context(), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	ctx = env.Set(ctx, "DATABRICKS_CLI_TELEMETRY_TIMEOUT", "")
+	ctx = telemetry.WithNewLogger(ctx)
+	plan := []agentPlanItem{{agent: &agents.Agent{Name: agents.NameCursor}}}
+	logInstallEvent(ctx, plan, installOpts{Scope: installer.ScopeGlobal}, protos.AitoolsErrorCategoryUnspecified, nil)
+
+	// AuthType pins PAT so a host DATABRICKS_AUTH_TYPE cannot pick another method.
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: server.URL, Token: "token", AuthType: "pat"})
+	require.NoError(t, telemetry.Upload(ctx, protos.ExecutionContext{}))
+	require.Len(t, protoLogs, 1)
+
+	var frontendLog struct {
+		Entry struct {
+			DatabricksCliLog struct {
+				AitoolsInstallEvent map[string]any `json:"aitools_install_event"`
+			} `json:"databricks_cli_log"`
+		} `json:"entry"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(protoLogs[0]), &frontendLog))
+	event := frontendLog.Entry.DatabricksCliLog.AitoolsInstallEvent
+	require.NotNil(t, event)
+	return event
+}
+
+func TestLogInstallEventSendsCallingAgent(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want protos.AitoolsAgentType
+	}{
+		{name: "claude code", env: []string{"CLAUDECODE", "1"}, want: protos.AitoolsAgentTypeClaudeCode},
+		{name: "no agent", env: nil, want: protos.AitoolsAgentTypeNone},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			agenttest.SetAgentEnv(t, tc.env...)
+			event := uploadInstallEvent(t)
+			assert.Equal(t, string(tc.want), event["calling_agent"])
+			// The calling agent is not an install target.
+			assert.Equal(t, []any{string(protos.AitoolsAgentTypeCursor)}, event["agents"])
+		})
+	}
+}
 
 func TestAgentsField(t *testing.T) {
 	cases := []struct {
@@ -74,7 +142,7 @@ func TestAgentsField(t *testing.T) {
 func TestAgentTypeCoversRegistry(t *testing.T) {
 	for _, a := range agents.Registry {
 		assert.NotEqualf(t, protos.AitoolsAgentTypeUnspecified, agentType(a.Name),
-			"agent %q has no telemetry enum: add a case to agentType and a value to "+
+			"agent %q has no telemetry enum: add a case to agents.AgentType and a value to "+
 				"AitoolsAgentType in enum.proto (Universe) + aitools_install.go (CLI)", a.Name)
 	}
 }
