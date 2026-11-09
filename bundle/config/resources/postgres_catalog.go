@@ -29,6 +29,7 @@ func (c PostgresCatalogConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresCatalog struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresCatalogConfig
 }
 

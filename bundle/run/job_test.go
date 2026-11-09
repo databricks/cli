@@ -17,13 +17,11 @@ import (
 
 func TestConvertPythonParams(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				{PythonWheelTask: &jobs.PythonWheelTask{
-					PackageName: "my_test_code",
-					EntryPoint:  "run",
-				}},
-			},
+		Tasks: []jobs.Task{
+			{PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: "my_test_code",
+				EntryPoint:  "run",
+			}},
 		},
 	}
 	b := &bundle.Bundle{
@@ -57,7 +55,7 @@ func TestConvertPythonParams(t *testing.T) {
 
 func TestJobRunnerCancel(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -101,7 +99,7 @@ func TestJobRunnerCancel(t *testing.T) {
 
 func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -140,8 +138,8 @@ func TestJobRunnerRestart(t *testing.T) {
 		},
 	} {
 		job := &resources.Job{
-			BaseResource: resources.BaseResource{ID: "123"},
-			JobSettings:  jobSettings,
+			ID:          "123",
+			JobSettings: jobSettings,
 		}
 		b := &bundle.Bundle{
 			Config: config.Root{
@@ -206,7 +204,7 @@ func TestJobRunnerRestart(t *testing.T) {
 
 func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -241,11 +239,9 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
-		BaseResource: resources.BaseResource{ID: "123"},
-		JobSettings: jobs.JobSettings{
-			Continuous: &jobs.Continuous{
-				PauseStatus: jobs.PauseStatusUnpaused,
-			},
+		ID: "123",
+		Continuous: &jobs.Continuous{
+			PauseStatus: jobs.PauseStatusUnpaused,
 		},
 	}
 	b := &bundle.Bundle{

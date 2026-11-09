@@ -17,6 +17,12 @@ title "A shutdown delay beyond the default lifetime raises it, no --server-timeo
 $CLI ssh setup --name=long-delay --cluster=$TEST_DEFAULT_CLUSTER_ID --shutdown-delay=48h &>LOG.long-delay
 sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/long-delay"
 
+# Holding the job run open for detached processes is fixed at submission too, so a host
+# configured through setup can only ask for it here.
+title "ProxyCommand written by setup --keep-detached-processes\n"
+$CLI ssh setup --name=keep-detached --cluster=$TEST_DEFAULT_CLUSTER_ID --keep-detached-processes &>LOG.keep-detached
+sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/keep-detached"
+
 title "Rejects a server that would refuse every connection"
 musterr trace $CLI ssh setup --name=broken --cluster=$TEST_DEFAULT_CLUSTER_ID --max-clients=0
 
@@ -24,4 +30,4 @@ title "Rejects a shutdown delay the server can never reach"
 musterr trace $CLI ssh setup --name=broken --cluster=$TEST_DEFAULT_CLUSTER_ID --shutdown-delay=48h --server-timeout=24h
 
 title "No host config is written for the rejected setups\n"
-find.py 'ssh-tunnel-configs' --expect 2
+find.py 'ssh-tunnel-configs' --expect 3

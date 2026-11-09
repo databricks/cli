@@ -1,0 +1,24 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/[UNIQUE_NAME]/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/[UNIQUE_NAME]/files/nb"
+          }
+        }
+      ],
+      "name": "pipeline-[UNIQUE_NAME]",
+      "storage": "dbfs:/pipelines/[UNIQUE_NAME]-init"
+    }
+  }
+]

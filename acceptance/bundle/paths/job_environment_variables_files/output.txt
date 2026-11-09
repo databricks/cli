@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "environment_variables_key": "default",
+    "spec": {
+      "files": [
+        "/Workspace/Users/[USERNAME]/.bundle/job_environment_variables_files/default/files/env/common.env",
+        "/Volumes/main/default/vol/shared.env",
+        "/Workspace/Shared/shared.env"
+      ],
+      "variables": {
+        "FOO": "bar"
+      }
+    }
+  }
+]

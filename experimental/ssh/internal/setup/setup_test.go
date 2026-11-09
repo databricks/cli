@@ -280,23 +280,25 @@ func TestSetup_SerializesServerLifecycleFlags(t *testing.T) {
 	}, nil)
 
 	opts := SetupOptions{
-		HostName:      "test-host",
-		ClusterID:     "cluster-123",
-		SSHConfigPath: filepath.Join(tmpDir, "ssh_config"),
-		SSHKeysDir:    tmpDir,
-		ShutdownDelay: 30 * time.Second,
-		MaxClients:    25,
-		ServerTimeout: 48 * time.Hour,
+		HostName:              "test-host",
+		ClusterID:             "cluster-123",
+		SSHConfigPath:         filepath.Join(tmpDir, "ssh_config"),
+		SSHKeysDir:            tmpDir,
+		ShutdownDelay:         30 * time.Second,
+		MaxClients:            25,
+		ServerTimeout:         48 * time.Hour,
+		KeepDetachedProcesses: true,
 	}
 
 	require.NoError(t, Setup(ctx, m.WorkspaceClient, opts))
 
-	// The ProxyCommand is the invocation that submits the server job, so both values have to
-	// reach the persisted host config or the user's choice is silently dropped.
+	// The ProxyCommand is the invocation that submits the server job, so every value fixed at
+	// submission has to reach the persisted host config or the user's choice is silently dropped.
 	hostContent, err := os.ReadFile(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
 	require.NoError(t, err)
 	assert.Contains(t, string(hostContent), "--max-clients=25")
 	assert.Contains(t, string(hostContent), "--server-timeout=48h0m0s")
+	assert.Contains(t, string(hostContent), "--keep-detached-processes")
 }
 
 func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {

@@ -100,6 +100,25 @@ type ResourceLifecycleConfig struct {
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
 
+	// StableOutputFields: output-only fields the backend assigns at creation and
+	// never changes on update — typically an AIP resource name derived from the
+	// immutable ID (e.g. a postgres project's "name" = "projects/{project_id}").
+	// The backend owns the value, so it is validated against RemoteType (from
+	// which the resolver reads it); the field may or may not also appear in
+	// StateType.
+	//
+	// A cross-resource reference to such a field (${resources.X.name}) resolves
+	// from the remote cache during a keeps-ID update instead of being delayed
+	// until after apply. Without this, a dependent that treats the reference as
+	// part of its own immutable identity (a hierarchical parent/branch name)
+	// recreates spuriously on every in-place update of the target. See
+	// LookupReferencePreDeploy.
+	//
+	// This category only gates reference resolution; it never classifies a change,
+	// so the FieldRule Reason is unused (it would never surface in a plan) and is
+	// left unset in the YAML.
+	StableOutputFields []FieldRule `yaml:"stable_output_fields,omitempty"`
+
 	// HashedFields: field paths persisted to state as a content hash
 	// ("sha256:<hex>") instead of the raw value. This is only valid
 	// for large, equality-only fields that are never read back from state
@@ -119,6 +138,8 @@ type Config struct {
 // hand-written rules and <resource_type>.generated.yml the ones derived from the
 // OpenAPI spec. A resource type without rules has no file. The file name is the
 // resource type, so each file holds the rules directly with no enclosing keys.
+// A file named after a sub-resource (grants.yml) applies to that sub-resource of
+// every parent (catalogs.grants, schemas.grants, ...) that has no file of its own.
 //
 //go:embed configs/*.yml
 var configFS embed.FS
@@ -140,6 +161,7 @@ var empty = ResourceLifecycleConfig{
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,
+	StableOutputFields:    nil,
 	HashedFields:          nil,
 	SensitiveFields:       nil,
 }
@@ -171,11 +193,33 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
 
-		dst.Resources[resourceType] = rc
+		_, isResourceType := SupportedResources[resourceType]
+		for _, rt := range configResourceTypes(resourceType) {
+			// A resource type's own file replaces the shared one, whichever is read first.
+			if _, ok := dst.Resources[rt]; ok && !isResourceType {
+				continue
+			}
+			dst.Resources[rt] = rc
+		}
 	}
 
 	return handWritten, generated
 })
+
+// configResourceTypes returns the resource types a config file named name applies to: the
+// resource type itself, or for a sub-resource name like "grants" every "<parent>.grants".
+func configResourceTypes(name string) []string {
+	if _, ok := SupportedResources[name]; ok {
+		return []string{name}
+	}
+	var result []string
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, "."+name) {
+			result = append(result, resourceType)
+		}
+	}
+	return result
+}
 
 // MustLoadConfig returns the configuration parsed from the configs/<resource_type>.yml files.
 func MustLoadConfig() *Config {

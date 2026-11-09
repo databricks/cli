@@ -1,0 +1,25 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/serving-endpoints",
+    "body": {
+      "name": "test-endpoint-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/serving-endpoints/79fec858-f9bb-2a68-79fe-c858f9bb2a69",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_VIEW"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

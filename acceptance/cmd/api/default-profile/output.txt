@@ -14,7 +14,7 @@
       "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_get cmd-exec-id/[UUID] interactive/none auth/pat"
     ],
     "X-Databricks-Workspace-Id": [
-      "[NUMID]"
+      "[WORKSPACE_ID]"
     ]
   },
   "method": "GET",

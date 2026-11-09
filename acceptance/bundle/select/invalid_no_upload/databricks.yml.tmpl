@@ -1,0 +1,12 @@
+bundle:
+  name: select-invalid-$UNIQUE_NAME
+
+experimental:
+  scripts:
+    # Must NOT run: the invalid selector is rejected before the predeploy script.
+    predeploy: touch predeploy_ran.marker
+
+resources:
+  jobs:
+    real:
+      name: real-$UNIQUE_NAME

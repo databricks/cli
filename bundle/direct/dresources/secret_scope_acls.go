@@ -88,10 +88,6 @@ func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*Secre
 	}, nil
 }
 
-func (r *ResourceSecretScopeAcls) RemapState(remote *SecretScopeAclsState) *SecretScopeAclsState {
-	return remote
-}
-
 func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {

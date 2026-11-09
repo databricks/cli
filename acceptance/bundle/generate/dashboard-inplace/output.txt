@@ -6,7 +6,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
 Created dashboards.test_dashboard
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === update the dashboard
@@ -15,7 +15,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "create_time": "[TIMESTAMP]",
   "dashboard_id": "[DASHBOARD_ID]",
   "display_name": "test dashboard",
-  "etag": "[NUMID]",
+  "etag": "80611981",
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources",
   "path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
@@ -23,6 +23,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "update_time": "[TIMESTAMP]",
   "warehouse_id": ""
 }
+
+>>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
 
 === update the dashboard file using bundle generate
 >>> [CLI] bundle generate dashboard --resource test_dashboard --force
@@ -32,3 +34,5 @@ Writing dashboard to dash.lvdash.json
 {
   "a": "b"
 }
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline

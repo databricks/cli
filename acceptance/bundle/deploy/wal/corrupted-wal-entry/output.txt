@@ -11,7 +11,7 @@ Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
 Created jobs.another_valid
 Created jobs.valid_job
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary
@@ -24,10 +24,10 @@ Resources:
   Jobs:
     another_valid:
       Name: another-valid
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[ANOTHER_VALID_ID]?w=[WORKSPACE_ID]
     valid_job:
       Name: valid-job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[VALID_JOB_ID]?w=[WORKSPACE_ID]
 
 >>> cat .databricks/bundle/default/resources.json.wal.corrupted
 {"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-

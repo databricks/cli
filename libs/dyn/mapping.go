@@ -3,6 +3,8 @@ package dyn
 import (
 	"maps"
 	"slices"
+
+	"github.com/databricks/cli/libs/diag"
 )
 
 // Pair represents a single key-value pair in a Mapping.
@@ -107,7 +109,7 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 // Set sets the value for the given key in the mapping.
 // If the key already exists, the value is updated. The location loc is ignored.
 // If the key does not exist, a new key-value pair is added.
-func (m *Mapping) SetLoc(skey string, loc []Location, value Value) {
+func (m *Mapping) SetLoc(skey string, loc []diag.Location, value Value) {
 	// If the key already exists, update the value.
 	if i, ok := m.index[skey]; ok {
 		m.pairs[i].Value = value

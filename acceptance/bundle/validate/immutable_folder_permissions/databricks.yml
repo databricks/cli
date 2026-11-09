@@ -1,0 +1,9 @@
+bundle:
+  name: my-bundle
+
+workspace:
+  sync_mode: immutable
+
+permissions:
+  - level: CAN_VIEW
+    user_name: viewer@example.com

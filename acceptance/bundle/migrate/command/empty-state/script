@@ -1,0 +1,10 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# A terraform state that tracks no resources (e.g. everything was destroyed)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+
+trace $CLI bundle deployment migrate
+
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 to add"
+
+rm "$OUT_REQUESTS"

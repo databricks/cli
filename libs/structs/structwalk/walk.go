@@ -124,8 +124,8 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		}
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		if jsonTag.Name() == "-" {
-			continue // skip fields without json name
+		if structaccess.IsSkippedField(sf) {
+			continue // encoding/json omits it entirely
 		}
 
 		// Resolve field name from JSON tag or fall back to Go field name
@@ -155,8 +155,14 @@ func getForceSendFields(v reflect.Value) []string {
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return nil
 	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
+	// Only the struct's own ForceSendFields: one promoted from an embedded struct names that
+	// struct's fields, since the SDK marshaller rejects names its struct does not have.
+	sf, ok := v.Type().FieldByName("ForceSendFields")
+	if !ok || len(sf.Index) != 1 {
+		return nil
+	}
+	fsField := v.Field(sf.Index[0])
+	if fsField.Kind() != reflect.Slice {
 		return nil
 	}
 	result, ok := reflect.TypeAssert[[]string](fsField)

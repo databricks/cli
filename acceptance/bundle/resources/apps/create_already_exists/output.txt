@@ -2,7 +2,7 @@
 >>> [CLI] apps create test-app-already-exists
 {
   "active_deployment": {
-    "deployment_id": "deploy-[NUMID]",
+    "deployment_id": "[APP_DEPLOYMENT_ID]",
     "source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
     "status": {
       "message": "Deployment succeeded",
@@ -23,7 +23,7 @@
   "id": "1000",
   "name": "test-app-already-exists",
   "service_principal_client_id": "[UUID]",
-  "service_principal_id": [NUMID],
+  "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-app-already-exists",
   "url": "test-app-already-exists-123.cloud.databricksapps.com"
 }
@@ -37,7 +37,7 @@ HTTP Status: 409 Conflict
 API error_code: RESOURCE_ALREADY_EXISTS
 API message: An app with the same name already exists: test-app-already-exists
 
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 >>> [CLI] apps delete test-app-already-exists
 {

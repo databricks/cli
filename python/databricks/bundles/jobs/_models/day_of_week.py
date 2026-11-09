@@ -6,8 +6,6 @@ from typing import Literal
 
 class DayOfWeek(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Days of week that can be referenced by Jobs scheduling settings.
     """
 

@@ -3,6 +3,7 @@ package logdiag
 import (
 	"context"
 	"path/filepath"
+	"slices"
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -157,6 +158,8 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		return
 	}
 
+	// Locations may share a backing array with the config tree; copy so the rewrite below doesn't leak into it.
+	d.Locations = slices.Clone(d.Locations)
 	for i := range d.Locations {
 		// Make location relative to the root
 		if d.Locations[i].File != "" {

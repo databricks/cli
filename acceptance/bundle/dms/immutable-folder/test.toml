@@ -1,0 +1,20 @@
+# The immutable folder API is not available against a real workspace yet.
+Cloud = false
+
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [
+    '.databricks',
+    'databricks.yml',
+]
+
+# The snapshot path is content-addressed.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[SNAPSHOT_HASH]'
+
+# When READPLAN=1, "bundle deploy" is called as "bundle deploy --plan .databricks/plan.json".
+# Normalize so both variants produce identical output.
+[[Repls]]
+Old = ' --plan .databricks/plan.json'
+New = ''

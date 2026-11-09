@@ -52,7 +52,7 @@ Building python_artifact...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files...
 Created jobs.sample_job
 Created pipelines.my_default_python_etl
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -t dev
@@ -68,7 +68,7 @@ Created jobs.sample_job
 Created jobs.sample_job.permissions
 Created pipelines.my_default_python_etl
 Created pipelines.my_default_python_etl.permissions
-Files: 21 uploaded, 0 deleted
+Files: 20 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -t prod

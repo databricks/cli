@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"crypto/md5"
 	_ "embed"
@@ -38,6 +39,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
 )
@@ -47,12 +49,31 @@ var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
 
+// portFwdServerlessSetting is the workspace setting an administrator turns off to disable port
+// forwarding to serverless compute, which the tunnel needs.
+const portFwdServerlessSetting = "port_fwd_serverless_enabled"
+
+var errPortForwardingDisabled = errors.New("port forwarding to serverless compute is disabled for this workspace " +
+	"(setting " + portFwdServerlessSetting + "), and the SSH tunnel needs it. " +
+	"Ask a workspace or account admin to enable it, or connect to a dedicated cluster with --cluster")
+
+// errDriverProxyForbidden is a 403 from the driver proxy. Unlike the other non-200 responses, which a
+// server that is still starting produces too, retrying cannot change it: the workspace forbids the
+// connection, e.g. because an administrator disabled port forwarding to serverless compute.
+var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
+
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+// DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
+const DefaultEnvironmentVersion = 4
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+
+	serverMetadataTimeout      = 5 * time.Minute
+	serverMetadataPollInterval = 2 * time.Second
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -130,6 +151,8 @@ type ClientOptions struct {
 	AutoApprove bool
 	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
 	UsagePolicyID string
+	// Whether detached processes prevent idle shutdown of the SSH server. Bounded by --server-timeout.
+	KeepDetachedProcesses bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -151,7 +174,7 @@ func (o *ClientOptions) Validate() error {
 	if o.IDE != "" && o.IDE != vscode.VSCodeOption && o.IDE != vscode.CursorOption {
 		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, vscode.VSCodeOption, vscode.CursorOption)
 	}
-	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
+	if o.EnvironmentVersion != 0 && o.EnvironmentVersion < minEnvironmentVersion {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	// base_environment and environment_version are mutually exclusive in the SDK,
@@ -161,6 +184,9 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
+	}
+	if o.EnvironmentVersion > 0 && o.ClusterID != "" {
+		return errors.New("--environment-version can only be used with serverless compute")
 	}
 	// A server started with fewer than one client slot rejects every connection with an
 	// opaque websocket handshake failure, so catch it here instead.
@@ -182,17 +208,22 @@ func (o *ClientOptions) Validate() error {
 }
 
 // GenerateDefaultConnectionName creates a deterministic connection name from
-// the workspace host, accelerator type, and base environment. The name includes
+// the workspace host, accelerator type, and environment. The name includes
 // a hash so that different workspaces produce different names (avoiding SSH
 // known_hosts conflicts). The environment is folded into the hash because a
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
-func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) string {
-	// Keep the hash host-only when no base environment is set so existing default
-	// connection names are preserved.
-	hashInput := host
-	if baseEnvironment != "" {
+func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, environmentVersion int) string {
+	// The version is hashed even when it is the default, so bumping
+	// DefaultEnvironmentVersion intentionally moves users to a new server.
+	var hashInput string
+	switch {
+	case baseEnvironment != "":
 		hashInput = host + "\x00" + baseEnvironment
+	default:
+		// The key keeps a version from hashing like a base environment
+		// whose name is that number.
+		hashInput = host + "\x00environment_version=" + strconv.Itoa(environmentVersion)
 	}
 	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
@@ -205,6 +236,16 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) st
 
 func (o *ClientOptions) IsServerlessMode() bool {
 	return o.ClusterID == "" && o.ConnectionName != ""
+}
+
+// submittedEnvironmentVersion returns the serverless environment version the server job is
+// submitted with, or 0 when it sets none: dedicated clusters have no environment, and a custom
+// base environment carries its own version.
+func (o *ClientOptions) submittedEnvironmentVersion() int {
+	if !o.IsServerlessMode() || o.BaseEnvironment != "" {
+		return 0
+	}
+	return cmp.Or(o.EnvironmentVersion, DefaultEnvironmentVersion)
 }
 
 // SessionIdentifier returns the unique identifier for the session.
@@ -250,6 +291,9 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+	}
+	if o.KeepDetachedProcesses {
+		proxyCommand += " --keep-detached-processes"
 	}
 
 	// Both of these are fixed when the server job is submitted, and for a host configured by
@@ -333,9 +377,18 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 	}
 
+	// Skipped when reconnecting with --metadata (the ProxyCommand child): the server is already
+	// running, so there is no compute left to spare, and every IDE reconnect would repeat the read.
+	if opts.IsServerlessMode() && opts.ServerMetadata == "" {
+		if err := checkPortForwardingToServerless(ctx, client); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryPortForwardingDisabled
+			return err
+		}
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
-		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
-			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
+		if err := vscode.CheckIDECommand(ctx, opts.IDE); err != nil {
+			outcome.errorCategory = ideCommandErrorCategory(err)
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
@@ -437,6 +490,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
+			if errors.Is(err, errDriverProxyForbidden) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
@@ -600,6 +656,8 @@ type serverMetadata struct {
 	ClusterID string
 	// UsagePolicyID the server was started with, used to decide whether a running server can be reused.
 	UsagePolicyID string
+	// KeepDetachedProcesses the server's run was submitted with, used the same way as UsagePolicyID.
+	KeepDetachedProcesses bool
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
@@ -643,15 +701,63 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		return serverMetadata{}, errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
 	return serverMetadata{
-		Port:          wsMetadata.Port,
-		UserName:      string(bodyBytes),
-		ClusterID:     effectiveClusterID,
-		UsagePolicyID: wsMetadata.UsagePolicyID,
+		Port:                  wsMetadata.Port,
+		UserName:              string(bodyBytes),
+		ClusterID:             effectiveClusterID,
+		UsagePolicyID:         wsMetadata.UsagePolicyID,
+		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
 	}, nil
+}
+
+// metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
+// is final and carries the driver proxy's own explanation; anything else is errServerMetadata,
+// which callers treat as a server that is not running yet.
+func metadataResponseError(statusCode int, body []byte) error {
+	if statusCode != http.StatusForbidden {
+		return errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", statusCode))
+	}
+	// The driver proxy writes its error as a JSON string ("CODE: message") rather than the usual
+	// {"error_code", "message"} object.
+	var message string
+	if json.Unmarshal(body, &message) != nil {
+		message = string(body)
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = fmt.Sprintf("status code %d", statusCode)
+	}
+	return fmt.Errorf("%w: %s", errDriverProxyForbidden, message)
+}
+
+// checkPortForwardingToServerless refuses a serverless connection before any compute is started when
+// the workspace setting that the driver proxy enforces for the tunnel is off. The proxy's gate
+// (PortForwardingToServerlessGate in data-plane-router) also depends on an enforcement flag and a port
+// allow-list that the CLI cannot see, and the setting is not readable through the public API in every
+// environment. A read that fails therefore lets the connection go ahead, and the proxy's own 403
+// (errDriverProxyForbidden) remains the backstop. The read goes through a client with retries turned
+// off, so a throttled or unavailable settings service cannot hold up the connection for the SDK's
+// retry budget.
+func checkPortForwardingToServerless(ctx context.Context, client *databricks.WorkspaceClient) error {
+	apiClient, err := newProbeAPIClient(client.Config)
+	if err != nil {
+		log.Debugf(ctx, "Could not build a client to read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	setting, err := settingsv2.NewWorkspaceSettingsV2(apiClient).GetPublicWorkspaceSetting(ctx, settingsv2.GetPublicWorkspaceSettingRequest{
+		Name: portFwdServerlessSetting,
+	})
+	if err != nil {
+		log.Debugf(ctx, "Could not read the %s setting, continuing: %v", portFwdServerlessSetting, err)
+		return nil
+	}
+	if setting.EffectiveBooleanVal != nil && !setting.EffectiveBooleanVal.Value {
+		return errPortForwardingDisabled
+	}
+	return nil
 }
 
 // newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
@@ -719,6 +825,9 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		// Recorded in the server's metadata.json so reconnects can tell which usage policy
 		// the running server was started under.
 		"usagePolicyId": opts.UsagePolicyID,
+		// The bootstrap only needs to know whether to hold the run open. How long it ends up
+		// holding it is decided by the work itself, bounded by the run's own timeout.
+		"keepDetachedProcesses": strconv.FormatBool(opts.KeepDetachedProcesses),
 	}
 
 	task := jobs.SubmitTask{
@@ -755,7 +864,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+			spec.EnvironmentVersion = strconv.Itoa(opts.submittedEnvironmentVersion())
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
@@ -938,10 +1047,10 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	// OS home. Only needed for an interactive session; skip the lookup otherwise.
 	var wsHome string
 	if len(opts.AdditionalArgs) == 0 {
-		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
+		if homeDir, err := sshWorkspace.GetWorkspaceHomeDir(ctx, client); err != nil {
+			log.Warnf(ctx, "Failed to resolve workspace home directory: %v", err)
 		} else {
-			wsHome = "/Workspace/Users/" + currentUser.UserName
+			wsHome = homeDir
 		}
 	}
 
@@ -1227,6 +1336,15 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// cancelSSHServerRun cancels the bootstrap run this connection submitted once no client can reach
+// its server. Best effort: the server also shuts itself down after its no-client delay, so a
+// failure here must not hide the error that made the connection give up.
+func cancelSSHServerRun(ctx context.Context, client *databricks.WorkspaceClient, runID int64) {
+	if _, err := client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID}); err != nil {
+		log.Debugf(ctx, "Failed to cancel the ssh server job run %d: %v", runID, err)
+	}
+}
+
 // runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
 // SSH server will never come up), returning a formatted failure description when it has.
 func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
@@ -1302,21 +1420,33 @@ func usagePolicyMatches(storedPolicy, requestedPolicy string) bool {
 	return requestedPolicy == "" || storedPolicy == requestedPolicy
 }
 
+// keepDetachedMatches reports whether a running server holds its run open for detached
+// processes when this connection asked it to. The mode is fixed when the run is submitted, so
+// asking for it needs a server that has it; a connection that does not ask takes whatever is
+// already running.
+func keepDetachedMatches(stored, requested bool) bool {
+	return !requested || stored
+}
+
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
 	sessionID := opts.SessionIdentifier()
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
 	clusterID := opts.ClusterID
 
 	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	// This includes errDriverProxyForbidden: a new server would be refused the same way.
 	if err != nil && !errors.Is(err, errServerMetadata) {
 		return "", 0, "", err
 	}
 
 	// Start a new server when none is running, or when the running one was started under a
-	// different usage policy. A job's usage policy is fixed at submission, so we can't retarget
-	// the existing server; the new server overwrites metadata.json and the old one idles out via
-	// shutdownDelay.
-	needNewServer := err != nil || !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID)
+	// different usage policy or without keeping detached processes. Both are fixed at
+	// submission, so we can't retarget the existing server; the new server overwrites
+	// metadata.json, and its bootstrap terminates the running server on the cluster before
+	// starting (see cleanup() in ssh-server-bootstrap.py), which ends the previous run.
+	needNewServer := err != nil ||
+		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
+		!keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses)
 	if needNewServer {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
@@ -1328,17 +1458,24 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
 		sp.Update("Waiting for the SSH server to start...")
-		maxRetries := 30
+		maxRetries := int(serverMetadataTimeout / serverMetadataPollInterval)
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
 				return "", 0, "", ctx.Err()
 			}
 			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			if errors.Is(err, errDriverProxyForbidden) {
+				cancelSSHServerRun(ctx, client, runID)
+				return "", 0, "", err
+			}
 			// Accept only once metadata reflects the requested usage policy, so we don't latch
 			// onto a server a previous connection started under a different policy before our new
 			// server has overwritten metadata.json.
 			if err == nil && !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) {
 				err = fmt.Errorf("found a running SSH server with usage policy %q, waiting for the one with %q", meta.UsagePolicyID, opts.UsagePolicyID)
+			}
+			if err == nil && !keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses) {
+				err = errors.New("found a running SSH server that does not keep detached processes, waiting for the one that does")
 			}
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
@@ -1351,7 +1488,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
 			}
 			if retries < maxRetries-1 {
-				time.Sleep(2 * time.Second)
+				time.Sleep(serverMetadataPollInterval)
 			} else {
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}
@@ -1376,6 +1513,15 @@ type connectOutcome struct {
 	// trace of the cancellation. Only a cancellation counts as the user giving up: a deadline
 	// would be a timeout, so category() matches the cause rather than testing for non-nil.
 	ctxErr error
+}
+
+// ideCommandErrorCategory tells a broken IDE command override apart from a command missing on
+// PATH: the first points at whatever set the override, the second at the user's machine.
+func ideCommandErrorCategory(err error) protos.SshTunnelErrorCategory {
+	if errors.Is(err, vscode.ErrIDECommandOverrideInvalid) {
+		return protos.SshTunnelErrorCategoryIDECommandOverrideInvalid
+	}
+	return protos.SshTunnelErrorCategoryIDECommandNotOnPath
 }
 
 // sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
@@ -1480,7 +1626,11 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		ServerStartTimeMs:  outcome.serverStartTimeMs,
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
+		EnvironmentVersion: opts.submittedEnvironmentVersion(),
 		HasUsagePolicy:     opts.UsagePolicyID != "",
-		ErrorCategory:      outcome.category(),
+		// The connect side can only report that the knob was asked for. Whether any detached
+		// process was there to keep is reported by the server, at teardown.
+		KeepDetachedRequested: opts.KeepDetachedProcesses,
+		ErrorCategory:         outcome.category(),
 	}
 }

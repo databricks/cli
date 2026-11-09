@@ -2,7 +2,8 @@
 mkdir -p whl
 echo "test wheel content" > whl/source.whl
 
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json)
 
 title "Expecting wheel to be uploaded"
 trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort

@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +73,7 @@ func TestPrependWorkspacePrefixPreservesLocations(t *testing.T) {
 			},
 		},
 	}
-	locations := []dyn.Location{{File: "databricks.yml", Line: 42, Column: 5}}
+	locations := []diag.Location{{File: "databricks.yml", Line: 42, Column: 5}}
 	bundletest.SetLocation(b, "workspace.root_path", locations)
 
 	diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())

@@ -1,4 +1,5 @@
 mkdir -p .databricks/bundle/default
-cp resources.future.json .databricks/bundle/default/resources.json
+cp "$STATE_FILE" .databricks/bundle/default/resources.json
 
-trace $CLI bundle plan 2>&1 | grep -o 'state version.*'
+trace musterr $CLI bundle plan 2>&1 | contains.py "state version 999 is newer than supported version 3; upgrade the CLI" "!requires features this CLI does not support"
+trace cmp "$STATE_FILE" .databricks/bundle/default/resources.json

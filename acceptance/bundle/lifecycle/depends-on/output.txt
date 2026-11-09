@@ -1,0 +1,45 @@
+
+=== Plan records the edges
+>>> [CLI] bundle plan -o json
+{
+  "resources.jobs.a_job": [
+    {
+      "node": "resources.jobs.z_job",
+      "label": "depends_on"
+    },
+    {
+      "node": "resources.pipelines.z_pipeline",
+      "label": "depends_on"
+    }
+  ],
+  "resources.jobs.z_job": null,
+  "resources.pipelines.z_pipeline": null
+}
+
+=== Deploy creates dependencies first
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.a_job
+Created jobs.z_job
+Created pipelines.z_pipeline
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //jobs //pipelines
+POST /api/2.2/jobs/create a_job
+
+=== Destroy deletes dependents first
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.a_job
+  delete resources.jobs.z_job
+  delete resources.pipelines.z_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.z_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 3 deleted
+a_job deleted first

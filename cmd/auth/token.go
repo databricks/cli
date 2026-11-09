@@ -25,7 +25,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const invalidRefreshTokenErrorCode = "INVALID_REFRESH_TOKEN"
+const unauthenticatedErrorCode = "UNAUTHENTICATED"
 
 type tokenErrorOutput struct {
 	ErrorCode string `json:"error_code"`
@@ -117,7 +117,7 @@ func writeTokenErrorOutput(w io.Writer, err error) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(tokenErrorOutput{
-		ErrorCode: invalidRefreshTokenErrorCode,
+		ErrorCode: unauthenticatedErrorCode,
 		Message:   err.Error(),
 	})
 }
@@ -291,6 +291,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}
+	if resources := u2mResourcesFromProfile(existingProfile); len(resources) > 0 {
+		allArgs = append(allArgs, u2m.WithResources(resources))
+	}
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
@@ -419,33 +422,27 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 
 // runInlineLogin runs a minimal interactive login flow: prompts for a profile
 // name and host, performs the OAuth challenge, saves the profile to
-// .databrickscfg, and returns the new profile name and profile.
+// .databrickscfg, and returns the new profile name and profile. It rejects
+// the names of existing sections so that it cannot log in to an existing
+// profile.
 func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, mode storage.StorageMode) (string, *profile.Profile, error) {
-	profileName, err := promptForProfile(ctx, "DEFAULT")
+	takenNames, err := databrickscfg.GetSectionNames(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
 	if err != nil {
 		return "", nil, err
 	}
-
-	existingProfile, err := loadProfileByName(ctx, profileName, profiler)
+	profileName, err := promptForProfile(ctx, "DEFAULT", takenNames)
 	if err != nil {
 		return "", nil, err
 	}
 
 	loginArgs := &auth.AuthArguments{}
 
-	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
+	err = setHostAndAccountId(ctx, nil, loginArgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
 	loginArgs.Profile = profileName
-
-	// Preserve scopes from the existing profile so the inline login
-	// uses the same scopes the user previously configured.
-	var scopesList []string
-	if existingProfile != nil && existingProfile.Scopes != "" {
-		scopesList = splitScopes(existingProfile.Scopes)
-	}
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
@@ -455,26 +452,25 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 	}
-	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
-	}
-	if len(scopesList) > 0 {
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
-	}
+
+	// Challenge uses the context passed to NewPersistentAuth, so the timeout
+	// must be set before it.
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
 		return "", nil, err
 	}
 	defer persistentAuth.Close()
 
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	token, err := persistentAuth.Challenge()
 	if err != nil {
 		return "", nil, err
 	}
 
+	// The section may have been created during the OAuth wait, after the
+	// taken names were read.
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
@@ -485,8 +481,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		AccountID:   loginArgs.AccountID,
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:      scopesList,
-		ClientID:    u2mClientIDFromProfile(existingProfile),
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

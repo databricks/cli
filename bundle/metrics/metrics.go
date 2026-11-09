@@ -8,36 +8,42 @@ const (
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
 	AppLifecycleStarted                 = "app_lifecycle_started"
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
+	DeploymentHistoryEnabled            = "deployment_history_enabled"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
-	// Outcome of the dry-run migration to the direct engine attempted after a
-	// successful terraform deploy WHEN THE USER OPTED OUT of direct (direct is
-	// the default, so this means engine: terraform). Only recorded when the state
-	// conversion is truly a dry run (no auto-migrate).
-	// DirectDryMigrateSuccess is false when the state could not be converted;
-	// DirectDryMigrateWarnings is true when the conversion emitted warnings
-	// (e.g. resources the direct engine can't represent).
-	DirectDryMigrateSuccess  = "direct_drymigrate_success"
-	DirectDryMigrateWarnings = "direct_drymigrate_warnings"
+	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
+	// resource, not from experimental.immutable_folder: the flag may change, and the
+	// resource is what the deploy actually uploads.
+	ImmutableSnapshotUsed = "immutable_snapshot_used"
 
-	// Outcome of an automatic post-deploy migration to the direct engine, which
-	// runs unless the user opted out with engine: terraform. These replace the
-	// direct_drymigrate_* keys on migrating deploys.
+	// Key under which the snapshot upload duration is reported in
+	// bundle_mutator_execution_time_ms, next to files.(upload) so the two can be
+	// compared. Covers creating the snapshot resource (the upload plus recording it in
+	// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
+	// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
+	// not a mutator.
+	SnapshotUploadDuration = "snapshot.upload"
+
+	// Outcome of an automatic migration of terraform state to the direct engine.
 	//   - migrate_error:        state conversion itself errored.
 	//   - migrate_commit_error: the state was converted, but committing it
 	//                           (renaming files / pushing to workspace) failed.
-	//   - migrate_warnings:     the conversion emitted warnings (see above).
+	//   - migrate_warnings:     the conversion emitted warnings (e.g. resources the direct engine can't represent).
 	DirectMigrateError       = "direct_migrate_error"
 	DirectMigrateCommitError = "direct_migrate_commit_error"
 	DirectMigrateWarnings    = "direct_migrate_warnings"
 	// True when the post-convert plan check failed; the migration was not committed.
 	DirectMigratePlanError = "direct_migrate_plan_error"
+	// True when the migrated state's first plan would recreate (destroy + create) an
+	// existing resource. The migration still commits; the recreate is a genuine pending
+	// change gated by the deploy's --auto-approve, and this only records how often it happens.
+	DirectMigrateRecreatePlanned = "direct_migrate_recreate_planned"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;
 	// all are absent when auto-migration did not run. If both config and env
-	// set direct, ConfigType wins per ResolveEngineSetting, so via_config
+	// set direct, bundle.engine wins per ValidateEngineSetting, so via_config
 	// covers the "durable opt-in" population and via_env covers the
 	// "env-var only" population.
 	//   - via_config:  bundle.engine = "direct" was set in the bundle config.

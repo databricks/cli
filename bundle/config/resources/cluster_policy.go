@@ -13,6 +13,7 @@ import (
 
 type ClusterPolicy struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	compute.CreatePolicy
 
 	// Shadows the embedded compute.CreatePolicy.Definition (a string). `any` lets the

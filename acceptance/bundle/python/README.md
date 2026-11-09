@@ -7,7 +7,7 @@ over it. `test_python_support_coverage`
 to have one, so a newly-onboarded resource needs a fixture here.
 
 Copy an existing one — `alerts-support/` (a resource with required nested fields) or
-`catalogs-support/` (direct-engine only) are the canonical examples. A fixture is six
+`catalogs-support/` are the canonical examples. A fixture is six
 files:
 
 - `databricks.yml` — `bundle.name: my_project`, `sync: {paths: []}`, a top-level
@@ -35,8 +35,7 @@ files:
    with plain literals, and drop cloud-only blocks (`permissions`, `grants`,
    `file_path`) — this test is local and deterministic.
 4. `test.toml`: add `EnvMatrix.PYDAB_VERSION = ["current"]` for a brand-new resource
-   (it only exists in the current wheel), and `EnvMatrix.DATABRICKS_BUNDLE_ENGINE =
-   ["direct"]` for a direct-only resource.
+   (it only exists in the current wheel).
 5. Generate the golden:
    `go test ./acceptance -run 'TestAccept/bundle/python/<plural>-support' -update`.
 6. **Re-run without `-update`** — it must pass against the golden you just generated. A

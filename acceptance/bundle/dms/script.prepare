@@ -7,3 +7,7 @@ dms_plan() {
     trace $CLI bundle plan "$@" -o json | jq 'del(.plan)'
     trace $CLI bundle plan "$@"
 }
+
+deployment_history_telemetry() {
+    jq -r 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "deployment_history_enabled") | "\(.key) \(.value)"' "$OUT_REQUESTS"
+}

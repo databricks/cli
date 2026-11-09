@@ -1,0 +1,5 @@
+Ignore = ["commands.log"]
+
+[[Repls]]
+Old = '\d+\.\d+s'
+New = '[DURATION]'

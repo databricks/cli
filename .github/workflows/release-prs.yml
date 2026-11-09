@@ -230,6 +230,16 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: echo "$RUNNER_TEMP/komac" >> $GITHUB_PATH
 
+      # komac creates the winget PR branch in the fork at upstream's HEAD commit; when
+      # the fork's default branch drifts far behind, GitHub rejects the branch creation
+      # with a misleading CreateRef permissions error. Fast-forward the fork first.
+      - name: Sync winget-pkgs fork with upstream
+        if: ${{ !inputs.dry_run }}
+        run: komac sync-fork
+        env:
+          KOMAC_FORK_OWNER: eng-dev-ecosystem-bot
+          GITHUB_TOKEN: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
+
       - name: Publish to Winget
         if: ${{ !inputs.dry_run }}
         run: |

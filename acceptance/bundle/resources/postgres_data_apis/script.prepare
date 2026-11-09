@@ -1,0 +1,13 @@
+# data_api_fields is the allow-list of Data API fields the acceptance tests
+# assert on. Anything the backend returns outside this list is dropped, so a new
+# field in the API response does not break the golden. The status reports the
+# configuration in effect, server defaults included.
+data_api_fields() {
+    jq '{name, parent, status: (.status | {db_schemas, db_max_rows, server_cors_allowed_origins})}'
+}
+
+# print_postgres_requests writes the recorded postgres write requests to
+# out.requests.<name>.json.
+print_postgres_requests() {
+    print_requests.py '//postgres' > "out.requests.$1.json"
+}

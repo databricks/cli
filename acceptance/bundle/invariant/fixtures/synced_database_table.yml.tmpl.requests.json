@@ -1,0 +1,81 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/schemas",
+    "body": {
+      "catalog_name": "main",
+      "name": "test_synced_[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/sql/statements/",
+    "body": {
+      "statement": "CREATE TABLE main.test_synced_[UNIQUE_NAME].trips_source AS SELECT * FROM samples.nyctaxi.trips LIMIT 10",
+      "wait_timeout": "45s",
+      "warehouse_id": "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/app"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/database/instances",
+    "body": {
+      "capacity": "CU_1",
+      "name": "test-db-instance-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/database/catalogs",
+    "body": {
+      "create_database_if_not_exists": true,
+      "database_instance_name": "test-db-instance-[UNIQUE_NAME]",
+      "database_name": "test_db",
+      "name": "test-catalog-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/database/synced_tables",
+    "body": {
+      "database_instance_name": "test-db-instance-[UNIQUE_NAME]",
+      "logical_database_name": "test_db",
+      "name": "test-catalog-[UNIQUE_NAME].test_db.test_table",
+      "spec": {
+        "primary_key_columns": [
+          "tpep_pickup_datetime"
+        ],
+        "scheduling_policy": "SNAPSHOT",
+        "source_table_full_name": "main.test_synced_[UNIQUE_NAME].trips_source"
+      }
+    }
+  }
+]

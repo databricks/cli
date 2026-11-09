@@ -31,7 +31,7 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.test_cluster_policy
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
@@ -55,7 +55,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[WORKSPACE_ID]
 
 === Update the cluster policy name
 >>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
@@ -88,7 +88,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy_2-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[WORKSPACE_ID]
 
 === Destroy the cluster policy
 >>> [CLI] bundle destroy --auto-approve

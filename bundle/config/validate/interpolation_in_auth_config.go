@@ -78,7 +78,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 				Detail: fmt.Sprintf(`Interpolation is not supported for the field %s. Please set
 the %s environment variable if you wish to configure this field at runtime.`, p.String(), envVar),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			})
 		}
 	}

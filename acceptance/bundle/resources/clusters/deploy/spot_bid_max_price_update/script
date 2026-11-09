@@ -1,0 +1,37 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Deploy 1: create the cluster with azure_attributes but no spot_bid_max_price\n"
+trace $CLI bundle deploy -qq
+title "azure_attributes sent on create (spot_bid_max_price absent):\n"
+print_requests.py //clusters/create | jq '.body.azure_attributes'
+
+title "Now the user adds an explicit spot_bid_max_price: 0 to the config\n"
+update_file.py databricks.yml "#spot_bid_max_price: 0" "spot_bid_max_price: 0"
+
+title "Deploy 2: bundle should detect and apply the spot_bid_max_price change\n"
+trace $CLI bundle plan
+title "spot_bid_max_price change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["azure_attributes.spot_bid_max_price"]'
+trace $CLI bundle deploy -qq
+
+title "azure_attributes sent on update (empty means the change was NOT applied):\n"
+print_requests.py //clusters/edit | jq '.body.azure_attributes'
+
+title "Deploy 3: no config change, should converge to a no-op\n"
+trace $CLI bundle plan
+
+title "Now the user removes spot_bid_max_price again\n"
+update_file.py databricks.yml "spot_bid_max_price: 0" "#spot_bid_max_price: 0"
+
+title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
+trace $CLI bundle plan
+title "spot_bid_max_price change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["azure_attributes.spot_bid_max_price"]'
+trace $CLI bundle deploy -qq
+
+title "Deploy 5: no config change, should converge to a no-op\n"
+trace $CLI bundle plan

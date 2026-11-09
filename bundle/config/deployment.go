@@ -14,4 +14,9 @@ type Deployment struct {
 	// LatestVersionID is the most recent version recorded for the deployment. It is
 	// zero when the deployment exists but has no version yet.
 	LatestVersionID int `json:"latest_version_id,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., fail_on_active_runs: false).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
 }

@@ -13,9 +13,9 @@ import (
 )
 
 func TestMergeLocations(t *testing.T) {
-	pythonLocation := dyn.Location{File: "foo.py", Line: 1, Column: 1}
-	generatedLocation := dyn.Location{File: generatedFileName, Line: 1, Column: 1}
-	yamlLocation := dyn.Location{File: "foo.yml", Line: 1, Column: 1}
+	pythonLocation := diag.Location{File: "foo.py", Line: 1, Column: 1}
+	generatedLocation := diag.Location{File: generatedFileName, Line: 1, Column: 1}
+	yamlLocation := diag.Location{File: "foo.yml", Line: 1, Column: 1}
 
 	locations := newPythonLocations()
 	putPythonLocation(locations, dyn.MustPathFromString("foo"), pythonLocation)
@@ -24,13 +24,13 @@ func TestMergeLocations(t *testing.T) {
 		map[string]dyn.Value{
 			"foo": dyn.V(
 				map[string]dyn.Value{
-					"baz": dyn.NewValue("baz", []dyn.Location{yamlLocation}),
-					"qux": dyn.NewValue("baz", []dyn.Location{generatedLocation, yamlLocation}),
+					"baz": dyn.NewValue("baz", []diag.Location{yamlLocation}),
+					"qux": dyn.NewValue("baz", []diag.Location{generatedLocation, yamlLocation}),
 				},
 			),
-			"bar": dyn.NewValue("baz", []dyn.Location{generatedLocation}),
+			"bar": dyn.NewValue("baz", []diag.Location{generatedLocation}),
 		},
-		[]dyn.Location{yamlLocation},
+		[]diag.Location{yamlLocation},
 	)
 
 	expected := dyn.NewValue(
@@ -38,16 +38,16 @@ func TestMergeLocations(t *testing.T) {
 			"foo": dyn.NewValue(
 				map[string]dyn.Value{
 					// pythonLocation is appended to the beginning of the list if absent
-					"baz": dyn.NewValue("baz", []dyn.Location{pythonLocation, yamlLocation}),
+					"baz": dyn.NewValue("baz", []diag.Location{pythonLocation, yamlLocation}),
 					// generatedLocation is replaced by pythonLocation
-					"qux": dyn.NewValue("baz", []dyn.Location{pythonLocation, yamlLocation}),
+					"qux": dyn.NewValue("baz", []diag.Location{pythonLocation, yamlLocation}),
 				},
-				[]dyn.Location{pythonLocation},
+				[]diag.Location{pythonLocation},
 			),
 			// if location is unknown, we keep it as-is
-			"bar": dyn.NewValue("baz", []dyn.Location{generatedLocation}),
+			"bar": dyn.NewValue("baz", []diag.Location{generatedLocation}),
 		},
-		[]dyn.Location{yamlLocation},
+		[]diag.Location{yamlLocation},
 	)
 
 	actual, err := mergePythonLocations(input, locations)
@@ -57,8 +57,8 @@ func TestMergeLocations(t *testing.T) {
 }
 
 func TestFindLocation(t *testing.T) {
-	location0 := dyn.Location{File: "foo.py", Line: 1, Column: 1}
-	location1 := dyn.Location{File: "foo.py", Line: 2, Column: 1}
+	location0 := diag.Location{File: "foo.py", Line: 1, Column: 1}
+	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
 	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
@@ -71,9 +71,9 @@ func TestFindLocation(t *testing.T) {
 }
 
 func TestFindLocation_indexPathComponent(t *testing.T) {
-	location0 := dyn.Location{File: "foo.py", Line: 1, Column: 1}
-	location1 := dyn.Location{File: "foo.py", Line: 2, Column: 1}
-	location2 := dyn.Location{File: "foo.py", Line: 3, Column: 1}
+	location0 := diag.Location{File: "foo.py", Line: 1, Column: 1}
+	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
+	location2 := diag.Location{File: "foo.py", Line: 3, Column: 1}
 
 	locations := newPythonLocations()
 	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
@@ -87,8 +87,8 @@ func TestFindLocation_indexPathComponent(t *testing.T) {
 }
 
 func TestFindLocation_closestAncestorLocation(t *testing.T) {
-	location0 := dyn.Location{File: "foo.py", Line: 1, Column: 1}
-	location1 := dyn.Location{File: "foo.py", Line: 2, Column: 1}
+	location0 := diag.Location{File: "foo.py", Line: 1, Column: 1}
+	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
 	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
@@ -101,8 +101,8 @@ func TestFindLocation_closestAncestorLocation(t *testing.T) {
 }
 
 func TestFindLocation_unknownLocation(t *testing.T) {
-	location0 := dyn.Location{File: "foo.py", Line: 1, Column: 1}
-	location1 := dyn.Location{File: "foo.py", Line: 2, Column: 1}
+	location0 := diag.Location{File: "foo.py", Line: 1, Column: 1}
+	location1 := diag.Location{File: "foo.py", Line: 2, Column: 1}
 
 	locations := newPythonLocations()
 	putPythonLocation(locations, dyn.MustPathFromString("foo"), location0)
@@ -114,7 +114,7 @@ func TestFindLocation_unknownLocation(t *testing.T) {
 }
 
 func TestLoadOutput(t *testing.T) {
-	location := dyn.Location{File: "my_job.py", Line: 1, Column: 1}
+	location := diag.Location{File: "my_job.py", Line: 1, Column: 1}
 	bundleRoot := t.TempDir()
 	output := `{
 		"resources": {
@@ -151,12 +151,12 @@ func TestLoadOutput(t *testing.T) {
 
 	name, err := dyn.Get(value, "resources.jobs.my_job.name")
 	require.NoError(t, err)
-	require.Equal(t, []dyn.Location{location}, name.Locations())
+	require.Equal(t, []diag.Location{location}, name.Locations())
 }
 
 func TestParsePythonLocations_absolutePath(t *testing.T) {
 	// output can contain absolute path that is outside of the bundle root
-	expected := dyn.Location{File: "/Shared/foo.py", Line: 1, Column: 2}
+	expected := diag.Location{File: "/Shared/foo.py", Line: 1, Column: 2}
 
 	input := `{"path": "foo", "file": "/Shared/foo.py", "line": 1, "column": 2}`
 	reader := bytes.NewReader([]byte(input))
@@ -171,7 +171,7 @@ func TestParsePythonLocations_absolutePath(t *testing.T) {
 func TestParsePythonLocations_relativePath(t *testing.T) {
 	// output can contain relative paths, we expect all locations to be absolute
 	// at this stage of mutator pipeline
-	expected := dyn.Location{File: filepath.Clean("/tmp/my_project/foo.py"), Line: 1, Column: 2}
+	expected := diag.Location{File: filepath.Clean("/tmp/my_project/foo.py"), Line: 1, Column: 2}
 
 	input := `{"path": "foo", "file": "foo.py", "line": 1, "column": 2}`
 	reader := bytes.NewReader([]byte(input))

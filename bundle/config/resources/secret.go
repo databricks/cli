@@ -15,6 +15,7 @@ import (
 
 type Secret struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.Secret
 
 	// List of grants to apply on this secret.

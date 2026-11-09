@@ -23,16 +23,6 @@
     "type": "whl"
   }
 }
-Building my_test_code...
-
->>> [CLI] bundle deploy
-Building my_test_code...
-Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
-Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.test_job
-Files: 17 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === There are 2 original wheels and 2 patched ones
 >>> find.py --expect 4 whl
@@ -65,16 +55,6 @@ json[1].libraries[1].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/defa
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
 
 === Updating the local wheel and deploying again
-Building my_test_code...
-
->>> [CLI] bundle deploy
-Building my_test_code...
-Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
-Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Updated jobs.test_job
-Files: 10 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify contents, it should now have new_module.py
 >>> find.py --expect 1 .databricks/.*my_test_code.*whl

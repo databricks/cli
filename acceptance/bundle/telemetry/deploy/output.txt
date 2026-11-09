@@ -15,5 +15,4 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> cat telemetry.json
 true
 
-=== Assert the dry-run migration to the direct engine is reported
 === Assert the terraform engine opt-in is reported

@@ -13,9 +13,8 @@ import (
 
 type ModelServingEndpoint struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
-	// This represents the input args for terraform, and will get converted
-	// to a HCL representation for CRUD
 	serving.CreateServingEndpoint
 
 	// This is a resource agnostic implementation of permissions for ACLs.

@@ -75,17 +75,20 @@ func newCreatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
+	// TODO: array: governed_tags
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy.`)
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", createPolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
 	cmd.Flags().Var(&createPolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
+  AGENT_SERVICE,
   CATALOG,
   CLEAN_ROOM,
   CONNECTION,
   CREDENTIAL,
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
+  FEATURE,
   FUNCTION,
   MCP_SERVICE,
   METASTORE,
@@ -97,6 +100,7 @@ func newCreatePolicy() *cobra.Command {
   RECIPIENT,
   SCHEMA,
   SHARE,
+  SKILL,
   STAGING_TABLE,
   STORAGE_CREDENTIAL,
   TABLE,
@@ -118,12 +122,14 @@ func newCreatePolicy() *cobra.Command {
     FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
       create and optional on update.
       Supported values: [
+        AGENT_SERVICE,
         CATALOG,
         CLEAN_ROOM,
         CONNECTION,
         CREDENTIAL,
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
+        FEATURE,
         FUNCTION,
         MCP_SERVICE,
         METASTORE,
@@ -135,6 +141,7 @@ func newCreatePolicy() *cobra.Command {
         RECIPIENT,
         SCHEMA,
         SHARE,
+        SKILL,
         STAGING_TABLE,
         STORAGE_CREDENTIAL,
         TABLE,
@@ -452,17 +459,20 @@ func newUpdatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: complex arg: deny
 	// TODO: array: except_principals
+	// TODO: array: governed_tags
 	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy.`)
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", updatePolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
 	cmd.Flags().Var(&updatePolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
+  AGENT_SERVICE,
   CATALOG,
   CLEAN_ROOM,
   CONNECTION,
   CREDENTIAL,
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
+  FEATURE,
   FUNCTION,
   MCP_SERVICE,
   METASTORE,
@@ -474,6 +484,7 @@ func newUpdatePolicy() *cobra.Command {
   RECIPIENT,
   SCHEMA,
   SHARE,
+  SKILL,
   STAGING_TABLE,
   STORAGE_CREDENTIAL,
   TABLE,
@@ -498,12 +509,14 @@ func newUpdatePolicy() *cobra.Command {
     FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
       create and optional on update.
       Supported values: [
+        AGENT_SERVICE,
         CATALOG,
         CLEAN_ROOM,
         CONNECTION,
         CREDENTIAL,
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
+        FEATURE,
         FUNCTION,
         MCP_SERVICE,
         METASTORE,
@@ -515,6 +528,7 @@ func newUpdatePolicy() *cobra.Command {
         RECIPIENT,
         SCHEMA,
         SHARE,
+        SKILL,
         STAGING_TABLE,
         STORAGE_CREDENTIAL,
         TABLE,

@@ -1,0 +1,3 @@
+# termtest goldens are LF-only snapshots of the VT emulator; keep Windows
+# checkouts from converting them to CRLF.
+*.golden text eol=lf

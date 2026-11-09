@@ -1,0 +1,5 @@
+bundle:
+  name: job_environment_variables_files
+
+include:
+  - resources/*.yml

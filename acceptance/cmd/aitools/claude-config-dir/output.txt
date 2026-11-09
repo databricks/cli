@@ -1,0 +1,21 @@
+
+=== Plugin installed only in the custom config directory
+
+>>> CLAUDE_CONFIG_DIR=custom [CLI] version
+Databricks CLI v[CLI_VERSION]
+
+=== Custom directory takes precedence over the default installation
+
+>>> CLAUDE_CONFIG_DIR=missing [CLI] version
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
+
+=== Empty override uses the default installation
+
+>>> CLAUDE_CONFIG_DIR= [CLI] version
+Databricks CLI v[CLI_VERSION]
+
+=== Unset override uses the default installation
+
+>>> [CLI] version
+Databricks CLI v[CLI_VERSION]

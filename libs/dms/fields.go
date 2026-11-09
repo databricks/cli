@@ -1,6 +1,6 @@
 package dms
 
-import "strings"
+import "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 
 // Fields is the set of operation fields an update writes, sent as its update mask. The
 // service rejects any other path, so this is the whole vocabulary.
@@ -51,12 +51,12 @@ func (f Fields) Has(other Fields) bool {
 }
 
 // Mask renders f as the update_mask the service expects, always in the same order.
-func (f Fields) Mask() string {
+func (f Fields) Mask() fieldmask.FieldMask {
 	names := make([]string, 0, len(wireNames))
 	for _, w := range wireNames {
 		if f.Has(w.field) {
 			names = append(names, w.name)
 		}
 	}
-	return strings.Join(names, ",")
+	return fieldmask.FieldMask{Paths: names}
 }

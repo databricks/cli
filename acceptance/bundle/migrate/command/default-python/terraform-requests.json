@@ -1,0 +1,134 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "environment": {
+        "dependencies": [
+          "--editable /Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/files"
+        ]
+      },
+      "libraries": [
+        {
+          "glob": {
+            "include": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
+          }
+        }
+      ],
+      "name": "[dev tester] my_default_python_etl",
+      "root_path": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/files/src/my_default_python_etl",
+      "schema": "tester",
+      "tags": {
+        "dev": "tester"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "job_clusters": [
+        {
+          "job_cluster_key": "job_cluster",
+          "new_cluster": {
+            "autoscale": {
+              "max_workers": 4,
+              "min_workers": 1
+            },
+            "data_security_mode": "DATA_SECURITY_MODE_AUTO",
+            "node_type_id": "i3.xlarge",
+            "spark_version": "16.4.x-scala2.12"
+          }
+        }
+      ],
+      "max_concurrent_runs": 4,
+      "name": "[dev tester] sample_job",
+      "parameters": [
+        {
+          "default": "hive_metastore",
+          "name": "catalog"
+        },
+        {
+          "default": "tester",
+          "name": "schema"
+        }
+      ],
+      "queue": {
+        "enabled": true
+      },
+      "tags": {
+        "dev": "tester"
+      },
+      "tasks": [
+        {
+          "job_cluster_key": "job_cluster",
+          "libraries": [
+            {
+              "whl": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+1790615449746915976-py3-none-any.whl"
+            }
+          ],
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/files/src/sample_notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "notebook_task"
+        },
+        {
+          "depends_on": [
+            {
+              "task_key": "notebook_task"
+            }
+          ],
+          "job_cluster_key": "job_cluster",
+          "libraries": [
+            {
+              "whl": "/Workspace/Users/tester@databricks.com/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+1790615449746915976-py3-none-any.whl"
+            }
+          ],
+          "python_wheel_task": {
+            "entry_point": "main",
+            "package_name": "my_default_python",
+            "parameters": [
+              "--catalog",
+              "hive_metastore",
+              "--schema",
+              "tester"
+            ]
+          },
+          "task_key": "python_wheel_task"
+        },
+        {
+          "depends_on": [
+            {
+              "task_key": "notebook_task"
+            }
+          ],
+          "pipeline_task": {
+            "pipeline_id": "79fe8a2d-965e-74e8-79fe-8a2d965e74e9"
+          },
+          "task_key": "refresh_pipeline"
+        }
+      ],
+      "trigger": {
+        "pause_status": "PAUSED",
+        "periodic": {
+          "interval": 1,
+          "unit": "DAYS"
+        }
+      }
+    }
+  }
+]

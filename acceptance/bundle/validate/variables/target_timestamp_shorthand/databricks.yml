@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: base
+
+targets:
+  dev:
+    variables:
+      x: 2020-01-02

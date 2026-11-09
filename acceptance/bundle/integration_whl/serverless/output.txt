@@ -6,11 +6,11 @@ Building my_test_code...
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.some_other_job
-Files: 16 uploaded, 0 deleted
+Files: 14 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "My Wheel Job" RUNNING
 [TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
@@ -27,7 +27,7 @@ Files: 9 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "My Wheel Job" RUNNING
 [TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS

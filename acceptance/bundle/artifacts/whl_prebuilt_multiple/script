@@ -1,6 +1,7 @@
 trace find.py --expect 2 whl
 
-trace $CLI bundle deploy 2>&1
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) 2>&1
 
 title "Expecting to find 2 wheels, same as initially provided"
 trace find.py --expect 2 whl

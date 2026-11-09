@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"golang.org/x/oauth2"
 )
@@ -64,6 +66,32 @@ func TestToken(t *testing.T) {
 	}
 	if tok.RefreshToken != "" {
 		t.Errorf("p.Token(): want refresh token '', got %s", tok.RefreshToken)
+	}
+}
+
+func TestToken_EntryWithoutToken(t *testing.T) {
+	cache := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return nil, nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://abc", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+	}
+	p, err := NewPersistentAuth(t.Context(), WithTokenStore(cache), WithOAuthArgument(arg))
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	for name, get := range map[string]func() (*oauth2.Token, error){
+		"Token":             p.Token,
+		"ForceRefreshToken": p.ForceRefreshToken,
+	} {
+		if _, err := get(); !errors.Is(err, storage.ErrNotFound) {
+			t.Errorf("p.%s(): want storage.ErrNotFound, got %v", name, err)
+		}
 	}
 }
 
@@ -157,12 +185,66 @@ func TestPersistentAuthClientID(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewPersistentAuth(): %v", err)
 			}
-			cfg, err := p.oauth2Config()
+			cfg, err := p.oauth2Config(t.Context())
 			if err != nil {
 				t.Fatalf("oauth2Config(): %v", err)
 			}
 			if cfg.ClientID != tt.want {
 				t.Errorf("client ID = %q, want %q", cfg.ClientID, tt.want)
+			}
+		})
+	}
+}
+
+func TestPersistentAuthResources(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []PersistentAuthOption
+		want []string
+	}{
+		{
+			name: "none",
+			want: nil,
+		},
+		{
+			name: "single",
+			opts: []PersistentAuthOption{WithResources([]string{"https://workspace.test/ai-gateway/mcp-services/system.ai.github"})},
+			want: []string{"https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
+		},
+		{
+			name: "multiple",
+			opts: []PersistentAuthOption{WithResources([]string{"https://a.test/r1", "https://b.test/r2"})},
+			want: []string{"https://a.test/r1", "https://b.test/r2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			arg, err := NewBasicWorkspaceOAuthArgument("https://workspace.test")
+			if err != nil {
+				t.Fatalf("NewBasicWorkspaceOAuthArgument(): %v", err)
+			}
+			opts := append([]PersistentAuthOption{
+				WithOAuthArgument(arg),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+			}, tt.opts...)
+			p, err := NewPersistentAuth(t.Context(), opts...)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): %v", err)
+			}
+			cfg, err := p.oauth2Config(t.Context())
+			if err != nil {
+				t.Fatalf("oauth2Config(): %v", err)
+			}
+			parsed, err := url.Parse(cfg.Endpoint.AuthURL)
+			if err != nil {
+				t.Fatalf("parsing AuthURL %q: %v", cfg.Endpoint.AuthURL, err)
+			}
+
+			got := parsed.Query()["resource"]
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("resource params = %v, want %v (AuthURL=%q)", got, tt.want, cfg.Endpoint.AuthURL)
 			}
 		})
 	}
@@ -514,6 +596,39 @@ func TestToken_ReturnsInvalidRefreshTokenError(t *testing.T) {
 	}
 	if _, ok := errors.AsType[*InvalidRefreshTokenError](err); !ok {
 		t.Fatalf("p.Token(): want error of type InvalidRefreshTokenError, got %v", err)
+	}
+}
+
+func TestToken_ReturnsErrorWithoutErrorCode(t *testing.T) {
+	// The default ApiClient transport returns an error response as an
+	// *httpclient.HttpError, which is returned as is without an error code.
+	for _, body := range []string{"<html>Bad Gateway</html>", `{"error_description": "Bad Gateway"}`} {
+		t.Run(body, func(t *testing.T) {
+			arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+			if err != nil {
+				t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+			}
+			p, err := NewPersistentAuth(
+				t.Context(),
+				WithTokenStore(&tokenStoreMock{lookup: func(string) (*oauth2.Token, error) {
+					return &oauth2.Token{AccessToken: "expired", RefreshToken: "cde", Expiry: time.Now().Add(-time.Minute)}, nil
+				}}),
+				WithHttpClient(&http.Client{Transport: httpclient.NewApiClient(httpclient.ClientConfig{
+					Transport: fixtures.SliceTransport{{Method: "POST", Resource: "/oidc/accounts/xyz/v1/token", Response: body, Status: 502}},
+				})}),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+				WithOAuthArgument(arg),
+			)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+			}
+			defer p.Close()
+			_, err = p.Token()
+			want := `token refresh: Post "https://accounts.cloud.databricks.test/oidc/accounts/xyz/v1/token": http 502: ` + body
+			if err == nil || err.Error() != want {
+				t.Errorf("p.Token(): want error %q, got %v", want, err)
+			}
+		})
 	}
 }
 
@@ -952,6 +1067,9 @@ func TestForceRefreshToken_FailsOnRefreshError(t *testing.T) {
 	if got := err.Error(); got != want {
 		t.Errorf("ForceRefreshToken(): want error %q, got %q", want, got)
 	}
+	if _, ok := errors.AsType[*oauth2.RetrieveError](err); !ok {
+		t.Errorf("ForceRefreshToken(): want error wrapping *oauth2.RetrieveError, got %v", err)
+	}
 }
 
 func TestForceRefreshToken_InvalidRefreshTokenError(t *testing.T) {
@@ -1069,7 +1187,7 @@ func TestChallenge(t *testing.T) {
 	}()
 
 	state := <-browserOpened
-	resp, err := http.Get("http://localhost:8020?code=__THIS__&state=" + state)
+	resp, err := http.Get("http://" + p.redirectAddr + "?code=__THIS__&state=" + state)
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1128,7 +1246,7 @@ func TestChallenge_ReturnsErrorOnFailure(t *testing.T) {
 	}()
 
 	<-browserOpened
-	resp, err := http.Get("http://localhost:8020?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
+	resp, err := http.Get("http://" + p.redirectAddr + "?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1260,7 +1378,6 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 	const (
 		testWorkspaceHost = "https://workspace.cloud.databricks.test"
 		testTokenEndpoint = "/oidc/v1/token"
-		testCallbackURL   = "http://localhost:8020"
 	)
 
 	tests := []struct {
@@ -1388,7 +1505,7 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 				t.Errorf("scope: want %q, got %q", tt.want, scopeReceived)
 			}
 
-			resp, err := http.Get(fmt.Sprintf("%s?code=__CODE__&state=%s", testCallbackURL, stateReceived))
+			resp, err := http.Get(fmt.Sprintf("http://%s?code=__CODE__&state=%s", p.redirectAddr, stateReceived))
 			if err != nil {
 				t.Fatalf("http.Get(): want no error, got %v", err)
 			}

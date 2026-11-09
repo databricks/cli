@@ -13,6 +13,7 @@ trace $CLI bundle plan -o json | nostamp > out.plan.direct.json
 
 title "Deploy (migrates state)"
 trace $CLI bundle deploy
+read_id.py my_job > /dev/null
 
 title "Print state after deploy"
 trace print_state.py | nostamp --indent 1

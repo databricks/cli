@@ -123,6 +123,27 @@ func GetDefaultProfile(ctx context.Context, configFilePath string) (string, erro
 	return GetDefaultProfileFrom(configFile), nil
 }
 
+// GetSectionNames returns the names of the non-empty sections in the config
+// file at configFilePath. Unlike LoadProfiles, it includes sections without a
+// host. SaveToProfile merges into an existing section with the same name, so
+// none of these names is free for a new profile. Returns nil if the file
+// doesn't exist.
+func GetSectionNames(ctx context.Context, configFilePath string) ([]string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil || configFile == nil {
+		return nil, err
+	}
+	var names []string
+	for _, s := range configFile.Sections() {
+		// go-ini always has a DEFAULT section, even if the file does not.
+		if len(s.Keys()) == 0 {
+			continue
+		}
+		names = append(names, s.Name())
+	}
+	return names, nil
+}
+
 // loadConfigFile loads a config file without creating it if it doesn't exist.
 // Returns (nil, nil) when the file is not found.
 func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {
@@ -210,10 +231,24 @@ func isFirstProfileInFile(configFile *config.File) bool {
 	return true
 }
 
-// SetDefaultProfile writes the default_profile key to the [__settings__] section.
-func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+// ValidateProfileName returns an error if profileName is reserved for the
+// [__settings__] section or cannot be written as a section header.
+func ValidateProfileName(profileName string) error {
 	if profileName == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+	// go-ini writes section headers unescaped, so a line break would produce a
+	// config file that no longer parses.
+	if strings.ContainsAny(profileName, "\r\n") {
+		return fmt.Errorf("profile name %q must not contain line breaks", profileName)
+	}
+	return nil
+}
+
+// SetDefaultProfile writes the default_profile key to the [__settings__] section.
+func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	if err := ValidateProfileName(profileName); err != nil {
+		return err
 	}
 
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
@@ -255,6 +290,33 @@ func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string)
 
 	section.Key(authStorageKey).SetValue(value)
 
+	return writeConfigFile(ctx, configFile)
+}
+
+// SaveResourcesToProfile writes (or clears) the `resources` key on a profile
+// section. `resources` is a comma-separated list of RFC 8707 resource indicators
+// requested during U2M login. An empty list removes the key. The profile
+// section must already exist.
+//
+// TODO: this value should ideally be passed with other values in Config.
+// This requires updating the SDK first, and then this dependency. The current
+// code is a short-cut to allow the CLI to support resources without having to
+// go through that cross-repos loop.
+func SaveResourcesToProfile(ctx context.Context, profileName, configFilePath string, resources []string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	section, err := configFile.GetSection(profileName)
+	if err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+	if len(resources) == 0 {
+		section.DeleteKey("resources")
+	} else if _, err := section.NewKey("resources", strings.Join(resources, ",")); err != nil {
+		// See SaveToProfile for why this is not Section.Key.
+		return err
+	}
 	return writeConfigFile(ctx, configFile)
 }
 
@@ -327,7 +389,7 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 		// Check if this section matches the normalized host
 		return normalizeHost(host) == normalizeHost(cfg.Host)
 	})
-	if err == errNoMatchingProfiles {
+	if errors.Is(err, errNoMatchingProfiles) {
 		section, err = configFile.NewSection(cfg.Profile)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create new profile: %w", err)
@@ -402,8 +464,8 @@ func backupConfigFile(ctx context.Context, configFile *config.File) error {
 // removed (use this for mutually exclusive fields like cluster_id vs
 // serverless_compute_id, or to drop stale auth credentials on auth-type switch).
 func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string) error {
-	if cfg.Profile == databricksSettingsSection {
-		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	if err := ValidateProfileName(cfg.Profile); err != nil {
+		return err
 	}
 
 	configFile, err := loadOrCreateConfigFile(ctx, cfg.ConfigFile)
@@ -435,8 +497,12 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		if attr.IsZero(cfg) {
 			continue
 		}
-		key := section.Key(attr.Name)
-		key.SetValue(attr.GetString(cfg))
+		// Section.Key falls back to the parent section for dotted names
+		// ([team] for [team.prod]), so it would overwrite the parent's value.
+		// NewKey only looks at the section's own keys.
+		if _, err := section.NewKey(attr.Name, attr.GetString(cfg)); err != nil {
+			return err
+		}
 	}
 
 	// Auto-set default profile when saving the first profile to the config file.

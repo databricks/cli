@@ -211,12 +211,14 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
 	// TODO: complex arg: effective_string_val
+	// TODO: complex arg: effective_workspace_label
 	// TODO: complex arg: integer_val
 	cmd.Flags().StringVar(&patchPublicWorkspaceSettingReq.Setting.Name, "name", patchPublicWorkspaceSettingReq.Setting.Name, `Name of the setting.`)
 	// TODO: complex arg: operational_email_custom_recipient
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
 	// TODO: complex arg: string_val
+	// TODO: complex arg: workspace_label
 
 	cmd.Use = "patch-public-workspace-setting NAME"
 	cmd.Short = `Update a workspace setting.`

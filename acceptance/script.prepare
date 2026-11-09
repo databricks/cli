@@ -115,18 +115,30 @@ add_repl() {
     env -u MSYS_NO_PATHCONV add_repl.py "$@"
 }
 
+# setup_custom_host sets CUSTOM_HOST to the test server reached as localhost
+# instead of 127.0.0.1, which stands in for a host shared by several workspaces,
+# and WORKSPACE_ID to the workspace ID that the test server reports. Call it
+# once per test, while DATABRICKS_HOST is still set: add_repl gives a repeated
+# replacement name a suffix, so a second call adds duplicate replacements.
+setup_custom_host() {
+    export CUSTOM_HOST=${DATABRICKS_HOST/127.0.0.1/localhost}
+    add_repl "$CUSTOM_HOST" CUSTOM_HOST
+    add_repl "${CUSTOM_HOST#*://}" CUSTOM_HOSTNAME
+    WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
+    export WORKSPACE_ID
+}
+
 nostamp() {
     # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
     # find nostamp.py on Windows.
     env -u MSYS_NO_PATHCONV nostamp.py "$@"
 }
 
-# The engine_terraform_* keys reflect the deployment engine opt-in; engine_terraform_env
-# in particular mirrors $DATABRICKS_BUNDLE_ENGINE, which the acceptance matrix sets per
-# variant, so it diverges across the matrix. Drop both here so this shared helper stays
-# engine-agnostic; they are asserted per-engine in bundle/telemetry/deploy.
+# The engine_terraform_* and deployment_history_enabled keys reflect matrix settings, so they
+# legitimately diverge across variants. Drop them here so this shared helper stays
+# matrix-agnostic; engine selection is asserted in bundle/telemetry/deploy.
 print_telemetry_bool_values() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -v '^engine_terraform_' | sort
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -Ev '^(engine_terraform_|deployment_history_enabled )' | sort
 }
 
 sethome() {

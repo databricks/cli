@@ -45,6 +45,7 @@ func (c McpServiceConfig) MarshalJSON() ([]byte, error) {
 
 type McpService struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	McpServiceConfig
 
 	// List of grants to apply on this MCP service. Grants are applied via the

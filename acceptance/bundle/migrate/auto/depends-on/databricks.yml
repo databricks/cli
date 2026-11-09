@@ -1,0 +1,12 @@
+bundle: {name: test-bundle}
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Auto-Migrate Job"
+    # Added after the terraform deployment; terraform has no lifecycle.depends_on.
+    other_job:
+      name: "Other Job"
+      lifecycle:
+        depends_on:
+          - resource: test_job

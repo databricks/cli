@@ -48,6 +48,7 @@ func (c PostgresBranchConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresBranch struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresBranchConfig
 }
 

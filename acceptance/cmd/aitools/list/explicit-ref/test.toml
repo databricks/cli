@@ -1,0 +1,3 @@
+# DATABRICKS_SKILLS_REF sets the skills ref, so the CLI does not use the
+# latest-release lookup.
+Env.DATABRICKS_SKILLS_REF = "test-ref"

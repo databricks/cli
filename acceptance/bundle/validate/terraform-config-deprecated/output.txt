@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle validate
+Warning: bundle.terraform is deprecated and has no effect: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  at bundle.terraform
+  in databricks.yml:4:5
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+
+>>> [CLI] bundle validate -t override
+Warning: bundle.terraform is deprecated and has no effect: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
+  at bundle.terraform
+  in databricks.yml:4:5
+     databricks.yml:12:9
+
+Name: test-bundle
+Target: override
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/override
+
+Found 1 warning

@@ -1,0 +1,8 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+use_compat_manifest
+
+trace $CLI aitools list --output json | list_fields
+
+title "The latest-release lookup picks the manifest version\n"
+trace print_requests.py --get

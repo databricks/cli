@@ -42,8 +42,9 @@ type the path (e.g. `.nextchanges/cli/quickstart.md`), write the entry, commit.
 | --- | --- |
 | `.nextchanges/notable-changes/` | Notable Changes (prominent, called out at the top) |
 | `.nextchanges/cli/` | CLI |
+| `.nextchanges/air/` | AI Runtime |
 | `.nextchanges/bundles/` | Bundles |
-| `.nextchanges/dependency-updates/` | Dependency updates |
+| `.nextchanges/dependency-updates/` | Dependency Updates |
 | `.nextchanges/api-changes/` | API Changes |
 
 See [`.agents/skills/pr-checklist/SKILL.md`](../.agents/skills/pr-checklist/SKILL.md)

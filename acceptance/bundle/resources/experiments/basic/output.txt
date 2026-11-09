@@ -13,7 +13,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [MY_EXPERIMENT_ID]
 {
   "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
   "artifact_location": "s3://original-[UNIQUE_NAME]",
@@ -57,7 +57,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [MY_EXPERIMENT_ID]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://original-[UNIQUE_NAME]",
@@ -101,7 +101,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [MY_EXPERIMENT_ID_3]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://new-[UNIQUE_NAME]",
@@ -140,7 +140,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] experiments get-experiment [NUMID]
+>>> [CLI] experiments get-experiment [MY_EXPERIMENT_ID_3]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://new-[UNIQUE_NAME]",

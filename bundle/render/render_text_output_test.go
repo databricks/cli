@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -159,7 +159,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{{
+					Locations: []diag.Location{{
 						File:   "foo.yaml",
 						Line:   1,
 						Column: 2,
@@ -177,7 +177,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Locations: []dyn.Location{
+					Locations: []diag.Location{
 						{
 							File:   "foo.yaml",
 							Line:   1,
@@ -203,7 +203,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.xxx")},
+					Paths:    structpath.NewPathSlice("resources", "jobs", "xxx"),
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
@@ -218,11 +218,11 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.xxx"),
-						dyn.MustPathFromString("resources.jobs.yyy"),
-						dyn.MustPathFromString("resources.jobs.zzz"),
-					},
+					Paths: structpath.MustParsePaths(
+						"resources.jobs.xxx",
+						"resources.jobs.yyy",
+						"resources.jobs.zzz",
+					),
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
@@ -239,11 +239,11 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Recommendation,
 					Summary:  "summary",
 					Detail:   "detail",
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.xxx"),
-						dyn.MustPathFromString("resources.jobs.yyy"),
-					},
-					Locations: []dyn.Location{
+					Paths: structpath.MustParsePaths(
+						"resources.jobs.xxx",
+						"resources.jobs.yyy",
+					),
+					Locations: []diag.Location{
 						{File: "foo.yaml", Line: 1, Column: 2},
 						{File: "bar.yaml", Line: 3, Column: 4},
 					},
@@ -299,28 +299,35 @@ func TestRenderSummary(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1", URL: "https://url1"},
-						JobSettings:  jobs.JobSettings{Name: "job1-name"},
+						ID:           "1",
+						BaseResource: resources.BaseResource{URL: "https://url1"},
+
+						JobSettings: jobs.JobSettings{Name: "job1-name"},
 					},
 					"job2": {
-						BaseResource: resources.BaseResource{ID: "2", URL: "https://url2"},
-						JobSettings:  jobs.JobSettings{Name: "job2-name"},
+						ID:           "2",
+						BaseResource: resources.BaseResource{URL: "https://url2"},
+
+						JobSettings: jobs.JobSettings{Name: "job2-name"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
-						BaseResource: resources.BaseResource{ID: "4"},
+						ID: "4",
+
 						// no URL
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
-						BaseResource:   resources.BaseResource{ID: "3", URL: "https://url3"},
+						ID:           "3",
+						BaseResource: resources.BaseResource{URL: "https://url3"},
+
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema"},
+						ID: "catalog.schema",
 						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
@@ -329,7 +336,9 @@ func TestRenderSummary(t *testing.T) {
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
-						BaseResource: resources.BaseResource{ID: "7", URL: "https://url4"},
+						ID:           "7",
+						BaseResource: resources.BaseResource{URL: "https://url4"},
+
 						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},

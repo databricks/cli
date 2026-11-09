@@ -3,10 +3,12 @@ package phases
 import (
 	"cmp"
 	"context"
+	"maps"
 	"math"
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -14,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -195,9 +198,73 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 	return present, scheduled, multitask
 }
 
+// pydabsMetrics reports usage of Python support. Loaders and mutators are read from
+// 'experimental/python' only: the Python mutator copies 'python' there.
+func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
+	}
+
+	out := &protos.BundleDeployPydabs{
+		ResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+		ResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+		ConfigSection:         b.Metrics.PythonConfigSection,
+	}
+
+	byType := make(map[string]*protos.PydabsResourceTypeCount)
+	for t, n := range b.Metrics.PythonAddedResources {
+		byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t, AddedCount: n}
+		out.AddedResourcesCount += n
+	}
+	for t, n := range b.Metrics.PythonUpdatedResources {
+		if byType[t] == nil {
+			byType[t] = &protos.PydabsResourceTypeCount{ResourceType: t}
+		}
+		byType[t].UpdatedCount = n
+		out.UpdatedResourcesCount += n
+	}
+
+	for _, t := range slices.Sorted(maps.Keys(byType)) {
+		out.Resources = append(out.Resources, *byType[t])
+	}
+	return out
+}
+
+// bundleGitInfo builds the git metadata for the deploy event, or nil when the
+// bundle root is not inside a git repository. OriginURL already has credentials
+// stripped by the load_git_details mutator.
+func bundleGitInfo(b *bundle.Bundle) *protos.BundleGitInfo {
+	git := b.Config.Bundle.Git
+	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
+		return nil
+	}
+	return &protos.BundleGitInfo{
+		OriginURL: git.OriginURL,
+		Branch:    git.Branch,
+		Commit:    git.Commit,
+	}
+}
+
+// fromWorkspaceFolder reports whether the bundle was deployed from a workspace
+// folder: the CLI running on a Databricks cluster with the bundle source under
+// /Workspace/, as opposed to a local checkout. Same signal as the source-linked
+// deployment preset uses to detect a Databricks workspace.
+func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
+	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
+	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   metrics.SnapshotUploadDuration,
+			Value: d.(time.Duration).Milliseconds(),
+		})
+	}
 
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -299,11 +366,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
 	}
 
-	// Record whether the deprecated terraform engine was explicitly opted into,
-	// separately per source. Only emitted when true; absence means "not opted in
-	// via this source". An invalid env value has already failed the command
-	// upstream via ResolveEngineSetting, so treating the FromEnv error as
-	// "not terraform" here cannot mask a real terraform opt-in.
+	// Record whether the removed terraform engine was still requested (the command
+	// then fails with the removal error), separately per source. Only emitted when
+	// true; absence means "not requested via this source". An invalid env value has
+	// already failed the command upstream via ValidateEngineSetting, so treating the
+	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
 		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
 	}
@@ -348,14 +415,31 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		mode = protos.BundleModeProduction
 	}
 
-	experimentalConfig := b.Config.Experimental
-	if experimentalConfig == nil {
-		experimentalConfig = &config.Experimental{}
+	pydabs := pydabsMetrics(b)
+
+	// Omit the pydabs section for bundles that don't use Python support.
+	var pydabsSection *protos.BundleDeployPydabs
+	if pydabs.ResourceLoadersCount > 0 || pydabs.ResourceMutatorsCount > 0 {
+		pydabsSection = pydabs
 	}
 
 	uploadFileSizers := make([]sizer, len(b.Files))
 	for i, f := range b.Files {
 		uploadFileSizers[i] = f
+	}
+
+	var deploymentHistory *protos.BundleDeploymentHistory
+	if stats := b.DeploymentBundle.StateDB.OperationBufferStats(); stats != nil {
+		deploymentHistory = &protos.BundleDeploymentHistory{
+			StagedOperationCount:           int64(stats.StagedOperationCount),
+			PeakPendingUpdateCount:         int64(stats.PeakPendingUpdateCount),
+			QueuedUpdateCountAtTimeout:     int64(stats.QueuedUpdateCountAtTimeout),
+			RecordingAttemptFailureCount:   int64(stats.RecordingAttemptFailureCount),
+			RecordingAttemptSuccessCount:   int64(stats.RecordingAttemptSuccessCount),
+			OperationRecordingSuccessCount: int64(stats.OperationRecordingSuccessCount),
+			OperationRecordingFailureCount: int64(stats.OperationRecordingFailureCount),
+			OperationRecordingPendingCount: int64(stats.OperationRecordingPendingCount),
+		}
 	}
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
@@ -364,7 +448,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			DeploymentId: b.Metrics.DeploymentId.String(),
 			ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount,
+			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
 			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
 			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
@@ -384,6 +468,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceDashboardIDs: dashboardIds,
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+			DeploymentHistory: deploymentHistory,
+
+			Pydabs: pydabsSection,
+
+			Git:                 bundleGitInfo(b),
+			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
@@ -394,10 +484,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,

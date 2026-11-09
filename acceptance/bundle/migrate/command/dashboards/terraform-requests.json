@@ -1,0 +1,20 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/lakeview/dashboards",
+    "body": {
+      "display_name": "my dashboard",
+      "parent_path": "/Workspace/Users/tester@databricks.com",
+      "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+      "warehouse_id": "123456"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/lakeview/dashboards/21e426a8882f7de9a42b984dbff36469/published",
+    "body": {
+      "embed_credentials": true,
+      "warehouse_id": "123456"
+    }
+  }
+]

@@ -46,11 +46,6 @@ backend_defaults:
   # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
   - field: config.auto_capture_config.enabled
 
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L395-L396
-  # route_optimized is ForceNew; backend returns false when not set by user.
-  - field: route_optimized
-    values: [false]
-
   # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
   # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
   # The backend defaults traffic_config (100% to the served entity) when the user

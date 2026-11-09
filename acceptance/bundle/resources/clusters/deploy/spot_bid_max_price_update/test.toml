@@ -1,0 +1,9 @@
+Cloud = false
+RecordRequests = true
+
+# Detecting a config change to an explicit zero-value float (azure_attributes.spot_bid_max_price: 0)
+# is direct-engine behavior; the terraform engine handles zero values differently.
+
+Ignore = [
+    "databricks.yml",
+]

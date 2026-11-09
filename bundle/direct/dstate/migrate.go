@@ -3,8 +3,6 @@ package dstate
 import (
 	"encoding/json"
 	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -15,29 +13,15 @@ import (
 // migrateState runs all necessary migrations on the database.
 // It is called after loading state from disk.
 func migrateState(db *Database) error {
-	// featureStateVersion states carry a feature list this CLI does not yet write or
-	// understand (see the featureStateVersion doc comment). A featureStateVersion
-	// state with no features is equivalent to currentStateVersion, so accept it and
-	// return without running the migrations below, leaving the on-disk version at
-	// featureStateVersion rather than flipping it down. One that records any feature
-	// depends on capabilities this CLI lacks, so refuse it and tell the user to upgrade.
-	if db.StateVersion == featureStateVersion {
-		if len(db.Features) == 0 {
-			return nil
-		}
-		features := make([]string, 0, len(db.Features))
-		for name := range db.Features {
-			features = append(features, name)
-		}
-		slices.Sort(features)
-		return fmt.Errorf("the deployment state requires features this CLI does not support: %s; upgrade to the latest CLI version and see %s for more information", strings.Join(features, ", "), featuresDocURL)
+	if db.StateVersion > currentStateVersion {
+		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, currentStateVersion)
+	}
+	if err := assertNoUnsupportedFeatures(db.Features); err != nil {
+		return err
 	}
 
 	if db.StateVersion == currentStateVersion {
 		return nil
-	}
-	if db.StateVersion > supportedStateVersion {
-		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, supportedStateVersion)
 	}
 
 	for version := db.StateVersion; version < currentStateVersion; version++ {
@@ -59,6 +43,8 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
+	// Version 3 adds feature flags; existing states need no data changes.
+	2: func(*Database) error { return nil },
 }
 
 // migrateV1ToV2 migrates permissions and grants entries from the old format

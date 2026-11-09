@@ -24,7 +24,7 @@ func NewConnectionsManager(maxClients int, shutdownDelay time.Duration) *Connect
 		connections:   make(map[string]*proxyConnection),
 		TimedOut:      make(chan bool),
 	}
-	cm.startShutdownTimer()
+	cm.startShutdownTimer(shutdownDelay)
 	return cm
 }
 
@@ -61,7 +61,7 @@ func (cm *ConnectionsManager) Remove(id string) {
 	cm.removeConnection(id)
 	count := cm.Count()
 	if count <= 0 {
-		cm.startShutdownTimer()
+		cm.startShutdownTimer(cm.shutdownDelay)
 	}
 }
 
@@ -71,13 +71,21 @@ func (cm *ConnectionsManager) removeConnection(id string) {
 	delete(cm.connections, id)
 }
 
-func (cm *ConnectionsManager) startShutdownTimer() {
+func (cm *ConnectionsManager) ExtendIdleTimeout(delay time.Duration) {
+	cm.connectionsMu.Lock()
+	defer cm.connectionsMu.Unlock()
+	if len(cm.connections) == 0 {
+		cm.startShutdownTimer(delay)
+	}
+}
+
+func (cm *ConnectionsManager) startShutdownTimer(delay time.Duration) {
 	cm.shutdownTimerMu.Lock()
 	defer cm.shutdownTimerMu.Unlock()
 	if cm.shutdownTimer != nil {
 		cm.shutdownTimer.Stop()
 	}
-	cm.shutdownTimer = time.AfterFunc(cm.shutdownDelay, func() {
+	cm.shutdownTimer = time.AfterFunc(delay, func() {
 		cm.TimedOut <- true
 	})
 }

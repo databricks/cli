@@ -1,0 +1,3 @@
+# The snapshot create request carries can_manage_principals, which the test reads back from the
+# recorded request.
+RecordRequests = true

@@ -1,0 +1,73 @@
+
+=== Deploy keeps resource state in the file and enforces best-effort history
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq {state_version, features, state} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "deployment_history_shadow": {}
+  },
+  "state": {
+    "resources.jobs.foo": {
+      "__id__": "[FOO_ID]",
+      "state": {
+        "deployment": {
+          "deployment_id": "[DEPLOYMENT_ID]",
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "state-features",
+        "queue": {
+          "enabled": true
+        }
+      }
+    }
+  }
+}
+
+=== Reopening reads resources from the file and produces a no-op plan
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //resources --get --oneline
+
+=== Disabling deployment history allows plan and deploy, and removes the file marker
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
+update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> jq .features // {} .databricks/bundle/default/resources.json
+{}
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+
+=== Removing the YAML setting also leaves history disabled
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy also uses the disabled setting
+>>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline

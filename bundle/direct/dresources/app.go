@@ -78,11 +78,10 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 // deployment when one exists, enabling drift detection for out-of-band redeploys.
 // Started is derived from compute status so the planner can detect start/stop changes.
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
-	started := !isComputeStopped(&remote.App)
 	return &AppState{
 		App:       remote.App,
 		Config:    remote.Config,
-		Lifecycle: &StateLifecycle{Started: &started},
+		Lifecycle: remote.Lifecycle,
 	}
 }
 

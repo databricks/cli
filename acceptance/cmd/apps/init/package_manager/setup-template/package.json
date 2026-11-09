@@ -1,0 +1,6 @@
+{
+  "name": "{{.projectName}}",
+  "dependencies": {
+    "@databricks/appkit": "0.82.0"
+  }
+}

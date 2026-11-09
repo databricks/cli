@@ -22,13 +22,16 @@ class Environment:
     """
     The base environment this environment is built on top of. A base environment defines the environment version and a
     list of dependencies for serverless compute. The value can be a file path to a custom `env.yaml` file
-    (e.g., `/Workspace/path/to/env.yaml`). Support for a Databricks-provided base environment ID
+    (e.g., `/Workspace/path/to/env.yaml`).
+    
+    Support for a Databricks-provided base environment ID
     (e.g., `workspace-base-environments/databricks_ai_v4`) and workspace base environment ID
     (e.g., `workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7`) is in Beta.
+    
     Either `environment_version` or `base_environment` can be provided.
+    
     For more information about Databricks-provided base environments, see the
     [list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.
-    For more information, see
     """
 
     client: VariableOrOptional[str] = None
@@ -43,14 +46,23 @@ class Environment:
 
     environment_version: VariableOrOptional[str] = None
     """
-    Either `environment_version` or `base_environment` needs to be provided. Environment version used by the environment.
+    The environment version used by this environment. Either `environment_version` or `base_environment` must be provided.
     Each version comes with a specific Python version and a set of Python packages.
     The version is a string, consisting of an integer.
     """
 
     java_dependencies: VariableOrList[str] = field(default_factory=list)
     """
-    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
+    List of Java dependencies. Each dependency is a string representing a Java library path. For example: `/Volumes/path/to/test.jar`.
+    """
+
+    project_environment: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Path to the `pyproject.toml` file that defines the project environment.
+    This field cannot be combined with `environment_version`, `base_environment`, dependency fields,
+    or any other environment-source fields. Set the environment version and dependencies in `pyproject.toml` instead.
     """
 
     @classmethod
@@ -68,13 +80,16 @@ class EnvironmentDict(TypedDict, total=False):
     """
     The base environment this environment is built on top of. A base environment defines the environment version and a
     list of dependencies for serverless compute. The value can be a file path to a custom `env.yaml` file
-    (e.g., `/Workspace/path/to/env.yaml`). Support for a Databricks-provided base environment ID
+    (e.g., `/Workspace/path/to/env.yaml`).
+    
+    Support for a Databricks-provided base environment ID
     (e.g., `workspace-base-environments/databricks_ai_v4`) and workspace base environment ID
     (e.g., `workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7`) is in Beta.
+    
     Either `environment_version` or `base_environment` can be provided.
+    
     For more information about Databricks-provided base environments, see the
     [list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.
-    For more information, see
     """
 
     client: VariableOrOptional[str]
@@ -89,14 +104,23 @@ class EnvironmentDict(TypedDict, total=False):
 
     environment_version: VariableOrOptional[str]
     """
-    Either `environment_version` or `base_environment` needs to be provided. Environment version used by the environment.
+    The environment version used by this environment. Either `environment_version` or `base_environment` must be provided.
     Each version comes with a specific Python version and a set of Python packages.
     The version is a string, consisting of an integer.
     """
 
     java_dependencies: VariableOrList[str]
     """
-    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
+    List of Java dependencies. Each dependency is a string representing a Java library path. For example: `/Volumes/path/to/test.jar`.
+    """
+
+    project_environment: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Path to the `pyproject.toml` file that defines the project environment.
+    This field cannot be combined with `environment_version`, `base_environment`, dependency fields,
+    or any other environment-source fields. Set the environment version and dependencies in `pyproject.toml` instead.
     """
 
 

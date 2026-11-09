@@ -1,0 +1,45 @@
+# The test server is reachable as both 127.0.0.1 and localhost. The first stands
+# in for a host that serves one workspace, the second for a custom host shared
+# by several workspaces of an account.
+export CLASSIC_HOST=$DATABRICKS_HOST
+export CUSTOM_HOST=${DATABRICKS_HOST/127.0.0.1/localhost}
+add_repl "$CUSTOM_HOST" CUSTOM_HOST
+
+# The workspace ID that the test server reports for its workspace.
+export WORKSPACE_ID=$(curl -s "$DATABRICKS_HOST/.well-known/databricks-config" | jq -r .workspace_id)
+
+# Each profile allows one pair of host and workspace ID; the custom host has no
+# profile without a workspace ID. Tests that need other profiles have their own
+# config files.
+cat > .databrickscfg <<EOF
+[workspace_classic]
+host = $CLASSIC_HOST
+
+[workspace_classic_id]
+host = $CLASSIC_HOST
+workspace_id = $WORKSPACE_ID
+
+[workspace_custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+EOF
+
+# show_auth prints the auth that a bundle script receives, which shows the
+# selected profile. The file is not substituted, so bash expands $CLI.
+cat > scripts.yml <<'EOF'
+scripts:
+  show_auth:
+    content: echo "profile=$DATABRICKS_CONFIG_PROFILE host=$DATABRICKS_HOST workspace_id=$DATABRICKS_WORKSPACE_ID"
+  nested_validate:
+    content: $CLI bundle validate -o json | jq -r .workspace.profile
+EOF
+
+for f in databricks.yml *.databrickscfg; do
+  [ -f "$f" ] || continue
+  envsubst < "$f" > out && mv out "$f"
+done
+
+# Credentials come only from DATABRICKS_TOKEN.
+unset DATABRICKS_HOST
+export DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/.databrickscfg
+export DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1

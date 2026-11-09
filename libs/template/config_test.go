@@ -213,33 +213,25 @@ func TestTemplateValidateSchema(t *testing.T) {
 func TestTemplateValidateSchemaVersion(t *testing.T) {
 	version := latestSchemaVersion
 	schema := jsonschema.Schema{
-		Extension: jsonschema.Extension{
-			Version: &version,
-		},
+		Version: &version,
 	}
 	assert.NoError(t, validateSchema(&schema))
 
 	version = latestSchemaVersion + 1
 	schema = jsonschema.Schema{
-		Extension: jsonschema.Extension{
-			Version: &version,
-		},
+		Version: &version,
 	}
 	assert.EqualError(t, validateSchema(&schema), fmt.Sprintf("template schema version %d is not supported by this version of the CLI. Please upgrade your CLI to the latest version", version))
 
 	version = 5000
 	schema = jsonschema.Schema{
-		Extension: jsonschema.Extension{
-			Version: &version,
-		},
+		Version: &version,
 	}
 	assert.EqualError(t, validateSchema(&schema), "template schema version 5000 is not supported by this version of the CLI. Please upgrade your CLI to the latest version")
 
 	version = 0
 	schema = jsonschema.Schema{
-		Extension: jsonschema.Extension{
-			Version: &version,
-		},
+		Version: &version,
 	}
 	assert.NoError(t, validateSchema(&schema))
 }

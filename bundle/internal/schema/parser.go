@@ -174,14 +174,22 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 	var stageErr error
 	_, err := jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+			basePath := getPath(typ)
+			// A type carries no launch stage by default, so we set to GA, unless
+			// overridden. Compute the override before findRef so it still applies to
+			// a resource with no spec type in cli.json (findRef miss) — e.g. the
+			// hand-written postgres_snapshot_schedules singleton — which would
+			// otherwise ship unlabelled despite its launchStageOverrides entry.
+			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
+
 			ref, ok := p.findRef(typ)
 			if !ok {
+				if typeLaunchStage != "" {
+					annotations.SetSelf(basePath, annotation.Descriptor{LaunchStage: typeLaunchStage})
+				}
 				return s
 			}
 
-			basePath := getPath(typ)
-			// A type carries no launch stage by default, so we set to GA, unless overridden.
-			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
 			enumLaunchStages, enumErr := notableEnumLaunchStages(ref.EnumLaunchStages)
 			if enumErr != nil {
 				stageErr = errors.Join(stageErr, fmt.Errorf("%s: %w", basePath, enumErr))

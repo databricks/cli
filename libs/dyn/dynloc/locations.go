@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -37,14 +38,16 @@ type Locations struct {
 	basePath string
 }
 
-func (l *Locations) gatherLocations(v dyn.Value) (map[string][]dyn.Location, error) {
-	locs := map[string][]dyn.Location{}
+func (l *Locations) gatherLocations(v dyn.Value) (map[string][]diag.Location, error) {
+	locs := map[string][]diag.Location{}
 	patterns := []dyn.Pattern{
 		dyn.NewPattern(dyn.AnyKey()),                                                                          // Top level fields
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey()),                                                    // Resource groups ("resources.jobs")
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),                                      // Resources for all types ("resources.jobs.my_job")
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks")),                 // Job tasks ("resources.jobs.my_job.tasks")
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex()), // Job task items ("resources.jobs.my_job.tasks[2]")
+		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey()),                                                    // Variable definitions ("variables.my_var")
+		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")),                                  // Resolved variable values ("variables.my_var.value")
 	}
 
 	for _, pattern := range patterns {
@@ -74,7 +77,7 @@ func (l *Locations) normalizeFilePath(file string) (string, error) {
 	return filepath.ToSlash(file), nil
 }
 
-func (l *Locations) registerFileNames(locs []dyn.Location) error {
+func (l *Locations) registerFileNames(locs []diag.Location) error {
 	cache := map[string]string{}
 	for _, loc := range locs {
 		// Never process the same file path twice.

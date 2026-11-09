@@ -13,6 +13,7 @@ import (
 
 type InstancePool struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	compute.CreateInstancePool
 	Permissions []InstancePoolPermission `json:"permissions,omitempty"`
 }

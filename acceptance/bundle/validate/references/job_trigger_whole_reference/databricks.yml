@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    base:
+      trigger: {file_arrival: {url: "s3://bucket/path"}}
+    viaref:
+      trigger: ${resources.jobs.base.trigger}

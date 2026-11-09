@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-provider-service-test-[UNIQUE_NAME]/default/files...
 Created model_provider_services.mps
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] ai-gateway get-model-provider-service model-provider-services/main.default.test_mps_[UNIQUE_NAME]

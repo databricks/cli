@@ -30,6 +30,11 @@ type SetupOptions struct {
 	// Maximum lifetime of the SSH server, will be added as a --server-timeout flag to the ProxyCommand.
 	// Also fixed at submission time.
 	ServerTimeout time.Duration
+	// Whether detached work prevents idle shutdown, added as --keep-detached-processes
+	// to the ProxyCommand. Fixed at
+	// submission time like the two above, so this is the only place a host configured through
+	// setup can ask for it.
+	KeepDetachedProcesses bool
 	// Optional path to the local ssh config. Defaults to ~/.ssh/config
 	SSHConfigPath string
 	// Optional path to the local directory to store SSH keys. Defaults to ~/.databricks/ssh-tunnel-keys
@@ -119,12 +124,13 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 	// omits --cluster, the ID is only known after the interactive picker above,
 	// so building it earlier would serialize an empty --cluster= flag.
 	clientOpts := sshclient.ClientOptions{
-		ClusterID:        opts.ClusterID,
-		AutoStartCluster: opts.AutoStartCluster,
-		ShutdownDelay:    opts.ShutdownDelay,
-		MaxClients:       opts.MaxClients,
-		ServerTimeout:    opts.ServerTimeout,
-		Profile:          opts.Profile,
+		ClusterID:             opts.ClusterID,
+		AutoStartCluster:      opts.AutoStartCluster,
+		ShutdownDelay:         opts.ShutdownDelay,
+		MaxClients:            opts.MaxClients,
+		ServerTimeout:         opts.ServerTimeout,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
+		Profile:               opts.Profile,
 	}
 	// The ProxyCommand is persisted in the SSH config, so reject values that would produce a
 	// tunnel that can never work (e.g. --max-clients=0) here rather than at first `ssh <name>`.

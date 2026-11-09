@@ -5,6 +5,7 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	agent_kit "github.com/databricks/cli/cmd/workspace/agent-kit"
 	ai_functions "github.com/databricks/cli/cmd/workspace/ai-functions"
 	ai_gateway "github.com/databricks/cli/cmd/workspace/ai-gateway"
 	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
@@ -23,6 +24,7 @@ import (
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
+	compute_migrations "github.com/databricks/cli/cmd/workspace/compute-migrations"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
 	consumer_fulfillments "github.com/databricks/cli/cmd/workspace/consumer-fulfillments"
 	consumer_installations "github.com/databricks/cli/cmd/workspace/consumer-installations"
@@ -50,6 +52,7 @@ import (
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
+	genie_agents "github.com/databricks/cli/cmd/workspace/genie-agents"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -61,6 +64,7 @@ import (
 	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
+	lakewatch "github.com/databricks/cli/cmd/workspace/lakewatch"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -142,6 +146,7 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, agent_kit.New())
 	out = append(out, ai_functions.New())
 	out = append(out, ai_gateway.New())
 	out = append(out, ai_search.New())
@@ -160,6 +165,7 @@ func All() []*cobra.Command {
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
+	out = append(out, compute_migrations.New())
 	out = append(out, connections.New())
 	out = append(out, consumer_fulfillments.New())
 	out = append(out, consumer_installations.New())
@@ -187,6 +193,7 @@ func All() []*cobra.Command {
 	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
+	out = append(out, genie_agents.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
@@ -198,6 +205,7 @@ func All() []*cobra.Command {
 	out = append(out, knowledge_assistants.New())
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
+	out = append(out, lakewatch.New())
 	out = append(out, libraries.New())
 	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())

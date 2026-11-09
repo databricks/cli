@@ -1,3 +1,4 @@
+RecordRequests = false
 # The assertion here is that the *backend* rewrites schema_json into Spark type names, which
 # the test server only mimics, so the cloud run is the one that matters -- see #6352, which
 # removed the superfluous Cloud = false. Inheriting CloudSlow = true left it nightly-only at
@@ -6,6 +7,9 @@
 Cloud = true
 CloudSlow = false
 Env.DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT = "30"
+
+# DMS=true half of the split; see the vector_search_* test.toml.
+EnvMatrix.DMS = ["true"]
 
 # The cap makes deploy warn that it stopped waiting; see ../basic/test.toml.
 [[Repls]]

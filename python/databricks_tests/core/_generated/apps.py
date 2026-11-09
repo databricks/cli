@@ -7,6 +7,7 @@ from databricks.bundles.apps._models.app_permission_level import AppPermissionLe
 from databricks.bundles.apps._models.app_resource import AppResource
 from databricks.bundles.apps._models.compute_size import ComputeSize
 from databricks.bundles.apps._models.git_repository import GitRepository
+from databricks.bundles.apps._models.git_source import GitSource
 from databricks.bundles.apps._models.lifecycle_with_started import LifecycleWithStarted
 from databricks.bundles.apps._models.telemetry_export_destination import (
     TelemetryExportDestination,
@@ -24,6 +25,7 @@ def _test_case():
                 "compute_size": "MEDIUM",
                 "config": {},
                 "git_repository": {"provider": "provider", "url": "url"},
+                "git_source": {},
                 "lifecycle": {},
                 "name": "name",
                 "permissions": [{"level": "CAN_MANAGE"}],
@@ -35,6 +37,7 @@ def _test_case():
                 compute_size=ComputeSize.MEDIUM,
                 config=AppConfig(),
                 git_repository=GitRepository(provider="provider", url="url"),
+                git_source=GitSource(),
                 lifecycle=LifecycleWithStarted(),
                 name="name",
                 permissions=[AppPermission(level=AppPermissionLevel.CAN_MANAGE)],

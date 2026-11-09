@@ -1,0 +1,6 @@
+trace errcode $CLI bundle deploy
+
+# The task must be sent with source: GIT so the backend resolves python_file
+# against the git repo. Without it the relative path is rejected.
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].spark_python_task' "$OUT_REQUESTS"
+rm "$OUT_REQUESTS"

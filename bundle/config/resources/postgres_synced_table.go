@@ -31,6 +31,7 @@ func (c PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresSyncedTable struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresSyncedTableConfig
 }
 

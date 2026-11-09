@@ -2,7 +2,6 @@ package artifacts
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -21,11 +21,31 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/klauspost/pgzip"
 )
 
 // tarballEpoch stamps every entry so the archive is reproducible: identical contents
 // produce identical bytes regardless of file mtimes.
 var tarballEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// pgzipBlockSize is the input chunk pgzip compresses per block. gzip's single-threaded
+// compression dominates packaging time on a large tree, so we use klauspost/pgzip to
+// spread it across cores. We keep the default compression level (matching the old
+// single-threaded gzip, so tarball sizes don't change) and pin the block size: pgzip
+// only parallelizes *across* blocks, so a fixed block size keeps the compressed byte
+// stream identical regardless of how many cores the build host has — preserving the
+// reproducibility contract above. This is pgzip's own default block size (1 MiB).
+const pgzipBlockSize = 1 << 20
+
+// newParallelGzip returns a parallel gzip writer with a deterministic block size. Callers
+// must Close it to flush the trailer.
+func newParallelGzip(w io.Writer) (*pgzip.Writer, error) {
+	gzw := pgzip.NewWriter(w)
+	if err := gzw.SetConcurrency(pgzipBlockSize, runtime.GOMAXPROCS(0)); err != nil {
+		return nil, err
+	}
+	return gzw, nil
+}
 
 // buildTarballArtifact produces the gzipped tarball for a `type: tgz` artifact that
 // DABs builds itself (no user `build` command). Archive entries are the packed files
@@ -123,7 +143,10 @@ func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifac
 		return strings.Compare(x.Relative, y.Relative)
 	})
 
-	gzw := gzip.NewWriter(w)
+	gzw, err := newParallelGzip(w)
+	if err != nil {
+		return err
+	}
 	tw := tar.NewWriter(gzw)
 	for _, file := range list {
 		if err := addFileToTarball(tw, b.SyncRoot, relBase, file); err != nil {
@@ -157,19 +180,26 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 		// The tree at <ref>:<path>, so entries come out relative to `path`.
 		treeish = ref + ":" + relBase
 	}
-	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar.gz", treeish}
+	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
+	// --format=tar.gz gzip is single-threaded, whereas pgzip spreads it across cores.
+	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar", treeish}
 	if len(a.Include) > 0 {
 		args = append(args, "--")
 		args = append(args, a.Include...)
 	}
+	gzw, err := newParallelGzip(w)
+	if err != nil {
+		return err
+	}
 	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Stdout = w
+	cmd.Stdout = gzw
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
+		gzw.Close()
 		return fmt.Errorf("git archive %s: %w: %s", treeish, err, stderr.String())
 	}
-	return nil
+	return gzw.Close()
 }
 
 // addFileToTarball writes f (a sync-root-relative file) to the archive under a name

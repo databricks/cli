@@ -1,0 +1,27 @@
+
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Migrate to direct with the same config (mixed-case name unchanged)
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Migrated 1 resource to direct deployment engine.
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== Follow-up plan on direct converges (the case-only difference is not a change)
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.my_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.my_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

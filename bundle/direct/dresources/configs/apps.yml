@@ -18,3 +18,10 @@ backend_defaults:
 ignore_remote_changes:
   - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
     reason: managed
+  # The Apps API returns deployment env vars with their name only: value and value_from are
+  # never read back, so the remote side is always empty and would otherwise plan an update
+  # on every run. See https://github.com/databricks/cli/issues/7301
+  - field: config.env[*].value
+    reason: input_only
+  - field: config.env[*].value_from
+    reason: input_only

@@ -1,0 +1,23 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "allow_duplicate_names": true,
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/pipeline.py"
+          }
+        }
+      ],
+      "name": "test-pipeline-[UNIQUE_NAME]"
+    }
+  }
+]

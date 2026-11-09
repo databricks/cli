@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+replace_ids.py
 
 trace $CLI bundle run my_job --only task_1
 trace print_requests.py //jobs/run-now

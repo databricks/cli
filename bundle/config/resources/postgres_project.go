@@ -40,6 +40,7 @@ func (c PostgresProjectConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresProject struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresProjectConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`

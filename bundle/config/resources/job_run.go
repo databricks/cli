@@ -18,6 +18,7 @@ import (
 // own configuration changes; lifecycle.triggers can add further conditions.
 type JobRun struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	jobs.RunNow
 
 	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.
@@ -120,6 +121,15 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 		SingularTitle: "Job Run",
 		PluralTitle:   "Job Runs",
 	}
+}
+
+// GetLifecycle returns the lifecycle settings. Lifecycle shadows BaseResource.Lifecycle,
+// which therefore stays empty.
+func (r *JobRun) GetLifecycle() LifecycleConfig {
+	if r.Lifecycle == nil {
+		return Lifecycle{}
+	}
+	return r.Lifecycle.Lifecycle
 }
 
 // GetName returns the in-product name, which is empty: a run has no name.

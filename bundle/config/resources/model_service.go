@@ -53,6 +53,7 @@ func (c ModelServiceConfig) MarshalJSON() ([]byte, error) {
 type ModelService struct {
 	BaseResource
 	ModelServiceConfig
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// List of grants to apply on this model service. Grants are applied via the
 	// permissions API (the `.grants` sub-resource), not the model-service body, so

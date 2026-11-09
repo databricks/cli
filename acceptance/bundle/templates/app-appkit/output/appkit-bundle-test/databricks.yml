@@ -1,0 +1,17 @@
+bundle:
+  name: appkit-bundle-test
+
+resources:
+  apps:
+    app:
+      name: appkit-bundle-test
+      description: AppKit bundle initialization test
+      source_code_path: ./
+      lifecycle:
+        started: true
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]

@@ -167,9 +167,7 @@ Specify one of the following fields: job_cluster_key, environment_key, existing_
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			job := &resources.Job{
-				JobSettings: jobs.JobSettings{
-					Tasks: []jobs.Task{tc.task},
-				},
+				Tasks: []jobs.Task{tc.task},
 			}
 
 			b := createBundle(map[string]*resources.Job{"job1": job})
