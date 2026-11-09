@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -15,13 +17,15 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/agent"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -34,10 +38,7 @@ type BindOptions struct {
 }
 
 // createBindingDeployment registers a first binding without changing metadata from an existing deploy.
-func createBindingDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) error {
-	if current != nil {
-		return nil
-	}
+func createBindingDeployment(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Bind does not upload files or stage an immutable snapshot, so it cannot report a deployed file path.
 	created, err := b.WorkspaceClient(ctx).BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
 		Deployment: bundledeployments.Deployment{
@@ -49,14 +50,13 @@ func createBindingDeployment(ctx context.Context, b *bundle.Bundle, current *bun
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create deployment: %w", err)
+		return "", fmt.Errorf("failed to create deployment: %w", err)
 	}
 	deploymentID, err := dms.DeploymentIDFromName(created.Name)
 	if err != nil {
-		return fmt.Errorf("failed to create deployment: %w", err)
+		return "", fmt.Errorf("failed to create deployment: %w", err)
 	}
-	b.DeploymentBundle.StateDB.DeploymentID = deploymentID
-	return nil
+	return deploymentID, nil
 }
 
 func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *statemgmt.StateDesc) {
@@ -68,9 +68,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	historySucceeded := true
+	var historyVersion string
+	var historyErr error
 	defer func() {
-		completeBindingHistory(ctx, b, historySucceeded && !logdiag.HasError(ctx))
+		completeBindingHistory(ctx, b, historyVersion, historyErr == nil && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -147,21 +148,28 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if err := recordBindHistory(ctx, b, resourceKey); err != nil {
-		historySucceeded = false
-		log.Warnf(ctx, "Failed to record bind history: %s", err)
+	historyVersion, historyErr = recordBindHistory(ctx, b, resourceKey)
+	if historyErr != nil {
+		log.Warnf(ctx, "Failed to record bind history: %s", historyErr)
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
 }
 
 // completeBindingHistory completes the recorded version after the remote state upload.
-func completeBindingHistory(ctx context.Context, b *bundle.Bundle, success bool) {
-	if !b.DeploymentBundle.StateDB.RecordsHistory() {
+func completeBindingHistory(ctx context.Context, b *bundle.Bundle, versionName string, success bool) {
+	if versionName == "" {
 		return
 	}
-	completionCtx := cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-	if _, err := b.DeploymentBundle.StateDB.CompleteVersion(completionCtx, success); err != nil {
+	reason := bundledeployments.VersionCompleteVersionCompleteFailure
+	if success {
+		reason = bundledeployments.VersionCompleteVersionCompleteSuccess
+	}
+	_, err := b.WorkspaceClient(ctx).BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
+		Name:             versionName,
+		CompletionReason: reason,
+	})
+	if err != nil {
 		log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
 	}
 }
@@ -205,50 +213,103 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	statemgmt.PushResourcesState(ctx, b)
 }
 
-// recordBindHistory records a committed binding's saved state when history recording is enabled.
-func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) (err error) {
+// recordBindHistory publishes a committed binding to DMS without changing local state.
+func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) (versionName string, err error) {
 	db := &b.DeploymentBundle.StateDB
 	_, statePath := b.StateFilenameDirect(ctx)
 	if err := db.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
-		return err
+		return "", err
 	}
 	defer func() {
 		_, finalizeErr := db.Finalize(ctx)
 		err = errors.Join(err, finalizeErr)
 	}()
 
-	if !db.RecordsHistory() {
-		return nil
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	if !db.RecordsHistory() && !bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		return "", nil
 	}
 
 	deploymentID, current, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
-		return err
+		return "", err
 	}
-	db.DeploymentID = deploymentID
-	db.VersionID, err = dms.ParseLastVersionID(current)
+	previous, err := dms.ParseLastVersionID(current)
+	if err != nil {
+		return "", err
+	}
+	if current == nil {
+		deploymentID, err = createBindingDeployment(ctx, b)
+		if err != nil {
+			return "", err
+		}
+	}
+	versionID := max(previous, db.Data.Serial) + 1
+	previousVersionID := ""
+	if previous > 0 {
+		previousVersionID = strconv.Itoa(previous)
+	}
+	var gitInfo *bundledeployments.GitInfo
+	if git := b.Config.Bundle.Git; git.Branch != "" || git.Commit != "" || git.OriginURL != "" {
+		gitInfo = &bundledeployments.GitInfo{Branch: git.Branch, Commit: git.Commit, OriginUrl: git.OriginURL}
+	}
+	version, err := b.WorkspaceClient(ctx).BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
+		Parent:    dms.DeploymentName(deploymentID),
+		VersionId: strconv.Itoa(versionID),
+		Version: bundledeployments.Version{
+			CliVersion:        build.GetInfo().Version,
+			VersionType:       dms.VersionTypeDeploy,
+			PreviousVersionId: previousVersionID,
+			GitInfo:           gitInfo,
+			Operations: []bundledeployments.StagedOperation{{
+				ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
+				ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
+			}},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create deployment version: %w", err)
+	}
+	versionName = version.Name
+	entry, ok := db.GetResourceEntry(resourceKey)
+	if !ok {
+		return versionName, fmt.Errorf("bound resource %s is missing from deployment state", resourceKey)
+	}
+	return versionName, recordBindingOperation(ctx, b, versionName, resourceKey, &entry)
+}
+
+// recordBindingOperation sends an operation's saved state, or its removal, directly to DMS.
+func recordBindingOperation(ctx context.Context, b *bundle.Bundle, versionName, resourceKey string, entry *dstate.ResourceEntry) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var state json.RawMessage
+	var resourceID string
+	if entry != nil {
+		var err error
+		state, err = json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		if err != nil {
+			return err
+		}
+		resourceID = entry.ID
+	}
+	update, err := dms.NewStateUpdate(resourceID, state, false)
 	if err != nil {
 		return err
 	}
-
-	if err := db.UpgradeToWrite(); err != nil {
-		return err
-	}
-	if !cmdctx.HasWorkspaceClient(ctx) {
-		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-	}
-	if err := createBindingDeployment(ctx, b, current); err != nil {
-		return err
-	}
-	if err := startVersion(ctx, b, dms.VersionTypeDeploy, []bundledeployments.StagedOperation{{
-		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
-		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
-	}}); err != nil {
-		return err
-	}
-	entry, ok := db.GetResourceEntry(resourceKey)
-	if !ok {
-		return fmt.Errorf("bound resource %s is missing from deployment state", resourceKey)
-	}
-	return db.RecordResourceHistory(ctx, resourceKey, &entry)
+	_, err = retry.With(ctx, retry.IsTransient, func() (*bundledeployments.Operation, error) {
+		return b.WorkspaceClient(ctx).BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
+			Name: versionName + "/operations/" + strings.TrimPrefix(resourceKey, dms.StatePrefix),
+			Operation: bundledeployments.Operation{
+				State:           string(update.State),
+				ResourceId:      update.ResourceID,
+				Status:          update.Status,
+				ForceSendFields: []string{"SequenceId", "ErrorMessage"},
+			},
+			UpdateMask: update.Fields.Mask(),
+		})
+	})
+	return err
 }

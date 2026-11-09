@@ -11,7 +11,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> fault.py PATCH /api/2.0/bundle/** 400 0 1
 
 >>> [CLI] bundle deployment bind record_failed [JOB_ID] --auto-approve
-Warn: Failed to record deployment history: recording operation for resources.jobs.record_failed: Fault injected by test.
+Warn: Failed to record bind history: Fault injected by test.
 Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 

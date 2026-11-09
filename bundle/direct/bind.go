@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -93,8 +92,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.openBindingState(ctx, tmpStatePath, configRoot, false)
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{})
 	if err != nil {
+		os.Remove(tmpStatePath)
+		return nil, err
+	}
+	if err := b.StateDB.UpgradeToWrite(); err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
@@ -236,25 +239,6 @@ func (result *BindResult) Cancel() {
 	if result != nil && result.TempStatePath != "" {
 		os.Remove(result.TempStatePath)
 	}
-}
-
-// openBindingState selects history mode before the binding write so recording needs no extra state commit.
-func (b *DeploymentBundle) openBindingState(ctx context.Context, statePath string, configRoot *config.Root, withRecovery dstate.WithRecovery) error {
-	var configured *bool
-	if configRoot.Experimental != nil {
-		configured = configRoot.Experimental.DeploymentHistory
-	}
-	mode := dstate.ReadingFile
-	if bundleenv.RecordsDeploymentHistory(ctx, configured) {
-		mode = dstate.WritingDeploymentHistoryShadow
-	}
-	if err := b.StateDB.Open(ctx, statePath, mode, withRecovery, dstate.OpenDmsArgs{}); err != nil {
-		return err
-	}
-	if mode == dstate.ReadingFile {
-		return b.StateDB.UpgradeToWrite()
-	}
-	return nil
 }
 
 // Unbind removes a resource from direct engine state without deleting
