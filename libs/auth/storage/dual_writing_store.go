@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 // TokenKeyProvider supplies the primary key used to store an OAuth token.
 type TokenKeyProvider interface {
 	GetCacheKey() string
@@ -43,6 +45,11 @@ func NewDualWritingStore(inner Store, arg TokenKeyProvider) *DualWritingStore {
 // whole Put call would break primary login over a non-essential mirror,
 // so a stale host-key entry is the lesser harm.
 func (s *DualWritingStore) Put(key string, e Entry) error {
+	// The contextless API has no request budget; callbacks use staged inner stores.
+	handled, err := WithFileTransaction(context.Background(), s, func(view Store) error { return view.Put(key, e) }, nil) //nolint:gocritic // Legacy Store interface has no operation context.
+	if handled {
+		return err
+	}
 	if err := s.inner.Put(key, e); err != nil {
 		return err
 	}
@@ -66,6 +73,11 @@ func (s *DualWritingStore) Lookup(key string) (Entry, error) {
 // Delete implements [Store]. Deletes under the primary key are also mirrored
 // under the host key, using the same best-effort compatibility policy as Put.
 func (s *DualWritingStore) Delete(key string) error {
+	// The contextless API has no request budget; callbacks use staged inner stores.
+	handled, err := WithFileTransaction(context.Background(), s, func(view Store) error { return view.Delete(key) }, nil) //nolint:gocritic // Legacy Store interface has no operation context.
+	if handled {
+		return err
+	}
 	if err := s.inner.Delete(key); err != nil {
 		return err
 	}
@@ -79,6 +91,21 @@ func (s *DualWritingStore) Delete(key string) error {
 	}
 	_ = s.inner.Delete(hostKey)
 	return nil
+}
+
+// WithFileTransaction keeps the primary and legacy mirror in one staged map.
+func (s *DualWritingStore) WithFileTransaction(ctx context.Context, update, cleanup func(Store) error) (bool, error) {
+	wrap := func(mutate func(Store) error) func(Store) error {
+		if mutate == nil {
+			return nil
+		}
+		return func(view Store) error {
+			wrapped := *s
+			wrapped.inner = view
+			return mutate(&wrapped)
+		}
+	}
+	return WithFileTransaction(ctx, s.inner, wrap(update), wrap(cleanup))
 }
 
 // hostCacheKey mirrors the SDK's former PersistentAuth.hostCacheKey:

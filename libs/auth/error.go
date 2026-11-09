@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -64,7 +65,7 @@ func (e *rewrittenAuthError) Unwrap() error {
 	return e.cause
 }
 
-// RewriteAuthError rewrites the error message for invalid refresh token error.
+// RewriteAuthError adds actionable guidance to closed OAuth refresh failures.
 // It returns whether the error was rewritten and the rewritten error.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
 	if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
@@ -76,6 +77,23 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 			return false, argErr
 		}
 		msg := `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
+		return true, &rewrittenAuthError{message: msg, cause: err}
+	}
+	if errors.Is(err, storage.ErrRefreshRecoveryRequired) {
+		var oauthArgument u2m.OAuthArgument
+		if profile == "" && host != "" {
+			if accountId != "" {
+				if arg, argErr := u2m.NewBasicAccountOAuthArgument(host, accountId); argErr == nil {
+					oauthArgument = arg
+				}
+			} else {
+				if arg, argErr := u2m.NewBasicWorkspaceOAuthArgument(host); argErr == nil {
+					oauthArgument = arg
+				}
+			}
+		}
+		msg := `A previous OAuth refresh has an uncertain outcome; automatic refresh is blocked. To reauthenticate, run the following command:
   $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
 		return true, &rewrittenAuthError{message: msg, cause: err}
 	}

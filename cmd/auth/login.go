@@ -126,6 +126,23 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
+	handled, err := storage.WithFileTransaction(ctx, tokenStore,
+		func(view storage.Store) error {
+			entry := storage.Entry{Token: token}
+			if err := storage.RecordFileLoginResult(view, key, entry); err != nil {
+				return err
+			}
+			return view.Put(key, entry)
+		},
+		func(view storage.Store) error { return view.Delete(key) },
+	)
+	if handled {
+		if err != nil {
+			return fmt.Errorf("store token: %w", err)
+		}
+		storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
+		return nil
+	}
 	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
 		storeErr := fmt.Errorf("store token: %w", err)
 		// The profile is already saved, but the old token may still be present.

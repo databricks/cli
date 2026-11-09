@@ -73,6 +73,76 @@ func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	assert.ErrorIs(t, err, storage.ErrNotFound)
 }
 
+type obstructFileCommitStore struct {
+	storage.Store
+	path string
+}
+
+func (s obstructFileCommitStore) WithFileTransaction(ctx context.Context, update, cleanup func(storage.Store) error) (bool, error) {
+	backup := s.path + ".saved"
+	return storage.WithFileTransaction(ctx, s.Store, func(view storage.Store) error {
+		if err := update(view); err != nil {
+			return err
+		}
+		if err := os.Rename(s.path, backup); err != nil {
+			return err
+		}
+		return os.Mkdir(s.path, 0o700)
+	}, func(view storage.Store) error {
+		if err := os.Remove(s.path); err != nil {
+			return err
+		}
+		if err := os.Rename(backup, s.path); err != nil {
+			return err
+		}
+		return cleanup(view)
+	})
+}
+
+func TestStoreLoginTokenFileBackedPublication(t *testing.T) {
+	for _, failCommit := range []bool{false, true} {
+		t.Run(map[bool]string{false: "publish", true: "failed-commit-cleanup"}[failCommit], func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "tokens.json")
+			store, err := storage.NewFileStore(t.Context(), storage.WithFileLocation(path))
+			require.NoError(t, err)
+			const host = "https://workspace.test"
+			for _, key := range []string{"profile", host, "unrelated"} {
+				require.NoError(t, store.Put(key, storage.Entry{Token: &oauth2.Token{AccessToken: "old"}}))
+			}
+			pending := &storage.PendingLogin{DeviceCode: "synthetic-device", UserCode: "synthetic-user", Host: host, Scopes: []string{"scope"}}
+			require.NoError(t, store.Put("unrelated-pending", storage.Entry{PendingLogin: pending}))
+			arg, err := u2m.NewProfileWorkspaceOAuthArgument(host, "profile")
+			require.NoError(t, err)
+			subject := store
+			if failCommit {
+				subject = obstructFileCommitStore{Store: store, path: path}
+			}
+			err = storeLoginToken(t.Context(), subject, storage.StorageModePlaintext, arg, &oauth2.Token{AccessToken: "new"})
+			if failCommit {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, "cache update")
+			} else {
+				require.NoError(t, err)
+			}
+			for _, key := range []string{"profile", host} {
+				value, err := store.Lookup(key)
+				if failCommit {
+					assert.ErrorIs(t, err, storage.ErrNotFound)
+				} else {
+					require.NoError(t, err)
+					assert.Equal(t, "new", value.Token.AccessToken)
+				}
+			}
+			other, err := store.Lookup("unrelated")
+			require.NoError(t, err)
+			assert.Equal(t, "old", other.Token.AccessToken)
+			other, err = store.Lookup("unrelated-pending")
+			require.NoError(t, err)
+			assert.Equal(t, pending, other.PendingLogin)
+		})
+	}
+}
+
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
 type logBuffer struct {
 	mu  sync.Mutex
@@ -147,6 +217,7 @@ func (f *fakeDiscoveryClient) IntrospectToken(ctx context.Context, host, accessT
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"test"})
 	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./imaginary-file/databrickscfg")
 
@@ -158,6 +229,7 @@ func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 }
 
 func TestSetHost(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://www.host-from-flag.test", "https://www.host-from-arg.test", "https://www.host1.test", "https://www.host2.test", "HTTPS://WWW.HOST1.TEST", "www.host1.test:8080"})
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
@@ -279,6 +351,7 @@ func TestSetHost(t *testing.T) {
 }
 
 func TestSetAccountId(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://accounts.cloud.databricks.com"})
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
@@ -307,6 +380,7 @@ func TestSetAccountId(t *testing.T) {
 }
 
 func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://unified.databricks.com"})
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
@@ -628,6 +702,7 @@ func TestRunHostDiscovery_NoHost(t *testing.T) {
 }
 
 func TestRunHostDiscovery_ExplicitFieldsNotOverridden(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://nonexistent.example.com"})
 	ctx := t.Context()
 	args := &auth.AuthArguments{
 		Host:        "https://nonexistent.example.com",
@@ -691,6 +766,7 @@ func TestRunHostDiscovery_ClassicWorkspaceDoesNotSetAccountID(t *testing.T) {
 }
 
 func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://spog.example.com"})
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
@@ -802,6 +878,7 @@ func TestShouldPromptWorkspace(t *testing.T) {
 }
 
 func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://unified.databricks.com?o=99999"})
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
@@ -936,6 +1013,7 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 }
 
 func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -978,6 +1056,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 }
 
 func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.test"})
 	tmpDir := t.TempDir()
 	parentFile := filepath.Join(tmpDir, "not-a-directory")
 	require.NoError(t, os.WriteFile(parentFile, nil, 0o600))
@@ -1010,6 +1089,7 @@ func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1066,6 +1146,7 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 }
 
 func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1136,6 +1217,7 @@ func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
 }
 
 func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1184,6 +1266,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 }
 
 func TestDiscoveryLogin_ExplicitClientIDOverridesExistingProfile(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1228,6 +1311,7 @@ func TestDiscoveryLogin_ExplicitClientIDOverridesExistingProfile(t *testing.T) {
 }
 
 func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1320,6 +1404,7 @@ func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 }
 
 func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
@@ -1361,6 +1446,7 @@ func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
 }
 
 func TestDiscoveryLogin_ClearsStaleRoutingFieldsFromUnifiedProfile(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://new-workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 
@@ -1422,6 +1508,7 @@ auth_type = databricks-cli
 }
 
 func TestDiscoveryLogin_IntrospectionWritesFreshWorkspaceID(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://new-workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 
@@ -1477,6 +1564,7 @@ auth_type = databricks-cli
 }
 
 func TestDiscoveryLogin_OverridesHostFromEnv(t *testing.T) {
+	stubUnavailableFixtureMetadata(t, []string{"https://workspace.example.com"})
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)

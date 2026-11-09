@@ -16,6 +16,7 @@ provided in your browser.
 
 >>> find.py home
 home/.databricks/token-cache.json
+home/.databricks/token-cache.json.lock
 
 >>> cache_keys
 [

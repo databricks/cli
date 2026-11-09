@@ -43,6 +43,21 @@ func (s *notFoundHintStore) Lookup(key string) (Entry, error) {
 
 func (s *notFoundHintStore) Delete(key string) error { return s.inner.Delete(key) }
 
+// WithFileTransaction preserves lookup hints on the staged file view.
+func (s *notFoundHintStore) WithFileTransaction(ctx context.Context, update, cleanup func(Store) error) (bool, error) {
+	wrap := func(mutate func(Store) error) func(Store) error {
+		if mutate == nil {
+			return nil
+		}
+		return func(view Store) error {
+			wrapped := *s
+			wrapped.inner = view
+			return mutate(&wrapped)
+		}
+	}
+	return WithFileTransaction(ctx, s.inner, wrap(update), wrap(cleanup))
+}
+
 // notFoundHint replaces ErrNotFound's terse "token not found" string
 // with an actionable message while still satisfying errors.Is(err,
 // ErrNotFound). PersistentAuth.loadToken wraps every store error with

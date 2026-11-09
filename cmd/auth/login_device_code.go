@@ -194,7 +194,7 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = l.tokenStore.Put(l.key, storage.Entry{PendingLogin: &storage.PendingLogin{
+	err = storage.PutWithContext(ctx, l.tokenStore, l.key, storage.Entry{PendingLogin: &storage.PendingLogin{
 		DeviceCode: da.DeviceCode,
 		UserCode:   da.UserCode,
 		Host:       l.host,
@@ -274,7 +274,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 // deletePendingLogin deletes the pending login. A pending login that is left
 // over only fails a rerun of the second step, so an error is only logged.
 func (l nonInteractiveDeviceCodeLogin) deletePendingLogin(ctx context.Context) {
-	if err := l.tokenStore.Delete(l.key); err != nil {
+	if err := storage.DeleteWithContext(ctx, l.tokenStore, l.key); err != nil {
 		log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
 	}
 }

@@ -241,6 +241,9 @@ func TestIsDeviceCodeSupportedForHost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.args.Host == "https://accounts.cloud.databricks.test" {
+				stubUnavailableFixtureMetadata(t, []string{tt.args.Host})
+			}
 			args := tt.args
 			require.NoError(t, setHost(t.Context(), nil, &args, nil))
 			assert.Equal(t, tt.want, isDeviceCodeSupportedForHost(args.Host, args.DiscoveryURL))

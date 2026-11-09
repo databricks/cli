@@ -22,10 +22,10 @@ trace $CLI completion uninstall --shell zsh --auto-approve
 trace $CLI completion status --shell zsh
 
 # Test shell subcommands produce output
-$CLI completion bash 2>&1 | head -1
-$CLI completion zsh 2>&1 | head -1
-$CLI completion fish 2>&1 | head -1
-$CLI completion powershell 2>&1 | head -1
+$CLI completion bash 2>&1 | sed -n '1p'
+$CLI completion zsh 2>&1 | sed -n '1p'
+$CLI completion fish 2>&1 | sed -n '1p'
+$CLI completion powershell 2>&1 | sed -n '1p'
 
 # Test bash --no-descriptions
-$CLI completion bash --no-descriptions 2>&1 | head -1
+$CLI completion bash --no-descriptions 2>&1 | sed -n '1p'

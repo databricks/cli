@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"maps"
@@ -10,9 +11,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,6 +76,49 @@ func writeTempConfig(t *testing.T, content string) string {
 	path := filepath.Join(t.TempDir(), ".databrickscfg")
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 	return path
+}
+
+func stubFixtureHostMetadata(t *testing.T, endpoints map[string]string) {
+	t.Helper()
+	previous := config.DefaultHostMetadataResolverFactory
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(_ context.Context, host string) (*config.HostMetadata, error) {
+			endpoint, ok := endpoints[host]
+			if !ok {
+				t.Error("unexpected fixture metadata host")
+				return nil, errors.New("unexpected fixture metadata host")
+			}
+			if endpoint == "" {
+				return nil, nil
+			}
+			return &config.HostMetadata{OIDCEndpoint: endpoint}, nil
+		}
+	}
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = previous })
+}
+
+// These cases test input selection, not a metadata response or HTTP transport.
+func stubUnavailableFixtureMetadata(t *testing.T, inputs []string) {
+	t.Helper()
+	declared := make(map[string]string, len(inputs))
+	for _, input := range inputs {
+		copy := auth.AuthArguments{Host: input}
+		require.NoError(t, normalizeLoginHost(&copy))
+		cfg := &config.Config{Host: copy.Host}
+		declared[cfg.CanonicalHostName()] = ""
+	}
+	stubFixtureHostMetadata(t, declared)
+}
+
+func stubLogoutHostMetadata(t *testing.T) {
+	t.Helper()
+	stubFixtureHostMetadata(t, map[string]string{
+		"https://my-workspace.cloud.databricks.com":        "https://my-workspace.cloud.databricks.com/oidc",
+		"https://my-unique-workspace.cloud.databricks.com": "https://my-unique-workspace.cloud.databricks.com/oidc",
+		"https://stale-account.cloud.databricks.com":       "https://stale-account.cloud.databricks.com/oidc",
+		"https://accounts.cloud.databricks.com":            "https://accounts.cloud.databricks.com/oidc/accounts/{account_id}",
+		"https://my-m2m.cloud.databricks.com":              "https://my-m2m.cloud.databricks.com/oidc",
+	})
 }
 
 func TestLogout(t *testing.T) {
@@ -162,6 +209,7 @@ func TestLogout(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := cmdio.MockDiscard(t.Context())
+			stubLogoutHostMetadata(t)
 			configPath := writeTempConfig(t, logoutTestConfig)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -211,6 +259,7 @@ func TestLogout(t *testing.T) {
 
 func TestLogoutNoTokens(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
+	stubLogoutHostMetadata(t)
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -235,6 +284,7 @@ func TestLogoutNoTokens(t *testing.T) {
 
 func TestLogoutNoTokensWithDelete(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
+	stubLogoutHostMetadata(t)
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -270,6 +320,7 @@ func (failingDeleteStore) Delete(string) error {
 // an unavailable store does not fail its logout.
 func TestLogoutNonLoginProfileIgnoresTokenStoreError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
+	stubLogoutHostMetadata(t)
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -299,6 +350,10 @@ func TestLogoutProfileFlagAndPositionalArgConflict(t *testing.T) {
 }
 
 func TestLogoutDeleteClearsDefaultProfile(t *testing.T) {
+	stubFixtureHostMetadata(t, map[string]string{
+		"https://my-workspace.cloud.databricks.com":    "https://my-workspace.cloud.databricks.com/oidc",
+		"https://other-workspace.cloud.databricks.com": "https://other-workspace.cloud.databricks.com/oidc",
+	})
 	configWithDefault := `[DEFAULT]
 [my-workspace]
 host = https://my-workspace.cloud.databricks.com
@@ -412,6 +467,43 @@ auth_type = databricks-cli
 	assert.Nil(t, tokenStore.Tokens[hostKey])
 }
 
+func TestClearFileTokenStorePreservesOtherEntries(t *testing.T) {
+	for _, shared := range []bool{false, true} {
+		t.Run(map[bool]string{false: "unique-host", true: "shared-host"}[shared], func(t *testing.T) {
+			server := newWellKnownServer(t, false, "synthetic-account")
+			owner := profile.Profile{Name: "owner", Host: server.URL, AuthType: "databricks-cli"}
+			profiles := profile.Profiles{owner}
+			if shared {
+				profiles = append(profiles, profile.Profile{Name: "sibling", Host: server.URL, AuthType: "databricks-cli"})
+			}
+			path := filepath.Join(t.TempDir(), "tokens.json")
+			store, err := storage.NewFileStore(t.Context(), storage.WithFileLocation(path))
+			require.NoError(t, err)
+			for _, key := range []string{owner.Name, server.URL, "unrelated"} {
+				require.NoError(t, store.Put(key, storage.Entry{Token: &oauth2.Token{AccessToken: "synthetic"}}))
+				require.NoError(t, store.Put(pendingLoginKey(key), storage.Entry{PendingLogin: &storage.PendingLogin{UserCode: "synthetic"}}))
+			}
+			require.NoError(t, clearTokenStore(t.Context(), owner, profile.InMemoryProfiler{Profiles: profiles}, store))
+			for _, key := range []string{owner.Name, pendingLoginKey(owner.Name)} {
+				_, err := store.Lookup(key)
+				assert.ErrorIs(t, err, storage.ErrNotFound)
+			}
+			for _, key := range []string{server.URL, pendingLoginKey(server.URL)} {
+				_, err := store.Lookup(key)
+				if shared {
+					assert.NoError(t, err)
+				} else {
+					assert.ErrorIs(t, err, storage.ErrNotFound)
+				}
+			}
+			for _, key := range []string{"unrelated", pendingLoginKey("unrelated")} {
+				_, err := store.Lookup(key)
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestHostCacheKeyAndMatchFn(t *testing.T) {
 	wsServer := newWellKnownServer(t, false, "ws-account")
 	spogServer := newWellKnownServer(t, true, "spog-account")
@@ -468,6 +560,11 @@ func TestHostCacheKeyAndMatchFn(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.profile.Host == "https://accounts.cloud.databricks.com" {
+				stubFixtureHostMetadata(t, map[string]string{
+					tc.profile.Host: tc.profile.Host + "/oidc/accounts/{account_id}",
+				})
+			}
 			key, matchFn := hostCacheKeyAndMatchFn(tc.profile)
 			if tc.wantKeyEmpty {
 				assert.Empty(t, key)
