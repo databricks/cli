@@ -259,22 +259,6 @@ func TestResolveWithSkip(t *testing.T) {
 	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString()) //nolint:dupword
 }
 
-func TestResolveExcept(t *testing.T) {
-	in := dyn.V(map[string]dyn.Value{
-		"a": dyn.V("a"),
-		"b": dyn.V("${a}"),
-		"c": dyn.V("${a}"),
-	})
-
-	out, err := dynvar.ResolveExcept(in, dynvar.DefaultLookup(in), func(p dyn.Path) bool {
-		return p.String() == "c"
-	})
-	require.NoError(t, err)
-
-	assert.Equal(t, "a", getByPath(t, out, "b").MustString())
-	assert.Equal(t, "${a}", getByPath(t, out, "c").MustString())
-}
-
 func TestResolveWithSkipEverything(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a": dyn.V("a"),

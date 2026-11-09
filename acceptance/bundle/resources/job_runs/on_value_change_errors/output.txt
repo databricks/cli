@@ -53,11 +53,11 @@ Found 1 error
 === a complex value is rejected
 >>> musterr [CLI] bundle validate
 Warning: expected string, found map
-  at resources.job_runs.my_run.lifecycle.triggers_state.on_value_change['${var.complex}']
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_value_change
   in databricks.yml:24:38
 
 Error: lifecycle.triggers.on_value_change must resolve to a string, number or boolean
-  in databricks.yml:24:38
+  in databricks.yml:24:20
 
 Name: job-runs-on-value-change-errors
 Target: default

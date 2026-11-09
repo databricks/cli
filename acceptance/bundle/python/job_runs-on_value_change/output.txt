@@ -1,41 +1,39 @@
 
-=== validate keeps a watch from YAML, from Python and from a Python mutator
+=== validate resolves a watch from YAML and from Python, with a mutator applied
 >>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 {
   "py_run": {
     "job_id": "${resources.jobs.my_job.id}",
+    "job_parameters": {
+      "source": "mutator"
+    },
     "lifecycle": {
       "triggers": [
         {
-          "on_value_change": "${var.x}"
-        },
-        {
-          "on_value_change": "${var.y}"
+          "on_value_change": "x1"
         }
       ],
       "triggers_state": {
         "on_value_change": {
-          "${var.x}": "x1",
-          "${var.y}": "y1"
+          "${var.x}": "x1"
         }
       }
     }
   },
   "yaml_run": {
     "job_id": "${resources.jobs.my_job.id}",
+    "job_parameters": {
+      "source": "mutator"
+    },
     "lifecycle": {
       "triggers": [
         {
-          "on_value_change": "${var.x}"
-        },
-        {
-          "on_value_change": "${var.y}"
+          "on_value_change": "x1"
         }
       ],
       "triggers_state": {
         "on_value_change": {
-          "${var.x}": "x1",
-          "${var.y}": "y1"
+          "${var.x}": "x1"
         }
       }
     }
@@ -55,7 +53,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> uv run [UV_ARGS] -q [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
-=== changing the variable watched in YAML and Python re-fires both runs
+=== changing the watched variable re-fires both runs
 >>> uv run [UV_ARGS] -q [CLI] bundle plan
 recreate job_runs.py_run
 recreate job_runs.yaml_run
@@ -69,16 +67,18 @@ Recreated job_runs.yaml_run
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 2 deleted, 1 unchanged
 
-=== changing the variable the Python mutator watches re-fires both runs
->>> uv run [UV_ARGS] -q [CLI] bundle plan
-recreate job_runs.py_run
-recreate job_runs.yaml_run
+=== a Python mutator cannot add a trigger to a job_run that sets on_value_change
+>>> musterr uv run [UV_ARGS] -q [CLI] bundle validate
+Error: Python mutators cannot add or remove lifecycle.triggers of a job_run that sets on_value_change
+  in resources.py:7:1
 
-Plan: 2 to add, 0 to change, 2 to delete, 1 unchanged
+Error: Python mutators cannot add or remove lifecycle.triggers of a job_run that sets on_value_change
+  in databricks.yml:32:11
 
->>> uv run [UV_ARGS] -q [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Recreated job_runs.py_run
-Recreated job_runs.yaml_run
-Files: 0 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 2 deleted, 1 unchanged
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 errors

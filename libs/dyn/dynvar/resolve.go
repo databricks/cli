@@ -37,12 +37,6 @@ func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
 
-// ResolveExcept is [Resolve], except that values at paths (relative to in) for
-// which skip returns true keep their variable references as they are.
-func ResolveExcept(in dyn.Value, fn Lookup, skip func(dyn.Path) bool) (out dyn.Value, err error) {
-	return resolver{in: in, fn: fn, skip: skip}.run()
-}
-
 // ReferenceError is returned for an unresolved variable reference. Suggestions
 // are carried as data so callers (which can import libs/diag) format them.
 type ReferenceError struct {
@@ -60,9 +54,8 @@ type lookupResult struct {
 }
 
 type resolver struct { //nolint:recvcheck // value receiver for run(), pointer for mutation methods
-	in   dyn.Value
-	fn   Lookup
-	skip func(dyn.Path) bool
+	in dyn.Value
+	fn Lookup
 
 	refs     map[string]Ref
 	resolved map[string]dyn.Value
@@ -98,9 +91,6 @@ func (r *resolver) collectVariableReferences() (err error) {
 		ref, ok := NewRef(v)
 		if !ok {
 			// Skip values without variable references.
-			return v, nil
-		}
-		if r.skip != nil && r.skip(p) {
 			return v, nil
 		}
 

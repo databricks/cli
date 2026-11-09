@@ -13,7 +13,7 @@ python:
   resources:
     - "resources:load_resources"
   mutators:
-    - "mutators:watch_y"
+    - "mutators:update_job_run"
 
 resources:
   jobs:
