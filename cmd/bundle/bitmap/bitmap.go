@@ -184,18 +184,17 @@ func render(out io.Writer, output outputFormat, schema []string, bits []bool, co
 	return fmt.Errorf("unknown output format %q", output)
 }
 
-// loadBits loads the bundle and computes its bitmap against the embedded schema.
+// loadBits loads the bundle and returns its bitmap against the embedded schema.
 func loadBits(cmd *cobra.Command) ([]bool, []string, error) {
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{Validate: true})
 	if err != nil {
 		return nil, nil, err
 	}
-	schema := bundlebitmap.EmbeddedSchema()
-	bits, err := bundlebitmap.Bits(b.UserConfig, b.Telemetry, schema)
+	bits, err := b.Bitmap.Bits(b.Telemetry)
 	if err != nil {
 		return nil, nil, err
 	}
-	return bits, schema, nil
+	return bits, bundlebitmap.EmbeddedSchema(), nil
 }
 
 func printLines(out io.Writer, lines []string) error {

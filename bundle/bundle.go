@@ -15,6 +15,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
@@ -23,7 +24,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -234,11 +234,12 @@ type Bundle struct {
 	// deploy event's bool_values and the bundle bitmap.
 	Telemetry Telemetry
 
-	// UserConfig is the configuration as the user wrote it: the loaded files with
-	// the selected target merged in, plus resources defined in Python. It is
-	// captured before Initialize fills in defaults, so the bundle bitmap records
-	// what users configure rather than what the CLI derives.
-	UserConfig dyn.Value
+	// Bitmap holds the config bits of the bundle bitmap: what users configure,
+	// not what the CLI derives. Initialize creates it from the loaded files with
+	// the selected target merged in, before it fills in defaults; the Python
+	// mutator adds the resources Python defines, and the end of Initialize adds
+	// the values of fields set through ${var.*} references.
+	Bitmap *bitmap.Builder
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

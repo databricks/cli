@@ -4,8 +4,6 @@
 1 variables.*.description
 1 bundle
 1 bundle.name
-1 bundle.target
-1 bundle.environment
 1 bundle.mode
 1 bundle.uuid
 1 include

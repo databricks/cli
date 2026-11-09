@@ -4,8 +4,8 @@
 // the binary. The schema is append-only so that bit positions stay stable across
 // releases: a newer binary can decode an older bitmap and vice versa.
 //
-// The bits describe the configuration as the user wrote it (bundle.UserConfig),
-// not the result of Initialize, so defaults the CLI fills in are not counted.
+// The bits describe the configuration as the user wrote it, not the result of
+// Initialize, so defaults the CLI fills in are not counted (see Builder).
 package bitmap
 
 import (
@@ -16,10 +16,13 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
@@ -118,6 +121,9 @@ func isPruned(p string) bool {
 		return true
 	case p == "__locations" || strings.HasPrefix(p, "__locations."):
 		return true
+	// Target selection sets these on every bundle; users do not write them.
+	case p == "bundle.target" || p == "bundle.environment":
+		return true
 	}
 	return false
 }
@@ -143,20 +149,92 @@ func Merge(old, fresh []string) (merged, added []string) {
 	return merged, added
 }
 
-// Bits returns a bit per schema entry: true when that config field or telemetry
-// flag is present, or for a "=true"/"=false" entry, when the bool holds that
-// value. The config is walked as its dyn.Value rather than the typed struct so
-// that presence is exactly what the config holds: an interface-typed field
-// (variables.*.default) or an empty container ({} or []) counts, and a zero
-// value counts only when it is written out. The telemetry struct's paths are
-// namespaced under "telemetry.".
-func Bits(cfg dyn.Value, telemetry any, schema []string) ([]bool, error) {
-	index := indexSchema(schema)
-	bits := make([]bool, len(schema))
-	if err := markTelemetry(telemetry, index, bits); err != nil {
+// Builder computes the config bits of a bundle as the user wrote it. Mark runs
+// on the loaded configuration, and on the resources Python adds, before any
+// mutator fills in defaults. A field holding a ${var.*} reference has no value
+// yet at that point, so Mark keeps it aside, and ResolveVariables marks the
+// variable's value once it is known. Bits are only ever set, never cleared.
+type Builder struct {
+	index map[string]int
+	bits  []bool
+
+	// refs are the fields Mark found holding a pure ${var.*} reference.
+	refs map[varRef]struct{}
+}
+
+// varRef is a field that held a pure ${var.*} reference.
+type varRef struct {
+	pattern   string // the field's schema pattern
+	reference string // e.g. "${var.flag}"
+}
+
+// varPrefix is the first component of a variable reference: ${var.name}.
+var varPrefix = dyn.NewPath(dyn.Key("var"))
+
+// NewBuilder returns a Builder for schema with no bits set.
+func NewBuilder(schema []string) *Builder {
+	return &Builder{
+		index: indexSchema(schema),
+		bits:  make([]bool, len(schema)),
+		refs:  map[varRef]struct{}{},
+	}
+}
+
+// Mark sets the bits of the fields present in cfg, a configuration tree rooted
+// at the configuration root. The config is walked as its dyn.Value rather than
+// the typed struct so that presence is exactly what the config holds: an
+// interface-typed field (variables.*.default) or an empty container ({} or [])
+// counts, and a zero value counts only when it is written out.
+func (b *Builder) Mark(cfg dyn.Value) {
+	b.markChildren(cfg, "")
+}
+
+// ResolveVariables marks the values of the fields Mark found holding a
+// ${var.*} reference, reading each variable's value from cfg, the processed
+// configuration. The values are the ones the user supplied (default, --var,
+// environment or file), whatever mutators later do to the field. A reference
+// that does not resolve keeps only the presence bit Mark set.
+func (b *Builder) ResolveVariables(cfg dyn.Value) {
+	refs := b.refs
+	b.refs = map[varRef]struct{}{}
+	for ref := range refs {
+		v, err := dynvar.Resolve(dyn.V(ref.reference), func(p dyn.Path) (dyn.Value, error) {
+			return variableValue(cfg, p)
+		})
+		if err != nil {
+			continue
+		}
+		// A value from --var or the environment is a string; coerce it the way
+		// the loader does when it reaches a bool field.
+		if _, ok := b.index[ref.pattern+trueSuffix]; ok {
+			normalized, diags := convert.Normalize(false, v)
+			if diags.HasError() {
+				continue
+			}
+			v = normalized
+		}
+		b.mark(v, ref.pattern)
+	}
+}
+
+// variableValue looks up the value of a ${var.name...} reference in cfg, which
+// keeps it under variables.name.value.
+func variableValue(cfg dyn.Value, p dyn.Path) (dyn.Value, error) {
+	if len(p) < 2 || !p.HasPrefix(varPrefix) {
+		return dyn.InvalidValue, dynvar.ErrSkipResolution
+	}
+	path := append(dyn.NewPath(dyn.Key("variables"), p[1], dyn.Key("value")), p[2:]...)
+	return dyn.GetByPath(cfg, path)
+}
+
+// Bits returns a bit per schema entry: the bits Mark and ResolveVariables set,
+// together with those of the measured telemetry fields, namespaced under
+// "telemetry.". A "=true"/"=false" entry is set when the bool held that value.
+func (b *Builder) Bits(telemetry any) ([]bool, error) {
+	bits := slices.Clone(b.bits)
+	if err := markTelemetry(telemetry, b.index, bits); err != nil {
 		return nil, err
 	}
-	markChildren(cfg, "", index, bits)
 	return bits, nil
 }
 
@@ -200,19 +278,19 @@ func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 // markChildren marks every child of v whose schema pattern is known. A map key
 // resolves to the struct field of that name when the schema has one and to the
 // ".*" wildcard otherwise; a sequence element resolves to "[*]".
-func markChildren(v dyn.Value, pattern string, index map[string]int, bits []bool) {
+func (b *Builder) markChildren(v dyn.Value, pattern string) {
 	if m, ok := v.AsMap(); ok {
 		for _, pair := range m.Pairs() {
 			child := joinField(pattern, pair.Key.MustString())
-			if _, ok := index[child]; !ok {
+			if _, ok := b.index[child]; !ok {
 				child = joinField(pattern, "*")
 			}
-			mark(pair.Value, child, index, bits)
+			b.mark(pair.Value, child)
 		}
 	}
 	if s, ok := v.AsSequence(); ok {
 		for _, elem := range s {
-			mark(elem, pattern+listSuffix, index, bits)
+			b.mark(elem, pattern+listSuffix)
 		}
 	}
 }
@@ -220,16 +298,25 @@ func markChildren(v dyn.Value, pattern string, index map[string]int, bits []bool
 // mark sets the bit for a present (non-null) value and recurses into it. A
 // pattern outside the schema is not descended into: that covers the pruned
 // subtrees and the contents of interface-typed fields, whose own bit is set.
-func mark(v dyn.Value, pattern string, index map[string]int, bits []bool) {
-	i, ok := index[pattern]
+func (b *Builder) mark(v dyn.Value, pattern string) {
+	i, ok := b.index[pattern]
 	if !ok || v.Kind() == dyn.KindNil {
 		return
 	}
-	bits[i] = true
+	b.bits[i] = true
 	if value, ok := v.AsBool(); ok {
-		setBit(index, bits, pattern+valueSuffix(value))
+		setBit(b.index, b.bits, pattern+valueSuffix(value))
 	}
-	markChildren(v, pattern, index, bits)
+	if s, ok := v.AsString(); ok && isVariableReference(s) {
+		b.refs[varRef{pattern: pattern, reference: s}] = struct{}{}
+	}
+	b.markChildren(v, pattern)
+}
+
+// isVariableReference reports whether s is exactly one ${var.*} reference.
+func isVariableReference(s string) bool {
+	p, ok := dynvar.PureReferenceToPath(s)
+	return ok && p.HasPrefix(varPrefix)
 }
 
 // setBit sets the bit of schema path p, if the schema has it.

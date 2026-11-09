@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
@@ -121,10 +122,12 @@ workspace: { current_user: { userName: test }}`)
 		assert.Equal(t, "pipeline_0", pipeline0.Name)
 	}
 
-	// The added resources are recorded in UserConfig as Python wrote them.
-	userJob0, err := dyn.Get(b.UserConfig, "resources.jobs.job0")
+	// The added resources are recorded in the bitmap; pipelines exist only in Python.
+	bits, err := b.Bitmap.Bits(struct{}{})
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"name": "job_0"}, userJob0.AsAny())
+	text := bitmap.Text(bitmap.EmbeddedSchema(), bits, bitmap.ContextFullBundle)
+	assert.Contains(t, text, "1 resources.pipelines")
+	assert.Contains(t, text, "1 resources.pipelines.*.name")
 
 	// output of locations.json should be applied to underlying dyn.Value
 	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
@@ -606,11 +609,13 @@ func loadYaml(name, content string) *bundle.Bundle {
 		panic(diag.Error())
 	}
 
-	// Initialize snapshots the loaded config before the Python mutator runs.
-	return &bundle.Bundle{
-		Config:     *v,
-		UserConfig: v.Value(),
+	// Initialize records the loaded config in the bitmap before the Python mutator runs.
+	b := &bundle.Bundle{
+		Config: *v,
+		Bitmap: bitmap.NewBuilder(bitmap.EmbeddedSchema()),
 	}
+	b.Bitmap.Mark(v.Value())
+	return b
 }
 
 func withFakeVEnv(t *testing.T, venvPath string) {
