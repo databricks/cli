@@ -16,13 +16,14 @@ Resource: resources.jobs.my_job
   job_clusters[job_cluster_key='shared'].new_cluster.custom_tags['team']: add
   job_clusters[job_cluster_key='shared'].new_cluster.init_scripts: replace
   job_clusters[job_cluster_key='shared'].new_cluster.spark_env_vars['ENV']: add
+  tags['added']: add
 
 
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -12,9 +12,18 @@
+@@ -13,9 +13,18 @@
              node_type_id: [NODE_TYPE_ID]
              custom_tags: # Keep this comment when adding tags.
 -            spark_env_vars: null # Keep the environment comment.
@@ -45,6 +46,12 @@ Resource: resources.jobs.my_job
 +              team: analytics
        tasks:
          - task_key: main
+@@ -31,4 +40,5 @@
+           tags:
+             existing: preserved
++            added: value
+           job_clusters:
+             - job_cluster_key: shared
 
 >>> [CLI] bundle config-remote-sync --save
 No changes detected.

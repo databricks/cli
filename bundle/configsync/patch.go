@@ -115,16 +115,6 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 
-			if patchErr != nil {
-				patched, err := addThroughNullAncestor(content, fieldPathCandidate, fieldChange.Change.Value)
-				if err != nil {
-					return nil, err
-				}
-				if patched != nil {
-					modifiedContent, patchErr = patched, nil
-				}
-			}
-
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
 				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
@@ -146,6 +136,20 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 		log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
 		if firstErr == nil {
 			firstErr = patchErr
+		}
+	}
+
+	// Reuse an existing parent at any candidate before materializing a null ancestor.
+	if !success && fieldChange.Change.Operation == OperationAdd {
+		for _, candidate := range fieldChange.writePaths() {
+			patched, err := addThroughNullAncestor(content, candidate, fieldChange.Change.Value)
+			if err != nil {
+				return nil, err
+			}
+			if patched != nil {
+				log.Debugf(ctx, "Materialized null ancestor for %s", candidate)
+				return patched, nil
+			}
 		}
 	}
 

@@ -495,3 +495,46 @@ func TestApplyChangeNullParentComments(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyChangeReusesExistingParent(t *testing.T) {
+	for _, parent := range []string{"null", "~", "", "{}"} {
+		t.Run(parent, func(t *testing.T) {
+			content := "resources: " + parent + " # base resources\ntargets:\n  dev:\n    resources:\n      jobs:\n        job:\n          tags:\n            existing: preserved # existing tag\n"
+			result, err := applyChange(t.Context(), []byte(content), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, content+"            added: value\n", string(result))
+			assert.Contains(t, string(result), "# base resources")
+			assert.Contains(t, string(result), "existing: preserved # existing tag")
+		})
+	}
+}
+
+func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		parent string
+	}{
+		{"missing alternative parent", "{}"},
+		{"null alternative parent", "null"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := "targets:\n  dev:\n    resources: " + tc.parent + "\n"
+			result, err := applyChange(t.Context(), []byte("resources: null\n"+target), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, `resources:
+  jobs:
+    job:
+      tags:
+        added: value
+`+target, string(result))
+		})
+	}
+}

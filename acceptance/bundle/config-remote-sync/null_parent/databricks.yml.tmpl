@@ -5,6 +5,7 @@ resources:
   jobs:
     my_job:
       name: test-job-$UNIQUE_NAME
+      tags: null # Keep job tags in the existing target mapping.
       job_clusters:
         - job_cluster_key: shared
           new_cluster:
@@ -27,6 +28,8 @@ targets:
     resources:
       jobs:
         my_job:
+          tags:
+            existing: preserved
           job_clusters:
             - job_cluster_key: shared
               new_cluster:
