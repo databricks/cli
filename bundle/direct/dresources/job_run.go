@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -15,10 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -28,10 +25,6 @@ import (
 
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
-
-// on_value_change fingerprints are keyed by the watched expression; the planner
-// resolves references at this path, so it is kept as a parsed node.
-var jobRunOnValueChangePath = structpath.MustParsePath("lifecycle.triggers_state.on_value_change")
 
 // JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
@@ -103,8 +96,6 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	var ts resources.JobRunTriggersState
 	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
 		ts = *input.Lifecycle.TriggersState
-		// Fingerprinting below rewrites value-trigger entries.
-		ts.OnValueChange = maps.Clone(ts.OnValueChange)
 	}
 	if input.HasOnBundleDeploy() {
 		ts.OnBundleDeploy = uuid.New().String()
@@ -113,22 +104,6 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	}
 	return state
-}
-
-// PrepareInputConfig maps unresolved watches to state paths so the deploy graph
-// tracks their resource references.
-func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
-	refs := map[string]string{}
-	if input.Lifecycle == nil || input.Lifecycle.TriggersState == nil {
-		return &structvar.StructVar{Value: input, Refs: refs}, nil
-	}
-	for expr, value := range input.Lifecycle.TriggersState.OnValueChange {
-		if !dynvar.ContainsVariableReference(value) {
-			continue
-		}
-		refs[structpath.NewBracketString(jobRunOnValueChangePath, expr).String()] = value
-	}
-	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET

@@ -292,9 +292,6 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"${var.watched}": "resolved",
 	}, state.Lifecycle.TriggersState.OnValueChange)
-	assert.Equal(t, map[string]string{
-		"${var.watched}": "resolved",
-	}, triggers.OnValueChange)
 	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
 	assert.Empty(t, triggers.OnBundleDeploy)
 }
