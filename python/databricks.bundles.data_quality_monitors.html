@@ -684,9 +684,9 @@ must be present.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.data_quality_monitors.NotificationDestination.destination_ids">
 <span class="sig-name descname"><span class="pre">destination_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.data_quality_monitors.NotificationDestination.destination_ids" title="Link to this definition">¶</a></dt>
-<dd><p>The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The
-destinations must already exist in the workspace; a workspace admin creates them. A maximum of
-25 destination IDs is supported.
+<dd><p>The notification-destination IDs (Slack / Teams / webhook / Asana / ServiceNow / AWS
+EventBridge) to send the notification to. The destinations must already exist in the
+workspace; a workspace admin creates them. A maximum of 25 destination IDs is supported.
 Only supported on schema monitors, via <cite>anomaly_detection_config</cite>; rejected on table monitors.</p>
 </dd></dl>
 
