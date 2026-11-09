@@ -24,3 +24,6 @@ backend_defaults:
   # value alone (OPEN by default, or ISOLATED when set outside the bundle) rather than
   # forcing it back to OPEN.
   - field: isolation_mode
+# Assigned by the backend and kept across renames: lets the plan find a catalog renamed outside the
+# bundle or by an interrupted deploy (see InternalIDField).
+internal_id_field: id
