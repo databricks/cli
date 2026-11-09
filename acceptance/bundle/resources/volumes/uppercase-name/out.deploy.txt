@@ -34,6 +34,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "name": {
         "action": "skip",
         "reason": "id_changes"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id"
       }
     }
   },
@@ -51,6 +55,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "storage_location": {
         "action": "skip",
         "reason": "immutable_backend_value"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id"
       }
     }
   }
