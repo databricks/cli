@@ -143,7 +143,7 @@ func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string,
 	}
 
 	// The catalog and schema come from config: a renamed parent moves the model with it, leaving id
-	// stale (see followParentRenames).
+	// stale (see followsParentRename).
 	parent := config.CatalogName + "." + config.SchemaName + "."
 	newID := parent + config.Name
 
