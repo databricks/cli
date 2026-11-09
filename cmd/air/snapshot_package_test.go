@@ -47,7 +47,7 @@ func TestCreateGitArchiveSnapshot(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil, ""))
+	mustCreateGitArchiveSnapshot(t, ctx, newGitRepo(repo), sha, out, dirName, nil, "")
 
 	entries := tarballEntries(t, out)
 	// Every real entry is prefixed with the directory name. git archive also emits a
@@ -71,7 +71,7 @@ func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}, ""))
+	mustCreateGitArchiveSnapshot(t, ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}, "")
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, dirName+"/src/model.py")
@@ -91,7 +91,7 @@ func TestCreateGitArchiveSnapshot_SubdirectoryRootPath(t *testing.T) {
 	require.NoError(t, err)
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", nil, prefix))
+	mustCreateGitArchiveSnapshot(t, ctx, newGitRepo(rootPath), sha, out, "subpkg", nil, prefix)
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, "subpkg/train.py")
@@ -115,7 +115,7 @@ func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testin
 	require.NoError(t, err)
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", []string{"src"}, prefix))
+	mustCreateGitArchiveSnapshot(t, ctx, newGitRepo(rootPath), sha, out, "subpkg", []string{"src"}, prefix)
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, "subpkg/src/model.py")
@@ -130,7 +130,7 @@ func TestCreateGitArchiveSnapshot_GitFailureSurfacesStderr(t *testing.T) {
 	commitAll(t, repo, "init")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), "0000000000000000000000000000000000000000", out, "repo", nil, "")
+	_, err := createGitArchiveSnapshot(ctx, newGitRepo(repo), "0000000000000000000000000000000000000000", out, "repo", nil, "")
 	require.ErrorContains(t, err, "failed to create git archive")
 	assert.ErrorContains(t, err, "fatal")
 }
@@ -142,7 +142,7 @@ func TestCreateGitArchiveSnapshotStopsWhenCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, filepath.Join(t.TempDir(), "snap.tar.gz"), "repo", nil, "")
+	_, err := createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, filepath.Join(t.TempDir(), "snap.tar.gz"), "repo", nil, "")
 	require.ErrorIs(t, err, context.Canceled)
 }
 

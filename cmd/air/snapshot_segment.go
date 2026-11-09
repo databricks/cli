@@ -1,8 +1,10 @@
 package aircmd
 
 import (
+	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -183,6 +185,147 @@ func writeMemberTar(ctx context.Context, w io.Writer, entries []tarpack.Entry, l
 		return fmt.Errorf("failed to finalize gzip: %w", err)
 	}
 	return nil
+}
+
+// writeTarSegments streams the tar archive in tarStream to outputTarball as gzip members. The
+// archive size is not known up front, so the caller passes targetBytes, the size at which a
+// member closes at the next entry boundary. Once maxMembers members are open, the last one
+// takes the rest. Each member is first written as raw tar to a temp file, so the stream is
+// never blocked on compression. Members then compress concurrently, at most runtime.NumCPU()
+// at a time, and the output is assembled only after all of them succeed.
+func writeTarSegments(ctx context.Context, component, outputTarball string, tarStream io.Reader, targetBytes int64, maxMembers int) (segmentIndex, error) {
+	dir, err := os.MkdirTemp("", "air-snapshot-members-")
+	if err != nil {
+		return segmentIndex{}, fmt.Errorf("failed to create snapshot members dir: %w", err)
+	}
+	defer os.RemoveAll(dir)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	g, gctx := errgroup.WithContext(ctx)
+	spool := &segmentSpool{dir: dir, g: g, slots: make(chan struct{}, runtime.NumCPU())}
+	streamErr := spool.stream(gctx, tarStream, targetBytes, maxMembers)
+	if streamErr != nil {
+		// The stream error is the root cause. Waiting only lets the compressors stop.
+		cancel()
+		_ = g.Wait()
+		return segmentIndex{}, streamErr
+	}
+	if err := g.Wait(); err != nil {
+		return segmentIndex{}, err
+	}
+	return concatMembers(component, outputTarball, spool.members)
+}
+
+// segmentSpool writes members as raw tar files and compresses each one in the background.
+type segmentSpool struct {
+	dir     string
+	g       *errgroup.Group
+	slots   chan struct{}
+	members []string // compressed member paths, in order
+}
+
+// rawMember is a member being written as raw tar, counting its bytes.
+type rawMember struct {
+	raw        *os.File
+	rawPath    string
+	memberPath string
+	tar        *tar.Writer
+	bytes      int64
+}
+
+func (m *rawMember) Write(p []byte) (int, error) {
+	n, err := m.raw.Write(p)
+	m.bytes += int64(n)
+	return n, err
+}
+
+// stream copies the entries of tarStream into members, closing a member at an entry boundary
+// once it holds targetBytes, and never opening more than maxMembers.
+func (s *segmentSpool) stream(ctx context.Context, tarStream io.Reader, targetBytes int64, maxMembers int) error {
+	cur, err := s.open()
+	if err != nil {
+		return err
+	}
+	tr := tar.NewReader(tarStream)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read git archive: %w", err)
+		}
+		if cur.bytes >= targetBytes && len(s.members) < maxMembers {
+			if err := s.close(ctx, cur, false); err != nil {
+				return err
+			}
+			if cur, err = s.open(); err != nil {
+				return err
+			}
+		}
+		if err := cur.tar.WriteHeader(hdr); err != nil {
+			return fmt.Errorf("failed to write snapshot entry %s: %w", hdr.Name, err)
+		}
+		if _, err := io.Copy(cur.tar, tr); err != nil {
+			return fmt.Errorf("failed to write snapshot entry %s: %w", hdr.Name, err)
+		}
+	}
+	return s.close(ctx, cur, true)
+}
+
+// open starts the next member as a raw tar file.
+func (s *segmentSpool) open() (*rawMember, error) {
+	i := len(s.members)
+	raw, err := os.Create(filepath.Join(s.dir, fmt.Sprintf("raw-%d", i)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create snapshot member: %w", err)
+	}
+	memberPath := filepath.Join(s.dir, fmt.Sprintf("member-%d", i))
+	s.members = append(s.members, memberPath)
+	m := &rawMember{raw: raw, rawPath: raw.Name(), memberPath: memberPath}
+	m.tar = tar.NewWriter(m)
+	return m, nil
+}
+
+// close finishes a raw member and queues its compression. Only the last member gets the
+// end-of-archive marker.
+func (s *segmentSpool) close(ctx context.Context, m *rawMember, last bool) error {
+	if last {
+		if err := m.tar.Close(); err != nil {
+			return fmt.Errorf("failed to finish snapshot tar: %w", err)
+		}
+	} else if err := m.tar.Flush(); err != nil {
+		return fmt.Errorf("failed to finish snapshot member: %w", err)
+	}
+	if err := m.raw.Close(); err != nil {
+		return fmt.Errorf("failed to finish snapshot member: %w", err)
+	}
+	s.g.Go(func() error {
+		s.slots <- struct{}{}
+		defer func() { <-s.slots }()
+		return compressRaw(ctx, m.rawPath, m.memberPath)
+	})
+	return nil
+}
+
+// compressRaw gzips the raw tar at rawPath into the member file at memberPath.
+func compressRaw(ctx context.Context, rawPath, memberPath string) error {
+	raw, err := os.Open(rawPath)
+	if err != nil {
+		return err
+	}
+	defer raw.Close()
+	return spoolFile(ctx, memberPath, func(ctx context.Context, w io.Writer) error {
+		gz, err := gzip.NewWriterLevel(ctxWriter{ctx, w}, gzip.DefaultCompression)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(gz, raw); err != nil {
+			return fmt.Errorf("failed to create plain tarball: %w", err)
+		}
+		return gz.Close()
+	})
 }
 
 // appendFile copies the file at path onto the end of w and returns the bytes copied.

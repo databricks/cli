@@ -1,0 +1,1 @@
+* `databricks air run` with a pinned git commit packages the snapshot as parallel gzip segments with an index, which shortens submission for large repositories. ([#7404](https://github.com/databricks/cli/pull/7404))

@@ -139,19 +139,14 @@ func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (s
 	return fmt.Sprintf("%s_%s.tar.gz", dirName, computePlainTarKey(files)[:16]), files, nil
 }
 
-// packageSnapshot writes the snapshot to tarball per the resolved plan: `git archive`
-// of the pinned commit for git_archive, else a segmented plain tar of the pre-listed
-// working-tree files. It returns the segment index for plain_tar and nil for
-// git_archive, which has no sidecar yet.
-func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, files []snapshotFile, tarball string) (*segmentIndex, error) {
+// packageSnapshot writes the snapshot to tarball per the resolved plan, as a segmented
+// tarball: the pinned commit's `git archive` for git_archive, else the pre-listed
+// working-tree files. It returns the index that is uploaded alongside the tarball.
+func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, files []snapshotFile, tarball string) (segmentIndex, error) {
 	if plan.mode == modeGitArchive {
-		return nil, createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths, plan.subtreePrefix)
+		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths, plan.subtreePrefix)
 	}
-	index, err := createPlainTarball(ctx, repoPath, tarball, files)
-	if err != nil {
-		return nil, err
-	}
-	return &index, nil
+	return createPlainTarball(ctx, repoPath, tarball, files)
 }
 
 // airArtifactInternalDir mirrors bundle/libraries.InternalDirName: CLI-uploaded
@@ -180,7 +175,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	// upload the bytes now or reuse an object already in the store.
 	remote := path.Join(uploadPath, tarName)
 
-	cached, err := snapshotCached(ctx, f, tarName, plan.mode == modePlainTar)
+	cached, err := snapshotCached(ctx, f, tarName)
 	if err != nil {
 		return result, err
 	}
@@ -223,9 +218,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	// The sidecar and tarball are written concurrently. The job is only submitted once both
 	// succeed, and a later cache hit requires both (see snapshotCached).
 	g, gctx := errgroup.WithContext(ctx)
-	if index != nil {
-		g.Go(func() error { return uploadSegmentIndex(gctx, f, tarName, index) })
-	}
+	g.Go(func() error { return uploadSegmentIndex(gctx, f, tarName, &index) })
 	g.Go(func() error {
 		if err := f.Write(gctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
 			return fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
@@ -241,14 +234,11 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	return result, nil
 }
 
-// snapshotCached reports whether the snapshot is already in the store. For an indexed
-// (plain_tar) snapshot both the tarball and its index sidecar must exist: a half-written
-// pair from an interrupted upload is a miss, and the pair is re-uploaded.
-func snapshotCached(ctx context.Context, store filer.Filer, tarName string, indexed bool) (bool, error) {
-	names := []string{tarName}
-	if indexed {
-		names = append(names, tarName+segmentIndexSuffix)
-	}
+// snapshotCached reports whether the snapshot is already in the store. Both the tarball and
+// its index sidecar must exist: a half-written pair from an interrupted upload is a miss, and
+// the pair is re-uploaded. A tarball from before sidecars were written is therefore also a miss.
+func snapshotCached(ctx context.Context, store filer.Filer, tarName string) (bool, error) {
+	names := []string{tarName, tarName + segmentIndexSuffix}
 	exists := make([]bool, len(names))
 	g, gctx := errgroup.WithContext(ctx)
 	for i, name := range names {

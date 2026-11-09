@@ -14,7 +14,7 @@ import (
 )
 
 // snapshotPackagingVersion is bumped when packaging logic changes in a way that invalidates existing caches
-const snapshotPackagingVersion = "v1"
+const snapshotPackagingVersion = "v2"
 
 // plainTarKeyVersion namespaces the plain_tar working-tree key (so it can never collide
 // with a git_archive key) and lets us invalidate it if the fingerprint scheme changes.

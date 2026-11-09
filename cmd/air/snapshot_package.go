@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/tarpack"
@@ -20,22 +21,35 @@ import (
 // load-bearing — the remote entry_script extracts to /databricks/code_source/<dir> — so
 // both forms prefix every entry with it.
 
-// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball, with every
-// entry prefixed by directoryName/. The tar is streamed from `git archive --format=tar`
-// into a parallel pgzip writer: git's own tar.gz format compresses on one thread, which
-// dominates packaging time on a large repo. When subtreePrefix is set, only that
-// repository subtree is archived and includePaths are relative to it.
-func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string) error {
+// createGitArchiveSnapshot writes commitSHA to outputTarball as a segmented tarball (see
+// snapshot_segment.go) and returns its index. Every entry is prefixed by directoryName/.
+// The tar is streamed from `git archive --format=tar`, since git's own tar.gz format
+// compresses on one thread. When subtreePrefix is set, only that repository subtree is
+// archived and includePaths are relative to it.
+func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string) (segmentIndex, error) {
+	return createGitArchiveSegments(ctx, git, commitSHA, outputTarball, directoryName, includePaths, subtreePrefix, segmentTargetBytes)
+}
+
+// createGitArchiveSegments is createGitArchiveSnapshot with a minimum member size, so tests
+// can force several members. Members are sized from the archive's blob total, so an
+// archive larger than segmentMaxMembers times the minimum still splits evenly.
+func createGitArchiveSegments(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string, minTargetBytes int64) (segmentIndex, error) {
 	treeish := commitSHA
 	archiveGit := git
 	if subtreePrefix != "" {
 		repoRoot, err := git.repositoryRoot(ctx)
 		if err != nil {
-			return err
+			return segmentIndex{}, err
 		}
 		archiveGit = newGitRepo(repoRoot)
 		treeish = commitSHA + ":" + subtreePrefix
 	}
+
+	total, err := archiveGit.archiveTarSize(ctx, treeish, includePaths)
+	if err != nil {
+		return segmentIndex{}, err
+	}
+	targetBytes := max(minTargetBytes, (total+segmentMaxMembers-1)/segmentMaxMembers)
 
 	args := []string{
 		"archive",
@@ -44,26 +58,67 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 		treeish,
 	}
 	args = append(args, includePaths...)
+	return streamGitArchive(ctx, archiveGit, args, outputTarball, directoryName, targetBytes, segmentMaxMembers)
+}
 
-	out, err := os.Create(outputTarball)
+// archiveTarSize estimates the uncompressed tar bytes `git archive` writes for the blobs of
+// treeish under includePaths, from `git ls-tree` sizes: a header block plus padded data per
+// blob. Submodule entries have no blob size and take no space in the archive.
+func (g gitRepo) archiveTarSize(ctx context.Context, treeish string, includePaths []string) (int64, error) {
+	args := []string{"ls-tree", "-r", "-l", "-z", treeish}
+	if len(includePaths) > 0 {
+		args = append(args, "--")
+		args = append(args, includePaths...)
+	}
+	out, err := g.runBytes(ctx, args...)
 	if err != nil {
-		return fmt.Errorf("failed to create tarball: %w", err)
+		return 0, fmt.Errorf("failed to create git archive: %w", err)
 	}
-	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
-	if err != nil {
-		out.Close()
-		return err
+
+	var total int64
+	for record := range bytes.SplitSeq(out, []byte{0}) {
+		// Each record is "<mode> <type> <object> <size>\t<path>".
+		meta, _, found := bytes.Cut(record, []byte{'\t'})
+		if !found {
+			continue
+		}
+		fields := strings.Fields(string(meta))
+		if len(fields) != 4 || fields[3] == "-" {
+			continue
+		}
+		size, err := strconv.ParseInt(fields[3], 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("failed to create git archive: %w", err)
+		}
+		total += tarBlockSize + (size+tarBlockSize-1)/tarBlockSize*tarBlockSize
 	}
-	if err := archiveGit.runTo(ctx, ctxWriter{ctx, gz}, args...); err != nil {
-		gz.Close()
-		out.Close()
-		return fmt.Errorf("failed to create git archive: %w", err)
+	return total, nil
+}
+
+// streamGitArchive runs git with args and writes its tar output to outputTarball as segmented
+// members.
+func streamGitArchive(ctx context.Context, git gitRepo, args []string, outputTarball, component string, targetBytes int64, maxMembers int) (segmentIndex, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	pr, pw := io.Pipe()
+	gitDone := make(chan error, 1)
+	go func() {
+		err := git.runTo(ctx, pw, args...)
+		pw.CloseWithError(err)
+		gitDone <- err
+	}()
+	index, err := writeTarSegments(ctx, component, outputTarball, pr, targetBytes, maxMembers)
+	// git pads the archive past the end-of-archive marker, so drain it before closing the reader.
+	if err == nil {
+		_, err = io.Copy(io.Discard, pr)
 	}
-	if err := gz.Close(); err != nil {
-		out.Close()
-		return fmt.Errorf("failed to finalize gzip: %w", err)
+	// Closing the read side makes git's next write fail, so git exits if we stopped early.
+	pr.CloseWithError(err)
+	// git's own failure is the root cause when the tar side also failed.
+	if gitErr := <-gitDone; gitErr != nil {
+		return segmentIndex{}, fmt.Errorf("failed to create git archive: %w", gitErr)
 	}
-	return out.Close()
+	return index, err
 }
 
 // createPlainTarball writes the given working-tree files to outputTarball as a

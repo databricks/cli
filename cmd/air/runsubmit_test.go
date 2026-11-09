@@ -904,11 +904,14 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	// persistence so the second submit's cache-existence Stat sees the first upload.
 	// Dedupe by path: the filer mkdirs-and-retries the import on a missing
 	// parent dir, so one logical upload can hit this route more than once.
+	var mu sync.Mutex
 	uploaded := map[string]bool{}
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
 		p := req.Vars["path"]
 		if strings.Contains(p, "/.air/repo_snapshots/") {
+			mu.Lock()
 			uploaded[p] = true
+			mu.Unlock()
 		}
 		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
@@ -943,7 +946,7 @@ code_source:
 	// Same pinned commit → identical content-addressed remote path, uploaded once
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
-	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+	assert.Len(t, uploaded, 2, "git_archive cache hit should skip the second upload: tarball and index sidecar")
 	require.NotNil(t, first.SizeBytes)
 	assert.Positive(t, *first.SizeBytes)
 	assert.Nil(t, second.SizeBytes)
