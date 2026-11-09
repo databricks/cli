@@ -1,0 +1,78 @@
+{
+  "id": "schema/main.schema_grants_import_[UNIQUE_NAME]",
+  "depends_on": [
+    {
+      "node": "resources.schemas.grants_schema",
+      "label": "${resources.schemas.grants_schema.id}"
+    }
+  ],
+  "action": "update",
+  "import": true,
+  "new_state": {
+    "value": {
+      "securable_type": "schema",
+      "full_name": "main.schema_grants_import_[UNIQUE_NAME]",
+      "__embed__": [
+        {
+          "principal": "[USERNAME]",
+          "privileges": [
+            "USE_SCHEMA"
+          ]
+        }
+      ]
+    }
+  },
+  "remote_state": {
+    "securable_type": "schema",
+    "full_name": "main.schema_grants_import_[UNIQUE_NAME]",
+    "__embed__": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "privileges": [
+          "MANAGE",
+          "USE_SCHEMA"
+        ]
+      },
+      {
+        "principal": "[USERNAME]",
+        "privileges": [
+          "CREATE_TABLE",
+          "MANAGE"
+        ]
+      }
+    ]
+  },
+  "changes": {
+    "[principal='deco-test-user@databricks.com']": {
+      "action": "update",
+      "old": {
+        "principal": "deco-test-user@databricks.com",
+        "privileges": [
+          "MANAGE",
+          "USE_SCHEMA"
+        ]
+      },
+      "remote": {
+        "principal": "deco-test-user@databricks.com",
+        "privileges": [
+          "MANAGE",
+          "USE_SCHEMA"
+        ]
+      }
+    },
+    "[principal='[USERNAME]'].privileges": {
+      "action": "update",
+      "old": [
+        "CREATE_TABLE",
+        "MANAGE"
+      ],
+      "new": [
+        "USE_SCHEMA"
+      ],
+      "remote": [
+        "CREATE_TABLE",
+        "MANAGE"
+      ]
+    }
+  }
+}

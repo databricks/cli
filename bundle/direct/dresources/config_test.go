@@ -43,6 +43,12 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
+func TestImportOnPlanOptIn(t *testing.T) {
+	for resourceType := range SupportedResources {
+		assert.Equal(t, strings.HasSuffix(resourceType, ".grants"), GetResourceConfig(resourceType).ImportOnPlan, resourceType)
+	}
+}
+
 // TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
 // permissions of every parent, except where a parent has its own file.
 func TestSubResourceConfig(t *testing.T) {

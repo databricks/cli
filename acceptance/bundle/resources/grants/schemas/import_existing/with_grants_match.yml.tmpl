@@ -1,0 +1,12 @@
+bundle:
+  name: grants-import-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_grants_import_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - CREATE_TABLE

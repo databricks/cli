@@ -184,6 +184,33 @@ func TestIsEmptyStateNotImplemented(t *testing.T) {
 	assert.False(t, empty)
 }
 
+func TestGrantsIDFromState(t *testing.T) {
+	tests := []struct {
+		resourceType string
+		state        any
+		id           string
+	}{
+		{"schemas.grants", &GrantsState{SecurableType: "schema", FullName: "main.foo"}, "schema/main.foo"},
+		{"catalogs.grants", &GrantsState{SecurableType: "catalog", FullName: "main"}, "catalog/main"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.resourceType, func(t *testing.T) {
+			adapter, err := NewAdapter(SupportedResources[tt.resourceType], tt.resourceType, nil)
+			require.NoError(t, err)
+			id, err := adapter.IDFromState(tt.state)
+			require.NoError(t, err)
+			assert.Equal(t, tt.id, id)
+		})
+	}
+}
+
+func TestImportOnPlanRequiresIDFromState(t *testing.T) {
+	adapter, err := NewAdapter((*ResourceJob)(nil), "jobs", nil)
+	require.NoError(t, err)
+	adapter.resourceConfig = &ResourceLifecycleConfig{ImportOnPlan: true}
+	assert.EqualError(t, adapter.validate(), "import_on_plan requires IDFromState")
+}
+
 func TestNormalizeAssignments(t *testing.T) {
 	tests := []struct {
 		name     string

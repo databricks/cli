@@ -90,6 +90,11 @@ func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
 	return len(state.EmbeddedSlice) == 0
 }
 
+// IDFromState identifies grants by their resolved parent.
+func (*ResourceGrants) IDFromState(state *GrantsState) string {
+	return makeGrantsID(state)
+}
+
 func grantKey(x catalog.PrivilegeAssignment) (string, string) {
 	return "principal", x.Principal
 }

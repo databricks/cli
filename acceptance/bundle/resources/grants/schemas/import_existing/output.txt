@@ -1,0 +1,115 @@
+
+=== Deploy schema without managing grants
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Created schemas.grants_schema
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add matching grants out of band
+>>> [CLI] grants update schema main.schema_grants_import_[UNIQUE_NAME] --json @update.rendered.json
+
+=== Plan matching grants without writing state
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> print_state.py
+null
+
+=== Adopt matching grants without updating permissions
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //unity-catalog/permissions
+
+>>> print_state.py
+{
+  "__id__": "schema/main.schema_grants_import_[UNIQUE_NAME]",
+  "state": {
+    "securable_type": "schema",
+    "full_name": "main.schema_grants_import_[UNIQUE_NAME]",
+    "__embed__": [
+      {
+        "principal": "[USERNAME]",
+        "privileges": [
+          "CREATE_TABLE"
+        ]
+      }
+    ]
+  },
+  "depends_on": [
+    {
+      "node": "resources.schemas.grants_schema",
+      "label": "${resources.schemas.grants_schema.id}"
+    }
+  ]
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Empty the adopted grants and verify revocation
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Updated schemas.grants_schema.grants
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] grants get schema main.schema_grants_import_[UNIQUE_NAME]
+[]
+
+>>> print_state.py
+null
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Import differing grants, including an extra principal
+>>> [CLI] grants update schema main.schema_grants_import_[UNIQUE_NAME] --json @update.rendered.json
+
+>>> [CLI] bundle plan
+update schemas.grants_schema.grants
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> print_state.py
+null
+
+=== Apply the import and revoke grants absent from config
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Updated schemas.grants_schema.grants
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] grants get schema main.schema_grants_import_[UNIQUE_NAME]
+[
+  {
+    "principal": "[USERNAME]",
+    "privileges": [
+      "USE_SCHEMA"
+    ]
+  }
+]
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

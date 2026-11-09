@@ -1,0 +1,12 @@
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "update.rendered.json",
+    "plan.json",
+]
+
+[[Repls]]
+Old = " --plan plan.json"
+New = ""

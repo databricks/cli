@@ -25,18 +25,27 @@ import (
 )
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
-// operation each. Skipped and undefined actions are left out: nothing is applied for them, so
-// their operations would stay pending and the service would hold no state for them.
+// operation each. Imports record a binding even when no API update is needed. Other
+// skipped and undefined actions are left out because apply does not write their state.
 func stagedOperations(plan *deployplan.Plan) ([]bundledeployments.StagedOperation, error) {
 	actions := plan.GetActions()
 	staged := make([]bundledeployments.StagedOperation, 0, len(actions))
 	for _, action := range actions {
-		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+		var actionType bundledeployments.OperationActionType
+		switch {
+		case plan.Plan[action.ResourceKey].Import:
+			actionType = bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate
+			if plan.Plan[action.ResourceKey].StateOnly {
+				actionType = bundledeployments.OperationActionTypeOperationActionTypeBind
+			}
+		case action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined:
 			continue
-		}
-		actionType, err := actionToSDK(action.ActionType)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
+		default:
+			var err error
+			actionType, err = actionToSDK(action.ActionType)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
+			}
 		}
 		staged = append(staged, bundledeployments.StagedOperation{
 			ResourceKey: strings.TrimPrefix(action.ResourceKey, dms.StatePrefix),
