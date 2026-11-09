@@ -198,27 +198,36 @@ workspace_id = none
 host =
 workspace_id = 111
 
+[invalid_host]
+host = https://bad host.test
+workspace_id = 111
+
 [no_host]
 workspace_id = 111
 `
 	tests := []struct {
-		name    string
-		profile string
-		want    string
-		wantErr string
+		name         string
+		profile      string
+		noConfigFile bool
+		want         string
+		wantErr      string
 	}{
 		{name: "unset", want: "https://spog.test"},
 		{name: "same workspace", profile: "classic", want: "https://classic.test"},
-		{name: "other workspace", profile: "other_workspace", wantErr: `profile "other_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE must have the workspace ID of the selected profile, got "222" and "111"`},
-		{name: "no workspace", profile: "no_workspace", wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE must have the workspace ID of the selected profile, got "none" and "111"`},
+		{name: "other workspace", profile: "other_workspace", wantErr: `profile "other_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "222", but the selected profile has workspace ID "111"`},
+		{name: "no workspace", profile: "no_workspace", wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "none", but the selected profile has workspace ID "111"`},
 		{name: "empty host", profile: "empty_host", wantErr: `profile "empty_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "no host", profile: "no_host", wantErr: `profile "no_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "missing profile", profile: "missing", wantErr: `profile "missing" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
+		{name: "invalid host", profile: "invalid_host", wantErr: `profile "invalid_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has an invalid host: `},
+		{name: "no config file", profile: "classic", noConfigFile: true, wantErr: `failed to load profile "classic" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE: cannot load Databricks config file: no configuration file found at `},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), ".databrickscfg")
-			require.NoError(t, os.WriteFile(path, []byte(configFile), 0o600))
+			if !tt.noConfigFile {
+				require.NoError(t, os.WriteFile(path, []byte(configFile), 0o600))
+			}
 			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
 			ctx = env.Set(ctx, workspaceHostProfileEnvVar, tt.profile)
 			ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
@@ -227,7 +236,7 @@ workspace_id = 111
 
 			host, err := loadHelpers(ctx)["workspace_host"].(func() (string, error))()
 			if tt.wantErr != "" {
-				assert.EqualError(t, err, tt.wantErr)
+				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			require.NoError(t, err)

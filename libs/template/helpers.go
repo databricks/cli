@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -92,10 +91,14 @@ func workspaceHost(ctx context.Context, w *databricks.WorkspaceClient) (string, 
 	}
 	p := profiles[0]
 	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone || p.WorkspaceID != w.Config.WorkspaceID {
-		return "", fmt.Errorf("profile %q from %s must have the workspace ID of the selected profile, got %q and %q", name, workspaceHostProfileEnvVar, p.WorkspaceID, w.Config.WorkspaceID)
+		return "", fmt.Errorf("profile %q from %s has workspace ID %q, but the selected profile has workspace ID %q", name, workspaceHostProfileEnvVar, p.WorkspaceID, w.Config.WorkspaceID)
+	}
+	// CanonicalizeHost returns a host that fails to parse unchanged, so check it here.
+	if _, err := url.Parse(p.Host); err != nil {
+		return "", fmt.Errorf("profile %q from %s has an invalid host: %w", name, workspaceHostProfileEnvVar, err)
 	}
 	// Normalize the host the same way the SDK normalizes the selected profile's host.
-	return (&sdkconfig.Config{Host: p.Host}).CanonicalHostName(), nil
+	return profile.CanonicalizeHost(p.Host), nil
 }
 
 func loadHelpers(ctx context.Context) template.FuncMap {
