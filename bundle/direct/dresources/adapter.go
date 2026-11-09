@@ -773,9 +773,10 @@ func (a *Adapter) HasInternalID() bool {
 	return a.internalIDPath != nil
 }
 
-// IsInternalIDField reports whether path is the resource's internal ID field.
+// IsInternalIDField reports whether path is the resource's internal ID field. It matches by
+// prefix, like the field rules do.
 func (a *Adapter) IsInternalIDField(path *structpath.PathNode) bool {
-	return a.internalIDPath != nil && path.String() == a.internalIDPath.String()
+	return a.internalIDPath != nil && path.HasPrefix(a.internalIDPath)
 }
 
 // IDFromState returns the ID the state gives the resource; see IResource.IDFromState.
