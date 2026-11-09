@@ -26,6 +26,10 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
+		var watched map[string]string
+		if jr.Lifecycle.TriggersState != nil {
+			watched = jr.Lifecycle.TriggersState.OnValueChange
+		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
 			armed := t.ArmedCount()
@@ -64,6 +68,19 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				// Report bad patterns at validate time; hashing only runs on deploy.
 				_, patternDiags := validateFileTriggerPattern(b, path+".on_file_change", *t.OnFileChange)
 				diags = diags.Extend(patternDiags)
+			}
+			if t.OnValueChange != nil {
+				// SnapshotJobRunValueTriggers reports empty and duplicate expressions. Any
+				// other expression is in triggers_state unless it resolved to a map or a
+				// list, which normalization dropped with a warning.
+				expr := strings.TrimSpace(*t.OnValueChange)
+				if _, ok := watched[expr]; expr != "" && !ok {
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   "lifecycle.triggers.on_value_change must resolve to a string, number or boolean",
+						Locations: b.Config.GetLocations(path + ".on_value_change"),
+					})
+				}
 			}
 		}
 	}

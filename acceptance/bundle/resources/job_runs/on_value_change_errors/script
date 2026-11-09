@@ -15,4 +15,4 @@ trace musterr $CLI bundle validate
 
 title "a complex value is rejected"
 update_file.py databricks.yml '        triggers: [{on_value_change: "${var.missing}"}]' '        triggers: [{on_value_change: "${var.complex}"}]'
-errcode trace $CLI bundle validate
+trace musterr $CLI bundle validate
