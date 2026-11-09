@@ -8,7 +8,7 @@ run_log="$PWD/LOG.run"
 
 # Cloud event logs and durations vary between runs.
 run_pipeline() {
-    $CLI pipelines run "$@" &> "$run_log"
+    MSYS_NO_PATHCONV=1 $CLI pipelines run "$@" &> "$run_log"
     contains.py "completed successfully." < "$run_log" > "$run_log.checked"
     grep -E '^• (All tables are |Refreshed |Full refreshed )' "$run_log"
 }
