@@ -778,6 +778,36 @@ resources:
         "warehouse_id":
           "description": |-
             The warehouse ID used to run the dashboard.
+    "data_quality_monitors":
+      "description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor.
+      "markdown_description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor. See [\_](/dev-tools/bundles/resources.md#data_quality_monitors).
+      "$type":
+        "markdown_description": |-
+          The data_quality_monitor resource allows you to define a [data quality monitor](/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [_](/data-governance/unity-catalog/data-quality-monitoring/index.md).
+
+          The bundle manages the schema alert in `anomaly_detection_config.notification_settings`. If it is omitted, deploying an update removes any alert set in the Data Quality Monitoring UI, so define alerts for bundle-managed monitors in the bundle.
+        "markdown_examples": |-
+          The following example defines an anomaly detection monitor on a schema:
+
+          ```yaml
+          resources:
+            schemas:
+              my_schema:
+                catalog_name: main
+                name: my_schema
+
+            data_quality_monitors:
+              my_schema_monitor:
+                object_type: schema
+                object_id: ${resources.schemas.my_schema.schema_id}
+                anomaly_detection_config: {}
+          ```
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "database_catalogs":
       "description": |-
         PLACEHOLDER
@@ -1265,6 +1295,20 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "materialization_sets":
+      "description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "markdown_description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "materialized_features":
+          "$fields":
+            "cron_schedule":
+              "description": |-
+                Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
         PLACEHOLDER
@@ -1543,6 +1587,9 @@ resources:
                                 "protobuf_options":
                                   "description": |-
                                     PLACEHOLDER
+                        "onedrive_options":
+                          "description": |-
+                            PLACEHOLDER
                         "sharepoint_options":
                           "description": |-
                             PLACEHOLDER
@@ -1637,6 +1684,23 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "postgres_data_apis":
+      "description": |-
+        The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.
+      "$type":
+        "description": |-
+          The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. At least one setting besides `parent` is required, such as `db_schemas`. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "openapi_mode":
+          "$type":
+            "description": |-
+              Controls how the Data API exposes the OpenAPI documentation endpoint. `OPEN_API_MODE_IGNORE_PRIVILEGES` serves the OpenAPI document without filtering it by the caller's privileges; `OPEN_API_MODE_DISABLED` turns the endpoint off.
+        "parent":
+          "description": |-
+            The database whose Data API this manages. Format: projects/{project_id}/branches/{branch_id}/databases/{database_id}
     "postgres_databases":
       "description": |-
         The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.
@@ -2302,6 +2366,9 @@ targets:
         "lookup":
           "description": |-
             The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+        "sensitive":
+          "description": |-
+            Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
         "type":
           "description": |-
             The type of the variable.
@@ -2365,6 +2432,9 @@ variables:
         "warehouse":
           "description": |-
             The name of the warehouse for which to retrieve an ID.
+    "sensitive":
+      "description": |-
+        Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
     "type":
       "description": |-
         The type of the variable.

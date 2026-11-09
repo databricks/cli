@@ -1,5 +1,113 @@
 # Version changelog
 
+## Release v1.25.0 (2026-11-09)
+
+### CLI
+
+ * `databricks aitools install --output json` now reports a more specific `error_category` (`MANIFEST_NOT_FOUND`, `PERMISSION_DENIED`, `FILESYSTEM`) for some failures it reported as `UNCATEGORIZED`. ([#7380](https://github.com/databricks/cli/pull/7380))
+ * Suggest `databricks auth logout --profile <profile-name> --delete` when multiple profiles match the same workspace in `databricks auth docker` commands. ([#7363](https://github.com/databricks/cli/pull/7363))
+ * Fix `%pip` in Jupyter notebooks opened over `databricks ssh connect` on serverless environment versions 5 and 6 and on dedicated clusters running recent Databricks Runtime versions, which fell back to the stock IPython magic instead of the Databricks one. ([#7263](https://github.com/databricks/cli/pull/7263))
+
+### AI Runtime
+
+ * `databricks air run` now validates the config server-side while it uploads the run artifacts, instead of before, which shortens submission. ([#7368](https://github.com/databricks/cli/pull/7368))
+ * Remove `CRITICAL` as a valid `compute.priority_class` value; the AI Runtime API no longer accepts it. ([#7371](https://github.com/databricks/cli/pull/7371))
+
+### Bundles
+
+ * Built-in templates add the workspace ID to `workspace.host` (`?w=<id>`) when the profile or an environment variable sets it, so generated bundles select the right workspace on hosts shared by several workspaces. Welcome messages show the same URL, and `dbt-sql` also adds `?o=<id>` to the HTTP path it suggests for `dbt init`. ([#7350](https://github.com/databricks/cli/pull/7350))
+ * Fix grants of a renamed or recreated catalog, schema, volume or other UC resource staying recorded under the old name, which made the next `bundle plan` propose to apply them again. ([#7345](https://github.com/databricks/cli/pull/7345))
+ * Fix permissions of a recreated pipeline, app, dashboard, model serving endpoint or other resource staying recorded under the old ID, which made every later `bundle plan` propose to apply them again. ([#7361](https://github.com/databricks/cli/pull/7361))
+ * Add the `postgres_data_apis` resource (Private Preview) for enabling and configuring the Data API of a Lakebase Postgres database. ([#7160](https://github.com/databricks/cli/pull/7160))
+ * Fixes [#4012](https://github.com/databricks/cli/issues/4012): registered model `aliases` are now set in Unity Catalog on deploy instead of being silently ignored. A model without an `aliases` section keeps the aliases set outside the bundle (for example by MLflow), and `aliases: []` removes them. ([#7163](https://github.com/databricks/cli/pull/7163))
+ * Include variable declarations and the source of each resolved value in the `--include-locations` output of `bundle validate` and `bundle summary`. ([#7351](https://github.com/databricks/cli/pull/7351))
+ * Add `.workspace.URLID` to bundle templates: the workspace ID that `.workspace.URL` adds, or empty, so templates can use it without failing when the ID is unknown. ([#7388](https://github.com/databricks/cli/pull/7388))
+ * Expose the workspace of the selected profile to bundle templates as `.workspace`, with `Hostname`, `ID`, and `URL`, so templates can address a workspace on a host shared by several workspaces. A template input named `workspace` takes precedence. ([#7349](https://github.com/databricks/cli/pull/7349))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7394](https://github.com/databricks/cli/pull/7394))
+ * Upgrade `github.com/mattn/go-runewidth` to v0.0.31, which removes ~30ms of startup time from every command. ([#7391](https://github.com/databricks/cli/pull/7391))
+ * Update the Go SDK to [v0.194.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.194.0). ([#7371](https://github.com/databricks/cli/pull/7371))
+ * Update the Go SDK to [v0.195.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.195.0). ([#7384](https://github.com/databricks/cli/pull/7384))
+
+
+## Release v1.24.0 (2026-11-04)
+
+### Notable Changes
+
+ * A variable used as the value of a secret is now sensitive: referencing it from any other field, such as a job parameter or a secret's `comment`, is an error because the value would be used in plain text. Mark other secret-holding variables with `sensitive: true` to get the same protection. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### CLI
+
+ * Fix `databricks auth login` and `databricks configure` overwriting the parent profile's host and token when saving a profile with a dotted name such as `team.prod` next to an existing `[team]`. ([#7266](https://github.com/databricks/cli/pull/7266))
+ * `databricks auth login` and `databricks auth token` now reject the name of an existing profile after "Create a new profile" instead of logging in to that profile. ([#7196](https://github.com/databricks/cli/pull/7196))
+ * `databricks auth login` and `databricks auth token` now reject a host that is not a URL with a hostname, such as `/`, `?o=123` or `https://`, instead of falling back to `DATABRICKS_HOST` or failing later. An empty host after "Enter a host URL manually" in the login profile picker no longer starts discovery login. ([#7195](https://github.com/databricks/cli/pull/7195))
+ * Prompts that validate their input, such as the `databricks configure` host prompt, no longer open with a red cross before anything is typed. ([#7314](https://github.com/databricks/cli/pull/7314))
+ * `databricks ssh connect` now documents `--environment-version` for choosing the serverless environment version, starts a separate default-named server for each version, and rejects the flag together with `--cluster`. Default connection names also include the environment version in their hash, so the default name when `--environment-version` is not specified changes with this release. Configuration associated with the old connection name (secret scope, SSH keys and known hosts in your local `.databricks` folder) will no longer be used and can be safely removed. ([#7310](https://github.com/databricks/cli/pull/7310))
+
+### AI Runtime
+
+ * Show workspace-supported accelerator types in `databricks air run -h config.compute.accelerator_type`. ([#7275](https://github.com/databricks/cli/pull/7275))
+ * `air list` now reports `No active runs found.` for an empty active-only result. ([#7276](https://github.com/databricks/cli/pull/7276))
+ * Stop printing a retry notice on every `air run --watch`; retries are still reported when they happen. ([#7270](https://github.com/databricks/cli/pull/7270))
+
+### Bundles
+
+ * Fix `bundle plan` reporting an update to an app's `config.env` values on every run, which also redeployed the app on every `bundle deploy`. The Apps API returns environment variable names only, so `value` and `value_from` are no longer compared against the remote deployment. ([#7326](https://github.com/databricks/cli/pull/7326))
+ * Add the `data_quality_monitors` resource for data quality monitors on Unity Catalog schemas and tables (direct engine only). ([#7094](https://github.com/databricks/cli/pull/7094))
+ * `bundle deploy` now asks for confirmation before recreating or deleting a Feature View, and `bundle deploy` and `bundle destroy` warn that FeatureSpecs using a Feature View are not checked. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Accept grant `privileges` values that the SDK enum does not list yet: `bundle validate` no longer warns (or errors under `--strict`) on them, and the PyDABs `Privilege` enum accepts unknown strings instead of raising. The JSON schema and PyDABs still advertise the known values for completion. ([#7315](https://github.com/databricks/cli/pull/7315))
+ * Add the `materialization_sets` resource, which materializes Feature Store Feature Views to offline and online stores. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Detect notebooks with the same rule as the workspace: a `.py`, `.sql`, `.scala` or `.r` file is a notebook when its first line contains `Databricks notebook source`, for example after a byte order mark. Previously such a file was tracked as a plain file, so removing it locally left the remote notebook behind. ([#7290](https://github.com/databricks/cli/pull/7290))
+ * Add `sensitive: true` for bundle variables. A variable used as the value of a secret is sensitive by default. `bundle validate -o json` redacts only sensitive variables instead of every string variable, and a sensitive variable can only be referenced from a sensitive resource field (such as a secret's `value`) or from another sensitive variable. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7305](https://github.com/databricks/cli/pull/7305))
+ * Bump dependencies with known vulnerabilities. ([#7327](https://github.com/databricks/cli/pull/7327))
+ * Update the Go SDK to [v0.191.1](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.1). ([#7277](https://github.com/databricks/cli/pull/7277))
+ * Update the Go SDK to [v0.193.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.193.0). ([#7303](https://github.com/databricks/cli/pull/7303))
+
+
+## Release v1.23.0 (2026-10-29)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+ * `databricks ssh connect` now makes `claude` and `codex` available on dedicated clusters. ([#7190](https://github.com/databricks/cli/pull/7190))
+ * `databricks ssh connect` on serverless now makes `claude` and `codex` available in IDE sessions (`--ide`) and to non-interactive commands (e.g. `databricks ssh connect -- 'claude -p "..."'`). ([#7123](https://github.com/databricks/cli/pull/7123))
+
+### AI Runtime
+
+ * Add workload support for the GPU_1xRTX6000 accelerator type in enabled workspaces. ([#7214](https://github.com/databricks/cli/pull/7214))
+ * Show only the accelerator types available in the current workspace in `databricks air run -h config.compute`. ([#6993](https://github.com/databricks/cli/pull/6993))
+
+### Bundles
+
+ * Fixed `bundle validate` failing with "expected a map to index" when a job `schedule`, `trigger` or `continuous` is a reference to a whole block, such as `${resources.jobs.base.schedule}`. ([#7225](https://github.com/databricks/cli/pull/7225))
+ * Added `lifecycle.depends_on` to order resources without referencing their fields. ([#7120](https://github.com/databricks/cli/pull/7120))
+ * Immutable-folder deploys now refuse to deploy onto a snapshot that was modified outside the bundle (break glass); `bundle deploy --force` moves the deployment to a fresh snapshot. ([#6774](https://github.com/databricks/cli/pull/6774))
+ * Fix `--include-locations` failing when a resource is missing a required field. ([#7185](https://github.com/databricks/cli/pull/7185))
+ * Removed spurious "required field is not set" warnings for a field whose value is a reference to a whole block, such as `schedule: ${resources.jobs.base.schedule}`. ([#7226](https://github.com/databricks/cli/pull/7226))
+ * Revert bundle file uploads to the legacy `/workspace-files/import-file` endpoint, rolling back [#6149](https://github.com/databricks/cli/pull/6149) and [#7034](https://github.com/databricks/cli/pull/7034) released in [v1.21.0](https://github.com/databricks/cli/releases/tag/v1.21.0). This fixes notebooks being uploaded as plain files and deployments failing (for example SQL notebooks in [#7216](https://github.com/databricks/cli/issues/7216)). A remote file or notebook whose type differs from the local one is now deleted and replaced instead of blocking the deploy. ([#7218](https://github.com/databricks/cli/pull/7218))
+ * Support selecting resources for deletion with `bundle deploy --select`. ([#7023](https://github.com/databricks/cli/pull/7023))
+ * Add the `workspace.sync_mode` setting with the values `overwrite` (default), `in-place`, and `immutable`. It replaces `presets.source_linked_deployment` (use `in-place`) and `experimental.immutable_folder` (use `immutable`), which are now deprecated and emit a warning. ([#7183](https://github.com/databricks/cli/pull/7183))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7213](https://github.com/databricks/cli/pull/7213))
+ * Update the Go SDK to [v0.190.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.190.0). ([#7155](https://github.com/databricks/cli/pull/7155))
+ * Update the Go SDK to [v0.191.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.0). ([#7211](https://github.com/databricks/cli/pull/7211))
+ * Bump Node.js downloaded by the `ssh` agent shim from v24.21.0 to v24.22.2. ([#7246](https://github.com/databricks/cli/pull/7246))
+
+
+## Release v1.22.1 (2026-10-22)
+
+### CLI
+
+ * Fix GitHub API rate limit errors in `aitools list` and plugin installs by pinning skills to `0.2.32`. ([#7159](https://github.com/databricks/cli/pull/7159))
+
 ## Release v1.22.0 (2026-10-22)
 
 ### CLI

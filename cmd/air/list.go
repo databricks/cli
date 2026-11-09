@@ -173,7 +173,7 @@ Filters:
 			warnIfTruncated(ctx, fetcher)
 			return renderEnvelope(ctx, listData{Rows: rows})
 		}
-		return renderListText(cmd, fetcher, limit)
+		return renderListText(cmd, fetcher, limit, !allStatus)
 	}
 
 	return cmd

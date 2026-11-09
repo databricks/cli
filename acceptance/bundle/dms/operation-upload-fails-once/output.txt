@@ -54,7 +54,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
->>> fault.py PATCH /api/2.0/bundle/* 500 0 1
+>>> fault.py PATCH /api/2.0/bundle/** 500 0 1
 
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
@@ -67,6 +67,18 @@ Recreated schemas.foo
 Warn: Failed to record deployment history: recording operation for resources.schemas.foo: Fault injected by test.
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+=== A failed history upload is counted separately from the queued operations
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "staged_operation_count": 1,
+  "operation_recording_success_count": 1,
+  "operation_recording_failure_count": 0,
+  "operation_recording_pending_count": 0,
+  "recording_attempt_failure_count": 1,
+  "recording_attempt_success_count": 1,
+  "queued_update_count_at_timeout": 0
+}
 
 === The service lists the schema with the failure
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json

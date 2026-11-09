@@ -13,15 +13,13 @@ import (
 
 type captureUCDependencies struct{}
 
-// If a user defines a UC schema in the bundle, they can refer to it in SDP pipelines,
-// UC Volumes, Registered Models, Quality Monitors, Model Serving Endpoints, or Vector Search
-// Indexes using the `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
+// If a user defines a UC schema in the bundle, other resources can refer to it using the
+// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
 // TF to capture the deploy time dependency this resource has on the schema and deploy changes
 // to the schema before deploying the dependent resource.
 //
-// Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
-// UC Volumes, Registered Models, Model Serving Endpoints, or Vector Search Indexes using the
-// `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
+// Similarly, if a user defines a UC catalog in the bundle, other resources can refer to it using
+// the `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
 // dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
@@ -203,6 +201,22 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		catalogName, schemaName := parts[0], parts[1]
 		f.FullName = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
+	for _, set := range b.Config.Resources.MaterializationSets {
+		if set == nil {
+			continue
+		}
+		for i := range set.MaterializedFeatures {
+			member := &set.MaterializedFeatures[i]
+			if offline := member.OfflineStoreConfig; offline != nil {
+				offline.SchemaName = resolveSchema(b, offline.CatalogName, offline.SchemaName)
+				offline.CatalogName = resolveCatalog(b, offline.CatalogName)
+			}
+			if online := member.OnlineStoreConfig; online != nil {
+				online.SchemaName = resolveSchema(b, online.CatalogName, online.SchemaName)
+				online.CatalogName = resolveCatalog(b, online.CatalogName)
+			}
+		}
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {

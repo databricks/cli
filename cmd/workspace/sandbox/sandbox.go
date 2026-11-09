@@ -43,6 +43,7 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	cmd.AddCommand(newCreateSandbox())
 	cmd.AddCommand(newDeletePath())
 	cmd.AddCommand(newDeleteSandbox())
+	cmd.AddCommand(newDownloadFile())
 	cmd.AddCommand(newExecuteCommandSync())
 	cmd.AddCommand(newGetMetadata())
 	cmd.AddCommand(newGetSandbox())
@@ -171,6 +172,7 @@ func newCreateSandbox() *cobra.Command {
 	cmd.Flags().Var(&createSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.DisplayName, "display-name", createSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
+	// TODO: complex arg: metadata
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.Name, "name", createSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -378,6 +380,95 @@ Delete a sandbox.
 	// Apply optional overrides to this command.
 	for _, fn := range deleteSandboxOverrides {
 		fn(cmd, &deleteSandboxReq)
+	}
+
+	return cmd
+}
+
+// start download-file command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var downloadFileOverrides []func(
+	*cobra.Command,
+	*sandbox.DownloadFileRequest,
+)
+
+func newDownloadFile() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var downloadFileReq sandbox.DownloadFileRequest
+
+	cmd.Flags().StringVar(&downloadFileReq.ByteRange, "byte-range", downloadFileReq.ByteRange, `A single byte range, such as bytes=0-1023 or bytes=-1024.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfMatch, "if-match", downloadFileReq.IfMatch, `Entity tags or *.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfModifiedSince, "if-modified-since", downloadFileReq.IfModifiedSince, `An HTTP-date.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfNoneMatch, "if-none-match", downloadFileReq.IfNoneMatch, `Entity tags or *.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfRange, "if-range", downloadFileReq.IfRange, `A strong entity tag.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfUnmodifiedSince, "if-unmodified-since", downloadFileReq.IfUnmodifiedSince, `An HTTP-date.`)
+
+	cmd.Use = "download-file PARENT PATH"
+	cmd.Short = `Download a sandbox file.`
+	cmd.Long = `Download a sandbox file.
+
+  Downloads a regular file from a sandbox as an application/octet-stream body.
+  The sandbox starts automatically if it is stopped. Filesystem access uses the
+  sandbox user's permissions and follows symbolic links.
+
+  A full download returns 200 OK. A satisfiable single byte range returns 206
+  Partial Content. Multiple byte ranges are unsupported and return 400. Invalid
+  ranges are ignored; an unsatisfiable range returns 416 with Content-Range
+  describing the file length. Range is ignored for empty files.
+
+  Conditional requests can return 304 Not Modified or 412 Precondition Failed.
+  If-Range selects a partial response only when its strong entity tag matches;
+  otherwise, the entire file is returned. HTTP-date validators in If-Range cause
+  a full download. Reads are not snapshots: concurrent in-place writes can
+  affect the returned bytes. HEAD is unsupported.
+
+  Range and conditional options may be supplied as query parameters or HTTP
+  headers. A parameter and one header may both be supplied when their values
+  match exactly. Conflicting values or repeated parameters return 400.
+
+  Arguments:
+    PARENT: The sandbox resource name, in the form sandboxes/{sandbox_id}.
+    PATH: The absolute UTF-8 path of the file inside the sandbox.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		downloadFileReq.Parent = args[0]
+		downloadFileReq.Path = args[1]
+
+		response, err := w.Sandbox.DownloadFile(ctx, downloadFileReq)
+		if err != nil {
+			return err
+		}
+
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range downloadFileOverrides {
+		fn(cmd, &downloadFileReq)
 	}
 
 	return cmd
@@ -1064,6 +1155,7 @@ func newUpdateSandbox() *cobra.Command {
 	cmd.Flags().Var(&updateSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.DisplayName, "display-name", updateSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
+	// TODO: complex arg: metadata
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.Name, "name", updateSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status

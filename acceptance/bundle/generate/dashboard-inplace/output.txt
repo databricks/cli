@@ -24,6 +24,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "warehouse_id": ""
 }
 
+>>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
+
 === update the dashboard file using bundle generate
 >>> [CLI] bundle generate dashboard --resource test_dashboard --force
 Writing dashboard to dash.lvdash.json
@@ -32,3 +34,5 @@ Writing dashboard to dash.lvdash.json
 {
   "a": "b"
 }
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline

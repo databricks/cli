@@ -50,6 +50,11 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// DeployDurations maps a resource key to the time.Duration its create, update or
+	// recreate took. Only successfully deployed resources are recorded; Apply runs
+	// nodes in parallel, hence the sync.Map.
+	DeployDurations sync.Map
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

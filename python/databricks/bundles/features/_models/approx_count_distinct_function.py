@@ -22,9 +22,22 @@ class ApproxCountDistinctFunction:
     The input column from which the approximate count of distinct values is computed.
     """
 
+    relative_error: VariableOrOptional[float] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The error the user accepts, as a fraction of the count, between 0.02 (by default) and 0.3.
+    This is one standard error of the estimate, the same meaning as Spark's relativeSD: 0.02 means
+    the result is within ±2% of the true count about 68% of the time (one standard deviation covers
+    68% of the region). Feature Store picks the sketch size that gives this relative error. If
+    neither relative_error nor relative_sd is set, 0.02 is default chosen at feature creation.
+    """
+
     relative_sd: VariableOrOptional[float] = None
     """
     The maximum relative standard deviation allowed (default defined by Spark).
+    Deprecated: use relative_error. When relative_error is set, reads return the same value here
+    for clients that don't have relative_error, and a request may only send that value.
     """
 
     @classmethod
@@ -43,9 +56,22 @@ class ApproxCountDistinctFunctionDict(TypedDict, total=False):
     The input column from which the approximate count of distinct values is computed.
     """
 
+    relative_error: VariableOrOptional[float]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The error the user accepts, as a fraction of the count, between 0.02 (by default) and 0.3.
+    This is one standard error of the estimate, the same meaning as Spark's relativeSD: 0.02 means
+    the result is within ±2% of the true count about 68% of the time (one standard deviation covers
+    68% of the region). Feature Store picks the sketch size that gives this relative error. If
+    neither relative_error nor relative_sd is set, 0.02 is default chosen at feature creation.
+    """
+
     relative_sd: VariableOrOptional[float]
     """
     The maximum relative standard deviation allowed (default defined by Spark).
+    Deprecated: use relative_error. When relative_error is set, reads return the same value here
+    for clients that don't have relative_error, and a request may only send that value.
     """
 
 

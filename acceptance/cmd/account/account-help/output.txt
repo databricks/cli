@@ -42,7 +42,7 @@ Provisioning
 Billing
   billable-usage                      This API allows you to download billable usage logs for the specified account and date range.
   budget-policy                       *Public Preview* A service serves REST API about Budget policies.
-  budgets                             *Public Preview* These APIs manage budget configurations for this account.
+  budgets                             These APIs manage budget configurations for this account.
   log-delivery                        These APIs manage log delivery configurations for this account.
   usage-dashboards                    These APIs manage usage dashboards for this account.
 

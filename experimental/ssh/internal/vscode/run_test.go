@@ -46,7 +46,7 @@ func TestCheckIDECommand_Missing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckIDECommand(tt.ide)
+			err := CheckIDECommand(t.Context(), tt.ide)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.wantErrMsg)
 		})
@@ -86,10 +86,42 @@ func TestCheckIDECommand_Found(t *testing.T) {
 			err := os.WriteFile(fakePath, []byte("#!/bin/sh\n"), 0o755)
 			require.NoError(t, err)
 
-			err = CheckIDECommand(tt.ide)
+			err = CheckIDECommand(t.Context(), tt.ide)
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestCheckIDECommand_Override(t *testing.T) {
+	// The override must be used even though nothing is on PATH.
+	t.Setenv("PATH", t.TempDir())
+	binDir := t.TempDir()
+	createFakeIDEExecutable(t, binDir, "code", "")
+	t.Setenv(IDECommandEnv, fakeIDECommandPath(binDir, "code"))
+
+	assert.NoError(t, CheckIDECommand(t.Context(), VSCodeOption))
+}
+
+func TestCheckIDECommand_OverrideMissing(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "code")
+	t.Setenv(IDECommandEnv, missing)
+
+	err := CheckIDECommand(t.Context(), VSCodeOption)
+	require.ErrorIs(t, err, ErrIDECommandOverrideInvalid)
+	assert.Contains(t, err.Error(), IDECommandEnv)
+	assert.Contains(t, err.Error(), missing)
+}
+
+func TestCheckIDECommand_OverrideNotAbsolute(t *testing.T) {
+	// A bare name is rejected even when it resolves on PATH.
+	binDir := t.TempDir()
+	t.Setenv("PATH", binDir)
+	createFakeIDEExecutable(t, binDir, "code", "")
+	t.Setenv(IDECommandEnv, "code")
+
+	err := CheckIDECommand(t.Context(), VSCodeOption)
+	require.ErrorIs(t, err, ErrIDECommandOverrideInvalid)
+	assert.Contains(t, err.Error(), "must be an absolute path")
 }
 
 func TestParseExtensionVersion(t *testing.T) {
@@ -233,6 +265,14 @@ func createFakeIDEExecutable(t *testing.T, dir, command, output string) {
 	}
 }
 
+// fakeIDECommandPath returns the path of a command written by the fake IDE helpers.
+func fakeIDECommandPath(dir, command string) string {
+	if runtime.GOOS == "windows" {
+		command += ".cmd"
+	}
+	return filepath.Join(dir, command)
+}
+
 // createFailingIDEExecutable writes a fake IDE command that exits non-zero for every
 // invocation, so "--list-extensions" fails and the check never learns what is installed.
 func createFailingIDEExecutable(t *testing.T, dir, command string) {
@@ -341,6 +381,39 @@ func TestCheckIDESSHExtension_AutoApproveMissing_Installs(t *testing.T) {
 
 	err := CheckIDESSHExtension(ctx, VSCodeOption, true)
 	assert.NoError(t, err)
+}
+
+func TestCheckIDESSHExtension_UsesOverride(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	binDir := t.TempDir()
+	createFakeIDEExecutable(t, binDir, "code", "ms-vscode-remote.remote-ssh@0.123.0\n")
+	t.Setenv(IDECommandEnv, fakeIDECommandPath(binDir, "code"))
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	assert.NoError(t, CheckIDESSHExtension(ctx, VSCodeOption, false))
+}
+
+func TestCheckIDESSHExtension_OverrideInInstallHint(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	binDir := t.TempDir()
+	createFakeIDEExecutable(t, binDir, "code", "ms-python.python@2024.1.1\n")
+	command := fakeIDECommandPath(binDir, "code")
+	t.Setenv(IDECommandEnv, command)
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
+	require.ErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
+	assert.Contains(t, err.Error(), command+" --install-extension")
+}
+
+func TestLaunchIDE_UsesOverride(t *testing.T) {
+	// Nothing is on PATH, so the launch only succeeds if it runs the override.
+	t.Setenv("PATH", t.TempDir())
+	binDir := t.TempDir()
+	createFakeIDEExecutable(t, binDir, "code", "")
+	t.Setenv(IDECommandEnv, fakeIDECommandPath(binDir, "code"))
+
+	assert.NoError(t, LaunchIDE(t.Context(), VSCodeOption, "databricks-cpu-7f189c39", "me@example.com"))
 }
 
 // The authority must be the host alias alone. The remote OS user is a fresh

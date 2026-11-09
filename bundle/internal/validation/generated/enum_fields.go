@@ -40,8 +40,6 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "MODEL_SERVICE", "TABLE", "VOLUME"},
 
-	"resources.catalogs.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
-
 	"resources.cluster_policies.*.permissions[*].level": {"CAN_USE"},
 
 	"resources.clusters.*.aws_attributes.availability":              {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
@@ -58,13 +56,19 @@ var EnumFields = map[string][]string{
 	"resources.dashboards.*.lifecycle_state":      {"ACTIVE", "TRASHED"},
 	"resources.dashboards.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
+	"resources.data_quality_monitors.*.data_profiling_config.custom_metrics[*].type":         {"DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE", "DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED", "DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT"},
+	"resources.data_quality_monitors.*.data_profiling_config.inference_log.granularities[*]": {"AGGREGATION_GRANULARITY_1_DAY", "AGGREGATION_GRANULARITY_1_HOUR", "AGGREGATION_GRANULARITY_1_MONTH", "AGGREGATION_GRANULARITY_1_WEEK", "AGGREGATION_GRANULARITY_1_YEAR", "AGGREGATION_GRANULARITY_2_WEEKS", "AGGREGATION_GRANULARITY_30_MINUTES", "AGGREGATION_GRANULARITY_3_WEEKS", "AGGREGATION_GRANULARITY_4_WEEKS", "AGGREGATION_GRANULARITY_5_MINUTES"},
+	"resources.data_quality_monitors.*.data_profiling_config.inference_log.problem_type":     {"INFERENCE_PROBLEM_TYPE_CLASSIFICATION", "INFERENCE_PROBLEM_TYPE_REGRESSION"},
+	"resources.data_quality_monitors.*.data_profiling_config.schedule.pause_status":          {"CRON_SCHEDULE_PAUSE_STATUS_PAUSED", "CRON_SCHEDULE_PAUSE_STATUS_UNPAUSED"},
+	"resources.data_quality_monitors.*.data_profiling_config.status":                         {"DATA_PROFILING_STATUS_ACTIVE", "DATA_PROFILING_STATUS_DELETE_PENDING", "DATA_PROFILING_STATUS_ERROR", "DATA_PROFILING_STATUS_FAILED", "DATA_PROFILING_STATUS_PENDING"},
+	"resources.data_quality_monitors.*.data_profiling_config.time_series.granularities[*]":   {"AGGREGATION_GRANULARITY_1_DAY", "AGGREGATION_GRANULARITY_1_HOUR", "AGGREGATION_GRANULARITY_1_MONTH", "AGGREGATION_GRANULARITY_1_WEEK", "AGGREGATION_GRANULARITY_1_YEAR", "AGGREGATION_GRANULARITY_2_WEEKS", "AGGREGATION_GRANULARITY_30_MINUTES", "AGGREGATION_GRANULARITY_3_WEEKS", "AGGREGATION_GRANULARITY_4_WEEKS", "AGGREGATION_GRANULARITY_5_MINUTES"},
+
 	"resources.database_instances.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 	"resources.database_instances.*.state":                {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
 
 	"resources.experiments.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_READ"},
 
 	"resources.external_locations.*.encryption_details.sse_encryption_details.algorithm": {"AWS_SSE_KMS", "AWS_SSE_S3"},
-	"resources.external_locations.*.grants[*].privileges[*]":                             {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.features.*.function.function_type":                                {"APPROX_COUNT_DISTINCT", "APPROX_PERCENTILE", "AVG", "COUNT", "FIRST", "FUNCTION_TYPE_UNSPECIFIED", "LAST", "MAX", "MIN", "STDDEV_POP", "STDDEV_SAMP", "SUM", "VAR_POP", "VAR_SAMP"},
 	"resources.features.*.source.request_source.flat_schema.fields[*].data_type": {"BINARY", "BOOLEAN", "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "LONG", "SHORT", "STRING", "TIMESTAMP"},
@@ -104,15 +108,19 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.permissions[*].level":                                                                              {"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.jobs.*.schedule.pause_status":                                                                             {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.schedule.sql_condition.trigger_mode":                                                               {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
+	"resources.jobs.*.tasks[*].ai_function_task.ai_extract.mode":                                                         {"MODE_PRECISION"},
+	"resources.jobs.*.tasks[*].ai_function_task.ai_parse_document.description_element_types[*]":                          {"DESCRIPTION_ELEMENT_TYPE_ALL", "DESCRIPTION_ELEMENT_TYPE_FIGURE"},
 	"resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.accelerator_type":                                  {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].ai_runtime_task.priority_class":                                                           {"BEST_EFFORT", "CRITICAL", "NORMAL"},
+	"resources.jobs.*.tasks[*].ai_runtime_task.priority_class":                                                           {"BEST_EFFORT", "NORMAL"},
 	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                                             {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].condition_task.op":                                                                        {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.file_format":                       {"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"},
 	"resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.page_attachment.page_selection":                    {"PAGE_SELECTION_ALL", "PAGE_SELECTION_SUBSET"},
 	"resources.jobs.*.tasks[*].dbt_task.source":                                                                          {"GIT", "WORKSPACE"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_function_task.ai_extract.mode":                                      {"MODE_PRECISION"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_function_task.ai_parse_document.description_element_types[*]":       {"DESCRIPTION_ELEMENT_TYPE_ALL", "DESCRIPTION_ELEMENT_TYPE_FIGURE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_type":               {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.priority_class":                                        {"BEST_EFFORT", "CRITICAL", "NORMAL"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.priority_class":                                        {"BEST_EFFORT", "NORMAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                                          {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task.op":                                                     {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.file_format":    {"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"},
@@ -156,6 +164,7 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].run_if":                                                                                   {"ALL_DONE", "ALL_FAILED", "ALL_SUCCESS", "AT_LEAST_ONE_FAILED", "AT_LEAST_ONE_SUCCESS", "NONE_FAILED"},
 	"resources.jobs.*.tasks[*].spark_python_task.source":                                                                 {"GIT", "WORKSPACE"},
 	"resources.jobs.*.tasks[*].sql_task.file.source":                                                                     {"GIT", "WORKSPACE"},
+	"resources.jobs.*.trigger.job_completion.if_status":                                                                  {"DONE", "FAILED", "SUCCESS"},
 	"resources.jobs.*.trigger.model.condition":                                                                           {"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"},
 	"resources.jobs.*.trigger.pause_status":                                                                              {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.trigger.periodic.unit":                                                                             {"DAYS", "HOURS", "MINUTES", "WEEKS"},
@@ -163,26 +172,29 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.trigger.table_update.condition":                                                                    {"ALL_UPDATED", "ANY_UPDATED"},
 	"resources.jobs.*.triggers[*].continuous.maintenance_window.day_of_week":                                             {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 	"resources.jobs.*.triggers[*].continuous.task_retry_mode":                                                            {"NEVER", "ON_FAILURE"},
+	"resources.jobs.*.triggers[*].job_completion.if_status":                                                              {"DONE", "FAILED", "SUCCESS"},
 	"resources.jobs.*.triggers[*].model.condition":                                                                       {"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"},
 	"resources.jobs.*.triggers[*].pause_status":                                                                          {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.triggers[*].periodic.unit":                                                                         {"DAYS", "HOURS", "MINUTES", "WEEKS"},
 	"resources.jobs.*.triggers[*].sql_condition.trigger_mode":                                                            {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.triggers[*].table_update.condition":                                                                {"ALL_UPDATED", "ANY_UPDATED"},
 
+	"resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.mode": {"DERIVED", "MANUAL"},
+	"resources.materialization_sets.*.materialized_features[*].pipeline_schedule_state":    {"ACTIVE", "PAUSED", "SNAPSHOT"},
+	"resources.materialization_sets.*.materialized_features[*].streaming_mode.mode":        {"STREAMING_MODE_TYPE_MBM", "STREAMING_MODE_TYPE_RTM"},
+	"resources.materialization_sets.*.materialized_features[*].table_trigger.condition":    {"TABLE_TRIGGER_CONDITION_ALL_UPDATED", "TABLE_TRIGGER_CONDITION_ANY_UPDATED"},
+
 	"resources.mcp_services.*.config.rate_limits[*].key":            {"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.mcp_services.*.config.rate_limits[*].renewal_period": {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
-	"resources.mcp_services.*.grants[*].privileges[*]":              {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.model_provider_services.*.config.provider_type":                 {"EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK", "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC", "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI", "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE", "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM", "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE", "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY", "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI"},
 	"resources.model_provider_services.*.config.rate_limits[*].key":            {"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.model_provider_services.*.config.rate_limits[*].renewal_period": {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
-	"resources.model_provider_services.*.grants[*].privileges[*]":              {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.model_services.*.config.rate_limits[*].key":                                {"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.model_services.*.config.rate_limits[*].renewal_period":                     {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
 	"resources.model_services.*.config.routing.destinations[*].destination_type":          {"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"},
 	"resources.model_services.*.config.routing.fallback.destinations[*].destination_type": {"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"},
-	"resources.model_services.*.grants[*].privileges[*]":                                  {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior":                                       {"BLOCK", "MASK", "NONE"},
@@ -223,6 +235,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":   {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.finder":                  {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.time_granularity":        {"ALL", "DAILY", "MONTHLY", "YEARLY"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.entity_type":                                       {"FILE", "FILE_METADATA"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.file_ingestion_options.format":                     {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.onedrive_options.file_ingestion_options.schema_evolution_mode":      {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.attachment_mode":                                    {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.body_format":                                        {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type":                                     {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -251,6 +266,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":    {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.finder":                   {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.time_granularity":         {"ALL", "DAILY", "MONTHLY", "YEARLY"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.entity_type":                                        {"FILE", "FILE_METADATA"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.file_ingestion_options.format":                      {"AVRO", "BINARYFILE", "CSV", "EXCEL", "JSON", "ORC", "PARQUET", "XML"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.onedrive_options.file_ingestion_options.schema_evolution_mode":       {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.attachment_mode":                                     {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.body_format":                                         {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type":                                      {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -261,10 +279,12 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.data_level":                                       {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.report_type":                                      {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":                                                          {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"},
+	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                                                                           {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.permissions[*].level":           {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_data_apis.*.openapi_mode": {"OPEN_API_MODE_DISABLED", "OPEN_API_MODE_IGNORE_PRIVILEGES"},
 
 	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
 
@@ -285,14 +305,8 @@ var EnumFields = map[string][]string{
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
 	"resources.quality_monitors.*.schedule.pause_status":      {"PAUSED", "UNPAUSED", "UNSPECIFIED"},
 
-	"resources.registered_models.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
-
-	"resources.schemas.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
-
 	"resources.secret_scopes.*.backend_type":         {"AZURE_KEYVAULT", "DATABRICKS"},
 	"resources.secret_scopes.*.permissions[*].level": {"READ", "WRITE", "MANAGE"},
-
-	"resources.secrets.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.sql_warehouses.*.channel.name":         {"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"},
 	"resources.sql_warehouses.*.permissions[*].level": {"CAN_MANAGE", "CAN_MONITOR", "CAN_USE", "CAN_VIEW", "IS_OWNER"},
@@ -311,12 +325,10 @@ var EnumFields = map[string][]string{
 	"resources.vector_search_endpoints.*.permissions[*].level": {"CAN_CREATE", "CAN_MANAGE", "CAN_USE"},
 
 	"resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_type": {"CONTINUOUS", "TRIGGERED"},
-	"resources.vector_search_indexes.*.grants[*].privileges[*]":             {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 	"resources.vector_search_indexes.*.index_subtype":                       {"FULL_TEXT", "HYBRID", "VECTOR"},
 	"resources.vector_search_indexes.*.index_type":                          {"DELTA_SYNC", "DIRECT_ACCESS"},
 
-	"resources.volumes.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
-	"resources.volumes.*.volume_type":             {"EXTERNAL", "MANAGED"},
+	"resources.volumes.*.volume_type": {"EXTERNAL", "MANAGED"},
 
 	"variables.*.type": {"complex"},
 

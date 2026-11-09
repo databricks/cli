@@ -116,6 +116,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults
 		mutator.SetVariables(),
 
+		// Reads (dynamic): * (strings) (searches for references to variables)
+		// Updates (dynamic): variables.*.sensitive (marks variables used as the value of a sensitive resource field)
+		// Rejects references to sensitive variables outside sensitive resource fields and other sensitive variables.
+		// Runs after SetVariables so values passed via --var, environment or file are checked too, and before
+		// any resolution while references are still visible.
+		validate.SensitiveVariableReferences(),
+
 		// Reads (dynamic): variables.*.lookup (checks for variable references in lookup fields)
 		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
 		// Prevents circular references between lookup variables
@@ -177,11 +184,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// required fields (no omitempty) still error if empty.
 		mutator.DropEmptyStrings(),
 
-		// Resolve --select selectors against the materialized resources: normalize
-		// each to its "type.name" form and validate it exists. Runs after all resource
-		// mutations so that dynamically added resources are visible. This does not
-		// filter resources; the direct engine selects against the resolved keys later.
-		mutator.ResolveSelect(),
+		// Record in telemetry whether --select was used. Selectors are validated once
+		// state is open (process.go) and resolved against the computed plan
+		// (Plan.FilterToSelected), so resources removed from config and planned for
+		// deletion are selectable too.
+		mutator.MarkSelectUsed(),
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
@@ -202,6 +209,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
+
+		// Reads (dynamic): resources.postgres_data_apis.*
+		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
+		validate.PostgresDataApiSettings(),
 
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),

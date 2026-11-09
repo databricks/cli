@@ -7,7 +7,13 @@ dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 title "update the dashboard"
 trace $CLI lakeview update $dashboard_id --serialized-dashboard '{"a":"b"}'
 
+# Generating from file-backed state must not depend on the history service.
+rm -f "$OUT_REQUESTS"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+
 title "update the dashboard file using bundle generate"
 trace $CLI bundle generate dashboard --resource test_dashboard --force
 
 trace cat dash.lvdash.json
+
+trace print_requests.py --dms //api/2.0/bundle --get --oneline

@@ -1,0 +1,93 @@
+
+=== A model created outside the bundle, with versions 1 and 2 registered the way mlflow.register_model does
+>>> [CLI] registered-models create --json {"name": "test-registered-model-[UNIQUE_NAME]", "catalog_name": "main", "schema_name": "default"}
+{
+  "full_name": "main.default.test-registered-model-[UNIQUE_NAME]"
+}
+
+>>> [CLI] api post /api/2.0/mlflow/unity-catalog/model-versions/create --json {"name": "main.default.test-registered-model-[UNIQUE_NAME]", "source": "dbfs:/tmp/model"}
+{
+  "version": "1"
+}
+
+>>> [CLI] api post /api/2.0/mlflow/unity-catalog/model-versions/create --json {"name": "main.default.test-registered-model-[UNIQUE_NAME]", "source": "dbfs:/tmp/model"}
+{
+  "version": "2"
+}
+
+=== Bind reports the comment and aliases the deploy will set
+>>> musterr [CLI] bundle deployment bind model1 main.default.test-registered-model-[UNIQUE_NAME]
+Plan: update resources.registered_models.model1
+
+Changes detected:
+  ~ aliases: null -> [{"alias_name":"test","version_num":1},{"alias_name":"staging","version_num":2}]
+  ~ comment: null -> "Managed by the bundle"
+
+Error: this bind operation requires user confirmation, but the current console does not support prompting.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+>>> [CLI] bundle deployment bind model1 main.default.test-registered-model-[UNIQUE_NAME] --auto-approve
+Successfully bound registered_model with an id 'main.default.test-registered-model-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy sets them
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated registered_models.model1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.default.test-registered-model-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "Managed by the bundle",
+    "name": "test-registered-model-[UNIQUE_NAME]",
+    "schema_name": "default"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.test-registered-model-[UNIQUE_NAME]/aliases/test",
+  "body": {
+    "version_num": 1
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/models/main.default.test-registered-model-[UNIQUE_NAME]/aliases/staging",
+  "body": {
+    "version_num": 2
+  }
+}
+
+>>> [CLI] registered-models get main.default.test-registered-model-[UNIQUE_NAME] --include-aliases
+{
+  "comment": "Managed by the bundle",
+  "aliases": [
+    {
+      "alias_name": "test",
+      "version_num": 1
+    },
+    {
+      "alias_name": "staging",
+      "version_num": 2
+    }
+  ]
+}
+
+=== Redeploy is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deployment unbind model1
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+>>> [CLI] registered-models delete main.default.test-registered-model-[UNIQUE_NAME]

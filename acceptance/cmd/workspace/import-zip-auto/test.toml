@@ -1,4 +1,0 @@
-Cloud = true
-
-# Workspace paths start with "/"; keep Git Bash on Windows from rewriting them.
-Env.MSYS_NO_PATHCONV = "1"

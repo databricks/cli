@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Bind an existing job with deployment history enabled"
+job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+
+title "Deploy keeps the bound job ID and enables shadow history"
+trace $CLI bundle deploy
+trace jq '{features, resource_id: .state["resources.jobs.foo"].__id__}' .databricks/bundle/default/resources.json
+
+title "Unbind preserves the shadow history marker and leaves the job intact"
+trace $CLI bundle deployment unbind foo
+trace jq '{features, state}' .databricks/bundle/default/resources.json
+trace $CLI jobs get "$job_id" | jq '{job_id}'
+
+title "Rebind preserves the existing shadow history marker"
+trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+trace jq '{features, resource_id: .state["resources.jobs.foo"].__id__}' .databricks/bundle/default/resources.json
+
+title "A subsequent deploy continues managing the same job"
+trace $CLI bundle deploy
+trace jq '{features, resource_id: .state["resources.jobs.foo"].__id__}' .databricks/bundle/default/resources.json

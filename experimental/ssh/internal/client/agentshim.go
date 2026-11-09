@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -64,12 +65,12 @@ const (
 	uvToolBinDir = agentDepsDir + "/uv_tools_bin-" + ugCommit
 
 	// pins the version of node/npm downloaded
-	nodeVersion = "v24.21.0"
+	nodeVersion = "v24.22.2"
 	nodeBaseURL = "https://nodejs.org/dist/" + nodeVersion + "/"
 
 	// SHA-256 of each pinned node release tarball
-	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
-	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
+	nodeX64LinuxChecksum   = "48cc0e21e048790e54c0cf5749c2725005313d652651c40b7a21feb9697aaf75"
+	nodeArm64LinuxChecksum = "eb187837a2230d4047161ac0be008584e16b46f726e9c9490ee35dc6b17d9ba8"
 
 	npmExecutable = "npm"
 
@@ -77,7 +78,7 @@ const (
 	workspaceHomeEnv = agentlauncher.WorkspaceHomeEnv
 
 	// the file holding the Databricks session context.
-	contextFile = "agent-system-context.md"
+	contextFile = agentlauncher.ContextFile
 
 	// lock file to serialize first-run toolchain setup across
 	// concurrent SSH clients sharing this driver's $HOME.
@@ -688,8 +689,16 @@ func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.Ag
 		return nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
 	}
 	argv = []string{ugExecutable, agent.Name, "--"}
-	argv = append(argv, contextArgs...)
-	argv = append(argv, agentArgs...)
+	// If the user passed `--` then inject context args just before, otherwise add
+	// them after the user's args. This is needed so we don't interfere with `ug`'s
+	// heuristics around positional args
+	i := slices.Index(agentArgs, "--")
+	if i == -1 {
+		argv = append(argv, agentArgs...)
+		argv = append(argv, contextArgs...)
+	} else {
+		argv = slices.Concat(argv, agentArgs[:i], contextArgs, agentArgs[i:])
+	}
 	return argv, os.Environ(), nil
 }
 
@@ -697,36 +706,7 @@ func prepareAgentLaunch(ctx context.Context, home string, agent agentlauncher.Ag
 func injectAgentContext(ctx context.Context, home string, agent agentlauncher.AgentSpec) ([]string, error) {
 	serverless := dbr.RuntimeVersion(ctx).Type == dbr.ClusterTypeServerless
 	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv), serverless)
-	switch {
-	case agent.ContextFlag != "":
-		// Keep the scratch context file under the shim's own directory so it never
-		// clobbers an unrelated file the user happens to have in their home.
-		dir := filepath.Join(home, agentRootDir)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return nil, fmt.Errorf("failed to create %s: %w", dir, err)
-		}
-		f := filepath.Join(dir, contextFile)
-		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
-			return nil, fmt.Errorf("failed to write agent context file: %w", err)
-		}
-		return []string{agent.ContextFlag, f}, nil
-	case agent.ContextHomeFile != "":
-		f := filepath.Join(home, agent.ContextHomeFile)
-		if _, err := os.Stat(f); err == nil {
-			return nil, nil // already present — don't clobber
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("failed to stat %s: %w", f, err)
-		}
-		if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
-			return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(f), err)
-		}
-		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
-			return nil, fmt.Errorf("failed to write %s: %w", f, err)
-		}
-		return nil, nil
-	default:
-		return nil, nil
-	}
+	return agent.ContextArg(home, systemContext)
 }
 
 // fetch url to a temp file, failing unless its SHA256 matches the expected checksum.

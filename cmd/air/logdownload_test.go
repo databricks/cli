@@ -43,6 +43,7 @@ func TestResolveNodeCount(t *testing.T) {
 	}{
 		{"GPU_1xA10", 2, 2},
 		{"GPU_1xH100", 4, 4},
+		{"GPU_1xRTX6000", 3, 3},
 		{"GPU_8xH100", 16, 2},
 		{"GPU_8xB300", 16, 2},
 	}

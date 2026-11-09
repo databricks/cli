@@ -48,7 +48,7 @@ Error: profile "blank-auth" uses auth_type "". Docker credential helper requires
 === Another profile already maps to the workspace
 
 >>> musterr [CLI] auth docker configure docker-test
-Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: duplicate and docker-test. Remove duplicate workspace_id entries before using Docker credential helper
+Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: duplicate and docker-test. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete
 
 === Nothing changed
 Docker config not created; profiles unchanged

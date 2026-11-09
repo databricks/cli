@@ -40,6 +40,8 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
+	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
+	{group: "features", message: deleteOrRecreateFeatureMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -359,7 +361,10 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 		return nil
 	}
 	if len(b.Select) > 0 {
-		plan.FilterToSelected(b.Select)
+		if err := plan.FilterToSelected(ctx, b.Select); err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
 	}
 	return plan
 }

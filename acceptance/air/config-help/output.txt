@@ -74,11 +74,16 @@ Use "-h config.<field>" for details on a field.
 config.compute
   Which accelerators to run on and how many.
 
+  Supported accelerator types:
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_1xRTX6000 - 1 accelerator per node
+
   Fields:
     num_accelerators  Total number of GPUs to allocate.
     accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.
     pool_id           GPU pool to run on, by id.
-    priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
+    priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL.
 
 Use "-h config.compute.<field>" for details on a field.
 
@@ -99,7 +104,7 @@ config.compute.pool_id
 
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id.
+  Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id.
 
   Type:     string
   Required: no
@@ -122,6 +127,11 @@ config.environment.version
 >>> [CLI] air run -h config.compute.accelerator_type
 config.compute.accelerator_type
   Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
+
+  Supported accelerator types:
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_1xRTX6000 - 1 accelerator per node
 
   Type:     string
   Required: no

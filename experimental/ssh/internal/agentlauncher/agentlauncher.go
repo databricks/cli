@@ -7,8 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
@@ -24,21 +27,48 @@ const (
 
 	// WorkspaceHomeEnv passes the user's workspace home to the shim for the agent context.
 	WorkspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
+
+	// ContextFile holds the Databricks session context, under RootDir.
+	ContextFile = "agent-system-context.md"
 )
 
 type AgentSpec struct {
 	Name          string
 	TelemetryName protos.SshAgentShimAgent
-	// ContextFlag passes the context file via this CLI flag (Claude's --append-system-prompt-file).
-	ContextFlag string
-	// ContextHomeFile writes the context to this $HOME instructions file (codex's AGENTS.md).
-	ContextHomeFile string
+	// ContextArg puts the system context where the agent reads it, returning the
+	// argv to pass to the agent binary.
+	ContextArg func(home, systemContext string) ([]string, error)
 }
 
 // Currently limited to the agents whose Unity Gateway CLI command supports --workspace
 var SupportedAgents = []AgentSpec{
-	{Name: "claude", TelemetryName: protos.SshAgentShimAgentClaudeCode, ContextFlag: "--append-system-prompt-file"},
-	{Name: "codex", TelemetryName: protos.SshAgentShimAgentCodex, ContextHomeFile: ".codex/AGENTS.md"},
+	{Name: "claude", TelemetryName: protos.SshAgentShimAgentClaudeCode, ContextArg: claudeContextArg},
+	{Name: "codex", TelemetryName: protos.SshAgentShimAgentCodex, ContextArg: codexContextArg},
+}
+
+func claudeContextArg(home, systemContext string) ([]string, error) {
+	// Keep the scratch context file under the shim's own directory so it never
+	// clobbers an unrelated file the user happens to have in their home.
+	dir := filepath.Join(home, RootDir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, fmt.Errorf("failed to create %s: %w", dir, err)
+	}
+	f := filepath.Join(dir, ContextFile)
+	if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
+		return nil, fmt.Errorf("failed to write agent context file: %w", err)
+	}
+	return []string{"--append-system-prompt-file", f}, nil
+}
+
+func codexContextArg(home, systemContext string) ([]string, error) {
+	// The override value is parsed as TOML, so encode the multi-line context as
+	// a TOML string rather than relying on codex's raw-string fallback.
+	// https://github.com/openai/codex/blob/rust-v0.145.0/codex-rs/utils/cli/src/config_override.rs
+	kv, err := toml.Marshal(map[string]string{"developer_instructions": systemContext})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode agent context: %w", err)
+	}
+	return []string{"-c", strings.TrimSpace(string(kv))}, nil
 }
 
 func AgentByName(name string) (AgentSpec, bool) {

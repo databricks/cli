@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -85,22 +84,20 @@ func validationUnavailable(err error) (*validationUnavailableError, bool) {
 	return errors.AsType[*validationUnavailableError](err)
 }
 
-// preflightValidate checks the config against the backend before any upload, so
-// a bad config fails fast with the server's own field-level errors.
+// preflightValidate checks the config against the backend before submission, so
+// a bad config fails with the server's own field-level errors.
 //
-// Availability failures fail open, while caller failures and field errors block.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+// Availability failures fail open: they report unavailable with a nil error, and
+// the caller decides how to warn. Caller failures and field errors block.
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) (unavailable bool, err error) {
 	validationCtx, cancel := context.WithTimeout(ctx, submissionValidationTimeout)
 	defer cancel()
 
-	err := validateConfigOnce(validationCtx, w, cfg, commandPath, containers, idempotencyToken)
+	err = validateConfigOnce(validationCtx, w, cfg, commandPath, containers, idempotencyToken)
 	if unavailable, _ := classifyValidationFailure(err); unavailable {
-		if cmdio.HasIO(ctx) {
-			cmdio.LogString(ctx, "Warning: server-side config validation was unavailable; continuing with submission.")
-		}
-		return nil
+		return true, nil
 	}
-	return err
+	return false, err
 }
 
 func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {

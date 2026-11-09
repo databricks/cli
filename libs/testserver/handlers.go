@@ -92,7 +92,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		if unsupported, ok := autoImportUnsupported(form.Path); ok {
 			return unsupported
 		}
-		resp = w.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
+		resp = w.WorkspaceImportAutoFile(form.Path, form.Content, form.Overwrite)
 	default:
 		return Response{
 			Body:       fmt.Sprintf("internal error: The test server only supports AUTO, RAW, SOURCE and JUPYTER formats, got %q.", form.Format),
@@ -465,6 +465,32 @@ func AddDefaultHandlers(server *Server) {
 		return data
 	})
 
+	// DBFS (dbfs:/ paths):
+	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
+		return req.Workspace.DbfsGetStatus(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/list", func(req Request) any {
+		return req.Workspace.DbfsList(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/mkdirs", func(req Request) any {
+		return req.Workspace.DbfsMkdirs(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/create", func(req Request) any {
+		return req.Workspace.DbfsCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/add-block", func(req Request) any {
+		return req.Workspace.DbfsAddBlock(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/close", func(req Request) any {
+		return req.Workspace.DbfsClose(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/read", func(req Request) any {
+		return req.Workspace.DbfsRead(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/delete", func(req Request) any {
+		return req.Workspace.DbfsDelete(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {
 		return TestMetastore
 	})
@@ -697,6 +723,24 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
 	})
 
+	// Data Quality Monitors:
+
+	server.Handle("POST", "/api/data-quality/v1/monitors", func(req Request) any {
+		return req.Workspace.DataQualityMonitorCreate(req)
+	})
+
+	server.Handle("GET", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
+	server.Handle("PATCH", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.DataQualityMonitorUpdate(req, req.Vars["object_type"], req.Vars["object_id"])
+	})
+
+	server.Handle("DELETE", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
 	// Apps:
 
 	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {
@@ -754,7 +798,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return req.Workspace.SchemasDelete(req, req.Vars["full_name"])
 	})
 
 	// Grants:
@@ -782,7 +826,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+		return req.Workspace.CatalogsDelete(req, req.Vars["name"])
 	})
 
 	// External Locations:
@@ -820,7 +864,7 @@ func AddDefaultHandlers(server *Server) {
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsGet(req, req.Vars["full_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
@@ -832,7 +876,20 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsDelete(req.Vars["full_name"])
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsSetAlias(req, req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsDeleteAlias(req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	// Model versions of Unity Catalog models are registered through the MLflow registry API.
+	server.Handle("POST", "/api/2.0/mlflow/unity-catalog/model-versions/create", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreateVersion(req)
 	})
 
 	// Model Services (AI Gateway):
@@ -881,6 +938,23 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("DELETE", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+	})
+
+	// Feature Engineering materialization sets:
+	server.Handle("POST", "/api/2.0/feature-engineering/materialization-sets", func(req Request) any {
+		return req.Workspace.MaterializationSetsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.OperationsGet(req.Vars["operation_id"])
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.MaterializationSets, req.Vars["materialization_set_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsUpdate(req, req.Vars["materialization_set_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
 	})
 
 	// Model Provider Services (AI Gateway):
@@ -1491,6 +1565,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
 		return req.Workspace.PostgresOperationGet(name)
@@ -1640,6 +1719,27 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
 		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Data API (a per-database singleton):
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDataApiCreate(req, parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiDelete(name)
 	})
 
 	// Postgres Roles:

@@ -66,9 +66,21 @@ func New(ctx context.Context) *cobra.Command {
 	// Add account subcommand.
 	cli.AddCommand(accountCommand())
 
+	// Hand-written commands that replace a generated workspace command of the
+	// same name. Cobra resolves duplicate names by position after an unstable
+	// sort, so the generated command must not be registered at all.
+	sandboxCmd := sandbox.New()
+	replacedWorkspaceCommands := map[string]bool{
+		sandboxCmd.Name(): true,
+	}
+
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
 	for _, cmd := range workspaceCommands {
+		if replacedWorkspaceCommands[cmd.Name()] {
+			continue
+		}
+
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
 			// some commands override groups in overrides.go, leave them as-is
@@ -118,7 +130,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
-	cli.AddCommand(sandbox.New())
+	cli.AddCommand(sandboxCmd)
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(quickstart.New())

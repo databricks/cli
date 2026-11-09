@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -229,10 +231,40 @@ func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
 	return out
 }
 
+// bundleGitInfo builds the git metadata for the deploy event, or nil when the
+// bundle root is not inside a git repository. OriginURL already has credentials
+// stripped by the load_git_details mutator.
+func bundleGitInfo(b *bundle.Bundle) *protos.BundleGitInfo {
+	git := b.Config.Bundle.Git
+	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
+		return nil
+	}
+	return &protos.BundleGitInfo{
+		OriginURL: git.OriginURL,
+		Branch:    git.Branch,
+		Commit:    git.Commit,
+	}
+}
+
+// fromWorkspaceFolder reports whether the bundle was deployed from a workspace
+// folder: the CLI running on a Databricks cluster with the bundle source under
+// /Workspace/, as opposed to a local checkout. Same signal as the source-linked
+// deployment preset uses to detect a Databricks workspace.
+func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
+	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   metrics.SnapshotUploadDuration,
+			Value: d.(time.Duration).Milliseconds(),
+		})
+	}
 
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -396,6 +428,20 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		uploadFileSizers[i] = f
 	}
 
+	var deploymentHistory *protos.BundleDeploymentHistory
+	if stats := b.DeploymentBundle.StateDB.OperationBufferStats(); stats != nil {
+		deploymentHistory = &protos.BundleDeploymentHistory{
+			StagedOperationCount:           int64(stats.StagedOperationCount),
+			PeakPendingUpdateCount:         int64(stats.PeakPendingUpdateCount),
+			QueuedUpdateCountAtTimeout:     int64(stats.QueuedUpdateCountAtTimeout),
+			RecordingAttemptFailureCount:   int64(stats.RecordingAttemptFailureCount),
+			RecordingAttemptSuccessCount:   int64(stats.RecordingAttemptSuccessCount),
+			OperationRecordingSuccessCount: int64(stats.OperationRecordingSuccessCount),
+			OperationRecordingFailureCount: int64(stats.OperationRecordingFailureCount),
+			OperationRecordingPendingCount: int64(stats.OperationRecordingPendingCount),
+		}
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -422,8 +468,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceDashboardIDs: dashboardIds,
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+			DeploymentHistory: deploymentHistory,
 
 			Pydabs: pydabsSection,
+
+			Git:                 bundleGitInfo(b),
+			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,

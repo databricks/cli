@@ -147,13 +147,35 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] feature-engineering get-feature main.myschema.myfeature
 "DESCRIPTION2"
 
-=== Change an immutable field (should recreate)
+=== Change an immutable field (should recreate, and ask for approval first)
 >>> update_file.py databricks.yml amount other_column
 
->>> [CLI] bundle deploy
+>>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Recreated features.feature1
+
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:
+  recreate resources.features.feature1
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
 Files: 1 uploaded, 0 deleted
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:
+  recreate resources.features.feature1
+Recreated features.feature1
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py //feature-engineering
@@ -198,6 +220,10 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.features.feature1
+
+This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:
   delete resources.features.feature1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
