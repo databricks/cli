@@ -1,4 +1,4 @@
-package pipelines
+package run
 
 import (
 	"context"
@@ -11,14 +11,36 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/sync"
 )
 
-// resolveRefreshSelectors separates table names from source files and translates local files to workspace paths.
-func resolveRefreshSelectors(ctx context.Context, b *bundle.Bundle, selectors []string) (tables, paths []string, err error) {
-	var remoteNames map[string]string
+// ResolveRefreshSelectors resolves source files to workspace paths.
+func (o *PipelineOptions) ResolveRefreshSelectors(ctx context.Context, b *bundle.Bundle) error {
+	r := refreshSelectorResolver{bundle: b}
+	var err error
+	o.Refresh, o.RefreshByPath, err = r.resolve(ctx, o.Refresh)
+	if err != nil {
+		return fmt.Errorf("invalid --refresh: %w", err)
+	}
+	o.FullRefresh, o.FullRefreshByPath, err = r.resolve(ctx, o.FullRefresh)
+	if err != nil {
+		return fmt.Errorf("invalid --full-refresh: %w", err)
+	}
+	// Validate before Restart stops an active update.
+	return o.Validate(nil)
+}
+
+type refreshSelectorResolver struct {
+	bundle      *bundle.Bundle
+	remoteNames map[string]string
+}
+
+func (r *refreshSelectorResolver) resolve(ctx context.Context, selectors []string) (tables, paths []string, err error) {
+	b := r.bundle
 	for _, selector := range selectors {
+		// /Workspace/ distinguishes remote paths from local paths like /Users/... on macOS.
 		if strings.HasPrefix(selector, "/Workspace/") {
 			paths = append(paths, selector)
 			continue
@@ -58,23 +80,26 @@ func resolveRefreshSelectors(ctx context.Context, b *bundle.Bundle, selectors []
 		if !filepath.IsLocal(rel) {
 			return nil, nil, fmt.Errorf("source file %q is outside the bundle sync root", selector)
 		}
-		if remoteNames == nil {
-			remoteNames, err = refreshSourcePaths(ctx, b)
+		if r.remoteNames == nil {
+			// Refresh uses the deployed snapshot.
+			if b.IsImmutableFolder() {
+				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config, dyn.MustPathFromString("workspace.file_path")); err != nil {
+					return nil, nil, err
+				}
+			}
+			r.remoteNames, err = refreshSourcePaths(ctx, b)
 			if err != nil {
 				return nil, nil, err
 			}
 		}
-		remoteName, ok := remoteNames[filepath.ToSlash(rel)]
+		remoteName, ok := r.remoteNames[filepath.ToSlash(rel)]
 		if !ok {
 			if _, _, err := notebook.DetectWithFS(b.SyncRoot, filepath.ToSlash(rel)); err != nil {
 				return nil, nil, fmt.Errorf("cannot identify source file %q: %w", selector, err)
 			}
-			return nil, nil, fmt.Errorf("source file %q is excluded from bundle sync; include it and run 'databricks pipelines deploy' first", selector)
+			return nil, nil, fmt.Errorf("source file %q is excluded from bundle sync; include it and deploy first", selector)
 		}
-		remoteRoot := b.Config.Workspace.FilePath
-		if b.IsSourceLinkedDeployment() {
-			remoteRoot = filepath.ToSlash(b.SyncRootPath)
-		}
+		remoteRoot := b.RemoteFilePath()
 		if strings.Contains(remoteRoot, "${") {
 			return nil, nil, fmt.Errorf("cannot resolve the deployed path for %q; use its absolute /Workspace/ path", selector)
 		}
@@ -83,17 +108,9 @@ func resolveRefreshSelectors(ctx context.Context, b *bundle.Bundle, selectors []
 	return tables, paths, nil
 }
 
-// refreshSourcePaths uses the sync mapping so notebook names and sync exclusions match deployment.
+// refreshSourcePaths maps local files to their deployed names.
 func refreshSourcePaths(ctx context.Context, b *bundle.Bundle) (map[string]string, error) {
-	includes, err := b.GetSyncIncludePatterns(ctx)
-	if err != nil {
-		return nil, err
-	}
-	list, err := sync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
-	if err != nil {
-		return nil, err
-	}
-	files, err := list.Files(ctx)
+	files, err := b.GetSyncFiles(ctx)
 	if err != nil {
 		return nil, err
 	}

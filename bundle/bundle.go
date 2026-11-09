@@ -397,6 +397,27 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 	return dir, nil
 }
 
+// GetSyncFiles lists files matching the bundle sync configuration.
+func (b *Bundle) GetSyncFiles(ctx context.Context) ([]fileset.File, error) {
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	if err != nil {
+		return nil, err
+	}
+	list, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	return list.Files(ctx)
+}
+
+// RemoteFilePath returns the initialized sync destination.
+func (b *Bundle) RemoteFilePath() string {
+	if b.IsSourceLinkedDeployment() {
+		return filepath.ToSlash(b.SyncRootPath)
+	}
+	return b.Config.Workspace.FilePath
+}
+
 // GetSyncIncludePatterns returns a list of user defined includes
 // And also adds InternalDir folder to include list for sync command
 // so this folder is always synced

@@ -1,1 +1,1 @@
-* Support source files in `pipelines run --refresh` and `--full-refresh` selectors. ([#7184](https://github.com/databricks/cli/pull/7184))
+* Support source files in `pipelines run` and `bundle run` with `--refresh` and `--full-refresh`. ([#7184](https://github.com/databricks/cli/pull/7184))

@@ -1,4 +1,4 @@
-package pipelines
+package run
 
 import (
 	"os"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,7 +76,7 @@ func TestResolveRefreshSelectors(t *testing.T) {
 			t.Chdir(root)
 			b := refreshTestBundle(root)
 			b.Config.Sync.Exclude = []string{"src/excluded.sql"}
-			tables, paths, err := resolveRefreshSelectors(t.Context(), b, tt.selectors)
+			tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), tt.selectors)
 			if tt.err != "" {
 				require.ErrorContains(t, err, tt.err)
 				return
@@ -108,7 +110,7 @@ func TestResolveRefreshSelectorsFromSubdirectory(t *testing.T) {
 	b := refreshTestBundle(root)
 	b.BundleRootPath = filepath.Join(root, "project")
 	for _, selector := range []string{"../../shared.sql", filepath.Join(root, "shared.sql")} {
-		tables, paths, err := resolveRefreshSelectors(t.Context(), b, []string{selector})
+		tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{selector})
 		require.NoError(t, err)
 		assert.Empty(t, tables)
 		assert.Equal(t, []string{"/Workspace/Shared/project/files/shared.sql"}, paths)
@@ -120,7 +122,7 @@ func TestResolveRefreshSelectorsOutsideSyncRoot(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(root, "project"), 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "outside.sql"), []byte("SELECT 1;\n"), 0o600))
 	t.Chdir(filepath.Join(root, "project"))
-	_, _, err := resolveRefreshSelectors(t.Context(), refreshTestBundle(filepath.Join(root, "project")), []string{"../outside.sql"})
+	_, _, err := (&refreshSelectorResolver{bundle: refreshTestBundle(filepath.Join(root, "project"))}).resolve(t.Context(), []string{"../outside.sql"})
 	require.ErrorContains(t, err, "is outside the bundle sync root")
 }
 
@@ -148,7 +150,7 @@ func TestResolveRefreshSelectorsDeploymentMode(t *testing.T) {
 			b := refreshTestBundle(root)
 			b.Config.Workspace.SyncMode = tt.mode
 			b.Config.Presets.SourceLinkedDeployment = tt.sourceLinked
-			tables, paths, err := resolveRefreshSelectors(t.Context(), b, []string{"query.sql"})
+			tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"query.sql"})
 			require.NoError(t, err)
 			assert.Empty(t, tables)
 			assert.Equal(t, []string{tt.want}, paths)
@@ -165,6 +167,32 @@ func TestResolveRefreshSelectorsUnresolvedWorkspacePath(t *testing.T) {
 	b.Config.Workspace.SyncMode = config.SyncModeImmutable
 	enabled := true
 	b.Config.Presets.SourceLinkedDeployment = &enabled
-	_, _, err := resolveRefreshSelectors(t.Context(), b, []string{"query.sql"})
+	b.DeploymentBundle.StateDB.OpenWithData("state", dstate.Database{})
+	_, _, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"query.sql"})
 	require.ErrorContains(t, err, "use its absolute /Workspace/ path")
+}
+
+func TestResolveRefreshSelectorsDeployedSnapshot(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{"query.sql", "full_query.sql"} {
+		require.NoError(t, os.WriteFile(filepath.Join(root, name), []byte("SELECT 2;\n"), 0o600))
+	}
+	t.Chdir(root)
+	b := refreshTestBundle(root)
+	b.Config.Workspace.SyncMode = config.SyncModeImmutable
+	b.Config.Workspace.FilePath = resources.SnapshotFullPathRef + "/files"
+	b.DeploymentBundle.StateDB.OpenWithData("state", dstate.Database{
+		State: map[string]dstate.ResourceEntry{
+			resources.SnapshotKey: {
+				ID:    "deployed-snapshot",
+				State: []byte(`{"full_path":"/Workspace/Shared/snapshots/deployed/snapshot"}`),
+			},
+		},
+	})
+	opts := PipelineOptions{Refresh: []string{"query.sql"}, FullRefresh: []string{"full_query.sql"}}
+	require.NoError(t, opts.ResolveRefreshSelectors(t.Context(), b))
+	assert.Empty(t, opts.Refresh)
+	assert.Empty(t, opts.FullRefresh)
+	assert.Equal(t, []string{"/Workspace/Shared/snapshots/deployed/snapshot/files/query.sql"}, opts.RefreshByPath)
+	assert.Equal(t, []string{"/Workspace/Shared/snapshots/deployed/snapshot/files/full_query.sql"}, opts.FullRefreshByPath)
 }

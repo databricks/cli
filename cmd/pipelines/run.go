@@ -17,6 +17,7 @@ import (
 	bundleresources "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
@@ -179,15 +180,18 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 
 	latestUpdate := *getUpdateResponse.Update
 
-	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
-		OrderBy: "timestamp asc",
-	}
-
-	events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
+	// The public events API rejects event_type filters.
+	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+		PipelineId: pipelineId,
+		Filter:     fmt.Sprintf("update_id='%s'", updateId),
+		OrderBy:    []string{"timestamp asc"},
+	})
 	if err != nil {
 		return err
 	}
+	events = slices.DeleteFunc(events, func(event pipelines.PipelineEvent) bool {
+		return event.EventType != "update_progress"
+	})
 
 	err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
 	if err != nil {
@@ -264,12 +268,19 @@ a file, or quote table identifiers with backticks to select an ambiguous table.`
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		runOptions := run.Options{
+			Pipeline: run.PipelineOptions{Refresh: refresh, FullRefresh: fullRefresh, FullRefreshAll: fullRefreshAll},
+			NoWait:   noWait,
+		}
 		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, _, err = resolveRunArgument(ctx, b, args)
 				return err
+			},
+			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, _ *statemgmt.StateDesc) error {
+				return runOptions.Pipeline.ResolveRefreshSelectors(ctx, b)
 			},
 			ErrorOnEmptyState: true,
 			SkipInitContext:   true,
@@ -282,24 +293,6 @@ a file, or quote table identifiers with backticks to select an ambiguous table.`
 
 		runner, err := keyToRunner(b, key)
 		if err != nil {
-			return err
-		}
-
-		runOptions := run.Options{
-			Pipeline: run.PipelineOptions{
-				FullRefreshAll: fullRefreshAll,
-			},
-			NoWait: noWait,
-		}
-		runOptions.Pipeline.Refresh, runOptions.Pipeline.RefreshByPath, err = resolveRefreshSelectors(ctx, b, refresh)
-		if err != nil {
-			return fmt.Errorf("invalid --refresh: %w", err)
-		}
-		runOptions.Pipeline.FullRefresh, runOptions.Pipeline.FullRefreshByPath, err = resolveRefreshSelectors(ctx, b, fullRefresh)
-		if err != nil {
-			return fmt.Errorf("invalid --full-refresh: %w", err)
-		}
-		if err := runOptions.Pipeline.Validate(nil); err != nil {
 			return err
 		}
 

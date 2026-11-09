@@ -5,9 +5,45 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestFetchAndDisplayPipelineUpdateFiltersProgressAcrossPages(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/pipelines/pipeline-1/updates/update-1", func(req testserver.Request) any {
+		return pipelines.GetUpdateResponse{Update: &pipelines.UpdateInfo{UpdateId: "update-1"}}
+	})
+	server.Handle("GET", "/api/2.0/pipelines/pipeline-1/events", func(req testserver.Request) any {
+		if req.URL.Query().Get("page_token") == "" {
+			assert.Equal(t, "update_id='update-1'", req.URL.Query().Get("filter"))
+			return pipelines.ListPipelineEventsResponse{
+				NextPageToken: "next-page",
+				Events: []pipelines.PipelineEvent{
+					{EventType: "update_progress", Timestamp: "2026-01-01T00:00:00Z", Message: "Update is WAITING_FOR_RESOURCES."},
+					{EventType: "flow_progress", Timestamp: "2026-01-01T00:00:05Z", Message: "Flow is PLANNING."},
+				},
+			}
+		}
+		assert.Equal(t, "next-page", req.URL.Query().Get("page_token"))
+		return pipelines.ListPipelineEventsResponse{
+			Events: []pipelines.PipelineEvent{
+				{EventType: "update_progress", Timestamp: "2026-01-01T00:00:10Z", Message: "Update is COMPLETED."},
+			},
+		}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
+
+	err = fetchAndDisplayPipelineUpdate(ctx, w, "pipeline-1", "update-1")
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "WAITING_FOR_RESOURCES")
+	assert.Contains(t, stdout.String(), "10.0s")
+}
 
 func TestDisplayPipelineUpdate(t *testing.T) {
 	tests := []struct {

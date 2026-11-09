@@ -15,7 +15,7 @@ type PipelineOptions struct {
 	// Perform a full graph update.
 	RefreshAll bool
 
-	// List of tables to update.
+	// List of tables or source files to update.
 	Refresh []string
 
 	RefreshByPath []string
@@ -23,7 +23,7 @@ type PipelineOptions struct {
 	// Perform a full graph reset and recompute.
 	FullRefreshAll bool
 
-	// List of tables to reset and recompute.
+	// List of tables or source files to reset and recompute.
 	FullRefresh []string
 
 	FullRefreshByPath []string
@@ -34,9 +34,9 @@ type PipelineOptions struct {
 
 func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 	fs.BoolVar(&o.RefreshAll, "refresh-all", false, "Perform a full graph update.")
-	fs.StringSliceVar(&o.Refresh, "refresh", nil, "List of tables to update.")
+	fs.StringSliceVar(&o.Refresh, "refresh", nil, "List of tables or source files to update. Local paths are relative to the current directory.")
 	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
+	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables or source files to reset and recompute. Local paths are relative to the current directory.")
 	fs.BoolVar(&o.ValidateOnly, "validate-only", false, "Perform an update to validate graph correctness.")
 }
 

@@ -206,6 +206,12 @@ Example usage:
 					return err
 				}
 
+				if ref.Description.SingularName == "pipeline" {
+					if err := runOptions.Pipeline.ResolveRefreshSelectors(ctx, b); err != nil {
+						return err
+					}
+				}
+
 				runOptions.NoWait = noWait
 				var runOutput output.RunOutput
 				if restart {
