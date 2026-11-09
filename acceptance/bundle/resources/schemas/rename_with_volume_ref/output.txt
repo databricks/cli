@@ -31,18 +31,16 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 update jobs.job1
 update schemas.schema1
-update volumes.volume1
 
-Plan: 0 to add, 3 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 
 === Deploy passes the volume's new full_name and id to the job
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated jobs.job1
 Updated schemas.schema1
-Updated volumes.volume1
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog
 {

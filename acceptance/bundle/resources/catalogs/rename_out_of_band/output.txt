@@ -45,6 +45,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       }
     ],
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
@@ -90,6 +91,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       }
     ],
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
