@@ -259,7 +259,7 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil)
+			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
@@ -271,10 +271,10 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 	}
 }
 
-// TestFollowParentRenames pins when an ID field that references a renamed parent is
+// TestFollowsParentRename pins when an ID field that references a renamed parent is
 // re-keyed (update_id) instead of recreated: only a provided_id_field of a resource with
 // DoUpdateWithID, and only if it was under that parent before the rename.
-func TestFollowParentRenames(t *testing.T) {
+func TestFollowsParentRename(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
@@ -319,11 +319,11 @@ func TestFollowParentRenames(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
-			ch := &deployplan.ChangeDesc{Action: deployplan.Recreate, Reason: "id_field", Old: tt.old, New: "s_new", Remote: tt.old}
+			ch := &deployplan.ChangeDesc{Old: tt.old, New: "s_new", Remote: tt.old}
 			parentRenames := map[string]*deployplan.ChangeDesc{
 				tt.field: {Action: deployplan.UpdateWithID, Reason: "id_changes", Old: "s_old", New: "s_new", Remote: "s_old"},
 			}
-			require.NoError(t, followParentRenames(adapter, deployplan.Changes{tt.field: ch}, parentRenames))
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, deployplan.Changes{tt.field: ch}, nil, nil, parentRenames))
 			assert.Equal(t, tt.expectedAction, ch.Action)
 		})
 	}
@@ -380,7 +380,7 @@ func TestRecreateBackendDefault(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
 				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
@@ -511,7 +511,7 @@ func TestScalarZeroChange(t *testing.T) {
 			adapter, ok := adapters["clusters"]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
 				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
@@ -575,7 +575,7 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 		Remote: state.ResultState,
 	}}
 
-	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote))
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote, nil))
 	return changes["result_state"]
 }
 
@@ -849,7 +849,7 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 		// config-absent (Old==New==nil), present in remote: matches both rules.
 		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},
 	}
-	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil, nil))
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
@@ -870,7 +870,7 @@ func TestInternalIDChangesAreSkipped(t *testing.T) {
 		} {
 			t.Run(tt.resource+" "+name, func(t *testing.T) {
 				changes := deployplan.Changes{tt.field: ch}
-				require.NoError(t, addPerFieldActions(t.Context(), adapters[tt.resource], changes, nil, nil))
+				require.NoError(t, addPerFieldActions(t.Context(), adapters[tt.resource], changes, nil, nil, nil))
 				assert.Equal(t, deployplan.Skip, changes[tt.field].Action)
 			})
 		}

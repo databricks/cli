@@ -378,13 +378,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
-			return false
-		}
-
-		err = followParentRenames(adapter, entry.Changes, parentRenames)
+		err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState, parentRenames)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
@@ -489,7 +483,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	return m, nil
 }
 
-func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, newState, remoteState any) error {
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, newState, remoteState any, parentRenames map[string]*deployplan.ChangeDesc) error {
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
@@ -522,6 +516,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if action, reason, ok := classifyIDField(cfg, path, ch); ok {
 			ch.Action = action
 			ch.Reason = reason
+			if action == deployplan.Recreate && followsParentRename(adapter, parentRenames[pathString], ch) {
+				ch.Action = deployplan.UpdateWithID
+				ch.Reason = deployplan.ReasonParentRenamed
+			}
 		} else if action, reason, ok := classifyIDField(generatedCfg, path, ch); ok {
 			ch.Action = action
 			ch.Reason = reason
@@ -795,33 +793,15 @@ func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) 
 	return false
 }
 
-// followParentRenames plans an update_id instead of a recreate for an ID field that changes
-// only because it references the name of a parent that is renamed in place. UC moves the
-// children of a renamed catalog or schema along with it, so recreating such a child fails
-// with "already exists"; its DoUpdateWithID addresses it under the new parent instead.
+// followsParentRename reports whether a change to a provided ID field only follows parentChange,
+// the rename of the parent field it references (see parentRenames). UC moves the children of a
+// renamed catalog or schema along with it, so recreating such a child fails with "already
+// exists"; it is planned as an update_id instead, which addresses it under the new parent.
 //
 // The old values must match too: a child moved to the renamed parent from somewhere else
 // still has to be recreated.
-func followParentRenames(adapter *dresources.Adapter, changes deployplan.Changes, parentRenames map[string]*deployplan.ChangeDesc) error {
-	if !adapter.HasDoUpdateWithID() {
-		return nil
-	}
-	for pathString, parentChange := range parentRenames {
-		ch := changes[pathString]
-		if ch == nil || ch.Action != deployplan.Recreate || !structdiff.IsEqual(ch.Old, parentChange.Old) {
-			continue
-		}
-		path, err := structpath.ParsePath(pathString)
-		if err != nil {
-			return err
-		}
-		if _, ok := findMatchingRule(path, adapter.ResourceConfig().ProvidedIDFields); !ok {
-			continue
-		}
-		ch.Action = deployplan.UpdateWithID
-		ch.Reason = deployplan.ReasonParentRenamed
-	}
-	return nil
+func followsParentRename(adapter *dresources.Adapter, parentChange, ch *deployplan.ChangeDesc) bool {
+	return parentChange != nil && adapter.HasDoUpdateWithID() && structdiff.IsEqual(ch.Old, parentChange.Old)
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
