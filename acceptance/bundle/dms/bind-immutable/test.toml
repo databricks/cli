@@ -1,4 +1,4 @@
-# We saw bind succeed without recording deployment history for immutable folders.
-# It reused deploy code that expected staged files, but bind does not stage files.
-# This test prevents that regression, ensuring DMS works for bind with immutable folders enabled.
-Cloud = false # Assert history metadata without requiring snapshot permissions on a real workspace.
+# This test ensures that deployment history works with bind and immutable folders. This case is interesting
+# because by default we record the snapshot path in deploy, but that is not available during bind. So it's important
+# to ensure that we don't do that during deployment bind, and recording history continues to work.
+Cloud = false
