@@ -101,8 +101,7 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *CatalogState {
 }
 
 func (*ResourceCatalog) RemapState(info *CatalogRemote) *CatalogState {
-	state := &CatalogState{IsolationMode: info.IsolationMode, Id: info.Id}
-	state.CreateCatalog = catalog.CreateCatalog{
+	return &CatalogState{
 		Comment:                   info.Comment,
 		ConnectionName:            info.ConnectionName,
 		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,
@@ -114,8 +113,9 @@ func (*ResourceCatalog) RemapState(info *CatalogRemote) *CatalogState {
 		ShareName:                 info.ShareName,
 		StorageRoot:               info.StorageRoot,
 		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
+		IsolationMode:             info.IsolationMode,
+		Id:                        info.Id,
 	}
-	return state
 }
 
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*CatalogRemote, error) {
