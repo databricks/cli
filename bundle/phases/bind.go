@@ -7,17 +7,23 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 type BindOptions struct {
@@ -37,7 +43,14 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	historySucceeded := true
 	defer func() {
+		if b.DeploymentBundle.StateDB.RecordsHistory() {
+			completionCtx := cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(completionCtx, historySucceeded && !logdiag.HasError(ctx)); err != nil {
+				log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+			}
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -114,6 +127,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	if err := recordBindHistory(ctx, b, resourceKey); err != nil {
+		historySucceeded = false
+		log.Warnf(ctx, "Failed to record bind history: %s", err)
+	}
+
 	statemgmt.PushResourcesState(ctx, b)
 }
 
@@ -154,4 +172,62 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
+}
+
+// recordBindHistory records the committed binding without applying the resource's plan.
+func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) (err error) {
+	db := &b.DeploymentBundle.StateDB
+	_, statePath := b.StateFilenameDirect(ctx)
+	if err := db.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+		return err
+	}
+	defer func() {
+		_, finalizeErr := db.Finalize(ctx)
+		err = errors.Join(err, finalizeErr)
+	}()
+
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	if !db.RecordsHistory() && !bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		return nil
+	}
+
+	deploymentID, current, err := LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return err
+	}
+	db.DeploymentID = deploymentID
+	if current != nil {
+		next, err := dms.NextVersion(current.LastVersionId)
+		if err != nil {
+			return err
+		}
+		db.VersionID = next - 1
+	}
+	if db.Data.Features == nil {
+		db.Data.Features = make(map[string]struct{})
+	}
+	db.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
+	if err := db.UpgradeToWrite(); err != nil {
+		return err
+	}
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	}
+	if err := createOrUpdateDeployment(ctx, b, current); err != nil {
+		return err
+	}
+	if err := startVersion(ctx, b, dms.VersionTypeDeploy, []bundledeployments.StagedOperation{{
+		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
+		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
+	}}); err != nil {
+		return err
+	}
+	entry, ok := db.GetResourceEntry(resourceKey)
+	if !ok {
+		return fmt.Errorf("bound resource %s is missing from deployment state", resourceKey)
+	}
+	return db.SaveState(ctx, resourceKey, entry.ID, entry.State, entry.DependsOn)
 }

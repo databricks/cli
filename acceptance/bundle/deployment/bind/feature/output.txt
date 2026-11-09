@@ -1,8 +1,4 @@
 
->>> [CLI] bundle deployment bind feature1 main.myschema.boundfeature --auto-approve
-Successfully bound feature with an id 'main.myschema.boundfeature'
-Run 'bundle deploy' to deploy changes to your workspace
-
 >>> [CLI] bundle summary
 Name: test-bundle
 Target: default

@@ -9,7 +9,7 @@ rm -f "$OUT_REQUESTS"
 trace $CLI bundle deployment bind foo $NEW_PIPELINE_ID --auto-approve &> out.bind-success.txt
 print_requests.py '^//import-file/' '^//workspace/delete'
 
-trace $CLI bundle summary -o json > out.summary.json
+trace $CLI bundle summary -o json | jq 'del(.bundle.deployment)' | nostamp.py > out.summary.json
 trace $CLI bundle plan
 
 rm -f "$OUT_REQUESTS"

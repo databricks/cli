@@ -1,0 +1,73 @@
+
+=== A version creation failure does not prevent binding
+>>> fault.py POST /api/2.0/bundle/deployments/*/versions 400 0 1
+
+>>> [CLI] bundle deployment bind create_failed [JOB_ID] --auto-approve
+Warn: Failed to record bind history: failed to create deployment version: Fault injected by test.
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== An operation recording failure does not prevent binding
+>>> fault.py PATCH /api/2.0/bundle/** 400 0 1
+
+>>> [CLI] bundle deployment bind record_failed [JOB_ID] --auto-approve
+Warn: Failed to record deployment history: recording operation for resources.jobs.record_failed: Fault injected by test.
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== A version completion failure does not prevent binding
+>>> fault.py POST /api/2.0/bundle/deployments/*/versions/*/complete 400 0 1
+
+>>> [CLI] bundle deployment bind complete_failed [JOB_ID] --auto-approve
+Warn: Failed to complete deployment history version: Fault injected by test.
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== All bindings survived the remote state round trips
+>>> jq .state | map_values(.__id__) .databricks/bundle/default/resources.json
+{
+  "resources.jobs.complete_failed": "[JOB_ID]",
+  "resources.jobs.create_failed": "[JOB_ID]",
+  "resources.jobs.record_failed": "[JOB_ID]"
+}
+
+>>> [CLI] jobs get [JOB_ID]
+{
+  "job_id": [JOB_ID],
+  "name": "bind-target-[UNIQUE_NAME]"
+}
+
+>>> print_requests.py --dms //versions --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "3"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.create_failed"}], "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "6"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.record_failed"}], "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/operations/jobs.record_failed", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[JOB_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-bind-history-failures-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"record_failed\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "9"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.complete_failed"}], "previous_version_id": "6", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/9/operations/jobs.complete_failed", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[JOB_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-bind-history-failures-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"complete_failed\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/9/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+=== A remote state upload failure fails the bind version
+>>> fault.py POST /api/2.0/workspace-files/import-file/**resources.json 400 0 1
+
+>>> musterr [CLI] bundle deployment bind upload_failed [JOB_ID] --auto-approve
+Error: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Fdms-bind-history-failures-[UNIQUE_NAME]%2Fdefault%2Fstate%2Fresources.json?overwrite=true
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+>>> print_requests.py --dms //versions --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "12"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.upload_failed"}], "previous_version_id": "9", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/12/operations/jobs.upload_failed", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[JOB_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-bind-history-failures-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"upload_failed\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/12/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+
+=== Remote state still contains only the successful bindings
+>>> [CLI] bundle summary -o json
+{
+  "complete_failed": "[JOB_ID]",
+  "create_failed": "[JOB_ID]",
+  "record_failed": "[JOB_ID]",
+  "upload_failed": null
+}

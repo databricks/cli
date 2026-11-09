@@ -2,7 +2,6 @@
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
- "serial": 2,
  "state": {
   "resources.dashboards.dashboard1": {
    "__id__": "[DASHBOARD_ID]",

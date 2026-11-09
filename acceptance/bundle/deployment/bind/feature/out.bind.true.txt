@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle deployment bind feature1 main.myschema.boundfeature --auto-approve
+Warn: Failed to record bind history: failed to create deployment version: operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): features.feature1
+Successfully bound feature with an id 'main.myschema.boundfeature'
+Run 'bundle deploy' to deploy changes to your workspace
