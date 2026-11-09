@@ -140,7 +140,8 @@ func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployme
 	return dep
 }
 
-// LookupDeployment reads the deployment metadata for a bundle.
+// LookupDeployment resolves the deployment node under statePath and reads its DMS record.
+// A missing workspace node returns no deployment.
 //
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
 //

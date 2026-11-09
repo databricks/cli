@@ -81,16 +81,9 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	}
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
-		dep := metadata.Deployment()
-		dep.InitialParentPath = b.Config.Workspace.StatePath
-		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
+		deploymentID, err = createDeployment(ctx, b, metadata)
 		if err != nil {
-			return fmt.Errorf("failed to create deployment: %w", err)
-		}
-		// The id is the workspace node the server makes under the parent path.
-		deploymentID, err = dms.DeploymentIDFromName(created.Name)
-		if err != nil {
-			return fmt.Errorf("failed to create deployment: %w", err)
+			return err
 		}
 		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
@@ -110,6 +103,42 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
+	return nil
+}
+
+// createDeployment registers metadata under the bundle's state path and returns its server-minted ID.
+func createDeployment(ctx context.Context, b *bundle.Bundle, metadata dms.Metadata) (string, error) {
+	dep := metadata.Deployment()
+	dep.InitialParentPath = b.Config.Workspace.StatePath
+	created, err := b.WorkspaceClient(ctx).BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
+	if err != nil {
+		return "", fmt.Errorf("failed to create deployment: %w", err)
+	}
+	// The id is the workspace node the server makes under the parent path.
+	deploymentID, err := dms.DeploymentIDFromName(created.Name)
+	if err != nil {
+		return "", fmt.Errorf("failed to create deployment: %w", err)
+	}
+	return deploymentID, nil
+}
+
+// createBindingDeployment registers a first binding without changing metadata from an existing deploy.
+func createBindingDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) error {
+	if current != nil {
+		return nil
+	}
+	// Bind does not upload files or stage an immutable snapshot, so it cannot report a deployed file path.
+	metadata := dms.Metadata{
+		DisplayName: b.Config.Bundle.Name,
+		TargetName:  b.Config.Bundle.Target,
+		Mode:        deploymentModeToSDK(b.Config.Bundle.Mode),
+		Workspace:   &bundledeployments.WorkspaceInfo{RootPath: b.Config.Workspace.RootPath},
+	}
+	deploymentID, err := createDeployment(ctx, b, metadata)
+	if err != nil {
+		return err
+	}
+	b.DeploymentBundle.StateDB.DeploymentID = deploymentID
 	return nil
 }
 

@@ -1,2 +1,2 @@
 # Verify shadow history markers and resource IDs across bind, deploy, unbind, and rebind.
-Cloud = false
+Cloud = true

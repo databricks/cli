@@ -1,0 +1,4 @@
+resources:
+  jobs:
+    bar:
+      name: bar

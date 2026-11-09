@@ -32,6 +32,15 @@ Run 'bundle deploy' to deploy changes to your workspace
   "name": "bind-target-[UNIQUE_NAME]"
 }
 
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_BIND",
+    "resource_id": "[JOB_ID]",
+    "resource_key": "jobs.foo"
+  }
+]
+
 === Deploy keeps the bound job ID with recorded history
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/files...

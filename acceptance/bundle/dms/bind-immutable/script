@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+
+title "An immutable bundle can record its first bind before any snapshot exists"
+trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+trace print_requests.py --dms //versions --oneline | contains.py OPERATION_ACTION_TYPE_BIND VERSION_COMPLETE_SUCCESS
+
+title "Deploy creates the immutable snapshot"
+trace $CLI bundle deploy
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-bind-immutable-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
+file_path=$(MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/bundle/deployments/${deployment_id}" | jq -r '.workspace_info.file_path')
+add_repl "$file_path" DEPLOYED_FILE_PATH
+rm -f "$OUT_REQUESTS"
+
+title "Binding another resource preserves the last deployed snapshot metadata"
+trace update_file.py databricks.yml 'include: []' 'include: [extra.yml]'
+trace $CLI bundle deployment bind bar "$job_id" --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --oneline | contains.py OPERATION_ACTION_TYPE_BIND VERSION_COMPLETE_SUCCESS
+trace MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/bundle/deployments/${deployment_id}" | jq --arg expected "$file_path" '{file_path: .workspace_info.file_path, preserved: (.workspace_info.file_path == $expected)}'
+rm -f "$OUT_REQUESTS"

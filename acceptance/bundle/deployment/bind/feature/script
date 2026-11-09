@@ -1,4 +1,4 @@
-trace $CLI bundle deployment bind feature1 main.myschema.boundfeature --auto-approve 2> out.bind.$DMS.txt
+trace $CLI bundle deployment bind feature1 main.myschema.boundfeature --auto-approve 2> out.bind.$OUTPUT_MODE.txt
 trace $CLI bundle summary
 
 trace $CLI bundle deployment unbind feature1

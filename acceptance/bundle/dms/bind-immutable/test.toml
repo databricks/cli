@@ -1,0 +1,1 @@
+Cloud = false # Assert history metadata without requiring snapshot permissions on a real workspace.

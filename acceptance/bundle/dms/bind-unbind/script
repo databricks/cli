@@ -3,11 +3,20 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "Bind an existing job with deployment history enabled"
 job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
 add_repl "$job_id" JOB_ID
+cleanup_bind_target() {
+    errcode $CLI bundle destroy --auto-approve >> LOG.cleanup 2>&1
+    errcode $CLI jobs delete "$job_id" >> LOG.cleanup 2>&1
+}
+trap cleanup_bind_target EXIT
+
 trace musterr $CLI bundle deployment bind foo "$job_id"
 trace print_requests.py --dms //api/2.0/bundle
 trace $CLI bundle deployment bind foo "$job_id" --auto-approve
 trace print_requests.py --dms //versions --oneline
 trace $CLI jobs get "$job_id" | jq '{job_id, name: .settings.name}'
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-bind-unbind-${UNIQUE_NAME}/default/state/resources.deployment.json" -o json | jq -r '.object_id')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, resource_id, last_action_type})'
+
 
 title "Deploy keeps the bound job ID with recorded history"
 trace $CLI bundle deploy

@@ -45,12 +45,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 
 	historySucceeded := true
 	defer func() {
-		if b.DeploymentBundle.StateDB.RecordsHistory() {
-			completionCtx := cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(completionCtx, historySucceeded && !logdiag.HasError(ctx)); err != nil {
-				log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
-			}
-		}
+		completeBindingHistory(ctx, b, historySucceeded && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -135,6 +130,17 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 	statemgmt.PushResourcesState(ctx, b)
 }
 
+// completeBindingHistory completes the recorded version after the remote state upload.
+func completeBindingHistory(ctx context.Context, b *bundle.Bundle, success bool) {
+	if !b.DeploymentBundle.StateDB.RecordsHistory() {
+		return
+	}
+	completionCtx := cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	if _, err := b.DeploymentBundle.StateDB.CompleteVersion(completionCtx, success); err != nil {
+		log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+	}
+}
+
 func jsonDump(ctx context.Context, v any, field string) string {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -174,7 +180,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	statemgmt.PushResourcesState(ctx, b)
 }
 
-// recordBindHistory records the committed binding without applying the resource's plan.
+// recordBindHistory records a committed binding's saved state when history recording is enabled.
 func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) (err error) {
 	db := &b.DeploymentBundle.StateDB
 	_, statePath := b.StateFilenameDirect(ctx)
@@ -216,7 +222,7 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	if err := createOrUpdateDeployment(ctx, b, current); err != nil {
+	if err := createBindingDeployment(ctx, b, current); err != nil {
 		return err
 	}
 	if err := startVersion(ctx, b, dms.VersionTypeDeploy, []bundledeployments.StagedOperation{{
