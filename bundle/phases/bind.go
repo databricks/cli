@@ -194,7 +194,7 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		return nil
 	}
 
-	deploymentID, current, err := LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	deploymentID, current, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err
 	}

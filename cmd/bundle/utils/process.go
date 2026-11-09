@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -405,7 +406,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		if needDirectState && stateMode == dstate.WritingDeploymentHistoryOnly {
 			var err error
-			dmsDeploymentID, dmsDeployment, err = phases.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+			dmsDeploymentID, dmsDeployment, err = dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -656,7 +657,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		return nil
 	}
 
-	dmsDeploymentID, dmsDeployment, err := phases.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	dmsDeploymentID, dmsDeployment, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err
 	}
@@ -676,7 +677,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 
 // prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS.
 func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
-	id, deployment, err := phases.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	id, deployment, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}

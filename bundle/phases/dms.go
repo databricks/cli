@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -23,7 +22,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
@@ -293,40 +291,4 @@ func deploymentModeToSDK(mode config.Mode) bundledeployments.DeploymentMode {
 	default:
 		return ""
 	}
-}
-
-// LookupDeployment reads the deployment metadata for a bundle.
-//
-// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
-//
-// TODO: a deployment is only usable when both the node and the service's record exist, and a
-// half-created one - node present, record missing - blocks the bundle here even though
-// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
-// that returns an empty id and version unless both halves are there, leaving the caller to call
-// CreateDeployment to create or finalize it.
-//
-// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
-// workspace lookup to turn the node into an id, then a get by that id.
-func LookupDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
-	nodePath := path.Join(statePath, dms.DeploymentNodeName)
-
-	obj, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
-		return w.Workspace.GetStatusByPath(ctx, nodePath)
-	})
-	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-		return "", nil, nil
-	}
-	if err != nil {
-		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
-	}
-	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
-	deployment, err := retry.With(ctx, retry.IsTransientRead, func() (*bundledeployments.Deployment, error) {
-		return w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-			Name: dms.DeploymentName(deploymentID),
-		})
-	})
-	if err != nil {
-		return "", nil, err
-	}
-	return deploymentID, deployment, nil
 }
