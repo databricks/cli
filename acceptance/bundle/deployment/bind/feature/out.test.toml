@@ -1,3 +1,2 @@
 Cloud = false
 EnvMatrix.DMS = ["", "true"]
-EnvMatrix.OUTPUT_MODE = ["plain", "recorded"]

@@ -1,9 +1,3 @@
-# Keep CI's DMS= variant while using non-empty labels for per-variant output files.
-EnvMatrix.OUTPUT_MODE = ["plain", "recorded"]
-EnvMatrixExclude.plain_with_history = ["DMS=true", "OUTPUT_MODE=plain"]
-EnvMatrixExclude.recorded_without_history = ["DMS=", "OUTPUT_MODE=recorded"]
-EnvVaryOutput = "OUTPUT_MODE"
-EnvRepl.OUTPUT_MODE = false
 Cloud = false
 
 Ignore = [
