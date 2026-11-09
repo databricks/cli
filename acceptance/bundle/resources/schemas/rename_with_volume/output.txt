@@ -77,6 +77,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       }
     ],
     "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -118,9 +119,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
-Updated volumes.volume1
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog
 {
