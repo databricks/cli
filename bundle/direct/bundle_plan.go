@@ -395,7 +395,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// Found at a new ID: the state has to follow it there.
 			action = deployplan.GetHigherAction(action, deployplan.UpdateWithID)
 		}
-		if action == deployplan.UpdateWithID && adapter.HasIDFromState() && entry.Changes.OnlyParentRenamed() {
+		if action == deployplan.UpdateWithID && adapter.HasIDFromState() && entry.Changes.HasOnlySingleReason(deployplan.ReasonParentRenamed) {
 			// The backend already moved the resource with its renamed parent, or the plan found it
 			// at its new ID: applying only records the state under the ID IDFromState gives it.
 			entry.StateOnly = true

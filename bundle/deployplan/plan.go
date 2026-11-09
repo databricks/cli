@@ -248,11 +248,11 @@ func (c *Changes) HasChangeExcept(prefixes ...string) bool {
 	return false
 }
 
-// OnlyParentRenamed reports whether every actionable change follows a parent's rename
-// (ReasonParentRenamed). The backend has already moved such a resource, so only its ID changes.
-func (c *Changes) OnlyParentRenamed() bool {
+// HasOnlySingleReason reports whether every actionable change has the given reason. It also holds
+// when no change is actionable.
+func (c *Changes) HasOnlySingleReason(reason string) bool {
 	for _, change := range *c {
-		if change.Action != Skip && change.Reason != ReasonParentRenamed {
+		if change.Action != Skip && change.Reason != reason {
 			return false
 		}
 	}
