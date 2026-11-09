@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+NEW_SCHEMA="test_catalog_renamed_${UNIQUE_NAME}.myschema2"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a catalog with a schema and a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "test_catalog_${UNIQUE_NAME}.myschema" | jq -r .schema_id)" SCHEMA_ID
+add_repl "$($CLI volumes read "test_catalog_${UNIQUE_NAME}.myschema.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the catalog and the schema in one deploy"
+trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+trace update_file.py databricks.yml "name: myschema" "name: myschema2"
+
+title "Both of the volume's parents are renamed, so both its catalog_name and schema_name follow them"
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+
+title "Deploy renames the catalog, then the schema under it. UC moves the volume both times, so it gets no request"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "The schema and the volume are under the new names, with their original ids"
+trace $CLI schemas get "$NEW_SCHEMA" | jq '{full_name, schema_id}'
+trace $CLI volumes read "$NEW_SCHEMA.myvolume" | jq '{full_name, volume_id}'
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
