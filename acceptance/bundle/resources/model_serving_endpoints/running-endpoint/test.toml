@@ -2,8 +2,8 @@ Timeout = '30m'
 Cloud = true
 CloudSlow = true
 
-# GCP test envs lack foundation-model / GPU serving capacity, so deploying this
-# real llama endpoint fails with UPDATE_FAILED after ~29 min. Skip on GCP.
+# GCP test envs lack serving capacity for this endpoint:
+#   Error: cannot create resources.model_serving_endpoints.my_endpoint: waiting after creating id=test-endpoint-[UNIQUE_NAME]: failed to reach NOT_UPDATING, got UPDATE_FAILED: current status: UPDATE_FAILED
 CloudEnvs.gcp = false
 
 [[Server]]

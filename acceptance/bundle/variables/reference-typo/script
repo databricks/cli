@@ -15,3 +15,6 @@ withdir double-nested-typo musterr trace $CLI bundle validate
 
 title "Two typos in one reference, outermost close to two variables: multiple suggestions\n"
 withdir double-nested-typo-multiple musterr trace $CLI bundle validate
+
+title "Volume schema and catalog references missing resources\n"
+withdir volume-missing-resources musterr trace $CLI bundle validate

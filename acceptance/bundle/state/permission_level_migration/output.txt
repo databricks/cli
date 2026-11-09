@@ -35,7 +35,7 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
    }
   },
   "resources.jobs.my_job.permissions": {
-   "__id__": "/jobs/123",
+   "__id__": "/jobs/[MY_JOB_ID]",
    "state": {
     "object_id": "/jobs/[MY_JOB_ID]",
     "__embed__": [

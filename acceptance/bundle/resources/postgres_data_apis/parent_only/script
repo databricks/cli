@@ -1,0 +1,5 @@
+title "Validate rejects a Data API that sets only parent"
+trace musterr $CLI bundle validate
+
+title "Deploy fails the same way before anything is created"
+trace musterr $CLI bundle deploy

@@ -1,3 +1,2 @@
 Cloud = true
-CloudEnvs.gcp = false
 EnvMatrix.DMS = ["", "true"]

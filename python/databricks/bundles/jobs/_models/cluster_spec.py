@@ -10,10 +10,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.jobs._models.auto_scale import (
-    AutoScale,
-    AutoScaleParam,
-)
+from databricks.bundles.jobs._models.auto_scale import AutoScale, AutoScaleParam
 from databricks.bundles.jobs._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesParam,

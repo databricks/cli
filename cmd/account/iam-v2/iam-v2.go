@@ -106,10 +106,8 @@ func newCreateDirectGroupMember() *cobra.Command {
 	cmd.Flags().StringVar(&createDirectGroupMemberReq.DirectGroupMember.Name, "name", createDirectGroupMemberReq.DirectGroupMember.Name, `The resource name of the group membership.`)
 
 	cmd.Use = "create-direct-group-member PARENT PRINCIPAL_ID"
-	cmd.Short = `*Beta* Create a direct group membership.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a direct group membership.
+	cmd.Short = `Create a direct group membership.`
+	cmd.Long = `Create a direct group membership.
 
   Creates a group membership (assigns a principal to a group).
 
@@ -122,8 +120,8 @@ Create a direct group membership.
     PRINCIPAL_ID: Internal ID of the principal in Databricks.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -206,10 +204,8 @@ func newCreateGroup() *cobra.Command {
 	cmd.Flags().StringVar(&createGroupReq.Group.Name, "name", createGroupReq.Group.Name, `The resource name of the group.`)
 
 	cmd.Use = "create-group PARENT"
-	cmd.Short = `*Beta* Create a group in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a group in the account.
+	cmd.Short = `Create a group in the account.`
+	cmd.Long = `Create a group in the account.
 
   Creates a local group in the Databricks account and returns the created group.
   A local group is one that is not synced from the customer's identity provider,
@@ -226,8 +222,8 @@ Create a group in the account.
       Format: accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -398,10 +394,8 @@ func newCreateServicePrincipal() *cobra.Command {
 	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.Name, "name", createServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
 	cmd.Use = "create-service-principal PARENT DISPLAY_NAME ACCOUNT_SP_STATUS"
-	cmd.Short = `*Beta* Create a service principal in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a service principal in the account.
+	cmd.Short = `Create a service principal in the account.`
+	cmd.Long = `Create a service principal in the account.
 
   Creates a local service principal in the Databricks account and returns the
   created service principal. A local service principal is one that is not synced
@@ -421,8 +415,8 @@ Create a service principal in the account.
       Supported values: [ACTIVE, INACTIVE]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -507,10 +501,8 @@ func newCreateUser() *cobra.Command {
 	cmd.Flags().StringVar(&createUserReq.User.Name, "name", createUserReq.User.Name, `The resource name of the user.`)
 
 	cmd.Use = "create-user PARENT USERNAME FULL_NAME ACCOUNT_USER_STATUS"
-	cmd.Short = `*Beta* Create a user in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a user in the account.
+	cmd.Short = `Create a user in the account.`
+	cmd.Long = `Create a user in the account.
 
   Creates a local user in the Databricks account and returns the created user. A
   local user is one that is not synced from the customer's identity provider,
@@ -531,8 +523,8 @@ Create a user in the account.
       Supported values: [ACTIVE, INACTIVE]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -625,10 +617,8 @@ func newCreateWorkspaceAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&createWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", createWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
 	cmd.Use = "create-workspace-assignment PARENT PRINCIPAL_ID"
-	cmd.Short = `*Beta* Create a workspace assignment.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a workspace assignment.
+	cmd.Short = `Create a workspace assignment.`
+	cmd.Long = `Create a workspace assignment.
 
   Creates a workspace assignment for a principal. Entitlements are granted one
   at a time rather than atomically. If the request fails partway through, the
@@ -644,8 +634,8 @@ Create a workspace assignment.
       different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -821,10 +811,8 @@ func newDeleteDirectGroupMember() *cobra.Command {
 	var deleteDirectGroupMemberReq iamv2.DeleteDirectGroupMemberRequest
 
 	cmd.Use = "delete-direct-group-member NAME"
-	cmd.Short = `*Beta* Delete a direct group membership.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a direct group membership.
+	cmd.Short = `Delete a direct group membership.`
+	cmd.Long = `Delete a direct group membership.
 
   Deletes a group membership (unassigns a principal from a group).
 
@@ -836,8 +824,8 @@ Delete a direct group membership.
       accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -885,10 +873,8 @@ func newDeleteGroup() *cobra.Command {
 	var deleteGroupReq iamv2.DeleteGroupRequest
 
 	cmd.Use = "delete-group NAME"
-	cmd.Short = `*Beta* Delete a group in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a group in the account.
+	cmd.Short = `Delete a group in the account.`
+	cmd.Long = `Delete a group in the account.
 
   Deletes a group from the Databricks account by its internal ID.
 
@@ -900,8 +886,8 @@ Delete a group in the account.
       accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1013,10 +999,8 @@ func newDeleteServicePrincipal() *cobra.Command {
 	var deleteServicePrincipalReq iamv2.DeleteServicePrincipalRequest
 
 	cmd.Use = "delete-service-principal NAME"
-	cmd.Short = `*Beta* Delete a service principal in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a service principal in the account.
+	cmd.Short = `Delete a service principal in the account.`
+	cmd.Long = `Delete a service principal in the account.
 
   Deletes a service principal from the Databricks account by its internal ID.
 
@@ -1025,8 +1009,8 @@ Delete a service principal in the account.
       accounts/{account_id}/service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1074,10 +1058,8 @@ func newDeleteUser() *cobra.Command {
 	var deleteUserReq iamv2.DeleteUserRequest
 
 	cmd.Use = "delete-user NAME"
-	cmd.Short = `*Beta* Delete a user in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a user in the account.
+	cmd.Short = `Delete a user in the account.`
+	cmd.Long = `Delete a user in the account.
 
   Deletes a user from the Databricks account by its internal ID.
 
@@ -1086,8 +1068,8 @@ Delete a user in the account.
       accounts/{account_id}/users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1135,10 +1117,8 @@ func newDeleteWorkspaceAssignment() *cobra.Command {
 	var deleteWorkspaceAssignmentReq iamv2.DeleteWorkspaceAssignmentRequest
 
 	cmd.Use = "delete-workspace-assignment NAME"
-	cmd.Short = `*Beta* Delete a workspace assignment.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a workspace assignment.
+	cmd.Short = `Delete a workspace assignment.`
+	cmd.Long = `Delete a workspace assignment.
 
   Deletes a workspace assignment for a principal, revoking all of its
   entitlements. Entitlements are revoked one at a time rather than atomically.
@@ -1150,8 +1130,8 @@ Delete a workspace assignment.
       accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1273,10 +1253,8 @@ func newGetDirectGroupMember() *cobra.Command {
 	var getDirectGroupMemberReq iamv2.GetDirectGroupMemberRequest
 
 	cmd.Use = "get-direct-group-member NAME"
-	cmd.Short = `*Beta* Get a direct group member.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a direct group member.
+	cmd.Short = `Get a direct group member.`
+	cmd.Long = `Get a direct group member.
 
   Gets a provisioned direct member of a group.
 
@@ -1285,8 +1263,8 @@ Get a direct group member.
       accounts/{account_id}/groups/{group_id}/direct-members/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1335,10 +1313,8 @@ func newGetExternalGroup() *cobra.Command {
 	var getExternalGroupReq iamv2.GetExternalGroupRequest
 
 	cmd.Use = "get-external-group NAME"
-	cmd.Short = `*Beta* Get an external group in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an external group in the account.
+	cmd.Short = `Get an external group in the account.`
+	cmd.Long = `Get an external group in the account.
 
   Retrieves an external group with the given external ID from the customer's
   IdP. If the group does not exist, it will be created in the account. If the
@@ -1350,8 +1326,8 @@ Get an external group in the account.
       accounts/{account_id}/external-groups/{external_group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1400,10 +1376,8 @@ func newGetExternalServicePrincipal() *cobra.Command {
 	var getExternalServicePrincipalReq iamv2.GetExternalServicePrincipalRequest
 
 	cmd.Use = "get-external-service-principal NAME"
-	cmd.Short = `*Beta* Get an external service principal in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an external service principal in the account.
+	cmd.Short = `Get an external service principal in the account.`
+	cmd.Long = `Get an external service principal in the account.
 
   Retrieves an external service principal with the given external ID from the
   customer's IdP. If the service principal does not exist, it will be created.
@@ -1415,8 +1389,8 @@ Get an external service principal in the account.
       accounts/{account_id}/external-service-principals/{external_service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1465,10 +1439,8 @@ func newGetExternalUser() *cobra.Command {
 	var getExternalUserReq iamv2.GetExternalUserRequest
 
 	cmd.Use = "get-external-user NAME"
-	cmd.Short = `*Beta* Get an external user in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an external user in the account.
+	cmd.Short = `Get an external user in the account.`
+	cmd.Long = `Get an external user in the account.
 
   Retrieves an external user with the given external ID from the customer's IdP.
   If the user does not exist, it will be created. If the customer is not
@@ -1479,8 +1451,8 @@ Get an external user in the account.
       accounts/{account_id}/external-users/{external_user_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1529,10 +1501,8 @@ func newGetGroup() *cobra.Command {
 	var getGroupReq iamv2.GetGroupRequest
 
 	cmd.Use = "get-group NAME"
-	cmd.Short = `*Beta* Get a group in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a group in the account.
+	cmd.Short = `Get a group in the account.`
+	cmd.Long = `Get a group in the account.
 
   Fetches a group from the Databricks account by its internal ID.
 
@@ -1541,8 +1511,8 @@ Get a group in the account.
       accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1652,10 +1622,8 @@ func newGetServicePrincipal() *cobra.Command {
 	var getServicePrincipalReq iamv2.GetServicePrincipalRequest
 
 	cmd.Use = "get-service-principal NAME"
-	cmd.Short = `*Beta* Get a service principal in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a service principal in the account.
+	cmd.Short = `Get a service principal in the account.`
+	cmd.Long = `Get a service principal in the account.
 
   Fetches a service principal from the Databricks account by its internal ID.
 
@@ -1664,8 +1632,8 @@ Get a service principal in the account.
       accounts/{account_id}/service-principals/{service_principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1714,10 +1682,8 @@ func newGetUser() *cobra.Command {
 	var getUserReq iamv2.GetUserRequest
 
 	cmd.Use = "get-user NAME"
-	cmd.Short = `*Beta* Get a user in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a user in the account.
+	cmd.Short = `Get a user in the account.`
+	cmd.Long = `Get a user in the account.
 
   Fetches a user from the Databricks account by its internal ID.
 
@@ -1726,8 +1692,8 @@ Get a user in the account.
       accounts/{account_id}/users/{user_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1845,10 +1811,8 @@ func newGetWorkspaceAssignment() *cobra.Command {
 	var getWorkspaceAssignmentReq iamv2.GetWorkspaceAssignmentRequest
 
 	cmd.Use = "get-workspace-assignment NAME"
-	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a workspace assignment for a principal.
+	cmd.Short = `Get a workspace assignment for a principal.`
+	cmd.Long = `Get a workspace assignment for a principal.
 
   Returns the assignment for a principal in a workspace.
 
@@ -1857,8 +1821,8 @@ Get a workspace assignment for a principal.
       accounts/{account_id}/workspaces/{workspace_id}/workspace-assignments/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1993,10 +1957,8 @@ func newListDirectGroupMembers() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-direct-group-members PARENT"
-	cmd.Short = `*Beta* List direct group members.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List direct group members.
+	cmd.Short = `List direct group members.`
+	cmd.Long = `List direct group members.
 
   Lists provisioned direct members of a group with their membership source
   (internal or from identity provider).
@@ -2006,8 +1968,8 @@ List direct group members.
       Format: accounts/{account_id}/groups/{group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2073,10 +2035,8 @@ func newListGroups() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-groups PARENT"
-	cmd.Short = `*Beta* List groups in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List groups in the account.
+	cmd.Short = `List groups in the account.`
+	cmd.Long = `List groups in the account.
 
   Lists the groups in the Databricks account, returning one page per call.
   Supports filtering by group name or external ID.
@@ -2086,8 +2046,8 @@ List groups in the account.
       accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2232,10 +2192,8 @@ func newListServicePrincipals() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-service-principals PARENT"
-	cmd.Short = `*Beta* List service principals in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List service principals in the account.
+	cmd.Short = `List service principals in the account.`
+	cmd.Long = `List service principals in the account.
 
   Lists the service principals in the Databricks account, returning one page per
   call. Supports filtering by application ID or external ID.
@@ -2245,8 +2203,8 @@ List service principals in the account.
       Format: accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2301,10 +2259,8 @@ func newListTransitiveParentGroups() *cobra.Command {
 	cmd.Flags().StringVar(&listTransitiveParentGroupsReq.PageToken, "page-token", listTransitiveParentGroupsReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
 
 	cmd.Use = "list-transitive-parent-groups PARENT"
-	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List all transitive parent groups of a principal.
+	cmd.Short = `List all transitive parent groups of a principal.`
+	cmd.Long = `List all transitive parent groups of a principal.
 
   Lists all transitive parent groups of a principal.
 
@@ -2313,8 +2269,8 @@ List all transitive parent groups of a principal.
       to list. Format: accounts/{account_id}/principals/{principal_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2377,10 +2333,8 @@ func newListUsers() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-users PARENT"
-	cmd.Short = `*Beta* List users in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List users in the account.
+	cmd.Short = `List users in the account.`
+	cmd.Long = `List users in the account.
 
   Lists the users in the Databricks account, returning one page per call.
   Supports filtering by username or external ID.
@@ -2390,8 +2344,8 @@ List users in the account.
       accounts/{account_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2541,10 +2495,8 @@ func newListWorkspaceAssignments() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-assignments PARENT"
-	cmd.Short = `*Beta* List workspace assignments for a workspace.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List workspace assignments for a workspace.
+	cmd.Short = `List workspace assignments for a workspace.`
+	cmd.Long = `List workspace assignments for a workspace.
 
   Lists workspace assignments for a workspace. The response omits the
   per-principal entitlement fields (entitlements and
@@ -2556,8 +2508,8 @@ List workspace assignments for a workspace.
       Format: accounts/{account_id}/workspaces/{workspace_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2880,10 +2832,8 @@ func newUpdateGroup() *cobra.Command {
 	cmd.Flags().StringVar(&updateGroupReq.Group.Name, "name", updateGroupReq.Group.Name, `The resource name of the group.`)
 
 	cmd.Use = "update-group NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a group in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a group in the account.
+	cmd.Short = `Update a group in the account.`
+	cmd.Long = `Update a group in the account.
 
   Updates an existing group in the Databricks account. Only the fields named in
   the update mask are modified. Returns the updated Group resource.
@@ -2903,8 +2853,8 @@ Update a group in the account.
     UPDATE_MASK: Required. The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -2973,10 +2923,8 @@ func newUpdateServicePrincipal() *cobra.Command {
 	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.Name, "name", updateServicePrincipalReq.ServicePrincipal.Name, `The resource name of the service principal.`)
 
 	cmd.Use = "update-service-principal NAME UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
-	cmd.Short = `*Beta* Update a service principal in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a service principal in the account.
+	cmd.Short = `Update a service principal in the account.`
+	cmd.Long = `Update a service principal in the account.
 
   Updates an existing service principal in the Databricks account. Only the
   fields named in the update mask are modified. Returns the updated
@@ -3000,8 +2948,8 @@ Update a service principal in the account.
       Supported values: [ACTIVE, INACTIVE]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -3087,10 +3035,8 @@ func newUpdateUser() *cobra.Command {
 	cmd.Flags().StringVar(&updateUserReq.User.Name, "name", updateUserReq.User.Name, `The resource name of the user.`)
 
 	cmd.Use = "update-user NAME UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
-	cmd.Short = `*Beta* Update a user in the account.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a user in the account.
+	cmd.Short = `Update a user in the account.`
+	cmd.Long = `Update a user in the account.
 
   Updates an existing user in the Databricks account and returns the updated
   user. Only the fields named in the update mask are modified. The updatable
@@ -3111,8 +3057,8 @@ Update a user in the account.
       Supported values: [ACTIVE, INACTIVE]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -3206,10 +3152,8 @@ func newUpdateWorkspaceAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, "name", updateWorkspaceAssignmentReq.WorkspaceAssignment.Name, `The resource name of the workspace assignment.`)
 
 	cmd.Use = "update-workspace-assignment NAME UPDATE_MASK PRINCIPAL_ID"
-	cmd.Short = `*Beta* Update a workspace assignment.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a workspace assignment.
+	cmd.Short = `Update a workspace assignment.`
+	cmd.Long = `Update a workspace assignment.
 
   Updates the entitlements of a directly assigned principal in a workspace.
   Changes are applied one at a time rather than atomically. If the request fails
@@ -3227,8 +3171,8 @@ Update a workspace assignment.
       different principal, create a new assignment.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

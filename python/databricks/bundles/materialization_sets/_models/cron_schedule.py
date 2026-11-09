@@ -20,7 +20,7 @@ class CronSchedule:
     """
     :meta private: [EXPERIMENTAL]
 
-    A cron-based schedule trigger for the materialization pipeline.
+    A cron-based schedule trigger for batch materialization.
     """
 
     cron_expression: VariableOrOptional[str] = None

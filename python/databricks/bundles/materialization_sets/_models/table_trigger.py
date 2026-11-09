@@ -20,8 +20,8 @@ class TableTrigger:
     """
     :meta private: [EXPERIMENTAL]
 
-    A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an
-    SdpSource's input_tables.
+    A trigger that starts batch materialization when the feature's source table changes:
+    a DeltaTableSource's table, or an SdpSource's input_tables.
     """
 
     condition: VariableOrOptional[TableTriggerTableTriggerCondition] = None

@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.193.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.195.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.3.0 // Apache-2.0
@@ -21,7 +21,7 @@ require (
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/jackc/pgx/v5 v5.11.0 // MIT
+	github.com/jackc/pgx/v5 v5.12.0 // MIT
 	github.com/klauspost/pgzip v1.3.0 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
