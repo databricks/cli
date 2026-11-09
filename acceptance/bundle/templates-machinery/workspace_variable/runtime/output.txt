@@ -244,9 +244,12 @@ URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
 user_name: [USERNAME]
 
 >>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=other_workspace musterr [CLI] bundle init ./helpers --profile workspace_custom_host
-Error: profile "other_workspace" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE has workspace ID 1234, but the selected profile has workspace ID [WORKSPACE_ID]
+Error: profile "other_workspace" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE must have the workspace ID of the selected profile, got "1234" and "[WORKSPACE_ID]"
 
 >>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=missing musterr [CLI] bundle debug render-template-schema ./helpers --profile workspace_custom_host
+Error: failed to load profile "missing" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE: resolve: [TEST_TMP_DIR]/.databrickscfg has no missing profile configured. Config: profile=missing, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+>>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=missing musterr [CLI] pipelines init --output-dir pipelines_out --profile workspace_custom_host
 Error: failed to load profile "missing" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE: resolve: [TEST_TMP_DIR]/.databrickscfg has no missing profile configured. Config: profile=missing, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 
 === ID

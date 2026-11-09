@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -153,7 +152,7 @@ func (c *config) assignDefaultValues(r *renderer) error {
 func (c *config) resolveFormat(format, description string) (string, error) {
 	switch format {
 	case "warehouse_path":
-		w := cmdctx.WorkspaceClient(c.ctx)
+		w := helpersClient(c.ctx)
 		warehouseId, err := cfgpickers.SelectWarehouse(c.ctx, w, description)
 		if err != nil {
 			return "", err
