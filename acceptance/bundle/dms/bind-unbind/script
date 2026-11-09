@@ -27,10 +27,11 @@ rm -f "$OUT_REQUESTS"
 
 title "Unbind preserves the shadow history marker and leaves the job intact"
 trace $CLI bundle deployment unbind foo
-trace print_requests.py --dms //versions --oneline --keep
-trace print_requests.py //jobs //permissions
+trace print_requests.py --dms //versions //jobs //permissions --oneline
 trace jq '{features, state}' .databricks/bundle/default/resources.json
 trace $CLI jobs get "$job_id" | jq '{job_id}'
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, resource_id, last_action_type})'
+
 
 rm -f "$OUT_REQUESTS"
 

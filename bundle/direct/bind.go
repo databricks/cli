@@ -269,6 +269,7 @@ func (result *BindResult) Cancel() {
 
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
+// It returns nil DMS metadata when deployment history is disabled.
 func (b *DeploymentBundle) Unbind(ctx context.Context, configRoot *config.Root, statePath, resourceKey string) (*DMSUnbindMetadata, error) {
 	if err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
 		return nil, err
