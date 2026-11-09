@@ -1,0 +1,6 @@
+# Linux only: inittrace clocks elsewhere are too coarse or noisy to compare against a
+# few-millisecond threshold (on Windows they can be quantized to the ~15.6 ms system tick).
+# Absent GOOS keys default to enabled, so the other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false

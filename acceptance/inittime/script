@@ -1,0 +1,12 @@
+# Package init() runs on every CLI invocation, so a slow one (often arriving through a
+# transitive dependency upgrade) delays every command. Today the slowest package takes
+# ~1 ms; go-runewidth v0.0.27 took ~20 ms. out.initlimits.txt makes new inits and
+# several-fold slowdowns visible in review; the 5 ms limit cannot be updated away.
+
+# The set of packages with an init differs per architecture; CI runs on amd64.
+if [ "$(uname -m)" != x86_64 ]; then
+    echo "SKIP_TEST out.initlimits.txt is recorded for amd64"
+    exit 0
+fi
+
+check_init_time.py --max-ms 5 --limits out.initlimits.txt -- $CLI --version
