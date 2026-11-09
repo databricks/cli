@@ -37,7 +37,6 @@ func checkOmitemptyBools(t *testing.T, typ reflect.Type, skip, seen map[reflect.
 	keepsZeros := ok && len(fsf.Index) == 1
 	cliDefined := strings.HasPrefix(typ.PkgPath(), "github.com/databricks/cli/") && !skip[typ]
 	for f := range typ.Fields() {
-		f := f
 		checkOmitemptyBools(t, f.Type, skip, seen)
 		// Readonly fields are set by the CLI, not by users.
 		if structtag.BundleTag(f.Tag.Get("bundle")).ReadOnly() {
