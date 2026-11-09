@@ -97,6 +97,12 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test_catalog_[UNIQUE_NAME]",
         "new": "test_catalog_renamed_[UNIQUE_NAME]",
         "remote": "test_catalog_[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[SCHEMA_ID]"
       }
     }
   },
@@ -138,6 +144,12 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test_catalog_[UNIQUE_NAME]",
         "new": "test_catalog_renamed_[UNIQUE_NAME]",
         "remote": "test_catalog_[UNIQUE_NAME]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]",
+        "remote": "[VOLUME_ID]"
       }
     }
   }

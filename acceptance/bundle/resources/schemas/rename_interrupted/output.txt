@@ -87,6 +87,12 @@ Exit code: [KILLED]
       "action": "skip",
       "reason": "immutable_backend_value",
       "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[VOLUME_ID]"
+    },
+    "volume_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "old": "[VOLUME_ID]",
+      "remote": "[VOLUME_ID]"
     }
   }
 }

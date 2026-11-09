@@ -69,6 +69,11 @@ Exit code: [KILLED]
       "reason": "id_field",
       "old": "test-schema-[UNIQUE_NAME]",
       "new": "test-schema-renamed-[UNIQUE_NAME]"
+    },
+    "volume_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "old": "[VOLUME_ID]"
     }
   }
 }

@@ -60,6 +60,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test-schema-[UNIQUE_NAME]",
         "new": "test-schema-renamed-[UNIQUE_NAME]",
         "remote": "test-schema-[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
       }
     }
   },
@@ -97,6 +103,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test-schema-[UNIQUE_NAME]",
         "new": "test-schema-renamed-[UNIQUE_NAME]",
         "remote": "test-schema-[UNIQUE_NAME]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]",
+        "remote": "[VOLUME_ID]"
       }
     }
   }
