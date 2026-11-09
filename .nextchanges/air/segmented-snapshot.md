@@ -1,0 +1,1 @@
+* `databricks air run` packages working-tree code snapshots as parallel gzip segments with an index, which shortens submission for large code directories. ([#7403](https://github.com/databricks/cli/pull/7403))
