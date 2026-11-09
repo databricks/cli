@@ -68,10 +68,6 @@ type ResourceLifecycleConfig struct {
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
 
-	// DropChanges: field patterns whose changes are left out of the plan: fields that config never
-	// sets but the state records, such as an internal ID recorded from the backend.
-	DropChanges []FieldRule `yaml:"drop_changes,omitempty"`
-
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -159,7 +155,6 @@ const (
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
-	DropChanges:           nil,
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
