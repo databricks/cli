@@ -66,7 +66,7 @@ func TestHasChange(t *testing.T) {
 	}
 }
 
-func TestOnlyParentRenamed(t *testing.T) {
+func TestHasOnlySingleReason(t *testing.T) {
 	parentRenamed := &deployplan.ChangeDesc{Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed}
 	tests := []struct {
 		name    string
@@ -99,10 +99,17 @@ func TestOnlyParentRenamed(t *testing.T) {
 			changes: deployplan.Changes{"name": {Action: deployplan.UpdateWithID, Reason: "id_changes"}},
 			want:    false,
 		},
+		{
+			name: "only skipped changes",
+			changes: deployplan.Changes{
+				"name": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAlreadySet},
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, tt.changes.OnlyParentRenamed())
+			assert.Equal(t, tt.want, tt.changes.HasOnlySingleReason(deployplan.ReasonParentRenamed))
 		})
 	}
 }
