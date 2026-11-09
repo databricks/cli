@@ -54,7 +54,7 @@ def render(data, indent):
     if isinstance(data, dict):
         for k in _PLAN_HEADER_KEYS:
             data.pop(k, None)  # 4. plan header, present only at the root
-        # Strip the summary's DMS IDs, keeping deployment settings such as locks.
+        # 5. Strip the summary's DMS IDs, keeping deployment settings such as locks.
         bundle = data.get("bundle")
         if isinstance(bundle, dict):
             deployment = bundle.get("deployment")
