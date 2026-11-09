@@ -57,6 +57,7 @@ F resources.clusters.*.lifecycle.started
 1 presets.name_prefix
 F presets.pipelines_development
 1 experimental
+F experimental.use_legacy_run_as
 T telemetry.ArtifactBuildCommandIsSet
 F telemetry.ArtifactBuildCommandIsSet
 T telemetry.ArtifactFilesIsSet
