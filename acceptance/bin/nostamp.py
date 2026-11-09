@@ -7,13 +7,14 @@ those through this so an acceptance golden compares equal whether or not recordi
 is a 2-space indent, keys in input order, <>& left unescaped, and integers at full precision.
 Tests under bundle/dms assert the stamp itself and must not use it.
 
-Removed in three shapes plus the plan header:
+Removed in these shapes:
   1. deployment_id/version_id nested in a deployment block, recognized by the
      neighbouring "kind" and "metadata_file_path", which are kept; version_id
      == "" is kept (a Terraform state dump carries that for an unstamped job).
   2. changes entries keyed "deployment.deployment_id" / "deployment.version_id".
   3. a changes object emptied by (2), or already empty.
   4. the recorded plan header field features.
+  5. deployment_id/latest_version_id in bundle.deployment; other settings are kept.
 """
 
 import argparse
@@ -23,6 +24,7 @@ import sys
 _STAMP_KEYS = ("deployment_id", "version_id")
 _CHANGE_KEYS = ("deployment.deployment_id", "deployment.version_id")
 _PLAN_HEADER_KEYS = ("features",)
+_BUNDLE_STAMP_KEYS = ("deployment_id", "latest_version_id")
 
 
 def scrub(node):
@@ -48,10 +50,30 @@ def scrub(node):
 
 
 def render(data, indent):
+    """
+    >>> data = {"bundle": {"deployment": {"deployment_id": "42", "latest_version_id": 7}}}
+    >>> json.loads(render(data, 2))
+    {'bundle': {}}
+    >>> deployment = {"deployment_id": "42", "latest_version_id": 7, "lock": {"enabled": False}}
+    >>> json.loads(render({"bundle": {"deployment": deployment}}, 2))
+    {'bundle': {'deployment': {'lock': {'enabled': False}}}}
+    >>> json.loads(render({"bundle": {"deployment": {"lock": {"enabled": False}}}}, 2))
+    {'bundle': {'deployment': {'lock': {'enabled': False}}}}
+    >>> json.loads(render({"bundle": {"deployment": {}}}, 2))
+    {'bundle': {'deployment': {}}}
+    """
     data = scrub(data)
     if isinstance(data, dict):
         for k in _PLAN_HEADER_KEYS:
             data.pop(k, None)  # 4. plan header, present only at the root
+        bundle = data.get("bundle")
+        if isinstance(bundle, dict):
+            deployment = bundle.get("deployment")
+            if isinstance(deployment, dict) and any(k in deployment for k in _BUNDLE_STAMP_KEYS):
+                for k in _BUNDLE_STAMP_KEYS:
+                    deployment.pop(k, None)
+                if not deployment:
+                    bundle.pop("deployment")
     return json.dumps(data, indent=indent, ensure_ascii=False, separators=(",", ": "))
 
 
