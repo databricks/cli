@@ -1,4 +1,2 @@
-# Dedicated regression: bind previews diffs without staging an immutable snapshot.
-# History must still be recorded before a snapshot exists, and preserve the last
-# deployed snapshot's file path when one already exists.
+# Reusing bundle deploy code breaks immutable snapshots because bind does not upload or stage files.
 Cloud = false # Assert history metadata without requiring snapshot permissions on a real workspace.
