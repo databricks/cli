@@ -147,11 +147,6 @@ func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string,
 	parent := config.CatalogName + "." + config.SchemaName + "."
 	newID := parent + config.Name
 
-	if entry.Changes.OnlyParentRenamed() {
-		// UC already moved the model with its parent; only the ID changes.
-		return newID, nil, nil
-	}
-
 	newName := ""
 	if config.Name != nameFromID {
 		newName = config.Name
