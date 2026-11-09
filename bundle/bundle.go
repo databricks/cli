@@ -441,7 +441,7 @@ func (b *Bundle) SyncMode() config.SyncMode {
 	switch {
 	case b.Config.Workspace.SyncMode != "":
 		return b.Config.Workspace.SyncMode
-	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+	case b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.ImmutableFolder):
 		return config.SyncModeImmutable
 	case config.IsExplicitlyEnabled(sourceLinked):
 		return config.SyncModeInPlace

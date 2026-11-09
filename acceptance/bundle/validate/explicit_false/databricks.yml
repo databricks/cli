@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle
+  deployment:
+    lock:
+      force: false
+
+workspace:
+  azure_use_msi: false
+
+variables:
+  plain:
+    default: x
+    sensitive: false
+
+artifacts:
+  whl:
+    type: whl
+    build: "true"
+    dynamic_version: false
+  overridden:
+    type: whl
+    build: "true"
+    dynamic_version: true
+
+experimental:
+  python_wheel_wrapper: false
+  use_legacy_run_as: false
+  skip_artifact_cleanup: false
+  skip_name_prefix_for_schema: false
+
+targets:
+  dev:
+    default: true
+    artifacts:
+      overridden:
+        dynamic_version: false

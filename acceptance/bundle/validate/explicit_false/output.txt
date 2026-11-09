@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "lock_force": false,
+  "workspace": {
+    "azure_use_msi": false
+  },
+  "variables": {
+    "plain": {
+      "sensitive": false
+    }
+  },
+  "artifacts": {
+    "overridden": {
+      "dynamic_version": false
+    },
+    "whl": {
+      "dynamic_version": false
+    }
+  },
+  "experimental": {
+    "python_wheel_wrapper": false,
+    "skip_artifact_cleanup": false,
+    "skip_name_prefix_for_schema": false,
+    "use_legacy_run_as": false
+  }
+}
