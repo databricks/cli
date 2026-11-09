@@ -19,3 +19,6 @@ updatable_id_fields:
 backend_defaults:
   # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
   - field: properties['unity.catalog.managed.*.defaults.*']
+# Assigned by the backend and kept across renames: lets the plan find a catalog renamed outside the
+# bundle or by an interrupted deploy (see InternalIDField).
+internal_id_field: id

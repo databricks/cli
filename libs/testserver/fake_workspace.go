@@ -241,7 +241,7 @@ type FakeWorkspace struct {
 	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
 	InstancePools         map[string]compute.GetInstancePool
 	ClusterPolicies       map[string]compute.Policy
-	Catalogs              map[string]catalog.CatalogInfo
+	Catalogs              map[string]fakeCatalog
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ModelServices         map[string]catalog.ModelService
@@ -535,7 +535,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Monitors:              map[string]catalog.MonitorInfo{},
 		DataQualityMonitors:   map[string]dataquality.Monitor{},
 		Apps:                  map[string]apps.App{},
-		Catalogs:              map[string]catalog.CatalogInfo{},
+		Catalogs:              map[string]fakeCatalog{},
 		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
 		Schemas:               map[string]catalog.SchemaInfo{},
 		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
