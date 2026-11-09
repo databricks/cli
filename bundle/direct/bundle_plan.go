@@ -501,13 +501,6 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if cfg != nil {
-			if _, ok := findMatchingRule(path, cfg.DropChanges); ok {
-				toDrop = append(toDrop, pathString)
-				continue
-			}
-		}
-
 		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
 		// against ch.New. Skip it for fields whose remote value is fabricated and thus
 		// meaningless: declared ignore_remote_changes (present in RemoteType but read back

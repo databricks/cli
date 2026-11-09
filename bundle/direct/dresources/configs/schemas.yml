@@ -16,7 +16,12 @@ backend_defaults:
   # Without this, every subsequent plan produces an Update whose payload is empty,
   # and UC rejects it with "UpdateSchema Nothing to update".
   - field: properties['unity.catalog.managed.*.defaults.*']
-drop_changes:
+ignore_local_changes:
   # Recorded from the backend (see InternalID); config never sets it.
+  - field: schema_id
+    reason: internal_id
+ignore_remote_changes:
+  # The spec does not mark schema_id output-only, so no generated rule covers a state
+  # recorded before schema_id was.
   - field: schema_id
     reason: internal_id
