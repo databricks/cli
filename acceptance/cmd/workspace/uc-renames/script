@@ -1,0 +1,54 @@
+CATALOG="test_catalog_${UNIQUE_NAME}"
+RENAMED="test_catalog_renamed_${UNIQUE_NAME}"
+
+cleanup() {
+    # Whichever name the catalog ended up with.
+    errcode $CLI catalogs delete "$CATALOG" --force &> LOG.cleanup
+    errcode $CLI catalogs delete "$RENAMED" --force &>> LOG.cleanup
+}
+trap cleanup EXIT
+
+exists() {
+    "$@" &> /dev/null && echo "exists" || echo "gone"
+}
+
+title "Create a catalog with a schema, and a volume, a registered model and a secret in it"
+trace $CLI catalogs create "$CATALOG" | jq '{name}'
+trace $CLI schemas create myschema "$CATALOG" | jq '{full_name}'
+trace $CLI volumes create "$CATALOG" myschema myvolume MANAGED | jq '{full_name}'
+trace $CLI registered-models create --catalog-name "$CATALOG" --schema-name myschema --name mymodel | jq '{full_name}'
+trace $CLI secrets-uc create-secret mysecret "$CATALOG" myschema value | jq '{full_name}'
+
+title "Creating a catalog under a taken name fails"
+trace musterr $CLI catalogs create "$CATALOG"
+
+title "Renaming the volume lowercases the new name"
+trace $CLI volumes update "$CATALOG.myschema.myvolume" --new-name MyVolume2 | jq '{full_name, name}'
+
+title "Renaming the model keeps its full name in sync"
+trace $CLI registered-models update "$CATALOG.myschema.mymodel" --new-name mymodel2 | jq '{full_name, name}'
+
+title "Renaming the schema moves the volume, the model and the secret with it"
+trace $CLI schemas update "$CATALOG.myschema" --new-name myschema2 | jq '{full_name}'
+trace $CLI volumes read "$CATALOG.myschema2.myvolume2" | jq '{full_name}'
+trace $CLI registered-models get "$CATALOG.myschema2.mymodel2" | jq '{full_name}'
+trace $CLI secrets-uc get-secret "$CATALOG.myschema2.mysecret" | jq '{full_name}'
+
+title "Renaming the catalog moves everything in it"
+trace $CLI catalogs update "$CATALOG" --new-name "$RENAMED" | jq '{name}'
+trace $CLI schemas get "$RENAMED.myschema2" | jq '{full_name}'
+trace $CLI volumes read "$RENAMED.myschema2.myvolume2" | jq '{full_name}'
+trace $CLI registered-models get "$RENAMED.myschema2.mymodel2" | jq '{full_name}'
+trace $CLI secrets-uc get-secret "$RENAMED.myschema2.mysecret" | jq '{full_name}'
+
+title "Deleting the schema with force deletes everything in it\n"
+# Not traced: the "not found" messages differ between UC and the test server.
+$CLI schemas delete "$RENAMED.myschema2" --force
+echo "volume: $(exists $CLI volumes read "$RENAMED.myschema2.myvolume2")"
+echo "model: $(exists $CLI registered-models get "$RENAMED.myschema2.mymodel2")"
+echo "secret: $(exists $CLI secrets-uc get-secret "$RENAMED.myschema2.mysecret")"
+
+title "Deleting the catalog with force deletes its schemas\n"
+trace $CLI schemas create other "$RENAMED" | jq '{full_name}'
+$CLI catalogs delete "$RENAMED" --force
+echo "schema: $(exists $CLI schemas get "$RENAMED.other")"
