@@ -1,4 +1,19 @@
 
+=== validate keeps the empty value
+>>> [CLI] bundle validate -o json
+{
+  "triggers": [
+    {
+      "on_value_change": ""
+    }
+  ],
+  "triggers_state": {
+    "on_value_change": [
+      ""
+    ]
+  }
+}
+
 === a watch on an empty value deploys and records it
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

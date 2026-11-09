@@ -4,6 +4,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "validate keeps the empty value"
+trace $CLI bundle validate -o json | jq .resources.job_runs.my_run.lifecycle
+
 title "a watch on an empty value deploys and records it"
 trace $CLI bundle deploy
 read_id.py my_job > /dev/null
