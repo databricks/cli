@@ -9,7 +9,7 @@ Warn: Failed to record unbind history: failed to create deployment version: Faul
 >>> fault.py PATCH /api/2.0/bundle/** 400 0 1
 
 >>> [CLI] bundle deployment unbind record_failed
-Warn: Failed to record deployment history: recording operation for resources.jobs.record_failed: Fault injected by test.
+Warn: Failed to record unbind history: Fault injected by test.
 
 === A version completion failure does not prevent unbinding
 >>> fault.py POST /api/2.0/bundle/deployments/*/versions/*/complete 400 0 1
