@@ -124,7 +124,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	nameFromID := items[len(items)-1]
 
 	// The parents come from config: a renamed catalog or schema moves the volume with it,
-	// leaving id stale (see followParentRenames).
+	// leaving id stale (see followsParentRename).
 	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
 
 	if entry.Changes.OnlyParentRenamed() {
