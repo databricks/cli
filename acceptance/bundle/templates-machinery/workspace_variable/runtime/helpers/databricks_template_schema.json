@@ -1,0 +1,10 @@
+{
+    "welcome_message": "workspace_host: {{ workspace_host }}, URL: {{ .workspace.URL }}",
+    "properties": {
+        "host": {
+            "type": "string",
+            "description": "Host for {{ user_name }}",
+            "default": "{{ workspace_host }}"
+        }
+    }
+}

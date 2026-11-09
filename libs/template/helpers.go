@@ -13,7 +13,6 @@ import (
 	"text/template"
 	"uuid"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -61,7 +60,7 @@ var bundleUuid = uuid.New().String()
 const deploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_DEPLOYMENT_HISTORY"
 
 func loadHelpers(ctx context.Context) template.FuncMap {
-	w := cmdctx.WorkspaceClient(ctx)
+	w := helpersClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}

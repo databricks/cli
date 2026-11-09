@@ -44,7 +44,17 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			return err
+		}
+		ctx, err := template.ConfigureHelpersClient(cmd.Context())
+		if err != nil {
+			return err
+		}
+		cmd.SetContext(ctx)
+		return nil
+	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if tag != "" && branch != "" {
 			return errors.New("only one of --tag or --branch can be specified")

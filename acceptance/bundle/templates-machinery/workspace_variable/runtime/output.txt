@@ -221,6 +221,34 @@ URL "/jobs": [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
 URLID: "[WORKSPACE_ID]"
 
+=== Helpers profile
+
+>>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=workspace_classic_id [CLI] bundle debug render-template-schema ./helpers --profile workspace_custom_host
+{
+  "welcome_message": "workspace_host: [DATABRICKS_URL], URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]",
+  "success_message": null,
+  "properties": {
+    "host": {
+      "description": "Host for [USERNAME]",
+      "default": "[DATABRICKS_URL]"
+    }
+  }
+}
+
+>>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=workspace_classic_id [CLI] bundle init ./helpers --profile workspace_custom_host
+workspace_host: [DATABRICKS_URL], URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+✨ Successfully initialized template
+workspace_host: [DATABRICKS_URL]
+host: [DATABRICKS_URL]
+URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+user_name: [USERNAME]
+
+>>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=other_workspace musterr [CLI] bundle init ./helpers --profile workspace_custom_host
+Error: profile "other_workspace" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE has workspace ID 1234, but the selected profile has workspace ID [WORKSPACE_ID]
+
+>>> DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=missing musterr [CLI] bundle debug render-template-schema ./helpers --profile workspace_custom_host
+Error: failed to load profile "missing" from DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE: resolve: [TEST_TMP_DIR]/.databrickscfg has no missing profile configured. Config: profile=missing, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
 === ID
 
 >>> [CLI] bundle init ./id --profile workspace_classic

@@ -52,6 +52,23 @@ grep ^URL urls.txt
 cd ..
 rm -r in_bundle
 
+# DABs in the Workspace selects the profile for the host of the page and points the helpers at a
+# profile for the workspace's own host: workspace_host keeps that host, .workspace follows the page.
+title "Helpers profile\n"
+trace DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=workspace_classic_id $CLI bundle debug render-template-schema ./helpers --profile workspace_custom_host | schema_fields
+trace DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=workspace_classic_id $CLI bundle init ./helpers --profile workspace_custom_host
+cat helpers.txt
+rm helpers.txt
+
+cat >> .databrickscfg <<EOT
+
+[other_workspace]
+host = $CUSTOM_HOST
+workspace_id = 1234
+EOT
+trace DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=other_workspace musterr $CLI bundle init ./helpers --profile workspace_custom_host
+trace DATABRICKS_BUNDLE_INIT_HELPERS_PROFILE=missing musterr $CLI bundle debug render-template-schema ./helpers --profile workspace_custom_host
+
 # A classic profile has no workspace_id, so URL has no ?w=, but ID returns the ID that the SDK
 # resolved from host metadata.
 title "ID\n"
