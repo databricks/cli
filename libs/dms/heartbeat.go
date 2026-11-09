@@ -19,8 +19,8 @@ type Heartbeat struct {
 	cancel  context.CancelFunc
 }
 
-// StartHeartbeat starts the heartbeat. We count CreateVersion as the first heartbeat.
-func StartHeartbeat(ctx context.Context, deploymentID string, versionNum int) *Heartbeat {
+// startVersionHeartbeat starts the heartbeat. We count CreateVersion as the first heartbeat.
+func startVersionHeartbeat(ctx context.Context, deploymentID string, versionNum int) *Heartbeat {
 	name := VersionName(deploymentID, versionNum)
 	return startHeartbeat(ctx, func(ctx context.Context) error {
 		_, err := cmdctx.WorkspaceClient(ctx).BundleDeployments.Heartbeat(ctx, bundledeployments.HeartbeatRequest{Name: name})

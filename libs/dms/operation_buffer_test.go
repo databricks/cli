@@ -30,11 +30,6 @@ func queued() *OperationBuffer {
 	}
 }
 
-// idleHeartbeat is a heartbeat whose sends do nothing, for buffers that never write.
-func idleHeartbeat(ctx context.Context) *Heartbeat {
-	return startHeartbeat(ctx, func(context.Context) error { return nil })
-}
-
 func stateUpdate(t *testing.T, name string) OperationUpdate {
 	t.Helper()
 	update, err := NewStateUpdate("id-1", json.RawMessage(`{"state":{"name":"`+name+`"}}`), false)
@@ -79,7 +74,7 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 
 func TestDrainIsIdempotent(t *testing.T) {
 	// An idle writer must finish when draining begins.
-	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{}, idleHeartbeat(t.Context()))
+	b := StartOperationBuffer(t.Context(), "dep-1", 1, BufferOptions{})
 	require.NoError(t, b.Drain(t.Context()))
 	require.NoError(t, b.Drain(t.Context()))
 }
@@ -124,7 +119,7 @@ func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
 		const operationCount = 1000
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
-		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, OperationCount: operationCount}, idleHeartbeat(ctx))
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, OperationCount: operationCount})
 		synctest.Wait()
 		cancel()
 		<-b.done

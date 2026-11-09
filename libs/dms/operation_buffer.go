@@ -32,7 +32,8 @@ type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
 
-	// heartbeat is told of each successful write, which the service counts as a heartbeat.
+	// heartbeat keeps the version's update_time fresh until Stop, past Drain. Each successful
+	// write renews it, since the service counts a write as a heartbeat.
 	heartbeat *Heartbeat
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
@@ -72,7 +73,9 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions, heartbeat *Heartbeat) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+	// Started on ctx, not the writer's context below, so it keeps running after Drain.
+	heartbeat := startVersionHeartbeat(ctx, deploymentID, versionNum)
 	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
 	capacity := bufferedOperations
@@ -239,6 +242,11 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 		b.cancel()
 		return b.Err()
 	}
+}
+
+// Stop ends the heartbeat, the buffer's only background work left after Drain.
+func (b *OperationBuffer) Stop() {
+	b.heartbeat.Stop()
 }
 
 // setErr keeps the first recording error for Drain to report.
