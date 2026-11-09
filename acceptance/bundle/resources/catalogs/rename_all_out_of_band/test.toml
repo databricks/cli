@@ -1,3 +1,4 @@
+Badness = "The plan does not look for a catalog renamed outside the bundle, so it creates it again: the create fails with CATALOG_ALREADY_EXISTS on every deploy, and destroy leaves the renamed catalog behind. Same on main."
 Cloud = true
 
 Ignore = [
