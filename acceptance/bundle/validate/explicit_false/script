@@ -1,5 +1,5 @@
 # An explicit false is kept in the config, and a target can override true with false
-# (artifacts.overridden.dynamic_version).
+# (lock.force, azure_use_msi and artifacts.overridden.dynamic_version).
 trace $CLI bundle validate -o json | jq '{
   lock_force: .bundle.deployment.lock.force,
   workspace: .workspace | {azure_use_msi},

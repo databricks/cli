@@ -2,10 +2,10 @@ bundle:
   name: test-bundle
   deployment:
     lock:
-      force: false
+      force: true
 
 workspace:
-  azure_use_msi: false
+  azure_use_msi: true
 
 variables:
   plain:
@@ -31,6 +31,13 @@ experimental:
 targets:
   dev:
     default: true
+    # Each of these turns off what the root config turns on.
+    bundle:
+      deployment:
+        lock:
+          force: false
+    workspace:
+      azure_use_msi: false
     artifacts:
       overridden:
         dynamic_version: false

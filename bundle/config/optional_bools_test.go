@@ -5,27 +5,46 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/stretchr/testify/assert"
 )
 
-// An omitempty bool in a CLI-defined config struct must be a *bool, unless the
-// struct declares ForceSendFields. Otherwise an explicit false is lost: the
-// typed-to-dynamic conversion that runs after every mutator drops zero values, so
-// the false never shows in the config and a target cannot override true with false.
-func TestOmitemptyBoolsArePointers(t *testing.T) {
-	// replace_existing is a resource input passed to the API as is; it only
-	// matters when true.
-	skip := map[reflect.Type]bool{
-		reflect.TypeFor[resources.PostgresEndpointConfig](): true,
-		reflect.TypeFor[resources.PostgresDatabaseConfig](): true,
-		reflect.TypeFor[resources.PostgresRoleConfig]():     true,
-	}
-	checkOmitemptyBools(t, reflect.TypeFor[Root](), skip, map[reflect.Type]bool{})
+// plainBools are the bool fields of CLI-defined config structs that predate
+// TestConfigBoolsArePointers. Do not add to this list: declare new fields as *bool.
+var plainBools = map[string]string{
+	"config.Bundle.Force": "readonly: set from --force, not by users",
+
+	"config.Deployment.FailOnActiveRuns":     "explicit false kept by ForceSendFields",
+	"config.Presets.ArtifactsDynamicVersion": "explicit false kept by ForceSendFields",
+	"resources.Lifecycle.PreventDestroy":     "explicit false kept by ForceSendFields",
+
+	"resources.DashboardConfig.EmbedCredentials":       "resource input",
+	"resources.PostgresProjectConfig.PurgeOnDelete":    "resource input",
+	"resources.PostgresBranchConfig.PurgeOnDelete":     "resource input",
+	"resources.PostgresBranchConfig.ReplaceExisting":   "resource input",
+	"resources.PostgresEndpointConfig.ReplaceExisting": "resource input",
+	"resources.PostgresDatabaseConfig.ReplaceExisting": "resource input",
+	"resources.PostgresRoleConfig.ReplaceExisting":     "resource input",
 }
 
-func checkOmitemptyBools(t *testing.T, typ reflect.Type, skip, seen map[reflect.Type]bool) {
+// Every bool field of a CLI-defined config struct must be a *bool. A plain bool
+// loses an explicit false: the typed-to-dynamic conversion that runs after every
+// mutator drops zero values, so the false never shows in the config, the bundle
+// bitmap cannot record it, and a target cannot override true with false.
+func TestConfigBoolsArePointers(t *testing.T) {
+	found := map[string]bool{}
+	findPlainBools(reflect.TypeFor[Root](), map[reflect.Type]bool{}, found)
+
+	for name := range found {
+		_, ok := plainBools[name]
+		assert.True(t, ok, "%s is a bool; declare it as *bool so that an explicit false is kept", name)
+	}
+	for name := range plainBools {
+		assert.True(t, found[name], "%s is no longer a bool; remove it from plainBools", name)
+	}
+}
+
+// findPlainBools records the bool fields of the CLI-defined structs reachable from typ.
+func findPlainBools(typ reflect.Type, seen map[reflect.Type]bool, found map[string]bool) {
 	for typ.Kind() == reflect.Pointer || typ.Kind() == reflect.Slice || typ.Kind() == reflect.Map {
 		typ = typ.Elem()
 	}
@@ -33,17 +52,14 @@ func checkOmitemptyBools(t *testing.T, typ reflect.Type, skip, seen map[reflect.
 		return
 	}
 	seen[typ] = true
-	fsf, ok := typ.FieldByName("ForceSendFields")
-	keepsZeros := ok && len(fsf.Index) == 1
-	cliDefined := strings.HasPrefix(typ.PkgPath(), "github.com/databricks/cli/") && !skip[typ]
+	cliDefined := strings.HasPrefix(typ.PkgPath(), "github.com/databricks/cli/")
 	for f := range typ.Fields() {
-		checkOmitemptyBools(t, f.Type, skip, seen)
-		// Readonly fields are set by the CLI, not by users.
-		if structtag.BundleTag(f.Tag.Get("bundle")).ReadOnly() {
+		if !f.IsExported() || f.Tag.Get("json") == "-" {
 			continue
 		}
-		if cliDefined && !keepsZeros && f.Type.Kind() == reflect.Bool && strings.Contains(f.Tag.Get("json"), ",omitempty") {
-			assert.Fail(t, "omitempty bool", "%s.%s must be a *bool so that an explicit false is kept", typ.Name(), f.Name)
+		findPlainBools(f.Type, seen, found)
+		if cliDefined && f.Type.Kind() == reflect.Bool {
+			found[typ.String()+"."+f.Name] = true
 		}
 	}
 }
