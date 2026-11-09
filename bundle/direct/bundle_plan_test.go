@@ -854,17 +854,25 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
 
-// TestDropChanges: a drop_changes field (volumes' volume_id, which config never sets) leaves the
-// plan entirely, while the volume's other changes stay.
-func TestDropChanges(t *testing.T) {
+// TestInternalIDChangesAreSkipped: volume_id and schema_id are recorded in state but never set by
+// config, so neither the always-different local value nor a state recorded before them plans an update.
+func TestInternalIDChangesAreSkipped(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
-	changes := deployplan.Changes{
-		"volume_id": {Old: "uuid-1", New: nil, Remote: "uuid-1"},
-		"comment":   {Old: "a", New: "b", Remote: "a"},
+	for _, tt := range []struct{ resource, field string }{
+		{"volumes", "volume_id"},
+		{"schemas", "schema_id"},
+	} {
+		for name, ch := range map[string]*deployplan.ChangeDesc{
+			"recorded":     {Old: "uuid-1", New: nil, Remote: "uuid-1"},
+			"not recorded": {Old: nil, New: nil, Remote: "uuid-1"},
+		} {
+			t.Run(tt.resource+" "+name, func(t *testing.T) {
+				changes := deployplan.Changes{tt.field: ch}
+				require.NoError(t, addPerFieldActions(t.Context(), adapters[tt.resource], changes, nil, nil))
+				assert.Equal(t, deployplan.Skip, changes[tt.field].Action)
+			})
+		}
 	}
-	require.NoError(t, addPerFieldActions(t.Context(), adapters["volumes"], changes, nil, nil))
-	assert.NotContains(t, changes, "volume_id")
-	assert.Equal(t, deployplan.Update, changes["comment"].Action)
 }
