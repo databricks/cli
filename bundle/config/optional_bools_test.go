@@ -13,17 +13,11 @@ import (
 var plainBools = map[string]string{
 	"config.Bundle.Force": "readonly: set from --force, not by users",
 
-	"config.Deployment.FailOnActiveRuns":     "explicit false kept by ForceSendFields",
-	"config.Presets.ArtifactsDynamicVersion": "explicit false kept by ForceSendFields",
-	"resources.Lifecycle.PreventDestroy":     "explicit false kept by ForceSendFields",
-
-	"resources.DashboardConfig.EmbedCredentials":       "resource input",
-	"resources.PostgresProjectConfig.PurgeOnDelete":    "resource input",
-	"resources.PostgresBranchConfig.PurgeOnDelete":     "resource input",
-	"resources.PostgresBranchConfig.ReplaceExisting":   "resource input",
-	"resources.PostgresEndpointConfig.ReplaceExisting": "resource input",
-	"resources.PostgresDatabaseConfig.ReplaceExisting": "resource input",
-	"resources.PostgresRoleConfig.ReplaceExisting":     "resource input",
+	// These structs declare ForceSendFields for more than this field, so an
+	// explicit false is kept through it.
+	"config.Presets.ArtifactsDynamicVersion":     "ForceSendFields also keeps the other presets' zero values",
+	"resources.Lifecycle.PreventDestroy":         "ForceSendFields also keeps an explicit depends_on: []",
+	"resources.DashboardConfig.EmbedCredentials": "ForceSendFields is passed on to the dashboards API",
 }
 
 // Every bool field of a CLI-defined config struct must be a *bool. A plain bool

@@ -1,6 +1,7 @@
 bundle:
   name: test-bundle
   deployment:
+    fail_on_active_runs: true
     lock:
       force: true
 
@@ -22,6 +23,46 @@ artifacts:
     build: "true"
     dynamic_version: true
 
+presets:
+  artifacts_dynamic_version: true
+
+resources:
+  dashboards:
+    d:
+      display_name: d
+      warehouse_id: w
+      embed_credentials: true
+  postgres_projects:
+    p:
+      project_id: p
+      purge_on_delete: true
+  postgres_branches:
+    b:
+      parent: ${resources.postgres_projects.p.name}
+      branch_id: b
+      no_expiry: true
+      purge_on_delete: true
+      replace_existing: true
+  postgres_endpoints:
+    e:
+      parent: ${resources.postgres_branches.b.name}
+      endpoint_id: e
+      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      replace_existing: true
+  postgres_roles:
+    r:
+      parent: ${resources.postgres_branches.b.name}
+      role_id: r
+      postgres_role: app_role
+      replace_existing: true
+  postgres_databases:
+    db:
+      parent: ${resources.postgres_branches.b.name}
+      database_id: db
+      postgres_database: app_db
+      role: ${resources.postgres_roles.r.name}
+      replace_existing: true
+
 experimental:
   python_wheel_wrapper: false
   use_legacy_run_as: false
@@ -34,6 +75,7 @@ targets:
     # Each of these turns off what the root config turns on.
     bundle:
       deployment:
+        fail_on_active_runs: false
         lock:
           force: false
     workspace:
@@ -41,3 +83,25 @@ targets:
     artifacts:
       overridden:
         dynamic_version: false
+    presets:
+      artifacts_dynamic_version: false
+    resources:
+      dashboards:
+        d:
+          embed_credentials: false
+      postgres_projects:
+        p:
+          purge_on_delete: false
+      postgres_branches:
+        b:
+          purge_on_delete: false
+          replace_existing: false
+      postgres_endpoints:
+        e:
+          replace_existing: false
+      postgres_roles:
+        r:
+          replace_existing: false
+      postgres_databases:
+        db:
+          replace_existing: false

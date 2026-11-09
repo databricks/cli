@@ -188,14 +188,14 @@ func TestApplyDeployFlags(t *testing.T) {
 		{
 			name:      "failOnActiveRuns ignored when flag unchanged",
 			opts:      bundleDeployOptions{failOnActiveRuns: true},
-			assertion: func(t *testing.T, b *bundle.Bundle) { assert.False(t, b.Config.Bundle.Deployment.FailOnActiveRuns) },
+			assertion: func(t *testing.T, b *bundle.Bundle) { assert.Nil(t, b.Config.Bundle.Deployment.FailOnActiveRuns) },
 		},
 		{
 			name: "failOnActiveRuns applies when --fail-on-active-runs is set",
 			args: []string{"--fail-on-active-runs"},
 			opts: bundleDeployOptions{failOnActiveRuns: true},
 			assertion: func(t *testing.T, b *bundle.Bundle) {
-				assert.True(t, b.Config.Bundle.Deployment.FailOnActiveRuns)
+				assert.True(t, config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.FailOnActiveRuns))
 			},
 		},
 	}

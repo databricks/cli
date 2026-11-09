@@ -29,7 +29,7 @@ bundle.compute_id	string	INPUT
 bundle.databricks_cli_version	string	INPUT
 bundle.deployment	config.Deployment	INPUT
 bundle.deployment.deployment_id	string	INPUT
-bundle.deployment.fail_on_active_runs	bool	INPUT
+bundle.deployment.fail_on_active_runs	*bool	INPUT
 bundle.deployment.latest_version_id	int	INPUT
 bundle.deployment.lock	config.Lock	INPUT
 bundle.deployment.lock.enabled	*bool	INPUT
@@ -75,7 +75,7 @@ environments.*.bundle.compute_id	string	INPUT
 environments.*.bundle.databricks_cli_version	string	INPUT
 environments.*.bundle.deployment	config.Deployment	INPUT
 environments.*.bundle.deployment.deployment_id	string	INPUT
-environments.*.bundle.deployment.fail_on_active_runs	bool	INPUT
+environments.*.bundle.deployment.fail_on_active_runs	*bool	INPUT
 environments.*.bundle.deployment.latest_version_id	int	INPUT
 environments.*.bundle.deployment.lock	config.Lock	INPUT
 environments.*.bundle.deployment.lock.enabled	*bool	INPUT
@@ -292,7 +292,7 @@ targets.*.bundle.compute_id	string	INPUT
 targets.*.bundle.databricks_cli_version	string	INPUT
 targets.*.bundle.deployment	config.Deployment	INPUT
 targets.*.bundle.deployment.deployment_id	string	INPUT
-targets.*.bundle.deployment.fail_on_active_runs	bool	INPUT
+targets.*.bundle.deployment.fail_on_active_runs	*bool	INPUT
 targets.*.bundle.deployment.latest_version_id	int	INPUT
 targets.*.bundle.deployment.lock	config.Lock	INPUT
 targets.*.bundle.deployment.lock.enabled	*bool	INPUT
