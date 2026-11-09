@@ -500,16 +500,20 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
+		// Config never sets the internal ID; the framework records it from the remote state.
+		if adapter.IsInternalIDField(path) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonInternalID
+			continue
+		}
+
 		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
 		// against ch.New. Skip it for fields whose remote value is fabricated and thus
 		// meaningless: declared ignore_remote_changes (present in RemoteType but read back
 		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
 		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
 		// new == remote (both nil, say) wrongly skips a real local change.
-		if adapter.IsInternalIDField(path) {
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonInternalID
-		} else if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmptyChange(ch) {
