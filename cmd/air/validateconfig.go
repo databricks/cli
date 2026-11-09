@@ -56,6 +56,9 @@ type configFieldError struct {
 
 type validateConfigResponse struct {
 	Errors []configFieldError `json:"errors"`
+	// Capabilities lists the snapshot formats the backend's launcher accepts. The SDK
+	// does not model the field yet, so it is read from the raw response.
+	Capabilities []string `json:"capabilities"`
 }
 
 type validationAuthenticationError struct {
@@ -90,30 +93,32 @@ func validationUnavailable(err error) (*validationUnavailableError, bool) {
 //
 // Availability failures fail open: they report unavailable with a nil error, and
 // the caller decides how to warn. Caller failures and field errors block.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) (unavailable bool, err error) {
+//
+// capabilities is non-empty only when validation succeeded and the backend advertised them.
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) (unavailable bool, capabilities []string, err error) {
 	validationCtx, cancel := context.WithTimeout(ctx, submissionValidationTimeout)
 	defer cancel()
 
-	err = validateConfigOnce(validationCtx, w, cfg, commandPath, containers, idempotencyToken)
+	capabilities, err = validateConfigOnce(validationCtx, w, cfg, commandPath, containers, idempotencyToken)
 	if unavailable, _ := classifyValidationFailure(err); unavailable {
-		return true, nil
+		return true, nil, nil
 	}
-	return false, err
+	return false, capabilities, err
 }
 
-func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) error {
+func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer, idempotencyToken string) ([]string, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
+		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 
 	requestBody, err := common.NewRequestBody(validateConfigRequest(ctx, cfg, commandPath, containers, idempotencyToken))
 	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, validateConfigPath, requestBody.Reader)
 	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", requestBody.ContentType)
@@ -125,17 +130,17 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 		default:
 			token, err := w.Config.GetTokenSource().Token(req.Context())
 			if err != nil {
-				return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
+				return nil, &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
 			}
 			token.SetAuthHeader(req)
 		}
 		if err := clientCfg.AuthVisitor(req); err != nil {
-			return &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
+			return nil, &validationAuthenticationError{fmt.Errorf("failed to validate config: %w", err)}
 		}
 	}
 	for _, visitor := range clientCfg.Visitors {
 		if err := visitor(req); err != nil {
-			return fmt.Errorf("failed to validate config: %w", err)
+			return nil, fmt.Errorf("failed to validate config: %w", err)
 		}
 	}
 	for key, value := range auth.WorkspaceIDHeaders(w.Config) {
@@ -154,35 +159,35 @@ func validateConfigOnce(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	}
 	resp, err := (&http.Client{Transport: transport}).Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 	defer resp.Body.Close()
 	responseBody, err := common.NewResponseWrapper(resp, requestBody)
 	if err != nil {
 		err = fmt.Errorf("failed to validate config: %w", err)
 		if errors.Is(err, context.Canceled) {
-			return err
+			return nil, err
 		}
 		if resp.StatusCode >= 400 {
-			return &apierr.APIError{
+			return nil, &apierr.APIError{
 				StatusCode: resp.StatusCode,
 				Message:    err.Error(),
 			}
 		}
-		return asValidationUnavailable(err, true)
+		return nil, asValidationUnavailable(err, true)
 	}
 	if err := apierr.GetAPIError(ctx, responseBody); err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	var result validateConfigResponse
 	if err := json.Unmarshal(responseBody.DebugBytes, &result); err != nil {
-		return asValidationUnavailable(fmt.Errorf("failed to validate config: %w", err), true)
+		return nil, asValidationUnavailable(fmt.Errorf("failed to validate config: %w", err), true)
 	}
 	if len(result.Errors) == 0 {
-		return nil
+		return result.Capabilities, nil
 	}
-	return errors.New(formatConfigErrors(result.Errors))
+	return nil, errors.New(formatConfigErrors(result.Errors))
 }
 
 func newDryRunValidationClient(w *databricks.WorkspaceClient) (*client.DatabricksClient, error) {

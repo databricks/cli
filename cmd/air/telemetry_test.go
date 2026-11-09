@@ -180,7 +180,7 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 	// The commit is no longer available when git archive attempts to package it.
 	result, err := uploadSnapshotTarball(t.Context(), w, newTestRepo(t), snapshotPlan{
 		mode: modeGitArchive, commitSHA: "missing-commit", isGitRepo: true,
-	}, testSnapshotArtifactPath)
+	}, testSnapshotArtifactPath, false)
 	require.Error(t, err)
 	assert.Equal(t, new(modeGitArchive), result.PackagingMode)
 	require.NotNil(t, result.PackagingDurationMs)

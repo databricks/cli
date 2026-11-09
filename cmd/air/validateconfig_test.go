@@ -111,7 +111,7 @@ func TestPreflightValidateFailsOpenWhenBackendUnavailable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := validateServer(t, tt.status, tt.body, nil)
-			_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			assert.NoError(t, err)
 		})
 	}
@@ -130,7 +130,7 @@ func TestPreflightValidationUnavailableDoesNotRetry(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	unavailable, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	unavailable, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 	assert.True(t, unavailable)
 	assert.Equal(t, int32(1), requests.Load())
@@ -145,7 +145,7 @@ func TestPreflightValidationDoesNotRetryTransportFailure(t *testing.T) {
 		return nil, errors.New("connection failed")
 	})
 
-	_, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 	assert.Equal(t, int32(1), requests.Load())
 }
@@ -176,7 +176,7 @@ func TestPreflightValidationFailsOpenOnInvalidSuccessResponse(t *testing.T) {
 				}, nil
 			})
 
-			_, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, _, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			require.NoError(t, err)
 			assert.Equal(t, int32(1), requests.Load())
 		})
@@ -201,7 +201,7 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
-	_, err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.Error(t, err)
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	require.True(t, ok)
@@ -237,7 +237,7 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	started := time.Now()
-	_, err = preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err = preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 
 	require.NoError(t, err)
 	assert.Less(t, time.Since(started), time.Second)
@@ -283,7 +283,7 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, _, err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -303,7 +303,7 @@ func TestPreflightValidationTimeoutFailsOpen(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	started := time.Now()
-	_, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	close(releaseRequest)
 	require.NoError(t, err)
 	assert.Less(t, time.Since(started), time.Second)
@@ -321,7 +321,7 @@ func TestPreflightValidationPropagatesCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	_, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(ctx, validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.ErrorIs(t, err, context.Canceled)
 }
 
@@ -346,7 +346,7 @@ func TestPreflightValidationPropagatesCancellationWhileReadingErrorResponse(t *t
 		<-validationStarted
 		cancel()
 	}()
-	_, err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(ctx, w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.ErrorIs(t, err, context.Canceled)
 }
 
@@ -354,7 +354,7 @@ func TestPreflightValidateBlocksOnCallerError(t *testing.T) {
 	for _, status := range []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			srv := validateServer(t, status, `{"error_code":"INVALID_PARAMETER_VALUE","message":"request rejected"}`, nil)
-			_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+			_, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 			require.Error(t, err)
 		})
 	}
@@ -367,7 +367,7 @@ func TestPreflightValidateBlocksOnRequestVisitorError(t *testing.T) {
 		return errors.New("failed to add request headers")
 	}
 
-	_, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.ErrorContains(t, err, "failed to add request headers")
 }
 
@@ -410,7 +410,7 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	cfg.MaxRetries = new(3)
 	cfg.EnvVariables = map[string]string{"HF_HOME": "/tmp/hf"}
 	cfg.Environment = &environmentConfig{UnityCatalogImage: "main.air.training:v1"}
-	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
@@ -434,7 +434,7 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 	cfg := baseRunConfig()
 	cfg.Compute.PoolID = new("cap-8xh100-res")
 	cfg.Compute.PriorityClass = new("NORMAL")
-	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
@@ -448,7 +448,7 @@ func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
 	var gotReq map[string]any
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
-	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
+	_, _, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]any{"idempotency_token": "token"}, gotReq["run_options"])

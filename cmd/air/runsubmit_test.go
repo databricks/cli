@@ -862,11 +862,11 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 	require.NotZero(t, snapshotUploads.Load(), "first submit should upload the tarball")
 	afterFirst := snapshotUploads.Load()
-	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
@@ -938,9 +938,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
-	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -992,7 +992,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	snap, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)
