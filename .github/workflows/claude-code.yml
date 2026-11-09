@@ -1,4 +1,4 @@
-name: Claude Code
+name: CLI PR review
 
 # Automated PR reviews (review-only — no interactive @claude / assist).
 #
@@ -43,9 +43,10 @@ jobs:
           owner: databricks-eng
           repositories: eng-dev-ecosystem
 
-      - name: Trigger Claude Code review
+      # The backend reads the code and posts the review as the bot.
+      - name: Trigger CLI PR review
         run: |
-          gh workflow run cli-claude-code.yml \
+          gh workflow run cli-pr-review.yml \
             -R databricks-eng/eng-dev-ecosystem \
             --ref main \
             -F pull_request_number=${{ github.event.pull_request.number }}
@@ -56,9 +57,9 @@ jobs:
         run: |
           sleep 10
           RUN_ID=$(gh run list -R databricks-eng/eng-dev-ecosystem \
-            --workflow cli-claude-code.yml --limit 1 \
+            --workflow cli-pr-review.yml --limit 1 \
             --json databaseId -q '.[0].databaseId')
-          echo "## Claude Code Review" >> "$GITHUB_STEP_SUMMARY"
+          echo "## CLI PR review" >> "$GITHUB_STEP_SUMMARY"
           echo "[View run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
           gh run watch "$RUN_ID" -R databricks-eng/eng-dev-ecosystem --exit-status
         env:
