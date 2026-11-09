@@ -20,7 +20,7 @@ trace read_id.py extra
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
 
-title "state records hashes for pure and mixed references"
+title "state records resolved values for pure and mixed references"
 trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state.on_value_change'
 
 title "redeploy with unchanged ids plans nothing"

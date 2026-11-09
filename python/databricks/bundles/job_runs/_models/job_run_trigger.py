@@ -27,7 +27,7 @@ class JobRunTrigger:
 
     on_value_change: VariableOrOptional[str] = None
     """
-    Interpolated expression. Re-fire the run when the resolved value changes or when a watch is added. Resource references in the expression become deployment dependencies. Resolved values are recorded as SHA-256 hashes. Removing a watch disarms it without re-firing the run. Incompatible with lifecycle.prevent_destroy.
+    Interpolated expression. Re-fire the run when the resolved value changes or when a watch is added. Resource references in the expression become deployment dependencies. Removing a watch disarms it without re-firing the run.
     """
 
     @classmethod
@@ -53,7 +53,7 @@ class JobRunTriggerDict(TypedDict, total=False):
 
     on_value_change: VariableOrOptional[str]
     """
-    Interpolated expression. Re-fire the run when the resolved value changes or when a watch is added. Resource references in the expression become deployment dependencies. Resolved values are recorded as SHA-256 hashes. Removing a watch disarms it without re-firing the run. Incompatible with lifecycle.prevent_destroy.
+    Interpolated expression. Re-fire the run when the resolved value changes or when a watch is added. Resource references in the expression become deployment dependencies. Removing a watch disarms it without re-firing the run.
     """
 
 
