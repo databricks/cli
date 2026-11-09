@@ -96,6 +96,25 @@ func TestWriteSymlink(t *testing.T) {
 	assert.Empty(t, got["pkg/link"].content)
 }
 
+func TestWriteFragmentOmitsEndMarker(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("alpha"), 0o644))
+	entries := []Entry{{Name: "pkg/a.txt", Path: filepath.Join(dir, "a.txt")}}
+
+	var full, fragment bytes.Buffer
+	require.NoError(t, Write(&full, entries))
+	require.NoError(t, WriteFragment(&fragment, entries))
+
+	// The fragment is the full archive minus the two zero end blocks.
+	assert.Equal(t, full.Bytes()[:fragment.Len()], fragment.Bytes())
+	assert.Equal(t, 1024, full.Len()-fragment.Len())
+	assert.Equal(t, make([]byte, 1024), full.Bytes()[fragment.Len():])
+
+	// Read as a standalone stream, the fragment yields its entry and then a clean EOF.
+	got := readTar(t, fragment.Bytes())
+	assert.Equal(t, "alpha", got["pkg/a.txt"].content)
+}
+
 func TestWriteSkipsIrregularAndMissingIsError(t *testing.T) {
 	dir := t.TempDir()
 

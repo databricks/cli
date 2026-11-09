@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/tarpack"
-	"github.com/klauspost/pgzip"
 )
 
 // Tar builders ported from cli/utils/snapshot.py. The git-ref path snapshots a commit
@@ -50,46 +49,31 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 	return nil
 }
 
-// createPlainTarball writes a gzipped tar of the given working-tree files to
-// outputTarball. The archive preserves repoPath's directory name as the top-level
-// entry. files come pre-resolved from snapshotFiles (.gitignore honored, .git and
-// macOS AppleDouble excluded), so the caller can reuse the same listing to
-// content-address the upload.
-func createPlainTarball(ctx context.Context, repoPath, outputTarball string, files []snapshotFile) error {
+// createPlainTarball writes the given working-tree files to outputTarball as a
+// segmented tarball (see snapshot_segment.go) and returns its index. The archive
+// preserves repoPath's directory name as the top-level entry. files come pre-resolved
+// from snapshotFiles (.gitignore honored, .git and macOS AppleDouble excluded), so the
+// caller can reuse the same listing to content-address the upload.
+func createPlainTarball(ctx context.Context, repoPath, outputTarball string, files []snapshotFile) (segmentIndex, error) {
 	dirName := filepath.Base(repoPath)
+	entries, sizes := plainTarEntries(repoPath, files)
+	return writeSegmentedTarball(ctx, dirName, outputTarball, entries, sizes, segmentTargetBytes, segmentMaxMembers)
+}
 
+// plainTarEntries returns the tar entries for files under repoPath's directory name,
+// with each entry's estimated tar size for balancing members.
+func plainTarEntries(repoPath string, files []snapshotFile) ([]tarpack.Entry, []int64) {
+	dirName := filepath.Base(repoPath)
 	entries := make([]tarpack.Entry, len(files))
+	sizes := make([]int64, len(files))
 	for i, file := range files {
 		entries[i] = tarpack.Entry{
 			Name: filepath.ToSlash(filepath.Join(dirName, file.rel)),
 			Path: filepath.Join(repoPath, file.rel),
 		}
+		sizes[i] = file.tarSize()
 	}
-
-	out, err := os.Create(outputTarball)
-	if err != nil {
-		return fmt.Errorf("failed to create tarball: %w", err)
-	}
-
-	// Gzip in parallel with klauspost/pgzip rather than a single-threaded writer:
-	// compression dominates packaging time on a large tree, and pgzip spreads it
-	// across cores. tarpack writes the tar in Go, so there is no `tar` subprocess
-	// (and no Windows colon-in-path issue a `tar -f` argument would hit).
-	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
-	if err != nil {
-		out.Close()
-		return err
-	}
-	if err := tarpack.Write(ctxWriter{ctx, gz}, entries); err != nil {
-		gz.Close()
-		out.Close()
-		return fmt.Errorf("failed to create plain tarball: %w", err)
-	}
-	if err := gz.Close(); err != nil {
-		out.Close()
-		return fmt.Errorf("failed to finalize gzip: %w", err)
-	}
-	return out.Close()
+	return entries, sizes
 }
 
 // ctxWriter fails writes once ctx is done, so a cancelled submission (for

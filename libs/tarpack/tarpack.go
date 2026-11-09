@@ -29,12 +29,32 @@ type Entry struct {
 // matches what `tar` stored for the same file.
 func Write(w io.Writer, entries []Entry) error {
 	tw := tar.NewWriter(w)
+	if err := writeEntries(tw, entries); err != nil {
+		return err
+	}
+	return tw.Close()
+}
+
+// WriteFragment is Write without the end-of-archive marker. Concatenating
+// fragments and then one Write-finalized archive yields a single tar stream, which
+// lets callers split an archive into independently compressed parts. Each fragment
+// ends on an entry boundary, so it can be read alone as a tar stream without its
+// end marker.
+func WriteFragment(w io.Writer, entries []Entry) error {
+	tw := tar.NewWriter(w)
+	if err := writeEntries(tw, entries); err != nil {
+		return err
+	}
+	return tw.Flush()
+}
+
+func writeEntries(tw *tar.Writer, entries []Entry) error {
 	for _, e := range entries {
 		if err := writeEntry(tw, e); err != nil {
 			return err
 		}
 	}
-	return tw.Close()
+	return nil
 }
 
 func writeEntry(tw *tar.Writer, e Entry) error {

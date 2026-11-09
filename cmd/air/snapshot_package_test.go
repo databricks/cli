@@ -135,7 +135,7 @@ func TestCreatePlainTarball(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	files, err := snapshotFiles(ctx, repo, nil, false)
 	require.NoError(t, err)
-	require.NoError(t, createPlainTarball(ctx, repo, out, files))
+	writePlainTarball(t, ctx, repo, out, files)
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -155,7 +155,7 @@ func TestCreatePlainTarballStopsWhenCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	err = createPlainTarball(ctx, repo, filepath.Join(t.TempDir(), "snap.tar.gz"), files)
+	_, err = createPlainTarball(ctx, repo, filepath.Join(t.TempDir(), "snap.tar.gz"), files)
 	require.ErrorIs(t, err, context.Canceled)
 }
 
@@ -169,7 +169,7 @@ func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	files, err := snapshotFiles(ctx, repo, nil, false)
 	require.NoError(t, err)
-	require.NoError(t, createPlainTarball(ctx, repo, out, files))
+	writePlainTarball(t, ctx, repo, out, files)
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -186,7 +186,7 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	files, err := snapshotFiles(ctx, repo, []string{"src"}, false)
 	require.NoError(t, err)
-	require.NoError(t, createPlainTarball(ctx, repo, out, files))
+	writePlainTarball(t, ctx, repo, out, files)
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -208,7 +208,7 @@ func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	files, err := snapshotFiles(t.Context(), repo, nil, false)
 	require.NoError(t, err)
-	require.NoError(t, createPlainTarball(t.Context(), repo, out, files))
+	writePlainTarball(t, t.Context(), repo, out, files)
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -230,7 +230,7 @@ func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	files, err := snapshotFiles(t.Context(), repo, nil, true)
 	require.NoError(t, err)
-	require.NoError(t, createPlainTarball(t.Context(), repo, out, files))
+	writePlainTarball(t, t.Context(), repo, out, files)
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)

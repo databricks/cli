@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -137,13 +138,18 @@ func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (s
 }
 
 // packageSnapshot writes the snapshot to tarball per the resolved plan: `git archive`
-// of the pinned commit for git_archive, else a plain tar of the pre-listed working-tree
-// files (nil for git_archive).
-func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, files []snapshotFile, tarball string) error {
+// of the pinned commit for git_archive, else a segmented plain tar of the pre-listed
+// working-tree files. It returns the segment index for plain_tar and nil for
+// git_archive, which has no sidecar yet.
+func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, files []snapshotFile, tarball string) (*segmentIndex, error) {
 	if plan.mode == modeGitArchive {
-		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths, plan.subtreePrefix)
+		return nil, createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths, plan.subtreePrefix)
 	}
-	return createPlainTarball(ctx, repoPath, tarball, files)
+	index, err := createPlainTarball(ctx, repoPath, tarball, files)
+	if err != nil {
+		return nil, err
+	}
+	return &index, nil
 }
 
 // airArtifactInternalDir mirrors bundle/libraries.InternalDirName: CLI-uploaded
@@ -192,7 +198,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 
 	tarball := filepath.Join(tmp, tarName)
 	packagingStart := time.Now()
-	err = packageSnapshot(ctx, repoPath, plan, files, tarball)
+	index, err := packageSnapshot(ctx, repoPath, plan, files, tarball)
 	result.PackagingDurationMs = new(time.Since(packagingStart).Milliseconds())
 	if err != nil {
 		return result, err
@@ -212,6 +218,12 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	}
 	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", tarName))
 	uploadStart := time.Now()
+	// The sidecar goes first so a tarball is never visible without its index.
+	if index != nil {
+		if err := uploadSegmentIndex(ctx, f, tarName, index); err != nil {
+			return result, err
+		}
+	}
 	err = f.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
 	result.UploadDurationMs = new(time.Since(uploadStart).Milliseconds())
 	if err != nil {
@@ -219,6 +231,19 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	}
 	result.CodeSourcePath = remote
 	return result, nil
+}
+
+// uploadSegmentIndex writes the index sidecar for tarName next to it in the store.
+func uploadSegmentIndex(ctx context.Context, store filer.Filer, tarName string, index *segmentIndex) error {
+	data, err := json.Marshal(index)
+	if err != nil {
+		return fmt.Errorf("failed to encode snapshot index: %w", err)
+	}
+	err = store.Write(ctx, tarName+segmentIndexSuffix, bytes.NewReader(data), filer.OverwriteIfExists, filer.CreateParentDirectories)
+	if err != nil {
+		return fmt.Errorf("failed to upload snapshot index for %s: %w", tarName, err)
+	}
+	return nil
 }
 
 // snapshotUploadFiler returns a filer rooted at <artifactPath>/.internal plus that

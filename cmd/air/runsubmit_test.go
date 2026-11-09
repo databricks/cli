@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -816,6 +817,66 @@ func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer,
 }
 
 const testSnapshotArtifactPath = "/Workspace/Users/tester@databricks.com/.air/repo_snapshots"
+
+// A plain-tar snapshot uploads its index sidecar before the tarball, so a visible tarball
+// always has its index. A cache hit writes neither.
+func TestSubmitWorkloadPlainTarUploadsIndexBeforeTarball(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	var writes []string
+	var index segmentIndex
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			// The filer retries the import after creating a missing parent dir, so
+			// record each object's first write only.
+			name := path.Base(p)
+			if !slices.Contains(writes, name) {
+				writes = append(writes, name)
+				if strings.HasSuffix(name, segmentIndexSuffix) {
+					require.NoError(t, json.Unmarshal(req.Body, &index))
+				}
+			}
+		}
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	repo := filepath.Join(t.TempDir(), "src")
+	writeRepoFile(t, repo, "train.py", "print()")
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: `+repo+`
+`)
+	loaded, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	sidecarStore, sidecarBase := testSidecarStore(t, w)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	require.NoError(t, err)
+
+	tarName := path.Base(first.CodeSourcePath)
+	assert.Equal(t, []string{tarName + segmentIndexSuffix, tarName}, writes)
+	assert.Equal(t, segmentFormat, index.Format)
+	assert.Equal(t, "src", index.Component)
+	require.NotNil(t, first.SizeBytes)
+	assert.Equal(t, *first.SizeBytes, index.Size)
+	assert.Len(t, index.Members, 1)
+
+	_, err = uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	require.NoError(t, err)
+	assert.Len(t, writes, 2, "cache hit should write neither the index nor the tarball")
+}
 
 // A plain-tar (working-tree) snapshot is content-addressed by its file fingerprint
 // (working-tree metadata): submitting the same unchanged tree twice reuses the already-uploaded

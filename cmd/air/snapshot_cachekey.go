@@ -20,7 +20,7 @@ const snapshotPackagingVersion = "v1"
 // with a git_archive key) and lets us invalidate it if the fingerprint scheme changes.
 // computePlainTarKey also folds in the shared snapshotPackagingVersion, so a
 // packaging-logic bump invalidates both modes' keys.
-const plainTarKeyVersion = "plaintar-v2"
+const plainTarKeyVersion = "plaintar-v3"
 
 // computePlainTarKey returns a content-addressed key for a working-tree snapshot: the
 // SHA-256 over every file's path, size, mtime, mode, and symlink target (sorted for
