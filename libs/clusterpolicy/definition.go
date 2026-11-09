@@ -75,11 +75,13 @@ func ValueEquals(policyValue, value any) bool {
 	return reflect.DeepEqual(policyValue, value)
 }
 
-// IsPolicyValue reports whether the value of the cluster attribute at path, a path relative
-// to the cluster spec, comes from the policy rather than the user. The backend rejects
-// values that differ from a fixed element, so a fixed field is frozen whatever its value;
-// other elements only set their opted-in default. The policy language's log-delivery
-// aliases are translated, and indexed rules take precedence over wildcards.
+// IsPolicyValue reports whether the policy, not the user, determines the value of the
+// cluster attribute at path, a path relative to the cluster spec. A fixed element
+// determines the field whatever its current value, because the backend rejects any other
+// value; other elements only when apply_policy_default_values is set and value equals
+// their defaultValue. This is a filtering predicate, not validation: true for a fixed
+// element does not mean value equals the element's value. The policy language's
+// log-delivery aliases are translated, and indexed rules take precedence over wildcards.
 // https://docs.databricks.com/aws/en/admin/clusters/policy-definition
 func (d Definition) IsPolicyValue(path *structpath.PathNode, value any, applyDefaults bool) bool {
 	indexed, wildcard := attributes(path)
