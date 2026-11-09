@@ -392,8 +392,8 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
 // Removing a trigger drops the change and leaves the last fingerprint in state,
-// so re-adding the trigger only re-fires when the watched files changed
-// meanwhile. All other trigger changes recreate the run.
+// so re-adding the trigger only re-fires when the watched files or value
+// changed meanwhile. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch path.String() {
 	case "lifecycle":
