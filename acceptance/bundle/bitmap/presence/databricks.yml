@@ -22,10 +22,8 @@ variables:
           spark_version: 15.4.x-scala2.12
           num_workers: 1
 
-# Known gap: an explicit false on an omitempty bool of a CLI-defined struct (11
-# such fields, all without ForceSendFields) is dropped when the loader syncs typed
-# config back to dyn, so only "experimental" itself is recorded here. SDK bools
-# keep it (see disable_auto_optimization below).
+# An explicit false on an optional bool of a CLI-defined struct (*bool) is recorded,
+# as it is for SDK bools (see disable_auto_optimization below).
 experimental:
   use_legacy_run_as: false
 

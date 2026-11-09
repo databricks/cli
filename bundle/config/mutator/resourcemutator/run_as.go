@@ -227,7 +227,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Track the use of the legacy run_as mode.
-	b.Telemetry.UseLegacyRunAs = new(b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
+	b.Telemetry.UseLegacyRunAs = new(b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.UseLegacyRunAs))
 
 	// Track whether top level run_as is set.
 	b.Telemetry.RunAsSet = new(b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)

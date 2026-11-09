@@ -16,7 +16,9 @@
     "bundle": {
       "name": true
     },
-    "experimental": true,
+    "experimental": {
+      "use_legacy_run_as": true
+    },
     "presets": {
       "name_prefix": true,
       "pipelines_development": true
@@ -123,6 +125,9 @@
     }
   },
   "false": {
+    "experimental": {
+      "use_legacy_run_as": true
+    },
     "presets": {
       "pipelines_development": true
     },
