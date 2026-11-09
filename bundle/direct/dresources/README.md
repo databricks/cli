@@ -47,9 +47,11 @@ For resources whose create or update is asynchronous (the resource is not immedi
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
 
-## Moved resources: IDFromState / InternalID
+## Renamed parents and moved resources: IDFromState / internal_id_field
 
-If the ID is built from the resource's own fields (a UC full name) and the backend has its own ID that a rename keeps (a volume's `volume_id`), record that ID in the state type, set it from the API responses (and from `RemapState`), and implement `IDFromState` and `InternalID` together, along with `DoUpdateWithID`. When nothing is at the recorded ID, the plan reads at the ID the config gives the resource and takes what it finds only if its internal ID matches the one saved in state. This covers a rename done out of band, or by a deploy that stopped before re-keying the resource.
+If the ID is built from the resource's own fields (a UC full name), implement `IDFromState`. Then an `update_id` that only follows a parent's rename is applied by the framework without calling `DoUpdateWithID` (the plan marks it `state_only`), so `DoUpdateWithID` only handles real updates.
+
+If the backend also has its own ID that a rename keeps (a volume's `volume_id`), add it to the state type, copy it in `RemapState`, and name it in the config as `internal_id_field`. The framework records it on every save and skips its changes in the plan. When nothing is at the recorded ID, the plan reads at the ID the config gives the resource and takes what it finds only if the internal ID matches. This covers a rename done out of band, or by a deploy that stopped before re-keying the resource.
 
 ## Empty states: IsEmptyState
 

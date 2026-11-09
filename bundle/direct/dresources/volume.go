@@ -16,7 +16,7 @@ import (
 
 // VolumeState is the volume's config plus its volume_id. The backend assigns volume_id and a
 // rename keeps it, so recording it lets the plan recognize the volume under a new name (see
-// InternalID).
+// internal_id_field in volumes.yml).
 type VolumeState struct {
 	catalog.CreateVolumeRequestContent
 	VolumeId string `json:"volume_id,omitempty"`
@@ -41,7 +41,7 @@ func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
 func (*ResourceVolume) PrepareState(input *resources.Volume) *VolumeState {
 	return &VolumeState{
 		CreateVolumeRequestContent: input.CreateVolumeRequestContent,
-		VolumeId:                   "", // Recorded from the backend when the volume is created or updated.
+		VolumeId:                   "", // Recorded by the framework from the remote state (internal_id_field).
 	}
 }
 
@@ -67,7 +67,6 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (str
 	if err != nil {
 		return "", nil, err
 	}
-	config.VolumeId = response.VolumeId
 	return response.FullName, response, nil
 }
 
@@ -102,11 +101,10 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *Volume
 		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	config.VolumeId = response.VolumeId
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *VolumeState, entry *PlanEntry) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    "", // Initialized below
@@ -127,16 +125,6 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	// leaving id stale (see followsParentRename).
 	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
 
-	if entry.Changes.OnlyParentRenamed() {
-		// UC already moved the volume with its parent; only the ID changes.
-		remote, ok := entry.RemoteState.(*catalog.VolumeInfo)
-		if !ok {
-			return "", nil, fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
-		}
-		config.VolumeId = remote.VolumeId
-		return updateRequest.Name, nil, nil
-	}
-
 	if config.Name != nameFromID {
 		updateRequest.NewName = config.Name
 	}
@@ -146,18 +134,12 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		return "", nil, err
 	}
 
-	config.VolumeId = response.VolumeId
 	return response.FullName, response, nil
 }
 
 // IDFromState returns the full name, which is the ID.
 func (*ResourceVolume) IDFromState(state *VolumeState) string {
 	return state.CatalogName + "." + state.SchemaName + "." + state.Name
-}
-
-// InternalID returns the volume_id.
-func (*ResourceVolume) InternalID(state *VolumeState) string {
-	return state.VolumeId
 }
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *VolumeState) error {
