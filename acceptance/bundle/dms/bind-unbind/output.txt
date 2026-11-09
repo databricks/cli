@@ -58,10 +58,10 @@ Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deployment unbind foo
 
 >>> print_requests.py --dms //versions //jobs //permissions --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "6"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.foo"}, {"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.foo.permissions"}], "previous_version_id": "4", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/operations/jobs.foo", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/operations/jobs.foo.permissions", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "5"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.foo"}, {"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.foo.permissions"}], "previous_version_id": "4", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/operations/jobs.foo", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/operations/jobs.foo.permissions", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 >>> jq {features, state} .databricks/bundle/default/resources.json
 {
@@ -98,9 +98,9 @@ Run 'bundle deploy' to deploy changes to your workspace
 }
 
 >>> print_requests.py --dms //versions --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "10"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.foo"}], "previous_version_id": "6", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/10/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[JOB_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/10/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "8"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_BIND", "resource_key": "jobs.foo"}], "previous_version_id": "5", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/8/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[JOB_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/state/metadata.json\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/8/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 === A subsequent deploy continues managing the same job
 >>> [CLI] bundle deploy
