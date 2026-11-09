@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle deployment unbind feature1
+Warn: Failed to record unbind history: failed to create deployment version: operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): features.feature1
