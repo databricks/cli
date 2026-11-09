@@ -22,8 +22,6 @@ variables.*.lookup.service_principal
 variables.*.lookup.warehouse
 bundle
 bundle.name
-bundle.target
-bundle.environment
 bundle.terraform
 bundle.terraform.exec_path
 bundle.force

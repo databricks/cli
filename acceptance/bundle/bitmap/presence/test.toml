@@ -1,2 +1,4 @@
+Env.BUNDLE_VAR_off_flag = "false"
+
 # Scratch files of the round-trip check; out.bitmap.txt and out.bitmap.json are the goldens.
 Ignore = [".databricks", "bitmap.b64", "recoded.b64", "decoded.txt", "decoded.json", "decoded-python.txt"]

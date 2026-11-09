@@ -31,7 +31,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -353,7 +352,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	// Record the Python resources as written, before their defaults are filled in.
-	if err := addUserResources(b, result.AddedResources); err != nil {
+	if err := markUserResources(b, result.AddedResources); err != nil {
 		return mutateDiags.Extend(diag.FromErr(err))
 	}
 
@@ -366,22 +365,19 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags
 }
 
-// addUserResources copies resources added by Python into b.UserConfig.
-func addUserResources(b *bundle.Bundle, added resourcemutator.ResourceKeySet) error {
+// markUserResources records the resources added by Python in the bundle
+// bitmap, as Python wrote them.
+func markUserResources(b *bundle.Bundle, added resourcemutator.ResourceKeySet) error {
 	for _, key := range added.ToArray() {
 		v, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key(key.Type), dyn.Key(key.Name)))
 		if err != nil {
 			return err
 		}
-		resource := dyn.V(map[string]dyn.Value{
+		b.Bitmap.Mark(dyn.V(map[string]dyn.Value{
 			"resources": dyn.V(map[string]dyn.Value{
 				key.Type: dyn.V(map[string]dyn.Value{key.Name: v}),
 			}),
-		})
-		b.UserConfig, err = merge.Merge(b.UserConfig, resource)
-		if err != nil {
-			return err
-		}
+		}))
 	}
 	return nil
 }
