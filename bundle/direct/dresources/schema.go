@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -15,7 +14,7 @@ import (
 
 // SchemaState is the schema's config plus its schema_id. The backend assigns schema_id and a
 // rename keeps it, so recording it lets the plan recognize the schema under a new name (see
-// InternalID).
+// internal_id_field in schemas.yml).
 type SchemaState struct {
 	catalog.CreateSchema
 	SchemaId string `json:"schema_id,omitempty"`
@@ -40,7 +39,7 @@ func (*ResourceSchema) New(client *databricks.WorkspaceClient) *ResourceSchema {
 func (*ResourceSchema) PrepareState(input *resources.Schema) *SchemaState {
 	return &SchemaState{
 		CreateSchema: input.CreateSchema,
-		SchemaId:     "", // Recorded from the backend when the schema is created or updated.
+		SchemaId:     "", // Recorded by the framework from the remote state (internal_id_field).
 	}
 }
 
@@ -66,7 +65,6 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	config.SchemaId = response.SchemaId
 	return response.FullName, response, nil
 }
 
@@ -111,12 +109,11 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *Schema
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	config.SchemaId = response.SchemaId
 	return response, nil
 }
 
 // DoUpdateWithID renames the schema in place when the name changes; the ID is the full name, so it changes too.
-func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *SchemaState, entry *PlanEntry) (string, *catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *SchemaState, _ *PlanEntry) (string, *catalog.SchemaInfo, error) {
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
 		return "", nil, err
@@ -131,33 +128,17 @@ func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *
 	// stale (see followsParentRename).
 	fullName := config.CatalogName + "." + nameFromID
 
-	if entry.Changes.OnlyParentRenamed() {
-		// UC already moved the schema with its catalog; only the ID changes.
-		remote, ok := entry.RemoteState.(*catalog.SchemaInfo)
-		if !ok {
-			return "", nil, fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
-		}
-		config.SchemaId = remote.SchemaId
-		return fullName, nil, nil
-	}
-
 	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, &config.CreateSchema))
 	if err != nil || response == nil {
 		return "", nil, err
 	}
 
-	config.SchemaId = response.SchemaId
 	return response.FullName, response, nil
 }
 
 // IDFromState returns the full name, which is the ID.
 func (*ResourceSchema) IDFromState(state *SchemaState) string {
 	return state.CatalogName + "." + state.Name
-}
-
-// InternalID returns the schema_id.
-func (*ResourceSchema) InternalID(state *SchemaState) string {
-	return state.SchemaId
 }
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *SchemaState) error {

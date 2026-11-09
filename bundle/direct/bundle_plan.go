@@ -395,6 +395,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// Found at a new ID: the state has to follow it there.
 			action = deployplan.GetHigherAction(action, deployplan.UpdateWithID)
 		}
+		if action == deployplan.UpdateWithID && adapter.HasIDFromState() && entry.Changes.OnlyParentRenamed() {
+			// The backend already moved the resource with its renamed parent, or the plan found it
+			// at its new ID: applying only records the state under the ID IDFromState gives it.
+			entry.StateOnly = true
+		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
@@ -501,7 +506,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
 		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
 		// new == remote (both nil, say) wrongly skips a real local change.
-		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
+		if adapter.IsInternalIDField(path) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonInternalID
+		} else if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmptyChange(ch) {
@@ -744,7 +752,7 @@ func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.
 // in savedState, so an unrelated object with the same name is never adopted; the create then fails
 // on it instead.
 func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.StructVar, storedID string, savedState any) (string, any, error) {
-	if !adapter.HasInternalID() || !adapter.HasDoUpdateWithID() || hasUnresolvedIDField(adapter, sv) {
+	if !adapter.HasInternalID() || hasUnresolvedIDField(adapter, sv) {
 		return "", nil, nil
 	}
 	savedInternalID, err := adapter.InternalID(savedState)
