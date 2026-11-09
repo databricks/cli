@@ -147,11 +147,6 @@ func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string,
 	parent := config.CatalogName + "." + config.SchemaName + "."
 	newID := parent + config.Name
 
-	if entry.Changes.OnlyParentRenamed() {
-		// UC already moved the model with its parent; only the ID changes.
-		return newID, nil, nil
-	}
-
 	newName := ""
 	if config.Name != nameFromID {
 		newName = config.Name
@@ -226,6 +221,11 @@ func (*ResourceRegisteredModel) OverrideChangeDesc(_ context.Context, path *stru
 		change.Reason = deployplan.ReasonUnmanaged
 	}
 	return nil
+}
+
+// IDFromState returns the full name, which is the ID.
+func (*ResourceRegisteredModel) IDFromState(state *catalog.CreateRegisteredModelRequest) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
 }
 
 func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) error {
