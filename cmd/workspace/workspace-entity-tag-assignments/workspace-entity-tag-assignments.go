@@ -20,18 +20,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "workspace-entity-tag-assignments",
-		Short: `*Beta* Manage tag assignments on workspace-scoped objects.`,
-		Long: `This command is in Beta and may change without notice.
-
-Manage tag assignments on workspace-scoped objects.`,
+		Use:     "workspace-entity-tag-assignments",
+		Short:   `Manage tag assignments on workspace-scoped objects.`,
+		Long:    `Manage tag assignments on workspace-scoped objects.`,
 		GroupID: "tags",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateTagAssignment())
@@ -69,24 +67,22 @@ func newCreateTagAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&createTagAssignmentReq.TagAssignment.TagValue, "tag-value", createTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "create-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `*Beta* Create a tag assignment for an entity.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a tag assignment for an entity.
+	cmd.Short = `Create a tag assignment for an entity.`
+	cmd.Long = `Create a tag assignment for an entity.
 
   Create a tag assignment
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, designerfiles, geniespaces, notebooks
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -162,24 +158,22 @@ func newDeleteTagAssignment() *cobra.Command {
 	var deleteTagAssignmentReq tags.DeleteTagAssignmentRequest
 
 	cmd.Use = "delete-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `*Beta* Delete a tag assignment for an entity.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a tag assignment for an entity.
+	cmd.Short = `Delete a tag assignment for an entity.`
+	cmd.Long = `Delete a tag assignment for an entity.
 
   Delete a tag assignment
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, designerfiles, geniespaces, notebooks
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -229,24 +223,22 @@ func newGetTagAssignment() *cobra.Command {
 	var getTagAssignmentReq tags.GetTagAssignmentRequest
 
 	cmd.Use = "get-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `*Beta* Get a tag assignment for an entity.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a tag assignment for an entity.
+	cmd.Short = `Get a tag assignment for an entity.`
+	cmd.Long = `Get a tag assignment for an entity.
 
   Get a tag assignment
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, designerfiles, geniespaces, notebooks
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -310,22 +302,20 @@ func newListTagAssignments() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-assignments ENTITY_TYPE ENTITY_ID"
-	cmd.Short = `*Beta* List tag assignments for an entity.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List tag assignments for an entity.
+	cmd.Short = `List tag assignments for an entity.`
+	cmd.Long = `List tag assignments for an entity.
 
   List the tag assignments for an entity
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, designerfiles, geniespaces, notebooks
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -384,16 +374,14 @@ func newUpdateTagAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&updateTagAssignmentReq.TagAssignment.TagValue, "tag-value", updateTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "update-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY UPDATE_MASK"
-	cmd.Short = `*Beta* Update a tag assignment for an entity.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a tag assignment for an entity.
+	cmd.Short = `Update a tag assignment for an entity.`
+	cmd.Long = `Update a tag assignment for an entity.
 
   Update a tag assignment
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, designerfiles, geniespaces, notebooks
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -411,8 +399,8 @@ Update a tag assignment for an entity.
       future.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)

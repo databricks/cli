@@ -1271,3 +1271,158 @@ func TestRenderFreshPyprojectSkipDBConnectOmitsDBConnect(t *testing.T) {
 	assert.Contains(t, s, "constraint-dependencies")
 	requireValidTOML(t, out)
 }
+
+func TestMergeManagedConstraintsAtWorkspaceRootAddsNoBlock(t *testing.T) {
+	in := []byte("[project]\nname = \"a\"\nrequires-python = \">=3.10\"\n")
+	c := Constraints{RequiresPython: ">=3.12", ConstraintDeps: []string{"numpy==1.26.4"}}
+	out, regions, err := MergeManaged(in, c, MergeOptions{ConstraintsAtWorkspaceRoot: true})
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `requires-python = ">=3.12"`)
+	assert.NotContains(t, string(out), "constraint-dependencies")
+	assert.NotContains(t, regions, regionToolUv)
+}
+
+func TestMergeToolUvBlockVirtualRoot(t *testing.T) {
+	in := []byte("[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n")
+	out, changed, _, err := MergeToolUvBlock(in, []string{"numpy==1.26.4"})
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Contains(t, string(out), managedMarkerStart)
+	assert.Contains(t, string(out), `"numpy==1.26.4"`)
+	assert.Contains(t, string(out), "[tool.uv.workspace]")
+
+	again, changed2, _, err := MergeToolUvBlock(out, []string{"numpy==1.26.4"})
+	require.NoError(t, err)
+	assert.False(t, changed2)
+	assert.Equal(t, out, again)
+}
+
+func TestMergeToolUvBlockKeepsCRLF(t *testing.T) {
+	in := []byte("[tool.uv.workspace]\r\nmembers = [\"a\"]\r\n")
+	out, _, _, err := MergeToolUvBlock(in, []string{"x==1"})
+	require.NoError(t, err)
+	assert.NotContains(t, strings.ReplaceAll(string(out), "\r\n", ""), "\n")
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootRemovesStaleStandaloneBlock(t *testing.T) {
+	// A run before workspace support wrote the managed block into the member,
+	// where uv ignores it. The member merge removes it; the root holds the pins.
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n" +
+		managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, regions, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n", string(out))
+	assert.Contains(t, regions, regionToolUv)
+
+	again, regions2, err := MergeManaged(out, c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, out, again)
+	assert.NotContains(t, regions2, regionToolUv)
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootRemovesStaleBlockKeepsUserTable(t *testing.T) {
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n" +
+		managedMarkerStart + "\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootKeepsHeaderForTrailingUserKeys(t *testing.T) {
+	// The user added a key below an earlier standalone block. It belongs to that
+	// block's [tool.uv] table, so the header must survive the block's removal.
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n" +
+		managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\npackage = false\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n", string(out))
+}
+
+func TestMergeToolUvBlockDottedKeyGuard(t *testing.T) {
+	// A [tool.uv] table defined without its own header cannot be extended by the
+	// line-based merge; appending a [tool.uv] header would define it twice, which
+	// uv rejects for the whole workspace.
+	tests := []struct {
+		name    string
+		in      string
+		wantErr bool
+	}{
+		{"workspace subtable header", "[tool.uv.workspace]\nmembers = [\"bundles/*\"]\n", false},
+		{"dotted key at top level", "tool.uv.workspace.members = [\"bundles/*\"]\n", true},
+		{"quoted dotted key", "\"tool\".\"uv\".workspace.members = [\"bundles/*\"]\n", true},
+		{"dotted key in [tool]", "[tool]\nuv.workspace.members = [\"bundles/*\"]\n", true},
+		{"inline tool table", "tool = { uv = { workspace = { members = [\"bundles/*\"] } } }\n", true},
+		{"inline uv table in [tool]", "[tool]\nuv = { workspace = { members = [\"bundles/*\"] } }\n", true},
+		// Header spellings the line-based merge does not match; the merged file
+		// would define [tool.uv] twice.
+		{"header with spaces", "[ tool.uv ]\ndev-dependencies = []\n", true},
+		{"quoted header", "[tool.\"uv\"]\ndev-dependencies = []\n", true},
+		{"quoted constraint key", "[tool.uv]\n\"constraint-dependencies\" = [\"y==1\"]\n", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, _, err := MergeToolUvBlock([]byte(tc.in), []string{"x==1"})
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMergeToolUvBlockReportsReplacedPins(t *testing.T) {
+	tests := []struct {
+		name         string
+		in           string
+		wantReplaced bool
+	}{
+		{"no pins", "[tool.uv.workspace]\nmembers = [\"a\"]\n", false},
+		{"only a comment names the key", "# constraint-dependencies are added by setup-local\n[tool.uv.workspace]\nmembers = [\"a\"]\n", false},
+		{"user pins", "[tool.uv]\nconstraint-dependencies = [\"urllib3<2\"]\n", true},
+		{"managed pins", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n    \"old==1\",\n]\n" + managedMarkerEnd + "\n", true},
+		{"empty unmarked key", "[tool.uv]\nconstraint-dependencies = []\n", false},
+		{"quote only in a comment", "[tool.uv]\nconstraint-dependencies = [\n    # \"placeholder\"\n]  # 'none yet'\n", false},
+		{"pin with a trailing comment", "[tool.uv]\nconstraint-dependencies = [\n    \"urllib3<2\", # why\n]\n", true},
+		{"empty managed block", managedMarkerStart + "\n[tool.uv]\nconstraint-dependencies = [\n]\n" + managedMarkerEnd + "\n", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, replaced, err := MergeToolUvBlock([]byte(tc.in), []string{"x==1"})
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantReplaced, replaced)
+		})
+	}
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootRemovesUnmarkedPins(t *testing.T) {
+	// A run before the managed markers wrote a plain [tool.uv] table with only
+	// constraint-dependencies; the standalone merge treats it as its own, so the
+	// member merge removes it too. Other [tool.uv] keys stay.
+	c := Constraints{RequiresPython: ">=3.12"}
+	opts := MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true}
+	head := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n"
+
+	out, regions, err := MergeManaged([]byte(head+"\n[tool.uv]\nconstraint-dependencies = [\"x==1\"]\n"), c, opts)
+	require.NoError(t, err)
+	assert.Equal(t, head, string(out))
+	assert.Contains(t, regions, regionToolUv)
+
+	out, _, err = MergeManaged([]byte(head+"\n[tool.uv]\npackage = false\nconstraint-dependencies = [\"x==1\"]\n"), c, opts)
+	require.NoError(t, err)
+	assert.Equal(t, head+"\n[tool.uv]\npackage = false\n", string(out))
+}
+
+func TestMergeManagedConstraintsAtWorkspaceRootKeepsUserBlankLine(t *testing.T) {
+	// A header-less managed block sits inside the user's [tool.uv] table; the
+	// blank line before it is the user's, not the merge's.
+	in := "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n\n" +
+		managedMarkerStart + "\nconstraint-dependencies = [\n    \"x==1\",\n]\n" + managedMarkerEnd + "\n"
+	c := Constraints{RequiresPython: ">=3.12"}
+	out, _, err := MergeManaged([]byte(in), c, MergeOptions{ConstraintsAtWorkspaceRoot: true, SkipDBConnect: true})
+	require.NoError(t, err)
+	assert.Equal(t, "[project]\nname = \"a\"\nrequires-python = \">=3.12\"\n\n[tool.uv]\npackage = false\n\n", string(out))
+}

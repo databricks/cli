@@ -1,0 +1,16 @@
+export PATH="$PWD/bin:$PATH"
+
+title "Validate the directory selected by --path"
+trace withdir app $CLI apps validate --path ..
+
+title "Skip tests"
+trace $CLI apps validate --skip-tests
+
+title "Report a failed script"
+trace VALIDATION_TEST_FAIL="run --if-present test" musterr $CLI apps validate
+
+title "Deploy validates with the same package manager before uploading"
+trace VALIDATION_TEST_FAIL="run --if-present build" musterr $CLI apps deploy
+
+title "Commands executed in the project directory"
+trace cat commands.log

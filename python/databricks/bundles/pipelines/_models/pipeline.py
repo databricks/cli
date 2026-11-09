@@ -15,10 +15,7 @@ from databricks.bundles.pipelines._models.event_log_spec import (
     EventLogSpec,
     EventLogSpecParam,
 )
-from databricks.bundles.pipelines._models.filters import (
-    Filters,
-    FiltersParam,
-)
+from databricks.bundles.pipelines._models.filters import Filters, FiltersParam
 from databricks.bundles.pipelines._models.ingestion_gateway_pipeline_definition import (
     IngestionGatewayPipelineDefinition,
     IngestionGatewayPipelineDefinitionParam,
@@ -89,7 +86,8 @@ class Pipeline(Resource):
 
     clusters: VariableOrList[PipelineCluster] = field(default_factory=list)
     """
-    Cluster settings for this pipeline deployment.
+    Cluster settings for this pipeline deployment. Applies to classic
+    (non-serverless) pipelines. Omit this field when `serverless` is `true`.
     """
 
     configuration: VariableOrDict[str] = field(default_factory=dict)
@@ -108,7 +106,9 @@ class Pipeline(Resource):
 
     development: VariableOrOptional[bool] = None
     """
-    Whether the pipeline is in Development mode. Defaults to false.
+    [DEPRECATED] Whether the pipeline is in Development mode. Defaults to false.
+    
+    Deprecated: set development mode for each update instead.
     """
 
     edition: VariableOrOptional[str] = None
@@ -176,6 +176,15 @@ class Pipeline(Resource):
     Maximum total size: 10k characters (JSON format)
     """
 
+    parent_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    
+    If absent, the pipeline doesn't have a workspace object.
+    """
+
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
     """
     The permissions to apply to this resource.
@@ -214,7 +223,11 @@ class Pipeline(Resource):
 
     serverless: VariableOrOptional[bool] = None
     """
-    Whether serverless compute is enabled for this pipeline.
+    Whether serverless compute is enabled for this pipeline. Serverless is the
+    recommended compute for new pipelines; set this to `true` to run the pipeline
+    on serverless. For notebook/file pipelines, omitting this field uses classic
+    compute configured through the `clusters` field. When `true`, omit `clusters`;
+    Photon is always enabled.
     """
 
     serverless_compute_id: VariableOrOptional[str] = None
@@ -286,7 +299,8 @@ class PipelineDict(TypedDict, total=False):
 
     clusters: VariableOrList[PipelineClusterParam]
     """
-    Cluster settings for this pipeline deployment.
+    Cluster settings for this pipeline deployment. Applies to classic
+    (non-serverless) pipelines. Omit this field when `serverless` is `true`.
     """
 
     configuration: VariableOrDict[str]
@@ -305,7 +319,9 @@ class PipelineDict(TypedDict, total=False):
 
     development: VariableOrOptional[bool]
     """
-    Whether the pipeline is in Development mode. Defaults to false.
+    [DEPRECATED] Whether the pipeline is in Development mode. Defaults to false.
+    
+    Deprecated: set development mode for each update instead.
     """
 
     edition: VariableOrOptional[str]
@@ -373,6 +389,15 @@ class PipelineDict(TypedDict, total=False):
     Maximum total size: 10k characters (JSON format)
     """
 
+    parent_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    
+    If absent, the pipeline doesn't have a workspace object.
+    """
+
     permissions: VariableOrList[PipelinePermissionParam]
     """
     The permissions to apply to this resource.
@@ -411,7 +436,11 @@ class PipelineDict(TypedDict, total=False):
 
     serverless: VariableOrOptional[bool]
     """
-    Whether serverless compute is enabled for this pipeline.
+    Whether serverless compute is enabled for this pipeline. Serverless is the
+    recommended compute for new pipelines; set this to `true` to run the pipeline
+    on serverless. For notebook/file pipelines, omitting this field uses classic
+    compute configured through the `clusters` field. When `true`, omit `clusters`;
+    Photon is always enabled.
     """
 
     serverless_compute_id: VariableOrOptional[str]

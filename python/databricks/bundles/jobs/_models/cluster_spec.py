@@ -10,10 +10,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.jobs._models.auto_scale import (
-    AutoScale,
-    AutoScaleParam,
-)
+from databricks.bundles.jobs._models.auto_scale import AutoScale, AutoScaleParam
 from databricks.bundles.jobs._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesParam,
@@ -176,9 +173,6 @@ class ClusterSpec:
     The node type of the Spark driver.
     Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
-    
-    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
-    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool] = None
@@ -454,9 +448,6 @@ class ClusterSpecDict(TypedDict, total=False):
     The node type of the Spark driver.
     Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
-    
-    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
-    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool]

@@ -1,0 +1,25 @@
+bundle:
+  name: sensitive-variables
+
+variables:
+  api_credential:
+    description: Sensitive because it is used as the value of a secret
+
+resources:
+  secrets:
+    example_secret:
+      name: example_secret
+      catalog_name: main
+      schema_name: default
+      value: ${var.api_credential}
+      comment: "Credential: ${var.api_credential}"
+
+  jobs:
+    example_job:
+      name: example_job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Shared/notebook
+            base_parameters:
+              token: ${var.api_credential}

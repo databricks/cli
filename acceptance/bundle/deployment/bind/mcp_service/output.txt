@@ -13,7 +13,7 @@ Resources:
   MCP services:
     mcp1:
       Name: mysvc
-      URL:  [DATABRICKS_URL]/explore/data/mcp-services/main/myschema/mysvc?w=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/mcp-services/main/myschema/mysvc?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle deployment unbind mcp1
 

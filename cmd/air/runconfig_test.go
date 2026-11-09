@@ -2,11 +2,15 @@ package aircmd
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -95,6 +99,56 @@ permissions:
 	assert.Len(t, cfg.Permissions, 2)
 }
 
+func TestLoadRunConfig_CodeSourceShapes(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{"flattened", "code_source:\n  root_path: src\n"},
+		{"flattened with type", "code_source:\n  type: snapshot\n  root_path: src\n"},
+		{"nested", "code_source:\n  snapshot:\n    root_path: src\n"},
+		{"nested with type", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: src\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tt.yaml))
+			require.NoError(t, err)
+			require.NotNil(t, cfg.CodeSource.Snapshot)
+			assert.Equal(t, "src", cfg.CodeSource.Snapshot.RootPath)
+			assert.Nil(t, cfg.CodeSource.LegacySnapshot)
+		})
+	}
+}
+
+func TestLoadRunConfig_CodeSourceErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		errFrag string
+	}{
+		{"empty", "code_source: {}\n", "requires snapshot configuration"},
+		{"type only", "code_source:\n  type: snapshot\n", "requires snapshot configuration"},
+		{"empty type", "code_source:\n  type: \"\"\n  root_path: src\n", "cannot be empty; omit it to use snapshot"},
+		{"null type", "code_source:\n  type: null\n  root_path: src\n", "cannot be empty; omit it to use snapshot"},
+		{"unsupported type", "code_source:\n  type: git\n  root_path: src\n", "must be 'snapshot'"},
+		{"mixed shapes", "code_source:\n  root_path: src\n  snapshot:\n    root_path: src\n", "remove the 'snapshot' wrapper and place all fields directly under code_source"},
+		{"mixed with null snapshot", "code_source:\n  root_path: src\n  snapshot: null\n", "remove the 'snapshot' wrapper and place all fields directly under code_source"},
+		{"flattened error path", "code_source:\n  root_path: \"\"\n", "code_source.root_path cannot be empty"},
+		{"nested error path", "code_source:\n  snapshot:\n    root_path: \"\"\n", "code_source.snapshot.root_path cannot be empty"},
+		{"null snapshot", "code_source:\n  snapshot: null\n", "code_source.snapshot.root_path cannot be empty"},
+		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", "field bogus not found"},
+		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", "field bogus not found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, minimalConfig+tt.yaml))
+			require.ErrorContains(t, err, tt.errFrag)
+		})
+	}
+}
+
 // TestLoadRunConfigUnityCatalogImage covers parsing environment.unity_catalog_image,
 // which is mutually exclusive with dependencies/version.
 func TestLoadRunConfigUnityCatalogImage(t *testing.T) {
@@ -139,6 +193,50 @@ func TestMultiImageExample(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "qwen_grpo_multi_image", cfg.ExperimentName)
 	assert.Len(t, cfg.Containers, 2)
+}
+
+func TestLoadRunConfigContainerNames(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		valid bool
+	}{
+		{"a", true},
+		{"trainer1", true},
+		{"data-proc", true},
+		{"a--b", true},
+		{strings.Repeat("a", 17), true},
+		{strings.Repeat("a", 32), true},
+		{"", false},
+		{"Trainer", false},
+		{"data_proc", false},
+		{"_trainer", false},
+		{"1trainer", false},
+		{"-trainer", false},
+		{"trainer-", false},
+		{"data.proc", false},
+		{"data proc", false},
+		{strings.Repeat("a", 33), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, fmt.Sprintf(`
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+containers:
+  - name: %q
+    command: echo train
+    ranks: [0]
+    unity_catalog_image: main.ml.trainer:v1
+`, tc.name)))
+			if tc.valid {
+				require.NoError(t, err)
+				assert.Equal(t, tc.name, cfg.Containers[0].Name)
+			} else {
+				require.ErrorContains(t, err, "containers[0].name must start with a lowercase letter")
+			}
+		})
+	}
 }
 
 func TestLoadRunConfigContainerValidation(t *testing.T) {
@@ -496,7 +594,7 @@ func TestSnapshotSourceConfigValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.snap.validate()
+			err := tt.snap.validate("code_source")
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
 				return
@@ -557,10 +655,9 @@ func TestResolveConfigField(t *testing.T) {
 		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
 		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
 		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
-		{"conditionally required", "config.code_source.type", "config.code_source.type", "string", "when code_source is set"},
 		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
 		{"free-form map", "config.parameters", "config.parameters", "map of string to any", ""},
-		{"deeply nested", "config.code_source.snapshot.root_path", "config.code_source.snapshot.root_path", "string", "when code_source.snapshot is set"},
+		{"flattened snapshot", "config.code_source.root_path", "config.code_source.root_path", "string", "when code_source is set"},
 	}
 
 	for _, tt := range tests {
@@ -582,7 +679,7 @@ func TestResolveConfigField_PolymorphicTypes(t *testing.T) {
 	tests := []struct{ path, wantType string }{
 		{"config.environment.dependencies", "list of strings"},
 		{"config.environment.version", "string or int"},
-		{"config.code_source.snapshot.git.remote", "bool or string"},
+		{"config.code_source.git.remote", "bool or string"},
 	}
 
 	for _, tt := range tests {
@@ -649,8 +746,13 @@ func TestResolveConfigField_Errors(t *testing.T) {
 		},
 		{
 			name:      "nested typo reports the resolved prefix",
-			path:      "config.code_source.snapshot.rootpath",
-			wantParts: []string{`unknown config field "config.code_source.snapshot.rootpath"`, `did you mean "root_path"?`},
+			path:      "config.code_source.rootpath",
+			wantParts: []string{`unknown config field "config.code_source.rootpath"`, `did you mean "root_path"?`},
+		},
+		{
+			name:      "legacy fields are hidden",
+			path:      "config.code_source.snapshot",
+			wantParts: []string{`unknown config field "config.code_source.snapshot"`},
 		},
 	}
 
@@ -702,6 +804,138 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
 }
 
+func TestRunCommandHelpComputeOptions(t *testing.T) {
+	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
+    GPU_1xH100 - 1 accelerator per node
+    GPU_8xH100 - 8 accelerators per node
+    GPU_8xB300 - 8 accelerators per node`
+	tests := []struct {
+		name        string
+		statusCode  int
+		response    string
+		wantOptions string
+		wantWarning bool
+	}{
+		{
+			name:        "workspace subset",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_8xH100","per_node_accelerator_count":4,"launch_stage":"PUBLIC_PREVIEW"},{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16},{"hardware_accelerator":"GPU_1xA10"}]}`,
+			wantOptions: "    GPU_8xH100 - 4 accelerators per node [Public Preview]\n    GPU_FUTURE - 16 accelerators per node\n    GPU_1xA10 - 1 accelerator per node",
+		},
+		{
+			name:        "workspace confirms RTX6000 availability",
+			response:    `{"compute_options":[{"hardware_accelerator":"GPU_1xRTX6000","per_node_accelerator_count":1,"launch_stage":"GA"}]}`,
+			wantOptions: "    GPU_1xRTX6000 - 1 accelerator per node",
+		},
+		{
+			name:        "empty response",
+			response:    `{}`,
+			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
+		},
+		{
+			name:        "endpoint unavailable falls back",
+			statusCode:  http.StatusNotFound,
+			response:    `{"error_code":"NOT_FOUND","message":"ListComputeOptions is not yet enabled."}`,
+			wantOptions: builtInOptions,
+		},
+		{
+			name:        "unexpected API error warns and falls back",
+			statusCode:  http.StatusInternalServerError,
+			response:    `{"error_code":"INTERNAL_ERROR","message":"Internal error."}`,
+			wantOptions: builtInOptions,
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.statusCode != 0 {
+					w.WriteHeader(tt.statusCode)
+				}
+				_, _ = w.Write([]byte(tt.response))
+			}))
+			t.Cleanup(srv.Close)
+
+			var out, errOut strings.Builder
+			cmd := newRunCommand()
+			cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
+			cmd.SetOut(&out)
+			cmd.SetErr(&errOut)
+			cmd.SetArgs([]string{"-h", "config.compute"})
+			require.NoError(t, cmd.Execute())
+
+			options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
+			require.True(t, found)
+			options, _, found = strings.Cut(options, "\n\n  Fields:")
+			require.True(t, found)
+			assert.Equal(t, tt.wantOptions, options)
+			if tt.wantWarning {
+				assert.Contains(t, errOut.String(), "showing the built-in list")
+			} else {
+				assert.Empty(t, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunCommandHelpComputeOptionsUsesBundleTarget(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	var defaultHit, targetHit bool
+	defaultServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			defaultHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_DEFAULT","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(defaultServer.Close)
+	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == computeOptionsPath {
+			targetHit = true
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_TARGET","per_node_accelerator_count":1}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(targetServer.Close)
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".databrickscfg"), []byte(fmt.Sprintf(`
+[DEFAULT]
+host = %s
+token = token
+
+[TARGET]
+host = %s
+token = token
+`, defaultServer.URL, targetServer.URL)), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(dir, ".databrickscfg"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(`
+bundle:
+  name: compute-help-test
+targets:
+  selected:
+    workspace:
+      profile: TARGET
+`), 0o600))
+
+	var out strings.Builder
+	cmd := newRunCommand()
+	cmd.Flags().String("target", "", "bundle target")
+	cmd.SetContext(t.Context())
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--target", "selected", "-h", "config.compute"})
+	require.NoError(t, cmd.Execute())
+
+	assert.True(t, targetHit)
+	assert.False(t, defaultHit)
+	assert.Contains(t, out.String(), "GPU_TARGET - 1 accelerator per node")
+	assert.NotContains(t, out.String(), "GPU_DEFAULT")
+}
+
 // Guards against adding a schema field without a help: tag.
 func TestConfigFieldsAllDocumented(t *testing.T) {
 	root, err := resolveConfigField("config")
@@ -710,6 +944,9 @@ func TestConfigFieldsAllDocumented(t *testing.T) {
 	var walk func(fields []configField)
 	walk = func(fields []configField) {
 		for _, f := range fields {
+			if f.hidden {
+				continue
+			}
 			assert.NotEmpty(t, f.help, "%s is missing a help: struct tag", f.path)
 			assert.NotEmpty(t, f.typeName, "%s has no type name", f.path)
 			walk(f.children)
@@ -747,12 +984,19 @@ func TestRunCommandHelp_NoConfigPath(t *testing.T) {
 // -h with a config path documents the field instead of the command, and does so
 // without the otherwise-required --file.
 func TestRunCommandHelp_ConfigPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_FUTURE","per_node_accelerator_count":16}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
 	var out strings.Builder
 	cmd := newRunCommand()
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL)))
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"-h", "config.compute.accelerator_type"})
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, out.String(), "config.compute.accelerator_type")
+	assert.Contains(t, out.String(), "GPU_FUTURE - 16 accelerators per node")
 	assert.Contains(t, out.String(), "Type:     string")
 	assert.NotContains(t, out.String(), "Usage:")
 }
@@ -777,8 +1021,16 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	paths := []string{
 		"compute.num_accelerators",
 		"environment.unity_catalog_image",
-		"code_source.snapshot.root_path",
+		"code_source.root_path",
 		"env_variables.MY_VAR", // free-form sub-path
+	}
+
+	for _, p := range []string{"code_source.type", "code_source.snapshot.root_path"} {
+		t.Run(p+" compatibility override", func(t *testing.T) {
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			_, err := resolveConfigField(p)
+			require.Error(t, err)
+		})
 	}
 	for _, p := range paths {
 		t.Run(p, func(t *testing.T) {

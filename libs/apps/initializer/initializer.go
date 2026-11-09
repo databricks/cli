@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -39,11 +40,12 @@ type Initializer interface {
 
 // GetProjectInitializer returns the appropriate initializer based on project type.
 // Detection order: package.json (Node.js), pyproject.toml (Python/uv), requirements.txt (Python/pip).
+// For Node.js projects, m is required and will be used for PM-specific operations.
 // Returns nil if no initializer is applicable.
-func GetProjectInitializer(workDir string) Initializer {
+func GetProjectInitializer(workDir string, m pkgmanager.Manager) Initializer {
 	// Check for Node.js project (package.json exists)
 	if fileExists(filepath.Join(workDir, "package.json")) {
-		return &InitializerNodeJs{workDir: workDir}
+		return &InitializerNodeJs{workDir: workDir, manager: m}
 	}
 
 	// Check for Python project with pyproject.toml (use uv)

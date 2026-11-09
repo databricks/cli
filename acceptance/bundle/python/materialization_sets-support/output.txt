@@ -1,0 +1,48 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_materialization_set"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "materialization_sets": {
+      "my_materialization_set_1": {
+        "materialized_features": [
+          {
+            "cron_schedule_trigger": {
+              "mode": "DERIVED"
+            },
+            "feature_name": "main.default.my_feature_1_updated",
+            "offline_store_config": {
+              "catalog_name": "main",
+              "schema_name": "default",
+              "table_name_prefix": "my_feature_1_off"
+            }
+          }
+        ]
+      },
+      "my_materialization_set_2": {
+        "materialized_features": [
+          {
+            "cron_schedule_trigger": {
+              "mode": "DERIVED"
+            },
+            "feature_name": "main.default.my_feature_2_updated",
+            "offline_store_config": {
+              "catalog_name": "main",
+              "schema_name": "default",
+              "table_name_prefix": "my_feature_2_off"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

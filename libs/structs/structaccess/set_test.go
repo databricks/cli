@@ -597,11 +597,9 @@ func TestSet_EmbeddedStructForceSendFields(t *testing.T) {
 		obj := Outer{
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
-			Inner: Inner{
-				InnerFieldOmit:   "inner_value",
-				InnerFieldNoOmit: "inner_no_omit",
-				ForceSendFields:  []string{"OuterFieldOmit", "InnerFieldOmit"},
-			},
+			InnerFieldOmit:   "inner_value",
+			InnerFieldNoOmit: "inner_no_omit",
+			ForceSendFields:  []string{"OuterFieldOmit", "InnerFieldOmit"},
 		}
 
 		// Set nil value for outer field - roundtrip nil -> nil
@@ -632,11 +630,9 @@ func TestSet_EmbeddedStructForceSendFields(t *testing.T) {
 		obj := Outer{
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
-			Inner: Inner{
-				InnerFieldOmit:   "inner_value",
-				InnerFieldNoOmit: "inner_no_omit",
-				ForceSendFields:  []string{},
-			},
+			InnerFieldOmit:   "inner_value",
+			InnerFieldNoOmit: "inner_no_omit",
+			ForceSendFields:  []string{},
 		}
 
 		// Set empty string for outer field, but get nil back (omitempty, no ForceSendFields)
@@ -689,10 +685,8 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
 			ForceSendFields:  []string{"OuterFieldOmit", "FirstFieldOmit"},
-			First: First{
-				FirstFieldOmit:   "first_value",
-				FirstFieldNoOmit: "first_no_omit",
-			},
+			FirstFieldOmit:   "first_value",
+			FirstFieldNoOmit: "first_no_omit",
 			Second: Second{
 				SecondFieldOmit:   "second_value",
 				SecondFieldNoOmit: "second_no_omit",
@@ -744,10 +738,8 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 			OuterFieldOmit:   "outer_value",
 			OuterFieldNoOmit: "outer_no_omit",
 			ForceSendFields:  []string{},
-			First: First{
-				FirstFieldOmit:   "first_value",
-				FirstFieldNoOmit: "first_no_omit",
-			},
+			FirstFieldOmit:   "first_value",
+			FirstFieldNoOmit: "first_no_omit",
 			Second: Second{
 				SecondFieldOmit:   "second_value",
 				SecondFieldNoOmit: "second_no_omit",

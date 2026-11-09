@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/apps/foo",
+  "path": "/api/2.0/permissions/apps/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

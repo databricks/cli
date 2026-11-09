@@ -4,6 +4,9 @@ __all__ = [
     "Dashboard",
     "DashboardDict",
     "DashboardParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -21,6 +24,11 @@ from databricks.bundles.dashboards._models.dashboard import (
     Dashboard,
     DashboardDict,
     DashboardParam,
+)
+from databricks.bundles.dashboards._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.dashboards._models.lifecycle import (
     Lifecycle,

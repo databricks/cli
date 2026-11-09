@@ -2,8 +2,10 @@ package migrate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -19,6 +21,28 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
+
+// SeedState records every terraform-state resource in stateDB, which must be open for write, so
+// the migrated state persists all deployed resources, including ones the current config no longer
+// declares. BuildStateFromTF then overwrites the config-declared entries with their full state (the
+// later WAL entry wins on replay); the rest keep this minimal entry, which is enough for the first
+// direct plan to delete them. Without this, a config that dropped every resource would record no
+// WAL entries at all and Finalize would persist no state file. An empty terraform state seeds
+// nothing, so its base file is written directly; the header-only Finalize leaves it intact.
+func SeedState(ctx context.Context, stateDB *dstate.DeploymentState, tfState *TFState) error {
+	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
+		if err := stateDB.Persist(); err != nil {
+			return fmt.Errorf("persisting empty migrated state: %w", err)
+		}
+		return nil
+	}
+	for key, id := range tfState.IDs {
+		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
+			return fmt.Errorf("seeding migrated state for %s: %w", key, err)
+		}
+	}
+	return nil
+}
 
 // BuildStateFromTF iterates over bundle resources, resolves cross-resource
 // references using TF state attributes, and writes each resource's state entry.
@@ -129,6 +153,15 @@ func BuildStateFromTF(
 				}
 			}
 		}
+		lifecycleDeps, err := direct.LifecycleDependsOn(configRoot, inputConfig)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: %w", node, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -170,6 +203,25 @@ func BuildStateFromTF(
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
 				return warningsSeen, fmt.Errorf("%s: parsing field path %q: %w", node, pending.fieldPathStr, err)
+			}
+
+			// The referenced resource was never deployed (new in config), so the deployed
+			// resource cannot have the field set either. Record it as unset: the first direct
+			// plan sees the difference and applies it once the referenced resource exists.
+			if referencesUndeployed(pending.refTemplate, tfIDs) {
+				current, err := structaccess.Get(sv.Value, fieldPath)
+				if err != nil {
+					return warningsSeen, fmt.Errorf("%s: reading field %q: %w", node, pending.fieldPathStr, err)
+				}
+				// A nil value means the field is already unset (e.g. an unresolved ref in a number).
+				if current != nil {
+					zero := reflect.Zero(reflect.TypeOf(current)).Interface()
+					if err := structaccess.Set(sv.Value, fieldPath, zero); err != nil {
+						return warningsSeen, fmt.Errorf("%s: cannot unset field %q: %w", node, pending.fieldPathStr, err)
+					}
+				}
+				delete(sv.Refs, pending.fieldPathStr)
+				continue
 			}
 
 			// ResolveFieldRef returns the fully resolved value for this field,
@@ -225,6 +277,29 @@ func BuildStateFromTF(
 	}
 
 	return warningsSeen, nil
+}
+
+// referencesUndeployed reports whether refTemplate references a resource that is not in the terraform state.
+func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
+	ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+	if !ok {
+		return false
+	}
+	for _, targetPath := range ref.References() {
+		path, err := dyn.NewPathFromString(targetPath)
+		if err != nil {
+			continue
+		}
+		targetNode, _ := config.GetNodeAndType(path)
+		// Not a resource reference (e.g. ${var.x}).
+		if len(targetNode) == 0 {
+			continue
+		}
+		if _, ok := tfIDs[targetNode.String()]; !ok {
+			return true
+		}
+	}
+	return false
 }
 
 // reconcileIDFields aligns each id-composing field (provided_id_fields, updatable_id_fields)

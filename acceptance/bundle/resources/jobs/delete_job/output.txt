@@ -65,6 +65,6 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_ID]
   }
 }

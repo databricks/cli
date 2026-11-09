@@ -120,18 +120,14 @@ bundle:
                 Whether to force this lock if it is enabled.
     "engine":
       "description": |-
-        The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "direct".
+        The deployment engine to use. Valid values are `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "direct".
       "$type":
         "enum":
-          - |-
-            terraform
           - |-
             direct
         "x-databricks-enum-descriptions":
           "direct": |-
             Deploy by calling the Databricks APIs directly. This is the default.
-          "terraform": |-
-            Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct
     "git":
       "description": |-
         The Git version control details that are associated with your bundle.
@@ -169,6 +165,8 @@ experimental:
     "immutable_folder":
       "description": |-
         Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
+      "deprecation_message": |-
+        Deprecated: please set workspace.sync_mode to immutable instead
     "pydabs":
       "description": |-
         The PyDABs configuration.
@@ -626,17 +624,20 @@ resources:
       "$fields":
         "libraries":
           "description": |-
-            A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+            A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
             "started":
               "description": |-
-                Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
+                Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -777,6 +778,36 @@ resources:
         "warehouse_id":
           "description": |-
             The warehouse ID used to run the dashboard.
+    "data_quality_monitors":
+      "description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor.
+      "markdown_description": |-
+        The data quality monitor definitions for the bundle, where each key is the name of the data quality monitor. See [\_](/dev-tools/bundles/resources.md#data_quality_monitors).
+      "$type":
+        "markdown_description": |-
+          The data_quality_monitor resource allows you to define a [data quality monitor](/api/workspace/dataquality/createmonitor) on a Unity Catalog schema (anomaly detection) or table (data profiling). It supersedes the `quality_monitor` resource. For information about data quality monitoring, see [_](/data-governance/unity-catalog/data-quality-monitoring/index.md).
+
+          The bundle manages the schema alert in `anomaly_detection_config.notification_settings`. If it is omitted, deploying an update removes any alert set in the Data Quality Monitoring UI, so define alerts for bundle-managed monitors in the bundle.
+        "markdown_examples": |-
+          The following example defines an anomaly detection monitor on a schema:
+
+          ```yaml
+          resources:
+            schemas:
+              my_schema:
+                catalog_name: main
+                name: my_schema
+
+            data_quality_monitors:
+              my_schema_monitor:
+                object_type: schema
+                object_id: ${resources.schemas.my_schema.schema_id}
+                anomaly_detection_config: {}
+          ```
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "database_catalogs":
       "description": |-
         PLACEHOLDER
@@ -921,6 +952,63 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "features":
+      "description": |-
+        The feature definitions for the bundle, where each key is the name of the feature.
+      "markdown_description": |-
+        The feature definitions for the bundle, where each key is the name of the feature.
+      "$fields":
+        "filter_condition":
+          "description": |-
+            PLACEHOLDER
+        "function":
+          "$fields":
+            "aggregation_function":
+              "$fields":
+                "time_window":
+                  "$fields":
+                    "continuous":
+                      "description": |-
+                        PLACEHOLDER
+                    "sliding":
+                      "description": |-
+                        PLACEHOLDER
+                    "tumbling":
+                      "description": |-
+                        PLACEHOLDER
+            "extra_parameters":
+              "description": |-
+                PLACEHOLDER
+            "function_type":
+              "description": |-
+                PLACEHOLDER
+        "inputs":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "source":
+          "$fields":
+            "delta_table_source":
+              "$fields":
+                "entity_columns":
+                  "description": |-
+                    PLACEHOLDER
+                "timeseries_column":
+                  "description": |-
+                    PLACEHOLDER
+            "kafka_source":
+              "$fields":
+                "entity_column_identifiers":
+                  "description": |-
+                    PLACEHOLDER
+                "timeseries_column_identifier":
+                  "description": |-
+                    PLACEHOLDER
+        "time_window":
+          "description": |-
+            PLACEHOLDER
     "genie_spaces":
       "description": |-
         PLACEHOLDER
@@ -1029,6 +1117,9 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1109,6 +1200,13 @@ resources:
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
+            "depends_on":
+              "description": |-
+                Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+              "$fields":
+                "resource":
+                  "description": |-
+                    Key of the resource to depend on, as `foo` or `jobs.foo`.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -1197,6 +1295,20 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "materialization_sets":
+      "description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "markdown_description": |-
+        The materialization set definitions for the bundle, where each key is the name of the materialization set.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "materialized_features":
+          "$fields":
+            "cron_schedule":
+              "description": |-
+                Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
         PLACEHOLDER
@@ -1475,6 +1587,9 @@ resources:
                                 "protobuf_options":
                                   "description": |-
                                     PLACEHOLDER
+                        "onedrive_options":
+                          "description": |-
+                            PLACEHOLDER
                         "sharepoint_options":
                           "description": |-
                             PLACEHOLDER
@@ -1569,6 +1684,23 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "postgres_data_apis":
+      "description": |-
+        The Postgres Data API definitions for the bundle, where each key is the name of the Data API. Each entry enables and configures the Data API (a REST interface) of a database on a Lakebase Autoscaling branch. Removing an entry turns off the Data API; the database and its data are not affected.
+      "$type":
+        "description": |-
+          The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. At least one setting besides `parent` is required, such as `db_schemas`. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "openapi_mode":
+          "$type":
+            "description": |-
+              Controls how the Data API exposes the OpenAPI documentation endpoint. `OPEN_API_MODE_IGNORE_PRIVILEGES` serves the OpenAPI document without filtering it by the caller's privileges; `OPEN_API_MODE_DISABLED` turns the endpoint off.
+        "parent":
+          "description": |-
+            The database whose Data API this manages. Format: projects/{project_id}/branches/{branch_id}/databases/{database_id}
     "postgres_databases":
       "description": |-
         The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.
@@ -2192,6 +2324,8 @@ targets:
         "source_linked_deployment":
           "description": |-
             Whether to link the deployment to the bundle source.
+          "deprecation_message": |-
+            Deprecated: please set workspace.sync_mode to in-place instead
         "tags":
           "description": |-
             The tags for the bundle deployment.
@@ -2232,6 +2366,9 @@ targets:
         "lookup":
           "description": |-
             The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+        "sensitive":
+          "description": |-
+            Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
         "type":
           "description": |-
             The type of the variable.
@@ -2295,6 +2432,9 @@ variables:
         "warehouse":
           "description": |-
             The name of the warehouse for which to retrieve an ID.
+    "sensitive":
+      "description": |-
+        Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
     "type":
       "description": |-
         The type of the variable.
@@ -2358,6 +2498,24 @@ workspace:
     "state_path":
       "description": |-
         The workspace state path
+    "sync_mode":
+      "description": |-
+        How bundle files are made available to deployed resources. Valid values are `overwrite`, `in-place`, and `immutable`. Defaults to `in-place` for development deployments from the Databricks Workspace and to `overwrite` otherwise.
+      "$type":
+        "enum":
+          - |-
+            overwrite
+          - |-
+            in-place
+          - |-
+            immutable
+        "x-databricks-enum-descriptions":
+          "immutable": |-
+            Upload bundle files and artifacts as a single immutable snapshot and set workspace.file_path and workspace.artifact_path to its location.
+          "in-place": |-
+            Do not upload bundle files. Deployed resources reference the source files in the workspace directly. Available only when deploying from the Databricks Workspace.
+          "overwrite": |-
+            Upload bundle files to workspace.file_path, replacing the files of the previous deployment.
     "workspace_id":
       "description": |-
         The Databricks workspace ID

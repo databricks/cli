@@ -11,6 +11,7 @@ const (
 	BundleConfigRemoteSyncErrorCategoryYamlApplyFailed     BundleConfigRemoteSyncErrorCategory = "YAML_APPLY_FAILED"
 	BundleConfigRemoteSyncErrorCategorySaveFailed          BundleConfigRemoteSyncErrorCategory = "SAVE_FAILED"
 	BundleConfigRemoteSyncErrorCategoryOutputFailed        BundleConfigRemoteSyncErrorCategory = "OUTPUT_FAILED"
+	BundleConfigRemoteSyncErrorCategoryResourceNotInConfig BundleConfigRemoteSyncErrorCategory = "RESOURCE_NOT_IN_CONFIG"
 )
 
 // BundleConfigRemoteSyncEvent is emitted on every execution of the
@@ -18,7 +19,7 @@ const (
 //
 // All fields are aggregate counts, booleans, or system-defined categories.
 // No resource names, keys, field paths, file paths, or configuration values
-// are logged.
+// are logged outside ErrorMessage.
 type BundleConfigRemoteSyncEvent struct {
 	// Whether the command was invoked with --save (config files written to
 	// disk) as opposed to diff-only mode.
@@ -61,6 +62,13 @@ type BundleConfigRemoteSyncEvent struct {
 	// changes it did not apply. Distinct from the "skip" operation filtered out
 	// during change detection, which never reaches ChangesTotal.
 	SkippedChangesCount int64 `json:"skipped_changes_count,omitempty"`
+
+	// Number of selected resources left entirely unchanged because the cluster
+	// policy attached to one of their clusters could not be read, by cause. A
+	// nonzero value means the run finished with a "partial" status.
+	ClusterPolicyNotFoundCount         int64 `json:"cluster_policy_not_found_count,omitempty"`
+	ClusterPolicyPermissionDeniedCount int64 `json:"cluster_policy_permission_denied_count,omitempty"`
+	ClusterPolicyReadFailedCount       int64 `json:"cluster_policy_read_failed_count,omitempty"`
 
 	// Variable-reference restoration counts for the two mechanisms that can
 	// write a current-target-scoped reference into a shared file (the source of

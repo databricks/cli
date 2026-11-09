@@ -17,8 +17,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "config.env[0].value": {
     "action": "update",
     "old": "original_value",
-    "new": "changed_value",
-    "remote": "original_value"
+    "new": "changed_value"
   }
 }
 

@@ -1,0 +1,10 @@
+title "A target that matches several profiles, including [DEFAULT], is rejected"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/ambiguous.databrickscfg $CLI bundle validate -t classic
+
+title "Account profiles are skipped"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/account.databrickscfg $CLI bundle run -t custom_host show_auth
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/account.databrickscfg $CLI bundle validate -t custom_host_without_workspace_id
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/account.databrickscfg $CLI bundle validate -t no_host_with_workspace_id -p account_custom_host
+
+title "A missing config file is rejected"
+trace errcode env DATABRICKS_CONFIG_FILE=$TEST_TMP_DIR/missing.databrickscfg $CLI bundle validate -t classic

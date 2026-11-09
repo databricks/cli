@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -43,15 +44,18 @@ func allResourceTypes(t *testing.T) []string {
 			"cluster_policies",
 			"clusters",
 			"dashboards",
+			"data_quality_monitors",
 			"database_catalogs",
 			"database_instances",
 			"experiments",
 			"external_locations",
+			"features",
 			"genie_spaces",
 			"instance_pools",
 			"internal_immutable_snapshots",
 			"job_runs",
 			"jobs",
+			"materialization_sets",
 			"mcp_services",
 			"model_provider_services",
 			"model_services",
@@ -60,6 +64,7 @@ func allResourceTypes(t *testing.T) []string {
 			"pipelines",
 			"postgres_branches",
 			"postgres_catalogs",
+			"postgres_data_apis",
 			"postgres_databases",
 			"postgres_endpoints",
 			"postgres_projects",
@@ -186,6 +191,7 @@ var allowList = []string{
 	"external_locations",
 	"synced_database_tables",
 	"jobs",
+	"materialization_sets",
 	"pipelines",
 	"models",
 	"model_services",
@@ -193,6 +199,7 @@ var allowList = []string{
 	"model_provider_services",
 	"postgres_branches",
 	"postgres_catalogs",
+	"postgres_data_apis",
 	"postgres_databases",
 	"postgres_endpoints",
 	"postgres_projects",
@@ -201,6 +208,7 @@ var allowList = []string{
 	"postgres_synced_tables",
 	"registered_models",
 	"experiments",
+	"features",
 	"genie_spaces",
 	"instance_pools",
 	"job_runs",
@@ -416,7 +424,7 @@ func TestRunAsIdentities(t *testing.T) {
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 			if tc.wantError {
 				require.ErrorContains(t, diags.Error(), "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name")
-				assert.Equal(t, []dyn.Location{r.GetLocation("run_as")}, diags[0].Locations)
+				assert.Equal(t, []diag.Location{r.GetLocation("run_as")}, diags[0].Locations)
 			} else {
 				require.NoError(t, diags.Error())
 			}

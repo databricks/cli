@@ -163,3 +163,16 @@ func TestLogWithoutLoggerDropsEvent(t *testing.T) {
 		})
 	})
 }
+
+func TestStateLineageHash(t *testing.T) {
+	ctx := WithNewLogger(t.Context())
+	assert.Empty(t, StateLineageHash(ctx))
+
+	SetStateLineageHash(ctx, "G0ZNUjK18Pa")
+	assert.Equal(t, "G0ZNUjK18Pa", StateLineageHash(ctx))
+}
+
+func TestStateLineageHashWithoutLogger(t *testing.T) {
+	SetStateLineageHash(t.Context(), "G0ZNUjK18Pa")
+	assert.Empty(t, StateLineageHash(t.Context()))
+}

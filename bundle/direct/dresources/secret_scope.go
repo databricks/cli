@@ -2,11 +2,11 @@ package dresources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -51,25 +51,21 @@ func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSec
 
 func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScope: workspace.CreateScope{
-			Scope:                  input.Name,
-			ScopeBackendType:       input.BackendType,
-			BackendAzureKeyvault:   input.KeyvaultMetadata,
-			InitialManagePrincipal: "",
-			ForceSendFields:        nil,
-		},
+		Scope:                  input.Name,
+		ScopeBackendType:       input.BackendType,
+		BackendAzureKeyvault:   input.KeyvaultMetadata,
+		InitialManagePrincipal: "",
+		ForceSendFields:        nil,
 	}
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScope: workspace.CreateScope{
-			Scope:                  remote.Scope,
-			ScopeBackendType:       remote.ScopeBackendType,
-			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-			InitialManagePrincipal: "",
-			ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
-		},
+		Scope:                  remote.Scope,
+		ScopeBackendType:       remote.ScopeBackendType,
+		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
+		InitialManagePrincipal: "",
+		ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
 	}
 }
 
@@ -94,7 +90,7 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretSco
 		}
 	}
 
-	return nil, fmt.Errorf("secret scope %q not found", id)
+	return nil, apierr.ErrNotFound
 }
 
 func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *SecretScopeRemote, error) {

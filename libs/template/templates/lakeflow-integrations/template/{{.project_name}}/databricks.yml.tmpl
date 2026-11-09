@@ -18,7 +18,7 @@ artifacts:
     build: >
       uv run python -c "import shutil;
       shutil.rmtree('__generated__', ignore_errors=True);
-      from databricks.lakeflow.integrations.generate import main;
+      from databricks.lakeflow.integrations.generator.generate import main;
       main([
         '--package-module', '{{.project_name}}',
         '--output-dir', '__generated__',
@@ -38,11 +38,11 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
+      host: {{.workspace.URL}}
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
+      host: {{.workspace.URL}}
       # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     permissions:

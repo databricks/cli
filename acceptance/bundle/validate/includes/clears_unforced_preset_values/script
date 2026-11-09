@@ -1,0 +1,2 @@
+# An include can override fields with "", 0 and false.
+trace $CLI bundle validate -o json | jq '{presets, job: (.resources.jobs.j | {name, max_concurrent_runs})}'

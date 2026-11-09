@@ -23,10 +23,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "knowledge-assistants",
-		Short: `*Beta* Manage Knowledge Assistants and related resources.`,
+		Short: `*Beta* Manage legacy Knowledge Assistants and related resources.`,
 		Long: `This command is in Beta and may change without notice.
 
-Manage Knowledge Assistants and related resources.`,
+Manage legacy Knowledge Assistants and related resources.`,
 		GroupID: "agentbricks",
 		RunE:    root.ReportUnknownSubcommand,
 	}

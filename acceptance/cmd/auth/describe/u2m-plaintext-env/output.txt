@@ -9,4 +9,4 @@ Current configuration:
   ✓ profile: u2m-profile (from --profile flag)
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: databricks-cli (from [TEST_TMP_DIR]/home/.databrickscfg config file)
-  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ rate_limit: 1000000000 (from DATABRICKS_RATE_LIMIT environment variable)

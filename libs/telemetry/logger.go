@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -16,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/google/uuid"
 )
 
 const (
@@ -42,7 +42,24 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 }
 
 type logger struct {
-	logs []protos.FrontendLog
+	logs             []protos.FrontendLog
+	stateLineageHash string
+}
+
+// SetStateLineageHash records the hashed lineage of the bundle state the command read, so that
+// the command's execution context can report it. Like Log, it is a no-op without a logger.
+func SetStateLineageHash(ctx context.Context, hash string) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.stateLineageHash = hash
+	}
+}
+
+// StateLineageHash returns the value recorded by SetStateLineageHash, or "" if none was.
+func StateLineageHash(ctx context.Context) string {
+	if l, ok := loggerFromContext(ctx); ok {
+		return l.stateLineageHash
+	}
+	return ""
 }
 
 func (l *logger) log(event protos.DatabricksCliLog) {
@@ -81,7 +98,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	for i, log := range l.logs {
 		b, err := json.Marshal(log)
 		if err != nil {
-			return fmt.Errorf("failed to marshal log: %s", err)
+			return fmt.Errorf("failed to marshal log: %w", err)
 		}
 		protoLogs[i] = string(b)
 	}

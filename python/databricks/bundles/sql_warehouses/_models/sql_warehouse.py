@@ -103,6 +103,15 @@ class SqlWarehouse(Resource):
     Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
+    max_dbu: VariableOrOptional[int] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
+    Must be at least the minimum DBU for the selected warehouse size and no greater
+    than the configured DBU limit. Actual capacity may be below this ceiling.
+    """
+
     max_num_clusters: VariableOrOptional[int] = None
     """
     Maximum number of clusters that the autoscaler will create to handle
@@ -144,9 +153,31 @@ class SqlWarehouse(Resource):
     The permissions to apply to this resource.
     """
 
+    reyden_cluster_size_multiplier: VariableOrOptional[float] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute
+    capacity relative to the nominal virtual cluster size. Only meaningful when
+    the warehouse is of Reyden type.
+    
+    Accepted range: 1.0 to the workspace-configured maximum (decimals
+    allowed). The default maximum is 100.0.
+    - Values below 1.0 are normalized to 1.0.
+    - Values above the configured maximum are capped at that maximum.
+    - When absent, the warehouse is treated as having a multiplier of 1.0.
+    """
+
     spot_instance_policy: VariableOrOptional[SpotInstancePolicy] = None
     """
     Configurations whether the endpoint should use spot instances.
+    """
+
+    statement_timeout: VariableOrOptional[int] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Warehouse statement timeout in seconds.
     """
 
     tags: VariableOrOptional[EndpointTags] = None
@@ -239,6 +270,15 @@ class SqlWarehouseDict(TypedDict, total=False):
     Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
+    max_dbu: VariableOrOptional[int]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
+    Must be at least the minimum DBU for the selected warehouse size and no greater
+    than the configured DBU limit. Actual capacity may be below this ceiling.
+    """
+
     max_num_clusters: VariableOrOptional[int]
     """
     Maximum number of clusters that the autoscaler will create to handle
@@ -280,9 +320,31 @@ class SqlWarehouseDict(TypedDict, total=False):
     The permissions to apply to this resource.
     """
 
+    reyden_cluster_size_multiplier: VariableOrOptional[float]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute
+    capacity relative to the nominal virtual cluster size. Only meaningful when
+    the warehouse is of Reyden type.
+    
+    Accepted range: 1.0 to the workspace-configured maximum (decimals
+    allowed). The default maximum is 100.0.
+    - Values below 1.0 are normalized to 1.0.
+    - Values above the configured maximum are capped at that maximum.
+    - When absent, the warehouse is treated as having a multiplier of 1.0.
+    """
+
     spot_instance_policy: VariableOrOptional[SpotInstancePolicyParam]
     """
     Configurations whether the endpoint should use spot instances.
+    """
+
+    statement_timeout: VariableOrOptional[int]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Warehouse statement timeout in seconds.
     """
 
     tags: VariableOrOptional[EndpointTagsParam]

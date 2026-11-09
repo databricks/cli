@@ -1,0 +1,68 @@
+for profile in workspace_classic workspace_classic_id workspace_custom_host no_workspace_id; do
+  title "Profile $profile"
+  trace $CLI bundle debug render-template-schema ./urls --profile $profile | schema_fields
+  trace $CLI bundle init ./urls --profile $profile
+  cat urls.txt
+  rm urls.txt
+done
+
+# Render the schema again with the current inputs, then run init with the same
+# inputs and profile. The input has an edited jobs_url: the schema still shows
+# its rendered default, and init keeps the edited value.
+title "Rerender and init with edited inputs"
+trace $CLI bundle debug render-template-schema ./urls --profile workspace_custom_host --input-file input.edited.json | schema_fields
+trace $CLI bundle init ./urls --profile workspace_custom_host --config-file input.edited.json
+cat urls.txt
+rm urls.txt
+
+# A default that fails, here because the profile has no workspace ID, doesn't
+# matter when the input has a value: init doesn't use it, and the schema keeps
+# it as written. Without a value, the schema still fails.
+title "Failing default of an input with a value"
+trace $CLI bundle debug render-template-schema ./supplied --profile no_workspace_id --input-file input.supplied.json | schema_fields
+trace $CLI bundle init ./supplied --profile no_workspace_id --config-file input.supplied.json
+cat value.txt
+rm value.txt
+trace musterr $CLI bundle debug render-template-schema ./supplied --profile no_workspace_id
+
+title "Invalid URL paths"
+for input in absolute-url protocol-relative workspace-selector selector-w selector-workspace-id semicolon; do
+  trace musterr $CLI bundle init ./urls --profile workspace_custom_host --config-file input.$input.json
+done
+
+# No profile, so that only the environment variable sets the ID.
+title "Workspace ID from environment variables"
+trace DATABRICKS_CONFIG_FILE=/dev/null DATABRICKS_HOST=$CUSTOM_HOST DATABRICKS_WORKSPACE_ID=$WORKSPACE_ID $CLI bundle init ./urls
+grep ^URL urls.txt
+rm urls.txt
+
+# bundle init reads the workspace configuration of a bundle in the working directory.
+title "Workspace ID from the bundle in the working directory"
+mkdir in_bundle
+cat > in_bundle/databricks.yml <<EOT
+bundle:
+  name: in_bundle
+workspace:
+  profile: workspace_classic
+  workspace_id: "$WORKSPACE_ID"
+EOT
+cd in_bundle
+trace $CLI bundle init ../urls
+grep ^URL urls.txt
+cd ..
+rm -r in_bundle
+
+# A classic profile has no workspace_id, so URL has no ?w=, but ID returns the ID that the SDK
+# resolved from host metadata.
+title "ID"
+trace $CLI bundle init ./id --profile workspace_classic
+cat id.txt
+rm id.txt
+print_requests.py --get > LOG.requests
+trace $CLI bundle init ./id --profile workspace_custom_host
+cat id.txt
+rm id.txt
+trace musterr $CLI bundle init ./id --profile no_workspace_id
+
+# Reading a missing ID doesn't make a request to discover it.
+trace print_requests.py --get --oneline ^//telemetry-ext

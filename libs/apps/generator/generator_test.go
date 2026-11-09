@@ -404,7 +404,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: exp",
 				"experiment:",
-				"experiment_id: ${var.exp_id}",
+				"experiment_id: ${var.exp_experimentId}",
 				"permission: CAN_READ",
 			},
 		},
@@ -449,7 +449,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: vol",
 				"uc_securable:",
-				"securable_full_name: ${var.vol_id}",
+				"securable_full_name: ${var.vol_path}",
 				"securable_type: VOLUME",
 				"permission: READ_VOLUME",
 			},
@@ -1043,7 +1043,7 @@ func TestBundleIgnoreFieldSkippedInVariablesAndTargets(t *testing.T) {
 	assert.Contains(t, example, "DB_NAME=your_database_database_name")
 }
 
-func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
+func TestVolumeManifestPathFieldBindsSecurable(t *testing.T) {
 	plugins := []manifest.Plugin{
 		{
 			Name: "files",
@@ -1065,24 +1065,47 @@ func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
 	}
 
 	cfg := generator.Config{
-		ResourceValues: map[string]string{
-			"files.path": "/Volumes/catalog/schema/vol",
-			"files.id":   "catalog.schema.vol",
-		},
+		ResourceValues: map[string]string{"files.path": "/Volumes/catalog/schema/vol"},
 	}
 
+	// The binding must reference the declared "path" field, so the variable it uses is set.
 	vars := generator.GenerateBundleVariables(plugins, cfg)
-	assert.Contains(t, vars, "files_path:")
-	assert.Contains(t, vars, "files_id:")
+	assert.Equal(t, "  files_path:\n    description: Volume path", vars)
 
 	target := generator.GenerateTargetVariables(plugins, cfg)
-	assert.Contains(t, target, "files_path: /Volumes/catalog/schema/vol")
-	assert.Contains(t, target, "files_id: catalog.schema.vol")
+	assert.Equal(t, "      files_path: /Volumes/catalog/schema/vol", target)
 
 	res := generator.GenerateBundleResources(plugins, cfg)
-	assert.Contains(t, res, "securable_full_name: ${var.files_id}")
+	assert.Contains(t, res, "securable_full_name: ${var.files_path}")
 	assert.Contains(t, res, "securable_type: VOLUME")
 	assert.Contains(t, res, "permission: WRITE_VOLUME")
+}
+
+func TestExperimentManifestFieldBindsExperimentID(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "agents",
+			Resources: manifest.Resources{
+				Optional: []manifest.Resource{
+					{
+						Type:        "experiment",
+						ResourceKey: "agents-mlflow-experiment",
+						Permission:  "CAN_EDIT",
+						Fields: map[string]manifest.ResourceField{
+							"experimentId": {Env: "MLFLOW_EXPERIMENT_ID", Description: "Experiment ID"},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{
+		ResourceValues: map[string]string{"agents-mlflow-experiment.experimentId": "123"},
+	}
+
+	assert.Equal(t, "  agents_mlflow_experiment_experimentId:\n    description: Experiment ID", generator.GenerateBundleVariables(plugins, cfg))
+	assert.Equal(t, "      agents_mlflow_experiment_experimentId: 123", generator.GenerateTargetVariables(plugins, cfg))
+	assert.Contains(t, generator.GenerateBundleResources(plugins, cfg), "experiment_id: ${var.agents_mlflow_experiment_experimentId}")
 }
 
 // postgresResource is the shared resource that "database" and "lakebase" both declare.
@@ -1146,4 +1169,121 @@ func TestDedupeResourcesRequiredWinsOverOptional(t *testing.T) {
 	// No --set values: as a required resource it is still emitted.
 	res := generator.GenerateBundleResources(deduped, generator.Config{})
 	assert.Equal(t, 1, strings.Count(res, "- name: postgres"))
+}
+
+func authModePlugins() []manifest.Plugin {
+	return []manifest.Plugin{
+		{
+			Name:   "analytics",
+			Scopes: []string{"ai-gateway", "sql"},
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "sql_warehouse", ResourceKey: "sql-warehouse", Scope: "sql",
+						Fields: map[string]manifest.ResourceField{"id": {Env: "DATABRICKS_WAREHOUSE_ID"}},
+					},
+					{
+						Type: "genie_space", ResourceKey: "genie-space", Scope: "genie",
+						Fields: map[string]manifest.ResourceField{"id": {Env: "GENIE_SPACE_ID"}},
+					},
+				},
+			},
+		},
+	}
+}
+
+func authModeConfig(modes map[string]string) generator.Config {
+	return generator.Config{
+		ResourceValues: map[string]string{"sql-warehouse.id": "wh1", "genie-space.id": "g1", "genie-space.name": "space"},
+		AuthModes:      modes,
+	}
+}
+
+func TestAuthModeSPIsDefault(t *testing.T) {
+	plugins := authModePlugins()
+	sp := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeSP})
+	unset := authModeConfig(nil)
+
+	assert.Equal(t, generator.GenerateBundleResources(plugins, unset), generator.GenerateBundleResources(plugins, sp))
+	assert.Equal(t, generator.GenerateAppEnv(plugins, unset), generator.GenerateAppEnv(plugins, sp))
+	assert.Empty(t, generator.GenerateUserAPIScopes(plugins, unset))
+	assert.Empty(t, generator.GenerateUserAPIScopes(plugins, sp))
+}
+
+func TestAuthModeOBO(t *testing.T) {
+	plugins := authModePlugins()
+	cfg := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeOBO})
+
+	assert.NotContains(t, generator.GenerateBundleResources(plugins, cfg), "sql-warehouse")
+	assert.NotContains(t, generator.GenerateBundleVariables(plugins, cfg), "sql_warehouse_id")
+	assert.NotContains(t, generator.GenerateTargetVariables(plugins, cfg), "sql_warehouse_id")
+	assert.Equal(t, "  - name: DATABRICKS_WAREHOUSE_ID\n    value: wh1\n  - name: GENIE_SPACE_ID\n    valueFrom: genie-space",
+		generator.GenerateAppEnv(plugins, cfg))
+	assert.Equal(t, "        - sql\n        - ai-gateway", generator.GenerateUserAPIScopes(plugins, cfg))
+}
+
+func TestAuthModeBoth(t *testing.T) {
+	plugins := authModePlugins()
+	cfg := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeBoth, "genie_space:genie-space": generator.AuthModeOBO})
+
+	assert.Contains(t, generator.GenerateBundleResources(plugins, cfg), "- name: sql-warehouse")
+	assert.NotContains(t, generator.GenerateBundleResources(plugins, cfg), "genie-space")
+	assert.Contains(t, generator.GenerateAppEnv(plugins, cfg), "valueFrom: sql-warehouse")
+	assert.Equal(t, "        - sql\n        - genie\n        - ai-gateway", generator.GenerateUserAPIScopes(plugins, cfg))
+}
+
+func TestAuthModeKeyDoesNotCollideAcrossTypes(t *testing.T) {
+	// Two resources share the resourceKey "data" but differ in type, so they must
+	// not share an auth mode: making the warehouse OBO must leave the app-only
+	// secret bound to the service principal and must not emit its empty scope.
+	plugins := []manifest.Plugin{
+		{Name: "a", Resources: manifest.Resources{Required: []manifest.Resource{
+			{Type: "sql_warehouse", ResourceKey: "data", Scope: "sql", Fields: map[string]manifest.ResourceField{"id": {Env: "WAREHOUSE_ID"}}},
+		}}},
+		{Name: "b", Resources: manifest.Resources{Required: []manifest.Resource{
+			{Type: "secret", ResourceKey: "data", AppOnly: true, Fields: map[string]manifest.ResourceField{"token": {Env: "TOKEN"}}},
+		}}},
+	}
+	cfg := generator.Config{
+		ResourceValues: map[string]string{"data.id": "wh1", "data.token": "s"},
+		AuthModes:      map[string]string{"sql_warehouse:data": generator.AuthModeOBO},
+	}
+
+	env := generator.GenerateAppEnv(plugins, cfg)
+	assert.Contains(t, env, "  - name: WAREHOUSE_ID\n    value: wh1") // warehouse: OBO literal
+	assert.Contains(t, env, "  - name: TOKEN\n    valueFrom: data")   // secret: still SP-bound
+	assert.Equal(t, "        - sql", generator.GenerateUserAPIScopes(plugins, cfg))
+}
+
+func TestGenerateBundleResourcesFromManifestBinding(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "tables",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type:        "uc_table",
+						ResourceKey: "table",
+						Description: "Table to read",
+						Permission:  "SELECT",
+						Fields:      map[string]manifest.ResourceField{"name": {Env: "TABLE_NAME", Description: "Table name"}},
+						Binding: &manifest.ResourceBinding{
+							YamlKey:      "uc_securable",
+							VarFields:    [][2]string{{"name", "securable_full_name"}},
+							StaticFields: [][2]string{{"securable_type", "TABLE"}},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{"table.name": "main.default.t"}}
+
+	assert.Equal(t, `        - name: table
+          uc_securable:
+            securable_full_name: ${var.table_name}
+            securable_type: TABLE
+            permission: SELECT`, generator.GenerateBundleResources(plugins, cfg))
+	assert.Equal(t, "  table_name:\n    description: Table name", generator.GenerateBundleVariables(plugins, cfg))
+	assert.Equal(t, "      table_name: main.default.t", generator.GenerateTargetVariables(plugins, cfg))
 }

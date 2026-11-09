@@ -39,6 +39,11 @@ const (
 	// condition rather than a transient failure, so it is distinguished from the rest.
 	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
 
+	// The IDE command override (DATABRICKS_SSH_IDE_COMMAND, set by the VS Code extension) names
+	// a command that can't be run. Distinct from IDE_COMMAND_NOT_ON_PATH because it points at
+	// whatever set the override rather than at the user's PATH.
+	SshTunnelErrorCategoryIDECommandOverrideInvalid SshTunnelErrorCategory = "IDE_COMMAND_OVERRIDE_INVALID"
+
 	// The IDE's installed-extension list could not be read, so whether the Remote SSH
 	// extension was present is unknown. Distinct from the install failures below because it
 	// says nothing about the extension itself, only that the check could not run.
@@ -79,6 +84,16 @@ const (
 	// The SSH server never became reachable: the bootstrap job failed to start, died, or
 	// its metadata never appeared before the timeout.
 	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
+
+	// An administrator turned off port forwarding to serverless compute
+	// (port_fwd_serverless_enabled), read from the setting before any compute was started.
+	SshTunnelErrorCategoryPortForwardingDisabled SshTunnelErrorCategory = "PORT_FORWARDING_DISABLED"
+
+	// The driver proxy refused a request to the SSH server with a 403, for a server that was
+	// already running or for one that this connection started. Usually port forwarding to
+	// serverless compute is off where the CLI cannot read that setting, but the 403 is not
+	// specific to it, so this names what happened rather than the likely cause.
+	SshTunnelErrorCategoryDriverProxyForbidden SshTunnelErrorCategory = "DRIVER_PROXY_FORBIDDEN"
 
 	// The user interrupted the connection (Ctrl-C or a termination signal). Takes precedence
 	// over the category of whichever step observed the interruption, including steps that shell
@@ -145,6 +160,11 @@ type SshTunnelEvent struct {
 
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success"`
+
+	// Serverless environment version the SSH server job is submitted with: the
+	// --environment-version value or the CLI default. Unset for dedicated clusters and
+	// for a custom base environment, which carries its own version.
+	EnvironmentVersion int `json:"environment_version,omitempty"`
 
 	// Whether a serverless usage policy was set via --usage-policy-id.
 	// Only the presence is recorded, not the policy ID itself.

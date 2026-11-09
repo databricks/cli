@@ -12,8 +12,6 @@ has_manage_run() {
     | jq 'any(.access_control_list[].all_permissions[]; .permission_level == "CAN_MANAGE_RUN")'
 }
 
-title "After first deploy"
-trace has_manage_run > out.after_first_deploy.txt
 # This is flaky on direct, because there are (at least) two ways to complete deployment:
 # sequence 1:
 #  job is deployed
@@ -23,8 +21,6 @@ trace has_manage_run > out.after_first_deploy.txt
 #  job is deployed
 #  app is deployed, updates job permissions
 #  job permissions are deployed
-# (It does not appear flaky on TF, maybe there is enough delay in one of the resources)
-rm -f out.after_first_deploy.direct.txt
 
 title "After second deploy"
 trace $CLI bundle deploy -qq

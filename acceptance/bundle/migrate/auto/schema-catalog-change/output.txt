@@ -1,9 +1,4 @@
 
->>> [CLI] catalogs create othercat_[UNIQUE_NAME] -o json
-{
-  "name": "othercat_[UNIQUE_NAME]"
-}
-
 === Replay the prior terraform deployment (captured from a real terraform run)
 
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate

@@ -22,7 +22,7 @@ func TestApplyChangesToYAML_PreserveFormatting(t *testing.T) {
 	yamlContent := `# Comment at top
 resources:
   jobs:
-    test_job:
+    "test.job":
       name: "Test Job"
 
       # Comment before timeout
@@ -42,7 +42,7 @@ resources:
 	mutator.DefaultMutators(ctx, b)
 
 	changes := Changes{
-		"resources.jobs.test_job": ResourceChanges{
+		"resources.jobs.test.job": ResourceChanges{
 			"timeout_seconds": &ConfigChangeDesc{
 				Operation: OperationReplace,
 				Value:     7200,
@@ -61,6 +61,7 @@ resources:
 	modified := fileChanges[0].ModifiedContent
 
 	assert.Contains(t, modified, "# Comment at top")
+	assert.Contains(t, modified, `"test.job":`)
 	assert.Contains(t, modified, "# Comment before timeout")
 	assert.Contains(t, modified, "timeout_seconds: 7200")
 	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")

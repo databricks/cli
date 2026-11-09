@@ -30,6 +30,13 @@ func stubValidateConfig(server *testserver.Server) {
 	})
 }
 
+func TestEffectiveIdempotencyToken(t *testing.T) {
+	cfg := &runConfig{IdempotencyToken: new("from-config")}
+	assert.Equal(t, "from-flag", effectiveIdempotencyToken("from-flag", cfg))
+	assert.Equal(t, "from-config", effectiveIdempotencyToken("", cfg))
+	assert.NotEmpty(t, effectiveIdempotencyToken("", &runConfig{}))
+}
+
 func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
 	// A config runtime version wins and is used bare.
@@ -106,6 +113,25 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayloadRTX6000(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfig(t, `
+experiment_name: rtx6000
+command: nvidia-smi
+compute:
+  accelerator_type: GPU_1xRTX6000
+  num_accelerators: 1
+`))
+	require.NoError(t, err)
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "6", "", snapshotResult{}, nil)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
+	computeJSON, err := json.Marshal(p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"accelerator_type":"GPU_1xRTX6000","accelerator_count":1}`, string(computeJSON))
+}
+
 func TestSubmitRun(t *testing.T) {
 	for _, tc := range []struct {
 		name                  string
@@ -115,12 +141,11 @@ func TestSubmitRun(t *testing.T) {
 	}{
 		{name: "on-demand"},
 		{name: "pool", poolID: "capacity-1"},
-		{name: "pool-critical", poolID: "capacity-1", priorityClass: "CRITICAL"},
 		{name: "pool-normal", poolID: "capacity-1", priorityClass: "NORMAL"},
 		{name: "pool-best-effort", poolID: "capacity-1", priorityClass: "BEST_EFFORT"},
 		{name: "image", unityCatalogImagePath: "main.air.training:prod"},
 		{name: "pool-image", poolID: "capacity-1", unityCatalogImagePath: "main.air.training:prod"},
-		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "CRITICAL", unityCatalogImagePath: "main.air.training:prod"},
+		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "BEST_EFFORT", unityCatalogImagePath: "main.air.training:prod"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := testserver.New(t)
@@ -249,26 +274,6 @@ func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
 	}`, string(b))
 }
 
-func TestSubmitToken(t *testing.T) {
-	cfg := &runConfig{IdempotencyToken: new("from-config")}
-
-	tok, err := submitToken("from-flag", cfg) // flag wins
-	require.NoError(t, err)
-	assert.Equal(t, "from-flag", tok)
-
-	tok, err = submitToken("", cfg) // then config
-	require.NoError(t, err)
-	assert.Equal(t, "from-config", tok)
-
-	tok, err = submitToken("", &runConfig{}) // else generated
-	require.NoError(t, err)
-	assert.NotEmpty(t, tok)
-
-	// An over-long token errors instead of being truncated.
-	_, err = submitToken(strings.Repeat("a", 65), cfg)
-	require.ErrorContains(t, err, "64 characters or less")
-}
-
 type blockingLaunchWriter struct {
 	started       chan struct{}
 	release       chan struct{}
@@ -357,7 +362,14 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
-	stubValidateConfig(server)
+	var validatedToken string
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		runOptions := body["run_options"].(map[string]any)
+		validatedToken = runOptions["idempotency_token"].(string)
+		return validateConfigResponse{}
+	})
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -371,6 +383,7 @@ func TestSubmitWorkload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
 	// command.sh under the run's launch directory.
@@ -387,6 +400,145 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpecAcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
 	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 	assert.Empty(t, d.Compute.ProvisionedCapacityId)
+}
+
+func TestSubmitWorkloadValidationOutcome(t *testing.T) {
+	tests := []struct {
+		name       string
+		response   any
+		wantError  string
+		wantSubmit bool
+		wantStderr string
+	}{
+		{
+			name: "field error",
+			response: validateConfigResponse{Errors: []configFieldError{{
+				Path: "task.deployments[0].compute.accelerator_count", Message: "must be positive", Code: "INVALID_COUNT",
+			}}},
+			wantError: "accelerator_count: must be positive",
+		},
+		{
+			name:       "service unavailable",
+			response:   testserver.Response{StatusCode: 503, Body: map[string]string{"error_code": "TEMPORARILY_UNAVAILABLE", "message": "try again"}},
+			wantSubmit: true,
+			wantStderr: "Warning: server-side config validation was unavailable; continuing with submission.\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			t.Cleanup(server.Close)
+			var uploads, submissions atomic.Int32
+			server.Handle("POST", validateConfigPath, func(req testserver.Request) any { return tt.response })
+			server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+				uploads.Add(1)
+				return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+			})
+			server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+				submissions.Add(1)
+				return jobs.SubmitRunResponse{RunId: 777}
+			})
+			testserver.AddDefaultHandlers(server)
+
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", RetryTimeoutSeconds: 1})
+			require.NoError(t, err)
+			cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+			cfg, err := loadRunConfig(cfgPath)
+			require.NoError(t, err)
+
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
+			if tt.wantError != "" {
+				require.ErrorContains(t, err, tt.wantError)
+			} else {
+				require.NoError(t, err)
+			}
+			// Uploads overlap validation, so a rejected config may still have
+			// staged artifacts; only submission is gated on validation.
+			if tt.wantSubmit {
+				assert.Positive(t, uploads.Load())
+				assert.Equal(t, int32(1), submissions.Load())
+			} else {
+				assert.Zero(t, submissions.Load())
+			}
+			assert.Equal(t, tt.wantStderr, stderr.String())
+		})
+	}
+}
+
+// Validation and artifact staging must run concurrently: the validate handler
+// only answers once an upload has arrived, which can't happen if staging waits
+// for validation.
+func TestSubmitWorkloadValidatesWhileStaging(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	uploadStarted := make(chan struct{})
+	markUploadStarted := sync.OnceFunc(func() { close(uploadStarted) })
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		markUploadStarted()
+		return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+	})
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		select {
+		case <-uploadStarted:
+			return validateConfigResponse{}
+		case <-time.After(submissionValidationTimeout / 2):
+			return validateConfigResponse{Errors: []configFieldError{{Message: "staging did not overlap validation"}}}
+		}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	runID, _, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+	assert.Equal(t, int64(777), runID)
+}
+
+// A validation failure must cancel in-flight staging and surface the validation
+// error, not the cancellation. The upload handler stalls until cleanup, so
+// without the cancellation submitWorkload would hit the test deadline instead.
+func TestSubmitWorkloadValidationFailureCancelsStaging(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	var submissions atomic.Int32
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		<-release
+		return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, true)
+	})
+	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+		return validateConfigResponse{Errors: []configFieldError{{Path: "task.experiment", Message: "is invalid"}}}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		submissions.Add(1)
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
+	require.ErrorContains(t, err, "task.experiment: is invalid")
+	require.NoError(t, ctx.Err(), "staging was not cancelled by the validation failure")
+	assert.Zero(t, submissions.Load())
 }
 
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
@@ -726,6 +878,16 @@ code_source:
 	// zero new import-file calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(false), second.UsesGit)
+	assert.Equal(t, new(modePlainTar), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -782,6 +944,16 @@ code_source:
 	// (the second submit is a cache hit and moves no bytes).
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
+	require.NotNil(t, first.SizeBytes)
+	assert.Positive(t, *first.SizeBytes)
+	assert.Nil(t, second.SizeBytes)
+	assert.Equal(t, new(true), second.UsesGit)
+	assert.Equal(t, new(modeGitArchive), first.PackagingMode)
+	assert.Equal(t, first.PackagingMode, second.PackagingMode)
+	assert.NotNil(t, first.PackagingDurationMs)
+	assert.NotNil(t, first.UploadDurationMs)
+	assert.Equal(t, new(int64(0)), second.PackagingDurationMs)
+	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
 }
 
 // When enabled, a code source uploads provenance sidecars (git_state.json and
@@ -822,6 +994,8 @@ code_source:
 
 	assert.Empty(t, snap.GitStatePath)
 	assert.Empty(t, snap.GitDiffPath)
+	assert.Equal(t, new(true), snap.UsesGit)
+	assert.Equal(t, new(modePlainTar), snap.PackagingMode)
 
 	_, err = sidecarStore.Read(ctx, gitStateName)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
@@ -879,20 +1053,17 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 	base, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	t.Run("unresolvable usage_policy_name fails before upload", func(t *testing.T) {
-		// An empty policy list makes the name unresolvable. Record every path the
-		// server sees so the "fails before any upload" ordering is asserted, not just
-		// asserted-by-comment: no import/mkdirs request may be made.
+	t.Run("unresolvable usage_policy_name blocks submission", func(t *testing.T) {
+		// An empty policy list makes the name unresolvable.
 		server := testserver.New(t)
 		t.Cleanup(server.Close)
-		var paths []string
+		var submissions atomic.Int32
 		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
-			paths = append(paths, req.URL.Path)
 			return usagePoliciesResponse{}
 		})
-		server.Handle("POST", "/api/2.0/workspace/{path...}", func(req testserver.Request) any {
-			paths = append(paths, req.URL.Path)
-			return testserver.Response{StatusCode: 200}
+		server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+			submissions.Add(1)
+			return jobs.SubmitRunResponse{RunId: 777}
 		})
 		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
@@ -903,9 +1074,29 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		cfg.UsagePolicyName = new("nope")
 		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
-		for _, p := range paths {
-			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
-		}
+		assert.Zero(t, submissions.Load())
+	})
+
+	t.Run("validation field errors take precedence over usage policy errors", func(t *testing.T) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		var policyLookups atomic.Int32
+		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
+			policyLookups.Add(1)
+			return usagePoliciesResponse{}
+		})
+		server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
+			return validateConfigResponse{Errors: []configFieldError{{Path: "task.experiment", Message: "is invalid"}}}
+		})
+		testserver.AddDefaultHandlers(server)
+		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, err)
+
+		cfg := *base
+		cfg.UsagePolicyName = new("nope")
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
+		require.ErrorContains(t, err, "task.experiment: is invalid")
+		assert.Zero(t, policyLookups.Load())
 	})
 }
 

@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.clusters._models.auto_scale import (
-    AutoScale,
-    AutoScaleParam,
-)
+from databricks.bundles.clusters._models.auto_scale import AutoScale, AutoScaleParam
 from databricks.bundles.clusters._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesParam,
@@ -189,9 +186,6 @@ class Cluster(Resource):
     The node type of the Spark driver.
     Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
-    
-    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
-    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool] = None
@@ -245,7 +239,7 @@ class Cluster(Resource):
 
     libraries: VariableOrList[Library] = field(default_factory=list)
     """
-    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStarted] = None
@@ -482,9 +476,6 @@ class ClusterDict(TypedDict, total=False):
     The node type of the Spark driver.
     Note that this field is optional; if unset, the driver node type will be set as the same value
     as `node_type_id` defined above.
-    
-    This field, along with node_type_id, should not be set if virtual_cluster_size is set.
-    If both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.
     """
 
     enable_elastic_disk: VariableOrOptional[bool]
@@ -538,7 +529,7 @@ class ClusterDict(TypedDict, total=False):
 
     libraries: VariableOrList[LibraryParam]
     """
-    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStartedParam]

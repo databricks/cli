@@ -37,6 +37,16 @@ def add_repl(value, repl):
         break
 
 
+def id_repl_name(key):
+    """Replacement name for the id of the resource with the given key: "foo" -> "FOO_ID".
+
+    The name is upper-cased, so a $UNIQUE_NAME inside the key would escape the harness's
+    (case-sensitive) [UNIQUE_NAME] replacement and make the name differ on every run.
+    Substitute it first: "app_${UNIQUE_NAME}_job" -> "APP_UNIQUE_NAME_JOB_ID".
+    """
+    return key.replace(os.environ["UNIQUE_NAME"], "UNIQUE_NAME").upper() + "_ID"
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("value")

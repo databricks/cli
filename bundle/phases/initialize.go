@@ -71,12 +71,14 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Loads git repository information and updates bundle configuration with git details
 		mutator.LoadGitDetails(),
 
+		// Reads (typed): b.Config.Workspace.SyncMode, b.Config.Presets.SourceLinkedDeployment, b.Config.Experimental.ImmutableFolder (warns about the deprecated settings)
+		// Updates (typed): b.Config.Workspace.SyncMode (in-place for development deployments in the Databricks Workspace, overwrite where in-place is unavailable)
 		// This mutator needs to be run before variable interpolation and defining default workspace paths
 		// because it affects how workspace variables are resolved.
-		mutator.ApplySourceLinkedDeploymentPreset(),
+		mutator.ApplySyncMode(),
 
 		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
-		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Updates (typed): b.Config.Workspace.SyncMode (forces to immutable when env var is set)
 		// Allows running the full test suite against the immutable folder code path without
 		// modifying any databricks.yml files.
 		mutator.OverrideImmutableFolder(),
@@ -113,6 +115,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults
 		mutator.SetVariables(),
+
+		// Reads (dynamic): * (strings) (searches for references to variables)
+		// Updates (dynamic): variables.*.sensitive (marks variables used as the value of a sensitive resource field)
+		// Rejects references to sensitive variables outside sensitive resource fields and other sensitive variables.
+		// Runs after SetVariables so values passed via --var, environment or file are checked too, and before
+		// any resolution while references are still visible.
+		validate.SensitiveVariableReferences(),
 
 		// Reads (dynamic): variables.*.lookup (checks for variable references in lookup fields)
 		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
@@ -153,6 +162,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Warn when the deprecated pipeline-level development property is set by the user.
+		// Must run after PythonMutator to see development values set by Python mutators.
+		validate.PipelineDevelopmentDeprecated(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
@@ -171,11 +184,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// required fields (no omitempty) still error if empty.
 		mutator.DropEmptyStrings(),
 
-		// Resolve --select selectors against the materialized resources: normalize
-		// each to its "type.name" form and validate it exists. Runs after all resource
-		// mutations so that dynamically added resources are visible. This does not
-		// filter resources; the direct engine selects against the resolved keys later.
-		mutator.ResolveSelect(),
+		// Record in telemetry whether --select was used. Selectors are validated once
+		// state is open (process.go) and resolved against the computed plan
+		// (Plan.FilterToSelected), so resources removed from config and planned for
+		// deletion are selectable too.
+		mutator.MarkSelectUsed(),
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
@@ -197,12 +210,20 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 
+		// Reads (dynamic): resources.postgres_data_apis.*
+		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
+		validate.PostgresDataApiSettings(),
+
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
+		// Reads (dynamic): resources.*.*.lifecycle.depends_on
+		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
+		validate.LifecycleDependsOn(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
-		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
-		// points to a Terraform-only field with no DABs equivalent.
+		// Errors when a cross-resource reference points to a Terraform-only field
+		// with no DABs equivalent.
 		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
@@ -212,7 +233,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		mutator.TranslatePaths(),
 
-		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
+		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Workspace.SyncMode (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),

@@ -188,12 +188,10 @@ func TestJobOptionsSqlParamsMultiple(t *testing.T) {
 
 func TestJobOptionsValidateIfJobHasJobParameters(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Parameters: []jobs.JobParameterDefinition{
-				{
-					Name:    "param",
-					Default: "value",
-				},
+		Parameters: []jobs.JobParameterDefinition{
+			{
+				Name:    "param",
+				Default: "value",
 			},
 		},
 	}
@@ -219,9 +217,7 @@ func TestJobOptionsValidateIfJobHasJobParameters(t *testing.T) {
 
 func TestJobOptionsValidateIfJobHasNoJobParameters(t *testing.T) {
 	job := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Parameters: []jobs.JobParameterDefinition{},
-		},
+		Parameters: []jobs.JobParameterDefinition{},
 	}
 
 	{

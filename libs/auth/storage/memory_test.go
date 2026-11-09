@@ -6,6 +6,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -55,6 +57,26 @@ func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 	}
 }
 
+func TestMemoryStore_PendingLoginUsesCopies(t *testing.T) {
+	s := NewMemoryStore()
+	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT", Scopes: []string{"sql"}}
+	require.NoError(t, s.Put("key1", Entry{PendingLogin: pending}))
+
+	pending.DeviceCode = "mutated-after-store"
+	pending.Scopes[0] = "mutated-after-store"
+
+	got, err := s.Lookup("key1")
+	require.NoError(t, err)
+	assert.Equal(t, "device-code", got.PendingLogin.DeviceCode)
+	assert.Equal(t, []string{"sql"}, got.PendingLogin.Scopes)
+
+	got.PendingLogin.Scopes[0] = "mutated-after-lookup"
+
+	got, err = s.Lookup("key1")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"sql"}, got.PendingLogin.Scopes)
+}
+
 func TestMemoryStore_Delete(t *testing.T) {
 	s := NewMemoryStore()
 	if err := s.Put("key1", Entry{Token: &oauth2.Token{AccessToken: "abc"}}); err != nil {
@@ -82,22 +104,19 @@ func TestMemoryStore_ConcurrentPutAndLookup(t *testing.T) {
 	const goroutines = 20
 	const iterations = 100
 	var wg sync.WaitGroup
-	wg.Add(goroutines * 2)
 	for i := range goroutines {
 		prefix := fmt.Sprintf("writer-%d", i)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range iterations {
 				key := fmt.Sprintf("%s-%d", prefix, j)
 				_ = s.Put(key, Entry{Token: &oauth2.Token{AccessToken: key}})
 			}
-		}()
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			for j := range iterations {
 				_, _ = s.Lookup(fmt.Sprintf("%s-%d", prefix, j))
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

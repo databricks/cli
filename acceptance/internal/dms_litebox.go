@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
@@ -27,25 +26,19 @@ var liteboxPermissionTypes = []string{"directories", "files", "notebooks", "work
 // to its shared fakes, retaining request recording and mocks for other APIs.
 func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	t.Helper()
-	endpoint := env.Get(t.Context(), "DMS_LITEBOX_URL")
-	if endpoint == "" {
+	settings := loadDMSLiteboxSettings(t)
+	if settings == nil {
 		return
 	}
-	dmsURL := liteboxURL(t, "DMS_LITEBOX_URL")
-	workspaceURL := liteboxURL(t, "DMS_LITEBOX_WORKSPACE_URL")
+	dmsURL := liteboxURL(t, settings.URL)
 
-	certFile, keyFile := env.Get(t.Context(), "DMS_LITEBOX_CERT"), env.Get(t.Context(), "DMS_LITEBOX_KEY")
-	caFile := env.Get(t.Context(), "DMS_LITEBOX_CA")
-	require.NotEmpty(t, certFile, "DMS_LITEBOX_CERT is required with DMS_LITEBOX_URL")
-	require.NotEmpty(t, keyFile, "DMS_LITEBOX_KEY is required with DMS_LITEBOX_URL")
-	require.NotEmpty(t, caFile, "DMS_LITEBOX_CA is required with DMS_LITEBOX_URL")
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.LoadX509KeyPair(settings.Cert, settings.Key)
 	require.NoError(t, err, "load Litebox client certificate and key")
-	pem, err := os.ReadFile(caFile)
-	require.NoError(t, err, "read DMS_LITEBOX_CA")
+	pem, err := os.ReadFile(settings.CA)
+	require.NoError(t, err, "read Litebox CA certificate")
 	roots := x509.NewCertPool()
 	require.True(t, roots.AppendCertsFromPEM(pem), "invalid Litebox certificate")
-	// Both upstreams must use LITE's test certificate for *.svc.cluster.local.
+	// The LITE gateway uses the service's test certificate.
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion:   tls.VersionTLS12,
@@ -64,10 +57,7 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		},
 	}
 	handler := func(r testserver.Request) any {
-		target := *workspaceURL
-		if isDMSPath(r.URL.Path) {
-			target = *dmsURL
-		}
+		target := *dmsURL
 		target.Path, target.RawPath, target.RawQuery = r.URL.Path, r.URL.RawPath, r.URL.RawQuery
 		req, err := http.NewRequestWithContext(r.Context, r.Method, target.String(), bytes.NewReader(r.Body))
 		if err != nil {
@@ -95,16 +85,14 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	routeLitebox(server, handler)
 }
 
-func liteboxURL(t *testing.T, name string) *url.URL {
+func liteboxURL(t *testing.T, endpoint string) *url.URL {
 	t.Helper()
-	endpoint := env.Get(t.Context(), name)
-	require.NotEmpty(t, endpoint, "%s is required with DMS_LITEBOX_URL", name)
 	u, err := url.Parse(endpoint)
-	require.NoError(t, err, "invalid %s", name)
+	require.NoError(t, err, "invalid DMS LITE gateway URL")
 	ip := net.ParseIP(u.Hostname())
 	require.True(t, u.Scheme == "https" && (u.Hostname() == "localhost" || (ip != nil && ip.IsLoopback())) &&
 		u.User == nil && u.RawQuery == "" && u.Fragment == "" && (u.Path == "" || u.Path == "/"),
-		"%s must be an HTTPS loopback origin", name)
+		"DMS LITE gateway URL must be an HTTPS loopback origin")
 	return u
 }
 

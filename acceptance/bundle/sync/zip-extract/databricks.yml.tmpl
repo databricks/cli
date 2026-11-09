@@ -1,0 +1,14 @@
+bundle:
+  name: zip-extract-$UNIQUE_NAME
+
+# Only sync archive.zip.
+sync:
+  exclude:
+    - archive_v2.zip
+    - databricks.yml
+    - databricks.yml.tmpl
+    - script
+    - test.toml
+    - output.txt
+    - out.*
+    - repls.json

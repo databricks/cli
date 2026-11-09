@@ -1,8 +1,5 @@
 trace $CLI bundle deploy
 
-# Common bool_values are engine-agnostic; the terraform-only direct_drymigrate_*
-# entries go to a per-engine file so output.txt stays shared.
-trace print_telemetry_bool_values | grep -v direct_drymigrate
-print_telemetry_bool_values | grep direct_drymigrate > out.drymigrate.txt || true
+trace print_telemetry_bool_values
 
 rm "$OUT_REQUESTS"

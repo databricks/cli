@@ -42,7 +42,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }
@@ -65,7 +65,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
-    "job_id": [NUMID],
+    "job_id": [JOB_WITH_RUN_AS_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -95,7 +95,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_WITH_RUN_AS_ID]
 {
   "user_name": "deco-test-user@databricks.com"
 }

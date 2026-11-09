@@ -92,6 +92,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
 	cmd.AddCommand(newListSnapshots())
+	cmd.AddCommand(newRevealRolePassword())
 	cmd.AddCommand(newUndeleteBranch())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
@@ -1160,10 +1161,8 @@ func newCreateSnapshot() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-snapshot PARENT SNAPSHOT_ID"
-	cmd.Short = `*Beta* Create a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Snapshot.
+	cmd.Short = `Create a Snapshot.`
+	cmd.Long = `Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
   the project.
@@ -1179,8 +1178,8 @@ Create a Snapshot.
       snapshot resource name and cannot be changed after creation.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -2235,10 +2234,8 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteSnapshotTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-snapshot NAME"
-	cmd.Short = `*Beta* Delete a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Snapshot.
+	cmd.Short = `Delete a Snapshot.`
+	cmd.Long = `Delete a Snapshot.
 
   Deletes the specified snapshot.
 
@@ -2252,8 +2249,8 @@ Delete a Snapshot.
       projects/{project_id}/snapshots/{snapshot_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2668,9 +2665,8 @@ func newGetCdfConfig() *cobra.Command {
 
 Get a change data feed configuration.
 
-  Get a single Lakebase CDF configuration, including the source Postgres schema,
-  target Unity Catalog schema, and the identity under which writes are
-  authorized.
+  Get a single Lakebase CDF configuration, including the source Postgres schema
+  and target Unity Catalog schema.
 
   Arguments:
     NAME: The resource name of the CdfConfig to retrieve. Format:
@@ -3152,10 +3148,8 @@ func newGetSnapshot() *cobra.Command {
 	var getSnapshotReq postgres.GetSnapshotRequest
 
 	cmd.Use = "get-snapshot NAME"
-	cmd.Short = `*Beta* Get a Snapshot.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Snapshot.
+	cmd.Short = `Get a Snapshot.`
+	cmd.Long = `Get a Snapshot.
 
   Retrieves information about the specified snapshot.
 
@@ -3164,8 +3158,8 @@ Get a Snapshot.
       projects/{project_id}/snapshots/{snapshot_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3224,12 +3218,9 @@ func newGetSnapshotSchedule() *cobra.Command {
     NAME: The resource name of the branch's snapshot schedule. Format:
       projects/{project_id}/branches/{branch_id}/snapshot-schedule`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3889,10 +3880,8 @@ func newListSnapshots() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-snapshots PARENT"
-	cmd.Short = `*Beta* List Snapshots.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Snapshots.
+	cmd.Short = `List Snapshots.`
+	cmd.Long = `List Snapshots.
 
   Returns a paginated list of snapshots in the project.
 
@@ -3900,8 +3889,8 @@ List Snapshots.
     PARENT: The project that owns the snapshots. Format: projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3933,6 +3922,69 @@ List Snapshots.
 	// Apply optional overrides to this command.
 	for _, fn := range listSnapshotsOverrides {
 		fn(cmd, &listSnapshotsReq)
+	}
+
+	return cmd
+}
+
+// start reveal-role-password command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var revealRolePasswordOverrides []func(
+	*cobra.Command,
+	*postgres.RevealRolePasswordRequest,
+)
+
+func newRevealRolePassword() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var revealRolePasswordReq postgres.RevealRolePasswordRequest
+
+	cmd.Use = "reveal-role-password NAME"
+	cmd.Short = `Reveal a Postgres Role password.`
+	cmd.Long = `Reveal a Postgres Role password.
+
+  Reveals the current password for a password-authenticated Postgres role.
+
+  Arguments:
+    NAME: The full resource path of the role whose password should be revealed.
+      Format: projects/{project_id}/branches/{branch_id}/roles/{role_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		revealRolePasswordReq.Name = args[0]
+
+		response, err := w.Postgres.RevealRolePassword(ctx, revealRolePasswordReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range revealRolePasswordOverrides {
+		fn(cmd, &revealRolePasswordReq)
 	}
 
 	return cmd
@@ -4814,7 +4866,13 @@ func newUpdateRole() *cobra.Command {
 	cmd.Short = `Update a Postgres Role for a Branch.`
 	cmd.Long = `Update a Postgres Role for a Branch.
 
-  Update a role for a branch.
+  Updates the mutable fields of a Postgres role for a branch.
+
+  The fields spec.identity_type, spec.auth_method, and spec.postgres_role
+  are fixed when the role is created. UpdateRole ignores values supplied for
+  these fields in the request body and retains their existing values. Explicitly
+  naming one of these fields in update_mask returns an INVALID_PARAMETER_VALUE
+  error.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4824,7 +4882,21 @@ func newUpdateRole() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the role. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. Supported fields are
+      spec.membership_roles, spec.attributes.createdb,
+      spec.attributes.createrole, and spec.attributes.bypassrls.
+
+      spec.identity_type, spec.auth_method, and spec.postgres_role cannot
+      be changed. Values supplied for these fields in the request body are
+      ignored. Including one of these fields as an explicit path in update_mask
+      returns an INVALID_PARAMETER_VALUE error. When spec is the only path in
+      the mask, only the supplied mutable attributes are updated. * by itself,
+      or spec combined with other supported paths, selects all supported
+      mutable fields. For these masks, all three attributes (createdb,
+      createrole, and bypassrls) must be supplied; omitting any returns an
+      INVALID_PARAMETER_VALUE error. Each of these mask forms replaces
+      membership_roles. Omitting it or supplying an empty list clears all
+      memberships, including DATABRICKS_SUPERUSER.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -4953,12 +5025,9 @@ func newUpdateSnapshotSchedule() *cobra.Command {
     UPDATE_MASK: Fields to update. The only updatable path is schedule, which replaces
       the entire set of cadences.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

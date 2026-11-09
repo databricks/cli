@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.apps._models.app_config import (
-    AppConfig,
-    AppConfigParam,
-)
+from databricks.bundles.apps._models.app_config import AppConfig, AppConfigParam
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
     AppPermissionParam,
@@ -56,16 +53,12 @@ class App(Resource):
 
     compute_max_instances: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.
+    Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.
     """
 
     compute_min_instances: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.
+    Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.
     """
 
     compute_size: VariableOrOptional[ComputeSize] = None
@@ -118,7 +111,7 @@ class App(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestination] = field(
@@ -159,16 +152,12 @@ class AppDict(TypedDict, total=False):
 
     compute_max_instances: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.
+    Maximum number of app instances the app is configured to run. Must be set together with `compute_min_instances`.
     """
 
     compute_min_instances: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.
+    Minimum number of app instances the app is configured to run. Must be set together with `compute_max_instances`.
     """
 
     compute_size: VariableOrOptional[ComputeSizeParam]
@@ -221,7 +210,7 @@ class AppDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the space this app belongs to.
+    [Beta] Name of the space this app belongs to.
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestinationParam]

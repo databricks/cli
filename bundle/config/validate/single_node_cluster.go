@@ -128,7 +128,7 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				Summary:   singleNodeWarningSummary,
 				Detail:    singleNodeWarningDetail,
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{p},
+				Paths:     dyn.ToStructPaths(p),
 			}
 
 			if showSingleNodeClusterWarning(ctx, v) {

@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 # Each entry is a path prefix: "tools" also covers "tools/task", "tools/other", etc.
-NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
+NESTED_MODULES = ("tools",)
 
 
 def in_nested_module(path):

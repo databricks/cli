@@ -1,0 +1,15 @@
+title "Plan records the edges"
+trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
+
+title "Deploy creates dependencies first"
+trace $CLI bundle deploy
+# z_job and z_pipeline are unordered relative to each other, so only check that a_job is last.
+trace print_requests.py //jobs //pipelines | jq -r '.method + " " + .path + " " + (.body.name // "")' | tail -n 1
+
+rm -f out.requests.txt
+
+title "Destroy deletes dependents first"
+a_job_id=$($CLI bundle summary -o json | jq -r .resources.jobs.a_job.id)
+trace $CLI bundle destroy --auto-approve
+first_deleted=$(print_requests.py //jobs/delete | jq -r .body.job_id | head -n 1)
+test "$first_deleted" = "$a_job_id" && echo "a_job deleted first"

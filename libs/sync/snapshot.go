@@ -93,7 +93,7 @@ func SnapshotPath(opts *SyncOptions) (string, error) {
 	if _, err := os.Stat(snapshotDir); errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(snapshotDir, 0o755)
 		if err != nil {
-			return "", fmt.Errorf("failed to create config directory: %s", err)
+			return "", fmt.Errorf("failed to create config directory: %w", err)
 		}
 	}
 	fileName := GetFileName(opts.Host, opts.RemotePath)
@@ -125,10 +125,10 @@ func (s *Snapshot) Save(ctx context.Context) error {
 	// persist snapshot to disk
 	bytes, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
+		return fmt.Errorf("failed to json marshal in-memory snapshot: %w", err)
 	}
 	if err := atomicfile.Write(s.snapshotPath, bytes, 0o644); err != nil {
-		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
+		return fmt.Errorf("failed to write sync snapshot to disk: %v", err) //nolint:errorlint // files.Upload treats fs.ErrPermission as a workspace permission problem; this is a local file
 	}
 	return nil
 }
@@ -146,13 +146,13 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 
 	bytes, err := os.ReadFile(snapshot.snapshotPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read sync snapshot from disk: %s", err)
+		return nil, fmt.Errorf("failed to read sync snapshot from disk: %w", err)
 	}
 
 	var fromDisk Snapshot
 	err = json.Unmarshal(bytes, &fromDisk)
 	if err != nil {
-		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %w", err)
 	}
 
 	// invalidate old snapshot with schema versions
@@ -164,7 +164,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	// unmarshal again over the existing snapshot instance
 	err = json.Unmarshal(bytes, &snapshot)
 	if err != nil {
-		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %w", err)
 	}
 
 	// Ensure that all paths are slash-separated upon loading

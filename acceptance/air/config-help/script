@@ -22,14 +22,14 @@ trace $CLI air run -h config.environment.version
 title "leaf field"
 trace $CLI air run -h config.compute.accelerator_type
 
-title "conditionally required leaf"
-trace $CLI air run -h config.code_source.type
+title "code source fields"
+trace $CLI air run -h config.code_source
 
-title "union field reports both accepted shapes"
-trace $CLI air run -h config.code_source.snapshot.git.remote
+title "union field"
+trace $CLI air run -h config.code_source.git.remote
 
-title "git-pinned subdirectory snapshots document root_path scoping"
-trace $CLI air run -h config.code_source.snapshot.root_path
+title "git-pinned subdirectory documents root_path scoping"
+trace $CLI air run -h config.code_source.root_path
 
 title "the config. prefix is optional"
 trace $CLI air run -h compute.num_accelerators

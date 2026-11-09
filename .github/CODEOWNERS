@@ -10,8 +10,8 @@
 /python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
-/cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
-/acceptance/pipelines/                  @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/                         @databricks/eng-deco-cli @databricks/eng-pipelines
+/acceptance/pipelines/                  @databricks/eng-deco-cli @databricks/eng-pipelines
 
 # Labs
 /cmd/labs/                              @databricks/eng-deco-cli @alexott @asnare
@@ -30,6 +30,7 @@
 /cmd/workspace/apps/                    @databricks/eng-deco-cli @databricks/eng-apps-devex
 /libs/apps/                             @databricks/eng-deco-cli @databricks/eng-apps-devex
 /acceptance/apps/                       @databricks/eng-deco-cli @databricks/eng-apps-devex
+/.nextchanges/cli/apps-*.md             @databricks/eng-deco-cli @databricks/eng-apps-devex
 
 # Sandbox
 /cmd/sandbox/                           @databricks/eng-deco-cli @databricks/eng-sandbox
@@ -39,6 +40,7 @@
 /cmd/auth/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 /libs/auth/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
 /acceptance/auth/                       @databricks/eng-deco-cli @databricks/eng-deco-platform
+/.nextchanges/cli/auth-*.md             @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Artifact Registry / Docker credentials
 /cmd/auth/docker/                       @databricks/eng-deco-cli @databricks/eng-artifact-registry

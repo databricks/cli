@@ -8,7 +8,7 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle deploy
-job_id="$(read_id.py sample_job)"
+job_id="$(read_id.py "sample job's\"quotes")"
 
 title "Rename task to new_task_2 remotely"
 edit_resource.py jobs $job_id <<EOF

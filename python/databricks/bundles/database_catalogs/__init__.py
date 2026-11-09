@@ -4,6 +4,9 @@ __all__ = [
     "DatabaseCatalog",
     "DatabaseCatalogDict",
     "DatabaseCatalogParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -14,6 +17,11 @@ from databricks.bundles.database_catalogs._models.database_catalog import (
     DatabaseCatalog,
     DatabaseCatalogDict,
     DatabaseCatalogParam,
+)
+from databricks.bundles.database_catalogs._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
 )
 from databricks.bundles.database_catalogs._models.lifecycle import (
     Lifecycle,

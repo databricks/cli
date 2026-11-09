@@ -210,6 +210,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := configChanges[resourceKey]
+		// Plan keys are unquoted; only the first two dots separate resource components.
+		var resourcePath *structpath.PathNode
+		for _, key := range strings.SplitN(resourceKey, ".", 3) {
+			resourcePath = structpath.NewStringKey(resourcePath, key)
+		}
 
 		fieldPaths := make([]string, 0, len(resourceChanges))
 		fieldPathsDepths := map[string]int{}
@@ -244,13 +249,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		// add of the new one, with nothing linking them. Pairing them back up lets a
 		// rename be written as a key rewrite in every block that defines the element,
 		// which keeps a split element split instead of collapsing it into one scope.
-		renames := matchRenamingPairs(b, blocks, resourceKey, resourceChanges)
+		renames := matchRenamingPairs(b, blocks, resourcePath.String(), resourceChanges)
 
 		indices := newIndexTracker()
 
 		for _, fieldPath := range fieldPaths {
 			configChange := resourceChanges[fieldPath]
-			fullPath := resourceKey + "." + fieldPath
+			fullPath := resourcePath.String() + "." + fieldPath
 
 			// The add half of a rename carries no source location of its own; the
 			// pair is written from the remove half, which does.
@@ -360,7 +365,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 						// on it belongs in that same block.
 						filePath = block.file
 					} else {
-						resourceLocation := b.Config.GetLocation(resourceKey)
+						resourceLocation := b.Config.GetLocationOf(resourcePath)
 						filePath = resourceLocation.File
 					}
 					if filePath == "" {

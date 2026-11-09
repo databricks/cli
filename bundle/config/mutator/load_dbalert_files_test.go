@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func TestLoadDBAlertFiles(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.alerts.my_alert", []dyn.Location{{
+	bundletest.SetLocation(b, "resources.alerts.my_alert", []diag.Location{{
 		File: filepath.Join(dir, "databricks.yml"),
 	}})
 
@@ -109,7 +109,7 @@ func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.alerts.my_alert", []dyn.Location{{
+	bundletest.SetLocation(b, "resources.alerts.my_alert", []diag.Location{{
 		File: filepath.Join(dir, "databricks.yml"),
 	}})
 

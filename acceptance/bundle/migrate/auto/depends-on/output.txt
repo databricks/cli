@@ -1,0 +1,27 @@
+
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Deploy migrates to direct and honors lifecycle.depends_on
+>>> [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 1 resource to direct deployment engine.
+Created jobs.other_job
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+direct_migrated_via_default true
+
+=== The edge is recorded in the plan
+>>> [CLI] bundle plan -o json
+{
+  "resources.jobs.other_job": [
+    {
+      "node": "resources.jobs.test_job",
+      "label": "depends_on"
+    }
+  ],
+  "resources.jobs.test_job": null
+}

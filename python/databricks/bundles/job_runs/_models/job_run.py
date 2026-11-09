@@ -42,6 +42,16 @@ class JobRun(Resource):
     The ID of the job to be executed
     """
 
+    duration_target: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
     """
     Job-level parameters used in the run. for example `"param": "overriding_val"`
@@ -94,6 +104,16 @@ class JobRunDict(TypedDict, total=False):
     job_id: VariableOr[int]
     """
     The ID of the job to be executed
+    """
+
+    duration_target: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
     """
 
     job_parameters: VariableOrDict[str]

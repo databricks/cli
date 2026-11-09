@@ -3,3 +3,6 @@ errcode $CLI bundle plan > out.plan.txt 2>&1
 errcode $CLI bundle deploy > out.deploy.txt 2>&1
 print_telemetry_bool_values > out.telemetry.txt
 rm "$OUT_REQUESTS"
+
+# The engine removal error comes before the Terraform-only reference error.
+DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle validate > out.validate-terraform-env.txt 2>&1

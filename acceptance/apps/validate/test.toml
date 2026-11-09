@@ -1,0 +1,6 @@
+Env.VALIDATION_TEST_FAIL = ""
+Ignore = ["commands.log"]
+
+[[Repls]]
+Old = '\d+\.\d+s'
+New = '[DURATION]'

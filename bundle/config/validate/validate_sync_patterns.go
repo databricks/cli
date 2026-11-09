@@ -7,9 +7,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,16 +26,16 @@ func (v *validateSyncPatterns) Name() string {
 func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	s := b.Config.Sync
 
-	checkPatterns(ctx, s.Exclude, "sync.exclude", b)
+	checkPatterns(ctx, s.Exclude, structpath.NewPath(nil, "sync", "exclude"), b)
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	checkPatterns(ctx, s.Include, "sync.include", b)
+	checkPatterns(ctx, s.Include, structpath.NewPath(nil, "sync", "include"), b)
 	return nil
 }
 
-func checkPatterns(ctx context.Context, patterns []string, path string, b *bundle.Bundle) {
+func checkPatterns(ctx context.Context, patterns []string, path *structpath.PathNode, b *bundle.Bundle) {
 	var errs errgroup.Group
 
 	for index, pattern := range patterns {
@@ -46,7 +46,9 @@ func checkPatterns(ctx context.Context, patterns []string, path string, b *bundl
 		// it means: do not include these files into result set
 		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(b.BundleRoot, []string{p})
+			// SyncInferRoot rewrites patterns to be relative to the sync root,
+			// which can be an ancestor of the bundle root.
+			fs, err := fileset.NewGlobSet(b.SyncRoot, []string{p})
 			if err != nil {
 				return err
 			}
@@ -57,12 +59,12 @@ func checkPatterns(ctx context.Context, patterns []string, path string, b *bundl
 			}
 
 			if len(all) == 0 {
-				path := fmt.Sprintf("%s[%d]", path, index)
+				path := structpath.NewPath(path, index)
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
-					Locations: b.Config.GetLocations(path),
-					Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+					Locations: b.Config.GetLocationsOf(path),
+					Paths:     []*structpath.PathNode{path},
 				})
 			}
 			return nil

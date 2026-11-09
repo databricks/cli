@@ -30,6 +30,31 @@ func TestParseSubmitTimeMs(t *testing.T) {
 	}
 }
 
+func TestListWorkspaceComputeOptions(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, computeOptionsPath, r.URL.Path)
+		assert.Equal(t, "123", r.Header.Get("X-Databricks-Workspace-Id"))
+		_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100","multi_node_supported":true,"per_node_accelerator_count":8,"launch_stage":"PUBLIC_PREVIEW"}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	w := newTestWorkspaceClient(t, srv.URL)
+	w.Config.WorkspaceID = "123"
+
+	options, err := listWorkspaceComputeOptions(t.Context(), w)
+	require.NoError(t, err)
+	require.Len(t, options, 1)
+	assert.Equal(t, "GPU_8xH100", options[0].HardwareAccelerator)
+	assert.Equal(t, "8x H100", options[0].DisplayName)
+	assert.True(t, *options[0].MultiNodeSupported)
+	assert.Equal(t, 8, *options[0].PerNodeAcceleratorCount)
+	assert.Equal(t, "PUBLIC_PREVIEW", options[0].LaunchStage)
+}
+
 // indexServer serves paginated AiTrainingService responses, one body per call,
 // tracking whether the index was hit.
 func indexServer(t *testing.T, hit *bool, bodies ...string) *httptest.Server {

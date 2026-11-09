@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "env": {
+    "default": "dev-value",
+    "value": "dev-value"
+  },
+  "other": {
+    "default": "plain",
+    "value": "plain"
+  },
+  "region": {
+    "default": "us-east-1",
+    "value": "us-east-1"
+  },
+  "size": {
+    "default": "large",
+    "value": "large"
+  }
+}

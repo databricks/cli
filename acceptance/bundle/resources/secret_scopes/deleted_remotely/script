@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy -qq
+
+title "delete the scope outside of the bundle"
+trace $CLI secrets delete-scope test-scope
+
+title "plan should recreate the scope"
+trace $CLI bundle plan
+
+title "deploy should recreate the scope"
+trace $CLI bundle deploy -qq
+trace $CLI secrets list-scopes -o json | jq -r '.[].name'

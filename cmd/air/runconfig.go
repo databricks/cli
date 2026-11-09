@@ -43,7 +43,7 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 // workspace checks performed by the backend.
 var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
 
-var containerNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var containerNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`)
 
 var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
 
@@ -228,7 +228,7 @@ func (c *runConfig) validate() error {
 // staged beside it because PuPr workspaces cannot consume the DEVELOPMENT API
 // field yet.
 type containerConfig struct {
-	Name                 string                               `yaml:"name" help:"Unique container name: at most 16 letters, digits, or underscores, not starting with a digit." required:"yes"`
+	Name                 string                               `yaml:"name" help:"Unique container name: 1–32 lowercase letters, digits, or hyphens; start with a letter and end with a letter or digit." required:"yes"`
 	Command              *string                              `yaml:"command" help:"Shell command run on every rank assigned to this container." required:"yes"`
 	Ranks                []int                                `yaml:"ranks" help:"Zero-based node ranks assigned to this container." required:"yes"`
 	UnityCatalogImage    string                               `yaml:"unity_catalog_image" help:"Unity Catalog image as <catalog>.<schema>.<image>:<tag>." required:"yes"`
@@ -256,8 +256,8 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) || len(container.Name) > 16 {
-			return fmt.Errorf("%s.name must be at most 16 letters, digits, or underscores and must not start with a digit, got %q", prefix, container.Name)
+		if !containerNameRe.MatchString(container.Name) {
+			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
 			return fmt.Errorf("%s.name %q is duplicated; container names must be unique", prefix, container.Name)
@@ -421,52 +421,72 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 
 // codeSourceConfig is the `code_source` block. Only the "snapshot" type exists.
 type codeSourceConfig struct {
-	Type     string                `yaml:"type" help:"Kind of code source. Must be \"snapshot\", the only supported type." required:"when code_source is set"`
-	Snapshot *snapshotSourceConfig `yaml:"snapshot" help:"Which local directory to archive and upload." required:"when code_source.type is \"snapshot\""`
+	Type           *string               `yaml:"type,omitempty" hidden:"yes"`
+	Snapshot       *snapshotSourceConfig `yaml:",inline"`
+	LegacySnapshot *snapshotSourceConfig `yaml:"snapshot,omitempty" hidden:"yes"`
 }
 
 func (c *codeSourceConfig) validate() error {
-	if c.Type != "snapshot" {
-		return fmt.Errorf("code_source.type must be 'snapshot', got %q", c.Type)
+	if c.Type != nil && strings.TrimSpace(*c.Type) == "" {
+		return errors.New("code_source.type cannot be empty; omit it to use snapshot")
 	}
-	if c.Snapshot == nil {
-		return errors.New("code_source.type='snapshot' requires a snapshot configuration")
+	if c.Type != nil && *c.Type != "snapshot" {
+		return fmt.Errorf("code_source.type must be 'snapshot', got %q", *c.Type)
 	}
-	return c.Snapshot.validate()
+	if c.Snapshot != nil && c.LegacySnapshot != nil {
+		return errors.New("code_source cannot combine the nested 'snapshot' block with direct fields; remove the 'snapshot' wrapper and place all fields directly under code_source")
+	}
+
+	snapshot := c.Snapshot
+	prefix := "code_source"
+	if snapshot == nil {
+		snapshot = c.LegacySnapshot
+		prefix = "code_source.snapshot"
+	}
+	if snapshot == nil {
+		return errors.New("code_source requires snapshot configuration with root_path")
+	}
+	if err := snapshot.validate(prefix); err != nil {
+		return err
+	}
+
+	c.Snapshot = snapshot
+	c.LegacySnapshot = nil
+	return nil
 }
 
 // snapshotSourceConfig describes a local directory to tar and upload.
 type snapshotSourceConfig struct {
-	RootPath     string   `yaml:"root_path" help:"Root of the code source to archive. A git-pinned subdirectory packages only that subtree." required:"when code_source.snapshot is set"`
+	RootPath     string   `yaml:"root_path" help:"Root of the code source to archive. A git-pinned subdirectory packages only that subtree." required:"when code_source is set"`
 	RemoteVolume *string  `yaml:"remote_volume" help:"Volume to upload the archive to. Must start with /Volumes/."`
 	Git          *gitRef  `yaml:"git" help:"Pin the snapshot to a specific git revision."`
 	IncludePaths []string `yaml:"include_paths" help:"Restrict the archive to these paths, relative to root_path and without \"..\". Omit to include everything."`
 }
 
-func (s *snapshotSourceConfig) validate() error {
+func (s *snapshotSourceConfig) validate(prefix string) error {
 	if strings.TrimSpace(s.RootPath) == "" {
-		return errors.New("code_source.snapshot.root_path cannot be empty")
+		return fmt.Errorf("%s.root_path cannot be empty", prefix)
 	}
 
 	if s.RemoteVolume != nil && !strings.HasPrefix(*s.RemoteVolume, "/Volumes/") {
-		return errors.New("code_source.snapshot.remote_volume must start with '/Volumes/'")
+		return fmt.Errorf("%s.remote_volume must start with '/Volumes/'", prefix)
 	}
 
 	// A non-nil but empty include_paths is an explicit mistake (omit it instead).
 	if s.IncludePaths != nil && len(s.IncludePaths) == 0 {
-		return errors.New("code_source.snapshot.include_paths cannot be an empty list; either omit it or provide paths")
+		return fmt.Errorf("%s.include_paths cannot be an empty list; either omit it or provide paths", prefix)
 	}
 	for _, p := range s.IncludePaths {
 		p = strings.TrimSpace(p)
 		if p == "" {
-			return errors.New("code_source.snapshot.include_paths entry cannot be empty")
+			return fmt.Errorf("%s.include_paths entry cannot be empty", prefix)
 		}
 		if strings.HasPrefix(p, "/") {
-			return fmt.Errorf("code_source.snapshot.include_paths must be relative paths, got: %s", p)
+			return fmt.Errorf("%s.include_paths must be relative paths, got: %s", prefix, p)
 		}
 		// No parent traversal: snapshots must stay within root_path.
 		if slices.Contains(strings.Split(p, "/"), "..") {
-			return fmt.Errorf("code_source.snapshot.include_paths cannot contain '..' traversal, got: %s", p)
+			return fmt.Errorf("%s.include_paths cannot contain '..' traversal, got: %s", prefix, p)
 		}
 	}
 
@@ -590,7 +610,7 @@ func writeConfigFieldHelp(w io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field)
+	renderConfigField(w, field, nil)
 	return nil
 }
 
@@ -616,6 +636,7 @@ type configField struct {
 	typeName string
 	required string
 	help     string
+	hidden   bool
 	// freeForm marks a user-keyed map (parameters/secrets/env_variables): no
 	// children, yet any sub-path into it is valid.
 	freeForm bool
@@ -626,8 +647,19 @@ type configField struct {
 // `-h config.<field>` and --override path validation resolve against it.
 func configSchema() configField {
 	return configField{
-		path:     configHelpRoot,
-		help:     "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + ".compute.accelerator_type.",
+		path: configHelpRoot,
+		help: "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + `.compute.accelerator_type.
+
+  AI coding agents can use the databricks-ai-runtime skill to write workload
+  YAML, submit runs, and monitor progress.
+
+  Install the skill locally for your coding agent:
+
+    databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+
+  Follow the prompts to choose your coding agent and installation scope.
+  Use --scope project to install into the current project.
+  See: https://github.com/databricks/databricks-agent-skills/tree/main/experimental/databricks-ai-runtime`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
@@ -651,7 +683,7 @@ func resolveConfigField(path string) (configField, error) {
 			return configField{}, fmt.Errorf("%q is not an object, so it has no field %q", current.path, part)
 		}
 		child, ok := findConfigChild(current.children, part)
-		if !ok {
+		if !ok || child.hidden {
 			return configField{}, unknownConfigFieldError(current, part, strings.Split(trimmed, ".")[:i+1])
 		}
 		current = child
@@ -680,11 +712,11 @@ func configLeafName(path string) string {
 
 // cutLast splits s around the final instance of sep.
 func cutLast(s, sep string) (before, after string, found bool) {
-	i := strings.LastIndex(s, sep)
-	if i < 0 {
+	before, after, ok := strings.CutLast(s, sep)
+	if !ok {
 		return s, "", false
 	}
-	return s[:i], s[i+len(sep):], true
+	return before, after, true
 }
 
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
@@ -692,6 +724,9 @@ func cutLast(s, sep string) (before, after string, found bool) {
 func unknownConfigFieldError(parent configField, part string, matched []string) error {
 	names := make([]string, 0, len(parent.children))
 	for _, c := range parent.children {
+		if c.hidden {
+			continue
+		}
 		names = append(names, configLeafName(c.path))
 	}
 	slices.Sort(names)
@@ -749,7 +784,13 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 		if tag == "" || tag == "-" {
 			continue
 		}
-		name, _, _ := strings.Cut(tag, ",")
+		name, options, _ := strings.Cut(tag, ",")
+		if slices.Contains(strings.Split(options, ","), "inline") {
+			if nested := underlyingConfigStruct(f.Type); nested != nil {
+				out = append(out, describeStruct(nested, prefix)...)
+			}
+			continue
+		}
 		if name == "" || name == "-" {
 			continue
 		}
@@ -759,6 +800,7 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			typeName: configTypeName(f.Type),
 			required: f.Tag.Get("required"),
 			help:     f.Tag.Get("help"),
+			hidden:   f.Tag.Get("hidden") == "yes",
 			freeForm: freeFormConfigFields[name],
 		}
 		if nested := underlyingConfigStruct(f.Type); nested != nil && !field.freeForm {
@@ -815,10 +857,19 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField) {
+func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
+	}
+	if (f.path == "config.compute" || f.path == "config.compute.accelerator_type") && computeOptions != nil {
+		fmt.Fprintln(w, "\n  Supported accelerator types:")
+		if len(computeOptions) == 0 {
+			fmt.Fprintln(w, "    No accelerator types are currently available for AI Runtime in this workspace.")
+		}
+		for _, option := range computeOptions {
+			fmt.Fprintf(w, "    %s - %s%s\n", option.HardwareAccelerator, formatPerNodeAcceleratorCount(option), launchStageBadge(option.LaunchStage))
+		}
 	}
 
 	if len(f.children) == 0 {
@@ -833,13 +884,70 @@ func renderConfigField(w io.Writer, f configField) {
 
 	width := 0
 	for _, c := range f.children {
+		if c.hidden {
+			continue
+		}
 		width = max(width, len(configLeafName(c.path)))
 	}
 	fmt.Fprintf(w, "\n  Fields:\n")
 	for _, c := range f.children {
+		if c.hidden {
+			continue
+		}
 		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+}
+
+func fallbackComputeOptions() []computeOption {
+	options := make([]computeOption, 0, len(gpuTypes))
+	for _, acceleratorType := range gpuTypes {
+		// RTX6000 availability must be confirmed by the workspace API during rollout.
+		if acceleratorType == gpuType1xRTX6000 {
+			continue
+		}
+		perNode, err := gpusPerNode(acceleratorType)
+		if err != nil {
+			continue
+		}
+		options = append(options, computeOption{
+			HardwareAccelerator:     string(acceleratorType),
+			PerNodeAcceleratorCount: &perNode,
+		})
+	}
+	return options
+}
+
+func formatPerNodeAcceleratorCount(option computeOption) string {
+	count := option.PerNodeAcceleratorCount
+	if count == nil {
+		acceleratorType, err := parseGPUType(option.HardwareAccelerator)
+		if err == nil {
+			if fallback, err := gpusPerNode(acceleratorType); err == nil {
+				count = &fallback
+			}
+		}
+	}
+	if count == nil {
+		return "accelerator count per node unavailable"
+	}
+	unit := "accelerators"
+	if *count == 1 {
+		unit = "accelerator"
+	}
+	return fmt.Sprintf("%d %s per node", *count, unit)
+}
+
+func launchStageBadge(stage string) string {
+	labels := map[string]string{
+		"PRIVATE_PREVIEW": "Private Preview",
+		"PUBLIC_BETA":     "Beta",
+		"PUBLIC_PREVIEW":  "Public Preview",
+	}
+	if label := labels[stage]; label != "" {
+		return " [" + label + "]"
+	}
+	return ""
 }
 
 // configFieldSummary is the one-line description used in a field listing: the

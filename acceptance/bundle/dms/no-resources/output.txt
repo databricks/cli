@@ -1,6 +1,5 @@
 
 === First deploy of a bundle with no resources: the deployment is created, and its workspace node identifies it even though no resource state was written
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
@@ -31,14 +30,14 @@ deployment_history_enabled true
 }
 
 === The plan records the deployment_history feature
-
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
+  "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -46,25 +45,23 @@ deployment_history_enabled true
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service lists no resources for the deployment
-
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 []
 
 === The raw recorded state the service holds for this deployment
-
 >>> print_state.py --no-dms
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
+ "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
  "state": {}
 }
 
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
@@ -73,42 +70,30 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"
 }
 
 === The plan records the deployment_history feature
-
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
+  "serial": 1,
   "features": {
-    "deployment_history": {}
+    "deployment_history_shadow": {}
   }
 }
 
@@ -116,19 +101,18 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The service still lists no resources
-
->>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 []
 
 === The raw recorded state after redeploy
-
 >>> print_state.py --no-dms
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
+ "serial": 1,
  "features": {
-  "deployment_history": {}
+  "deployment_history_shadow": {}
  },
  "state": {}
 }

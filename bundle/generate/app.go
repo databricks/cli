@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -15,8 +16,8 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) 
 	// The majority of fields of the app struct are read-only.
 	// We copy the relevant fields manually.
 	dv := map[string]dyn.Value{
-		"name":        dyn.NewValue(app.Name, []dyn.Location{{Line: 1}}),
-		"description": dyn.NewValue(app.Description, []dyn.Location{{Line: 2}}),
+		"name":        dyn.NewValue(app.Name, []diag.Location{{Line: 1}}),
+		"description": dyn.NewValue(app.Description, []diag.Location{{Line: 2}}),
 	}
 
 	// For a git-backed app, emit git_repository + git_source instead of a
@@ -29,11 +30,11 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) 
 			dv["git_source"] = gs
 		}
 	} else {
-		dv["source_code_path"] = dyn.NewValue(sourceCodePath, []dyn.Location{{Line: 4}})
+		dv["source_code_path"] = dyn.NewValue(sourceCodePath, []diag.Location{{Line: 4}})
 	}
 
 	if ar.Kind() != dyn.KindNil {
-		dv["resources"] = ar.WithLocations([]dyn.Location{{Line: 5}})
+		dv["resources"] = ar.WithLocations([]diag.Location{{Line: 5}})
 	}
 
 	return dyn.V(dv), nil
@@ -41,13 +42,13 @@ func ConvertAppToValue(app *apps.App, sourceCodePath string) (dyn.Value, error) 
 
 func gitRepositoryValue(r *apps.GitRepository) dyn.Value {
 	m := map[string]dyn.Value{
-		"url":      dyn.NewValue(r.Url, []dyn.Location{{Line: 1}}),
-		"provider": dyn.NewValue(r.Provider, []dyn.Location{{Line: 2}}),
+		"url":      dyn.NewValue(r.Url, []diag.Location{{Line: 1}}),
+		"provider": dyn.NewValue(r.Provider, []diag.Location{{Line: 2}}),
 	}
 	if r.AutoDeploy {
-		m["auto_deploy"] = dyn.NewValue(r.AutoDeploy, []dyn.Location{{Line: 3}})
+		m["auto_deploy"] = dyn.NewValue(r.AutoDeploy, []diag.Location{{Line: 3}})
 	}
-	return dyn.NewValue(m, []dyn.Location{{Line: 3}})
+	return dyn.NewValue(m, []diag.Location{{Line: 3}})
 }
 
 // gitSourceValue returns the reference the app deploys from (branch, tag, or
@@ -67,17 +68,17 @@ func gitSourceValue(app *apps.App) dyn.Value {
 	m := map[string]dyn.Value{}
 	switch {
 	case src.Branch != "":
-		m["branch"] = dyn.NewValue(src.Branch, []dyn.Location{{Line: 1}})
+		m["branch"] = dyn.NewValue(src.Branch, []diag.Location{{Line: 1}})
 	case src.Tag != "":
-		m["tag"] = dyn.NewValue(src.Tag, []dyn.Location{{Line: 1}})
+		m["tag"] = dyn.NewValue(src.Tag, []diag.Location{{Line: 1}})
 	case src.Commit != "":
-		m["commit"] = dyn.NewValue(src.Commit, []dyn.Location{{Line: 1}})
+		m["commit"] = dyn.NewValue(src.Commit, []diag.Location{{Line: 1}})
 	}
 	if src.SourceCodePath != "" {
-		m["source_code_path"] = dyn.NewValue(src.SourceCodePath, []dyn.Location{{Line: 2}})
+		m["source_code_path"] = dyn.NewValue(src.SourceCodePath, []diag.Location{{Line: 2}})
 	}
 	if len(m) == 0 {
 		return dyn.NilValue
 	}
-	return dyn.NewValue(m, []dyn.Location{{Line: 4}})
+	return dyn.NewValue(m, []diag.Location{{Line: 4}})
 }

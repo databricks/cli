@@ -15,7 +15,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
     "autotermination_minutes": 60,
     "aws_attributes": {},
     "cluster_name": "test-cluster-1",
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"
@@ -30,7 +30,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
     "autotermination_minutes": 60,
     "azure_attributes": {},
     "cluster_name": "test-cluster-2",
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"
@@ -45,7 +45,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
     "autotermination_minutes": 60,
     "cluster_name": "test-cluster-3",
     "gcp_attributes": {},
-    "instance_pool_id": "ip-[NUMID]",
+    "instance_pool_id": "ip-1234567890",
     "num_workers": 2,
     "spark_conf": {
       "spark.executor.memory": "2g"

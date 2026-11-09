@@ -1,0 +1,1 @@
+Badness = "The merge error has no location or path, and diagnostics of includes loaded after the failed merge (the unknown field in b.yml) are not reported, although they do not depend on the merge."

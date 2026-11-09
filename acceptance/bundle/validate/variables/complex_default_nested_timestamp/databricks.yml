@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+variables:
+  payload:
+    type: complex
+    default:
+      created: 2020-01-02

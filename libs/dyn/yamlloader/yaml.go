@@ -1,6 +1,7 @@
 package yamlloader
 
 import (
+	"errors"
 	"io"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -12,7 +13,7 @@ func LoadYAML(path string, r io.Reader) (dyn.Value, error) {
 	dec := yaml.NewDecoder(r)
 	err := dec.Decode(&node)
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return dyn.NilValue, nil
 		}
 		return dyn.InvalidValue, err

@@ -64,7 +64,7 @@ func TestWaitCappedAbandonsPoll(t *testing.T) {
 	assert.Positive(t, polls)
 }
 
-// TestWaitCappedAbandonsBareContextError covers the other shape: retryWith returns ctx.Err()
+// TestWaitCappedAbandonsBareContextError covers the other shape: retry.With returns ctx.Err()
 // directly when the cap lands while it sleeps between transient-error retries.
 func TestWaitCappedAbandonsBareContextError(t *testing.T) {
 	_, err := waitCapped(t.Context(), 20*time.Millisecond, "test resource", waitForCtx)

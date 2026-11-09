@@ -50,13 +50,13 @@ const (
 	// Installing uv (download, checksum, or extraction) failed.
 	SshAgentShimErrorCategoryUvInstallFailed SshAgentShimErrorCategory = "UV_INSTALL_FAILED"
 
-	// Installing the Unity Gateway CLI (`ucode`, via `uv tool install`) failed.
+	// Installing the Unity Gateway CLI (`ug`, via `uv tool install`) failed.
 	SshAgentShimErrorCategoryGatewayCLIInstallFailed SshAgentShimErrorCategory = "UNITY_GATEWAY_CLI_INSTALL_FAILED"
 
 	// Installing Node.js (download, checksum, or extraction) failed.
 	SshAgentShimErrorCategoryNodeInstallFailed SshAgentShimErrorCategory = "NODE_INSTALL_FAILED"
 
-	// The install steps reported success but the Unity Gateway CLI (`ucode`) was still not on
+	// The install steps reported success but the Unity Gateway CLI (`ug`) was still not on
 	// PATH when the shim went to launch the agent: a setup inconsistency, distinct from the
 	// install itself failing.
 	SshAgentShimErrorCategoryUnityGatewayCLINotFound SshAgentShimErrorCategory = "UNITY_GATEWAY_CLI_NOT_FOUND"
@@ -73,12 +73,30 @@ const (
 	// intentionally does not do).
 	SshAgentShimErrorCategoryAgentLaunchFailed SshAgentShimErrorCategory = "AGENT_LAUNCH_FAILED"
 
+	// The configuration stage failed.
+	SshAgentShimErrorCategoryAgentConfigurationFailed SshAgentShimErrorCategory = "AGENT_CONFIGURATION_FAILED"
+
 	// The user interrupted setup (Ctrl-C or a termination signal) before the agent launched.
 	SshAgentShimErrorCategoryUserAborted SshAgentShimErrorCategory = "USER_ABORTED"
 
 	// A failure the launch path did not attribute to any category above. A rise here points
 	// at a CLI bug or a new failure mode that needs its own category.
 	SshAgentShimErrorCategoryUnknown SshAgentShimErrorCategory = "UNKNOWN"
+)
+
+// The agent for an `ssh agent-shim <agent>` command invocation. Values are in
+// screaming snake case to match what JSON->proto deserialization expects.
+type SshAgentShimAgent string
+
+const (
+	// Unknown agent was specified.
+	SshAgentShimAgentUnspecified SshAgentShimAgent = "TYPE_UNSPECIFIED"
+
+	// Claude Code CLI.
+	SshAgentShimAgentClaudeCode SshAgentShimAgent = "CLAUDE_CODE"
+
+	// Codex CLI.
+	SshAgentShimAgentCodex SshAgentShimAgent = "CODEX"
 )
 
 // SshAgentShimEvent is emitted when a user runs `ssh agent-shim <agent>` on the remote
@@ -89,9 +107,9 @@ const (
 // uploaded from the shim just before the exec. A failed launch returns normally and is
 // uploaded by cmd/root as usual.
 type SshAgentShimEvent struct {
-	// Name of the agent the user asked to launch (e.g. "claude", "codex"). Drawn from a
-	// fixed set of CLI-defined identifiers, never user-authored text.
-	AgentName string `json:"agent_name"`
+	//  The agent the user asked to launch, mapped to a string matching the proto enum
+	// (e.g. "CLAUDE_CODE", "CODEX", etc).
+	Agent SshAgentShimAgent `json:"agent"`
 
 	// Whether the agent was launched. False means setup failed before the agent ran.
 	// Populated on every event, so no omitempty: a genuine false must stay distinguishable

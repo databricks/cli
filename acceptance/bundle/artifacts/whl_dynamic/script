@@ -9,6 +9,7 @@ trace $CLI bundle validate -o json | nostamp | jq .artifacts
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 nostamp < tmp.plan.json > out.plan_create.json
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+replace_ids.py
 cat LOG.deploy | contains.py "patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+" "patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+" > /dev/null
 
 title "There are 2 original wheels and 2 patched ones"

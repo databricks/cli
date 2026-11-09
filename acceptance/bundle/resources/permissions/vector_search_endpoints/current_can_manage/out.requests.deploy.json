@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/vector-search-endpoints/[UUID]",
+  "path": "/api/2.0/permissions[FOO_ID_2]",
   "body": {
     "access_control_list": [
       {

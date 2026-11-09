@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -25,7 +26,7 @@ import (
 // type lets callers pass the value to URL builders, env vars, and other
 // string-typed sinks without a manual strconv.FormatInt step.
 func ResolveWorkspaceID(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	if id := w.Config.WorkspaceID; id != "" && id != WorkspaceIDNone {
+	if id := w.Config.WorkspaceID; id != "" && id != profile.WorkspaceIDNone {
 		return id, nil
 	}
 	id, err := w.CurrentWorkspaceID(ctx)

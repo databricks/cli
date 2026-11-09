@@ -1,0 +1,21 @@
+
+=== Validate rejects a Data API that sets only parent
+>>> musterr [CLI] bundle validate
+Error: postgres_data_apis.my_data_api: at least one Data API setting besides parent is required, for example db_schemas
+  at resources.postgres_data_apis.my_data_api
+  in databricks.yml:7:7
+
+Name: parent-only-pg-data-api
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/parent-only-pg-data-api/default
+
+Found 1 error
+
+=== Deploy fails the same way before anything is created
+>>> musterr [CLI] bundle deploy
+Error: postgres_data_apis.my_data_api: at least one Data API setting besides parent is required, for example db_schemas
+  at resources.postgres_data_apis.my_data_api
+  in databricks.yml:7:7
+

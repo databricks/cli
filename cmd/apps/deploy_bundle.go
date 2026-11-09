@@ -78,7 +78,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		deployCmd.Flags().BoolVar(&opts.autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 		deployCmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 		deployCmd.Flags().BoolVar(&opts.verbose, "verbose", false, "Enable verbose output.")
-		deployCmd.Flags().StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+		deployCmd.Flags().StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning.")
 		// Verbose flag currently only affects file sync output, it's used by the vscode extension
 		deployCmd.Flags().MarkHidden("verbose")
 		deployCmd.Flags().BoolVar(&opts.skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")

@@ -1,0 +1,6 @@
+variables:
+  libs:
+    type: complex
+    default:
+      - one
+      - two

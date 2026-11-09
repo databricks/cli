@@ -13,3 +13,7 @@ Response.Body = '''
 	"logs": "Hello from Jar!\n[]"
 }
 '''
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

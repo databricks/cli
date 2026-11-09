@@ -1,0 +1,7 @@
+title "Deploy warns about the deprecated property and passes development: true through"
+trace $CLI bundle deploy
+trace print_requests.py //pipelines | jq '{path, development: .body.development}'
+
+title "Run on a non-development target does not send development; the pipeline-level value applies"
+trace $CLI bundle run my_pipeline
+trace print_requests.py //pipelines

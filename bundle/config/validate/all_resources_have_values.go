@@ -3,7 +3,6 @@ package validate
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -43,7 +42,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{slices.Clone(p)},
+				Paths:     dyn.ToStructPaths(p),
 			})
 
 			return v, nil

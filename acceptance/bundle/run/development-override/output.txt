@@ -1,0 +1,34 @@
+
+=== Deploy warns about the deprecated property and passes development: true through
+>>> [CLI] bundle deploy
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:8:20
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-override/prod/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //pipelines
+{
+  "path": "/api/2.0/pipelines",
+  "development": true
+}
+
+=== Run on a non-development target does not send development; the pipeline-level value applies
+>>> [CLI] bundle run my_pipeline
+Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:8:20
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {}
+}

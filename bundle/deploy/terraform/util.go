@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/log"
-	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type (
@@ -29,10 +28,13 @@ type resourcesState struct {
 
 const SupportedStateVersion = 4
 
+// ManagedResourceMode is the tfstate "mode" of a managed resource; data sources use "data".
+const ManagedResourceMode = "managed"
+
 type stateResource struct {
 	Type      string                  `json:"type"`
 	Name      string                  `json:"name"`
-	Mode      tfjson.ResourceMode     `json:"mode"`
+	Mode      string                  `json:"mode"`
 	Instances []stateResourceInstance `json:"instances"`
 }
 
@@ -79,7 +81,7 @@ func resourcesStateToMap(ctx context.Context, state *resourcesState) (ExportedRe
 	result := make(ExportedResourcesMap)
 
 	for _, resource := range state.Resources {
-		if resource.Mode != tfjson.ManagedResourceMode {
+		if resource.Mode != ManagedResourceMode {
 			continue
 		}
 		for _, instance := range resource.Instances {

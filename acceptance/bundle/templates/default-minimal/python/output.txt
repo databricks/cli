@@ -18,7 +18,6 @@ To get started, refer to the project README.md file and the documentation at htt
     "my_default_minimal/.vscode/extensions.json",
     "my_default_minimal/.vscode/settings.json",
     "my_default_minimal/AGENTS.md",
-    "my_default_minimal/CLAUDE.md",
     "my_default_minimal/README.md",
     "my_default_minimal/databricks.yml",
     "my_default_minimal/fixtures/.gitkeep",

@@ -1,6 +1,7 @@
 package manifest_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -434,4 +435,27 @@ func TestCollectOptionalResources(t *testing.T) {
 	resources := m.CollectOptionalResources([]string{"analytics"})
 	require.Len(t, resources, 1)
 	assert.Equal(t, "catalog", resources[0].Type)
+}
+
+func TestResourceBindingJSON(t *testing.T) {
+	var r manifest.Resource
+	err := json.Unmarshal([]byte(`{
+		"type": "volume",
+		"resourceKey": "files",
+		"binding": {
+			"yamlKey": "uc_securable",
+			"varFields": [["id", "securable_full_name"]],
+			"staticFields": [["securable_type", "VOLUME"]]
+		}
+	}`), &r)
+	require.NoError(t, err)
+	assert.Equal(t, &manifest.ResourceBinding{
+		YamlKey:      "uc_securable",
+		VarFields:    [][2]string{{"id", "securable_full_name"}},
+		StaticFields: [][2]string{{"securable_type", "VOLUME"}},
+	}, r.Binding)
+
+	var noBinding manifest.Resource
+	require.NoError(t, json.Unmarshal([]byte(`{"type": "volume"}`), &noBinding))
+	assert.Nil(t, noBinding.Binding)
 }

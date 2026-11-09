@@ -6,8 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/cli/acceptance/internal/selection"
 )
@@ -66,7 +65,7 @@ func newSubsetSelector(t *testing.T, overwrite, forcerun bool) subsetSelector {
 	seed := os.Getenv(SubsetSeedEnvVar)
 	if seed == "" {
 		// Reproduce this run's subset by re-running with the logged seed.
-		seed = uuid.NewString()
+		seed = uuid.New().String()
 		t.Logf("%s not set, using random seed %q", SubsetSeedEnvVar, seed)
 	}
 

@@ -3,7 +3,10 @@ package phases
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
@@ -113,17 +116,17 @@ func aiRuntimeJob(extraTask bool) *resources.Job {
 	if extraTask {
 		tasks = append(tasks, jobs.Task{TaskKey: "prep"})
 	}
-	return &resources.Job{JobSettings: jobs.JobSettings{Tasks: tasks}}
+	return &resources.Job{Tasks: tasks}
 }
 
 func TestAiRuntimeTaskMetrics(t *testing.T) {
 	scheduledJob := aiRuntimeJob(false)
 	scheduledJob.Schedule = &jobs.CronSchedule{QuartzCronExpression: "0 0 * * * ?"}
 
-	forEachJob := &resources.Job{JobSettings: jobs.JobSettings{Tasks: []jobs.Task{{
+	forEachJob := &resources.Job{Tasks: []jobs.Task{{
 		TaskKey:     "fanout",
 		ForEachTask: &jobs.ForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"}}},
-	}}}}
+	}}}
 
 	tests := []struct {
 		name                          string
@@ -173,4 +176,31 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 			assert.Equal(t, tc.multitask, multitask, "multitask")
 		})
 	}
+}
+
+func TestPydabsMetrics(t *testing.T) {
+	pythonConfig := config.Python{
+		Resources: []string{"resources:load_resources"},
+		Mutators:  []string{"mutators:m1", "mutators:m2"},
+	}
+	metrics := bundle.Metrics{
+		PythonAddedResources:   map[string]int64{"jobs": 2, "pipelines": 1},
+		PythonUpdatedResources: map[string]int64{"jobs": 3, "apps": 1},
+		PythonConfigSection:    protos.PydabsConfigSectionPython,
+	}
+	expected := &protos.BundleDeployPydabs{
+		ResourceLoadersCount:  1,
+		ResourceMutatorsCount: 2,
+		AddedResourcesCount:   3,
+		UpdatedResourcesCount: 4,
+		Resources: []protos.PydabsResourceTypeCount{
+			{ResourceType: "apps", AddedCount: 0, UpdatedCount: 1},
+			{ResourceType: "jobs", AddedCount: 2, UpdatedCount: 3},
+			{ResourceType: "pipelines", AddedCount: 1, UpdatedCount: 0},
+		},
+		ConfigSection: protos.PydabsConfigSectionPython,
+	}
+
+	b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
+	assert.Equal(t, expected, pydabsMetrics(b))
 }

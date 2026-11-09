@@ -1,0 +1,19 @@
+
+=== Target no_host uses the default profile
+>>> errcode [CLI] bundle run -t no_host show_auth
+profile=workspace_classic_id host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== Target no_host_with_workspace_id uses the default profile
+>>> errcode [CLI] bundle run -t no_host_with_workspace_id show_auth
+profile=workspace_classic_id host=[DATABRICKS_URL] workspace_id=[WORKSPACE_ID]
+
+=== Target no_host_other_workspace is rejected
+>>> errcode [CLI] bundle validate -t no_host_other_workspace
+Error: cannot resolve bundle auth configuration: resolve: strict profile matching: profile workspace_classic_id does not have workspace_id 2222222222. Config: workspace_id=2222222222, profile=workspace_classic_id, config_file=[TEST_TMP_DIR]/.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Name: strict-profile-match
+Target: no_host_other_workspace
+
+Found 1 error
+
+Exit code: 1

@@ -162,11 +162,9 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			// Mock bespoke API calls to /api/2.0/workspace/get-status, that are
 			// used to figure out the right file extension for the notebook.
 			statNotebook := wsfsFileInfo{
-				ObjectInfo: workspace.ObjectInfo{
-					Path:       tc.notebookPath,
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeNotebook,
-				},
+				Path:              tc.notebookPath,
+				Language:          tc.language,
+				ObjectType:        workspace.ObjectTypeNotebook,
 				ReposExportFormat: tc.notebookExportFormat,
 			}
 
@@ -249,11 +247,9 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 
 			// Mock the get-status call used to figure out the notebook's file extension.
 			statNotebook := wsfsFileInfo{
-				ObjectInfo: workspace.ObjectInfo{
-					Path:       "/dir/foo",
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeNotebook,
-				},
+				Path:              "/dir/foo",
+				Language:          tc.language,
+				ObjectType:        workspace.ObjectTypeNotebook,
 				ReposExportFormat: tc.notebookExportFormat,
 			}
 

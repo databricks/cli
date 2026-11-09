@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+variables:
+  v:
+    default: &x
+      a:
+        - *x
