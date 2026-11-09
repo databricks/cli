@@ -39,6 +39,13 @@ trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI registered-models get "test_catalog_renamed_${UNIQUE_NAME}.myschema2.mymodel2" | jq '{full_name, created_at}'
 
+title "Rename the model and change its comment in one deploy: both go in one PATCH"
+trace update_file.py databricks.yml "name: mymodel2" "name: mymodel3"
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "test_catalog_renamed_${UNIQUE_NAME}.myschema2.mymodel3" | jq '{full_name, comment, created_at}'
+
 title "The state tracks the new paths and the plan is a no-op"
 trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
 trace $CLI bundle plan
