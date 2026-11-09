@@ -68,7 +68,7 @@ quality_monitors: catalog.CreateMonitor
 
 registered_models: catalog.RegisteredModelInfo
 
-schemas: catalog.CreateSchema
+schemas: catalog.SchemaInfo
 
 secret_scopes: workspace.CreateScope
 
@@ -82,4 +82,4 @@ vector_search_endpoints: vectorsearch.CreateEndpoint
 
 vector_search_indexes: vectorsearch.CreateVectorIndexRequest
 
-volumes: catalog.CreateVolumeRequestContent
+volumes: catalog.VolumeInfo
