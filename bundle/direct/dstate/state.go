@@ -276,6 +276,27 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	return success, nil
 }
 
+// RecordResourceHistory publishes an operation's state (nil for removal) without writing local state.
+func (db *DeploymentState) RecordResourceHistory(ctx context.Context, resourceKey string, entry *ResourceEntry) error {
+	db.AssertOpenedForWrite()
+	buf := db.getOperationBuffer()
+	if buf == nil {
+		return nil
+	}
+	var recorded json.RawMessage
+	var resourceID string
+	if entry != nil {
+		var err error
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		if err != nil {
+			return err
+		}
+		resourceID = entry.ID
+	}
+	buf.RecordOperation(ctx, resourceKey, false, resourceID, recorded)
+	return nil
+}
+
 // RecordFailure records that a resource did not apply, so the history says why rather than
 // leaving the resource out. resourceID is the id it had before the failure.
 func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {

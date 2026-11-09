@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -218,11 +217,7 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		err = errors.Join(err, finalizeErr)
 	}()
 
-	var configured *bool
-	if b.Config.Experimental != nil {
-		configured = b.Config.Experimental.DeploymentHistory
-	}
-	if !db.RecordsHistory() && !bundleenv.RecordsDeploymentHistory(ctx, configured) {
+	if !db.RecordsHistory() {
 		return nil
 	}
 
@@ -238,10 +233,7 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		}
 		db.VersionID = next - 1
 	}
-	if db.Data.Features == nil {
-		db.Data.Features = make(map[string]struct{})
-	}
-	db.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
+
 	if err := db.UpgradeToWrite(); err != nil {
 		return err
 	}
@@ -261,5 +253,5 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 	if !ok {
 		return fmt.Errorf("bound resource %s is missing from deployment state", resourceKey)
 	}
-	return db.SaveState(ctx, resourceKey, entry.ID, entry.State, entry.DependsOn)
+	return db.RecordResourceHistory(ctx, resourceKey, &entry)
 }
