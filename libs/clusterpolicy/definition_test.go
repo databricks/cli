@@ -48,7 +48,7 @@ func TestValueEquals(t *testing.T) {
 	}
 }
 
-func TestDefinitionSupplies(t *testing.T) {
+func TestDefinitionIsPolicyValue(t *testing.T) {
 	definition, err := ParseDefinition(`{
 		"spark_version": {"type": "fixed", "value": "15.4.x-scala2.12"},
 		"autotermination_minutes": {"type": "range", "defaultValue": 60},
@@ -90,7 +90,7 @@ func TestDefinitionSupplies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			path, err := structpath.ParsePath(tt.path)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, definition.Supplies(path, tt.value, tt.applyDefaults))
+			assert.Equal(t, tt.want, definition.IsPolicyValue(path, tt.value, tt.applyDefaults))
 		})
 	}
 }

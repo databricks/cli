@@ -217,7 +217,7 @@ func (f *clusterPolicyFilter) isPolicyOnlySubtree(clusterPath, path *structpath.
 		return false, err
 	}
 	for _, leaf := range leaves {
-		if !definition.Supplies(leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
+		if !definition.IsPolicyValue(leaf.path.SkipPrefix(clusterPath.Len()), leaf.value, applyDefaults == true) {
 			return false, nil
 		}
 	}

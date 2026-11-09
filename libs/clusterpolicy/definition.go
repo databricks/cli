@@ -75,30 +75,30 @@ func ValueEquals(policyValue, value any) bool {
 	return reflect.DeepEqual(policyValue, value)
 }
 
-// Supplies reports whether the policy could have set the cluster attribute at path, a path
-// relative to the cluster spec, to value. The backend rejects values that differ from a
-// fixed element, so a fixed field is frozen whatever its value; other elements only set
-// their opted-in default. The policy language's log-delivery aliases are translated, and
-// indexed rules take precedence over wildcards.
+// IsPolicyValue reports whether the value of the cluster attribute at path, a path relative
+// to the cluster spec, comes from the policy rather than the user. The backend rejects
+// values that differ from a fixed element, so a fixed field is frozen whatever its value;
+// other elements only set their opted-in default. The policy language's log-delivery
+// aliases are translated, and indexed rules take precedence over wildcards.
 // https://docs.databricks.com/aws/en/admin/clusters/policy-definition
-func (d Definition) Supplies(path *structpath.PathNode, value any, applyDefaults bool) bool {
+func (d Definition) IsPolicyValue(path *structpath.PathNode, value any, applyDefaults bool) bool {
 	indexed, wildcard := attributes(path)
 	if indexed == "cluster_log_conf.s3.region" {
-		return d["cluster_log_conf.region"].supplies(value, applyDefaults)
+		return d["cluster_log_conf.region"].isPolicyValue(value, applyDefaults)
 	}
 	if storage, ok := strings.CutPrefix(indexed, "cluster_log_conf."); ok && strings.HasSuffix(storage, ".destination") {
 		storage = strings.ToUpper(strings.TrimSuffix(storage, ".destination"))
 		logType := d["cluster_log_conf.type"].EffectiveValue(applyDefaults)
-		return ValueEquals(logType, storage) && d["cluster_log_conf.path"].supplies(value, applyDefaults)
+		return ValueEquals(logType, storage) && d["cluster_log_conf.path"].isPolicyValue(value, applyDefaults)
 	}
 	element, ok := d[indexed]
 	if !ok {
 		element = d[wildcard]
 	}
-	return element.supplies(value, applyDefaults)
+	return element.isPolicyValue(value, applyDefaults)
 }
 
-func (e Element) supplies(value any, applyDefaults bool) bool {
+func (e Element) isPolicyValue(value any, applyDefaults bool) bool {
 	if e.Type == "fixed" {
 		return true
 	}
