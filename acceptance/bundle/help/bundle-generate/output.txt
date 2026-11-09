@@ -27,12 +27,46 @@ Usage:
   databricks bundle generate [command]
 
 Available Commands:
-  alert       Generate configuration for an alert
-  app         Generate bundle configuration for a Databricks app
-  dashboard   Generate configuration for a dashboard
-  genie-space Generate configuration for a Genie space
-  job         Generate bundle configuration for a job
-  pipeline    Generate bundle configuration for a pipeline
+  alert                      Generate configuration for an alert
+  app                        Generate bundle configuration for a Databricks app
+  catalog                    Generate bundle configuration for a catalog
+  cluster                    Generate bundle configuration for a cluster
+  cluster-policy             Generate bundle configuration for a cluster policy
+  dashboard                  Generate configuration for a dashboard
+  data-quality-monitor       Generate bundle configuration for a data quality monitor
+  database-catalog           Generate bundle configuration for a database catalog
+  database-instance          Generate bundle configuration for a database instance
+  experiment                 Generate bundle configuration for an experiment
+  external-location          Generate bundle configuration for an external location
+  feature                    Generate bundle configuration for a feature
+  genie-space                Generate configuration for a Genie space
+  instance-pool              Generate bundle configuration for an instance pool
+  job                        Generate bundle configuration for a job
+  materialization-set        Generate bundle configuration for a materialization set
+  mcp-service                Generate bundle configuration for a mcp service
+  model                      Generate bundle configuration for a model
+  model-provider-service     Generate bundle configuration for a model provider service
+  model-service              Generate bundle configuration for a model service
+  model-serving-endpoint     Generate bundle configuration for a model serving endpoint
+  pipeline                   Generate bundle configuration for a pipeline
+  postgres-branch            Generate bundle configuration for a postgres branch
+  postgres-catalog           Generate bundle configuration for a postgres catalog
+  postgres-database          Generate bundle configuration for a postgres database
+  postgres-endpoint          Generate bundle configuration for a postgres endpoint
+  postgres-project           Generate bundle configuration for a postgres project
+  postgres-role              Generate bundle configuration for a postgres role
+  postgres-snapshot-schedule Generate bundle configuration for a postgres snapshot schedule
+  postgres-synced-table      Generate bundle configuration for a postgres synced table
+  quality-monitor            Generate bundle configuration for a quality monitor
+  registered-model           Generate bundle configuration for a registered model
+  schema                     Generate bundle configuration for a schema
+  secret                     Generate bundle configuration for a secret
+  secret-scope               Generate bundle configuration for a secret scope
+  sql-warehouse              Generate bundle configuration for a sql warehouse
+  synced-database-table      Generate bundle configuration for a synced database table
+  vector-search-endpoint     Generate bundle configuration for a vector search endpoint
+  vector-search-index        Generate bundle configuration for a vector search index
+  volume                     Generate bundle configuration for a volume
 
 Flags:
   -h, --help         help for generate

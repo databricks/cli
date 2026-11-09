@@ -10,46 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// generateUnsupported lists the resource groups without a generate subcommand.
-// Remove a group once its command lands. A group that is in neither this list
-// nor the command tree fails the test, so every new resource type gets a decision.
+// generateUnsupported lists the resource groups that deliberately have no generate
+// subcommand. A group that is in neither this list nor the command tree fails the
+// test, so every new resource type gets an explicit decision.
 var generateUnsupported = []string{
-	"catalogs",
-	"cluster_policies",
-	"clusters",
-	"data_quality_monitors",
-	"database_catalogs",
-	"database_instances",
-	"experiments",
-	"external_locations",
-	"features",
-	"instance_pools",
 	"internal_immutable_snapshots",
 	"job_runs",
-	"materialization_sets",
-	"mcp_services",
-	"model_provider_services",
-	"model_services",
-	"model_serving_endpoints",
-	"models",
-	"postgres_branches",
-	"postgres_catalogs",
-	"postgres_databases",
-	"postgres_endpoints",
-	"postgres_projects",
-	"postgres_roles",
-	"postgres_snapshot_schedules",
-	"postgres_synced_tables",
-	"quality_monitors",
-	"registered_models",
-	"schemas",
-	"secret_scopes",
-	"secrets",
-	"sql_warehouses",
-	"synced_database_tables",
-	"vector_search_endpoints",
-	"vector_search_indexes",
-	"volumes",
 }
 
 func TestGenerateCommandCoversAllResourceGroups(t *testing.T) {

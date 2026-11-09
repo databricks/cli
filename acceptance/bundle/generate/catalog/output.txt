@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle generate catalog --existing-id my_catalog
+Catalog configuration successfully saved to [TEST_TMP_DIR]/resources/my_catalog.catalog.yml
+
+>>> cat resources/my_catalog.catalog.yml
+resources:
+  catalogs:
+    my_catalog:
+      comment: primary catalog
+      name: my_catalog
+
+>>> [CLI] bundle validate
+Name: generate-catalog
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/generate-catalog/default
+
+Validation OK!

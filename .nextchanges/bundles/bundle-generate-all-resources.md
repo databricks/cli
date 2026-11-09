@@ -1,0 +1,1 @@
+* Add `databricks bundle generate <resource>` subcommands for every bundle resource type the deployment engine can read, such as `catalog`, `schema`, `cluster`, `sql-warehouse`, and `model-serving-endpoint`. ([#7365](https://github.com/databricks/cli/pull/7365))
