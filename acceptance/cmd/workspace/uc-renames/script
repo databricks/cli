@@ -4,7 +4,7 @@ RENAMED="test_catalog_renamed_${UNIQUE_NAME}"
 cleanup() {
     # Whichever name the catalog ended up with.
     errcode $CLI catalogs delete "$CATALOG" --force &> LOG.cleanup
-    errcode $CLI catalogs delete "$RENAMED" --force &>> LOG.cleanup
+    errcode $CLI catalogs delete "$RENAMED" --force >> LOG.cleanup 2>&1
 }
 trap cleanup EXIT
 
