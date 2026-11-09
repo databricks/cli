@@ -194,6 +194,9 @@ workspace_id = 222
 host = https://classic.test
 workspace_id = none
 
+[no_workspace_id]
+host = https://classic.test
+
 [empty_host]
 host =
 workspace_id = 111
@@ -209,13 +212,17 @@ workspace_id = 111
 		name         string
 		profile      string
 		noConfigFile bool
-		want         string
-		wantErr      string
+		// selectedWorkspaceID is the selected profile's workspace ID, "111" when nil.
+		selectedWorkspaceID *string
+		want                string
+		wantErr             string
 	}{
 		{name: "unset", want: "https://spog.test"},
 		{name: "same workspace", profile: "classic", want: "https://classic.test"},
 		{name: "other workspace", profile: "other_workspace", wantErr: `profile "other_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "222", but the selected profile has workspace ID "111"`},
 		{name: "no workspace", profile: "no_workspace", wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "none", but the selected profile has workspace ID "111"`},
+		{name: "no workspace on both", profile: "no_workspace", selectedWorkspaceID: new("none"), wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "none", but the selected profile has workspace ID "none"`},
+		{name: "no workspace ID on both", profile: "no_workspace_id", selectedWorkspaceID: new(""), wantErr: `profile "no_workspace_id" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "", but the selected profile has workspace ID ""`},
 		{name: "empty host", profile: "empty_host", wantErr: `profile "empty_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "no host", profile: "no_host", wantErr: `profile "no_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "missing profile", profile: "missing", wantErr: `profile "missing" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
@@ -230,8 +237,12 @@ workspace_id = 111
 			}
 			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
 			ctx = env.Set(ctx, workspaceHostProfileEnvVar, tt.profile)
+			selectedWorkspaceID := "111"
+			if tt.selectedWorkspaceID != nil {
+				selectedWorkspaceID = *tt.selectedWorkspaceID
+			}
 			ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
-				Config: &workspaceConfig.Config{Host: "https://spog.test", WorkspaceID: "111"},
+				Config: &workspaceConfig.Config{Host: "https://spog.test", WorkspaceID: selectedWorkspaceID},
 			})
 
 			host, err := loadHelpers(ctx)["workspace_host"].(func() (string, error))()
