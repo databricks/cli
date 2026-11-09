@@ -1,14 +1,15 @@
 package aircmd
 
 import (
-	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/databricks/cli/libs/tarpack"
-	"github.com/klauspost/pgzip"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -99,44 +100,64 @@ func writeSegmentedTarball(ctx context.Context, component, outputTarball string,
 	})
 }
 
-// writeSegments runs writeMember for n members concurrently, each into its own buffer, and
-// appends the buffers to outputTarball in member order as they complete. Compressed
-// members are held in memory until their turn, so peak memory is about the compressed
-// size of the tarball, and no copy goes through a temp file.
+// writeSegments runs writeMember for n members, spooling each to a temp file with at most
+// runtime.NumCPU() in flight, then appends the files to outputTarball in member order. The
+// output is assembled only after every member succeeds, so a failed member never leaves a
+// partial tarball behind.
 func writeSegments(ctx context.Context, component, outputTarball string, n int, writeMember func(ctx context.Context, i int, w io.Writer) error) (segmentIndex, error) {
+	dir, err := os.MkdirTemp("", "air-snapshot-members-")
+	if err != nil {
+		return segmentIndex{}, fmt.Errorf("failed to create snapshot members dir: %w", err)
+	}
+	defer os.RemoveAll(dir)
+
+	paths := make([]string, n)
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.NumCPU())
+	for i := range n {
+		paths[i] = filepath.Join(dir, fmt.Sprintf("member-%d", i))
+		g.Go(func() error {
+			return spoolFile(gctx, paths[i], func(ctx context.Context, w io.Writer) error {
+				return writeMember(ctx, i, w)
+			})
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return segmentIndex{}, err
+	}
+	return concatMembers(component, outputTarball, paths)
+}
+
+// spoolFile creates path and fills it with the output of write.
+func spoolFile(ctx context.Context, path string, write func(ctx context.Context, w io.Writer) error) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if err := write(ctx, f); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// concatMembers appends the member files at paths, in order, to outputTarball and returns
+// the index of their byte ranges.
+func concatMembers(component, outputTarball string, paths []string) (segmentIndex, error) {
 	out, err := os.Create(outputTarball)
 	if err != nil {
 		return segmentIndex{}, fmt.Errorf("failed to create tarball: %w", err)
 	}
 	defer out.Close()
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	bufs := make([]*bytes.Buffer, n)
-	done := make([]chan struct{}, n)
-	g, gctx := errgroup.WithContext(ctx)
-	for i := range n {
-		bufs[i] = &bytes.Buffer{}
-		done[i] = make(chan struct{})
-		g.Go(func() error {
-			defer close(done[i])
-			return writeMember(gctx, i, bufs[i])
-		})
-	}
-
 	index := segmentIndex{Format: segmentFormat, Version: segmentFormatVersion, Component: component}
-	for i := range n {
-		<-done[i]
-		length, err := bufs[i].WriteTo(out)
+	for _, p := range paths {
+		length, err := appendFile(out, p)
 		if err != nil {
-			return segmentIndex{}, fmt.Errorf("failed to write snapshot member %d: %w", i, err)
+			return segmentIndex{}, fmt.Errorf("failed to append snapshot member: %w", err)
 		}
-		bufs[i] = nil
 		index.Members = append(index.Members, segmentMember{Offset: index.Size, Length: length})
 		index.Size += length
-	}
-	if err := g.Wait(); err != nil {
-		return segmentIndex{}, err
 	}
 	if err := out.Close(); err != nil {
 		return segmentIndex{}, fmt.Errorf("failed to finalize tarball: %w", err)
@@ -147,7 +168,7 @@ func writeSegments(ctx context.Context, component, outputTarball string, n int, 
 // writeMemberTar writes entries to w as one gzip member. Members other than the last
 // omit the tar end-of-archive marker.
 func writeMemberTar(ctx context.Context, w io.Writer, entries []tarpack.Entry, last bool) error {
-	gz, err := pgzip.NewWriterLevel(ctxWriter{ctx, w}, pgzip.DefaultCompression)
+	gz, err := gzip.NewWriterLevel(ctxWriter{ctx, w}, gzip.DefaultCompression)
 	if err != nil {
 		return err
 	}
@@ -162,4 +183,14 @@ func writeMemberTar(ctx context.Context, w io.Writer, entries []tarpack.Entry, l
 		return fmt.Errorf("failed to finalize gzip: %w", err)
 	}
 	return nil
+}
+
+// appendFile copies the file at path onto the end of w and returns the bytes copied.
+func appendFile(w io.Writer, path string) (int64, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	return io.Copy(w, f)
 }
