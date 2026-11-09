@@ -33,6 +33,10 @@ import (
 // codeSnapshotV2Capability is the config:validate capability that enables v2.
 const codeSnapshotV2Capability = "code_snapshot_v2"
 
+// v2Decision reports whether the backend advertised v2. It blocks until config:validate has
+// finished, so it is only called where the answer is needed.
+type v2Decision func(ctx context.Context) (bool, error)
+
 const (
 	v2Buckets           = 16
 	v2ManifestFormat    = "air-snapshot-manifest"
@@ -93,15 +97,15 @@ func memberOf(bucket, k int) int {
 	return bucket / (v2Buckets / k)
 }
 
-// v2Header is the tar header for info with owner fields cleared. The owner names come from
-// the local user database and would change ids between machines.
+// v2Header is the tar header for info. It carries the same owner fields as v1, so extraction
+// restores the same ownership. Ids therefore depend on the machine that packaged the tree,
+// and another machine re-uploads once.
 func v2Header(info fs.FileInfo, name, linkTarget string) (*tar.Header, error) {
 	hdr, err := tar.FileInfoHeader(info, linkTarget)
 	if err != nil {
 		return nil, err
 	}
 	hdr.Name = name
-	hdr.Uid, hdr.Gid, hdr.Uname, hdr.Gname = 0, 0, "", ""
 	return hdr, nil
 }
 

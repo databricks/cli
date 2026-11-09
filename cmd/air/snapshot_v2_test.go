@@ -1,11 +1,16 @@
 package aircmd
 
 import (
+	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -107,22 +112,134 @@ func TestKForTarSize(t *testing.T) {
 
 // Same tree gives the same ids, and the ids are pinned so a change to the fragment encoding
 // is visible in review (it re-uploads every member once).
-func TestV2IDsAreDeterministicAndPinned(t *testing.T) {
-	repo := writeV2Tree(t, v2TestTree(24))
-	first := v2IDs(t, repo, v2Buckets)
-	second := v2IDs(t, repo, v2Buckets)
-	assert.Equal(t, first, second)
+// The same tree gives the same ids, from one run to the next and from a copy in another
+// directory. Ids are not pinned because owner fields are part of the fragment, so they depend
+// on the user that packages the tree.
+func TestV2IDsAreDeterministic(t *testing.T) {
+	first := v2IDs(t, writeV2Tree(t, v2TestTree(24)), v2Buckets)
+	assert.Equal(t, first, v2IDs(t, writeV2Tree(t, v2TestTree(24)), v2Buckets))
+	assert.Equal(t, first, v2IDs(t, writeV2Tree(t, v2TestTree(24)), v2Buckets))
+}
 
-	var got []string
-	for id := range first {
-		got = append(got, id)
+// fixedV2 is a v2Decision with a fixed answer.
+func fixedV2(v2 bool) v2Decision {
+	return func(context.Context) (bool, error) { return v2, nil }
+}
+
+// entryHeader is the part of a tar header that must match between v1 and v2.
+type entryHeader struct {
+	Typeflag byte
+	Mode     int64
+	ModTime  int64
+	Uid, Gid int
+	Uname    string
+	Gname    string
+	Linkname string
+	Size     int64
+}
+
+// tarHeaders reads every entry header from a tar stream.
+func tarHeaders(t *testing.T, r io.Reader) map[string]entryHeader {
+	t.Helper()
+	out := map[string]entryHeader{}
+	tr := tar.NewReader(r)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return out
+		}
+		require.NoError(t, err)
+		out[hdr.Name] = entryHeader{
+			Typeflag: hdr.Typeflag,
+			Mode:     hdr.Mode,
+			ModTime:  hdr.ModTime.UnixNano(),
+			Uid:      hdr.Uid,
+			Gid:      hdr.Gid,
+			Uname:    hdr.Uname,
+			Gname:    hdr.Gname,
+			Linkname: hdr.Linkname,
+			Size:     hdr.Size,
+		}
 	}
-	slices.Sort(got)
-	t.Logf("ids: %v", got)
+}
 
-	// Pinned for the fixed tree above (fixed mtime and mode, owner fields cleared).
-	want := []string{"2030798903f5ffd2d9bfd594b90f00db", "42d7e05f72052c59572de52b8685133c", "5aded820cc397b719161ef29cce01977", "7cef810a2d0a0108a199cac9b530f96c", "910cc54d61649a4f83b22932506d9a35", "91972034b47e8679e3f9c36370d8d030", "ba2ce71feaf6e8bfcc3c316df9050830", "bd4f954cb0158d38f8bc36c6902ad8a5", "d151e658c32c0de18699b99889a77982", "efec3e984af63c246333c8e1c1f96a3d", "f2c7eda8bd574178784aabddd415a0b5", "f2fb48177b6de2b085280f2ee02ee6af", "fb1516bccc909166ff6dedb7da1f50b9", "fbf370ae26a25139242b0b1840db4974"}
-	assert.Equal(t, want, got)
+// A v1 tarball and the v2 members of the same tree carry identical headers for every entry:
+// name, mode, mtime, owner, type, link target and size. Only the packaging differs.
+func TestV2AndV1EntryHeadersMatch(t *testing.T) {
+	repo := writeV2Tree(t, v2TestTree(60))
+	require.NoError(t, os.Symlink("pkg0/mod0.py", filepath.Join(repo, "link.py")))
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
+
+	v1Path := filepath.Join(t.TempDir(), "v1.tar.gz")
+	_, err = createPlainTarball(t.Context(), repo, v1Path, files)
+	require.NoError(t, err)
+	v1Data, err := os.ReadFile(v1Path)
+	require.NoError(t, err)
+	gz, err := gzip.NewReader(bytes.NewReader(v1Data))
+	require.NoError(t, err)
+	v1 := tarHeaders(t, gz)
+
+	tmp := t.TempDir()
+	members, err := buildV2Members(t.Context(), tmp, repo, filepath.Base(repo), files, v2Buckets)
+	require.NoError(t, err)
+	v2 := map[string]entryHeader{}
+	for _, m := range members {
+		f, err := os.Open(m.fragment)
+		require.NoError(t, err)
+		maps.Copy(v2, tarHeaders(t, f))
+		require.NoError(t, f.Close())
+	}
+
+	require.Len(t, v2, len(v1))
+	for name, want := range v1 {
+		assert.Equal(t, want, v2[name], name)
+	}
+	assert.Equal(t, byte(tar.TypeSymlink), v1[path.Join(filepath.Base(repo), "link.py")].Typeflag)
+}
+
+// The manifest has exactly the agreed fields, and the end object is last.
+func TestV2ManifestSchema(t *testing.T) {
+	repo := writeV2Tree(t, v2TestTree(30))
+	store := newV2Store(t, nil)
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
+	var result snapshotResult
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, testSnapshotArtifactPath+"/.internal", repo, files, &result))
+
+	rc, err := store.f.Read(t.Context(), path.Base(result.CodeSourcePath))
+	require.NoError(t, err)
+	defer rc.Close()
+	var manifest map[string]json.RawMessage
+	require.NoError(t, json.NewDecoder(rc).Decode(&manifest))
+	keys := make([]string, 0, len(manifest))
+	for k := range manifest {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	assert.Equal(t, []string{"component", "format", "k", "members", "tar_size", "version"}, keys)
+
+	var typed struct {
+		Format  string     `json:"format"`
+		Version int        `json:"version"`
+		K       int        `json:"k"`
+		Members []v2Member `json:"members"`
+	}
+	raw, err := json.Marshal(manifest)
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(raw, &typed))
+	assert.Equal(t, "air-snapshot-manifest", typed.Format)
+	assert.Equal(t, 2, typed.Version)
+	require.NotEmpty(t, typed.Members)
+
+	end, err := writeV2EndFragment(t.TempDir())
+	require.NoError(t, err)
+	assert.Equal(t, end.ID, typed.Members[len(typed.Members)-1].ID, "end object is last")
+	for _, m := range typed.Members {
+		assert.Len(t, m.ID, 32)
+		assert.Positive(t, m.GzSize)
+		assert.Positive(t, m.TarSize)
+	}
 }
 
 // A one-file edit changes exactly one member id: the member holding the file.

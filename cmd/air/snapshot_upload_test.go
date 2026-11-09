@@ -85,7 +85,7 @@ func TestUploadSnapshotPlainTarWritesIndexAndTarball(t *testing.T) {
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
+	first, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, fixedV2(false))
 	require.NoError(t, err)
 
 	tarName := path.Base(first.CodeSourcePath)
@@ -97,7 +97,7 @@ func TestUploadSnapshotPlainTarWritesIndexAndTarball(t *testing.T) {
 	assert.Len(t, rec.index.Members, 1)
 
 	rec.reset()
-	second, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
+	second, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, fixedV2(false))
 	require.NoError(t, err)
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Empty(t, rec.names(), "cache hit should write neither the index nor the tarball")
@@ -112,7 +112,7 @@ func TestUploadSnapshotPlainTarMissingSidecarReuploadsBoth(t *testing.T) {
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
+	first, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, fixedV2(false))
 	require.NoError(t, err)
 	tarName := path.Base(first.CodeSourcePath)
 
@@ -121,7 +121,7 @@ func TestUploadSnapshotPlainTarMissingSidecarReuploadsBoth(t *testing.T) {
 	require.NoError(t, uploadDir.Delete(ctx, tarName+segmentIndexSuffix))
 
 	rec.reset()
-	second, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
+	second, err := uploadSnapshot(ctx, w, snap, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, fixedV2(false))
 	require.NoError(t, err)
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
 	assert.Equal(t, map[string]bool{tarName: true, tarName + segmentIndexSuffix: true}, rec.names())

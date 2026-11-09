@@ -360,8 +360,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Package and upload the code snapshot, if any; the remote code_source_path
 	// rides the ai_runtime_task. A run with no code_source leaves it empty.
 	// Snapshot is the only code_source type.
-	// The snapshot format depends on the capabilities validation advertises, so the snapshot
-	// stage waits for validation. Validation and the other artifacts still run concurrently.
+	// The snapshot format depends on the capabilities validation advertises. Only the format
+	// decision waits for validation: planning, listing and keying the snapshot run in parallel
+	// with it, and v1 submits do not wait longer than before.
 	validated := make(chan struct{})
 	var capabilities []string
 	var stageSnapshot func(context.Context) (snapshotResult, error)
@@ -369,14 +370,17 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
 		// uploadSnapshot replaces this when remote_volume is configured.
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
-		stageSnapshot = func(ctx context.Context) (snapshotResult, error) {
+		v2Advertised := func(ctx context.Context) (bool, error) {
 			select {
 			case <-validated:
 			case <-ctx.Done():
-				return snapshotResult{}, ctx.Err()
+				return false, ctx.Err()
 			}
+			return slices.Contains(capabilities, codeSnapshotV2Capability), nil
+		}
+		stageSnapshot = func(ctx context.Context) (snapshotResult, error) {
 			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-			return uploadSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir, slices.Contains(capabilities, codeSnapshotV2Capability))
+			return uploadSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir, v2Advertised)
 		}
 	}
 

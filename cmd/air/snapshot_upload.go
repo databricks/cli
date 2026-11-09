@@ -31,7 +31,7 @@ const uploadProvenanceSidecars = false
 // artifact store's .internal directory, returning the remote path to attach to the
 // ai_runtime_task. Uploading reuses libs/filer for the workspace/volume write without
 // depending on the bundle package (see uploadSnapshotTarball / snapshotUploadFiler).
-func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string, codeSnapshotV2 bool) (snapshotResult, error) {
+func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string, v2Advertised v2Decision) (snapshotResult, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
@@ -50,7 +50,7 @@ func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *sn
 	if snap.RemoteVolume != nil {
 		snapshotArtifactPath = *snap.RemoteVolume
 	}
-	result, err := uploadSnapshotTarball(ctx, w, repoPath, plan, snapshotArtifactPath, codeSnapshotV2)
+	result, err := uploadSnapshotTarball(ctx, w, repoPath, plan, snapshotArtifactPath, v2Advertised)
 	if err != nil {
 		return result, err
 	}
@@ -160,7 +160,7 @@ const airArtifactInternalDir = ".internal"
 // The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
 // for git_archive and by the working-tree metadata fingerprint for plain_tar — so if
 // the identical object already exists we skip packaging and upload entirely and reuse it.
-func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string, codeSnapshotV2 bool) (snapshotResult, error) {
+func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string, v2Advertised v2Decision) (snapshotResult, error) {
 	result := snapshotResult{UsesGit: &plan.isGitRepo, PackagingMode: &plan.mode}
 	f, uploadPath, err := snapshotUploadFiler(ctx, w, artifactPath)
 	if err != nil {
@@ -171,10 +171,17 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	if err != nil {
 		return result, err
 	}
-	// v2 is only written when the backend advertised it; any other case keeps the v1 tarball.
-	if codeSnapshotV2 && plan.mode == modePlainTar {
-		err := uploadSnapshotV2(ctx, f, uploadPath, repoPath, files, &result)
-		return result, err
+	// The format decision is the first point that needs validation. Only plain_tar can be v2, so
+	// git_archive never waits. The cache check below differs by format, so it comes after.
+	if plan.mode == modePlainTar {
+		v2, err := v2Advertised(ctx)
+		if err != nil {
+			return result, err
+		}
+		if v2 {
+			err := uploadSnapshotV2(ctx, f, uploadPath, repoPath, files, &result)
+			return result, err
+		}
 	}
 	// code_source_path is content-addressed by tarName, so it is the same whether we
 	// upload the bytes now or reuse an object already in the store.
