@@ -1,1 +1,0 @@
-* Include variable declarations and the source of each resolved value in the `--include-locations` output of `bundle validate` and `bundle summary`. ([#7351](https://github.com/databricks/cli/pull/7351))
