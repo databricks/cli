@@ -59,8 +59,6 @@ func TestSandboxClientRejectsInvalidArguments(t *testing.T) {
 }
 
 func TestSandboxClientWriteDoesNotOverwrite(t *testing.T) {
-	// The upload API always replaces, so exclusive writes go through a temporary file
-	// and a rename, which must not leave the temporary file behind.
 	ctx := t.Context()
 	f := newSandboxTestFiler(t)
 

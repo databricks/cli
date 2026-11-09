@@ -3,11 +3,11 @@ package filer
 import (
 	"cmp"
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"net/url"
 	"path"
@@ -15,8 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
@@ -97,12 +99,11 @@ func (i sandboxFileInfo) Sys() any {
 // SandboxClient implements the [Filer] interface for the filesystem of a
 // single Databricks sandbox.
 //
-// The sandbox file APIs are more permissive than the Filer contract: uploads
-// always replace the target and create missing parents, and deletes succeed if
-// the path is absent. Where the contract is stricter, this client checks the
-// path first or, for exclusive creates, uses rename (see createExclusive).
+// Uploads create missing parents and deletes succeed for absent paths, so this
+// client checks those paths to enforce the stricter Filer contract.
 type SandboxClient struct {
-	api sandbox.SandboxInterface
+	api          sandbox.SandboxInterface
+	uploadClient *client.DatabricksClient
 
 	// parent is the sandbox resource name, "sandboxes/{sandbox_id}", that every
 	// file API call is scoped to.
@@ -126,10 +127,15 @@ func NewSandboxClient(w *databricks.WorkspaceClient, sandboxID, root string) (Fi
 	if !path.IsAbs(root) {
 		return nil, fmt.Errorf("sandbox root must be absolute: %s", root)
 	}
+	uploadClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
 	return &SandboxClient{
-		api:    w.Sandbox,
-		parent: "sandboxes/" + url.PathEscape(sandboxID),
-		root:   NewWorkspaceRootPath(root),
+		api:          w.Sandbox,
+		uploadClient: uploadClient,
+		parent:       "sandboxes/" + url.PathEscape(sandboxID),
+		root:         NewWorkspaceRootPath(root),
 	}, nil
 }
 
@@ -158,107 +164,31 @@ func (c *SandboxClient) Write(ctx context.Context, name string, reader io.Reader
 		}
 	}
 
-	if slices.Contains(mode, OverwriteIfExists) {
-		err := c.upload(ctx, absPath, reader)
-		// The server returns 409 when the target is a directory, and also when a
-		// parent path component is a file. Stat to tell them apart.
-		if sandboxStatus(err) == http.StatusConflict {
-			if info, serr := c.stat(ctx, absPath); serr == nil && info.IsDir() {
-				return notAFile{absPath}
-			}
-		}
-		return err
-	}
-
-	// Fail fast if the target exists, so that rerunning a copy that skips
-	// existing files doesn't upload every file only to lose the rename. This
-	// check alone is racy; createExclusive provides the guarantee.
-	_, err = c.stat(ctx, absPath)
-	if err == nil {
-		return fileAlreadyExistsError{absPath}
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
-
-	return c.createExclusive(ctx, absPath, reader)
-}
-
-// createExclusive writes a file that must not already exist, and guarantees
-// that only one of several concurrent writers creates it. The libs/locker lock
-// file relies on this guarantee from filers.
-//
-// The upload API can't do this: it always replaces the target (observed), and
-// per its docs rejects conditional headers such as If-None-Match with 400. The
-// rename API can: it returns
-// 409 ALREADY_EXISTS if the destination exists, and of several concurrent
-// renames onto the same absent destination, exactly one succeeds. That
-// atomicity is observed behavior (consistent with renameat(2) with
-// RENAME_NOREPLACE), not documented; TestFilerConcurrentExclusiveWrite in
-// integration/libs/filer pins it. So upload to a temporary file and rename it
-// into place.
-func (c *SandboxClient) createExclusive(ctx context.Context, absPath string, reader io.Reader) error {
-	tmpPath := exclusiveCreateTempPath(absPath)
-
-	err := c.upload(ctx, tmpPath, reader)
-	if err != nil {
-		// A failed upload can still have created the file, if the response was
-		// lost after the server committed it.
-		c.removeTemp(ctx, tmpPath)
-		return err
-	}
-
-	_, err = c.api.RenamePath(ctx, sandbox.RenamePathRequest{
-		Parent:      c.parent,
-		Source:      tmpPath,
-		Destination: absPath,
-	})
-	if err != nil {
-		// A failed rename leaves the temporary file in place.
-		c.removeTemp(ctx, tmpPath)
-
-		// The destination exists. Another writer created it, or it is a
-		// directory; os.OpenFile with O_EXCL reports both as fs.ErrExist too.
-		if errors.Is(err, apierr.ErrAlreadyExists) {
+	overwrite := slices.Contains(mode, OverwriteIfExists)
+	if !overwrite {
+		// Avoid streaming skipped files; overwrite=false still protects concurrent creates.
+		_, err = c.stat(ctx, absPath)
+		if err == nil {
 			return fileAlreadyExistsError{absPath}
 		}
-		return sandboxPathError(err, absPath)
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
 	}
-
-	return nil
-}
-
-// exclusiveCreateTempPath returns the temporary path that createExclusive
-// uploads to before renaming it to absPath. It is in the same directory because
-// rename fails across filesystems (400), and the directory is the only location
-// known to be on the target's filesystem. The random name keeps concurrent
-// writers of the same target from sharing one temporary file, and its fixed
-// length keeps it within the filesystem's name limit whatever the target's name.
-// A temporary file left behind (removeTemp failed or the process was killed) is
-// a regular dotfile, visible to listings and recursive copies.
-func exclusiveCreateTempPath(absPath string) string {
-	return path.Join(path.Dir(absPath), ".databricks-"+rand.Text()+".tmp")
-}
-
-// removeTemp deletes a temporary file left by createExclusive. It runs even if
-// ctx is cancelled, because cancellation is a common reason the write failed.
-// Its error is ignored: a leftover temporary file doesn't change the outcome of
-// the write, and reporting it would hide the error that caused the cleanup.
-func (c *SandboxClient) removeTemp(ctx context.Context, tmpPath string) {
-	_, _ = c.api.DeletePath(context.WithoutCancel(ctx), sandbox.DeletePathRequest{
-		Parent: c.parent,
-		Path:   tmpPath,
-	})
-}
-
-// upload creates or replaces the file at absPath, creating missing parents.
-func (c *SandboxClient) upload(ctx context.Context, absPath string, reader io.Reader) error {
-	err := c.api.UploadFile(ctx, sandbox.UploadFileRequest{
-		Parent: c.parent,
-		Path:   absPath,
-		// The caller owns reader; the SDK must not close it.
-		Contents: io.NopCloser(reader),
-	})
+	headers := map[string]string{"Content-Type": "application/octet-stream"}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(c.uploadClient.Config))
+	// The pinned SDK lacks the overwrite field; its HTTP client still streams the body.
+	err = c.uploadClient.Do(ctx, http.MethodPut, "/api/2.0/sandbox-files/"+c.parent+"/content",
+		headers, map[string]any{"path": absPath, "overwrite": overwrite}, io.NopCloser(reader), nil)
+	if !overwrite && sandboxStatus(err) == http.StatusPreconditionFailed {
+		return fileAlreadyExistsError{absPath}
+	}
+	// A 409 can indicate a directory target or a parent component that is a file.
+	if sandboxStatus(err) == http.StatusConflict {
+		if info, serr := c.stat(ctx, absPath); serr == nil && info.IsDir() {
+			return notAFile{absPath}
+		}
+	}
 	return sandboxPathError(err, absPath)
 }
 

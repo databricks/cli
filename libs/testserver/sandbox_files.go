@@ -33,8 +33,8 @@ const (
 )
 
 // fakeSandboxFs is the filesystem of one sandbox, keyed by absolute path. It models the
-// server's semantics, which are looser than the Filer contract: uploads replace and create
-// parents, and deletes of absent paths succeed. The filer must close those gaps itself, so
+// server's semantics, which are looser than the Filer contract: uploads create parents,
+// and deletes of absent paths succeed. The filer must close those gaps itself, so
 // the fake must not.
 type fakeSandboxFs struct {
 	entries map[string]*sandboxFsEntry
@@ -180,13 +180,20 @@ func (e *sandboxFsEntry) info(p string) sandbox.SandboxFileInfo {
 
 // SandboxFilesUpload creates or replaces a file, creating missing parents.
 func (s *FakeWorkspace) SandboxFilesUpload(req Request, sandboxID string) Response {
-	// The server rejects query parameters it doesn't know, including "overwrite".
-	for name := range req.URL.Query() {
-		if name != "path" {
+	query := req.URL.Query()
+	for name := range query {
+		if name != "path" && name != "overwrite" {
 			return sandboxFilesError(400, "INVALID_PARAMETER_VALUE", sandboxFilesBadUpload)
 		}
 	}
-	p, errResp := sandboxFilesPath("path", req.URL.Query().Get("path"))
+	overwrite := true
+	if values, ok := query["overwrite"]; ok {
+		if len(values) != 1 || (values[0] != "true" && values[0] != "false") {
+			return sandboxFilesError(400, "INVALID_PARAMETER_VALUE", sandboxFilesBadUpload)
+		}
+		overwrite = values[0] == "true"
+	}
+	p, errResp := sandboxFilesPath("path", query.Get("path"))
 	if errResp != nil {
 		return *errResp
 	}
@@ -194,6 +201,9 @@ func (s *FakeWorkspace) SandboxFilesUpload(req Request, sandboxID string) Respon
 	defer s.LockUnlock()()
 	sfs := s.sandboxFs(sandboxID)
 	existing, underFile := sfs.lookup(p)
+	if !overwrite && existing != nil {
+		return sandboxFilesError(http.StatusPreconditionFailed, "BAD_REQUEST", "The file does not satisfy the request preconditions.")
+	}
 	if underFile || (existing != nil && existing.isDir) {
 		return sandboxFilesError(409, "BAD_REQUEST", sandboxFilesWrongState)
 	}

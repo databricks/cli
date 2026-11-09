@@ -70,7 +70,6 @@ func TestSandboxFilesListPagination(t *testing.T) {
 }
 
 func TestSandboxFilesUploadRejectsUnknownParameters(t *testing.T) {
-	// The real server rejects "overwrite", like any parameter besides "path".
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 	c, err := client.New(&config.Config{Host: server.URL, Token: "testtoken"})
@@ -78,7 +77,7 @@ func TestSandboxFilesUploadRejectsUnknownParameters(t *testing.T) {
 
 	err = c.Do(t.Context(), http.MethodPut, "/api/2.0/sandbox-files/"+sandboxParent+"/content",
 		map[string]string{"Content-Type": "application/octet-stream"},
-		map[string]any{"path": "/tmp/file", "overwrite": false},
+		map[string]any{"path": "/tmp/file", "unknown": false},
 		io.NopCloser(strings.NewReader("")), nil)
 	assert.ErrorIs(t, err, apierr.ErrInvalidParameterValue)
 }
