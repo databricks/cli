@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -416,7 +415,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
 			// does not exist until a first deploy creates it, so it is left off here and the deploy
 			// phase stamps the created id.
-			lastVersionID, err := parseLastVersionID(dmsDeployment)
+			lastVersionID, err := dms.ParseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -632,19 +631,6 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-// parseLastVersionID parses the deployment's last recorded version, which the service reports
-// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
-func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
-	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
-		return 0, nil
-	}
-	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
-	}
-	return v, nil
-}
-
 // OpenDirectStateForRead opens the direct-engine state database read-only. When the bundle
 // records deployment history the local state file is only a tombstone, so the resources are
 // read from the deployment metadata service instead.
@@ -661,7 +647,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if err != nil {
 		return err
 	}
-	lastVersionID, err := parseLastVersionID(dmsDeployment)
+	lastVersionID, err := dms.ParseLastVersionID(dmsDeployment)
 	if err != nil {
 		return err
 	}
@@ -681,7 +667,7 @@ func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bun
 	if err != nil {
 		return nil, err
 	}
-	lastVersion, err := parseLastVersionID(deployment)
+	lastVersion, err := dms.ParseLastVersionID(deployment)
 	if err != nil {
 		return nil, err
 	}

@@ -226,12 +226,9 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		return err
 	}
 	db.DeploymentID = deploymentID
-	if current != nil {
-		next, err := dms.NextVersion(current.LastVersionId)
-		if err != nil {
-			return err
-		}
-		db.VersionID = next - 1
+	db.VersionID, err = dms.ParseLastVersionID(current)
+	if err != nil {
+		return err
 	}
 
 	if err := db.UpgradeToWrite(); err != nil {

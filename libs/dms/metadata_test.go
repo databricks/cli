@@ -3,6 +3,7 @@ package dms
 import (
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,4 +41,24 @@ func TestDeploymentIDFromName(t *testing.T) {
 
 	_, err = DeploymentIDFromName("deployments/")
 	assert.Error(t, err)
+}
+
+func TestParseLastVersionID(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		deployment *bundledeployments.Deployment
+		want       int
+	}{
+		{"no deployment", nil, 0},
+		{"no version", &bundledeployments.Deployment{}, 0},
+		{"existing version", &bundledeployments.Deployment{LastVersionId: "4"}, 4},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ParseLastVersionID(tc.deployment)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+	_, err := ParseLastVersionID(&bundledeployments.Deployment{LastVersionId: "invalid"})
+	assert.ErrorContains(t, err, "last_version_id")
 }

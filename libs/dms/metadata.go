@@ -75,6 +75,19 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 	return strings.Join(stale, ",")
 }
 
+// ParseLastVersionID parses the deployment's last recorded version, which the service reports
+// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
+func ParseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
+	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
+	}
+	return v, nil
+}
+
 // NextVersion is the version number this run will create, given the deployment's most recent
 // one. lastVersionID is empty before the deployment has any version.
 func NextVersion(lastVersionID string) (int, error) {
