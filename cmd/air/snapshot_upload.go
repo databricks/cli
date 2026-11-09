@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"golang.org/x/sync/errgroup"
 )
 
 // uploadProvenanceSidecars controls collection and upload of git_state.json
@@ -178,11 +180,11 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	// upload the bytes now or reuse an object already in the store.
 	remote := path.Join(uploadPath, tarName)
 
-	exists, err := snapshotExists(ctx, f, tarName)
+	cached, err := snapshotCached(ctx, f, tarName, plan.mode == modePlainTar)
 	if err != nil {
 		return result, err
 	}
-	if exists {
+	if cached {
 		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
 		result.CodeSourcePath = remote
 		result.PackagingDurationMs = new(int64(0))
@@ -218,19 +220,48 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	}
 	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", tarName))
 	uploadStart := time.Now()
-	// The sidecar goes first so a tarball is never visible without its index.
+	// The sidecar and tarball are written concurrently. The job is only submitted once both
+	// succeed, and a later cache hit requires both (see snapshotCached).
+	g, gctx := errgroup.WithContext(ctx)
 	if index != nil {
-		if err := uploadSegmentIndex(ctx, f, tarName, index); err != nil {
-			return result, err
-		}
+		g.Go(func() error { return uploadSegmentIndex(gctx, f, tarName, index) })
 	}
-	err = f.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
+	g.Go(func() error {
+		if err := f.Write(gctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
+			return fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
+		}
+		return nil
+	})
+	err = g.Wait()
 	result.UploadDurationMs = new(time.Since(uploadStart).Milliseconds())
 	if err != nil {
-		return result, fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
+		return result, err
 	}
 	result.CodeSourcePath = remote
 	return result, nil
+}
+
+// snapshotCached reports whether the snapshot is already in the store. For an indexed
+// (plain_tar) snapshot both the tarball and its index sidecar must exist: a half-written
+// pair from an interrupted upload is a miss, and the pair is re-uploaded.
+func snapshotCached(ctx context.Context, store filer.Filer, tarName string, indexed bool) (bool, error) {
+	names := []string{tarName}
+	if indexed {
+		names = append(names, tarName+segmentIndexSuffix)
+	}
+	exists := make([]bool, len(names))
+	g, gctx := errgroup.WithContext(ctx)
+	for i, name := range names {
+		g.Go(func() error {
+			ok, err := snapshotExists(gctx, store, name)
+			exists[i] = ok
+			return err
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return false, err
+	}
+	return !slices.Contains(exists, false), nil
 }
 
 // uploadSegmentIndex writes the index sidecar for tarName next to it in the store.

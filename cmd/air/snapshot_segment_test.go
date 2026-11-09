@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/tarpack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,15 +25,12 @@ func writePlainTarball(t *testing.T, ctx context.Context, repo, out string, file
 	require.NoError(t, err)
 }
 
-// readSingleStream reads the .tar.gz as one gzip stream and returns the entry names,
-// as an old launcher's `tar -xzf` does. It fails on any error other than the clean
-// end of the archive.
-func readSingleStream(t *testing.T, b []byte) []string {
+// tarNames reads a tar stream to its end and returns the entry names. A clean EOF is
+// accepted at an entry boundary, so it also reads a member fragment with no end marker.
+func tarNames(t *testing.T, r io.Reader) []string {
 	t.Helper()
-	gz, err := gzip.NewReader(bytes.NewReader(b))
-	require.NoError(t, err)
 	var names []string
-	tr := tar.NewReader(gz)
+	tr := tar.NewReader(r)
 	for {
 		hdr, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -45,38 +43,39 @@ func readSingleStream(t *testing.T, b []byte) []string {
 	}
 }
 
-// readMemberFragment decodes one member on its own and returns its entry names.
-// Members other than the last end without the end-of-archive marker, so a clean EOF
-// on a header boundary is the expected end.
-func readMemberFragment(t *testing.T, member []byte) []string {
-	t.Helper()
-	gz, err := gzip.NewReader(bytes.NewReader(member))
-	require.NoError(t, err)
-	var names []string
-	tr := tar.NewReader(gz)
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			return names
-		}
-		require.NoError(t, err)
-		names = append(names, hdr.Name)
-		_, err = io.Copy(io.Discard, tr)
-		require.NoError(t, err)
-	}
+// segmentFixture is a repo packaged as a multi-member segmented tarball. The small target
+// forces several members.
+type segmentFixture struct {
+	entries []tarpack.Entry
+	index   segmentIndex
+	data    []byte
 }
 
-// makeSegmentRepo creates n files of growing size under a repo directory and returns
-// the repo path and its snapshot file listing.
-func makeSegmentRepo(t *testing.T, n int) (string, []snapshotFile) {
+func newSegmentFixture(t *testing.T) segmentFixture {
 	t.Helper()
 	repo := filepath.Join(t.TempDir(), "code")
-	for i := range n {
+	for i := range 30 {
 		writeRepoFile(t, repo, fmt.Sprintf("pkg%d/file%d.py", i%3, i), strings.Repeat(fmt.Sprintf("x = %d\n", i), 50*i+1))
 	}
 	files, err := snapshotFiles(t.Context(), repo, nil, false)
 	require.NoError(t, err)
-	return repo, files
+	entries, sizes := plainTarEntries(repo, files)
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	index, err := writeSegmentedTarball(t.Context(), "code", out, entries, sizes, 4096, 16)
+	require.NoError(t, err)
+	require.Greater(t, len(index.Members), 1)
+	data, err := os.ReadFile(out)
+	require.NoError(t, err)
+	return segmentFixture{entries: entries, index: index, data: data}
+}
+
+func (f segmentFixture) names() []string {
+	var names []string
+	for _, e := range f.entries {
+		names = append(names, e.Name)
+	}
+	return names
 }
 
 func TestPlanSegments(t *testing.T) {
@@ -104,129 +103,94 @@ func TestPlanSegments(t *testing.T) {
 // Old launchers read the whole .tar.gz as one gzip stream: it must yield exactly the
 // expected entries, even with several members.
 func TestSegmentedTarballReadsAsSingleStream(t *testing.T) {
-	ctx := t.Context()
-	repo, files := makeSegmentRepo(t, 30)
-	entries, sizes := plainTarEntries(repo, files)
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	index, err := writeSegmentedTarball(ctx, filepath.Base(repo), out, entries, sizes, 4096, 16)
+	f := newSegmentFixture(t)
+	gz, err := gzip.NewReader(bytes.NewReader(f.data))
 	require.NoError(t, err)
-	require.Greater(t, len(index.Members), 1)
-
-	data, err := os.ReadFile(out)
-	require.NoError(t, err)
-	var want []string
-	for _, e := range entries {
-		want = append(want, e.Name)
-	}
-	assert.ElementsMatch(t, want, readSingleStream(t, data))
+	assert.Equal(t, f.names(), tarNames(t, gz))
 }
 
-// Each member decodes independently to a valid tar fragment, and the union of the
-// members is the full set of entries in order.
+// Each member decodes on its own to a tar fragment, and the members in order are the full
+// entry set. Only the last member carries the end-of-archive marker.
 func TestSegmentedTarballMembersDecodeIndependently(t *testing.T) {
-	ctx := t.Context()
-	repo, files := makeSegmentRepo(t, 30)
-	entries, sizes := plainTarEntries(repo, files)
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	index, err := writeSegmentedTarball(ctx, filepath.Base(repo), out, entries, sizes, 4096, 16)
-	require.NoError(t, err)
-	require.Greater(t, len(index.Members), 1)
-
-	data, err := os.ReadFile(out)
-	require.NoError(t, err)
+	f := newSegmentFixture(t)
 	var union []string
-	for _, m := range index.Members {
-		union = append(union, readMemberFragment(t, data[m.Offset:m.Offset+m.Length])...)
+	for i, m := range f.index.Members {
+		member := f.data[m.Offset : m.Offset+m.Length]
+		gz, err := gzip.NewReader(bytes.NewReader(member))
+		require.NoError(t, err)
+		payload, err := io.ReadAll(gz)
+		require.NoError(t, err)
+		endsWithMarker := bytes.HasSuffix(payload, make([]byte, 1024))
+		assert.Equal(t, i == len(f.index.Members)-1, endsWithMarker, "member %d", i)
+
+		gz, err = gzip.NewReader(bytes.NewReader(member))
+		require.NoError(t, err)
+		union = append(union, tarNames(t, gz)...)
 	}
-	var want []string
-	for _, e := range entries {
-		want = append(want, e.Name)
-	}
-	assert.Equal(t, want, union)
+	assert.Equal(t, f.names(), union)
 }
 
-// The index matches the tarball: members are contiguous, cover [0, size), size equals
-// the file size, and every entry sits under the component directory.
+// The index matches the tarball: members are contiguous, cover [0, size) with size equal
+// to the file size, and every entry sits under the component directory.
 func TestSegmentedTarballIndexContract(t *testing.T) {
-	ctx := t.Context()
-	repo, files := makeSegmentRepo(t, 30)
-	entries, sizes := plainTarEntries(repo, files)
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	index, err := writeSegmentedTarball(ctx, filepath.Base(repo), out, entries, sizes, 4096, 16)
-	require.NoError(t, err)
-
-	info, err := os.Stat(out)
-	require.NoError(t, err)
-	assert.Equal(t, segmentFormat, index.Format)
-	assert.Equal(t, segmentFormatVersion, index.Version)
-	assert.Equal(t, "code", index.Component)
-	assert.Equal(t, info.Size(), index.Size)
+	f := newSegmentFixture(t)
+	assert.Equal(t, segmentFormat, f.index.Format)
+	assert.Equal(t, segmentFormatVersion, f.index.Version)
+	assert.Equal(t, "code", f.index.Component)
+	assert.Equal(t, int64(len(f.data)), f.index.Size)
 
 	var next int64
-	for _, m := range index.Members {
+	for _, m := range f.index.Members {
 		assert.Equal(t, next, m.Offset)
 		assert.Positive(t, m.Length)
 		next += m.Length
 	}
-	assert.Equal(t, index.Size, next)
+	assert.Equal(t, f.index.Size, next)
 
-	data, err := os.ReadFile(out)
-	require.NoError(t, err)
-	for _, name := range readSingleStream(t, data) {
+	for _, name := range f.names() {
 		assert.True(t, strings.HasPrefix(name, "code/"), name)
 	}
 }
 
-// Only the last member carries the end-of-archive marker.
-func TestSegmentedTarballEndMarkerOnlyInLastMember(t *testing.T) {
-	ctx := t.Context()
-	repo, files := makeSegmentRepo(t, 30)
-	entries, sizes := plainTarEntries(repo, files)
-	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	index, err := writeSegmentedTarball(ctx, filepath.Base(repo), out, entries, sizes, 4096, 16)
-	require.NoError(t, err)
-	require.Greater(t, len(index.Members), 1)
-
-	data, err := os.ReadFile(out)
-	require.NoError(t, err)
-	for i, m := range index.Members {
-		gz, err := gzip.NewReader(bytes.NewReader(data[m.Offset : m.Offset+m.Length]))
-		require.NoError(t, err)
-		payload, err := io.ReadAll(gz)
-		require.NoError(t, err)
-		trailer := make([]byte, 1024)
-		endsWithMarker := bytes.Equal(payload[len(payload)-1024:], trailer)
-		assert.Equal(t, i == len(index.Members)-1, endsWithMarker, "member %d", i)
-	}
-}
-
-// A small repo packages as one member, and the tarball is a plain single-member archive.
+// A small repo packages as one member, and the index covers the whole file.
 func TestCreatePlainTarballSmallRepoIsOneMember(t *testing.T) {
-	repo, files := makeSegmentRepo(t, 3)
+	repo := filepath.Join(t.TempDir(), "code")
+	writeRepoFile(t, repo, "a.py", "print()")
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	index, err := createPlainTarball(t.Context(), repo, out, files)
 	require.NoError(t, err)
-	assert.Len(t, index.Members, 1)
-	assert.Equal(t, []segmentMember{{Offset: 0, Length: index.Size}}, index.Members)
+
+	info, err := os.Stat(out)
+	require.NoError(t, err)
+	assert.Equal(t, []segmentMember{{Offset: 0, Length: info.Size()}}, index.Members)
+	assert.Equal(t, info.Size(), index.Size)
 }
 
-// Same input yields byte-identical tarballs and indexes, which the content-addressed
-// cache key depends on.
+// Same input yields byte-identical tarballs and indexes, which the content-addressed cache
+// key depends on.
 func TestCreatePlainTarballIsDeterministic(t *testing.T) {
-	repo, files := makeSegmentRepo(t, 30)
-	dir := t.TempDir()
-	first := filepath.Join(dir, "first.tar.gz")
-	second := filepath.Join(dir, "second.tar.gz")
+	repo := filepath.Join(t.TempDir(), "code")
+	for i := range 30 {
+		writeRepoFile(t, repo, fmt.Sprintf("f%d.py", i), strings.Repeat("x", 300*i+1))
+	}
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
 	entries, sizes := plainTarEntries(repo, files)
-	indexA, err := writeSegmentedTarball(t.Context(), filepath.Base(repo), first, entries, sizes, 4096, 16)
-	require.NoError(t, err)
-	indexB, err := writeSegmentedTarball(t.Context(), filepath.Base(repo), second, entries, sizes, 4096, 16)
-	require.NoError(t, err)
 
-	a, err := os.ReadFile(first)
-	require.NoError(t, err)
-	b, err := os.ReadFile(second)
-	require.NoError(t, err)
-	assert.Equal(t, a, b)
+	dir := t.TempDir()
+	write := func(name string) (segmentIndex, []byte) {
+		out := filepath.Join(dir, name)
+		index, err := writeSegmentedTarball(t.Context(), "code", out, entries, sizes, 4096, 16)
+		require.NoError(t, err)
+		data, err := os.ReadFile(out)
+		require.NoError(t, err)
+		return index, data
+	}
+	indexA, dataA := write("a.tar.gz")
+	indexB, dataB := write("b.tar.gz")
+	require.Greater(t, len(indexA.Members), 1)
+	assert.Equal(t, dataA, dataB)
 	assert.Equal(t, indexA, indexB)
 }
