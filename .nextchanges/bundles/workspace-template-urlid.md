@@ -1,0 +1,1 @@
+* Add `.workspace.URLID` to bundle templates: the workspace ID that `.workspace.URL` adds, or empty, so templates can use it without failing when the ID is unknown. ([#7388](https://github.com/databricks/cli/pull/7388))
