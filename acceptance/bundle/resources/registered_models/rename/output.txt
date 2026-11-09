@@ -117,6 +117,14 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "name": "myschema",
       "owner": "[USERNAME]",
       "schema_id": "[UUID]"
+    },
+    "changes": {
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
+      }
     }
   }
 }
@@ -248,6 +256,12 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
         "old": "myschema",
         "new": "myschema2",
         "remote": "myschema"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
       }
     }
   }
@@ -406,6 +420,12 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
         "action": "skip",
         "reason": "empty",
         "remote": 0
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
       }
     }
   }
