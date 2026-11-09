@@ -461,6 +461,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
+	// Opt-in snapshot GC runs once the run exists; it never changes the result.
+	gcAfterSubmit(ctx, w, cfg, base)
+
 	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
 }

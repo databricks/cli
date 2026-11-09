@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
@@ -225,29 +226,31 @@ func v2ObjectName(id string) string {
 	return path.Join(v2ObjectsDir, id+".tar.gz")
 }
 
-// putV2Members makes every member an object in store and records its gzip size. An object
-// that already exists is only sized: its id is its content, so it is never rewritten. At most
-// v2UploadConcurrency members are compressed or uploaded at once.
-func putV2Members(ctx context.Context, store filer.Filer, members []v2Member, tmp string) error {
+// putV2Members makes every member an object in store and records its gzip size. At most
+// v2UploadConcurrency members are compressed or uploaded at once. now is the time the snapshot
+// is written, against which object age is judged.
+func putV2Members(ctx context.Context, store filer.Filer, members []v2Member, tmp string, now time.Time) error {
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(v2UploadConcurrency)
 	for i := range members {
 		g.Go(func() error {
-			return putV2Member(gctx, store, &members[i], tmp)
+			return putV2Member(gctx, store, &members[i], tmp, now)
 		})
 	}
 	return g.Wait()
 }
 
-// putV2Member writes one member as an object unless it already exists.
-func putV2Member(ctx context.Context, store filer.Filer, m *v2Member, tmp string) error {
+// putV2Member writes one member as an object unless a fresh copy already exists. An object
+// younger than v2ReuseWindow is reused, since its id is its content. An older one is written
+// again, which refreshes its mtime and keeps GC from deleting it under a reusing submit.
+func putV2Member(ctx context.Context, store filer.Filer, m *v2Member, tmp string, now time.Time) error {
 	name := v2ObjectName(m.ID)
 	info, err := store.Stat(ctx, name)
-	switch {
-	case err == nil:
+	if err == nil && now.Sub(info.ModTime()) < v2ReuseWindow {
 		m.GzSize = info.Size()
 		return nil
-	case !errors.Is(err, fs.ErrNotExist):
+	}
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to check snapshot object %s: %w", name, err)
 	}
 
@@ -268,6 +271,53 @@ func putV2Member(ctx context.Context, store filer.Filer, m *v2Member, tmp string
 		defer f.Close()
 		return store.Write(ctx, name, f, filer.OverwriteIfExists, filer.CreateParentDirectories)
 	})
+}
+
+// renewV2Manifest renews an existing manifest whose objects are all present, by rewriting it
+// unchanged. It reports false when the manifest is missing, unreadable, or references a missing
+// object. The snapshot is then written in full, which also repairs a damaged manifest.
+func renewV2Manifest(ctx context.Context, store filer.Filer, name string) (v2Manifest, bool, error) {
+	rc, err := store.Read(ctx, name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return v2Manifest{}, false, nil
+	}
+	if err != nil {
+		return v2Manifest{}, false, fmt.Errorf("failed to read snapshot manifest %s: %w", name, err)
+	}
+	data, err := io.ReadAll(rc)
+	rc.Close()
+	if err != nil {
+		return v2Manifest{}, false, fmt.Errorf("failed to read snapshot manifest %s: %w", name, err)
+	}
+	var manifest v2Manifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		log.Debugf(ctx, "snapshot manifest %s is unreadable, rewriting it: %v", name, err)
+		return v2Manifest{}, false, nil
+	}
+
+	var missing atomic.Bool
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(v2UploadConcurrency)
+	for _, m := range manifest.Members {
+		g.Go(func() error {
+			_, err := store.Stat(gctx, v2ObjectName(m.ID))
+			if errors.Is(err, fs.ErrNotExist) {
+				missing.Store(true)
+				return nil
+			}
+			return err
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return v2Manifest{}, false, fmt.Errorf("failed to check snapshot objects: %w", err)
+	}
+	if missing.Load() {
+		return v2Manifest{}, false, nil
+	}
+	if err := store.Write(ctx, name, bytes.NewReader(data), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
+		return v2Manifest{}, false, fmt.Errorf("failed to renew snapshot manifest %s: %w", name, err)
+	}
+	return manifest, true, nil
 }
 
 // withV2Retry runs op up to v2UploadAttempts times with exponential backoff. Context
@@ -334,20 +384,27 @@ func previousV2K(ctx context.Context, store filer.Filer, component string) (int,
 // uploadSnapshotV2 writes the working-tree snapshot in v2 form and sets result from it. The
 // manifest is written last, after every object succeeded, so a visible manifest always refers
 // to complete objects. An unchanged snapshot is found by its manifest name alone.
-func uploadSnapshotV2(ctx context.Context, store filer.Filer, uploadPath, repoPath string, files []snapshotFile, result *snapshotResult) error {
+func uploadSnapshotV2(ctx context.Context, store filer.Filer, uploadPath, repoPath string, files []snapshotFile, result *snapshotResult, now time.Time) error {
 	component := filepath.Base(repoPath)
 	manifestName := component + "_" + computePlainTarKey(files)[:16] + v2ManifestSuffix
 	remote := path.Join(uploadPath, manifestName)
 
-	cached, err := snapshotExists(ctx, store, manifestName)
+	// An unchanged snapshot renews its manifest's lease when all its objects are present. Renewal
+	// is a rewrite, which is what keeps GC from treating the manifest as abandoned.
+	previous, renewed, err := renewV2Manifest(ctx, store, manifestName)
 	if err != nil {
 		return err
 	}
-	if cached {
+	if renewed {
 		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
+		var gzTotal int64
+		for _, m := range previous.Members {
+			gzTotal += m.GzSize
+		}
 		result.CodeSourcePath = remote
 		result.PackagingDurationMs = new(int64(0))
 		result.UploadDurationMs = new(int64(0))
+		result.SizeBytes = &gzTotal
 		return nil
 	}
 
@@ -380,7 +437,7 @@ func uploadSnapshotV2(ctx context.Context, store filer.Filer, uploadPath, repoPa
 	result.PackagingDurationMs = new(time.Since(packagingStart).Milliseconds())
 
 	uploadStart := time.Now()
-	if err := putV2Members(ctx, store, members, tmp); err != nil {
+	if err := putV2Members(ctx, store, members, tmp, now); err != nil {
 		return err
 	}
 	manifest := v2Manifest{Format: v2ManifestFormat, Version: v2ManifestVersion, Component: component, K: k, Members: members}

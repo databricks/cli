@@ -179,7 +179,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 			return result, err
 		}
 		if v2 {
-			err := uploadSnapshotV2(ctx, f, uploadPath, repoPath, files, &result)
+			err := uploadSnapshotV2(ctx, f, uploadPath, repoPath, files, &result, time.Now())
 			return result, err
 		}
 	}

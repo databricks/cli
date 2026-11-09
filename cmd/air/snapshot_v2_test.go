@@ -205,7 +205,7 @@ func TestV2ManifestSchema(t *testing.T) {
 	files, err := snapshotFiles(t.Context(), repo, nil, false)
 	require.NoError(t, err)
 	var result snapshotResult
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, testSnapshotArtifactPath+"/.internal", repo, files, &result))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, testSnapshotArtifactPath+"/.internal", repo, files, &result, time.Now()))
 
 	rc, err := store.f.Read(t.Context(), path.Base(result.CodeSourcePath))
 	require.NoError(t, err)
@@ -439,7 +439,7 @@ func TestV2InterruptedUploadLeavesNoManifest(t *testing.T) {
 	store := newV2Store(t, func(name string, _ int) bool { return name == manifestName })
 	uploadPath := testSnapshotArtifactPath + "/.internal"
 	var result snapshotResult
-	require.Error(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result))
+	require.Error(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result, time.Now()))
 	_, err = store.f.Stat(t.Context(), manifestName)
 	assert.ErrorIs(t, err, os.ErrNotExist)
 	assert.Positive(t, store.totalWrites(), "the objects were written before the manifest failed")
@@ -448,7 +448,7 @@ func TestV2InterruptedUploadLeavesNoManifest(t *testing.T) {
 	store.setFailWrite(nil)
 	store.resetWrites()
 	result = snapshotResult{}
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result, time.Now()))
 	assert.Equal(t, 1, store.totalWrites(), "only the manifest is written on retry")
 	assert.Equal(t, 1, store.written(manifestName))
 }
@@ -463,7 +463,7 @@ func TestV2RetriesTransientWriteFailure(t *testing.T) {
 	}
 	store := newV2Store(t, failFirst)
 	var result snapshotResult
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, testSnapshotArtifactPath+"/.internal", repo, files, &result))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, testSnapshotArtifactPath+"/.internal", repo, files, &result, time.Now()))
 	// Every object's first write failed, so each was retried and the upload still succeeded.
 	assert.Positive(t, store.failed.Load())
 }
@@ -483,7 +483,7 @@ func TestV2UploadConcurrencyIsBounded(t *testing.T) {
 		list[i] = v2Member{ID: hex.EncodeToString(sum), TarSize: 1024, fragment: fragment}
 	}
 	store := newV2Store(t, nil)
-	require.NoError(t, putV2Members(t.Context(), store.f, list, tmp))
+	require.NoError(t, putV2Members(t.Context(), store.f, list, tmp, time.Now()))
 
 	assert.LessOrEqual(t, int(store.maxSeen.Load()), v2UploadConcurrency)
 	assert.Greater(t, int(store.maxSeen.Load()), 1, "uploads should overlap")
@@ -501,15 +501,18 @@ func TestV2UnchangedSnapshotWritesNothing(t *testing.T) {
 	require.NoError(t, err)
 
 	var first snapshotResult
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &first))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &first, time.Now()))
 	before := store.totalWrites()
 	assert.Positive(t, before)
 
 	var second snapshotResult
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &second))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &second, time.Now()))
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
-	assert.Equal(t, before, store.totalWrites(), "unchanged resubmit writes nothing")
+	// The only write is the manifest rewrite that renews its lease. No object is written.
+	assert.Equal(t, before+1, store.totalWrites(), "unchanged resubmit renews the manifest and nothing else")
+	assert.Equal(t, 2, store.written(path.Base(second.CodeSourcePath)), "written once by each submit")
 	assert.Equal(t, new(int64(0)), second.UploadDurationMs)
+	assert.Equal(t, first.SizeBytes, second.SizeBytes)
 }
 
 // The manifest records the K it was written with, and the next snapshot of the same
@@ -532,7 +535,7 @@ func TestV2KRatchetsFromPreviousManifest(t *testing.T) {
 	files, err := snapshotFiles(t.Context(), repo, nil, false)
 	require.NoError(t, err)
 	var result snapshotResult
-	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result))
+	require.NoError(t, uploadSnapshotV2(t.Context(), store.f, uploadPath, repo, files, &result, time.Now()))
 
 	rc, err := store.f.Read(t.Context(), path.Base(result.CodeSourcePath))
 	require.NoError(t, err)

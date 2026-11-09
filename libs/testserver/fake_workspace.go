@@ -1309,6 +1309,8 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool,
 			ObjectType: "FILE",
 			Path:       filePath,
 			ObjectId:   nextTreenodeID(),
+			// The workspace reports when a file was last written; callers rely on it for age.
+			ModifiedAt: time.Now().UnixMilli(),
 		},
 		Data: body,
 	}
