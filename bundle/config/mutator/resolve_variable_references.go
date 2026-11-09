@@ -48,6 +48,21 @@ var defaultPrefixes = []string{
 
 var artifactPath = dyn.MustPathFromString("artifacts")
 
+// keepUnresolved holds the locations whose references are never resolved in place.
+//
+// A job_runs on_value_change expression is the key its resolved value is recorded
+// under, so it has to survive until SnapshotJobRunValueTriggers copies it into
+// triggers_state after PythonMutator; ResolveJobRunValueTriggerReferences then
+// resolves the copy.
+var keepUnresolved = func() *dyn.TrieNode {
+	trie := &dyn.TrieNode{}
+	err := trie.Insert(dyn.MustPatternFromString("resources.job_runs.*.lifecycle.triggers[*].on_value_change"))
+	if err != nil {
+		panic(err)
+	}
+	return trie
+}()
+
 type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
@@ -100,6 +115,18 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+// ResolveJobRunValueTriggerReferences resolves the on_value_change expressions that
+// SnapshotJobRunValueTriggers copied into resources.job_runs.*.lifecycle.triggers_state.
+func ResolveJobRunValueTriggerReferences() bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         defaultPrefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.MustPatternFromString("resources.job_runs.*.lifecycle.triggers_state.on_value_change"),
+		includeResources: true,
 	}
 }
 
@@ -261,8 +288,13 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			kept := func(rel dyn.Path) bool {
+				_, ok := keepUnresolved.SearchPath(slices.Concat(p, rel))
+				return ok
+			}
+
 			// Resolve variable references in all values.
-			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
+			return dynvar.ResolveExcept(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
 				if path.HasPrefix(varPath) {
 					newPath := dyn.NewPath(
@@ -297,7 +329,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				}
 
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			})
+			}, kept)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

@@ -6,6 +6,7 @@ trap cleanup EXIT
 
 title "a watch on an empty value deploys and records it"
 trace $CLI bundle deploy
+read_id.py my_job > /dev/null
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
 trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle'

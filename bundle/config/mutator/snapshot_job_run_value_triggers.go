@@ -12,7 +12,11 @@ import (
 
 type snapshotJobRunValueTriggers struct{}
 
-// SnapshotJobRunValueTriggers records on_value_change expressions before interpolation.
+// SnapshotJobRunValueTriggers copies each on_value_change expression into
+// lifecycle.triggers_state, keyed by the trimmed expression, for
+// ResolveJobRunValueTriggerReferences to resolve. The expression itself is never
+// resolved in place (see keepUnresolved), so the key stays stable when the value
+// changes.
 func SnapshotJobRunValueTriggers() bundle.Mutator {
 	return &snapshotJobRunValueTriggers{}
 }
@@ -24,8 +28,7 @@ func (*snapshotJobRunValueTriggers) Name() string {
 func (*snapshotJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || jr.Lifecycle == nil ||
-			(jr.Lifecycle.TriggersState != nil && jr.Lifecycle.TriggersState.OnValueChange != nil) {
+		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
 

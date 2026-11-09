@@ -3,7 +3,6 @@ trace uv run $UV_ARGS -q $CLI bundle validate --output json | jq .resources.job_
 
 title "first deploy runs both"
 trace uv run $UV_ARGS -q $CLI bundle deploy
-trace print_state.py | jq '.state["resources.job_runs.py_run"].state.lifecycle, .state["resources.job_runs.yaml_run"].state.lifecycle'
 
 title "redeploy with unchanged values plans nothing"
 trace uv run $UV_ARGS -q $CLI bundle plan
