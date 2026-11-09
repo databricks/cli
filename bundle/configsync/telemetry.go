@@ -71,7 +71,7 @@ type Stats struct {
 	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
 	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
 
-	InGitRepo bool
+	InGitRepo *bool
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory

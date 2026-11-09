@@ -144,8 +144,8 @@ type Bundle struct {
 	WorktreeRoot vfs.Path
 
 	// InGitRepo reports whether the bundle root is inside a git repository.
-	// When false, WorktreeRoot falls back to SyncRoot.
-	InGitRepo bool
+	// Nil when git detection did not run or failed.
+	InGitRepo *bool
 
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.

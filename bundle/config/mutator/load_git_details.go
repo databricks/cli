@@ -27,7 +27,11 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		diags = append(diags, diag.WarningFromErr(err)...)
 	}
 
-	b.InGitRepo = info.WorktreeRoot != ""
+	// On error the repository root is unknown, not absent, so leave InGitRepo unset.
+	if err == nil {
+		b.InGitRepo = new(info.WorktreeRoot != "")
+	}
+
 	if info.WorktreeRoot == "" {
 		b.WorktreeRoot = b.SyncRoot
 	} else {
