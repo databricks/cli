@@ -1,2 +1,3 @@
-# Reusing bundle deploy code breaks immutable snapshots because bind does not upload or stage files.
+# Ensure bind works with immutable folders and deployment history enabled.
+# Reusing bundle deploy code fails here because bind does not upload or stage files.
 Cloud = false # Assert history metadata without requiring snapshot permissions on a real workspace.
