@@ -278,8 +278,12 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, configRoot *config.Root, 
 		return nil, err
 	}
 
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
 	var metadata *DMSUnbindMetadata
-	if b.dmsMetadataEnabled(ctx, configRoot) {
+	if b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
 		metadata = &DMSUnbindMetadata{Serial: b.StateDB.Data.Serial}
 		// Finalize commits the removals below as one WAL transaction.
 		if b.StateDB.Data.State != nil {
