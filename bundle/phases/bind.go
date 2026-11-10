@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -148,7 +149,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	historyVersion, historyErr = recordBindHistory(ctx, b, resourceKey)
+	historyVersion, historyErr = recordBindHistory(ctx, b, result.State)
 	if historyErr != nil {
 		log.Warnf(ctx, "Failed to record bind history: %s", historyErr)
 	}
@@ -214,22 +215,12 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 }
 
 // recordBindHistory publishes a committed binding to DMS without changing local state.
-func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) (versionName string, err error) {
-	db := &b.DeploymentBundle.StateDB
-	_, statePath := b.StateFilenameDirect(ctx)
-	if err := db.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
-		return "", err
-	}
-	defer func() {
-		_, finalizeErr := db.Finalize(ctx)
-		err = errors.Join(err, finalizeErr)
-	}()
-
+func recordBindHistory(ctx context.Context, b *bundle.Bundle, state direct.BindingState) (versionName string, err error) {
 	var configured *bool
 	if b.Config.Experimental != nil {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
-	if !db.RecordsHistory() && !bundleenv.RecordsDeploymentHistory(ctx, configured) {
+	if !state.RecordsHistory && !bundleenv.RecordsDeploymentHistory(ctx, configured) {
 		return "", nil
 	}
 
@@ -247,7 +238,7 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 			return "", err
 		}
 	}
-	versionID := max(previous, db.Data.Serial) + 1
+	versionID := max(previous, state.Serial) + 1
 	previousVersionID := ""
 	if previous > 0 {
 		previousVersionID = strconv.Itoa(previous)
@@ -255,6 +246,14 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 	var gitInfo *bundledeployments.GitInfo
 	if git := b.Config.Bundle.Git; git.Branch != "" || git.Commit != "" || git.OriginURL != "" {
 		gitInfo = &bundledeployments.GitInfo{Branch: git.Branch, Commit: git.Commit, OriginUrl: git.OriginURL}
+	}
+	keys := slices.Sorted(maps.Keys(state.Resources))
+	staged := make([]bundledeployments.StagedOperation, 0, len(keys))
+	for _, key := range keys {
+		staged = append(staged, bundledeployments.StagedOperation{
+			ResourceKey: strings.TrimPrefix(key, dms.StatePrefix),
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
+		})
 	}
 	version, err := b.WorkspaceClient(ctx).BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
 		Parent:    dms.DeploymentName(deploymentID),
@@ -264,21 +263,18 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 			VersionType:       dms.VersionTypeDeploy,
 			PreviousVersionId: previousVersionID,
 			GitInfo:           gitInfo,
-			Operations: []bundledeployments.StagedOperation{{
-				ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
-				ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
-			}},
+			Operations:        staged,
 		},
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create deployment version: %w", err)
 	}
 	versionName = version.Name
-	entry, ok := db.GetResourceEntry(resourceKey)
-	if !ok {
-		return versionName, fmt.Errorf("bound resource %s is missing from deployment state", resourceKey)
+	var recordErr error
+	for _, key := range keys {
+		recordErr = errors.Join(recordErr, recordBindingOperation(ctx, b, versionName, key, state.Resources[key]))
 	}
-	return versionName, recordBindingOperation(ctx, b, versionName, resourceKey, &entry)
+	return versionName, recordErr
 }
 
 // recordBindingOperation sends an operation's saved state, or its removal, directly to DMS.

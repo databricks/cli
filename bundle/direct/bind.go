@@ -35,8 +35,16 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
+// BindingState carries the resulting bindings and file metadata; nil entries represent removals.
+type BindingState struct {
+	Serial         int
+	RecordsHistory bool
+	Resources      map[string]*dstate.ResourceEntry
+}
+
 // BindResult contains the result of a bind operation including any detected changes.
 type BindResult struct {
+	State BindingState
 	// HasChanges is true if deploying after bind would make changes to the resource
 	HasChanges bool
 	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
@@ -197,6 +205,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
+	resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
+	state := BindingState{
+		Serial:         b.StateDB.Data.Serial,
+		RecordsHistory: b.StateDB.RecordsHistory(),
+		Resources:      map[string]*dstate.ResourceEntry{resourceKey: &resourceState},
+	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
@@ -208,6 +222,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 	// Check if the bound resource has changes
 	result := &BindResult{
+		State:         state,
 		HasChanges:    false,
 		Action:        deployplan.Skip,
 		Plan:          plan,
