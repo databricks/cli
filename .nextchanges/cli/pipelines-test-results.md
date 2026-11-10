@@ -1,0 +1,1 @@
+* `databricks pipelines test` waits for the test run and prints the result of each test and a summary. `--no-wait` returns after the run starts. ([#7432](https://github.com/databricks/cli/pull/7432), [#7433](https://github.com/databricks/cli/pull/7433), [#7298](https://github.com/databricks/cli/pull/7298), [#7439](https://github.com/databricks/cli/pull/7439))
