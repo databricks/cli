@@ -3,6 +3,7 @@ package installer
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
@@ -14,6 +15,13 @@ const aiToolsUserAgentKey = "aitools"
 // (github.com/databricks-solutions/ai-dev-kit). Its skills have been subsumed
 // into databricks-agent-skills, but we track ai-dev-kit installs separately.
 const aiDevKitUserAgentKey = "aidevkit"
+
+// callingAgentToolingUserAgentKey is the user-agent key for the Databricks AI
+// tooling of the agent calling the CLI, read from that agent's own locations
+// (see agents.Agent.DatabricksTooling). Paired with the SDK's agent/<name> key
+// it gives a per-calling-agent install rate, which the aitools/ pairs cannot:
+// they report plugins of every tool on the machine.
+const callingAgentToolingUserAgentKey = "aitools-agent"
 
 // WithAiToolsInUserAgent adds one aitools/<tool>_<version> pair to the user
 // agent for each coding tool that has the Databricks plugin installed, e.g.
@@ -44,4 +52,26 @@ func WithAiDevKitInUserAgent(ctx context.Context) context.Context {
 		version = "unknown"
 	}
 	return useragent.InContext(ctx, aiDevKitUserAgentKey, version)
+}
+
+// WithCallingAgentToolingInUserAgent adds "aitools-agent/<plugin|skills|none>"
+// for the registry agent calling the CLI. Nothing is added when no agent is
+// detected, several are, or the CLI cannot install into the agent.
+func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
+	a := agents.CallingAgent()
+	if a == nil {
+		return ctx
+	}
+	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, toolingUserAgentValue(a.DatabricksTooling(ctx)))
+}
+
+func toolingUserAgentValue(t agents.Tooling) string {
+	switch t {
+	case agents.ToolingPlugin:
+		return "plugin"
+	case agents.ToolingSkills:
+		return "skills"
+	default:
+		return "none"
+	}
 }
