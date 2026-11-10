@@ -1,0 +1,5 @@
+# Opt out of UUID numbering: every UUID collapses to [UUID], regardless of value.
+# Use this for tests that emit multiple distinct UUIDs in a non-deterministic order
+# (the [N] assignment would be unstable), or where the distinction is not worth the
+# extra tokens.
+UniqueUUID = false
