@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,11 +43,34 @@ func TestPipelineOptionsPathSelectionsPayload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			payload, err := tt.opts.toPayload(nil, "pipeline-id", false)
+			payload, err := tt.opts.toPayload(&resources.Pipeline{}, "pipeline-id", false)
 			require.NoError(t, err)
 			data, err := json.Marshal(payload)
 			require.NoError(t, err)
 			assert.JSONEq(t, tt.expected, string(data))
+		})
+	}
+}
+
+func TestPipelineOptionsQuotedTablesPayload(t *testing.T) {
+	for _, schema := range []string{"", "default"} {
+		t.Run("schema="+schema, func(t *testing.T) {
+			fs, opts := setupPipelineOptions(t)
+			err := fs.Parse([]string{"--refresh", "table:`a`` b,c` orders", "--full-refresh", "`daily rollup`"})
+			require.NoError(t, err)
+			require.NoError(t, opts.ResolveRefreshSelectors(t.Context(), nil))
+			pipeline := &resources.Pipeline{}
+			pipeline.Schema = schema
+			payload, err := opts.toPayload(pipeline, "pipeline-id", false)
+			require.NoError(t, err)
+			if schema == "" {
+				assert.Equal(t, []string{"a` b,c", "orders"}, payload.RefreshSelection)
+				assert.Equal(t, []string{"daily rollup"}, payload.FullRefreshSelection)
+			} else {
+				assert.Equal(t, []string{"`a`` b,c`", "orders"}, payload.RefreshSelection)
+				assert.Equal(t, []string{"`daily rollup`"}, payload.FullRefreshSelection)
+			}
+			assert.Equal(t, []string{"`a`` b,c`", "orders"}, opts.Refresh)
 		})
 	}
 }
@@ -96,7 +120,7 @@ func TestPipelineOptionsRefreshAll(t *testing.T) {
 
 func TestPipelineOptionsRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--refresh=arg1,arg2,arg3`})
+	err := fs.Parse([]string{`--refresh=arg1 arg2 arg3`})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.Refresh)
 }
@@ -110,7 +134,7 @@ func TestPipelineOptionsFullRefreshAll(t *testing.T) {
 
 func TestPipelineOptionsFullRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--full-refresh=arg1,arg2,arg3`})
+	err := fs.Parse([]string{`--full-refresh=arg1 arg2 arg3`})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.FullRefresh)
 }
@@ -125,9 +149,9 @@ func TestPipelineOptionsValidateOnly(t *testing.T) {
 func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	args := []string{
 		`--refresh-all`,
-		`--refresh=arg1,arg2,arg3`,
+		`--refresh=arg1 arg2 arg3`,
 		`--full-refresh-all`,
-		`--full-refresh=arg1,arg2,arg3`,
+		`--full-refresh=arg1 arg2 arg3`,
 		`--validate-only`,
 	}
 	for _, arg := range args {
@@ -141,7 +165,7 @@ func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 
 func TestPipelineOptionsValidateSuccessWithRefreshAndFullRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--refresh=arg1,arg2`, `--full-refresh=arg3,arg4`})
+	err := fs.Parse([]string{`--refresh=arg1 arg2`, `--full-refresh=arg3 arg4`})
 	require.NoError(t, err)
 	err = opts.Validate(nil)
 	assert.NoError(t, err)

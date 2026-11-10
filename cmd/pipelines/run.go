@@ -239,22 +239,21 @@ KEY is the unique name of the pipeline to run, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
 Refreshes all tables in the pipeline unless otherwise specified.
 
-Use --refresh or --full-refresh with table names, local source files, or absolute
-/Workspace/ paths. Local files use the bundle sync configuration and paths are
-relative to the current directory. Deploy local changes before running.
-Each flag accepts either table names or source files, but cannot mix both.
-Existing local files take precedence over unquoted table names. Use ./ to require
-a file, or quote table identifiers with backticks to select an ambiguous table.`,
+Use --refresh or --full-refresh with space-separated table:<name> or file:<path>
+selectors inside quotes, or repeat the flag. Bare names select tables.
+For example: --refresh "orders payments" or --refresh "file:./src/a.py file:./src/b.py".
+Use backticks around names or paths containing spaces or commas, and double a
+backtick to escape it. In Bash and zsh, put values containing backticks in single quotes.
+Comma-separated lists are no longer supported.
+Paths can be local source files or absolute /Workspace/ paths. Local paths are relative to the current directory and use the
+bundle sync configuration. Deploy local changes before running.
+Each flag accepts either tables or paths, but cannot mix both.`,
 	}
 
-	var refresh []string
-	var fullRefreshAll bool
-	var fullRefresh []string
+	var pipelineOptions run.PipelineOptions
 
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables or source files to run. Local paths are relative to the current directory.")
-	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables or source files to reset and recompute. Local paths are relative to the current directory.")
+	pipelineOptions.DefineRefreshFlags(pipelineGroup.FlagSet())
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(pipelineGroup)
@@ -269,7 +268,7 @@ a file, or quote table identifiers with backticks to select an ambiguous table.`
 		cmd.SetContext(ctx)
 
 		runOptions := run.Options{
-			Pipeline: run.PipelineOptions{Refresh: refresh, FullRefresh: fullRefresh, FullRefreshAll: fullRefreshAll},
+			Pipeline: pipelineOptions,
 			NoWait:   noWait,
 		}
 		var key string

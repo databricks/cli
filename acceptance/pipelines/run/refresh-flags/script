@@ -22,54 +22,85 @@ trace run_pipeline --full-refresh-all
 trace print_requests.py //pipelines
 
 title "Running pipeline with --refresh flag and specific tables"
-trace run_pipeline --refresh table1,table2
+trace run_pipeline --refresh "table1 table2"
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh flag and specific tables"
-trace run_pipeline --full-refresh table1,table2
+trace run_pipeline --full-refresh "table1 table2"
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh flag and --refresh flag"
-trace run_pipeline --full-refresh table1,table2 --refresh table3,table4
+trace run_pipeline --full-refresh "table:table1 table:table2" --refresh "table:table3 table:table4"
+trace print_requests.py //pipelines
+
+title "Refreshing tables and fully refreshing a source file together"
+trace run_pipeline --refresh "table:table3 table:table4" --full-refresh file:pipeline_file.py
 trace print_requests.py //pipelines
 
 title "Refreshing tables defined in a source file"
-trace run_pipeline --refresh pipeline_file.py
+trace run_pipeline --refresh file:pipeline_file.py
 trace print_requests.py //pipelines
 
 title "Fully refreshing tables defined in a source file"
-trace run_pipeline --full-refresh pipeline_file.py
+trace run_pipeline --full-refresh file:pipeline_file.py
 trace print_requests.py //pipelines
 
 title "Refreshing a source notebook"
-trace run_pipeline --refresh src/pipeline_notebook.sql
+trace run_pipeline --refresh file:src/pipeline_notebook.sql
 trace print_requests.py //pipelines
 
 title "Refreshing an absolute workspace path"
-trace run_pipeline --refresh "$remote/pipeline_file.py"
+trace run_pipeline --refresh "file:$remote/pipeline_file.py"
 trace print_requests.py //pipelines
 
 title "Refreshing from a subdirectory"
-trace withdir src run_pipeline --refresh ../pipeline_file.py
+trace withdir src run_pipeline --refresh file:../pipeline_file.py
 trace print_requests.py //pipelines
 
 title "Bundle run supports both file flags"
-trace $CLI bundle run my_pipeline --refresh pipeline_file.py --full-refresh src/pipeline_notebook.sql &> LOG.bundle
+trace $CLI bundle run my_pipeline --refresh file:pipeline_file.py --full-refresh file:src/pipeline_notebook.sql &> LOG.bundle
+trace print_requests.py //pipelines
+
+title "Refreshing a source file and fully refreshing tables together"
+trace run_pipeline --refresh file:pipeline_file.py --full-refresh "table:table3 table:table4"
 trace print_requests.py //pipelines
 
 title "Rejecting missing sources and incompatible refresh modes"
-trace musterr $CLI pipelines run --refresh ./missing.sql --no-wait
-trace musterr $CLI pipelines run --refresh pipeline_file.py --full-refresh-all --no-wait
-trace musterr $CLI pipelines run --full-refresh ./missing.sql --restart --no-wait
+trace musterr $CLI pipelines run --refresh table: --restart --no-wait
+trace musterr $CLI pipelines run --full-refresh file: --restart --no-wait
+trace musterr $CLI pipelines run --refresh file:./missing.sql --no-wait
+trace musterr $CLI pipelines run --refresh file:pipeline_file.py --full-refresh-all --no-wait
+trace musterr $CLI pipelines run --full-refresh file:./missing.sql --restart --no-wait
 touch "$OUT_REQUESTS"
 trace print_requests.py //pipelines
 
 title "Rejecting mixed selectors before restarting the pipeline"
-trace musterr $CLI pipelines run --refresh table1,pipeline_file.py --restart --no-wait
-trace musterr $CLI pipelines run --full-refresh table2,pipeline_file.py --restart --no-wait
+trace musterr $CLI pipelines run --refresh "table:table1 file:pipeline_file.py" --restart --no-wait
+trace musterr $CLI pipelines run --full-refresh "table:table2 file:pipeline_file.py" --restart --no-wait
 touch "$OUT_REQUESTS"
 trace print_requests.py //pipelines
 
-trace musterr $CLI bundle run my_pipeline --refresh table1,pipeline_file.py --restart --no-wait
+trace musterr $CLI bundle run my_pipeline --refresh "table:table1 file:pipeline_file.py" --restart --no-wait
+touch "$OUT_REQUESTS"
+trace print_requests.py //pipelines
+
+title "Repeated table selectors and backtick quoting"
+trace run_pipeline --refresh table:table1 --refresh table2
+trace print_requests.py //pipelines
+trace run_pipeline --full-refresh 'table:`table1` `table2`'
+trace print_requests.py //pipelines
+
+title "Selecting multiple source files"
+trace run_pipeline --refresh 'file:`pipeline_file.py` file:src/pipeline_notebook.sql'
+trace print_requests.py //pipelines
+trace $CLI bundle run my_pipeline --full-refresh 'file:pipeline_file.py file:src/pipeline_notebook.sql' &> LOG.bundle.files
+trace print_requests.py //pipelines
+
+title "Rejecting invalid selector syntax before restart"
+trace musterr $CLI pipelines run --refresh table1,table2 --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI pipelines run --full-refresh table1,table2 --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI pipelines run --refresh 'table:`table1' --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI pipelines run --refresh '' --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI pipelines run --refresh flow:ingest --restart --no-wait
 touch "$OUT_REQUESTS"
 trace print_requests.py //pipelines

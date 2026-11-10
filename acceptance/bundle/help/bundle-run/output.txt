@@ -19,6 +19,14 @@ parameter names.
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
 
+For pipelines, --refresh and --full-refresh accept space-separated table:<name>
+or file:<path> selectors inside quotes, or repeated flags. Bare names select tables.
+For example: --refresh "orders payments" or --refresh "file:./src/a.py file:./src/b.py".
+Use backticks around names or paths containing spaces or commas, and double a
+backtick to escape it. In Bash and zsh, put values containing backticks in single quotes.
+Comma-separated lists are no longer supported.
+Deploy local file changes before running. Each flag accepts either tables or files.
+
 ---------------------------------------------------------
 
 You can also use the bundle run command to execute scripts / commands in the same
@@ -54,11 +62,11 @@ Job Task Flags:
       --sql-params stringToString            A map from keys to values for jobs with SQL tasks. (default [])
 
 Pipeline Flags:
-      --full-refresh strings   List of tables or source files to reset and recompute. Local paths are relative to the current directory.
-      --full-refresh-all       Perform a full graph reset and recompute.
-      --refresh strings        List of tables or source files to update. Local paths are relative to the current directory.
-      --refresh-all            Perform a full graph update.
-      --validate-only          Perform an update to validate graph correctness.
+      --full-refresh selectors   Space-separated table:<name> or file:<path> selectors to reset and recompute. Bare names select tables. Repeatable.
+      --full-refresh-all         Perform a full graph reset and recompute.
+      --refresh selectors        Space-separated table:<name> or file:<path> selectors to update. Bare names select tables. Repeatable.
+      --refresh-all              Perform a full graph update.
+      --validate-only            Perform an update to validate graph correctness.
 
 Flags:
   -h, --help      help for run

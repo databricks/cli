@@ -1,6 +1,7 @@
 package run
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,54 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRefreshSelectionFlag(t *testing.T) {
+	var manyTables, manyFiles []string
+	for i := range 50 {
+		manyTables = append(manyTables, fmt.Sprintf("table_%d", i))
+		manyFiles = append(manyFiles, fmt.Sprintf("file:src/pipeline_%d.py", i))
+	}
+	tests := []struct {
+		name   string
+		values []string
+		want   []string
+		err    string
+	}{
+		{name: "50 tables", values: []string{strings.Join(manyTables, " ")}, want: manyTables},
+		{name: "50 files", values: []string{strings.Join(manyFiles, " ")}, want: manyFiles},
+		{name: "single table", values: []string{"orders"}, want: []string{"orders"}},
+		{name: "table list", values: []string{"orders payments"}, want: []string{"orders", "payments"}},
+		{name: "repeated flag", values: []string{"orders payments", "table:customers"}, want: []string{"orders", "payments", "table:customers"}},
+		{name: "file list", values: []string{"file:a.py file:b.py"}, want: []string{"file:a.py", "file:b.py"}},
+		{name: "whitespace", values: []string{"  orders\tpayments\ncustomers\u2003returns  "}, want: []string{"orders", "payments", "customers", "returns"}},
+		{name: "quoted table", values: []string{"`order details` payments"}, want: []string{"`order details`", "payments"}},
+		{name: "qualified identifier", values: []string{"table:`catalog`.`schema`.`order details`"}, want: []string{"table:`catalog`.`schema`.`order details`"}},
+		{name: "quoted comma", values: []string{"table:`a,b` orders"}, want: []string{"table:`a,b`", "orders"}},
+		{name: "escaped backtick", values: []string{"table:`a`` b,c` orders"}, want: []string{"table:`a`` b,c`", "orders"}},
+		{name: "quoted file", values: []string{"file:`./my pipeline.py` file:b.py"}, want: []string{"file:`./my pipeline.py`", "file:b.py"}},
+		{name: "empty value", values: []string{""}, err: "expected at least one"},
+		{name: "whitespace only", values: []string{" \t "}, err: "expected at least one"},
+		{name: "old comma list", values: []string{"orders,payments"}, err: "comma-separated selectors are no longer supported"},
+		{name: "comma after quoted name", values: []string{"`orders`,payments"}, err: "comma-separated selectors"},
+		{name: "unclosed backtick", values: []string{"orders `payments"}, err: "unclosed backtick"},
+		{name: "unclosed escaped backtick", values: []string{"file:`a``"}, err: "unclosed backtick"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var flag refreshSelectionFlag
+			for _, value := range tt.values {
+				err := flag.Set(value)
+				if tt.err != "" {
+					require.ErrorContains(t, err, tt.err)
+					assert.Empty(t, flag)
+					return
+				}
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.want, []string(flag))
+		})
+	}
+}
 
 func TestResolveRefreshSelectors(t *testing.T) {
 	longTable := strings.Repeat("c", 100) + "." + strings.Repeat("s", 100) + "." + strings.Repeat("t", 100)
@@ -32,39 +81,55 @@ func TestResolveRefreshSelectors(t *testing.T) {
 			tables:    []string{"table1", "schema.table2", "schema.sql", "catalog.schema.sql", "`schema`.`table/with/slashes`", "`schema`.`sql`"},
 		},
 		{
-			name:      "quoted table with the same name as a file",
-			selectors: []string{"`src/query.sql`"},
-			tables:    []string{"`src/query.sql`"},
+			name:      "bare table with the same name as a file",
+			selectors: []string{"orders"},
+			tables:    []string{"orders"},
 		},
 		{
 			name:      "mixed table and file selectors",
-			selectors: []string{"table1", "src/query.sql", "src/module.py"},
+			selectors: []string{"table:table1", "file:src/query.sql", "file:src/module.py"},
 			tables:    []string{"table1"},
 			paths:     []string{"/Workspace/Shared/project/files/src/query.sql", "/Workspace/Shared/project/files/src/module.py"},
 		},
 		{
 			name:      "notebook extension removed",
-			selectors: []string{"src/notebook.py", "src/jupyter.ipynb"},
+			selectors: []string{"file:src/notebook.py", "file:src/jupyter.ipynb"},
 			paths:     []string{"/Workspace/Shared/project/files/src/notebook", "/Workspace/Shared/project/files/src/jupyter"},
 		},
 		{
 			name:      "workspace path",
-			selectors: []string{"/Workspace/Shared/remote.sql"},
-			paths:     []string{"/Workspace/Shared/remote.sql"},
+			selectors: []string{"file:/Workspace/Shared/remote+part.sql"},
+			paths:     []string{"/Workspace/Shared/remote+part.sql"},
 		},
-		{name: "missing relative file", selectors: []string{"src/missing.sql"}, err: `source file "src/missing.sql" not found`},
-		{name: "explicit missing filename", selectors: []string{"./missing.sql"}, err: `source file "./missing.sql" not found`},
+		{
+			name:      "explicit table identifiers",
+			selectors: []string{"table:orders", "table:catalog.schema.orders", "table:`file:orders`", "table:file:orders"},
+			tables:    []string{"orders", "catalog.schema.orders", "`file:orders`", "file:orders"},
+		},
+		{name: "empty quoted table", selectors: []string{"table:``"}, err: "table: requires a table name"},
+		{name: "empty bare table", selectors: []string{"``"}, err: "table selector requires a table name"},
+		{name: "empty quoted file", selectors: []string{"file:``"}, err: "file: requires a source file path"},
+		{name: "empty table", selectors: []string{"table:"}, err: "table: requires a table name"},
+		{name: "unsupported flow", selectors: []string{"flow:ingest"}, err: "flow selectors are not supported"},
+		{name: "quoted workspace path", selectors: []string{"file:`/Workspace/Shared/my pipeline.py`"}, paths: []string{"/Workspace/Shared/my pipeline.py"}},
+		{name: "escaped backtick in workspace path", selectors: []string{"file:`/Workspace/Shared/a``b.py`"}, paths: []string{"/Workspace/Shared/a`b.py"}},
+		{name: "local file with spaces", selectors: []string{"file:`src/my query.sql`"}, paths: []string{"/Workspace/Shared/project/files/src/my query.sql"}},
+		{name: "empty path", selectors: []string{"file:"}, err: "file: requires a source file path"},
+		{name: "missing relative file", selectors: []string{"file:src/missing.sql"}, err: `source file "src/missing.sql" not found`},
+		{name: "explicit missing filename", selectors: []string{"file:./missing.sql"}, err: `source file "./missing.sql" not found`},
 		{name: "table named like a directory", selectors: []string{"src"}, tables: []string{"src"}},
-		{name: "explicit directory", selectors: []string{"./src"}, err: "is a directory"},
-		{name: "excluded file", selectors: []string{"src/excluded.sql"}, err: "is excluded from bundle sync"},
-		{name: "invalid notebook", selectors: []string{"src/invalid.ipynb"}, err: "invalid Jupyter notebook file"},
+		{name: "explicit directory", selectors: []string{"file:./src"}, err: "is a directory"},
+		{name: "excluded file", selectors: []string{"file:src/excluded.sql"}, err: "is excluded from bundle sync"},
+		{name: "invalid notebook", selectors: []string{"file:src/invalid.ipynb"}, err: "invalid Jupyter notebook file"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(root, "orders"), []byte("SELECT 1;\n"), 0o600))
 			require.NoError(t, os.MkdirAll(filepath.Join(root, "src"), 0o700))
 			for name, content := range map[string]string{
 				"query.sql":     "SELECT 1;\n",
+				"my query.sql":  "SELECT 1;\n",
 				"module.py":     "print('file')\n",
 				"notebook.py":   "# Databricks notebook source\nprint('notebook')\n",
 				"jupyter.ipynb": `{"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5}`,
@@ -110,7 +175,7 @@ func TestResolveRefreshSelectorsFromSubdirectory(t *testing.T) {
 	b := refreshTestBundle(root)
 	b.BundleRootPath = filepath.Join(root, "project")
 	for _, selector := range []string{"../../shared.sql", filepath.Join(root, "shared.sql")} {
-		tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{selector})
+		tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"file:" + selector})
 		require.NoError(t, err)
 		assert.Empty(t, tables)
 		assert.Equal(t, []string{"/Workspace/Shared/project/files/shared.sql"}, paths)
@@ -122,7 +187,7 @@ func TestResolveRefreshSelectorsOutsideSyncRoot(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(root, "project"), 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "outside.sql"), []byte("SELECT 1;\n"), 0o600))
 	t.Chdir(filepath.Join(root, "project"))
-	_, _, err := (&refreshSelectorResolver{bundle: refreshTestBundle(filepath.Join(root, "project"))}).resolve(t.Context(), []string{"../outside.sql"})
+	_, _, err := (&refreshSelectorResolver{bundle: refreshTestBundle(filepath.Join(root, "project"))}).resolve(t.Context(), []string{"file:../outside.sql"})
 	require.ErrorContains(t, err, "is outside the bundle sync root")
 }
 
@@ -150,7 +215,7 @@ func TestResolveRefreshSelectorsDeploymentMode(t *testing.T) {
 			b := refreshTestBundle(root)
 			b.Config.Workspace.SyncMode = tt.mode
 			b.Config.Presets.SourceLinkedDeployment = tt.sourceLinked
-			tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"query.sql"})
+			tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"file:query.sql"})
 			require.NoError(t, err)
 			assert.Empty(t, tables)
 			assert.Equal(t, []string{tt.want}, paths)
@@ -168,7 +233,7 @@ func TestResolveRefreshSelectorsUnresolvedWorkspacePath(t *testing.T) {
 	enabled := true
 	b.Config.Presets.SourceLinkedDeployment = &enabled
 	b.DeploymentBundle.StateDB.OpenWithData("state", dstate.Database{})
-	_, _, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"query.sql"})
+	_, _, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"file:query.sql"})
 	require.ErrorContains(t, err, "use its absolute /Workspace/ path")
 }
 
@@ -189,7 +254,7 @@ func TestResolveRefreshSelectorsDeployedSnapshot(t *testing.T) {
 			},
 		},
 	})
-	opts := PipelineOptions{Refresh: []string{"query.sql"}, FullRefresh: []string{"full_query.sql"}}
+	opts := PipelineOptions{Refresh: []string{"file:query.sql"}, FullRefresh: []string{"file:full_query.sql"}}
 	require.NoError(t, opts.ResolveRefreshSelectors(t.Context(), b))
 	assert.Empty(t, opts.Refresh)
 	assert.Empty(t, opts.FullRefresh)

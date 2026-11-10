@@ -3,6 +3,7 @@ package run
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -34,10 +35,14 @@ type PipelineOptions struct {
 
 func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 	fs.BoolVar(&o.RefreshAll, "refresh-all", false, "Perform a full graph update.")
-	fs.StringSliceVar(&o.Refresh, "refresh", nil, "List of tables or source files to update. Local paths are relative to the current directory.")
-	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables or source files to reset and recompute. Local paths are relative to the current directory.")
+	o.DefineRefreshFlags(fs)
 	fs.BoolVar(&o.ValidateOnly, "validate-only", false, "Perform an update to validate graph correctness.")
+}
+
+func (o *PipelineOptions) DefineRefreshFlags(fs *flag.FlagSet) {
+	fs.Var((*refreshSelectionFlag)(&o.Refresh), "refresh", "Space-separated table:<name> or file:<path> selectors to update. Bare names select tables. Repeatable.")
+	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
+	fs.Var((*refreshSelectionFlag)(&o.FullRefresh), "full-refresh", "Space-separated table:<name> or file:<path> selectors to reset and recompute. Bare names select tables. Repeatable.")
 }
 
 // Validate returns if the combination of options is valid.
@@ -90,5 +95,18 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		// using the pipeline-level development property while it is being deprecated.
 		Development: development,
 	}
+	// Legacy pipelines accept literal names rather than SQL identifiers.
+	if pipeline.Schema == "" {
+		payload.RefreshSelection = unquoteRefreshTables(payload.RefreshSelection)
+		payload.FullRefreshSelection = unquoteRefreshTables(payload.FullRefreshSelection)
+	}
 	return payload, nil
+}
+
+func unquoteRefreshTables(tables []string) []string {
+	tables = slices.Clone(tables)
+	for i, table := range tables {
+		tables[i] = unquoteRefreshSelector(table)
+	}
+	return tables
 }
