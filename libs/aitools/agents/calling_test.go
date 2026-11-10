@@ -6,55 +6,57 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/agents"
-	"github.com/databricks/cli/libs/aitools/agents/agenttest"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAgentForProvider(t *testing.T) {
-	assert.Equal(t, agents.NameCopilot, agents.AgentForProvider("copilot-cli").Name)
-	assert.Equal(t, agents.NameGemini, agents.AgentForProvider("gemini-cli").Name)
-	assert.Equal(t, agents.NameClaudeCode, agents.AgentForProvider("claude-code").Name)
-	assert.Nil(t, agents.AgentForProvider("windsurf"))
-	assert.Nil(t, agents.AgentForProvider("multiple"))
-	assert.Nil(t, agents.AgentForProvider(""))
-}
+func TestCallingAgent(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want string // registry agent name; "" means no calling agent
+	}{
+		{name: "claude code", env: []string{"CLAUDECODE", "1"}, want: agents.NameClaudeCode},
+		{name: "cursor", env: []string{"CURSOR_AGENT", "1"}, want: agents.NameCursor},
+		{name: "codex", env: []string{"CODEX_CI", "1"}, want: agents.NameCodex},
+		{name: "opencode", env: []string{"OPENCODE", "1"}, want: agents.NameOpenCode},
+		{name: "copilot", env: []string{"COPILOT_CLI", "1"}, want: agents.NameCopilot},
+		{name: "antigravity", env: []string{"ANTIGRAVITY_AGENT", "1"}, want: agents.NameAntigravity},
+		{name: "pi", env: []string{"PI_CODING_AGENT", "1"}, want: agents.NamePi},
+		{name: "gemini", env: []string{"GEMINI_CLI", "1"}, want: agents.NameGemini},
+		{name: "goose", env: []string{"GOOSE_TERMINAL", "1"}, want: agents.NameGoose},
+		{name: "kiro", env: []string{"KIRO", "1"}, want: agents.NameKiro},
+		{name: "agent the CLI cannot install into", env: []string{"WINDSURF_AGENT", "1"}},
+		{name: "free-text agent", env: []string{"AGENT", "some-internal-tool"}},
+		{name: "no agent"},
+		{name: "several agents", env: []string{"CLAUDECODE", "1", "CURSOR_AGENT", "1"}},
+	}
 
-// Every registry agent must be reachable from some SDK product, or it could
-// never be the calling agent.
-func TestAgentForProviderCoversRegistry(t *testing.T) {
-	products := []string{"antigravity", "claude-code", "codex", "copilot-cli", "cursor", "gemini-cli", "goose", "kiro", "opencode", "pi"}
-	reached := map[string]bool{}
-	for _, p := range products {
-		if a := agents.AgentForProvider(p); a != nil {
-			reached[a.Name] = true
-		}
+	// Every registry agent must be reachable through its SDK env var, or it
+	// could never be the calling agent.
+	covered := map[string]bool{}
+	for _, tc := range cases {
+		covered[tc.want] = true
 	}
 	for _, a := range agents.Registry {
-		assert.True(t, reached[a.Name], "registry agent %q has no SDK product mapping", a.Name)
+		assert.True(t, covered[a.Name], "no case reaches registry agent %q", a.Name)
 	}
-}
 
-func TestCallingAgentFromEnv(t *testing.T) {
-	agenttest.SetAgentEnv(t, "COPILOT_CLI", "1")
-	assert.Equal(t, agents.NameCopilot, agents.CallingAgent().Name)
-}
-
-func TestCallingAgentFreeText(t *testing.T) {
-	agenttest.SetAgentEnv(t, "AGENT", "some-internal-tool")
-	assert.Nil(t, agents.CallingAgent())
-}
-
-func TestCallingAgentNone(t *testing.T) {
-	agenttest.SetAgentEnv(t)
-	assert.Nil(t, agents.CallingAgent())
-}
-
-func TestCallingAgentMultiple(t *testing.T) {
-	agenttest.SetAgentEnv(t, "CLAUDECODE", "1", "CURSOR_AGENT", "1")
-	assert.Nil(t, agents.CallingAgent())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.SetAgentEnv(t, tc.env...)
+			a := agents.CallingAgent()
+			if tc.want == "" {
+				assert.Nil(t, a)
+				return
+			}
+			require.NotNil(t, a)
+			assert.Equal(t, tc.want, a.Name)
+		})
+	}
 }
 
 // toolingFixture isolates HOME, the working directory and agent config env so
@@ -315,14 +317,9 @@ func TestDatabricksToolingClaudePluginInSeveralMarketplaces(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), home)
 	a := agents.ByName(agents.NameClaudeCode)
 	require.NotNil(t, a)
-	// Go randomizes map iteration (for a two-entry map the second entry comes
-	// first only about one time in eight), so a reader that keeps only the
-	// first databricks entry fails some of these reads.
-	got := map[agents.Tooling]int{}
-	for range 200 {
-		got[a.DatabricksTooling(ctx, func() bool { return false })]++
-	}
-	assert.Equal(t, map[agents.Tooling]int{agents.ToolingPlugin: 200}, got)
+	// TestDatabricksPluginVersionAcrossMarketplaces checks that the records of
+	// every marketplace entry are read.
+	assert.Equal(t, agents.ToolingPlugin, a.DatabricksTooling(ctx, func() bool { return false }))
 }
 
 // The CLI install state is not read for agents whose own manifest is

@@ -62,16 +62,13 @@ func TestDatabricksPluginVersion(t *testing.T) {
 func TestDatabricksPluginVersionAcrossMarketplaces(t *testing.T) {
 	configDir := t.TempDir()
 	writeManifest(t, configDir, `{"plugins":{"databricks@a":[{"scope":"user","version":"0.2.9"}],"databricks@b":[{"scope":"user","version":"0.3.0"}]}}`)
-	// Go randomizes map iteration (for a two-entry map the second entry comes
-	// first only about one time in eight), so a reader that keeps only the
-	// first databricks entry fails some of these reads.
-	got := map[string]int{}
-	for range 200 {
-		version, ok := agentWithConfigDir(configDir).DatabricksPluginVersion(t.Context())
-		require.True(t, ok)
-		got[version]++
-	}
-	assert.Equal(t, map[string]int{"0.3.0": 200}, got)
+	a := agentWithConfigDir(configDir)
+	installs, ok := claudePluginInstalls(t.Context(), a)
+	require.True(t, ok)
+	assert.Len(t, installs, 2)
+	version, ok := a.DatabricksPluginVersion(t.Context())
+	require.True(t, ok)
+	assert.Equal(t, "0.3.0", version)
 }
 
 // projectFixture creates <root>/Project/sub and returns the project dir and the

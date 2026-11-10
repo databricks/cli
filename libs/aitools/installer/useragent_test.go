@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/aitools/agents/agenttest"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -147,11 +147,9 @@ func TestWithCallingAgentToolingInUserAgent(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// The first t.TempDir picks the temp root, so create both before
-			// SetAgentEnv clears TMPDIR / TEMP.
+			testutil.SetAgentEnv(t, tc.agentEnv...)
 			tmp := t.TempDir()
 			cwd := t.TempDir()
-			agenttest.SetAgentEnv(t, tc.agentEnv...)
 			t.Setenv("HOME", tmp)
 			t.Setenv("USERPROFILE", tmp)
 			// A .git in cwd keeps the project lookup out of the host's directories.
