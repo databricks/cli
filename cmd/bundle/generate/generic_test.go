@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -139,16 +140,20 @@ func TestGenerateResourceRejectsStateThatDoesNotMapOntoConfig(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(b.BundleRootPath, "resources", "my_scope.secret_scope.yml"))
 }
 
-func TestNewResourceCommandsSkipsHandWrittenAndSubResources(t *testing.T) {
-	var names []string
-	for _, cmd := range NewResourceCommands() {
-		names = append(names, cmd.Name())
+func TestNewCommandsCoversEveryResourceType(t *testing.T) {
+	names := make(map[string]*cobra.Command)
+	for _, cmd := range NewCommands() {
+		names[cmd.Name()] = cmd
 	}
-	assert.Contains(t, names, "catalog")
+
+	// Hand-written generators keep their own command.
+	assert.Contains(t, names["job"].Flags().FlagUsages(), "existing-job-id")
+	// Generic ones take --existing-id.
+	assert.Contains(t, names["catalog"].Flags().FlagUsages(), "existing-id")
 	assert.Contains(t, names, "external-location")
-	assert.NotContains(t, names, "job")
+
 	assert.NotContains(t, names, "job-run")
-	for _, name := range names {
+	for name := range names {
 		assert.NotContains(t, name, ".")
 	}
 }

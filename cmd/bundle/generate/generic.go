@@ -27,28 +27,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// noGenericCommand lists the resource groups the generic command skips: the
-// hand-written generators also download files, job runs are triggered rather than
-// imported, and snapshots are internal.
-var noGenericCommand = map[string]bool{
-	"jobs":                         true,
-	"pipelines":                    true,
-	"dashboards":                   true,
-	"alerts":                       true,
-	"apps":                         true,
-	"genie_spaces":                 true,
+// generators holds the hand-written generate commands. They exist because these
+// types also download files (notebooks, dashboard JSON, app sources) or have a
+// watch mode, which the generic command does not do yet. Every other resource type
+// in dresources.SupportedResources gets the generic command.
+var generators = map[string]func() *cobra.Command{
+	"alerts":       NewGenerateAlertCommand,
+	"apps":         NewGenerateAppCommand,
+	"dashboards":   NewGenerateDashboardCommand,
+	"genie_spaces": NewGenerateGenieSpaceCommand,
+	"jobs":         NewGenerateJobCommand,
+	"pipelines":    NewGeneratePipelineCommand,
+}
+
+// notGenerated lists the resource groups without a generate command: job runs are
+// triggered rather than imported, and snapshots are internal.
+var notGenerated = map[string]bool{
 	"job_runs":                     true,
 	"internal_immutable_snapshots": true,
 }
 
-// NewResourceCommands returns a generate subcommand for every resource type the
-// deployment engine can read, except those in noGenericCommand.
-func NewResourceCommands() []*cobra.Command {
+// NewCommands returns a generate subcommand for every bundle resource type.
+func NewCommands() []*cobra.Command {
 	descriptions := config.SupportedResources()
 	var cmds []*cobra.Command
 	for _, group := range slices.Sorted(maps.Keys(dresources.SupportedResources)) {
 		// Permissions and grants ("jobs.permissions") are not standalone resources.
-		if noGenericCommand[group] || strings.Contains(group, ".") {
+		if notGenerated[group] || strings.Contains(group, ".") {
+			continue
+		}
+		if newCommand, ok := generators[group]; ok {
+			cmds = append(cmds, newCommand())
 			continue
 		}
 		cmds = append(cmds, newResourceCommand(group, descriptions[group]))
