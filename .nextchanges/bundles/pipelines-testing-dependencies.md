@@ -1,0 +1,1 @@
+* `bundle validate` reports common mistakes in a pipeline's `testing.environment.dependencies`, such as package names, URLs and a requirements file without `-r`. ([#7428](https://github.com/databricks/cli/pull/7428))
