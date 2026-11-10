@@ -8,8 +8,11 @@ Files: 3 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === A member the server cannot tear down settles the update's operation as FAILED and returns
+
 === it with HTTP 200. The deploy fails with the operation's error code and message, naming each
+
 === member left behind from the operation's metadata.
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -22,16 +25,22 @@ Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: ma
 Files: 2 uploaded, 0 deleted
 
 === Nothing was written, so the removal is still pending
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
 update
 
 === The delete settles FAILED the same way, and here the engine decides what the user sees:
+
 === its destroy step forgives a delete error matching none of the cases it knows, so the
+
 === destroy reports success and drops the state while the set stays in the workspace. The leg
+
 === with deployment-history recording takes the one branch that records and returns the
+
 === failure, which is why this case runs on the other leg only.
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.features.failfeat

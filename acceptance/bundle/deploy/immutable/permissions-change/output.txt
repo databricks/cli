@@ -1,5 +1,6 @@
 
 === Deploy without permissions
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
@@ -8,6 +9,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 
 === Add permissions and redeploy
+
 >>> [CLI] bundle deploy
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.

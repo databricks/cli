@@ -1,5 +1,6 @@
 
 === Deploy the immutable snapshot
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
@@ -8,6 +9,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 
 === Destroy the bundle
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job
@@ -17,6 +19,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Deploy again moves to a new snapshot instead of the one left behind
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
@@ -26,6 +29,7 @@ Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSH
 OK: deployment moved to a new snapshot
 
 === Redeploy reuses the new snapshot
+
 >>> [CLI] bundle deploy
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
@@ -33,6 +37,7 @@ Third snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHO
 OK: new snapshot reused on redeploy
 
 === Destroy and deploy again moves to yet another snapshot
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job

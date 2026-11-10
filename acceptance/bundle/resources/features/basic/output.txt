@@ -1,5 +1,6 @@
 
 === Initial summary before deploy
+
 >>> [CLI] bundle summary -o json
 {
   "description": "DESCRIPTION1",
@@ -34,6 +35,7 @@
 }
 
 === Verify it does not exist yet
+
 >>> musterr [CLI] feature-engineering get-feature main.myschema.myfeature
 Error: Resource ml.Feature not found: main.myschema.myfeature
 
@@ -80,6 +82,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Summary should show the id and the Catalog Explorer url
+
 >>> [CLI] bundle summary -o json
 {
   "id": "main.myschema.myfeature",
@@ -87,6 +90,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify deployment
+
 >>> [CLI] feature-engineering get-feature main.myschema.myfeature
 {
   "full_name": "main.myschema.myfeature",
@@ -97,6 +101,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update description (should update in place, not recreate)
+
 >>> update_file.py databricks.yml DESCRIPTION1 DESCRIPTION2
 
 >>> [CLI] bundle deploy
@@ -148,6 +153,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "DESCRIPTION2"
 
 === Change an immutable field (should recreate, and ask for approval first)
+
 >>> update_file.py databricks.yml amount other_column
 
 >>> musterr [CLI] bundle deploy

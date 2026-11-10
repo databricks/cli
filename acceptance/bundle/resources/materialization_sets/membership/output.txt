@@ -18,7 +18,9 @@ Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === The cascade is per feature and runs both ways. Removing feata's online member alone is
+
 === refused, because the delete also reaches the offline member the config still declares
+
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Materialized features '[UUID]' of feature 'main.matset_[UNIQUE_NAME].feata_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID]', which the request does not supply. Remove those as well. (400 INVALID_PARAMETER_VALUE)
@@ -31,7 +33,9 @@ API message: Materialized features '[UUID]' of feature 'main.matset_[UNIQUE_NAME
 Files: 1 uploaded, 0 deleted
 
 === And removing feata's offline member alone is refused for the same reason, from the other
+
 === direction
+
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-membership-[UNIQUE_NAME]/default/files...
 Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Deleting materialized features '[UUID]' of feature 'main.matset_[UNIQUE_NAME].feata_[UNIQUE_NAME]' also deletes materialized features '[UUID]', which the request does not delete. Delete the unrequested materialized features as well. (400 INVALID_PARAMETER_VALUE)
@@ -44,7 +48,9 @@ API message: Deleting materialized features '[UUID]' of feature 'main.matset_[UN
 Files: 1 uploaded, 0 deleted
 
 === Removing a whole feature's pair plans as update, not recreate, and the other feature's
+
 === members keep their ids, so the set was reconciled rather than rebuilt
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action

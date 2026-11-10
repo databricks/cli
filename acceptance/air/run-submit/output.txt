@@ -159,6 +159,7 @@ Stream logs after submission using:
 }
 
 === submit an RTX6000 workload with AI Runtime 6
+
 >>> [CLI] air run -f rtx6000.yaml
 Submitting experiment: rtx6000-submit-smoke
 Submitted workload with Job Run ID: 555
@@ -169,6 +170,7 @@ Stream logs after submission using:
   databricks air logs 555
 
 === the RTX6000 accelerator and runtime reach the submit payload
+
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",

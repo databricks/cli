@@ -1,5 +1,6 @@
 
 === default target without compute_id
+
 >>> [CLI] bundle validate
 Warning: compute_id is deprecated, please use cluster_id instead
   at bundle.compute_id
@@ -18,6 +19,7 @@ Workspace:
 Found 2 warnings
 
 === target with compute_id
+
 >>> [CLI] bundle validate -t dev
 Warning: compute_id is deprecated, please use cluster_id instead
   at bundle.compute_id

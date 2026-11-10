@@ -10,6 +10,7 @@ Inserted sample data into main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME]
 Table main.matset_[UNIQUE_NAME].src_[UNIQUE_NAME] is now visible (catalog_name=main)
 
 === A batch feature materialized offline creates, and a redeploy plans nothing
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
 Created features.batchfeat
@@ -25,7 +26,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Removing the member empties the set, which the update endpoint refuses in favour of the
+
 === delete endpoint. Restoring the member plans nothing, so no refusal wrote.
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -45,8 +48,11 @@ API message: Updating materialization set '[UUID]' with no materialized features
 Files: 2 uploaded, 0 deleted
 
 === Writing no value instead of an empty list is the same declaration, and has to reach the same
+
 === endpoint: the member field emptied whole is one path rather than one per member, and the
+
 === immutable rules match it just as readily.
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -73,7 +79,9 @@ Files: 2 uploaded, 0 deleted
 }
 
 === Taking the refusal's advice: dropping the set resource rather than its members plans as a
+
 === delete and settles. This is the deploy path's delete, not bundle destroy's.
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -106,7 +114,9 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 === Repointing the destination is a recreate, not a silent no-op. The server cannot move a
+
 === materialization in place, so the set is rebuilt at the new location.
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -118,7 +128,9 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 spec:immutable old=batch_[UNIQUE_NAME]_off new=moved_[UNIQUE_NAME]_off
 
 === The schedule state is write-once, so pausing the feature is a recreate rather than the
+
 === in-place update the endpoint would refuse
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions

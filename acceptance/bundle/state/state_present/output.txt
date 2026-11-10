@@ -13,6 +13,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none lineage/ARgQbIVroS5 engine/direct auth/pat"
 
 === A resources.json with a lower serial does not win: the terraform state still migrates
+
 >>> [CLI] bundle plan
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

@@ -1,5 +1,6 @@
 
 === mode: development with pipeline development: false: deploy and run both use development: true
+
 >>> [CLI] bundle deploy -t dev_false
 Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.my_pipeline.development
@@ -35,6 +36,7 @@ Update ID: [UUID]
 }
 
 === Switched to mode: development without redeploying: run sends development: true
+
 >>> [CLI] bundle deploy -t switch_to_dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_to_dev/files...
 Created pipelines.my_pipeline
@@ -58,6 +60,7 @@ Update ID: [UUID]
 }
 
 === Switched away from mode: development without redeploying: run does not send development
+
 >>> [CLI] bundle deploy -t switch_from_dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_from_dev/files...
 Created pipelines.my_pipeline
@@ -79,6 +82,7 @@ Update ID: [UUID]
 }
 
 === Pipeline switched to production outside the bundle: run on a development target sends development: true
+
 >>> [CLI] bundle deploy -t ui_toggle
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/ui_toggle/files...
 Created pipelines.my_pipeline

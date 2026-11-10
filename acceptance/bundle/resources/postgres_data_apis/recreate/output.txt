@@ -1,5 +1,6 @@
 
 === Deploy the Data API on the first database
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default/files...
 Created postgres_branches.production
@@ -27,6 +28,7 @@ Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Moving the Data API to another database recreates it
+
 >>> update_file.py databricks.yml postgres_databases.first.name postgres_databases.second.name
 
 >>> [CLI] bundle plan

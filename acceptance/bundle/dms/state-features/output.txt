@@ -1,5 +1,6 @@
 
 === Deploy keeps resource state in the file and enforces best-effort history
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
 Created jobs.foo
@@ -35,12 +36,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Reopening reads resources from the file and produces a no-op plan
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py --dms //resources --get --oneline
 
 === Disabling deployment history allows plan and deploy, and removes the file marker
+
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
 update jobs.foo
 
@@ -58,10 +61,12 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Removing the YAML setting also leaves history disabled
+
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Destroy also uses the disabled setting
+
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.foo
