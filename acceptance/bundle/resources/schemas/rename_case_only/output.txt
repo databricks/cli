@@ -50,7 +50,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
 Files: 2 uploaded, 0 deleted
@@ -78,7 +78,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.schema1
 

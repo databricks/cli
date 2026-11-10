@@ -3,7 +3,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 VOLUME="main.test_schema_${UNIQUE_NAME}.myvolume"
 
 cleanup() {
-    trace errcode $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve
 
     # Consume the destroy's requests so none are left recorded.
     print_requests.py //unity-catalog &> LOG.destroy_requests
@@ -19,7 +19,7 @@ title "Change only the case of the name. UC lowercases names, so it is the same 
 trace update_file.py databricks.yml "name: myvolume" "name: MyVolume"
 # Drop the remote_state fields that differ between clouds or from the test server.
 trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI volumes read "$VOLUME" | jq '{full_name, name, volume_id}'
 

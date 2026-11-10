@@ -145,9 +145,9 @@ Error: cannot update_id resources.volumes.volume1: dependency failed: resources.
 
 Files: 3 uploaded, 0 deleted
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted
 
->>> errcode [CLI] catalogs delete test_catalog_renamed_[UNIQUE_NAME] --force
+>>> [CLI] catalogs delete test_catalog_renamed_[UNIQUE_NAME] --force
