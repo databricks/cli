@@ -1,0 +1,1 @@
+* With `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`, `bundle plan` shows a change to the `testing` property of a pipeline that was made outside the bundle, and `bundle deploy` undoes it. ([#7438](https://github.com/databricks/cli/pull/7438), [#7439](https://github.com/databricks/cli/pull/7439))

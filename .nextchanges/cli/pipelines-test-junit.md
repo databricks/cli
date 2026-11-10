@@ -1,0 +1,1 @@
+* Add `--junit-xml` to `databricks pipelines test`, which writes the results of the test run to a JUnit XML report. ([#7299](https://github.com/databricks/cli/pull/7299), [#7434](https://github.com/databricks/cli/pull/7434), [#7439](https://github.com/databricks/cli/pull/7439))
