@@ -320,6 +320,11 @@ tasks:
     cmds:
       - "uv python install 3.9 3.10 3.11 3.12 3.13"
 
+  install-ruff:
+    desc: Install Ruff 0.9.1 via uv
+    cmds:
+      - uv tool install ruff==0.9.1
+
   # --- Building ---
 
   # The root binary only imports bundle/, cmd/, experimental/, internal/, libs/,
@@ -967,8 +972,15 @@ tasks:
   bump-sdk-post:
     desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
     cmds:
+      # The acceptance tests run uv offline, so the managed interpreters they
+      # pin (3.10 for bundle tests, 3.9-3.13 in one template matrix) must exist
+      # up front. CI installs them in setup-build-environment; the SDK bumper's
+      # image ships only Python 3.12, and a missing version would otherwise be
+      # baked into the goldens as a uv error.
+      - task: install-pythons
+      - task: install-ruff
       - task: generate-check
-      - task: test-update
+      - PATH="$(uv tool dir --bin):$PATH" "{{.TASK_EXE}}" test-update
 
   # Refreshes acceptance/bundle/refschema/output/*.txt, which record the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
