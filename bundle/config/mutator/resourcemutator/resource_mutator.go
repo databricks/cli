@@ -183,6 +183,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
 		CaptureUCDependencies(),
 
+		// Reads (dynamic): resources.*.** (searches for ${resources.*} references), resources.*.*.grants, resources.*.*.lifecycle.depends_on
+		// Updates (dynamic): resources.*.*.lifecycle.depends_on (adds the grants of the resources a resource depends on)
+		CaptureGrantsDependencies(),
+
 		// Reads (dynamic): resources.dashboards.*.file_path
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 		// Drops (dynamic): resources.dashboards.*.file_path

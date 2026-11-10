@@ -1,4 +1,27 @@
 
+=== The grants of a referenced catalog or schema become an implicit lifecycle.depends_on
+>>> [CLI] bundle validate -o json
+{
+  "catalogs": {
+    "pipeline_catalog": null
+  },
+  "pipelines": {
+    "load": [
+      {
+        "resource": "schemas.src.grants"
+      }
+    ]
+  },
+  "schemas": {
+    "src": [
+      {
+        "resource": "catalogs.pipeline_catalog.grants"
+      }
+    ]
+  }
+}
+
+=== The plan orders dependents after the grants
 >>> [CLI] bundle plan -o json
 {
   "resources.catalogs.pipeline_catalog": null,
@@ -19,7 +42,7 @@
     },
     {
       "node": "resources.schemas.src.grants",
-      "label": "${resources.schemas.src.catalog_name}"
+      "label": "depends_on"
     }
   ],
   "resources.schemas.src": [
@@ -29,7 +52,7 @@
     },
     {
       "node": "resources.catalogs.pipeline_catalog.grants",
-      "label": "${resources.catalogs.pipeline_catalog.name}"
+      "label": "depends_on"
     }
   ],
   "resources.schemas.src.grants": [
