@@ -22,10 +22,10 @@ trace update_file.py databricks.yml "name: myschema" "name: myschema2"
 
 title "Both of the volume's parents are renamed, so both its catalog_name and schema_name follow them"
 # Drop the remote_state fields that differ between clouds or from the test server.
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
 
 title "Deploy renames the catalog, then the schema under it. UC moves the volume both times, so it gets no request"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 
 title "The schema and the volume are under the new names, with their original ids"

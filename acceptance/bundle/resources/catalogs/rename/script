@@ -22,10 +22,10 @@ trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 title "UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them"
 # Drop the remote_state fields that differ between clouds or from the test server.
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
 
 title "Deploy renames the catalog. UC moves the schema and the volume with it, so they get no request"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 
 title "The old catalog is gone and the schema and the volume are under the new one, with their original ids\n"
