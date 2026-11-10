@@ -264,11 +264,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return true
 		}
 
-		// Collected before resolveReferences, which drops the references it resolves.
-		parentRenames, err := b.parentRenames(resourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-			return false
+		// Collected before resolveReferences, which drops the references it resolves. Only a resource
+		// that can follow a rename needs them (see followsParentRename).
+		var parentRenames map[string]*deployplan.ChangeDesc
+		if adapter.HasDoUpdateWithID() {
+			parentRenames, err = b.parentRenames(resourceKey)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
 		}
 
 		// Process all references in the resource using Refs map
