@@ -9,11 +9,6 @@ trace $CLI bundle init pydabs --config-file ./input.json
 #
 # You can use trailing comma to force line breaks to make formatting consistent
 # with different line-length settings.
-#
-# ruff comes from the uv cache: the harness prefetches this exact release
-# (PrefetchRuff in acceptance_test.go) because the sandbox is offline. uv's -q
-# hides its "Installed 1 package" line, printed only by the first variant that
-# builds the tool environment for the test interpreter.
 
 echo "Checking code formatting with ruff format --line-length 88"
 trace uv tool run -q ruff@0.9.1 format --isolated --line-length 88 --quiet --diff --check my_pydabs
