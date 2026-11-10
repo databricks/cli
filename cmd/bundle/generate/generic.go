@@ -25,19 +25,30 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-// generators holds the hand-written generate commands. They exist because these
-// types also download files (notebooks, dashboard JSON, app sources) or have a
-// watch mode, which the generic command does not do yet. Every other resource type
-// in dresources.SupportedResources gets the generic command.
-var generators = map[string]func() *cobra.Command{
-	"alerts":       NewGenerateAlertCommand,
-	"apps":         NewGenerateAppCommand,
-	"dashboards":   NewGenerateDashboardCommand,
-	"genie_spaces": NewGenerateGenieSpaceCommand,
-	"jobs":         NewGenerateJobCommand,
-	"pipelines":    NewGeneratePipelineCommand,
+// idFlag is the lookup flag of the generic command. Hand-written generators that
+// named theirs differently accept it as an alias (see generators).
+const idFlag = "existing-id"
+
+// generator is a hand-written generate command. They exist because these types
+// also download files (notebooks, dashboard JSON, app sources) or have a watch
+// mode, which the generic command does not do yet. Every other resource type in
+// dresources.SupportedResources gets the generic command.
+type generator struct {
+	newCommand func() *cobra.Command
+	// idFlagName is the command's own lookup flag when it is not idFlag.
+	idFlagName string
+}
+
+var generators = map[string]generator{
+	"alerts":       {newCommand: NewGenerateAlertCommand},
+	"apps":         {newCommand: NewGenerateAppCommand, idFlagName: "existing-app-name"},
+	"dashboards":   {newCommand: NewGenerateDashboardCommand},
+	"genie_spaces": {newCommand: NewGenerateGenieSpaceCommand},
+	"jobs":         {newCommand: NewGenerateJobCommand, idFlagName: "existing-job-id"},
+	"pipelines":    {newCommand: NewGeneratePipelineCommand, idFlagName: "existing-pipeline-id"},
 }
 
 // notGenerated lists the resource groups without a generate command: job runs are
@@ -47,7 +58,9 @@ var notGenerated = map[string]bool{
 	"internal_immutable_snapshots": true,
 }
 
-// NewCommands returns a generate subcommand for every bundle resource type.
+// NewCommands returns a generate subcommand for every bundle resource type. Each
+// command also answers to its resource group ("catalogs"), so callers that hold a
+// key from deployment state can address it without a singular/plural mapping.
 func NewCommands() []*cobra.Command {
 	descriptions := config.SupportedResources()
 	var cmds []*cobra.Command
@@ -56,13 +69,31 @@ func NewCommands() []*cobra.Command {
 		if notGenerated[group] || strings.Contains(group, ".") {
 			continue
 		}
-		if newCommand, ok := generators[group]; ok {
-			cmds = append(cmds, newCommand())
-			continue
+		var cmd *cobra.Command
+		if g, ok := generators[group]; ok {
+			cmd = g.newCommand()
+			if g.idFlagName != "" {
+				aliasFlag(cmd, idFlag, g.idFlagName)
+			}
+		} else {
+			cmd = newResourceCommand(group, descriptions[group])
 		}
-		cmds = append(cmds, newResourceCommand(group, descriptions[group]))
+		cmd.Aliases = append(cmd.Aliases, group)
+		cmds = append(cmds, cmd)
 	}
 	return cmds
+}
+
+// aliasFlag makes --alias parse as --name on cmd. pflag resolves names through the
+// normalize function, so the flag keeps its own name in help and in the required
+// flag check.
+func aliasFlag(cmd *cobra.Command, alias, name string) {
+	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, n string) pflag.NormalizedName {
+		if n == alias {
+			return pflag.NormalizedName(name)
+		}
+		return pflag.NormalizedName(n)
+	})
 }
 
 // resourceOptions carries the flag values of a generic generate subcommand.
@@ -94,8 +125,8 @@ Example:
 			title, title, desc.SingularName, use, desc.SingularName),
 	}
 
-	cmd.Flags().StringVar(&opts.id, "existing-id", "", "ID of the "+title+" to generate configuration for")
-	cmd.MarkFlagRequired("existing-id")
+	cmd.Flags().StringVar(&opts.id, idFlag, "", "ID of the "+title+" to generate configuration for")
+	cmd.MarkFlagRequired(idFlag)
 	cmd.Flags().StringVarP(&opts.configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().BoolVarP(&opts.force, "force", "f", false, `force overwrite existing files in the output directory`)
 	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)

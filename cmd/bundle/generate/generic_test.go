@@ -146,16 +146,34 @@ func TestNewCommandsCoversEveryResourceType(t *testing.T) {
 		names[cmd.Name()] = cmd
 	}
 
-	// Hand-written generators keep their own command.
+	// Hand-written generators keep their own flag and accept --existing-id as an alias.
 	assert.Contains(t, names["job"].Flags().FlagUsages(), "existing-job-id")
+	assert.NotContains(t, names["job"].Flags().FlagUsages(), "--existing-id")
+	assert.Equal(t, "existing-job-id", names["job"].Flags().Lookup("existing-id").Name)
+	assert.Equal(t, "existing-app-name", names["app"].Flags().Lookup("existing-id").Name)
 	// Generic ones take --existing-id.
 	assert.Contains(t, names["catalog"].Flags().FlagUsages(), "existing-id")
 	assert.Contains(t, names, "external-location")
+
+	// Every command answers to its resource group as well.
+	assert.Equal(t, []string{"catalogs"}, names["catalog"].Aliases)
+	assert.Equal(t, []string{"jobs"}, names["job"].Aliases)
+	assert.True(t, names["external-location"].HasAlias("external_locations"))
 
 	assert.NotContains(t, names, "job-run")
 	for name := range names {
 		assert.NotContains(t, name, ".")
 	}
+}
+
+func TestAliasFlagParsesAliasAsTarget(t *testing.T) {
+	cmd := NewGenerateJobCommand()
+	aliasFlag(cmd, "existing-id", "existing-job-id")
+	require.NoError(t, cmd.Flags().Parse([]string{"--existing-id", "123"}))
+
+	id, err := cmd.Flags().GetInt64("existing-job-id")
+	require.NoError(t, err)
+	assert.Equal(t, int64(123), id)
 }
 
 func TestResourceCommandFlagsAndHelp(t *testing.T) {
