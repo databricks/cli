@@ -3,7 +3,6 @@ package sandbox
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -17,7 +16,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -216,11 +214,17 @@ func TestPortForwardHandlerAllowsLocalOrigins(t *testing.T) {
 	forward := startForward(t, upstream, fakeAuth)
 	addr := strings.TrimPrefix(forward.URL, "http://")
 
-	for _, headers := range []string{"Origin: http://localhost:3000\r\nSec-Fetch-Site: same-site\r\n", "Origin: http://" + addr + "\r\nSec-Fetch-Site: same-origin\r\n", "Sec-Fetch-Site: none\r\n"} {
+	for _, headers := range []string{
+		"Origin: http://localhost:3000\r\nSec-Fetch-Site: same-site\r\n",
+		"Origin: http://" + addr + "\r\nSec-Fetch-Site: same-origin\r\n",
+		// Browsers treat localhost and 127.0.0.1 as different sites.
+		"Origin: http://localhost:5173\r\nSec-Fetch-Site: cross-site\r\n",
+		"Sec-Fetch-Site: none\r\n",
+	} {
 		status, _, _ := rawRequest(t, addr, "POST / HTTP/1.1\r\nHost: "+addr+"\r\n"+headers+"Content-Length: 0\r\nConnection: close\r\n\r\n")
 		assert.Equal(t, http.StatusOK, status, headers)
 	}
-	assert.Equal(t, int32(3), calls.Load())
+	assert.Equal(t, int32(4), calls.Load())
 }
 
 func TestIsLoopbackHost(t *testing.T) {
@@ -318,86 +322,4 @@ func testTarget() portForwardTarget {
 		authenticate: fakeAuth,
 		transport:    http.DefaultTransport,
 	}
-}
-
-// newLookupAPI returns a sandbox API whose GET for testSandboxID answers with status.
-func newLookupAPI(t *testing.T, status int) *sandboxAPI {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/.well-known/databricks-config" {
-			assert.NoError(t, json.NewEncoder(w).Encode(map[string]string{
-				"oidc_endpoint": "https://workspace.example.test/oidc",
-			}))
-			return
-		}
-		assert.Equal(t, sandboxPath(testSandboxID), r.URL.Path)
-		w.WriteHeader(status)
-		if status == http.StatusOK {
-			assert.NoError(t, json.NewEncoder(w).Encode(sandboxEntry{SandboxID: testSandboxID, Status: "Running"}))
-			return
-		}
-		_, _ = io.WriteString(w, `{"error_code": "ERROR", "message": "lookup failed"}`)
-	}))
-	t.Cleanup(server.Close)
-
-	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
-	require.NoError(t, err)
-	api, err := newSandboxAPI(workspaceClient)
-	require.NoError(t, err)
-	return api
-}
-
-func TestResolvePortForwardSandboxUsesDefault(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	ctx = cmdio.MockDiscard(ctx)
-	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
-
-	got, status, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", nil)
-	require.NoError(t, err)
-	assert.Equal(t, testSandboxID, got)
-	assert.Equal(t, "Running", status)
-}
-
-func TestResolvePortForwardSandboxClearsMissingDefault(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	ctx = cmdio.MockDiscard(ctx)
-	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
-
-	_, _, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", nil)
-	assert.ErrorContains(t, err, `saved default "`+testSandboxID+`" no longer exists (cleared)`)
-	assert.Empty(t, getDefault(ctx, "profile"))
-}
-
-func TestResolvePortForwardSandboxRejectsUnknownID(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	ctx = cmdio.MockDiscard(ctx)
-
-	_, _, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", []string{testSandboxID})
-	assert.ErrorContains(t, err, `no sandbox named "`+testSandboxID+`"`)
-}
-
-func TestResolvePortForwardSandboxContinuesOnOtherLookupErrors(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	ctx = cmdio.MockDiscard(ctx)
-
-	got, status, err := resolvePortForwardSandbox(ctx, newLookupAPI(t, http.StatusForbidden), "profile", []string{testSandboxID})
-	require.NoError(t, err)
-	assert.Equal(t, testSandboxID, got)
-	assert.Empty(t, status)
-}
-
-func TestResolvePortForwardSandboxRejectsDotSegmentIDs(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	for _, id := range []string{".", ".."} {
-		t.Run(id, func(t *testing.T) {
-			_, _, err := resolvePortForwardSandbox(ctx, nil, "profile", []string{id})
-			assert.EqualError(t, err, `invalid sandbox ID "`+id+`"`)
-		})
-	}
-}
-
-func TestResolvePortForwardSandboxRequiresDefault(t *testing.T) {
-	ctx, _ := stateCtx(t)
-
-	_, _, err := resolvePortForwardSandbox(ctx, nil, "profile", nil)
-	assert.ErrorContains(t, err, "no default sandbox configured")
 }

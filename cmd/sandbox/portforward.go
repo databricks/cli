@@ -18,11 +18,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -107,12 +105,16 @@ Examples:
 			if err != nil {
 				return err
 			}
-			sandboxID, status, err := resolvePortForwardSandbox(ctx, api, profile, args)
+			var arg string
+			if len(args) > 0 {
+				arg = args[0]
+			}
+			sandboxID, sb, err := resolveSandbox(ctx, api, profile, arg)
 			if err != nil {
 				return err
 			}
-			if status != "" {
-				if _, err := ensureRunning(ctx, api, sandboxID, status); err != nil {
+			if sb != nil {
+				if _, err := ensureRunning(ctx, api, sandboxID, sb.Status); err != nil {
 					return err
 				}
 			}
@@ -129,7 +131,7 @@ Examples:
 				workspace:    workspace,
 				sandboxID:    sandboxID,
 				authenticate: w.Config.Authenticate,
-				headers:      auth.WorkspaceIDHeaders(w.Config),
+				headers:      api.headers(),
 				transport:    transport,
 			}
 
@@ -162,46 +164,6 @@ func parseForwards(specs []string) ([]portForward, error) {
 		forwards = append(forwards, portForward{localPort: localPort, remotePort: remotePort})
 	}
 	return forwards, nil
-}
-
-// resolvePortForwardSandbox returns the sandbox named in args, or the default
-// sandbox when args is empty, and its status. Like `sandbox ssh`, it clears a
-// default that no longer exists. Other lookup errors only warn and return an
-// empty status, since the forward may still work.
-func resolvePortForwardSandbox(ctx context.Context, api *sandboxAPI, profile string, args []string) (string, string, error) {
-	var sandboxID string
-	if len(args) == 0 {
-		if sandboxID = getDefault(ctx, profile); sandboxID == "" {
-			return "", "", errors.New("no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox")
-		}
-	} else {
-		resolved, err := resolveLocalID(ctx, profile, args[0])
-		if err != nil {
-			return "", "", err
-		}
-		sandboxID = resolved
-	}
-
-	// The ID is a segment of every forwarded path, so "." or ".." would move
-	// requests off the port-forward route.
-	if sandboxID == "." || sandboxID == ".." {
-		return "", "", fmt.Errorf("invalid sandbox ID %q", sandboxID)
-	}
-
-	entry, err := api.get(ctx, sandboxID)
-	if err != nil {
-		switch {
-		case !errors.Is(err, apierr.ErrNotFound):
-			warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))
-			return sandboxID, "", nil
-		case len(args) == 0:
-			_ = clearDefault(ctx, profile)
-			return "", "", fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", sandboxID)
-		default:
-			return "", "", fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
-		}
-	}
-	return sandboxID, entry.Status, nil
 }
 
 // newPortForwardTransport returns the workspace config's transport, or the
@@ -334,21 +296,18 @@ func isLoopbackHost(hostport string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// isCrossSiteRequest reports whether a browser marked the request as coming
-// from a page outside this machine. Browsers send Sec-Fetch-Site with every
-// request and Origin with cross-origin ones; WebSocket handshakes bypass CORS,
-// so this is their only guard. Pages from any localhost port, such as a local
-// frontend, are allowed.
+// isCrossSiteRequest reports whether a browser sent the request from a page
+// outside this machine. WebSocket handshakes bypass CORS, so this is their only
+// guard. Pages from any loopback origin, such as a local frontend, are allowed:
+// browsers treat localhost and 127.0.0.1 as different sites, so their Origin
+// decides rather than Sec-Fetch-Site. Requests without an Origin, such as
+// navigations and image loads, fall back to Sec-Fetch-Site.
 func isCrossSiteRequest(r *http.Request) bool {
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
-		return true
+	if origin := r.Header.Get("Origin"); origin != "" {
+		u, err := url.Parse(origin)
+		return err != nil || !isLoopbackHost(u.Host)
 	}
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		return false
-	}
-	u, err := url.Parse(origin)
-	return err != nil || !isLoopbackHost(u.Host)
+	return r.Header.Get("Sec-Fetch-Site") == "cross-site"
 }
 
 // hasDotSegment reports whether an escaped URL path contains a "." or ".."

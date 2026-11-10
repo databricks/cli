@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // resolveLocalID maps a user-typed argument to a sandbox ID using only
@@ -60,4 +62,57 @@ func resolveLocalID(ctx context.Context, profile, arg string) (string, error) {
 			arg, strings.Join(ids, ", "),
 		)
 	}
+}
+
+// resolveSandbox returns the ID of the sandbox named by arg, or of the
+// profile's default sandbox when arg is empty, and the sandbox as the server
+// reports it. The entry is nil when the lookup failed with an error other than
+// not-found or a rejected request: those only warn, so a transient API hiccup
+// doesn't block a connection the gateway can still route.
+func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (string, *sandboxEntry, error) {
+	var sandboxID string
+	if arg == "" {
+		if sandboxID = getDefault(ctx, profile); sandboxID == "" {
+			return "", nil, errors.New("no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox")
+		}
+	} else {
+		resolved, err := resolveLocalID(ctx, profile, arg)
+		if err != nil {
+			return "", nil, err
+		}
+		sandboxID = resolved
+	}
+	if err := validateSandboxID(sandboxID); err != nil {
+		return "", nil, err
+	}
+
+	sb, err := api.get(ctx, sandboxID)
+	switch {
+	case err == nil:
+		return sandboxID, sb, nil
+	case errors.Is(err, apierr.ErrNotFound) && arg == "":
+		// A stale default is almost always user-correctable (deleted from
+		// another machine, reaped by an admin); fail fast with an actionable
+		// message.
+		_ = clearDefault(ctx, profile)
+		return "", nil, fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", sandboxID)
+	case errors.Is(err, apierr.ErrNotFound):
+		return "", nil, fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
+	case errors.Is(err, apierr.ErrBadRequest):
+		return "", nil, fmt.Errorf("failed to look up sandbox %s: %w", sandboxID, err)
+	default:
+		warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))
+		return sandboxID, nil, nil
+	}
+}
+
+// validateSandboxID rejects IDs that are not a single path segment. Commands
+// put the ID in workspace URL paths, and the workspace decodes an escaped "/",
+// so a separator or dot segment would move a request onto another API with the
+// caller's credentials.
+func validateSandboxID(id string) error {
+	if id == "." || id == ".." || strings.ContainsAny(id, `/\`) {
+		return fmt.Errorf("invalid sandbox ID %q", id)
+	}
+	return nil
 }
