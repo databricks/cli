@@ -107,7 +107,7 @@ class TriggerConfiguration:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional SQL condition that gates whether this trigger fires.
+    [Beta] Optional SQL condition that gates whether this trigger fires.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
@@ -182,7 +182,7 @@ class TriggerConfigurationDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional SQL condition that gates whether this trigger fires.
+    [Beta] Optional SQL condition that gates whether this trigger fires.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]

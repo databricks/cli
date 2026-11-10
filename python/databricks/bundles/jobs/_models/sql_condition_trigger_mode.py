@@ -6,8 +6,6 @@ from typing import Literal
 
 class SqlConditionTriggerMode(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     The strategy used to evaluate a SQL condition trigger against a query result set.
 
     * `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED`: Sentinel zero-value. Not a valid input — the
@@ -16,8 +14,8 @@ class SqlConditionTriggerMode(Enum):
     * `QUERY_RETURNS_ROWS`: Fires whenever the result set has at least one row. Zero rows means
     the condition is not met. This is the original SQL condition behavior.
     * `RESULT_VALUE_CHANGES`: Fires whenever the query's single result value differs from the
-    previous evaluation. The first evaluation always fires. Queries must return exactly one
-    cell (one row, one column).
+    previous evaluation. The first evaluation stores the result as a baseline and does not
+    fire. Queries must return exactly one cell (one row, one column).
     """
 
     QUERY_RETURNS_ROWS = "QUERY_RETURNS_ROWS"
