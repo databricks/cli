@@ -17,7 +17,6 @@ packages = [
 [dependency-groups]
 dev = [
     # libraries part of serverless environment
-    "requests",
     "databricks-sdk"
 ]
 
