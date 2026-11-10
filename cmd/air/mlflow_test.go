@@ -78,7 +78,7 @@ func TestMLflowIDs(t *testing.T) {
 		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E1", RunID: "R100"}, got)
 	})
 
-	t.Run("falls back to an earlier attempt when the latest has none", func(t *testing.T) {
+	t.Run("a finished run falls back to an earlier attempt when the latest has none", func(t *testing.T) {
 		// The last retry failed before it started, so only attempt 0 logged to MLflow.
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/2.2/jobs/runs/get-output" && r.URL.Query().Get("run_id") == "99" {
@@ -89,9 +89,14 @@ func TestMLflowIDs(t *testing.T) {
 		}))
 		t.Cleanup(srv.Close)
 
-		retried := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}, {RunId: 100}}}
-		got := mlflowIDs(ctx, newTestWorkspaceClient(t, srv.URL), retried)
-		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}, got)
+		w := newTestWorkspaceClient(t, srv.URL)
+		tasks := []jobs.RunTask{{RunId: 99}, {RunId: 100}}
+		finished := &jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}, Tasks: tasks}
+		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}, mlflowIDs(ctx, w, finished))
+
+		// A run still starting its next retry must not link to the previous attempt.
+		running := &jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}, Tasks: tasks}
+		assert.Nil(t, mlflowIDs(ctx, w, running))
 	})
 }
 

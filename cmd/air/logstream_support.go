@@ -234,10 +234,9 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 	if status.stateMessage != "" {
 		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)
 	}
-	// A retry that failed before it started has no logs of its own, but the
-	// attempts before it may.
+	// Only the latest attempt was checked; earlier ones may have logs.
 	if req.attempt < 0 && status.terminal() && status.latestAttempt > 0 {
-		msg = fmt.Sprintf("%s. Earlier retries may have logs: databricks air logs %d --retry %d", strings.TrimRight(msg, "."), req.runID, status.latestAttempt-1)
+		msg = fmt.Sprintf("%s. Earlier retries may have logs; pass --retry %d to see them", strings.TrimRight(msg, "."), status.latestAttempt-1)
 	}
 	if req.jsonOutput {
 		printLogEvent(out, "ERROR", req.node, msg)

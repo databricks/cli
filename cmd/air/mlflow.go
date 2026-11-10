@@ -25,12 +25,13 @@ func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run
 	return mlflowIDsFromAttempts(ctx, w, run, aiRuntimeTaskOutput(ctx, w, run))
 }
 
-// mlflowIDsFromAttempts returns the MLflow IDs in latest, the latest attempt's
-// output, else those of the newest earlier attempt that has them. A retry that
-// failed before it started has no MLflow output, but the run's earlier
-// attempts still logged to an MLflow run worth linking.
+// mlflowIDsFromAttempts returns the IDs from latest (the latest attempt's
+// output), else, for a finished run, from the newest earlier attempt that has
+// them: a last retry that failed before it started never got an MLflow run of
+// its own. A run still in progress keeps only the latest attempt's IDs, so its
+// link and ETA never point at a previous attempt.
 func mlflowIDsFromAttempts(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, latest *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
-	if ids := mlflowIDsFromOutput(latest); ids != nil || len(run.Tasks) < 2 {
+	if ids := mlflowIDsFromOutput(latest); ids != nil || len(run.Tasks) < 2 || !isTerminal(run) {
 		return ids
 	}
 	for _, task := range slices.Backward(run.Tasks[:len(run.Tasks)-1]) {

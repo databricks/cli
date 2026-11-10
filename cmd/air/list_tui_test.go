@@ -283,11 +283,28 @@ func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
 	// A narrower terminal re-wraps the same text.
 	next, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 24})
 	m = next.(listModel)
-	view := m.View()
-	assert.Contains(t, view, "ENDOFREASON")
-	for line := range strings.SplitSeq(view, "\n") {
+	pane := m.viewport.View()
+	assert.Contains(t, pane, "ENDOFREASON")
+	for line := range strings.SplitSeq(pane, "\n") {
 		assert.LessOrEqual(t, ansi.StringWidth(line), 30, line)
 	}
+}
+
+func TestListModelDetailPaneKeepsBoxRowsAndURLsWhole(t *testing.T) {
+	m := detailLoadingModel(t)
+	boxRow := "│  command: python train.py " + strings.Repeat("--flag ", 12) + "│"
+	url := "MLflow URL: https://example.test/ml/experiments/1/runs/" + strings.Repeat("a", 64)
+	require.Greater(t, len(boxRow), 80)
+	require.Greater(t, len(url), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: boxRow + "\n" + url})
+	m = next.(listModel)
+	assert.Equal(t, 2, m.viewport.TotalLineCount(), "box rows and URLs must not wrap")
+
+	// ←/→ pans to the clipped end instead.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = next.(listModel)
+	assert.Positive(t, m.viewport.HorizontalScrollPercent())
 }
 
 func TestListModelDetailLateMsgDropped(t *testing.T) {

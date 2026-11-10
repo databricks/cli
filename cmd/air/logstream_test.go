@@ -548,7 +548,13 @@ func TestEmitNoLogs(t *testing.T) {
 			name:   "latest retry of a terminal run",
 			req:    logRequest{attempt: -1},
 			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "Out of capacity.", latestAttempt: 2},
-			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs: databricks air logs 7 --retry 1\n",
+			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry 1 to see them\n",
+		},
+		{
+			name:   "latest retry of a running run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 2},
+			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
 		},
 		{
 			name:   "explicitly requested retry",
