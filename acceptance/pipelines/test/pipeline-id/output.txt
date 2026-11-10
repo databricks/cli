@@ -41,6 +41,10 @@ Update: [UUID][3]
   }
 }
 
-=== --pipeline-id is required
+=== Outside a project, --pipeline-id is required
 >>> musterr [CLI] pipelines test tests
-Error: identify the pipeline with --pipeline-id
+Error: Unable to locate the bundle root: databricks.yml not found.
+
+Run this command from a directory that contains a bundle, or set the DATABRICKS_BUNDLE_ROOT environment variable to the bundle root directory.
+Alternatively, create a new bundle with 'databricks bundle init'.
+

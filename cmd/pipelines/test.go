@@ -5,17 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
+	"os"
+	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"uuid"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -116,6 +126,53 @@ func resolveTestSelections(selections []string, toWorkspacePath func(string) (st
 	return resolved, nil
 }
 
+// bundleWorkspacePath maps a local path, relative to the working directory, to its deployed
+// path under filesRoot, the deployed path of the bundle's synchronized files.
+func bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
+	if !filepath.IsAbs(localPath) {
+		localPath = filepath.Join(cwd, localPath)
+	}
+	rel, err := filepath.Rel(syncRoot, localPath)
+	if err != nil || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("%s is outside the synchronized bundle files in %s", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
+	}
+	return path.Join(filesRoot, filepath.ToSlash(rel)), nil
+}
+
+// bundleFilesRoot returns the deployed path of the bundle's synchronized files, as TranslatePaths
+// maps resource paths, or "" for an immutable deployment, whose snapshot path the command does not know.
+func bundleFilesRoot(b *bundle.Bundle) string {
+	switch {
+	case b.SyncMode() == config.SyncModeImmutable:
+		return ""
+	case b.IsSourceLinkedDeployment():
+		return b.SyncRootPath
+	default:
+		return b.Config.Workspace.FilePath
+	}
+}
+
+// bundleTestSelectionPath maps a local path, relative to the working directory, to its deployed path
+// under filesRoot. The path must exist locally, so that a typo fails before compute starts.
+func bundleTestSelectionPath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
+	if filesRoot == "" {
+		return "", errors.New("local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path")
+	}
+	workspacePath, err := bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
+	if err != nil {
+		return "", err
+	}
+	if !filepath.IsAbs(localPath) {
+		localPath = filepath.Join(cwd, localPath)
+	}
+	if _, err := os.Stat(localPath); errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("%s does not exist; pass a local path or an absolute workspace path", filepath.ToSlash(localPath))
+	} else if err != nil {
+		return "", err
+	}
+	return workspacePath, nil
+}
+
 // hasRelativeSelection reports whether a selection is a relative path.
 func hasRelativeSelection(selections []string) bool {
 	for _, selection := range selections {
@@ -172,13 +229,18 @@ func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelin
 
 // testTarget is the pipeline a test run is submitted to.
 type testTarget struct {
+	key        string
 	pipelineID string
 	selections []string
 	w          *databricks.WorkspaceClient
 }
 
 func (t testTarget) printHeader(out io.Writer, updateID string) {
-	fmt.Fprintf(out, "Pipeline: %s\n", t.pipelineID)
+	if t.key != "" {
+		fmt.Fprintf(out, "Pipeline: %s (%s)\n", t.key, t.pipelineID)
+	} else {
+		fmt.Fprintf(out, "Pipeline: %s\n", t.pipelineID)
+	}
 	fmt.Fprintf(out, "Update: %s\n", updateID)
 }
 
@@ -210,18 +272,82 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	return testTarget{pipelineID: pipelineID, selections: selections, w: w}, nil
 }
 
+// resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
+func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, error) {
+	var key string
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+			var err error
+			key, err = resolvePipelineArgument(ctx, b, args[:min(len(args), 1)])
+			return err
+		},
+		ErrorOnEmptyState: true,
+		SkipInitContext:   true,
+	})
+	if err != nil {
+		return testTarget{}, err
+	}
+	ctx := cmd.Context()
+
+	pipelineID, err := resolvePipelineIdFromKey(ctx, b, key)
+	if err != nil {
+		if _, lookupErr := resources.Lookup(b, key, isPipeline); lookupErr != nil {
+			return testTarget{}, notPipelineKeyError(cmd, b, key, args)
+		}
+		return testTarget{}, err
+	}
+	suggestPipelineDeploy(ctx, cmd)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return testTarget{}, err
+	}
+	var selectionArgs []string
+	if len(args) > 1 {
+		selectionArgs = args[1:]
+	}
+	filesRoot := bundleFilesRoot(b)
+	selections, err := resolveTestSelections(selectionArgs, func(p string) (string, error) {
+		return bundleTestSelectionPath(cwd, b.SyncRootPath, filesRoot, p)
+	})
+	if err != nil {
+		return testTarget{}, err
+	}
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx)}, nil
+}
+
+// notPipelineKeyError explains that the first argument is not a pipeline KEY, names the bundle's
+// pipelines, and shows the command that passes the arguments as test selections of the first one.
+func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args []string) error {
+	keys := slices.Sorted(maps.Keys(resources.Completions(b, isPipeline)))
+	if len(keys) == 0 {
+		return fmt.Errorf("%q is not a pipeline in this bundle, and the bundle has no pipelines", key)
+	}
+	usage := []string{cmd.CommandPath(), shellquote.BashArg(keys[0])}
+	for _, arg := range args {
+		usage = append(usage, shellquote.BashArg(arg))
+	}
+	return fmt.Errorf("%q is not a pipeline in this bundle (pipelines: %s). Usage: %s", key, strings.Join(keys, ", "), strings.Join(usage, " "))
+}
+
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "test [flags] [TEST_SELECTION...]",
+		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
 		Short: "*Preview* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
 
 This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
 
-Identify the pipeline with --pipeline-id.
+KEY is the unique name of the pipeline, as defined in its YAML file.
+It is required when test selections are given. If there is only one pipeline
+in the project and no arguments are given, it is selected automatically.
+Outside a project, identify the pipeline with --pipeline-id; all positional
+arguments are then test selections.
 
 TEST_SELECTION is a test directory, file, or pytest test ID, for example
-tests/test_orders.py::test_backfill. A relative path is relative to the
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
 pipeline's root_path. Paths that start with / are workspace paths. Without a
 selection, all of the pipeline's tests run.
 
@@ -229,14 +355,14 @@ Each --pytest-arg passes one argument to pytest, in the order given. Only -k
 and -m are supported, each followed by its value in the next --pytest-arg, for
 example:
 
-  databricks pipelines test --pipeline-id <id> --pytest-arg=-k --pytest-arg='orders and not slow'`,
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'`,
 	}
 
 	var pipelineID string
 	var pytestArgs []string
 
 	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
-	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test.")
+	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a KEY.")
 	testGroup.FlagSet().StringArrayVar(&pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
@@ -257,17 +383,23 @@ example:
 		if err := validatePytestArgs(pytestArgs); err != nil {
 			return err
 		}
-		if pipelineID == "" {
-			return errors.New("identify the pipeline with --pipeline-id")
-		}
-		id, err := uuid.Parse(pipelineID)
-		if err != nil {
-			return fmt.Errorf("--pipeline-id %q is not a pipeline ID", pipelineID)
-		}
-
-		target, err := resolveTestTargetByID(cmd, args, id.String())
-		if err != nil {
-			return err
+		var target testTarget
+		if pipelineID != "" {
+			id, err := uuid.Parse(pipelineID)
+			if err != nil {
+				return fmt.Errorf("--pipeline-id %q is not a pipeline ID", pipelineID)
+			}
+			target, err = resolveTestTargetByID(cmd, args, id.String())
+			if err != nil {
+				return err
+			}
+		} else {
+			cmd.SetContext(logdiag.InitContext(cmd.Context()))
+			var err error
+			target, err = resolveTestTargetInBundle(cmd, args)
+			if err != nil {
+				return err
+			}
 		}
 		ctx := cmd.Context()
 
