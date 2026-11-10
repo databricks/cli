@@ -1,7 +1,6 @@
 
-=== A submit error from the service is shown as is, and no update ID is printed
-
->>> musterr [CLI] pipelines test --pipeline-id [UUID][0]
+=== A submit error from the service is shown as is, no update ID is printed, and an older report is replaced
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --junit-xml out.start-failed.xml
 Error: An active update '[UUID][1]' already exists for pipeline '[UUID][2]'.
 
 >>> print_requests.py //updates

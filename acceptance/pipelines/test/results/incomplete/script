@@ -1,2 +1,2 @@
 title "Compute ends before all results are received"
-trace musterr $CLI pipelines test --pipeline-id $pipeline_id
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --junit-xml out.report.xml

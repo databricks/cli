@@ -377,3 +377,20 @@ func TestCheckTestUpdateWithoutTestOnly(t *testing.T) {
 
 	assert.NoError(t, checkTestUpdate(t.Context(), w, "p1", updateID))
 }
+
+func TestTestRunProblem(t *testing.T) {
+	ev := newTestEvents(t)
+	passed := newTestRun()
+	passed.add(ev.testCase("t::a", "PASSED", ""))
+	passed.add(ev.summary(1, 1, 0, 0, 0))
+	assert.Empty(t, testRunProblem(passed, "", nil))
+	assert.Empty(t, testRunProblem(passed, "", root.ErrAlreadyPrinted))
+	assert.Equal(t, "update u1 is COMPLETED: result delivery failed", testRunProblem(passed, "", errors.New("update u1 is COMPLETED: result delivery failed")))
+
+	empty := newTestRun()
+	empty.add(ev.summary(0, 0, 0, 0, 0))
+	assert.Equal(t, "No tests were collected.", testRunProblem(empty, "", root.ErrAlreadyPrinted))
+
+	assert.Equal(t, "RUN INCOMPLETE: the update was canceled.\nupdate u1 is CANCELED",
+		testRunProblem(newTestRun(), "the update was canceled", errors.New("update u1 is CANCELED")))
+}
