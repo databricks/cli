@@ -75,7 +75,7 @@ type IResource interface {
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *VolumeState) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
 	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
@@ -86,7 +86,7 @@ type IResource interface {
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *SchemaState, entry *PlanEntry) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
