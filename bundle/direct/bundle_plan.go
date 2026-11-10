@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -353,7 +354,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		if remoteState != nil {
 			remoteStateComparable, err = adapter.RemapState(remoteState)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, cmp.Or(entry.ID, dbentry.ID), err))
 				return false
 			}
 
@@ -361,7 +362,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// is a hash on all three sides of the diff (saved, local, remote)
 			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, cmp.Or(entry.ID, dbentry.ID), err))
 				return false
 			}
 
