@@ -30,7 +30,8 @@ type pluginInstall struct {
 // appliesTo reports whether the agent loads this install when run in cwd:
 // always for machine-wide scopes, and for project and local scopes only inside
 // the recorded project (cwd is the project or a directory under it). A record
-// with an unknown scope counts, so a new machine-wide scope is not missed.
+// with an unknown scope counts, so a new machine-wide scope is not missed. cwd
+// must be resolved (see resolvePath).
 func (p pluginInstall) appliesTo(cwd string) bool {
 	switch p.Scope {
 	case "project", "local":
@@ -43,9 +44,10 @@ func (p pluginInstall) appliesTo(cwd string) bool {
 	}
 }
 
-// isSameOrUnder reports whether dir is root or a directory under it.
+// isSameOrUnder reports whether dir is root or a directory under it. dir must
+// be resolved (see resolvePath); root is resolved here.
 func isSameOrUnder(root, dir string) bool {
-	root, dir = resolvePath(root), resolvePath(dir)
+	root = resolvePath(root)
 	rel, err := filepath.Rel(root, dir)
 	if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return true
@@ -111,10 +113,8 @@ func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
 
 // databricksPluginActiveIn reports whether the agent's own manifest has a
 // databricks plugin record that applies in cwd (see pluginInstall.appliesTo).
+// A plugin disabled in the agent's settings still counts.
 func (a *Agent) databricksPluginActiveIn(ctx context.Context, cwd string) bool {
-	if a.pluginInstalls == nil {
-		return false
-	}
 	installs, _ := a.pluginInstalls(ctx, a)
 	for _, install := range installs {
 		if install.appliesTo(cwd) {

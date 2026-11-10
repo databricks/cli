@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
@@ -62,7 +63,29 @@ func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
 	if a == nil {
 		return ctx
 	}
-	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, toolingUserAgentValue(a.DatabricksTooling(ctx)))
+	tooling := a.DatabricksTooling(ctx, func() bool { return globalPluginRecorded(ctx, a.Name) })
+	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, toolingUserAgentValue(tooling))
+}
+
+// globalPluginRecorded reports whether the global CLI install state records a
+// databricks plugin install for the agent. Only the global state is read: the
+// CLI installs plugins in project scope only for agents with SupportsProjectScope
+// (see mapAgentScope in cmd/aitools), and those have a manifest reader.
+func globalPluginRecorded(ctx context.Context, agentName string) bool {
+	dir, err := GlobalSkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
+		return false
+	}
+	if state == nil {
+		return false
+	}
+	_, ok := state.Plugins[agentName]
+	return ok
 }
 
 func toolingUserAgentValue(t agents.Tooling) string {

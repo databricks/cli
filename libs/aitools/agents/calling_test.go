@@ -104,7 +104,9 @@ func TestDatabricksTooling(t *testing.T) {
 		name  string
 		agent string
 		setup func(t *testing.T, home, cwd string)
-		want  agents.Tooling
+		// recorded is what pluginRecorded (the CLI install state) reports.
+		recorded bool
+		want     agents.Tooling
 	}{
 		{
 			name:  "nothing installed",
@@ -126,19 +128,16 @@ func TestDatabricksTooling(t *testing.T) {
 			agent: agents.NameClaudeCode,
 			setup: func(t *testing.T, home, cwd string) {
 				writeFile(t, filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), `{"plugins":{}}`)
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"),
-					`{"schema_version":2,"plugins":{"claude-code":{"marketplace":"claude-plugins-official","plugin":"databricks"}}}`)
 			},
-			want: agents.ToolingNone,
+			recorded: true,
+			want:     agents.ToolingNone,
 		},
 		{
-			name:  "stale claude record in the CLI state, no claude manifest at all",
-			agent: agents.NameClaudeCode,
-			setup: func(t *testing.T, home, cwd string) {
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"),
-					`{"schema_version":2,"plugins":{"claude-code":{"plugin":"databricks"}}}`)
-			},
-			want: agents.ToolingNone,
+			name:     "stale claude record in the CLI state, no claude manifest at all",
+			agent:    agents.NameClaudeCode,
+			setup:    func(t *testing.T, home, cwd string) {},
+			recorded: true,
+			want:     agents.ToolingNone,
 		},
 		{
 			name:  "claude project-scope plugin for another project",
@@ -189,22 +188,18 @@ func TestDatabricksTooling(t *testing.T) {
 			want: agents.ToolingPlugin,
 		},
 		{
-			name:  "codex plugin recorded in the CLI state",
-			agent: agents.NameCodex,
-			setup: func(t *testing.T, home, cwd string) {
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"),
-					`{"schema_version":2,"plugins":{"codex":{"marketplace":"databricks-agent-skills","plugin":"databricks"}}}`)
-			},
-			want: agents.ToolingPlugin,
+			name:     "codex plugin recorded in the CLI state",
+			agent:    agents.NameCodex,
+			setup:    func(t *testing.T, home, cwd string) {},
+			recorded: true,
+			want:     agents.ToolingPlugin,
 		},
 		{
-			name:  "copilot plugin recorded in the CLI state",
-			agent: agents.NameCopilot,
-			setup: func(t *testing.T, home, cwd string) {
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"),
-					`{"schema_version":2,"plugins":{"copilot":{"plugin":"databricks"}}}`)
-			},
-			want: agents.ToolingPlugin,
+			name:     "copilot plugin recorded in the CLI state",
+			agent:    agents.NameCopilot,
+			setup:    func(t *testing.T, home, cwd string) {},
+			recorded: true,
+			want:     agents.ToolingPlugin,
 		},
 		{
 			name:  "another agent's plugin does not count",
@@ -212,8 +207,6 @@ func TestDatabricksTooling(t *testing.T) {
 			setup: func(t *testing.T, home, cwd string) {
 				writeFile(t, filepath.Join(home, ".claude", "plugins", "installed_plugins.json"),
 					`{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.9"}]}}`)
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"),
-					`{"plugins":{"claude-code":{"plugin":"databricks"}}}`)
 			},
 			want: agents.ToolingNone,
 		},
@@ -295,14 +288,6 @@ func TestDatabricksTooling(t *testing.T) {
 			},
 			want: agents.ToolingSkills,
 		},
-		{
-			name:  "corrupt state reads as not installed",
-			agent: agents.NameCodex,
-			setup: func(t *testing.T, home, cwd string) {
-				writeFile(t, filepath.Join(home, ".databricks", "aitools", "skills", ".state.json"), `{not json`)
-			},
-			want: agents.ToolingNone,
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -311,8 +296,7 @@ func TestDatabricksTooling(t *testing.T) {
 			ctx := env.WithUserHomeDir(t.Context(), home)
 			a := agents.ByName(tc.agent)
 			require.NotNil(t, a)
-			assert.Equal(t, tc.want, a.DatabricksTooling(ctx))
-			assert.Equal(t, tc.want != agents.ToolingNone, a.HasDatabricksTooling(ctx))
+			assert.Equal(t, tc.want, a.DatabricksTooling(ctx, func() bool { return tc.recorded }))
 		})
 	}
 }
@@ -337,7 +321,24 @@ func TestDatabricksToolingClaudePluginInSeveralMarketplaces(t *testing.T) {
 	// first databricks entry fails some of these reads.
 	got := map[agents.Tooling]int{}
 	for range 200 {
-		got[a.DatabricksTooling(ctx)]++
+		got[a.DatabricksTooling(ctx, func() bool { return false })]++
 	}
 	assert.Equal(t, map[agents.Tooling]int{agents.ToolingPlugin: 200}, got)
+}
+
+// The CLI install state is not read for agents whose own manifest is
+// authoritative (Claude Code) or that have no plugin (Cursor).
+func TestDatabricksToolingSkipsInstallState(t *testing.T) {
+	for _, name := range []string{agents.NameClaudeCode, agents.NameCursor} {
+		t.Run(name, func(t *testing.T) {
+			home, _ := toolingFixture(t)
+			ctx := env.WithUserHomeDir(t.Context(), home)
+			a := agents.ByName(name)
+			require.NotNil(t, a)
+			a.DatabricksTooling(ctx, func() bool {
+				t.Error("pluginRecorded called")
+				return true
+			})
+		})
+	}
 }

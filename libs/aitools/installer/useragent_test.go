@@ -130,6 +130,7 @@ func TestWithCallingAgentToolingInUserAgent(t *testing.T) {
 		agentEnv []string
 		claude   string // claude-code manifest version, when set
 		plugins  map[string]string
+		state    string // raw global install state, when set
 		skill    string // skill dir to create, relative to HOME, when set
 		want     string // "" means no aitools-agent segment
 	}{
@@ -139,6 +140,8 @@ func TestWithCallingAgentToolingInUserAgent(t *testing.T) {
 		{name: "claude with its plugin", agentEnv: []string{"CLAUDECODE", "1"}, claude: "0.2.9", want: "aitools-agent/plugin"},
 		{name: "codex without tooling while claude has it", agentEnv: []string{"CODEX_CI", "1"}, claude: "0.2.9", want: "aitools-agent/none"},
 		{name: "codex with its recorded plugin", agentEnv: []string{"CODEX_CI", "1"}, plugins: map[string]string{"codex": "0.2.8"}, want: "aitools-agent/plugin"},
+		{name: "codex while the CLI state records only claude's plugin", agentEnv: []string{"CODEX_CI", "1"}, plugins: map[string]string{"claude-code": "0.2.8"}, want: "aitools-agent/none"},
+		{name: "codex with a corrupt CLI state", agentEnv: []string{"CODEX_CI", "1"}, state: "{not json", want: "aitools-agent/none"},
 		{name: "claude with only a stale CLI record", agentEnv: []string{"CLAUDECODE", "1"}, plugins: map[string]string{"claude-code": "0.2.8"}, want: "aitools-agent/none"},
 		{name: "claude with only skills", agentEnv: []string{"CLAUDECODE", "1"}, skill: filepath.Join(".claude", "skills", "databricks-apps"), want: "aitools-agent/skills"},
 	}
@@ -158,6 +161,12 @@ func TestWithCallingAgentToolingInUserAgent(t *testing.T) {
 				writeClaudeManifest(t, filepath.Join(tmp, ".claude"), tc.claude)
 			}
 			savePluginState(t, GlobalSkillsDir, tc.plugins)
+			if tc.state != "" {
+				dir, err := GlobalSkillsDir(t.Context())
+				require.NoError(t, err)
+				require.NoError(t, os.MkdirAll(dir, 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, stateFileName), []byte(tc.state), 0o600))
+			}
 			if tc.skill != "" {
 				require.NoError(t, os.MkdirAll(filepath.Join(tmp, tc.skill), 0o755))
 			}
