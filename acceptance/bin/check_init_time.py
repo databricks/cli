@@ -79,9 +79,8 @@ def read_limits(path):
 
 
 def format_limit(ms):
-    # Aligned on the decimal point so cheap and expensive packages are easy to tell apart.
-    whole, frac = (f"{ms:.1f}" if ms >= 1 else f"{ms:.2f}").split(".")
-    return f"{whole:>3}.{frac:<2}"
+    # Fixed width so cheap and expensive packages are easy to tell apart.
+    return f"{ms:5.2f}"
 
 
 def new_limit(ms):
