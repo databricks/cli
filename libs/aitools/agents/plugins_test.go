@@ -14,10 +14,10 @@ import (
 // Claude Code's manifest reader (the format these tests write).
 func agentWithConfigDir(dir string) *Agent {
 	return &Agent{
-		Name:          "test-agent",
-		DisplayName:   "Test Agent",
-		ConfigDir:     func(_ context.Context) (string, error) { return dir, nil },
-		pluginVersion: claudePluginVersion,
+		Name:           "test-agent",
+		DisplayName:    "Test Agent",
+		ConfigDir:      func(_ context.Context) (string, error) { return dir, nil },
+		pluginInstalls: claudePluginInstalls,
 	}
 }
 
@@ -56,6 +56,75 @@ func TestDatabricksPluginVersion(t *testing.T) {
 			assert.Equal(t, tt.wantOK, ok)
 			assert.Equal(t, tt.wantVersion, version)
 		})
+	}
+}
+
+func TestDatabricksPluginVersionAcrossMarketplaces(t *testing.T) {
+	configDir := t.TempDir()
+	writeManifest(t, configDir, `{"plugins":{"databricks@a":[{"scope":"user","version":"0.2.9"}],"databricks@b":[{"scope":"user","version":"0.3.0"}]}}`)
+	a := agentWithConfigDir(configDir)
+	installs, ok := claudePluginInstalls(t.Context(), a)
+	require.True(t, ok)
+	assert.Len(t, installs, 2)
+	version, ok := a.DatabricksPluginVersion(t.Context())
+	require.True(t, ok)
+	assert.Equal(t, "0.3.0", version)
+}
+
+// projectFixture creates <root>/Project/sub and returns the project dir and the
+// sub dir, with root resolved so the paths are the ones the OS reports.
+func projectFixture(t *testing.T) (project, sub string) {
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	project = filepath.Join(root, "Project")
+	sub = filepath.Join(project, "sub")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+	return project, sub
+}
+
+// Every record counts, not only the first one the reader returns.
+func TestDatabricksPluginActiveInChecksEveryRecord(t *testing.T) {
+	project, _ := projectFixture(t)
+	a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool) {
+		return []pluginInstall{
+			{Scope: "project", ProjectPath: filepath.Join(filepath.Dir(project), "Other")},
+			{Scope: "user"},
+		}, true
+	}}
+	assert.True(t, a.databricksPluginActiveIn(t.Context(), project))
+}
+
+func TestPluginInstallAppliesToProjectOutsideWorkingDir(t *testing.T) {
+	project, sub := projectFixture(t)
+	sibling := filepath.Join(filepath.Dir(project), "Other")
+	require.NoError(t, os.Mkdir(sibling, 0o755))
+
+	// Existing directories, so the comparison by file identity runs too.
+	for _, cwd := range []string{sibling, filepath.Dir(project)} {
+		assert.False(t, pluginInstall{Scope: "project", ProjectPath: project}.appliesTo(cwd), cwd)
+	}
+	assert.False(t, pluginInstall{Scope: "local", ProjectPath: sub}.appliesTo(project))
+}
+
+func TestPluginInstallAppliesToSymlinkedProjectPath(t *testing.T) {
+	project, sub := projectFixture(t)
+	alias := filepath.Join(filepath.Dir(project), "alias")
+	if err := os.Symlink(project, alias); err != nil {
+		t.Skipf("cannot create a symlink: %v", err)
+	}
+	for _, cwd := range []string{project, sub} {
+		assert.True(t, pluginInstall{Scope: "project", ProjectPath: alias}.appliesTo(cwd), cwd)
+	}
+}
+
+func TestPluginInstallAppliesToProjectPathInAnotherCase(t *testing.T) {
+	project, sub := projectFixture(t)
+	upper := filepath.Join(filepath.Dir(project), "PROJECT")
+	if _, err := os.Stat(upper); err != nil {
+		t.Skip("the temp filesystem is case-sensitive")
+	}
+	for _, cwd := range []string{project, sub} {
+		assert.True(t, pluginInstall{Scope: "project", ProjectPath: upper}.appliesTo(cwd), cwd)
 	}
 }
 
