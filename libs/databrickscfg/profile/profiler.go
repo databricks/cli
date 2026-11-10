@@ -48,18 +48,18 @@ func WithName(name string) ProfileMatchFunction {
 // WithHost returns a ProfileMatchFunction that matches profiles whose
 // canonical host equals the given host.
 func WithHost(host string) ProfileMatchFunction {
-	target := CanonicalizeHost(host)
+	target := canonicalizeHost(host)
 	return func(p Profile) bool {
-		return p.Host != "" && CanonicalizeHost(p.Host) == target
+		return p.Host != "" && canonicalizeHost(p.Host) == target
 	}
 }
 
 // WithHostAndAccountID returns a ProfileMatchFunction that matches profiles
 // by both canonical host and account ID.
 func WithHostAndAccountID(host, accountID string) ProfileMatchFunction {
-	target := CanonicalizeHost(host)
+	target := canonicalizeHost(host)
 	return func(p Profile) bool {
-		return p.Host != "" && CanonicalizeHost(p.Host) == target && p.AccountID == accountID
+		return p.Host != "" && canonicalizeHost(p.Host) == target && p.AccountID == accountID
 	}
 }
 
@@ -68,14 +68,14 @@ func WithHostAndAccountID(host, accountID string) ProfileMatchFunction {
 // SPOG workspace profiles where multiple workspaces share the same host and
 // account ID.
 func WithHostAccountIDAndWorkspaceID(host, accountID, workspaceID string) ProfileMatchFunction {
-	target := CanonicalizeHost(host)
+	target := canonicalizeHost(host)
 	return func(p Profile) bool {
-		return p.Host != "" && CanonicalizeHost(p.Host) == target && p.AccountID == accountID && p.WorkspaceID == workspaceID
+		return p.Host != "" && canonicalizeHost(p.Host) == target && p.AccountID == accountID && p.WorkspaceID == workspaceID
 	}
 }
 
-// CanonicalizeHost normalizes a host using the SDK's canonical host logic.
-func CanonicalizeHost(host string) string {
+// canonicalizeHost normalizes a host using the SDK's canonical host logic.
+func canonicalizeHost(host string) string {
 	return (&config.Config{Host: host}).CanonicalHostName()
 }
 

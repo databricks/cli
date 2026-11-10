@@ -197,6 +197,16 @@ workspace_id = none
 [no_workspace_id]
 host = https://classic.test
 
+[workspace_id_in_query]
+host = https://classic.test/?o=111
+
+[other_workspace_in_query]
+host = https://classic.test/?w=222
+
+[workspace_id_over_query]
+host = https://classic.test/?o=222
+workspace_id = 111
+
 [empty_host]
 host =
 workspace_id = 111
@@ -223,6 +233,9 @@ workspace_id = 111
 		{name: "no workspace", profile: "no_workspace", wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "none", but the selected profile has workspace ID "111"`},
 		{name: "no workspace on both", profile: "no_workspace", selectedWorkspaceID: new("none"), wantErr: `profile "no_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "none", but the selected profile has workspace ID "none"`},
 		{name: "no workspace ID on both", profile: "no_workspace_id", selectedWorkspaceID: new(""), wantErr: `profile "no_workspace_id" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "", but the selected profile has workspace ID ""`},
+		{name: "workspace ID in host query", profile: "workspace_id_in_query", want: "https://classic.test"},
+		{name: "other workspace in host query", profile: "other_workspace_in_query", wantErr: `profile "other_workspace_in_query" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "222", but the selected profile has workspace ID "111"`},
+		{name: "workspace_id over host query", profile: "workspace_id_over_query", want: "https://classic.test"},
 		{name: "empty host", profile: "empty_host", wantErr: `profile "empty_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "no host", profile: "no_host", wantErr: `profile "no_host" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
 		{name: "missing profile", profile: "missing", wantErr: `profile "missing" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host`},
@@ -254,4 +267,25 @@ workspace_id = 111
 			assert.Equal(t, tt.want, host)
 		})
 	}
+}
+
+func TestWorkspaceHostProfileReadOnce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("[classic]\nhost = https://classic.test\nworkspace_id = 111\n"), 0o600))
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+	ctx = env.Set(ctx, workspaceHostProfileEnvVar, "classic")
+	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+		Config: &workspaceConfig.Config{Host: "https://spog.test", WorkspaceID: "111"},
+	})
+	workspaceHost := loadHelpers(ctx)["workspace_host"].(func() (string, error))
+
+	host, err := workspaceHost()
+	require.NoError(t, err)
+	assert.Equal(t, "https://classic.test", host)
+
+	// Later calls must not read the config file again.
+	require.NoError(t, os.Remove(path))
+	host, err = workspaceHost()
+	require.NoError(t, err)
+	assert.Equal(t, "https://classic.test", host)
 }

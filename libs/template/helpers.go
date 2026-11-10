@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"text/template"
 	"uuid"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -90,15 +92,18 @@ func workspaceHost(ctx context.Context, w *databricks.WorkspaceClient) (string, 
 		return "", fmt.Errorf("profile %q from %s not found or has no host", name, workspaceHostProfileEnvVar)
 	}
 	p := profiles[0]
-	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone || p.WorkspaceID != w.Config.WorkspaceID {
-		return "", fmt.Errorf("profile %q from %s has workspace ID %q, but the selected profile has workspace ID %q", name, workspaceHostProfileEnvVar, p.WorkspaceID, w.Config.WorkspaceID)
-	}
-	// CanonicalizeHost returns a host that fails to parse unchanged, so check it here.
+	// CanonicalHostName returns a host that fails to parse unchanged, so check it here.
 	if _, err := url.Parse(p.Host); err != nil {
 		return "", fmt.Errorf("profile %q from %s has an invalid host: %w", name, workspaceHostProfileEnvVar, err)
 	}
-	// Normalize the host the same way the SDK normalizes the selected profile's host.
-	return profile.CanonicalizeHost(p.Host), nil
+	// Read the host and workspace ID the way the SDK reads them for the selected profile: the
+	// query is stripped from the host, and without workspace_id the ID comes from ?w= or ?o=.
+	cfg := &sdkconfig.Config{Host: p.Host, WorkspaceID: p.WorkspaceID}
+	host := cfg.CanonicalHostName()
+	if cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone || cfg.WorkspaceID != w.Config.WorkspaceID {
+		return "", fmt.Errorf("profile %q from %s has workspace ID %q, but the selected profile has workspace ID %q", name, workspaceHostProfileEnvVar, cfg.WorkspaceID, w.Config.WorkspaceID)
+	}
+	return host, nil
 }
 
 func loadHelpers(ctx context.Context) template.FuncMap {
@@ -160,9 +165,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"path_separator": func() string {
 			return string(os.PathSeparator)
 		},
-		"workspace_host": func() (string, error) {
+		// Templates call workspace_host many times, so read the profile once.
+		"workspace_host": sync.OnceValues(func() (string, error) {
 			return workspaceHost(ctx, w)
-		},
+		}),
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
