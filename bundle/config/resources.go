@@ -49,6 +49,7 @@ type Resources struct {
 	PostgresRoles             map[string]*resources.PostgresRole             `json:"postgres_roles,omitempty"`
 	PostgresSyncedTables      map[string]*resources.PostgresSyncedTable      `json:"postgres_synced_tables,omitempty"`
 	PostgresSnapshotSchedules map[string]*resources.PostgresSnapshotSchedule `json:"postgres_snapshot_schedules,omitempty"`
+	PostgresDataApis          map[string]*resources.PostgresDataApi          `json:"postgres_data_apis,omitempty"`
 	VectorSearchEndpoints     map[string]*resources.VectorSearchEndpoint     `json:"vector_search_endpoints,omitempty"`
 	VectorSearchIndexes       map[string]*resources.VectorSearchIndex        `json:"vector_search_indexes,omitempty"`
 	InstancePools             map[string]*resources.InstancePool             `json:"instance_pools,omitempty"`
@@ -148,6 +149,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["postgres_snapshot_schedules"], r.PostgresSnapshotSchedules),
+		collectResourceMap(descriptions["postgres_data_apis"], r.PostgresDataApis),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
@@ -194,6 +196,25 @@ func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
 	}
 }
 
+// ResolveDependsOn returns the key of the node that a lifecycle.depends_on entry refers to:
+// "resources.jobs.foo" for "foo" or "jobs.foo", and "resources.schemas.foo.grants" for the
+// grants or permissions of a qualified key, as "schemas.foo.grants".
+func (r *Resources) ResolveDependsOn(ref string) (string, error) {
+	resourceRef, sub := ref, ""
+	if parts := strings.Split(ref, "."); len(parts) == 3 {
+		if _, ok := ResourcesTypes[parts[0]+"."+parts[2]]; !ok {
+			return "", fmt.Errorf("no such resource: %s", ref)
+		}
+		resourceRef, sub = parts[0]+"."+parts[1], "."+parts[2]
+	}
+
+	res, key, err := r.ResolveKey(resourceRef)
+	if err != nil {
+		return "", err
+	}
+	return "resources." + res.ResourceDescription().PluralName + "." + key + sub, nil
+}
+
 func (r *Resources) HasInternalResources() bool {
 	return len(r.Snapshots) > 0
 }
@@ -238,6 +259,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_roles":               (&resources.PostgresRole{}).ResourceDescription(),
 		"postgres_synced_tables":       (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"postgres_snapshot_schedules":  (&resources.PostgresSnapshotSchedule{}).ResourceDescription(),
+		"postgres_data_apis":           (&resources.PostgresDataApi{}).ResourceDescription(),
 		"vector_search_endpoints":      (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),

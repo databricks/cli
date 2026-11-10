@@ -6,7 +6,7 @@
   "browse_only": false,
   "catalog_name": "main",
   "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
+  "created_at": [UNIX_TIME_MILLIS],
   "created_by": "[USERNAME]",
   "enable_predictive_optimization": "INHERIT",
   "full_name": "main.schema-[UNIQUE_NAME]",
@@ -14,7 +14,7 @@
   "name": "schema-[UNIQUE_NAME]",
   "owner": "[USERNAME]",
   "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
+  "updated_at": [UNIX_TIME_MILLIS],
   "updated_by": "[USERNAME]"
 }
 

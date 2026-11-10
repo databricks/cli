@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.apps._models.app_config import (
-    AppConfig,
-    AppConfigParam,
-)
+from databricks.bundles.apps._models.app_config import AppConfig, AppConfigParam
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
     AppPermissionParam,

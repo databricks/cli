@@ -140,6 +140,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
 		"job_runs":                     true,
 		"postgres_branches":            true,
+		"postgres_data_apis":           true,
 		"postgres_databases":           true,
 		"postgres_endpoints":           true,
 		"postgres_projects":            true,
@@ -389,6 +390,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresDataApis: map[string]*resources.PostgresDataApi{
+			"my_postgres_data_api": {
+				PostgresDataApiConfig: resources.PostgresDataApiConfig{
+					Parent: "projects/my-postgres-project/branches/my-postgres-branch/databases/my-postgres-database",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -454,6 +462,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSnapshotSchedule(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDataApi(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
@@ -549,6 +558,44 @@ func TestResolveKey(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantType, res.ResourceDescription().PluralName)
 			assert.Equal(t, tc.wantKey, key)
+		})
+	}
+}
+
+func TestResolveDependsOn(t *testing.T) {
+	r := &Resources{
+		Jobs:      map[string]*resources.Job{"foo": {}, "thing": {}},
+		Pipelines: map[string]*resources.Pipeline{"thing": {}},
+		Schemas:   map[string]*resources.Schema{"bar": {}},
+	}
+
+	tests := []struct {
+		ref     string
+		want    string
+		wantErr string
+	}{
+		{ref: "foo", want: "resources.jobs.foo"},
+		{ref: "jobs.foo", want: "resources.jobs.foo"},
+		{ref: "schemas.bar.grants", want: "resources.schemas.bar.grants"},
+		{ref: "jobs.foo.permissions", want: "resources.jobs.foo.permissions"},
+		{ref: "missing", wantErr: "no such resource: missing"},
+		{ref: "thing", wantErr: "ambiguous resource: thing (can resolve to jobs.thing, pipelines.thing); use a qualified name to disambiguate"},
+		{ref: "jobs.foo.grants", wantErr: "no such resource: jobs.foo.grants"},
+		{ref: "schemas.missing.grants", wantErr: "no such resource: schemas.missing"},
+		{ref: "bar.grants", wantErr: "no such resource: bar.grants"},
+		{ref: "a.b.c", wantErr: "no such resource: a.b.c"},
+		{ref: "a.b.c.d", wantErr: "no such resource: a.b.c.d"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ref, func(t *testing.T) {
+			got, err := r.ResolveDependsOn(tc.ref)
+			if tc.wantErr != "" {
+				assert.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

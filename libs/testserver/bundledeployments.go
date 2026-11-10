@@ -50,6 +50,7 @@ var dmsResourceTypes = []string{
 	"database_instances",
 	"experiments",
 	"external_locations",
+	"features",
 	"genie_spaces",
 	"instance_pools",
 	"internal_immutable_folders",

@@ -483,27 +483,39 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 			name: "serverless with accelerator",
 			opts: ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
 			want: protos.SshTunnelEvent{
-				ComputeType:     protos.SshTunnelComputeTypeServerless,
-				AcceleratorType: "GPU_1xA10",
-				ClientMode:      protos.SshTunnelClientModeSSH,
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				AcceleratorType:    "GPU_1xA10",
+				ClientMode:         protos.SshTunnelClientModeSSH,
+				EnvironmentVersion: 4,
 			},
 		},
 		{
 			name: "proxy mode takes precedence over IDE",
 			opts: ClientOptions{ConnectionName: "my-conn", ProxyMode: true, IDE: "vscode"},
 			want: protos.SshTunnelEvent{
-				ComputeType: protos.SshTunnelComputeTypeServerless,
-				IdeType:     "vscode",
-				ClientMode:  protos.SshTunnelClientModeProxy,
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				IdeType:            "vscode",
+				ClientMode:         protos.SshTunnelClientModeProxy,
+				EnvironmentVersion: 4,
 			},
 		},
 		{
 			name: "IDE mode",
 			opts: ClientOptions{ConnectionName: "my-conn", IDE: "cursor"},
 			want: protos.SshTunnelEvent{
-				ComputeType: protos.SshTunnelComputeTypeServerless,
-				IdeType:     "cursor",
-				ClientMode:  protos.SshTunnelClientModeIDE,
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				IdeType:            "cursor",
+				ClientMode:         protos.SshTunnelClientModeIDE,
+				EnvironmentVersion: 4,
+			},
+		},
+		{
+			name: "explicit serverless environment version",
+			opts: ClientOptions{ConnectionName: "my-conn", EnvironmentVersion: 6},
+			want: protos.SshTunnelEvent{
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				ClientMode:         protos.SshTunnelClientModeSSH,
+				EnvironmentVersion: 6,
 			},
 		},
 		{

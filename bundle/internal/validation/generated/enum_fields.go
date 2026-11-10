@@ -111,7 +111,7 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].ai_function_task.ai_extract.mode":                                                         {"MODE_PRECISION"},
 	"resources.jobs.*.tasks[*].ai_function_task.ai_parse_document.description_element_types[*]":                          {"DESCRIPTION_ELEMENT_TYPE_ALL", "DESCRIPTION_ELEMENT_TYPE_FIGURE"},
 	"resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.accelerator_type":                                  {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].ai_runtime_task.priority_class":                                                           {"BEST_EFFORT", "CRITICAL", "NORMAL"},
+	"resources.jobs.*.tasks[*].ai_runtime_task.priority_class":                                                           {"BEST_EFFORT", "NORMAL"},
 	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                                             {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].condition_task.op":                                                                        {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].dashboard_task.subscription.attachment.data_attachment.file_format":                       {"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"},
@@ -120,7 +120,7 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].for_each_task.task.ai_function_task.ai_extract.mode":                                      {"MODE_PRECISION"},
 	"resources.jobs.*.tasks[*].for_each_task.task.ai_function_task.ai_parse_document.description_element_types[*]":       {"DESCRIPTION_ELEMENT_TYPE_ALL", "DESCRIPTION_ELEMENT_TYPE_FIGURE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_type":               {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.priority_class":                                        {"BEST_EFFORT", "CRITICAL", "NORMAL"},
+	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.priority_class":                                        {"BEST_EFFORT", "NORMAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                                          {"GPU_1xA10", "GPU_1xH100", "GPU_8xB300", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task.op":                                                     {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.attachment.data_attachment.file_format":    {"FILE_FORMAT_CSV", "FILE_FORMAT_EXCEL", "FILE_FORMAT_TSV"},
@@ -283,6 +283,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                                                                           {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.permissions[*].level":           {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_data_apis.*.openapi_mode": {"OPEN_API_MODE_DISABLED", "OPEN_API_MODE_IGNORE_PRIVILEGES"},
 
 	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
 

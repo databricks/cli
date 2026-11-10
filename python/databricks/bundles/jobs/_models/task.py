@@ -38,10 +38,7 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -119,7 +116,7 @@ class Task:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
@@ -373,7 +370,7 @@ class TaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]

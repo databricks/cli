@@ -62,6 +62,7 @@ class InstancePool(Resource):
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.
+    The node type cannot be changed after the pool is created.
     """
 
     aws_attributes: VariableOrOptional[InstancePoolAwsAttributes] = None
@@ -185,6 +186,7 @@ class InstancePoolDict(TypedDict, total=False):
     the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
     and optimized for memory or compute intensive workloads. A list of available node
     types can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.
+    The node type cannot be changed after the pool is created.
     """
 
     aws_attributes: VariableOrOptional[InstancePoolAwsAttributesParam]

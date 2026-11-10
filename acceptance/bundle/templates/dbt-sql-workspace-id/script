@@ -1,0 +1,25 @@
+setup_custom_host
+
+cat > .databrickscfg <<EOT
+[no_workspace_id]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+token = $DATABRICKS_TOKEN
+EOT
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# dbt reads the workspace ID from ?o= in the HTTP path. The template adds it
+# when the profile sets the ID, like ?w= in the bundle host.
+for profile in no_workspace_id custom_host; do
+  title "Profile $profile\n"
+  trace $CLI bundle init dbt-sql --config-file ./input.json --profile $profile
+  trace grep 'host:' my_dbt_sql/databricks.yml
+  trace grep -E "^    default: [^{]" my_dbt_sql/profile_template.yml
+  rm -r my_dbt_sql
+done

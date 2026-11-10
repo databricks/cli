@@ -172,7 +172,7 @@
             "browse_only": false,
             "catalog_name": "main",
             "comment": "mycomment",
-            "created_at": [UNIX_TIME_MILLIS][0],
+            "created_at": [UNIX_TIME_MILLIS],
             "created_by": "[USERNAME]",
             "full_name": "main.schema_grants.mymodel",
             "id": "main.schema_grants.mymodel",
@@ -186,7 +186,7 @@
             ],
             "schema_name": "schema_grants",
             "storage_location": null,
-            "updated_at": [UNIX_TIME_MILLIS][0],
+            "updated_at": [UNIX_TIME_MILLIS],
             "updated_by": "[USERNAME]"
           },
           "sensitive_attributes": [],

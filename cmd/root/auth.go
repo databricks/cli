@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/liteswap"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -205,10 +206,37 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	return true, aerr
 }
 
+// bindHostMetadataLogger makes cfg's host-metadata resolution log through
+// ctx's logger. The SDK's EnsureResolved hands the resolver
+// context.Background(), so without this its log lines bypass the command's
+// logger, including the one a background resolution (aitools telemetry auth)
+// sets to keep its warnings out of the command's output. Only the logger is
+// carried over: the request keeps the SDK's context (user agent, no
+// cancellation), as before. The resolver is built when the SDK asks for it,
+// as the SDK itself does, so configs that never resolve a host build none.
+func bindHostMetadataLogger(ctx context.Context, cfg *config.Config) {
+	// Only main.go registers the factory (blank import of libs/hostmetadata),
+	// so it is nil in test binaries and other programs that use this package.
+	factory := config.DefaultHostMetadataResolverFactory
+	if factory == nil {
+		return
+	}
+	logger := log.GetLogger(ctx)
+	cfg.HostMetadataResolver = func(sdkCtx context.Context, host string) (*config.HostMetadata, error) {
+		resolve := factory(cfg)
+		if resolve == nil {
+			// The factory contract allows nil to fall through to the SDK's fetch.
+			resolve = cfg.DefaultHostMetadataResolver()
+		}
+		return resolve(log.NewContext(sdkCtx, logger), host)
+	}
+}
+
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 	ctx := cmd.Context()
 	liteswap.Apply(ctx, cfg)
+	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
@@ -338,6 +366,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	cfg := &config.Config{}
 	liteswap.Apply(ctx, cfg)
+	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	profile, hasProfileFlag := profileFlagValue(cmd)

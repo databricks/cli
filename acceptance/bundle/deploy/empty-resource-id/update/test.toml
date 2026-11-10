@@ -1,0 +1,3 @@
+[[Server]]
+Pattern = "PATCH /api/2.1/unity-catalog/volumes/main.myschema.myvolume"
+Response.Body = '{}'
