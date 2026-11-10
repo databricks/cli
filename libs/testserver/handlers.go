@@ -986,10 +986,11 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ModelProviderServices, req.Vars["name"])
 	})
 
-	// Volumes:
+	// Volumes: stored under their lowercased full name; UC looks a full name up case-insensitively
+	// (checked on AWS: a volume re-keyed as main.s.MyVolume is still read at that path).
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGetUC(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"], "Volume")
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, strings.ToLower(req.Vars["full_name"]), "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
@@ -997,11 +998,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+		return req.Workspace.VolumesUpdate(req, strings.ToLower(req.Vars["full_name"]))
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+		return MapDelete(req.Workspace, req.Workspace.Volumes, strings.ToLower(req.Vars["full_name"]))
 	})
 
 	// Repos:

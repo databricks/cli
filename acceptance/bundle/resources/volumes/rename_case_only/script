@@ -25,3 +25,10 @@ trace $CLI volumes read "$VOLUME" | jq '{full_name, name, volume_id}'
 
 title "Redeploy"
 trace $CLI bundle plan
+
+title "Rename the schema. The volume is re-keyed without a request. Its recorded ID keeps the config's casing, which UC reads case-insensitively"
+trace update_file.py databricks.yml test_schema_ test_schema_renamed_
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI bundle summary --output json | jq '.resources.volumes.volume1.id'
+trace $CLI bundle plan
