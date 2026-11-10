@@ -1,0 +1,25 @@
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '{"update_id": "00000000-0000-0000-0000-0000000000a1"}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '{"update": {"update_id": "00000000-0000-0000-0000-0000000000a1", "state": "FAILED"}}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{"events": [
+  {"id": "e1", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_valid_order"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e2", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e3", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_legacy_format"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e4", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_fixture"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e5", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:01.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_valid_order"}, "details": {"test_case_progress": {"status": "PASSED"}}},
+  {"id": "e6", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:01.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill"}, "details": {"test_case_progress": {"status": "RUNNING"}}},
+  {"id": "e7", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:03.140Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill"}, "details": {"test_case_progress": {"status": "FAILED"}}, "level": "ERROR", "error": {"fatal": false, "exceptions": [{"class_name": "AssertionError", "message": "assert 100 == 150"}]}},
+  {"id": "e8", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:04.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_legacy_format"}, "details": {"test_case_progress": {"status": "SKIPPED"}}},
+  {"id": "e9", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:05.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_fixture"}, "details": {"test_case_progress": {"status": "ERROR"}}, "level": "ERROR", "error": {"fatal": false, "exceptions": [{"class_name": "RuntimeError", "message": "fixture orders setup failed"}]}},
+  {"id": "e10", "event_type": "test_run_summary", "timestamp": "2026-01-01T00:00:06.000Z", "details": {"test_run_summary": {"total": 4, "passed": 1, "failed": 1, "skipped": 1, "errored": 1}}},
+  {"id": "e11", "event_type": "update_progress", "timestamp": "2026-01-01T00:00:07.000Z", "level": "ERROR", "error": {"fatal": true, "exceptions": [{"class_name": "TestFailure", "message": "[PIPELINE_TEST_FAILED] 2 of the pipeline's tests failed (1 passed, 1 skipped)."}]}}
+]}
+'''
