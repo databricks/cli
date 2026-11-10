@@ -10,6 +10,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "The grants of a referenced catalog or schema become an implicit lifecycle.depends_on"
+trace $CLI bundle validate -o json | jq '.resources | map_values(map_values(.lifecycle.depends_on))'
+
+title "The plan orders dependents after the grants"
 trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
 
 trace $CLI bundle deploy

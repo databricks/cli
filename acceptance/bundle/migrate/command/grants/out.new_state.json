@@ -16,6 +16,10 @@
     {
      "node": "resources.schemas.my_schema",
      "label": "${resources.schemas.my_schema.name}"
+    },
+    {
+     "node": "resources.schemas.my_schema.grants",
+     "label": "depends_on"
     }
    ]
   },
@@ -81,6 +85,10 @@
     {
      "node": "resources.schemas.my_schema",
      "label": "${resources.schemas.my_schema.name}"
+    },
+    {
+     "node": "resources.schemas.my_schema.grants",
+     "label": "depends_on"
     }
    ]
   },
