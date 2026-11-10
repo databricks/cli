@@ -9,38 +9,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// SDK agent products (useragent.AgentProvider values) whose names differ from
-// the registry name.
+// providerAliases maps the SDK agent products (useragent.AgentProvider values)
+// whose names differ from the registry name. Every other product is looked up
+// by its own name.
 // https://github.com/databricks/databricks-sdk-go/blob/main/useragent/agent.go
-const (
-	providerCopilot = "copilot-cli"
-	providerGemini  = "gemini-cli"
-)
-
-// providerToRegistry maps SDK agent products to registry agent names. Products
-// missing here have no registry entry, so the CLI cannot install into them.
-var providerToRegistry = map[string]string{
-	NameClaudeCode:  NameClaudeCode,
-	NameCursor:      NameCursor,
-	NameCodex:       NameCodex,
-	NameOpenCode:    NameOpenCode,
-	providerCopilot: NameCopilot,
-	NameAntigravity: NameAntigravity,
-	NamePi:          NamePi,
-	providerGemini:  NameGemini,
-	NameGoose:       NameGoose,
-	NameKiro:        NameKiro,
+var providerAliases = map[string]string{
+	"copilot-cli": NameCopilot,
+	"gemini-cli":  NameGemini,
 }
 
 // AgentForProvider returns the registry agent for an SDK agent product
 // (useragent.AgentProvider value), or nil when the product has no registry
 // entry, is "multiple", or is empty.
 func AgentForProvider(provider string) *Agent {
-	name, ok := providerToRegistry[provider]
-	if !ok {
-		return nil
+	if name, ok := providerAliases[provider]; ok {
+		provider = name
 	}
-	return ByName(name)
+	return ByName(provider)
 }
 
 // CallingAgent returns the registry agent driving the CLI, or nil when no
@@ -58,6 +43,18 @@ const (
 	ToolingSkills
 	ToolingPlugin
 )
+
+// String returns the value reported in the aitools-agent User-Agent segment.
+func (t Tooling) String() string {
+	switch t {
+	case ToolingPlugin:
+		return "plugin"
+	case ToolingSkills:
+		return "skills"
+	default:
+		return "none"
+	}
+}
 
 // DatabricksTooling reports the Databricks plugin or skills in this agent's own
 // locations; read errors count as not installed. Claude Code's manifest is

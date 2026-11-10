@@ -20,7 +20,6 @@ func TestAgentForProvider(t *testing.T) {
 	assert.Nil(t, agents.AgentForProvider("windsurf"))
 	assert.Nil(t, agents.AgentForProvider("multiple"))
 	assert.Nil(t, agents.AgentForProvider(""))
-	assert.Nil(t, agents.AgentForProvider("copilot"))
 }
 
 // Every registry agent must be reachable from some SDK product, or it could

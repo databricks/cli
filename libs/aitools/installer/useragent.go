@@ -64,7 +64,7 @@ func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
 		return ctx
 	}
 	tooling := a.DatabricksTooling(ctx, func() bool { return globalPluginRecorded(ctx, a.Name) })
-	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, toolingUserAgentValue(tooling))
+	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, tooling.String())
 }
 
 // globalPluginRecorded reports whether the global CLI install state records a
@@ -86,15 +86,4 @@ func globalPluginRecorded(ctx context.Context, agentName string) bool {
 	}
 	_, ok := state.Plugins[agentName]
 	return ok
-}
-
-func toolingUserAgentValue(t agents.Tooling) string {
-	switch t {
-	case agents.ToolingPlugin:
-		return "plugin"
-	case agents.ToolingSkills:
-		return "skills"
-	default:
-		return "none"
-	}
 }
