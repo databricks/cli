@@ -34,10 +34,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       },
       "enable_predictive_optimization": "INHERIT",
       "full_name": "main.test-schema-[UNIQUE_NAME]",
-      "metastore_id": "[UUID]",
+      "metastore_id": "[UUID][0]",
       "name": "test-schema-[UNIQUE_NAME]",
       "owner": "[USERNAME]",
-      "schema_id": "[UUID]",
+      "schema_id": "[UUID][1]",
       "updated_by": "[USERNAME]"
     },
     "changes": {
@@ -51,8 +51,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "schema_id": {
         "action": "skip",
         "reason": "internal_id",
-        "old": "[UUID]",
-        "remote": "[UUID]"
+        "old": "[UUID][1]",
+        "remote": "[UUID][1]"
       }
     }
   },
@@ -80,8 +80,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "name": "myvolume",
       "owner": "[USERNAME]",
       "schema_name": "test-schema-[UNIQUE_NAME]",
-      "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
-      "volume_id": "[UUID]",
+      "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][2]",
+      "volume_id": "[UUID][2]",
       "volume_type": "MANAGED"
     },
     "changes": {
@@ -95,13 +95,13 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "storage_location": {
         "action": "skip",
         "reason": "immutable_backend_value",
-        "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+        "remote": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][2]"
       },
       "volume_id": {
         "action": "skip",
         "reason": "internal_id",
-        "old": "[UUID]",
-        "remote": "[UUID]"
+        "old": "[UUID][2]",
+        "remote": "[UUID][2]"
       },
       "volume_type": {
         "action": "recreate",

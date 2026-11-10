@@ -32,7 +32,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "full_name": "main.test-schema1-[UNIQUE_NAME]",
       "name": "test-schema1-[UNIQUE_NAME]",
       "owner": "[USERNAME]",
-      "schema_id": "[UUID]"
+      "schema_id": "[UUID][0]"
     },
     "changes": {
       "name": {
@@ -45,8 +45,8 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "schema_id": {
         "action": "skip",
         "reason": "internal_id",
-        "old": "[UUID]",
-        "remote": "[UUID]"
+        "old": "[UUID][0]",
+        "remote": "[UUID][0]"
       }
     }
   },
@@ -61,14 +61,14 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       "full_name": "main.test-schema2-[UNIQUE_NAME]",
       "name": "test-schema2-[UNIQUE_NAME]",
       "owner": "[USERNAME]",
-      "schema_id": "[UUID]"
+      "schema_id": "[UUID][1]"
     },
     "changes": {
       "schema_id": {
         "action": "skip",
         "reason": "internal_id",
-        "old": "[UUID]",
-        "remote": "[UUID]"
+        "old": "[UUID][1]",
+        "remote": "[UUID][1]"
       }
     }
   },
