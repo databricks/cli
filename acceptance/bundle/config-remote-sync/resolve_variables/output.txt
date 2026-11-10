@@ -157,7 +157,8 @@ Resource: resources.pipelines.my_pipeline
     "resource_pipeline_ids": [
       "[MY_PIPELINE_ID]"
     ]
-  }
+  },
+  "in_git_repo": false
 }
 
 >>> [CLI] bundle destroy --auto-approve

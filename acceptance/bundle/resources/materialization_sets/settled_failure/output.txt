@@ -20,7 +20,7 @@ update
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: materialization set [UUID]: operation failed: [INTERNAL_ERROR] Changed 0 of 2 materialized features in materialization set '[UUID]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.; [UUID] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID]'. If the issue persists, please retry or contact support.
+Error: cannot update resources.materialization_sets.set1: updating id=[UUID][0]: materialization set [UUID][0]: operation failed: [INTERNAL_ERROR] Changed 0 of 2 materialized features in materialization set '[UUID][0]'. The operation's progress lists which update succeeded, which failed and why.; members left unchanged: [UUID][1] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID][1]'. If the issue persists, please retry or contact support.; [UUID][2] (INTERNAL_ERROR): Failed to delete materialized feature '[UUID][2]'. If the issue persists, please retry or contact support.
 
 Files: 2 uploaded, 0 deleted
 

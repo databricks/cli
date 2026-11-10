@@ -34,7 +34,8 @@ Resource: resources.jobs.foo
     "resource_job_ids": [
       "[FOO_ID]"
     ]
-  }
+  },
+  "in_git_repo": false
 }
 
 >>> cat [OUTPUT_DIR]/out.requests.txt

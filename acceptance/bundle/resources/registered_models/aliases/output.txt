@@ -40,7 +40,7 @@
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][0]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1
@@ -72,7 +72,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][0]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1
@@ -94,7 +94,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][0]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -163,7 +163,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='challenger'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][1]"
   },
   "aliases[alias_name='challenger'].model_name": {
     "action": "skip",
@@ -183,7 +183,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][2]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -236,7 +236,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][3]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -316,7 +316,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "challenger",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][4]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 1
@@ -330,7 +330,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][5]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -347,7 +347,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "staging",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][6]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 1
@@ -396,7 +396,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "champion",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][5]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 2
@@ -443,7 +443,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][7]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1

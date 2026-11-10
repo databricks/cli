@@ -9,12 +9,33 @@
       "label": "depends_on"
     },
     {
+      "node": "resources.jobs.z_job.permissions",
+      "label": "depends_on"
+    },
+    {
       "node": "resources.pipelines.z_pipeline",
+      "label": "depends_on"
+    },
+    {
+      "node": "resources.schemas.z_schema.grants",
       "label": "depends_on"
     }
   ],
   "resources.jobs.z_job": null,
-  "resources.pipelines.z_pipeline": null
+  "resources.jobs.z_job.permissions": [
+    {
+      "node": "resources.jobs.z_job",
+      "label": "${resources.jobs.z_job.id}"
+    }
+  ],
+  "resources.pipelines.z_pipeline": null,
+  "resources.schemas.z_schema": null,
+  "resources.schemas.z_schema.grants": [
+    {
+      "node": "resources.schemas.z_schema",
+      "label": "${resources.schemas.z_schema.id}"
+    }
+  ]
 }
 
 === Deploy creates dependencies first
@@ -23,11 +44,14 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.a_job
 Created jobs.z_job
+Created jobs.z_job.permissions
 Created pipelines.z_pipeline
+Created schemas.z_schema
+Created schemas.z_schema.grants
 Files: 1 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs //pipelines
+>>> print_requests.py //jobs //pipelines //unity-catalog
 POST /api/2.2/jobs/create a_job
 
 === Destroy deletes dependents first
@@ -37,6 +61,10 @@ The following resources will be deleted:
   delete resources.jobs.a_job
   delete resources.jobs.z_job
   delete resources.pipelines.z_pipeline
+  delete resources.schemas.z_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.z_schema
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
@@ -44,5 +72,5 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 3 deleted
+Destroy: 4 deleted
 a_job deleted first

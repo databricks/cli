@@ -30,7 +30,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/feature-engineering/materialization-sets",
   "q": {
-    "request_id": "[UUID]"
+    "request_id": "[UUID][0]"
   },
   "body": {
     "materialized_features": [
@@ -66,7 +66,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --get //feature-engineering/operations
 {
   "method": "GET",
-  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+  "path": "/api/2.0/feature-engineering/operations/[UUID][1]"
 }
 
 === The server assigned a set id and a member id per member
@@ -114,12 +114,12 @@ Destroy: 2 deleted
   "method": "DELETE",
   "path": "/api/2.0/feature-engineering/materialization-sets/[SET1_ID]",
   "q": {
-    "request_id": "[UUID]"
+    "request_id": "[UUID][2]"
   }
 }
 
 >>> print_requests.py --get //feature-engineering/operations
 {
   "method": "GET",
-  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+  "path": "/api/2.0/feature-engineering/operations/[UUID][3]"
 }

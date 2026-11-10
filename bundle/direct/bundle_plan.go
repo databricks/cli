@@ -1464,11 +1464,10 @@ func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.
 
 	var result []deployplan.DependsOnEntry
 	for _, dep := range resource.GetLifecycle().GetDependsOn() {
-		res, key, err := configRoot.Resources.ResolveKey(dep.Resource)
+		target, err := configRoot.Resources.ResolveDependsOn(dep.Resource)
 		if err != nil {
 			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
 		}
-		target := "resources." + res.ResourceDescription().PluralName + "." + key
 		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
 	}
 	return result, nil

@@ -1,0 +1,3 @@
+# Package init() runs on every CLI invocation, so slow inits (often arriving through a
+# transitive dependency upgrade) delay every command. The total is ~5 ms on linux/amd64.
+check_init_time.py --max-ms 10 -- $CLI --version 2> LOG.inittime
