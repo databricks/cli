@@ -419,6 +419,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
+	if err := b.addParentMoves(plan); err != nil {
+		return nil, err
+	}
+
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
 			entry.NewState = nil
@@ -748,6 +752,91 @@ func (b *DeploymentBundle) renameChange(resourceKey, field string) (*deployplan.
 		return nil, nil
 	}
 	return change, nil
+}
+
+// addParentMoves handles a recreate of a resource whose parent, as recorded in its state's
+// depends_on, is renamed in the same plan. The backend moves the resource along with the parent,
+// so the recreate has to delete it at the ID the rename gives it, after the rename: the entry's ID
+// is set to that ID and the entry depends on the parent. The config may no longer reference the
+// parent (the resource moves to another one), which is why the parent comes from the state.
+func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
+	for resourceKey, entry := range plan.Plan {
+		if entry.Action != deployplan.Recreate || entry.ID != "" {
+			continue
+		}
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return err
+		}
+		if !adapter.HasIDFromState() {
+			continue
+		}
+		dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+		if !ok {
+			continue
+		}
+		state, err := parseState(adapter.StateType(), dbentry.State)
+		if err != nil {
+			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
+		}
+
+		var parents []deployplan.DependsOnEntry
+		for _, dep := range dbentry.DependsOn {
+			rename, err := b.dependencyRename(dep.Label)
+			if err != nil {
+				return fmt.Errorf("%s: %w", resourceKey, err)
+			}
+			if rename == nil {
+				continue
+			}
+			for pathString, ch := range entry.Changes {
+				if !structdiff.IsEqual(ch.Old, rename.Old) {
+					continue
+				}
+				path, err := structpath.ParsePath(pathString)
+				if err != nil {
+					return err
+				}
+				if err := structaccess.Set(state, path, rename.New); err != nil {
+					return fmt.Errorf("%s: setting %s: %w", resourceKey, pathString, err)
+				}
+				parents = append(parents, dep)
+			}
+		}
+		if len(parents) == 0 {
+			continue
+		}
+
+		id, err := adapter.IDFromState(state)
+		if err != nil {
+			return fmt.Errorf("%s: %w", resourceKey, err)
+		}
+		if id == dbentry.ID {
+			continue
+		}
+		entry.ID = id
+		for _, parent := range parents {
+			if !slices.ContainsFunc(entry.DependsOn, func(d deployplan.DependsOnEntry) bool { return d.Node == parent.Node }) {
+				entry.DependsOn = append(entry.DependsOn, parent)
+			}
+		}
+	}
+	return nil
+}
+
+// dependencyRename returns the rename of the field a depends_on label references, nil if the label
+// is not a pure reference or that field is not renamed in this plan.
+func (b *DeploymentBundle) dependencyRename(label string) (*deployplan.ChangeDesc, error) {
+	ref, ok := dynvar.NewRef(dyn.V(label))
+	if !ok || !ref.IsPure() {
+		return nil, nil
+	}
+	targetPath, err := structpath.ParsePath(ref.References()[0])
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse reference %q: %w", label, err)
+	}
+	targetKey, targetField := splitResourcePath(targetPath)
+	return b.renameChange(targetKey, targetField.String())
 }
 
 // findMoved looks for a resource missing from its recorded ID at the ID its config gives it, where a
