@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structdiff"
@@ -874,5 +875,81 @@ func TestInternalIDChangesAreSkipped(t *testing.T) {
 				assert.Equal(t, deployplan.Skip, changes[tt.field].Action)
 			})
 		}
+	}
+}
+
+func TestAddParentMoves(t *testing.T) {
+	const (
+		schemaKey = "resources.schemas.schema1"
+		volumeKey = "resources.volumes.volume1"
+	)
+	schema1Dep := deployplan.DependsOnEntry{Node: schemaKey, Label: "${resources.schemas.schema1.name}"}
+	schema2Dep := deployplan.DependsOnEntry{Node: "resources.schemas.schema2", Label: "${resources.schemas.schema2.name}"}
+
+	tests := []struct {
+		name          string
+		schemaRenamed bool
+		volumeChanges deployplan.Changes
+		wantID        string
+		wantDependsOn []deployplan.DependsOnEntry
+	}{
+		{
+			name:          "moved to another schema",
+			schemaRenamed: true,
+			volumeChanges: deployplan.Changes{"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"}},
+			wantID:        "main.s1-renamed.vol",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			name:          "recreated in the renamed schema",
+			schemaRenamed: true,
+			volumeChanges: deployplan.Changes{
+				"schema_name": {Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed, Old: "s1", New: "s1-renamed"},
+				"volume_type": {Action: deployplan.Recreate, Old: "MANAGED", New: "EXTERNAL"},
+			},
+			wantID:        "main.s1-renamed.vol",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			name:          "schema not renamed",
+			schemaRenamed: false,
+			volumeChanges: deployplan.Changes{"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"}},
+			wantID:        "",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapters, err := dresources.InitAll(nil)
+			require.NoError(t, err)
+
+			schemaEntry := &deployplan.PlanEntry{Action: deployplan.Skip}
+			if tt.schemaRenamed {
+				schemaEntry = &deployplan.PlanEntry{
+					Action:  deployplan.UpdateWithID,
+					Changes: deployplan.Changes{"name": {Action: deployplan.UpdateWithID, Old: "s1", New: "s1-renamed"}},
+				}
+			}
+			plan := deployplan.NewPlanDirect()
+			plan.Plan[schemaKey] = schemaEntry
+			plan.Plan[volumeKey] = &deployplan.PlanEntry{
+				Action:    deployplan.Recreate,
+				DependsOn: []deployplan.DependsOnEntry{schema2Dep},
+				Changes:   tt.volumeChanges,
+			}
+
+			b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
+				volumeKey: {
+					ID:        "main.s1.vol",
+					State:     []byte(`{"catalog_name": "main", "schema_name": "s1", "name": "vol", "volume_type": "MANAGED"}`),
+					DependsOn: []deployplan.DependsOnEntry{schema1Dep},
+				},
+			}})
+
+			require.NoError(t, b.addParentMoves(plan))
+			assert.Equal(t, tt.wantID, plan.Plan[volumeKey].ID)
+			assert.Equal(t, tt.wantDependsOn, plan.Plan[volumeKey].DependsOn)
+		})
 	}
 }

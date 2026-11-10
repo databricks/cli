@@ -57,6 +57,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     }
   },
   "resources.volumes.volume1": {
+    "id": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
     "depends_on": [
       {
         "node": "resources.schemas.schema1",
@@ -138,7 +139,7 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 }
 {
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].myvolume"
+  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-renamed-[UNIQUE_NAME].myvolume"
 }
 {
   "method": "POST",

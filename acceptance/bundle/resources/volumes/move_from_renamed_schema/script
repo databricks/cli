@@ -27,8 +27,8 @@ trace print_requests.py //unity-catalog
 title "The volume is in the second schema"
 trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name}'
 
-title "The old volume moved with the renamed schema. It should have been deleted"
-trace $CLI volumes read "$RENAMED_VOLUME" | jq '{full_name, volume_id}'
+title "The old volume, moved with the renamed schema, was deleted there"
+trace musterr $CLI volumes read "$RENAMED_VOLUME"
 
 title "Redeploy is a no-op"
 trace $CLI bundle plan
