@@ -1,6 +1,7 @@
 pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
 rm "$OUT_REQUESTS"
 
-title "A submit error from the service is shown as is, and no update ID is printed"
-trace musterr $CLI pipelines test --pipeline-id $pipeline_id
+title "A submit error from the service is shown as is, no update ID is printed, and an older report is replaced"
+echo '<testsuites><testsuite name="old" tests="1"><testcase name="test_old"></testcase></testsuite></testsuites>' > out.start-failed.xml
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --junit-xml out.start-failed.xml
 trace print_requests.py //updates

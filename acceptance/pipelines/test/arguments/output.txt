@@ -31,10 +31,17 @@ update starts.
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
 to read the results later. To stop the update, run 'pipelines stop'.
 
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause. The report replaces the file on every exit except a flag that
+cannot be parsed. With workspace.sync_mode immutable, test names keep the path
+of the deployed snapshot, which changes with each deployment.
+
 Usage:
   databricks pipelines test [flags] [KEY] [TEST_SELECTION...]
 
 Pipeline Test Flags:
+      --junit-xml string         Write the results as a JUnit XML report to this file, replacing it.
       --no-wait                  Don't wait for the tests to complete.
       --pipeline-id string       ID of the pipeline to test, instead of a KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
@@ -53,6 +60,10 @@ Global Flags:
 
 === The command is experimental and off by default
 >>> musterr [CLI] pipelines test --pipeline-id 1234
+Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
+
+=== With the command off, an older report is still replaced
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --junit-xml out.gate-off.xml
 Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
 
 === pytest arguments must be passed with --pytest-arg
@@ -95,3 +106,11 @@ Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that p
 
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 
 Error: --resume "" is not an update ID; pass the update ID that pipelines test printed
+
+=== --junit-xml needs the results
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml out.no-wait.xml
+Error: --junit-xml cannot be used with --no-wait because no results are available when the command returns
+
+=== An invalid flag replaces an older report
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x --junit-xml out.flag-error.xml
+Error: unsupported pytest argument "-x": only -k and -m are supported

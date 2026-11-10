@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/atomicfile"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type junitTestSuites struct {
@@ -142,6 +144,37 @@ func (r *testReport) finish(updateID string, run *testRun, problem string, runEr
 	}
 	fmt.Fprintf(r.out, "JUnit report: %s\n", filepath.ToSlash(r.path))
 	return runErr
+}
+
+// failed writes a report with one failing entry for an error that ended the command before the
+// update could be read, so that an older report does not survive. A write error is joined with
+// err, as in finish.
+func (r *testReport) failed(ctx context.Context, err error) error {
+	if r.path == "" {
+		return err
+	}
+	message := err.Error()
+	printed := errors.Is(err, root.ErrAlreadyPrinted)
+	if printed {
+		// The error was printed as a diagnostic. Name it instead of the sentinel's text.
+		message = "the project has errors, see the command output"
+		if logdiag.IsSetup(ctx) && logdiag.GetFirstErrorSummary(ctx) != "" {
+			message = logdiag.GetFirstErrorSummary(ctx)
+		}
+	}
+	report := junitTestSuites{Suites: []junitTestSuite{{
+		Name:   r.suiteName,
+		Tests:  1,
+		Errors: 1,
+		Cases:  []junitTestCase{{Name: "pipelines test", Error: newJUnitResult(message)}},
+	}}}
+	if writeErr := writeJUnitReport(r.path, report); writeErr != nil {
+		if printed {
+			return writeErr
+		}
+		return errors.Join(err, writeErr)
+	}
+	return err
 }
 
 // writeJUnitReport replaces the file at path with the report.

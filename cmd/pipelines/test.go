@@ -384,6 +384,10 @@ func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
 	if profile := cmd.Flag("profile").Value.String(); profile != "" {
 		parts = append(parts, "--profile", shellquote.BashArg(profile))
 	}
+	// Reading the results again replaces the partial report.
+	if flag := cmd.Flag("junit-xml"); flag != nil && flag.Value.String() != "" {
+		parts = append(parts, "--junit-xml", shellquote.BashArg(flag.Value.String()))
+	}
 	// --resume loads the bundle again, so it needs the same variable values.
 	if flag := cmd.Flag("var"); flag != nil {
 		if values, ok := flag.Value.(pflag.SliceValue); ok {
@@ -509,6 +513,89 @@ func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun
 	return fmt.Errorf("update %s is %s", updateID, state)
 }
 
+// testRunProblem describes why a run that ended did not pass for a reason other than
+// failed tests, or returns "" otherwise.
+func testRunProblem(run *testRun, incompleteReason string, runErr error) string {
+	var lines []string
+	switch {
+	case incompleteReason != "":
+		lines = append(lines, fmt.Sprintf("RUN INCOMPLETE: %s.", incompleteReason))
+	case run.summaries[0].Total == 0:
+		lines = append(lines, "No tests were collected.")
+	}
+	if runErr != nil && !errors.Is(runErr, root.ErrAlreadyPrinted) {
+		lines = append(lines, runErr.Error())
+	}
+	return strings.Join(lines, "\n")
+}
+
+// testFlags holds the flags of pipelines test.
+type testFlags struct {
+	pipelineID     string
+	pytestArgs     []string
+	noWait         bool
+	timeout        time.Duration
+	resumeUpdateID string
+	junitPath      string
+}
+
+// checkTestFlags rejects the flag combinations that pipelines test does not support, before any API call.
+func checkTestFlags(cmd *cobra.Command, args []string, f testFlags) error {
+	if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
+		return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
+	}
+	if cmd.ArgsLenAtDash() >= 0 {
+		return errors.New("the -- separator is not supported: " + pytestArgHint)
+	}
+	if root.OutputType(cmd) != flags.OutputText {
+		return fmt.Errorf("--output %s is not supported by pipelines test", root.OutputType(cmd))
+	}
+	if err := validatePytestArgs(f.pytestArgs); err != nil {
+		return err
+	}
+	if f.timeout < 0 {
+		return errors.New("--timeout must not be negative")
+	}
+	if f.noWait && f.timeout > 0 {
+		return errors.New("--timeout cannot be used with --no-wait")
+	}
+	if f.noWait && f.junitPath != "" {
+		return errors.New("--junit-xml cannot be used with --no-wait because no results are available when the command returns")
+	}
+	// An empty --resume, such as from an unset shell variable, must not start a new run.
+	if cmd.Flags().Changed("resume") {
+		selectionCount := len(args)
+		if f.pipelineID == "" {
+			selectionCount = max(len(args)-1, 0)
+		}
+		switch {
+		case f.noWait:
+			return errors.New("--resume cannot be used with --no-wait")
+		case len(f.pytestArgs) > 0:
+			return errors.New("--resume cannot be used with --pytest-arg")
+		case selectionCount > 0:
+			return errors.New("--resume cannot be used with test selections")
+		}
+		if _, err := uuid.Parse(f.resumeUpdateID); err != nil {
+			return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", f.resumeUpdateID)
+		}
+	}
+	return nil
+}
+
+// resolveTestTarget identifies the pipeline by --pipeline-id or, in a bundle, by its KEY.
+func resolveTestTarget(cmd *cobra.Command, args []string, f testFlags, resume bool) (testTarget, error) {
+	if f.pipelineID != "" {
+		id, err := uuid.Parse(f.pipelineID)
+		if err != nil {
+			return testTarget{}, fmt.Errorf("--pipeline-id %q is not a pipeline ID", f.pipelineID)
+		}
+		return resolveTestTargetByID(cmd, args, id.String(), !f.noWait)
+	}
+	cmd.SetContext(logdiag.InitContext(cmd.Context()))
+	return resolveTestTargetInBundle(cmd, args, resume)
+}
+
 // notPipelineKeyError explains that the first argument is not a pipeline KEY, names the bundle's
 // pipelines, and shows the command that passes the arguments as test selections of the first one.
 func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args []string) error {
@@ -556,21 +643,24 @@ skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
 update starts.
 
 --timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
-to read the results later. To stop the update, run 'pipelines stop'.`,
+to read the results later. To stop the update, run 'pipelines stop'.
+
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause. The report replaces the file on every exit except a flag that
+cannot be parsed. With workspace.sync_mode immutable, test names keep the path
+of the deployed snapshot, which changes with each deployment.`,
 	}
 
-	var pipelineID string
-	var pytestArgs []string
-	var noWait bool
-	var timeout time.Duration
-	var resumeUpdateID string
+	var f testFlags
 
 	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
-	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a KEY.")
-	testGroup.FlagSet().StringArrayVar(&pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
-	testGroup.FlagSet().BoolVar(&noWait, "no-wait", false, "Don't wait for the tests to complete.")
-	testGroup.FlagSet().DurationVar(&timeout, "timeout", 0, "Stop waiting for results after this duration, for example 30m. The update keeps running.")
-	testGroup.FlagSet().StringVar(&resumeUpdateID, "resume", "", "Read the results of an existing test update instead of starting one.")
+	testGroup.FlagSet().StringVar(&f.pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a KEY.")
+	testGroup.FlagSet().StringArrayVar(&f.pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
+	testGroup.FlagSet().BoolVar(&f.noWait, "no-wait", false, "Don't wait for the tests to complete.")
+	testGroup.FlagSet().DurationVar(&f.timeout, "timeout", 0, "Stop waiting for results after this duration, for example 30m. The update keeps running.")
+	testGroup.FlagSet().StringVar(&f.resumeUpdateID, "resume", "", "Read the results of an existing test update instead of starting one.")
+	testGroup.FlagSet().StringVar(&f.junitPath, "junit-xml", "", "Write the results as a JUnit XML report to this file, replacing it.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(testGroup)
@@ -578,61 +668,24 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 	cmd.SetFlagErrorFunc(testFlagErrorFunc)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
-			return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
+		// Every exit writes the report, so that an older report never survives.
+		report := &testReport{path: f.junitPath, out: cmd.OutOrStdout(), suiteName: f.pipelineID}
+		if report.suiteName == "" && len(args) > 0 {
+			report.suiteName = args[0]
 		}
-		if cmd.ArgsLenAtDash() >= 0 {
-			return errors.New("the -- separator is not supported: " + pytestArgHint)
+		if err := checkTestFlags(cmd, args, f); err != nil {
+			return report.failed(cmd.Context(), err)
 		}
-		if root.OutputType(cmd) != flags.OutputText {
-			return fmt.Errorf("--output %s is not supported by pipelines test", root.OutputType(cmd))
-		}
-		if err := validatePytestArgs(pytestArgs); err != nil {
-			return err
-		}
-		if timeout < 0 {
-			return errors.New("--timeout must not be negative")
-		}
-		if noWait && timeout > 0 {
-			return errors.New("--timeout cannot be used with --no-wait")
-		}
-		// An empty --resume, such as from an unset shell variable, must not start a new run.
 		resume := cmd.Flags().Changed("resume")
-		if resume {
-			selectionCount := len(args)
-			if pipelineID == "" {
-				selectionCount = max(len(args)-1, 0)
-			}
-			switch {
-			case noWait:
-				return errors.New("--resume cannot be used with --no-wait")
-			case len(pytestArgs) > 0:
-				return errors.New("--resume cannot be used with --pytest-arg")
-			case selectionCount > 0:
-				return errors.New("--resume cannot be used with test selections")
-			}
-			if _, err := uuid.Parse(resumeUpdateID); err != nil {
-				return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", resumeUpdateID)
-			}
+		target, err := resolveTestTarget(cmd, args, f, resume)
+		if err != nil {
+			return report.failed(cmd.Context(), err)
 		}
-		var target testTarget
-		if pipelineID != "" {
-			id, err := uuid.Parse(pipelineID)
-			if err != nil {
-				return fmt.Errorf("--pipeline-id %q is not a pipeline ID", pipelineID)
-			}
-			target, err = resolveTestTargetByID(cmd, args, id.String(), !noWait)
-			if err != nil {
-				return err
-			}
-		} else {
-			cmd.SetContext(logdiag.InitContext(cmd.Context()))
-			var err error
-			target, err = resolveTestTargetInBundle(cmd, args, resume)
-			if err != nil {
-				return err
-			}
+		report.suiteName = target.key
+		if report.suiteName == "" {
+			report.suiteName = target.pipelineID
 		}
+		report.projectFolder = target.projectFolder
 		ctx := cmd.Context()
 
 		// The handler is installed before the update starts, but only the wait listens to it: a
@@ -641,20 +694,19 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		waitCtx, stop := notifyTestInterrupt(ctx)
 		defer stop()
 
-		updateID := resumeUpdateID
+		updateID := f.resumeUpdateID
 		if !resume {
-			req := newStartTestUpdateRequest(target.selections, pytestArgs)
-			var err error
+			req := newStartTestUpdateRequest(target.selections, f.pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return err
+				return report.failed(ctx, err)
 			}
 		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
-			return err
+			return report.failed(ctx, err)
 		}
 		out := cmd.OutOrStdout()
 		target.printHeader(out, updateID)
-		if noWait {
+		if f.noWait {
 			return nil
 		}
 
@@ -663,25 +715,29 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		// The timeout is not a context deadline: the SDK rate limiter fails a request that would wait
 		// past the deadline before the context expires, with an error that does not name the timeout.
 		var timedOut <-chan time.Time
-		if timeout > 0 {
-			timedOut = time.After(timeout)
+		if f.timeout > 0 {
+			timedOut = time.After(f.timeout)
 		}
 		state, err := waitForTestUpdate(waitCtx, target.w, target.pipelineID, updateID, run, printer, timedOut)
 		if err != nil {
 			isTimeout := errors.Is(err, errTestWaitTimeout)
 			if !isTimeout && waitCtx.Err() == nil {
-				return err
+				return report.finish(updateID, run, err.Error(), err)
 			}
 			resumeCmd := target.resumeCommand(cmd, updateID)
+			stopErr := fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resumeCmd)
 			if isTimeout {
-				return fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resumeCmd)
+				stopErr = fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, f.timeout, resumeCmd)
 			}
-			return fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resumeCmd)
+			return report.finish(updateID, run, stopErr.Error(), stopErr)
 		}
 		incompleteReason := run.incompleteReason(state)
 		renderTestResult(out, run, incompleteReason, target.shortTestID)
+		runErr := testRunError(updateID, state, run, incompleteReason)
+		// The report line comes before the summary, so that the summary stays the last line.
+		err = report.finish(updateID, run, testRunProblem(run, incompleteReason, runErr), runErr)
 		renderTestSummaryLine(out, run, incompleteReason)
-		return testRunError(updateID, state, run, incompleteReason)
+		return err
 	}
 
 	return cmd

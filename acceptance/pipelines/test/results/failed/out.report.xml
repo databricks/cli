@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="[UUID]" tests="4" failures="1" errors="1" skipped="1">
+    <testcase classname="tests.test_orders" name="test_valid_order"></testcase>
+    <testcase classname="tests.test_orders" name="test_backfill" time="2.140">
+      <failure message="AssertionError: assert 100 == 150">AssertionError: assert 100 == 150</failure>
+    </testcase>
+    <testcase classname="tests.test_orders" name="test_legacy_format">
+      <skipped></skipped>
+    </testcase>
+    <testcase classname="tests.test_orders" name="test_fixture">
+      <error message="RuntimeError: fixture orders setup failed">RuntimeError: fixture orders setup failed</error>
+    </testcase>
+  </testsuite>
+</testsuites>

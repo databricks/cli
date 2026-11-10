@@ -1,9 +1,10 @@
 
 === A canceled update is an incomplete run
->>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --resume [UUID][1]
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --resume [UUID][1] --junit-xml out.report.xml
 Pipeline: [UUID][0]
 Update: [UUID][1]
 
 RUN INCOMPLETE: the update was canceled before all test results were received.
+JUnit report: out.report.xml
 Done. PASSED=0 FAILED=0 SKIPPED=0 ERROR=0 TOTAL=1
 Error: update [UUID][1] is CANCELED
