@@ -1,6 +1,6 @@
 
 === Failed, errored and skipped tests
->>> musterr [CLI] pipelines test --pipeline-id [UUID][0]
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml
 Pipeline: [UUID][0]
 Update: [UUID][1]
 Running tests...
@@ -17,4 +17,5 @@ Failure in tests/test_orders.py::test_backfill
 Error in tests/test_orders.py::test_fixture
   RuntimeError: fixture orders setup failed
 
+JUnit report: out.report.xml
 Done. PASSED=1 FAILED=1 SKIPPED=1 ERROR=1 TOTAL=4

@@ -1,0 +1,2 @@
+title "A project with errors names its first error in the report"
+trace musterr $CLI pipelines test my_pipeline --junit-xml out.invalid.xml
