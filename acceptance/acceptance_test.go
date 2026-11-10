@@ -226,6 +226,9 @@ func requirePrerequisites(t *testing.T) bool {
 		// uv builds the databricks-bundles wheel and provides the test interpreter
 		// via `uv python find`, which landed in the 0.3 line.
 		internal.RequireUV(t, "0.4")
+		// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+		// the check-formatting test's golden output assumes its formatter behavior.
+		internal.RequireRuff(t, "0.9.1")
 		// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
 		internal.RequirePython(t, "3.11")
 	})
@@ -291,15 +294,6 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// Run after the version check passed; must use the top-level t so the PATH
 	// change survives for the rest of the run.
 	internal.ConfigurePython(t, "3.11")
-
-	// The ruff shim in script.prepare runs `uv tool run ruff@0.9.1` (the golden
-	// assumes that release's formatter; keep the two pins in sync). Fetch it
-	// into the uv cache before UV_OFFLINE below cuts the sandbox off. Not inside
-	// requirePrerequisites: a -run filter for a test directory skips that
-	// subtest. DBR has no network, and no test that runs there uses ruff.
-	if !WorkspaceTmpDir {
-		internal.PrefetchRuff(t, "0.9.1")
-	}
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
@@ -433,7 +427,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
-	uvCache := getUVCacheDir(t)
+	uvCache := getUVDefaultCacheDir(t)
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
@@ -1811,14 +1805,17 @@ func ListDir(t *testing.T, src string) []string {
 	return files
 }
 
-// getUVCacheDir returns uv's effective cache directory. Must be called before
-// HOME is overridden in tests. Asking uv, rather than deriving the default from
-// HOME, honors UV_CACHE_DIR (CI's setup-uv points it at a per-job directory),
-// so test scripts read the cache that PrefetchRuff filled.
-func getUVCacheDir(t *testing.T) string {
-	out, err := exec.Command("uv", "cache", "dir").Output()
-	require.NoError(t, err, "uv cache dir")
-	return strings.TrimSpace(string(out))
+func getUVDefaultCacheDir(t *testing.T) string {
+	// According to uv docs https://docs.astral.sh/uv/concepts/cache/#caching-in-continuous-integration
+	// the default cache directory is
+	// "A system-appropriate cache directory, e.g., $XDG_CACHE_HOME/uv or $HOME/.cache/uv on Unix and %LOCALAPPDATA%\uv\cache on Windows"
+	cacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	if runtime.GOOS == "windows" {
+		return cacheDir + "\\uv\\cache"
+	} else {
+		return cacheDir + "/uv"
+	}
 }
 
 // getUVPythonInstallDir returns the directory where uv stores managed Python installations.
