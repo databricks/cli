@@ -34,19 +34,19 @@ jq 'del(.state["resources.schemas.schema1"].state.schema_id, .state["resources.v
 mv tmp.json "$STATE"
 recorded_ids
 
-title "Deploy with nothing to change"
+title "A deploy with nothing else to change records them, with a state-only update"
 plan
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 recorded_ids
 
-title "Rename the schema out of band, and the config to match"
+title "Rename the schema out of band, and the config to match. The plan finds both by their ids"
 trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
 print_requests.py //unity-catalog &> LOG.rename_requests
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 plan
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 
-title "Redeploy"
-trace errcode $CLI bundle plan
+title "Redeploy is a no-op"
+trace $CLI bundle plan

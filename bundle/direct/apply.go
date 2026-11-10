@@ -53,6 +53,9 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
+		if planEntry.StateOnly {
+			return d.RecordState(ctx, db, oldID, newState, planEntry)
+		}
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
 		if planEntry.StateOnly {
@@ -276,6 +279,16 @@ func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, 
 	err = d.saveState(ctx, db, newID, newState, d.DependsOn, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", newID, err)
+	}
+	return nil
+}
+
+// RecordState saves the state at its ID without a backend call. A state-only update does this to
+// record the internal ID the state lacks, from the plan's remote state.
+func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
+	err := d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 	return nil
 }

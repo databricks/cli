@@ -1,4 +1,3 @@
-Badness = "A state recorded without schema_id and volume_id (by a CLI from before they were recorded) never gets them, since a deploy with nothing to change writes no state. So the plan cannot find the schema and the volume renamed out of band, and creates them again."
 Cloud = true
 
 # The test rewrites the deployment state by hand, which the recording service refuses because it
