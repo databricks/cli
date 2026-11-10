@@ -19,6 +19,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "action": "skip",
     "reason": "immutable_backend_value",
     "remote": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]"
+  },
+  "volume_id": {
+    "action": "skip",
+    "reason": "internal_id",
+    "old": "[UUID][1]",
+    "remote": "[UUID][1]"
   }
 }
 
