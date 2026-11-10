@@ -6,10 +6,7 @@ Plan: update resources.jobs.foo
 Changes detected:
   ~ deployment: null -> {"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/state/metadata.json"}
   ~ edit_mode: null -> "UI_LOCKED"
-  ~ format: null -> "MULTI_TASK"
-  ~ max_concurrent_runs: null -> 1
   ~ name: "bind-target-[UNIQUE_NAME]" -> "foo"
-  ~ queue: null -> {"enabled":true}
 
 Error: this bind operation requires user confirmation, but the current console does not support prompting.
 To proceed, use --auto-approve after reviewing the plan above.

@@ -1,7 +1,8 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Bind an existing job with deployment history enabled"
-job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+# Match Jobs API defaults so the bind preview is identical locally and on cloud.
+job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'", "format": "MULTI_TASK", "max_concurrent_runs": 1, "queue": {"enabled": true}}' | jq -r '.job_id')
 add_repl "$job_id" JOB_ID
 cleanup_bind_target() {
     errcode $CLI bundle destroy --auto-approve >> LOG.cleanup 2>&1
