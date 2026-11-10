@@ -206,8 +206,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
 	var dmsMetadata *DMSBindMetadata
-	if b.dmsMetadataEnabled(ctx, configRoot) {
+	if b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
 		resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
 		dmsMetadata = &DMSBindMetadata{Serial: b.StateDB.Data.Serial, ResourceState: resourceState}
 	}
@@ -254,14 +258,6 @@ func (result *BindResult) Cancel() {
 	if result != nil && result.TempStatePath != "" {
 		os.Remove(result.TempStatePath)
 	}
-}
-
-func (b *DeploymentBundle) dmsMetadataEnabled(ctx context.Context, configRoot *config.Root) bool {
-	var configured *bool
-	if configRoot.Experimental != nil {
-		configured = configRoot.Experimental.DeploymentHistory
-	}
-	return b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 // Unbind removes a resource from direct engine state without deleting
