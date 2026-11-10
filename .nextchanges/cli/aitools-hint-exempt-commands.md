@@ -1,1 +1,1 @@
-* Stop printing the Databricks AI tooling install hint on `auth`, `configure`, `current-user me`, `help`, and shell-completion commands, where it does not convert.
+* Stop printing the Databricks AI tooling install hint on `auth`, `configure`, `current-user me`, `help`, and shell-completion commands, where it does not convert. ([#7452](https://github.com/databricks/cli/pull/7452))
