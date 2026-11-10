@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_metadata_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -64,7 +64,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
@@ -125,7 +125,7 @@ A common practice is to use a username or principal name in this path, i.e. use
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
