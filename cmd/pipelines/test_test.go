@@ -2,7 +2,14 @@ package pipelines
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/spf13/cobra"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,4 +85,43 @@ func TestRootPathSelection(t *testing.T) {
 
 	_, err = rootPathSelection("", "tests")
 	assert.ErrorContains(t, err, "the pipeline has no root_path")
+}
+
+// Source-linked deployments run the source files, as TranslatePaths maps them.
+func TestBundleFilesRootSourceLinked(t *testing.T) {
+	b := &bundle.Bundle{SyncRootPath: "/Workspace/Users/someone/orders"}
+	b.Config.Workspace.FilePath = "/Workspace/Users/someone/.bundle/orders/dev/files"
+	b.Config.Workspace.SyncMode = config.SyncModeInPlace
+	assert.Equal(t, "/Workspace/Users/someone/orders", bundleFilesRoot(b))
+}
+
+func TestBundleTestSelectionPath(t *testing.T) {
+	syncRoot := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(syncRoot, "pipeline", "tests"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(syncRoot, "conftest.py"), nil, 0o644))
+	filesRoot := "/Workspace/Users/someone/.bundle/orders/dev/files"
+
+	// A path may leave the working directory as long as it stays in the synchronized files.
+	got, err := bundleTestSelectionPath(filepath.Join(syncRoot, "pipeline", "tests"), syncRoot, filesRoot, filepath.Join("..", "..", "conftest.py"))
+	require.NoError(t, err)
+	assert.Equal(t, filesRoot+"/conftest.py", got)
+
+	// A path that does not exist locally is an error, so that a typo fails before compute starts.
+	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, "tests/test_a.py")
+	assert.EqualError(t, err, filepath.ToSlash(filepath.Join(syncRoot, "tests", "test_a.py"))+" does not exist; pass a local path or an absolute workspace path")
+
+	// A path outside the synchronized files is an error. The error shows forward slashes.
+	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, filepath.Join("..", "tests"))
+	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
+}
+
+func TestNotPipelineKeyError(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	b := &bundle.Bundle{}
+	b.Config.Resources.Pipelines = map[string]*resources.Pipeline{"orders": {}, "customers": {}}
+	err := notPipelineKeyError(cmd, b, "tests/test_orders.py", []string{"tests/test_orders.py", "tests/test_x.py::test_a b"})
+	assert.EqualError(t, err, `"tests/test_orders.py" is not a pipeline in this bundle (pipelines: customers, orders). Usage: test customers tests/test_orders.py 'tests/test_x.py::test_a b'`)
+
+	err = notPipelineKeyError(cmd, &bundle.Bundle{}, "tests", []string{"tests"})
+	assert.EqualError(t, err, `"tests" is not a pipeline in this bundle, and the bundle has no pipelines`)
 }
