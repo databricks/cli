@@ -1,0 +1,20 @@
+
+=== Failed, errored and skipped tests
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0]
+Pipeline: [UUID][0]
+Update: [UUID][1]
+Running tests...
+1 of 4 PASSED tests/test_orders.py::test_valid_order ........................... [PASSED]
+2 of 4 FAILED tests/test_orders.py::test_backfill .............................. [FAILED in 2.14s]
+3 of 4 SKIPPED tests/test_orders.py::test_legacy_format ........................ [SKIPPED]
+4 of 4 ERROR tests/test_orders.py::test_fixture ................................ [ERROR]
+
+Completed with 1 failed and 1 errored tests:
+
+Failure in tests/test_orders.py::test_backfill
+  AssertionError: assert 100 == 150
+
+Error in tests/test_orders.py::test_fixture
+  RuntimeError: fixture orders setup failed
+
+Done. PASSED=1 FAILED=1 SKIPPED=1 ERROR=1 TOTAL=4

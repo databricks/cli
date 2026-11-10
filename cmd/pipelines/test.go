@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/databricks/cli/bundle"
@@ -192,6 +193,20 @@ func rootPathSelection(rootPath, relPath string) (string, error) {
 	return strings.TrimSuffix(rootPath, "/") + "/" + filepath.ToSlash(relPath), nil
 }
 
+// relativeTestID shows a test ID whose file is under folder relative to that folder, as pytest names
+// tests from the project root. Other IDs are returned unchanged. The service reports IDs with the
+// /Workspace prefix, which a folder may lack, so both are compared without it.
+func relativeTestID(folder, id string) string {
+	if folder == "" {
+		return id
+	}
+	prefix := strings.TrimSuffix(strings.TrimPrefix(folder, "/Workspace"), "/") + "/"
+	if rel, ok := strings.CutPrefix(strings.TrimPrefix(id, "/Workspace"), prefix); ok {
+		return rel
+	}
+	return id
+}
+
 // getRootPath reads the root_path of the deployed pipeline.
 func getRootPath(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
 	pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineID})
@@ -233,6 +248,14 @@ type testTarget struct {
 	pipelineID string
 	selections []string
 	w          *databricks.WorkspaceClient
+
+	// projectFolder is the deployed folder that test IDs are shown relative to: the bundle's
+	// synchronized files, or root_path. It is "" when unknown.
+	projectFolder string
+}
+
+func (t testTarget) shortTestID(id string) string {
+	return relativeTestID(t.projectFolder, id)
 }
 
 func (t testTarget) printHeader(out io.Writer, updateID string) {
@@ -245,7 +268,7 @@ func (t testTarget) printHeader(out io.Writer, updateID string) {
 }
 
 // resolveTestTargetByID identifies the pipeline by --pipeline-id; all positional arguments are selections.
-func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string) (testTarget, error) {
+func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string, wait bool) (testTarget, error) {
 	if cmd.Flag("target").Value.String() == "" {
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 	}
@@ -255,8 +278,9 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 
+	// root_path resolves relative selections and shortens the test IDs printed while waiting.
 	var rootPath string
-	if hasRelativeSelection(args) {
+	if wait || hasRelativeSelection(args) {
 		var err error
 		rootPath, err = getRootPath(ctx, w, pipelineID)
 		if err != nil {
@@ -269,7 +293,7 @@ func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string)
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{pipelineID: pipelineID, selections: selections, w: w}, nil
+	return testTarget{pipelineID: pipelineID, selections: selections, w: w, projectFolder: rootPath}, nil
 }
 
 // resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
@@ -313,7 +337,97 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string) (testTarget, e
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx)}, nil
+	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), projectFolder: filesRoot}, nil
+}
+
+const testPollInterval = time.Second
+
+// waitForTestUpdate polls the update until it ends, prints each test case as it finishes, and
+// returns the final state. It takes the steps of the bundle pipeline runner's wait loop
+// (bundle/run/pipeline.go), which cannot be reused because it starts a regular update.
+func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, run *testRun, printer *testProgressPrinter) (pipelines.UpdateInfoState, error) {
+	lastTimestamp := ""
+	for {
+		response, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		if err != nil {
+			return "", err
+		}
+		if response.Update == nil {
+			return "", fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
+		}
+		state := response.Update.State
+		printer.updateState(state)
+
+		// Reading from the last timestamp returns its events again; the run ignores duplicates.
+		events, err := readTestEvents(ctx, w, pipelineID, updateID, lastTimestamp)
+		if err != nil {
+			return "", err
+		}
+		if len(events) > 0 {
+			lastTimestamp = events[len(events)-1].Timestamp
+		}
+		addTestEvents(run, printer, events)
+
+		switch state {
+		case pipelines.UpdateInfoStateCompleted, pipelines.UpdateInfoStateFailed, pipelines.UpdateInfoStateCanceled:
+			// Events can become readable after later ones, so read all of them once more.
+			events, err := readTestEvents(ctx, w, pipelineID, updateID, "")
+			if err != nil {
+				return "", err
+			}
+			addTestEvents(run, printer, events)
+			return state, nil
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(testPollInterval):
+		}
+	}
+}
+
+// addTestEvents adds events to the run and prints each case that gets its final outcome.
+func addTestEvents(run *testRun, printer *testProgressPrinter, events []testPipelineEvent) {
+	for _, e := range events {
+		if c := run.add(e); c != nil {
+			printer.caseFinished(c, len(run.cases))
+		}
+	}
+}
+
+// updateError returns the error that the update reported: its own, or else the test verdict.
+func (r *testRun) updateError() string {
+	if r.fatalError != "" {
+		return r.fatalError
+	}
+	return r.verdictError
+}
+
+// testRunError returns the error the command exits with after the update ended, or nil if at
+// least one test was collected and every collected test passed or was skipped.
+func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun, incompleteReason string) error {
+	if incompleteReason == "" {
+		summary := run.summaries[0]
+		testsFailed := summary.Total == 0 || summary.Failed > 0 || summary.Errored > 0
+		if !testsFailed && state == pipelines.UpdateInfoStateCompleted && run.fatalError == "" {
+			return nil
+		}
+		// A test update fails when its tests fail; the printed result explains it, unless the
+		// update ended in another way or reports an error of its own. The service's own verdict,
+		// such as "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed", is not.
+		ended := state == pipelines.UpdateInfoStateFailed || state == pipelines.UpdateInfoStateCompleted
+		if testsFailed && ended && run.fatalError == "" {
+			return root.ErrAlreadyPrinted
+		}
+	} else if state == pipelines.UpdateInfoStateCompleted {
+		return root.ErrAlreadyPrinted
+	}
+	if updateError := run.updateError(); updateError != "" {
+		return fmt.Errorf("update %s is %s: %s", updateID, state, updateError)
+	}
+	return fmt.Errorf("update %s is %s", updateID, state)
 }
 
 // notPipelineKeyError explains that the first argument is not a pipeline KEY, names the bundle's
@@ -355,15 +469,22 @@ Each --pytest-arg passes one argument to pytest, in the order given. Only -k
 and -m are supported, each followed by its value in the next --pytest-arg, for
 example:
 
-  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'`,
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
+
+The command waits for the results. It exits with code 0 only if at least one
+test was collected and none failed or errored, so a run whose tests were all
+skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
+update starts. To stop the update, run 'pipelines stop'.`,
 	}
 
 	var pipelineID string
 	var pytestArgs []string
+	var noWait bool
 
 	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
 	testGroup.FlagSet().StringVar(&pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a KEY.")
 	testGroup.FlagSet().StringArrayVar(&pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
+	testGroup.FlagSet().BoolVar(&noWait, "no-wait", false, "Don't wait for the tests to complete.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(testGroup)
@@ -389,7 +510,7 @@ example:
 			if err != nil {
 				return fmt.Errorf("--pipeline-id %q is not a pipeline ID", pipelineID)
 			}
-			target, err = resolveTestTargetByID(cmd, args, id.String())
+			target, err = resolveTestTargetByID(cmd, args, id.String(), !noWait)
 			if err != nil {
 				return err
 			}
@@ -408,8 +529,22 @@ example:
 		if err != nil {
 			return err
 		}
-		target.printHeader(cmd.OutOrStdout(), updateID)
-		return nil
+		out := cmd.OutOrStdout()
+		target.printHeader(out, updateID)
+		if noWait {
+			return nil
+		}
+
+		run := newTestRun()
+		printer := &testProgressPrinter{out: out, shortID: target.shortTestID}
+		state, err := waitForTestUpdate(ctx, target.w, target.pipelineID, updateID, run, printer)
+		if err != nil {
+			return err
+		}
+		incompleteReason := run.incompleteReason(state)
+		renderTestResult(out, run, incompleteReason, target.shortTestID)
+		renderTestSummaryLine(out, run, incompleteReason)
+		return testRunError(updateID, state, run, incompleteReason)
 	}
 
 	return cmd
