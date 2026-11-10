@@ -22,10 +22,10 @@ trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
 title "UC moves the volume with the schema, so the plan re-keys the volume instead of recreating it"
 # Drop the remote_state fields that differ between clouds or from the test server.
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
 
 title "Deploy renames the schema. UC moves the volume with it, so the volume gets no request"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 
 title "The old schema is gone and the volume is under the new one, with its original volume_id"
