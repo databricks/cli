@@ -92,15 +92,18 @@ func (r *ResourceRegisteredModel) WaitAfterCreate(ctx context.Context, id string
 var registeredModelForceSend = []string{"Comment"}
 
 func makeUpdateRegisteredModel(fullName, newName string, config *catalog.CreateRegisteredModelRequest) catalog.UpdateRegisteredModelRequest {
-	// UC rejects an update that sets both name and new_name.
+	// UC rejects an update that sets both name and new_name, even an empty name: a config read back
+	// from a saved plan force-sends it.
 	name := config.Name
+	notSent := []string{"Owner", "NewName"}
 	if newName != "" {
 		name = ""
+		notSent = append(notSent, "Name")
 	}
 	return catalog.UpdateRegisteredModelRequest{
 		FullName:        fullName,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), notSent...),
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
