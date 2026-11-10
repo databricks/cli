@@ -11,10 +11,10 @@ trace $CLI bundle init pydabs --config-file ./input.json
 # with different line-length settings.
 
 echo "Checking code formatting with ruff format --line-length 88"
-trace uv tool run -q ruff@0.9.1 format --isolated --line-length 88 --quiet --diff --check my_pydabs
+trace ruff format --isolated --line-length 88 --quiet --diff --check my_pydabs
 
 echo "Checking code formatting with ruff format --line-length 120"
-trace uv tool run -q ruff@0.9.1 format --isolated --line-length 120 --quiet --diff --check my_pydabs
+trace ruff format --isolated --line-length 120 --quiet --diff --check my_pydabs
 
 trace yamlcheck.py
 

@@ -292,7 +292,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// change survives for the rest of the run.
 	internal.ConfigurePython(t, "3.11")
 
-	// The check-formatting script runs `uv tool run ruff@0.9.1` (its golden
+	// The ruff shim in script.prepare runs `uv tool run ruff@0.9.1` (the golden
 	// assumes that release's formatter; keep the two pins in sync). Fetch it
 	// into the uv cache before UV_OFFLINE below cuts the sandbox off. Not inside
 	// requirePrerequisites: a -run filter for a test directory skips that
