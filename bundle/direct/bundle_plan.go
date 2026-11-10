@@ -878,17 +878,18 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 
 // hasUnresolvedIDField reports whether a field the ID is built from is still an unresolved reference.
 func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) bool {
-	cfg := adapter.ResourceConfig()
 	for pathString := range sv.Refs {
 		path, err := structpath.ParsePath(pathString)
 		if err != nil {
 			return true
 		}
-		if _, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
-			return true
-		}
-		if _, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {
-			return true
+		for _, cfg := range []*dresources.ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+			if _, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+				return true
+			}
+			if _, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {
+				return true
+			}
 		}
 	}
 	return false
