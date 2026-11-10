@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="[UUID][0]" tests="3" failures="0" errors="2" skipped="0">
+    <testcase classname="tests.test_compute" name="test_small_order"></testcase>
+    <testcase classname="tests.test_compute" name="test_large_order">
+      <error message="no result received"></error>
+    </testcase>
+    <testcase name="update [UUID][1]">
+      <error message="RUN INCOMPLETE: the update failed before all test results were received.">RUN INCOMPLETE: the update failed before all test results were received.&#xA;update [UUID][1] is FAILED: ComputeTerminatedException: Compute terminated unexpectedly.</error>
+    </testcase>
+  </testsuite>
+</testsuites>

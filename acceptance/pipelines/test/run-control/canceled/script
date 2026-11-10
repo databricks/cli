@@ -1,2 +1,2 @@
 title "A canceled update is an incomplete run"
-trace musterr $CLI pipelines test --pipeline-id $pipeline_id --resume 00000000-0000-0000-0000-0000000000a1
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --resume 00000000-0000-0000-0000-0000000000a1 --junit-xml out.report.xml

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="[UUID][0]" tests="2" failures="0" errors="2" skipped="0">
+    <testcase classname="tests.test_orders" name="test_slow">
+      <error message="no result received"></error>
+    </testcase>
+    <testcase name="update [UUID][1]">
+      <error message="stopped waiting for update [UUID][1] after 1s; the update keeps running, to get its results run: databricks pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml --resume [UUID][1]">stopped waiting for update [UUID][1] after 1s; the update keeps running, to get its results run: databricks pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml --resume [UUID][1]</error>
+    </testcase>
+  </testsuite>
+</testsuites>
