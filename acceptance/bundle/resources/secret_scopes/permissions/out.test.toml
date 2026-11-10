@@ -1,4 +1,3 @@
 Cloud = true
 RunsOnDbr = true
-CloudEnvs.gcp = false
 EnvMatrix.DMS = ["", "true"]

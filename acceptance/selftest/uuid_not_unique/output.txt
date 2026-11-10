@@ -1,0 +1,4 @@
+
+=== UniqueUUID = false collapses every UUID to [UUID]
+first:  [UUID]
+second: [UUID]

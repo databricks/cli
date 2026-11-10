@@ -1,9 +1,5 @@
 Cloud = true
 
-# Lakebase v2 (postgres) is only available in AWS as of January 2026
-CloudEnvs.gcp = false
-CloudEnvs.azure = false
-
 # Run on both direct and Terraform modes
 
 Ignore = [

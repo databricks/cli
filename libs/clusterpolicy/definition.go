@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // Element is the part of a cluster policy element that materializes a value. The backend
@@ -71,4 +73,55 @@ func ValueEquals(policyValue, value any) bool {
 		}
 	}
 	return reflect.DeepEqual(policyValue, value)
+}
+
+// IsPolicyValue reports whether the policy, not the user, determines the value of the
+// cluster attribute at path, a path relative to the cluster spec. A fixed element
+// determines the field whatever its current value, because the backend rejects any other
+// value; other elements only when apply_policy_default_values is set and value equals
+// their defaultValue. This is a filtering predicate, not validation: true for a fixed
+// element does not mean value equals the element's value. The policy language's
+// log-delivery aliases are translated, and indexed rules take precedence over wildcards.
+// https://docs.databricks.com/aws/en/admin/clusters/policy-definition
+func (d Definition) IsPolicyValue(path *structpath.PathNode, value any, applyDefaults bool) bool {
+	indexed, wildcard := attributes(path)
+	if indexed == "cluster_log_conf.s3.region" {
+		return d["cluster_log_conf.region"].isPolicyValue(value, applyDefaults)
+	}
+	if storage, ok := strings.CutPrefix(indexed, "cluster_log_conf."); ok && strings.HasSuffix(storage, ".destination") {
+		storage = strings.ToUpper(strings.TrimSuffix(storage, ".destination"))
+		logType := d["cluster_log_conf.type"].EffectiveValue(applyDefaults)
+		return ValueEquals(logType, storage) && d["cluster_log_conf.path"].isPolicyValue(value, applyDefaults)
+	}
+	element, ok := d[indexed]
+	if !ok {
+		element = d[wildcard]
+	}
+	return element.isPolicyValue(value, applyDefaults)
+}
+
+func (e Element) isPolicyValue(value any, applyDefaults bool) bool {
+	if e.Type == "fixed" {
+		return true
+	}
+	expected := e.EffectiveValue(applyDefaults)
+	return expected != nil && ValueEquals(expected, value)
+}
+
+// attributes renders a path relative to the cluster in the policy language,
+// once with indices and once with "*" in their place. Dotted map keys stay one key,
+// e.g. spark_conf["a.b"] becomes spark_conf.a.b. Map keys are not wildcarded: a rule
+// such as spark_conf.* constrains values but is not treated as supplying them.
+func attributes(path *structpath.PathNode) (indexed, wildcard string) {
+	var indexedParts, wildcardParts []string
+	for _, node := range path.AsSlice() {
+		if key, ok := node.StringKey(); ok {
+			indexedParts = append(indexedParts, key)
+			wildcardParts = append(wildcardParts, key)
+		} else if index, ok := node.Index(); ok {
+			indexedParts = append(indexedParts, strconv.Itoa(index))
+			wildcardParts = append(wildcardParts, "*")
+		}
+	}
+	return strings.Join(indexedParts, "."), strings.Join(wildcardParts, ".")
 }

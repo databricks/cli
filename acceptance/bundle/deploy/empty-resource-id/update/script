@@ -1,0 +1,11 @@
+trace $CLI bundle deploy
+
+title "A successful rename response without an ID fails the deployment"
+trace update_file.py databricks.yml myvolume mynewvolume
+trace musterr $CLI bundle deploy
+
+title "The failed rename preserves the original ID and state"
+trace print_state.py | jq -S .state
+
+title "The next plan still updates the existing resource"
+trace $CLI bundle plan
