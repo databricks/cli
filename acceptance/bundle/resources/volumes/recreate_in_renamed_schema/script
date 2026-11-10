@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a managed volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the schema and change the volume's type in one deploy. The type change recreates the volume"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //unity-catalog
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
