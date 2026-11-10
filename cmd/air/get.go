@@ -165,7 +165,7 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
 		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
-		ids := mlflowIDsFromOutput(taskOutput)
+		ids := mlflowIDsFromAttempts(ctx, w, run, taskOutput)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url

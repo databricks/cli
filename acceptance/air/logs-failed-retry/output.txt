@@ -1,0 +1,6 @@
+
+=== logs of a failed retry with no logs point to the earlier retry
+>>> [CLI] air logs 123
+No logs available for run 123. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs: databricks air logs 123 --retry 0
+
+Exit code: 1

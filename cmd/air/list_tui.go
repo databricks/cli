@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -184,6 +185,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
 
@@ -217,7 +219,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailContent = msg.body
 		}
 		m.detailTitle = msg.title
-		m.viewport.SetContent(m.detailContent)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.viewport.GotoTop()
 		return m, nil
 
@@ -290,6 +292,13 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.maybeFetch()
 	}
 	return m, nil
+}
+
+// wrappedDetail is the detail text wrapped to the pane width: the viewport clips
+// lines at the pane edge and can't scroll horizontally, which would hide the end
+// of a long failure reason or log line.
+func (m listModel) wrappedDetail() string {
+	return ansi.Wrap(m.detailContent, m.viewport.Width, "")
 }
 
 // clampedOffset returns the scroll offset that keeps the cursor visible.

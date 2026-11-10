@@ -3,9 +3,11 @@ package aircmd
 import (
 	"io"
 	"strconv"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -267,6 +269,25 @@ func TestListModelDetailPaneAndBack(t *testing.T) {
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
 	assert.Contains(t, m.View(), "Run ID")
+}
+
+func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
+	m := detailLoadingModel(t)
+	reason := "Failure reason: " + strings.Repeat("the task exited with a long error ", 4) + "ENDOFREASON"
+	require.Greater(t, len(reason), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: reason})
+	m = next.(listModel)
+	assert.Contains(t, m.View(), "ENDOFREASON", "the end of a long line must be visible, not clipped at the pane edge")
+
+	// A narrower terminal re-wraps the same text.
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 24})
+	m = next.(listModel)
+	view := m.View()
+	assert.Contains(t, view, "ENDOFREASON")
+	for line := range strings.SplitSeq(view, "\n") {
+		assert.LessOrEqual(t, ansi.StringWidth(line), 30, line)
+	}
 }
 
 func TestListModelDetailLateMsgDropped(t *testing.T) {

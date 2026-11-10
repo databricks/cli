@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -17,10 +18,27 @@ type mlflowIdentifiers struct {
 	RunID        string
 }
 
-// mlflowIDs fetches the MLflow IDs for a run via its latest task. Returns nil if
-// they can't be obtained.
+// mlflowIDs fetches the MLflow IDs for a run via its latest task, falling back
+// to earlier attempts (see mlflowIDsFromAttempts). Returns nil if they can't be
+// obtained.
 func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
-	return mlflowIDsFromOutput(aiRuntimeTaskOutput(ctx, w, run))
+	return mlflowIDsFromAttempts(ctx, w, run, aiRuntimeTaskOutput(ctx, w, run))
+}
+
+// mlflowIDsFromAttempts returns the MLflow IDs in latest, the latest attempt's
+// output, else those of the newest earlier attempt that has them. A retry that
+// failed before it started has no MLflow output, but the run's earlier
+// attempts still logged to an MLflow run worth linking.
+func mlflowIDsFromAttempts(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, latest *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
+	if ids := mlflowIDsFromOutput(latest); ids != nil || len(run.Tasks) < 2 {
+		return ids
+	}
+	for _, task := range slices.Backward(run.Tasks[:len(run.Tasks)-1]) {
+		if ids := mlflowIDsForTask(ctx, w, task.RunId); ids != nil {
+			return ids
+		}
+	}
+	return nil
 }
 
 func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *jobs.AiRuntimeTaskOutput {
