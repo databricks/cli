@@ -20,8 +20,8 @@ title "Rename the first schema and move the volume to the second one in one depl
 trace update_file.py databricks.yml test-schema1- test-schema1-renamed-
 trace update_file.py databricks.yml schemas.schema1.name schemas.schema2.name
 # Drop the remote_state fields that differ between clouds or from the test server.
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
-trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json) --auto-approve
 trace print_requests.py //unity-catalog
 
 title "The volume is in the second schema"
