@@ -23,4 +23,11 @@ resources:
       name: my pipeline
       environment:
         dependencies:
-          - -e ./project[test]
+          - -e ./project
+      testing:
+        sources:
+          - glob:
+              include: /Workspace/Shared/orders/tests/**
+        environment:
+          dependencies:
+            - -e ./project[test]
