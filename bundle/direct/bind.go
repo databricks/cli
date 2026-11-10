@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -35,16 +36,16 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
-// BindingState carries the resulting bindings and file metadata; nil entries represent removals.
-type BindingState struct {
-	Serial         int
-	RecordsHistory bool
-	Resources      map[string]*dstate.ResourceEntry
+// DMSBindMetadata holds the bound resource state and serial to publish after bind is committed.
+type DMSBindMetadata struct {
+	Serial        int
+	ResourceState dstate.ResourceEntry
 }
 
 // BindResult contains the result of a bind operation including any detected changes.
 type BindResult struct {
-	State BindingState
+	// DMSMetadata is nil when deployment history is disabled.
+	DMSMetadata *DMSBindMetadata
 	// HasChanges is true if deploying after bind would make changes to the resource
 	HasChanges bool
 	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
@@ -205,11 +206,10 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
-	state := BindingState{
-		Serial:         b.StateDB.Data.Serial,
-		RecordsHistory: b.StateDB.RecordsHistory(),
-		Resources:      map[string]*dstate.ResourceEntry{resourceKey: &resourceState},
+	var dmsMetadata *DMSBindMetadata
+	if b.dmsMetadataEnabled(ctx, configRoot) {
+		resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
+		dmsMetadata = &DMSBindMetadata{Serial: b.StateDB.Data.Serial, ResourceState: resourceState}
 	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
@@ -222,7 +222,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 	// Check if the bound resource has changes
 	result := &BindResult{
-		State:         state,
+		DMSMetadata:   dmsMetadata,
 		HasChanges:    false,
 		Action:        deployplan.Skip,
 		Plan:          plan,
@@ -254,6 +254,14 @@ func (result *BindResult) Cancel() {
 	if result != nil && result.TempStatePath != "" {
 		os.Remove(result.TempStatePath)
 	}
+}
+
+func (b *DeploymentBundle) dmsMetadataEnabled(ctx context.Context, configRoot *config.Root) bool {
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
+	return b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 // Unbind removes a resource from direct engine state without deleting
