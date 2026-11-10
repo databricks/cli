@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -192,12 +193,34 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
 
-	parent := &cobra.Command{Use: aiToolsCommandName}
-	child := &cobra.Command{Use: "install"}
-	parent.AddCommand(child)
-
-	MaybeHint(ctx, child)
+	MaybeHint(ctx, testutil.CommandAt("aitools install"))
 	assert.Empty(t, stderr.String())
+}
+
+func TestIsHintExemptCommand(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"aitools install", true},
+		{"experimental aitools skills install", true},
+		{"auth login", true},
+		{"auth token", true},
+		{"configure", true},
+		{"current-user me", true},
+		{"completion bash", true},
+		{"help jobs", true},
+		{cobra.ShellCompRequestCmd, true},
+		{"version", false},
+		{"current-user", false},
+		{"clusters list", false},
+		{"jobs run-now", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsHintExemptCommand(testutil.CommandAt(tc.path)))
+		})
+	}
 }
 
 func TestMaybeHint_NoIONoPanic(t *testing.T) {

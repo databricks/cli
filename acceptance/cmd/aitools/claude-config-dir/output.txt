@@ -10,6 +10,14 @@ Databricks CLI v[CLI_VERSION]
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 Databricks CLI v[CLI_VERSION]
 
+=== Exempt commands never hint, even without the tooling
+
+>>> CLAUDE_CONFIG_DIR=missing [CLI] current-user me
+{
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
+}
+
 === Empty override uses the default installation
 
 >>> CLAUDE_CONFIG_DIR= [CLI] version

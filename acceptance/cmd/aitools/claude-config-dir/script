@@ -10,6 +10,9 @@ sethome ./installed-home
 title "Custom directory takes precedence over the default installation\n"
 trace CLAUDE_CONFIG_DIR=missing $CLI version
 
+title "Exempt commands never hint, even without the tooling\n"
+trace CLAUDE_CONFIG_DIR=missing $CLI current-user me
+
 title "Empty override uses the default installation\n"
 trace CLAUDE_CONFIG_DIR= $CLI version
 

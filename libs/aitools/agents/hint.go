@@ -3,6 +3,8 @@ package agents
 import (
 	"context"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -25,11 +27,6 @@ const (
 	// https://github.com/databricks/databricks-sdk-go/blob/main/useragent/agent.go
 	claudeAgentProvider = "claude-code"
 
-	// aiToolsCommandName is the top-level command whose subtree is never hinted:
-	// telling the agent to run `databricks aitools install` while it is already
-	// running an aitools command makes no sense.
-	aiToolsCommandName = "aitools"
-
 	// claudeSessionEnv is Claude Code's per-session identifier. It keys the
 	// per-session throttle (at most one hint per hintSessionTTL per session);
 	// when unset (older Claude) the hint degrades to per-command.
@@ -47,15 +44,15 @@ const hintSessionTTL = time.Hour
 
 // MaybeHint prints a one-line recommendation to install the Databricks AI
 // tooling when Claude Code drives the CLI without it installed. It is a no-op
-// for human callers, other agents, aitools commands themselves, when there is
-// no output stream, once the tooling is present, and when the session was
-// hinted within the last hintSessionTTL. Best-effort: it writes only to stderr
-// and never fails the command.
+// for human callers, other agents, hint-exempt commands (IsHintExemptCommand),
+// when there is no output stream, once the tooling is present, and when the
+// session was hinted within the last hintSessionTTL. Best-effort: it writes
+// only to stderr and never fails the command.
 func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 	if useragent.AgentProvider() != claudeAgentProvider {
 		return
 	}
-	if isAIToolsCommand(cmd) {
+	if IsHintExemptCommand(cmd) {
 		return
 	}
 	if !cmdio.HasIO(ctx) {
@@ -75,15 +72,45 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 	recordSessionHint(ctx)
 }
 
-// isAIToolsCommand reports whether cmd is the aitools command or one of its
-// subcommands, walking the parent chain (mirrors versioncheck.isExemptCommand).
-func isAIToolsCommand(cmd *cobra.Command) bool {
-	for c := cmd; c != nil; c = c.Parent() {
-		if c.Name() == aiToolsCommandName {
+// hintExemptCommands are the commands, with their subcommands, on which no
+// tooling hint prints. Paths are relative to the root command. The aitools
+// trees are exempt because telling the agent to run aitools while it already
+// runs aitools makes no sense. The rest are plumbing or one-shot lookups (auth
+// checks, "who am I", help, shell completion): the agent has no task to apply
+// the skills to, and the nudge eval showed such calls do not convert.
+var hintExemptCommands = []string{
+	"aitools",
+	"experimental aitools",
+	"auth",
+	"configure",
+	"current-user me",
+	"completion",
+	"help",
+	cobra.ShellCompRequestCmd,
+	cobra.ShellCompNoDescRequestCmd,
+}
+
+// IsHintExemptCommand reports whether cmd is one of hintExemptCommands or a
+// subcommand of one.
+func IsHintExemptCommand(cmd *cobra.Command) bool {
+	path := commandPath(cmd)
+	for _, exempt := range hintExemptCommands {
+		if path == exempt || strings.HasPrefix(path, exempt+" ") {
 			return true
 		}
 	}
 	return false
+}
+
+// commandPath returns cmd's path below the root command, e.g. "current-user me",
+// so hintExemptCommands holds whatever the root is named.
+func commandPath(cmd *cobra.Command) string {
+	var names []string
+	for c := cmd; c.HasParent(); c = c.Parent() {
+		names = append(names, c.Name())
+	}
+	slices.Reverse(names)
+	return strings.Join(names, " ")
 }
 
 // claudeToolingInstalled reports whether Databricks AI tooling is present for
