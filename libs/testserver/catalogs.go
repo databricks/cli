@@ -6,8 +6,25 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// fakeCatalog is CatalogInfo plus the id UC returns, which its API spec does not declare. The id
+// is kept across renames.
+type fakeCatalog struct {
+	catalog.CatalogInfo
+
+	Id string `json:"id,omitempty"`
+}
+
+func (c *fakeCatalog) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c fakeCatalog) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
+}
 
 // catalogNameManagedDefaults scopes the managed-property injection to the
 // backend-default drift test, keeping unrelated tests free of it. Mirrors
@@ -83,9 +100,10 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
-	s.Catalogs[createRequest.Name] = catalogInfo
+	created := fakeCatalog{CatalogInfo: catalogInfo, Id: nextUUID()}
+	s.Catalogs[createRequest.Name] = created
 	return Response{
-		Body: catalogInfo,
+		Body: created,
 	}
 }
 
@@ -113,7 +131,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	applyUpdatedFields(&existing, updateRequest, fields)
+	applyUpdatedFields(&existing.CatalogInfo, updateRequest, fields)
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName

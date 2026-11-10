@@ -5,8 +5,6 @@ NEW_CATALOG="test_catalog_renamed_${UNIQUE_NAME}"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    # The renamed catalog is not where the state looks for it, so destroy cannot remove it.
-    trace $CLI catalogs delete "$NEW_CATALOG" --force
 
     # Consume the destroy's requests so none are left recorded.
     print_requests.py //unity-catalog &> LOG.destroy_requests
@@ -21,6 +19,8 @@ plan() {
 title "Deploy a catalog with a schema and a volume in it"
 trace $CLI bundle deploy
 print_requests.py //unity-catalog &> LOG.deploy_requests
+# The SDK drops the catalog's id, so read it with a raw GET.
+add_repl "$(MSYS_NO_PATHCONV=1 $CLI api get "/api/2.1/unity-catalog/catalogs/$OLD_CATALOG" | jq -r .id)" CATALOG_ID
 add_repl "$($CLI schemas get "$OLD_CATALOG.myschema" | jq -r .schema_id)" SCHEMA_ID
 add_repl "$($CLI volumes read "$OLD_CATALOG.myschema.myvolume" | jq -r .volume_id)" VOLUME_ID
 
@@ -30,11 +30,14 @@ print_requests.py //unity-catalog &> LOG.rename_requests
 
 title "Rename the catalog in the config to match"
 trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
-NEW_SCHEMA="$NEW_CATALOG.myschema"
-NEW_VOLUME="$NEW_SCHEMA.myvolume"
 
-title "The plan finds the schema and the volume at their new names by their ids. A catalog has no such id, so it is created again"
+title "The plan finds the catalog, the schema and the volume at their new names by their ids"
 plan
 
-title "The catalog's create fails because the renamed catalog has its name"
-trace musterr $CLI bundle deploy
+title "Deploy only records the new names in the state"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

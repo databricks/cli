@@ -38,7 +38,7 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
 	require.Equal(t, 0, getResponse.StatusCode)
 
-	body, ok := getResponse.Body.(catalog.CatalogInfo)
+	body, ok := getResponse.Body.(fakeCatalog)
 	require.True(t, ok)
 	assert.Equal(t, "my_catalog", body.Name)
 	assert.Equal(t, "my_catalog", body.FullName)
@@ -78,8 +78,9 @@ func TestCatalogsCreate_EchoesEveryAcceptedField(t *testing.T) {
 	response := workspace.CatalogsCreate(Request{Body: []byte(createCatalogRequest)})
 	assert.Equal(t, 0, response.StatusCode)
 
-	info, ok := response.Body.(catalog.CatalogInfo)
+	body, ok := response.Body.(fakeCatalog)
 	require.True(t, ok)
+	info := body.CatalogInfo
 
 	assert.Equal(t, "my_catalog", info.Name)
 	assert.Equal(t, "c", info.Comment)
@@ -123,8 +124,9 @@ func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 	}`)}, "my_catalog")
 	assert.Equal(t, 0, response.StatusCode)
 
-	info, ok := response.Body.(catalog.CatalogInfo)
+	body, ok := response.Body.(fakeCatalog)
 	require.True(t, ok)
+	info := body.CatalogInfo
 
 	assert.Equal(t, "updated", info.Comment)
 	assert.Equal(t, int64(72), info.CustomMaxRetentionHours)
@@ -132,4 +134,17 @@ func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 	assert.Equal(t, "key-2", info.ManagedEncryptionSettings.CustomerManagedKeyId)
 	assert.Equal(t, map[string]string{"opt": "3"}, info.Options)
 	assert.Equal(t, map[string]string{"prop": "4"}, info.Properties)
+}
+
+func TestCatalogsUpdate_RenameKeepsID(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	created, ok := workspace.CatalogsCreate(Request{Body: []byte(`{"name": "my_catalog"}`)}).Body.(fakeCatalog)
+	require.True(t, ok)
+	require.NotEmpty(t, created.Id)
+
+	renamed, ok := workspace.CatalogsUpdate(Request{Body: []byte(`{"new_name": "my_catalog2"}`)}, "my_catalog").Body.(fakeCatalog)
+	require.True(t, ok)
+	assert.Equal(t, "my_catalog2", renamed.Name)
+	assert.Equal(t, created.Id, renamed.Id)
 }
