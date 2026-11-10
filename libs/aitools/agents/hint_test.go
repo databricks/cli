@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -193,8 +193,20 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
 
-	MaybeHint(ctx, testutil.CommandAt("aitools install"))
+	MaybeHint(ctx, commandAt("aitools install"))
 	assert.Empty(t, stderr.String())
+}
+
+// commandAt builds a command tree under a "databricks" root and returns the
+// command at the space-separated path, e.g. "current-user me".
+func commandAt(path string) *cobra.Command {
+	cmd := &cobra.Command{Use: "databricks"}
+	for name := range strings.FieldsSeq(path) {
+		child := &cobra.Command{Use: name}
+		cmd.AddCommand(child)
+		cmd = child
+	}
+	return cmd
 }
 
 func TestIsHintExemptCommand(t *testing.T) {
@@ -218,7 +230,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
-			assert.Equal(t, tc.want, IsHintExemptCommand(testutil.CommandAt(tc.path)))
+			assert.Equal(t, tc.want, IsHintExemptCommand(commandAt(tc.path)))
 		})
 	}
 }
