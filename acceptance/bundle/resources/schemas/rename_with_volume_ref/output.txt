@@ -1,0 +1,93 @@
+
+=== Deploy a schema, a volume in it and a job that reads the volume's full_name and id
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.job1
+Created schemas.schema1
+Created volumes.volume1
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [JOB_ID]
+[
+  {
+    "default": "main.test-schema-[UNIQUE_NAME].myvolume",
+    "name": "volume_full_name"
+  },
+  {
+    "default": "main.test-schema-[UNIQUE_NAME].myvolume",
+    "name": "volume_id"
+  },
+  {
+    "default": "[VOLUME_ID]",
+    "name": "volume_uuid"
+  }
+]
+
+=== Rename the schema
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+=== The volume's full_name and id change with the schema, so the job is updated too
+>>> [CLI] bundle plan
+update jobs.job1
+update schemas.schema1
+
+Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
+
+=== Deploy passes the volume's new full_name and id to the job
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated jobs.job1
+Updated schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "test-schema-renamed-[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] jobs get [JOB_ID]
+[
+  {
+    "default": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+    "name": "volume_full_name"
+  },
+  {
+    "default": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+    "name": "volume_id"
+  },
+  {
+    "default": "[VOLUME_ID]",
+    "name": "volume_uuid"
+  }
+]
+
+=== Redeploy is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job1
+  delete resources.schemas.schema1
+  delete resources.volumes.volume1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete resources.volumes.volume1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

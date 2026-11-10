@@ -18,6 +18,14 @@
         "name": "schema_dup_grants_[UNIQUE_NAME]",
         "owner": "[USERNAME]",
         "schema_id": "[UUID]"
+      },
+      "changes": {
+        "schema_id": {
+          "action": "skip",
+          "reason": "internal_id",
+          "old": "[UUID]",
+          "remote": "[UUID]"
+        }
       }
     },
     "resources.schemas.apps_schema.grants": {

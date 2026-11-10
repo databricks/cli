@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+RENAMED_VOLUME="main.test-schema1-renamed-${UNIQUE_NAME}.myvolume"
+NEW_VOLUME="main.test-schema2-${UNIQUE_NAME}.myvolume"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy two schemas and a volume in the first one"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "main.test-schema1-${UNIQUE_NAME}.myvolume" | jq -r .volume_id)" OLD_VOLUME_ID
+
+title "Rename the first schema and move the volume to the second one in one deploy. Moving the volume recreates it"
+trace update_file.py databricks.yml test-schema1- test-schema1-renamed-
+trace update_file.py databricks.yml schemas.schema1.name schemas.schema2.name
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //unity-catalog
+
+title "The volume is in the second schema"
+trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name}'
+
+title "The old volume, moved with the renamed schema, was deleted there"
+trace musterr $CLI volumes read "$RENAMED_VOLUME"
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

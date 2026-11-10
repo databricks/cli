@@ -1,0 +1,9 @@
+
+# Local only: an EXTERNAL volume needs an external location, which the test workspaces do not have.
+# volumes/move_from_renamed_schema covers the same recreate on a real workspace.
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

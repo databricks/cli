@@ -12,8 +12,8 @@ type Action struct {
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
 	// resource no longer exists remotely.
 	Gone bool
-	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
-	// because the resource implements no DoDelete (deleting it has no backend effect).
+	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
+	// (a delete of a resource without DoDelete, or a re-key).
 	StateOnly bool
 }
 
@@ -21,12 +21,10 @@ func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
 }
 
-// IsStateOnlyDelete reports whether applying this delete only drops the state entry
-// without any backend call: the resource is already gone remotely (Gone) or has no
-// delete operation (StateOnly). Such deletes are omitted from human output, excluded
-// from the resource counts, and need no destructive-action approval. See the same
-// method on PlanEntry.
-func (a Action) IsStateOnlyDelete() bool {
+// IsStateOnly reports whether applying this action makes no backend call and only changes the
+// state (see PlanEntry.IsStateOnly). Such actions are omitted from human output and need no
+// approval.
+func (a Action) IsStateOnly() bool {
 	return a.Gone || a.StateOnly
 }
 

@@ -49,7 +49,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	// Deletes that only clean up the state (already gone remotely, or no delete
 	// operation) are not destructive and need no approval.
-	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {

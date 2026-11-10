@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structdiff"
@@ -55,8 +56,8 @@ func TestDynPathToStructPath(t *testing.T) {
 func TestExtractReferences_ExcludesReadonlyFields(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
-	// The volume state type is catalog.CreateVolumeRequestContent, which has
-	// comment but not volume_path.
+	// The volume state type is VolumeState, which has comment but not
+	// volume_path.
 	stateType := adapters["volumes"].StateType()
 
 	const yml = `
@@ -259,7 +260,7 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil)
+			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
@@ -267,6 +268,64 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			} else {
 				assert.NotEqual(t, deployplan.ReasonRemoteAlreadySet, tt.ch.Reason, "a real local change must not be skipped as remote_already_set")
 			}
+		})
+	}
+}
+
+// TestFollowsParentRename pins when an ID field that references a renamed parent is
+// re-keyed (update_id) instead of recreated: only a provided_id_field of a resource with
+// DoUpdateWithID, and only if it was under that parent before the rename.
+func TestFollowsParentRename(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		old            string
+		expectedAction deployplan.ActionType
+	}{
+		{
+			name:           "child of the renamed parent follows it",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.UpdateWithID,
+		},
+		{
+			name:           "child moved from another parent is recreated",
+			resource:       "volumes",
+			field:          "schema_name",
+			old:            "other",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "resource without DoUpdateWithID is recreated",
+			resource:       "registered_models",
+			field:          "schema_name",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			name:           "recreate_on_changes field is recreated",
+			resource:       "volumes",
+			field:          "storage_location",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			ch := &deployplan.ChangeDesc{Old: tt.old, New: "s_new", Remote: tt.old}
+			parentRenames := map[string]*deployplan.ChangeDesc{
+				tt.field: {Action: deployplan.UpdateWithID, Reason: "id_changes", Old: "s_old", New: "s_new", Remote: "s_old"},
+			}
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, deployplan.Changes{tt.field: ch}, nil, nil, parentRenames))
+			assert.Equal(t, tt.expectedAction, ch.Action)
 		})
 	}
 }
@@ -322,7 +381,7 @@ func TestRecreateBackendDefault(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
 				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
@@ -453,7 +512,7 @@ func TestScalarZeroChange(t *testing.T) {
 			adapter, ok := adapters["clusters"]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
 				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
@@ -517,7 +576,7 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 		Remote: state.ResultState,
 	}}
 
-	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote))
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote, nil))
 	return changes["result_state"]
 }
 
@@ -791,7 +850,106 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 		// config-absent (Old==New==nil), present in remote: matches both rules.
 		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},
 	}
-	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil, nil))
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
+}
+
+// TestInternalIDChangesAreSkipped: volume_id and schema_id are recorded in state but never set by
+// config, so neither the always-different local value nor a state recorded before them plans an update.
+func TestInternalIDChangesAreSkipped(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	for _, tt := range []struct{ resource, field string }{
+		{"volumes", "volume_id"},
+		{"schemas", "schema_id"},
+	} {
+		for name, ch := range map[string]*deployplan.ChangeDesc{
+			"recorded":     {Old: "uuid-1", New: nil, Remote: "uuid-1"},
+			"not recorded": {Old: nil, New: nil, Remote: "uuid-1"},
+		} {
+			t.Run(tt.resource+" "+name, func(t *testing.T) {
+				changes := deployplan.Changes{tt.field: ch}
+				require.NoError(t, addPerFieldActions(t.Context(), adapters[tt.resource], changes, nil, nil, nil))
+				assert.Equal(t, deployplan.Skip, changes[tt.field].Action)
+			})
+		}
+	}
+}
+
+func TestAddParentMoves(t *testing.T) {
+	const (
+		schemaKey = "resources.schemas.schema1"
+		volumeKey = "resources.volumes.volume1"
+	)
+	schema1Dep := deployplan.DependsOnEntry{Node: schemaKey, Label: "${resources.schemas.schema1.name}"}
+	schema2Dep := deployplan.DependsOnEntry{Node: "resources.schemas.schema2", Label: "${resources.schemas.schema2.name}"}
+
+	tests := []struct {
+		name          string
+		schemaRenamed bool
+		volumeChanges deployplan.Changes
+		wantID        string
+		wantDependsOn []deployplan.DependsOnEntry
+	}{
+		{
+			name:          "moved to another schema",
+			schemaRenamed: true,
+			volumeChanges: deployplan.Changes{"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"}},
+			wantID:        "main.s1-renamed.vol",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			name:          "recreated in the renamed schema",
+			schemaRenamed: true,
+			volumeChanges: deployplan.Changes{
+				"schema_name": {Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed, Old: "s1", New: "s1-renamed"},
+				"volume_type": {Action: deployplan.Recreate, Old: "MANAGED", New: "EXTERNAL"},
+			},
+			wantID:        "main.s1-renamed.vol",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			name:          "schema not renamed",
+			schemaRenamed: false,
+			volumeChanges: deployplan.Changes{"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"}},
+			wantID:        "",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapters, err := dresources.InitAll(nil)
+			require.NoError(t, err)
+
+			schemaEntry := &deployplan.PlanEntry{Action: deployplan.Skip}
+			if tt.schemaRenamed {
+				schemaEntry = &deployplan.PlanEntry{
+					Action:  deployplan.UpdateWithID,
+					Changes: deployplan.Changes{"name": {Action: deployplan.UpdateWithID, Old: "s1", New: "s1-renamed"}},
+				}
+			}
+			plan := deployplan.NewPlanDirect()
+			plan.Plan[schemaKey] = schemaEntry
+			plan.Plan[volumeKey] = &deployplan.PlanEntry{
+				Action:    deployplan.Recreate,
+				DependsOn: []deployplan.DependsOnEntry{schema2Dep},
+				Changes:   tt.volumeChanges,
+			}
+
+			b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
+				volumeKey: {
+					ID:        "main.s1.vol",
+					State:     []byte(`{"catalog_name": "main", "schema_name": "s1", "name": "vol", "volume_type": "MANAGED"}`),
+					DependsOn: []deployplan.DependsOnEntry{schema1Dep},
+				},
+			}})
+
+			require.NoError(t, b.addParentMoves(plan))
+			assert.Equal(t, tt.wantID, plan.Plan[volumeKey].ID)
+			assert.Equal(t, tt.wantDependsOn, plan.Plan[volumeKey].DependsOn)
+		})
+	}
 }
