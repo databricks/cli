@@ -4,6 +4,10 @@
 # or override this in their own script.prepare or script.
 export DATABRICKS_AUTH_STORAGE=plaintext
 
+ruff() {
+    uv tool run -q ruff@0.9.1 "$@"
+}
+
 errcode() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e
