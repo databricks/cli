@@ -13,7 +13,7 @@ trap cleanup EXIT
 
 # Drop the remote_state fields that differ between clouds or from the test server.
 plan() {
-    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+    trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
 }
 
 title "Deploy a catalog with a schema and a volume in it"
@@ -39,7 +39,7 @@ title "The plan finds the catalog, the schema and the volume at their new names 
 plan
 
 title "Deploy only records the new names in the state"
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
 
