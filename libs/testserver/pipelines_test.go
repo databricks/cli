@@ -51,7 +51,7 @@ func TestPipelineCreate_AllowsSingleSegmentTargetSchemaName(t *testing.T) {
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	response := workspace.PipelineStartUpdate("non-existent-pipeline")
+	response := workspace.PipelineStartUpdate("non-existent-pipeline", nil)
 	assert.Equal(t, 404, response.StatusCode)
 	assert.Contains(t, response.Body.(map[string]string)["message"], "The specified pipeline non-existent-pipeline was not found")
 }
@@ -74,7 +74,7 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 
 	pipelineId := createTestPipeline(t, workspace)
 
-	startResponse := workspace.PipelineStartUpdate(pipelineId)
+	startResponse := workspace.PipelineStartUpdate(pipelineId, nil)
 	assert.Equal(t, 0, startResponse.StatusCode)
 
 	stopResponse := workspace.PipelineStop(pipelineId)
