@@ -31,6 +31,7 @@ func TestCallingAgent(t *testing.T) {
 		{name: "kiro", env: []string{"KIRO", "1"}, want: agents.NameKiro},
 		{name: "agent the CLI cannot install into", env: []string{"WINDSURF_AGENT", "1"}},
 		{name: "free-text agent", env: []string{"AGENT", "some-internal-tool"}},
+		{name: "free-text agent named like a registry agent", env: []string{"AGENT", "copilot"}, want: agents.NameCopilot},
 		{name: "no agent"},
 		{name: "several agents", env: []string{"CLAUDECODE", "1", "CURSOR_AGENT", "1"}},
 	}
@@ -85,7 +86,7 @@ func writeFile(t *testing.T, path, body string) {
 }
 
 // writeClaudeRecord writes a Claude manifest with one databricks plugin record
-// in the given scope and project path (the field Claude Code requires for the
+// in the given scope and project path (the field Claude Code writes for the
 // project and local scopes).
 func writeClaudeRecord(t *testing.T, home, scope, projectPath string) {
 	record := map[string]string{"scope": scope, "version": "0.2.9"}

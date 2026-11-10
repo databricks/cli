@@ -82,6 +82,18 @@ func projectFixture(t *testing.T) (project, sub string) {
 	return project, sub
 }
 
+// Every record counts, not only the first one the reader returns.
+func TestDatabricksPluginActiveInChecksEveryRecord(t *testing.T) {
+	project, _ := projectFixture(t)
+	a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool) {
+		return []pluginInstall{
+			{Scope: "project", ProjectPath: filepath.Join(filepath.Dir(project), "Other")},
+			{Scope: "user"},
+		}, true
+	}}
+	assert.True(t, a.databricksPluginActiveIn(t.Context(), project))
+}
+
 func TestPluginInstallAppliesToProjectOutsideWorkingDir(t *testing.T) {
 	project, sub := projectFixture(t)
 	sibling := filepath.Join(filepath.Dir(project), "Other")

@@ -60,15 +60,15 @@ func (t Tooling) String() string {
 // locations; read errors count as not installed. Claude Code's manifest is
 // authoritative because `claude plugin uninstall` leaves a stale CLI install
 // record. For Codex and Copilot, pluginRecorded (the CLI install state) is the
-// only plugin source, so it includes plugins later removed with the agent's own
-// CLI. The shared skills store is not consulted: it cannot attribute skills.
+// only plugin source, so it misses plugins installed with the agent's own CLI
+// and includes plugins later removed with it. The shared skills store is not consulted: it cannot attribute skills.
 // The install hint's claudeToolingInstalled differs on purpose: it stays quiet
 // for any trace of an install, while this reports what the agent loads.
 func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() bool) Tooling {
-	// Getwd returns "" on error, which skips the project lookups below.
-	cwd, err := os.Getwd()
-	if err == nil {
-		cwd = resolvePath(cwd)
+	// An unknown working directory skips the project lookups below.
+	cwd := ""
+	if wd, err := os.Getwd(); err == nil {
+		cwd = resolvePath(wd)
 	}
 	switch {
 	case a.pluginInstalls != nil:
