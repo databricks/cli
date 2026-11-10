@@ -94,7 +94,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
@@ -143,7 +143,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
@@ -195,7 +195,7 @@ func (s *FakeWorkspace) SecretsUcDeleteSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
