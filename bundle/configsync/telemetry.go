@@ -71,6 +71,8 @@ type Stats struct {
 	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
 	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
 
+	InGitRepo *bool
+
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
 }
@@ -317,6 +319,7 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			StatesAvailableCount:               s.StatesAvailableCount,
 			StateResourceIDs:                   s.StateResourceIDs,
 			SelectedResourceIDs:                s.SelectedResourceIDs,
+			InGitRepo:                          s.InGitRepo,
 			ErrorMessage:                       s.ErrorMessage,
 			ErrorCategory:                      s.ErrorCategory,
 		},

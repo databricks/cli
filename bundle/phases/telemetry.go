@@ -474,6 +474,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 			Git:                 bundleGitInfo(b),
 			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
+			InGitRepo:           b.InGitRepo,
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
