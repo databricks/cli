@@ -405,6 +405,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// at its new ID: applying only records the state under the ID IDFromState gives it.
 			entry.StateOnly = true
 		}
+		if action == deployplan.Skip {
+			missing, err := missingInternalID(adapter, savedState, remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+			if missing {
+				// The state was recorded without the internal ID (by a CLI from before it was, or by
+				// bind): applying only records it, from the remote state.
+				action = deployplan.Update
+				entry.StateOnly = true
+			}
+		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
@@ -879,6 +892,20 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 		return "", nil, err
 	}
 	return id, remote, nil
+}
+
+// missingInternalID reports whether savedState lacks the internal ID that remote, the remote state
+// remapped to the state type, has.
+func missingInternalID(adapter *dresources.Adapter, savedState, remote any) (bool, error) {
+	if !adapter.HasInternalID() || remote == nil {
+		return false, nil
+	}
+	saved, err := adapter.InternalID(savedState)
+	if err != nil || saved != "" {
+		return false, err
+	}
+	found, err := adapter.InternalID(remote)
+	return found != "", err
 }
 
 // hasUnresolvedIDField reports whether a field the ID is built from is still an unresolved reference.

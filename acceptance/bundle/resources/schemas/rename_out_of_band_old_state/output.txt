@@ -14,11 +14,18 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "resources.volumes.volume1": {}
 }
 
-=== Deploy with nothing to change
+=== A deploy with nothing else to change records them, with a state-only update
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
-    "action": "skip",
+    "action": "update",
+    "state_only": true,
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "test-schema-[UNIQUE_NAME]"
+      }
+    },
     "remote_state": {
       "browse_only": false,
       "catalog_name": "main",
@@ -46,7 +53,16 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "label": "${resources.schemas.schema1.name}"
       }
     ],
-    "action": "skip",
+    "action": "update",
+    "state_only": true,
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "myvolume",
+        "schema_name": "test-schema-[UNIQUE_NAME]",
+        "volume_type": "MANAGED"
+      }
+    },
     "remote_state": {
       "catalog_name": "main",
       "created_at": [UNIX_TIME_MILLIS][1],
@@ -77,11 +93,15 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> jq .state | map_values(.state | {schema_id, volume_id} | with_entries(select(.value != null))) .databricks/bundle/default/resources.json
 {
-  "resources.schemas.schema1": {},
-  "resources.volumes.volume1": {}
+  "resources.schemas.schema1": {
+    "schema_id": "[SCHEMA_ID]"
+  },
+  "resources.volumes.volume1": {
+    "volume_id": "[VOLUME_ID]"
+  }
 }
 
-=== Rename the schema out of band, and the config to match
+=== Rename the schema out of band, and the config to match. The plan finds both by their ids
 >>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
@@ -93,30 +113,53 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
-    "action": "create",
+    "id": "main.test-schema-renamed-[UNIQUE_NAME]",
+    "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
         "name": "test-schema-renamed-[UNIQUE_NAME]"
       }
     },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_at": [UNIX_TIME_MILLIS][0],
+      "created_by": "[USERNAME]",
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+      "name": "test-schema-renamed-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[SCHEMA_ID]"
+    },
     "changes": {
       "name": {
-        "action": "update_id",
-        "reason": "id_changes",
+        "action": "skip",
+        "reason": "remote_already_set",
         "old": "test-schema-[UNIQUE_NAME]",
-        "new": "test-schema-renamed-[UNIQUE_NAME]"
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-renamed-[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[SCHEMA_ID]"
       }
     }
   },
   "resources.volumes.volume1": {
+    "id": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
     "depends_on": [
       {
         "node": "resources.schemas.schema1",
         "label": "${resources.schemas.schema1.name}"
       }
     ],
-    "action": "create",
+    "action": "update_id",
+    "state_only": true,
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -125,50 +168,60 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
         "volume_type": "MANAGED"
       }
     },
+    "remote_state": {
+      "catalog_name": "main",
+      "created_at": [UNIX_TIME_MILLIS][1],
+      "created_by": "[USERNAME]",
+      "full_name": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+      "name": "myvolume",
+      "owner": "[USERNAME]",
+      "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+      "volume_id": "[VOLUME_ID]",
+      "volume_type": "MANAGED"
+    },
     "changes": {
       "schema_name": {
-        "action": "recreate",
-        "reason": "id_field",
+        "action": "skip",
+        "reason": "remote_already_set",
         "old": "test-schema-[UNIQUE_NAME]",
-        "new": "test-schema-renamed-[UNIQUE_NAME]"
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-renamed-[UNIQUE_NAME]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]",
+        "remote": "[VOLUME_ID]"
       }
     }
   }
 }
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Error: cannot create resources.schemas.schema1: Schema 'test-schema-renamed-[UNIQUE_NAME]' already exists (400 SCHEMA_ALREADY_EXISTS)
-
-Endpoint: POST [DATABRICKS_URL]/api/2.1/unity-catalog/schemas
-HTTP Status: 400 Bad Request
-API error_code: SCHEMA_ALREADY_EXISTS
-API message: Schema 'test-schema-renamed-[UNIQUE_NAME]' already exists
-
-Error: cannot create resources.volumes.volume1: dependency failed: resources.schemas.schema1
-
 Files: 2 uploaded, 0 deleted
-
-Exit code: 1
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //unity-catalog
-{
-  "method": "POST",
-  "path": "/api/2.1/unity-catalog/schemas",
-  "body": {
-    "catalog_name": "main",
-    "name": "test-schema-renamed-[UNIQUE_NAME]"
-  }
-}
 
-=== Redeploy
->>> errcode [CLI] bundle plan
-create schemas.schema1
-create volumes.volume1
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+=== Redeploy is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+  delete resources.volumes.volume1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete resources.volumes.volume1
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted
+Destroy: 2 deleted
