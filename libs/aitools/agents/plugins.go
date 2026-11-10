@@ -16,14 +16,18 @@ import (
 const pluginManifestFile = "installed_plugins.json"
 
 // pluginInstall is one install record in an agent's plugin manifest. A plugin
-// installed in more than one scope has several records.
+// installed in more than one scope has several records. Claude Code documents
+// the record's scope and version and what each scope covers:
+// https://code.claude.com/docs/en/plugins/loading#check-which-stage-a-plugin-reached
+// https://code.claude.com/docs/en/plugins/install#choose-an-install-scope
 type pluginInstall struct {
 	Version string `json:"version"`
 	// Scope is Claude Code's install scope: "managed", "user", "project" or
 	// "local".
 	Scope string `json:"scope"`
-	// ProjectPath is the project the record applies to. Claude Code requires it
-	// for the project and local scopes.
+	// ProjectPath is the project a project or local scope record applies to.
+	// It is not in Claude Code's public docs; Claude Code writes it for those
+	// scopes.
 	ProjectPath string `json:"projectPath"`
 }
 
