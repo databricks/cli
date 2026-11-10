@@ -17,6 +17,9 @@ Created materialization_sets.set1
 Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
+>>> read_id.py set1
+[SET1_ID]
+
 >>> [CLI] bundle plan -o json
 
 >>> set_actions
@@ -35,12 +38,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
+Error: cannot update resources.materialization_sets.set1: updating id=[SET1_ID]: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[SET1_ID]?request_id=[UUID][0]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
+API message: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead.
 
 Files: 2 uploaded, 0 deleted
 
@@ -56,12 +59,12 @@ Files: 2 uploaded, 0 deleted
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-batch-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.materialization_sets.set1: updating id=[UUID]: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
+Error: cannot update resources.materialization_sets.set1: updating id=[SET1_ID]: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[UUID]?request_id=[UUID]&update_mask=%2A
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/feature-engineering/materialization-sets/[SET1_ID]?request_id=[UUID][1]&update_mask=%2A
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Updating materialization set '[UUID]' with no materialized features is not supported. Delete the set instead.
+API message: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead.
 
 Files: 2 uploaded, 0 deleted
 

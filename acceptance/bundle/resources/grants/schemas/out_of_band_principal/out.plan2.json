@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 2,
   "plan": {
     "resources.schemas.grants_schema": {
@@ -14,10 +14,10 @@
         "created_by": "[USERNAME]",
         "enable_predictive_optimization": "INHERIT",
         "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
-        "metastore_id": "[UUID]",
+        "metastore_id": "[UUID][1]",
         "name": "schema_out_of_band_principal_[UNIQUE_NAME]",
         "owner": "[USERNAME]",
-        "schema_id": "[UUID]"
+        "schema_id": "[UUID][2]"
       }
     },
     "resources.schemas.grants_schema.grants": {

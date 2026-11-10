@@ -25,15 +25,15 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
       "permissions": [
         {
           "level": "CAN_ATTACH_TO",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][0]"
         },
         {
           "level": "CAN_RESTART",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][1]"
         },
         {
           "level": "CAN_MANAGE",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][2]"
         },
         {
           "level": "CAN_MANAGE",

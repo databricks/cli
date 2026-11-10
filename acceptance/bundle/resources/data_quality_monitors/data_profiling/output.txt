@@ -16,20 +16,20 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "data_profiling_config": {
       "assets_dir": "/Workspace/Users/user@example.com/assets1",
-      "output_schema_id": "[UUID]",
+      "output_schema_id": "[UUID][0]",
       "schedule": {
         "quartz_cron_expression": "0 0 12 * * ?",
         "timezone_id": "UTC"
       },
       "snapshot": {}
     },
-    "object_id": "[UUID]",
+    "object_id": "[UUID][1]",
     "object_type": "table"
   }
 }
 
 === Verify deployment, including server-computed fields
->>> [CLI] data-quality get-monitor table [UUID]
+>>> [CLI] data-quality get-monitor table [UUID][1]
 {
   "assets_dir": "/Workspace/Users/user@example.com/assets1",
   "schedule": {
@@ -56,21 +56,21 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //data-quality
 {
   "method": "PATCH",
-  "path": "/api/data-quality/v1/monitors/table/[UUID]",
+  "path": "/api/data-quality/v1/monitors/table/[UUID][1]",
   "q": {
     "update_mask": "*"
   },
   "body": {
     "data_profiling_config": {
       "assets_dir": "/Workspace/Users/user@example.com/assets1",
-      "output_schema_id": "[UUID]",
+      "output_schema_id": "[UUID][0]",
       "schedule": {
         "quartz_cron_expression": "0 0 6 * * ?",
         "timezone_id": "UTC"
       },
       "snapshot": {}
     },
-    "object_id": "[UUID]",
+    "object_id": "[UUID][1]",
     "object_type": "table"
   }
 }
