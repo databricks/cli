@@ -1,1 +1,1 @@
-OK: package init times are within threshold
+OK: total package init() time is within 10 ms
