@@ -108,13 +108,20 @@ parameter names.
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
 
-For pipelines, --refresh and --full-refresh accept space-separated table:<name>
-or file:<path> selectors inside quotes, or repeated flags. Bare names select tables.
-For example: --refresh "orders payments" or --refresh "file:./src/a.py file:./src/b.py".
-Use backticks around names or paths containing spaces or commas, and double a
-backtick to escape it. In Bash and zsh, put values containing backticks in single quotes.
-Comma-separated lists are no longer supported.
-Deploy local file changes before running. Each flag accepts either tables or files.
+For pipeline runs, --refresh and --full-refresh accept:
+  Tables: orders or table:orders
+  Source files: file:./src/pipeline.py (file: is required)
+
+Put multiple selectors in quotes, or repeat the flag:
+  --refresh "orders payments"
+  --refresh "file:./src/a.py file:./src/b.py"
+  --refresh table:orders --refresh table:payments
+
+For a path containing spaces:
+  --refresh 'file:` + "`./src/my pipeline.py`" + `'
+
+Each refresh mode accepts either tables or files.
+Deploy local file changes before running.
 
 ---------------------------------------------------------
 

@@ -239,15 +239,22 @@ KEY is the unique name of the pipeline to run, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
 Refreshes all tables in the pipeline unless otherwise specified.
 
-Use --refresh or --full-refresh with space-separated table:<name> or file:<path>
-selectors inside quotes, or repeat the flag. Bare names select tables.
-For example: --refresh "orders payments" or --refresh "file:./src/a.py file:./src/b.py".
-Use backticks around names or paths containing spaces or commas, and double a
-backtick to escape it. In Bash and zsh, put values containing backticks in single quotes.
-Comma-separated lists are no longer supported.
-Paths can be local source files or absolute /Workspace/ paths. Local paths are relative to the current directory and use the
-bundle sync configuration. Deploy local changes before running.
-Each flag accepts either tables or paths, but cannot mix both.`,
+For pipeline runs, --refresh and --full-refresh accept:
+  Tables: orders or table:orders
+  Source files: file:./src/pipeline.py (file: is required)
+
+Put multiple selectors in quotes, or repeat the flag:
+  --refresh "orders payments"
+  --refresh "file:./src/a.py file:./src/b.py"
+  --refresh table:orders --refresh table:payments
+
+For a path containing spaces:
+  --refresh 'file:` + "`./src/my pipeline.py`" + `'
+
+Each refresh mode accepts either tables or files.
+Local file paths are relative to the current directory and map to deployed files.
+Absolute /Workspace/ paths are also accepted. Deploy local changes before running.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var pipelineOptions run.PipelineOptions

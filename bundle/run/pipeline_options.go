@@ -40,9 +40,9 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 }
 
 func (o *PipelineOptions) DefineRefreshFlags(fs *flag.FlagSet) {
-	fs.Var((*refreshSelectionFlag)(&o.Refresh), "refresh", "Space-separated table:<name> or file:<path> selectors to update. Bare names select tables. Repeatable.")
+	fs.Var((*refreshSelectionFlag)(&o.Refresh), "refresh", "Space-separated table:<name> or file:<path> selectors to update. Quote lists or repeat the flag.")
 	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	fs.Var((*refreshSelectionFlag)(&o.FullRefresh), "full-refresh", "Space-separated table:<name> or file:<path> selectors to reset and recompute. Bare names select tables. Repeatable.")
+	fs.Var((*refreshSelectionFlag)(&o.FullRefresh), "full-refresh", "Space-separated table:<name> or file:<path> selectors to reset and recompute. Quote lists or repeat the flag.")
 }
 
 // Validate returns if the combination of options is valid.
