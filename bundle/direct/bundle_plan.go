@@ -897,12 +897,13 @@ func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) 
 // followsParentRename reports whether a change to a provided ID field only follows parentChange,
 // the rename of the parent field it references (see parentRenames). UC moves the children of a
 // renamed catalog or schema along with it, so recreating such a child fails with "already
-// exists"; it is planned as an update_id instead, which addresses it under the new parent.
+// exists"; it is planned as an update_id instead, which addresses it under the new parent. That
+// needs IDFromState: with no other change, the update_id only re-keys the state (StateOnly).
 //
 // The old values must match too: a child moved to the renamed parent from somewhere else
 // still has to be recreated.
 func followsParentRename(adapter *dresources.Adapter, parentChange, ch *deployplan.ChangeDesc) bool {
-	return parentChange != nil && adapter.HasDoUpdateWithID() && structdiff.IsEqual(ch.Old, parentChange.Old)
+	return parentChange != nil && adapter.HasDoUpdateWithID() && adapter.HasIDFromState() && structdiff.IsEqual(ch.Old, parentChange.Old)
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
