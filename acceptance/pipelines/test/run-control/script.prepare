@@ -1,0 +1,3 @@
+# Each case stubs Start Update, Get Update and List Pipeline Events in its test.toml.
+pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
+rm "$OUT_REQUESTS"

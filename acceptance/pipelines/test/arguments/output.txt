@@ -26,7 +26,10 @@ example:
 The command waits for the results. It exits with code 0 only if at least one
 test was collected and none failed or errored, so a run whose tests were all
 skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
-update starts. To stop the update, run 'pipelines stop'.
+update starts.
+
+--timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
+to read the results later. To stop the update, run 'pipelines stop'.
 
 Usage:
   databricks pipelines test [flags] [KEY] [TEST_SELECTION...]
@@ -35,6 +38,8 @@ Pipeline Test Flags:
       --no-wait                  Don't wait for the tests to complete.
       --pipeline-id string       ID of the pipeline to test, instead of a KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
+      --resume string            Read the results of an existing test update instead of starting one.
+      --timeout duration         Stop waiting for results after this duration, for example 30m. The update keeps running.
 
 Flags:
   -h, --help   help for test
@@ -71,3 +76,22 @@ Error: --pipeline-id "1234" is not a pipeline ID
 === JSON output is not supported
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
 Error: --output json is not supported by pipelines test
+
+=== Incompatible run-control flags
+>>> musterr [CLI] pipelines test --pipeline-id 1234 tests --resume 5678
+Error: --resume cannot be used with test selections
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --pytest-arg=-m --pytest-arg=smoke
+Error: --resume cannot be used with --pytest-arg
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678 --no-wait
+Error: --resume cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --timeout 10m
+Error: --timeout cannot be used with --no-wait
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 5678' OR '1'='1
+Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that pipelines test printed
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --resume 
+Error: --resume "" is not an update ID; pass the update ID that pipelines test printed
