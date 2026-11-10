@@ -1,0 +1,8 @@
+Badness = "The schema's rename moves the volume, but the recreate deletes the volume at its recorded path, which no longer exists. The volume moved with the schema is left behind untracked."
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

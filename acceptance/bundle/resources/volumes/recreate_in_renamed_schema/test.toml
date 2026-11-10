@@ -1,0 +1,10 @@
+Badness = "The schema's rename moves the volume, but the recreate deletes the volume at its recorded path, which no longer exists, and then creates it under the name the moved volume still has. The test server accepts that create, overwriting the moved volume; a real workspace would reject it because the name is taken."
+
+# Local only: an EXTERNAL volume needs an external location, which the test workspaces do not have.
+# volumes/move_from_renamed_schema covers the same recreate on a real workspace.
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
