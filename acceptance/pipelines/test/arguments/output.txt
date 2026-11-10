@@ -23,10 +23,16 @@ example:
 
   databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
 
+The command waits for the results. It exits with code 0 only if at least one
+test was collected and none failed or errored, so a run whose tests were all
+skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
+update starts. To stop the update, run 'pipelines stop'.
+
 Usage:
   databricks pipelines test [flags] [KEY] [TEST_SELECTION...]
 
 Pipeline Test Flags:
+      --no-wait                  Don't wait for the tests to complete.
       --pipeline-id string       ID of the pipeline to test, instead of a KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
 

@@ -1,0 +1,2 @@
+title "Failed, errored and skipped tests"
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id
