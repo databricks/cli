@@ -48,32 +48,64 @@ Exit code: [KILLED]
 === The volume went with the old schema. Nothing with its volume_id is at its new path, so the plan creates it
 >>> [CLI] bundle plan --output json
 {
-  "depends_on": [
-    {
-      "node": "resources.schemas.schema1",
-      "label": "${resources.schemas.schema1.name}"
-    }
-  ],
-  "action": "create",
-  "new_state": {
-    "value": {
+  "resources.schemas.schema1": {
+    "action": "skip",
+    "remote_state": {
+      "browse_only": false,
       "catalog_name": "main",
-      "name": "myvolume",
-      "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
-      "volume_type": "MANAGED"
+      "catalog_type": "MANAGED_CATALOG",
+      "created_by": "[USERNAME]",
+      "effective_predictive_optimization_flag": {
+        "inherited_from_name": "[METASTORE_NAME]",
+        "inherited_from_type": "METASTORE",
+        "value": "ENABLE"
+      },
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+      "metastore_id": "[UUID]",
+      "name": "test-schema-renamed-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[UUID]",
+      "storage_root": "s3://mybucket/b",
+      "updated_by": "[USERNAME]"
+    },
+    "changes": {
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
+      }
     }
   },
-  "changes": {
-    "schema_name": {
-      "action": "recreate",
-      "reason": "id_field",
-      "old": "test-schema-[UNIQUE_NAME]",
-      "new": "test-schema-renamed-[UNIQUE_NAME]"
+  "resources.volumes.volume1": {
+    "depends_on": [
+      {
+        "node": "resources.schemas.schema1",
+        "label": "${resources.schemas.schema1.name}"
+      }
+    ],
+    "action": "create",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "myvolume",
+        "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+        "volume_type": "MANAGED"
+      }
     },
-    "volume_id": {
-      "action": "skip",
-      "reason": "internal_id",
-      "old": "[VOLUME_ID]"
+    "changes": {
+      "schema_name": {
+        "action": "recreate",
+        "reason": "id_field",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]"
+      }
     }
   }
 }
