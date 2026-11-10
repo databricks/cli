@@ -51,6 +51,7 @@ Available Commands:
   pipeline                   Generate bundle configuration for a pipeline
   postgres-branch            Generate bundle configuration for a postgres branch
   postgres-catalog           Generate bundle configuration for a postgres catalog
+  postgres-data-api          Generate bundle configuration for a postgres data api
   postgres-database          Generate bundle configuration for a postgres database
   postgres-endpoint          Generate bundle configuration for a postgres endpoint
   postgres-project           Generate bundle configuration for a postgres project
