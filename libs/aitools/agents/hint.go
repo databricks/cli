@@ -77,7 +77,8 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 // trees are exempt because telling the agent to run aitools while it already
 // runs aitools makes no sense. The rest are plumbing or one-shot lookups (auth
 // checks, "who am I", help, shell completion): the agent has no task to apply
-// the skills to, and the nudge eval showed such calls do not convert.
+// the skills to. Evaluations showed that conversion on these commands is low,
+// so a hint on them wastes the prompt.
 var hintExemptCommands = []string{
 	"aitools",
 	"experimental aitools",
