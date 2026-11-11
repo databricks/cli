@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/stretchr/testify/assert"
@@ -137,8 +138,8 @@ func TestLoadRunConfig_CodeSourceErrors(t *testing.T) {
 		{"flattened error path", "code_source:\n  root_path: \"\"\n", "code_source.root_path cannot be empty"},
 		{"nested error path", "code_source:\n  snapshot:\n    root_path: \"\"\n", "code_source.snapshot.root_path cannot be empty"},
 		{"null snapshot", "code_source:\n  snapshot: null\n", "code_source.snapshot.root_path cannot be empty"},
-		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", "field bogus not found"},
-		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", "field bogus not found"},
+		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", `unknown field "code_source.bogus"`},
+		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", `unknown field "code_source.snapshot.bogus"`},
 	}
 
 	for _, tt := range tests {
@@ -326,6 +327,91 @@ func TestLoadRunConfig_UnknownFieldRejected(t *testing.T) {
 	}
 }
 
+func TestLoadRunConfig_UnknownFieldMessages(t *testing.T) {
+	tests := []struct {
+		name      string
+		yaml      string
+		wantParts []string
+		denyParts []string
+	}{
+		{
+			name: "top-level typo",
+			yaml: minimalConfig + "envronment:\n  version: 6\n",
+			wantParts: []string{
+				`line 7: unknown field "envronment"; did you mean "environment"?`,
+				`fields under "config" are: code_source, command, compute,`,
+				`run "databricks air run -h config" for details`,
+			},
+			denyParts: []string{"runConfig", "newer documentation"},
+		},
+		{
+			name: "nested typo",
+			yaml: minimalConfig + "code_source:\n  rot_path: .\n",
+			wantParts: []string{
+				`line 8: unknown field "code_source.rot_path"; did you mean "root_path"?`,
+				`fields under "config.code_source" are: git, include_paths, remote_volume, root_path`,
+				`run "databricks air run -h config.code_source" for details`,
+			},
+			denyParts: []string{"codeSourceConfig", "newer documentation"},
+		},
+		{
+			name:      "list item typo",
+			yaml:      minimalConfig + "permissions:\n  - user_name: a@example.test\n    levl: CAN_VIEW\n",
+			wantParts: []string{`line 9: unknown field "permissions.levl"; did you mean "level"?`},
+		},
+		{
+			name: "no close match suggests a newer CLI",
+			yaml: minimalConfig + "code_source:\n  root_path: .\n  fancy_new_option: true\n",
+			wantParts: []string{
+				`line 9: unknown field "code_source.fancy_new_option"` + "\n",
+				"may not be supported by this CLI (version " + build.GetInfo().Version + ")",
+				"databricks version --check",
+			},
+			denyParts: []string{"did you mean"},
+		},
+		{
+			name: "every unknown field is reported",
+			yaml: "envronment: {}\n" + minimalConfig + "compute2: {}\ncode_source:\n  rot_path: .\n",
+			wantParts: []string{
+				": 3 unknown fields\n",
+				`line 1: unknown field "envronment"`,
+				`line 8: unknown field "compute2"`,
+				`line 10: unknown field "code_source.rot_path"`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, tt.yaml))
+			require.Error(t, err)
+			for _, part := range tt.wantParts {
+				assert.Contains(t, err.Error(), part)
+			}
+			for _, part := range tt.denyParts {
+				assert.NotContains(t, err.Error(), part)
+			}
+		})
+	}
+}
+
+func TestLoadRunConfig_KnownFieldsAcceptedByUnknownFieldCheck(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{"hidden legacy code_source keys", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: src\n"},
+		{"free-form maps", "parameters:\n  lr: {nested: 1}\nenv_variables:\n  ANY_NAME: x\n"},
+		{"merge key", "permissions:\n  - <<: {level: CAN_VIEW}\n    user_name: a@example.test\n"},
+		{"merge key from alias", "permissions:\n  - &grant {level: CAN_VIEW, user_name: a@example.test}\n  - <<: *grant\n    user_name: b@example.test\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, minimalConfig+tt.yaml))
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestLoadRunConfig_ErrorLineNumbersUseSource(t *testing.T) {
 	path := writeConfig(t, `# first comment
 # second comment
@@ -339,12 +425,12 @@ unknown_field: true
 
 	t.Run("without overrides", func(t *testing.T) {
 		_, err := loadRunConfig(path)
-		require.ErrorContains(t, err, "line 8: field unknown_field")
+		require.ErrorContains(t, err, `line 8: unknown field "unknown_field"`)
 	})
 
 	t.Run("with overrides", func(t *testing.T) {
 		_, err := loadRunConfigWithOverrides(t.Context(), path, []string{"compute.num_accelerators=2"})
-		require.ErrorContains(t, err, "line 8: field unknown_field")
+		require.ErrorContains(t, err, `line 8: unknown field "unknown_field"`)
 	})
 }
 
