@@ -18,7 +18,7 @@
           "label": "${resources.vector_search_endpoints.foo.endpoint_uuid}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

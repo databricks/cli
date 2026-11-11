@@ -33,10 +33,10 @@ Files: 1 uploaded, 0 deleted
 >>> print_state.py
 null
 
-=== A missing remote resource still plans a create
+=== A missing remote resource still plans an update
 >>> [CLI] bundle plan -o json
 {
-  "action": "create",
+  "action": "update",
   "id": null,
   "import": null
 }

@@ -21,11 +21,11 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:22:3
 
-Created jobs.my_job.permissions
 Recreated internal_immutable_snapshots.immutable
 Updated jobs.my_job
+Updated jobs.my_job.permissions
 Files: 0 uploaded, 0 deleted
-Resources: 2 created, 1 changed, 1 deleted, 0 unchanged
+Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
 Second snapshot path: /Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][2]/snapshot/files/src/main.py
 
 === Verify snapshot path changed after permissions change

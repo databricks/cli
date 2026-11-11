@@ -1,0 +1,14 @@
+{
+  "resources.jobs.job": {
+    "action": "create"
+  },
+  "resources.jobs.job.permissions": {
+    "action": "update"
+  },
+  "resources.schemas.schema": {
+    "action": "create"
+  },
+  "resources.schemas.schema.grants": {
+    "action": "update"
+  }
+}

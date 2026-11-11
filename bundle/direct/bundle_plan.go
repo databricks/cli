@@ -43,7 +43,7 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 }
 
 // ValidatePlanAgainstState rejects a saved plan that no longer matches the state it was built
-// against: its features, its lineage and its serial.
+// against (features, lineage and serial), or requests creation of a resource that no longer supports it.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	stateDB.AssertOpenedForReadOrWrite()
 
@@ -64,6 +64,26 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	expected := stateDB.GetSerial()
 	if plan.Serial != expected {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
+	}
+
+	// Older saved plans used create for grants and permissions. Reject them before
+	// applying any resources now that these types only support updates.
+	adapters, err := dresources.InitAll(nil)
+	if err != nil {
+		return err
+	}
+	b := DeploymentBundle{Adapters: adapters}
+	for _, action := range plan.GetActions() {
+		if action.ActionType != deployplan.Create && action.ActionType != deployplan.Recreate {
+			continue
+		}
+		adapter, err := b.getAdapterForKey(action.ResourceKey)
+		if err != nil {
+			return fmt.Errorf("%s: %w", action.ResourceKey, err)
+		}
+		if !adapter.HasDoCreate() {
+			return fmt.Errorf("cannot %s %s: resource does not support creation; run 'bundle plan' again", action.ActionType, action.ResourceKey)
+		}
 	}
 
 	return nil
@@ -299,8 +319,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
 		if !hasEntry || dbentry.ID == "" {
-			entry.Action = deployplan.Create
-			if !adapter.ResourceConfig().ImportOnPlan || hasUnresolvedIDField(adapter, sv) {
+			if adapter.HasDoCreate() {
+				entry.Action = deployplan.Create
+				return true
+			}
+			entry.Action = deployplan.Update
+			if hasUnresolvedIDField(adapter, sv) {
 				return true
 			}
 			id, err := adapter.IDFromState(sv.Value)
@@ -416,9 +440,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if remoteState == nil {
-			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
-			// because we know remote does not exist.
-			action = deployplan.Create
+			// A missing object is created again. Resources without creation update
+			// their parent instead, preserving any planned change to its ID.
+			action = deployplan.GetHigherAction(deployplan.Update, getMaxAction(entry.Changes))
+			if adapter.HasDoCreate() {
+				action = deployplan.Create
+			}
 		} else {
 			action = getMaxAction(entry.Changes)
 		}
@@ -1379,6 +1406,13 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 			}
 			id := b.StateDB.GetResourceID(targetResourceKey)
 			if id == "" {
+				adapter, err := b.getAdapterForKey(targetResourceKey)
+				if err != nil {
+					return nil, err
+				}
+				if !adapter.HasDoCreate() {
+					return nil, errDelayed
+				}
 				return nil, errors.New("internal error: no db entry")
 			}
 			return id, nil

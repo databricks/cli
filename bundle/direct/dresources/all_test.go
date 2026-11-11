@@ -1182,9 +1182,20 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
-	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, newState)
-	require.NoError(t, err, "DoCreate failed state=%v", newState)
-	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
+	var createdID string
+	var remoteStateFromCreate any
+	if adapter.HasDoCreate() {
+		createdID, remoteStateFromCreate, err = adapter.DoCreate(ctx, newState)
+		require.NoError(t, err, "DoCreate failed state=%v", newState)
+	} else {
+		createdID, err = adapter.IDFromState(newState)
+		require.NoError(t, err)
+		remote, err = adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
+		remoteStateFromCreate, err = adapter.DoUpdate(ctx, createdID, newState, &deployplan.PlanEntry{RemoteState: remote})
+		require.NoError(t, err, "initial DoUpdate failed state=%v", newState)
+	}
+	require.NotEmpty(t, createdID)
 
 	remote, err = adapter.DoRead(ctx, createdID)
 	require.NoError(t, err)

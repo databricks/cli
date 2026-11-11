@@ -73,7 +73,9 @@ type IResource interface {
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
 
-	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
+	// [Optional] DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
+	// Without DoCreate, the resource must implement IDFromState and DoUpdate. Its first
+	// deployment updates the resource at that ID after resolving its dependencies.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *VolumeState) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
@@ -134,9 +136,9 @@ type Adapter struct {
 	prepareState *calladapt.BoundCaller
 	remapState   *calladapt.BoundCaller
 	doRefresh    *calladapt.BoundCaller
-	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	doCreate           *calladapt.BoundCaller
 	doDelete           *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
@@ -257,7 +259,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doCreate, err = prepareCallRequired(resource, "DoCreate")
+	a.doCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoCreate")
 	if err != nil {
 		return err
 	}
@@ -373,7 +375,6 @@ func (a *Adapter) validate() error {
 
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
-		"DoCreate newState", a.doCreate.InTypes[1], stateType,
 	}
 
 	// DoDelete is optional; validate its state argument only when implemented.
@@ -393,11 +394,18 @@ func (a *Adapter) validate() error {
 		return fmt.Errorf("RemapState method not found and remote type %v must match state type %v", remoteType, stateType)
 	}
 
-	// Validate DoCreate: must return (string, remoteType, error)
-	if len(a.doCreate.OutTypes) != 3 {
-		return fmt.Errorf("DoCreate must return (string, remoteType, error), got %d return values", len(a.doCreate.OutTypes))
+	if a.doCreate != nil {
+		// DoCreate must return (string, remoteType, error).
+		if len(a.doCreate.OutTypes) != 3 {
+			return fmt.Errorf("DoCreate must return (string, remoteType, error), got %d return values", len(a.doCreate.OutTypes))
+		}
+		validations = append(validations,
+			"DoCreate newState", a.doCreate.InTypes[1], stateType,
+			"DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType,
+		)
+	} else if a.idFromState == nil || a.doUpdate == nil {
+		return errors.New("resources without DoCreate require IDFromState and DoUpdate")
 	}
-	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
 
 	if a.isEmptyState != nil {
 		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
@@ -422,9 +430,6 @@ func (a *Adapter) validate() error {
 
 	if a.idFromState != nil {
 		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
-	}
-	if a.resourceConfig.ImportOnPlan && a.idFromState == nil {
-		return errors.New("import_on_plan requires IDFromState")
 	}
 
 	if a.resourceConfig != nil && a.resourceConfig.InternalIDField != "" {
@@ -615,6 +620,11 @@ func normalizeNilPointer(v any) any {
 		return nil
 	}
 	return v
+}
+
+// HasDoCreate reports whether the resource creates an object on its first deployment.
+func (a *Adapter) HasDoCreate() bool {
+	return a.doCreate != nil
 }
 
 func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, error) {

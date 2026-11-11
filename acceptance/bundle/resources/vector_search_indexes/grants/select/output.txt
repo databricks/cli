@@ -2,17 +2,17 @@
 >>> [CLI] bundle plan
 create vector_search_endpoints.my_endpoint
 create vector_search_indexes.my_index
-create vector_search_indexes.my_index.grants
+update vector_search_indexes.my_index.grants
 
-Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
-Created vector_search_indexes.my_index.grants
+Updated vector_search_indexes.my_index.grants
 Files: 0 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 2 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged

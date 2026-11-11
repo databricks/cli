@@ -83,15 +83,15 @@ Warning: unknown field: description
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Created experiments.experiment
-Created experiments.experiment.permissions
 Created jobs.batch_inference_job
-Created jobs.batch_inference_job.permissions
 Created jobs.model_training_job
-Created jobs.model_training_job.permissions
 Created registered_models.model
-Created registered_models.model.grants
+Updated experiments.experiment.permissions
+Updated jobs.batch_inference_job.permissions
+Updated jobs.model_training_job.permissions
+Updated registered_models.model.grants
 Files: 26 uploaded, 0 deleted
-Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 4 created, 4 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary --var catalog_name=main -o json
 Warning: expected a string value, found null

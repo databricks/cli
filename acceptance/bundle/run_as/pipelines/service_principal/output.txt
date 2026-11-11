@@ -12,16 +12,16 @@ Validation OK!
 
 >>> [CLI] bundle plan -t t_user_name
 create pipelines.nyc_taxi_pipeline
-create pipelines.nyc_taxi_pipeline.permissions
+update pipelines.nyc_taxi_pipeline.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name/files...
 Created pipelines.nyc_taxi_pipeline
-Created pipelines.nyc_taxi_pipeline.permissions
+Updated pipelines.nyc_taxi_pipeline.permissions
 Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_user_name_different
 
 >>> [CLI] bundle validate -t t_user_name_different
@@ -35,16 +35,16 @@ Validation OK!
 
 >>> [CLI] bundle plan -t t_user_name_different
 create pipelines.nyc_taxi_pipeline
-create pipelines.nyc_taxi_pipeline.permissions
+update pipelines.nyc_taxi_pipeline.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_user_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files...
 Created pipelines.nyc_taxi_pipeline
-Created pipelines.nyc_taxi_pipeline.permissions
+Updated pipelines.nyc_taxi_pipeline.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_service_principal_name
 
 >>> [CLI] bundle validate -t t_service_principal_name
@@ -58,16 +58,16 @@ Validation OK!
 
 >>> [CLI] bundle plan -t t_service_principal_name
 create pipelines.nyc_taxi_pipeline
-create pipelines.nyc_taxi_pipeline.permissions
+update pipelines.nyc_taxi_pipeline.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name/files...
 Created pipelines.nyc_taxi_pipeline
-Created pipelines.nyc_taxi_pipeline.permissions
+Updated pipelines.nyc_taxi_pipeline.permissions
 Files: 7 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 \nProcessing target: t_service_principal_name_different
 
 >>> [CLI] bundle validate -t t_service_principal_name_different
@@ -81,13 +81,13 @@ Validation OK!
 
 >>> [CLI] bundle plan -t t_service_principal_name_different
 create pipelines.nyc_taxi_pipeline
-create pipelines.nyc_taxi_pipeline.permissions
+update pipelines.nyc_taxi_pipeline.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -t t_service_principal_name_different
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/files...
 Created pipelines.nyc_taxi_pipeline
-Created pipelines.nyc_taxi_pipeline.permissions
+Updated pipelines.nyc_taxi_pipeline.permissions
 Files: 9 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged

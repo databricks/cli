@@ -20,7 +20,7 @@
           "label": "${resources.genie_spaces.foo.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

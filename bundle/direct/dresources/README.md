@@ -59,13 +59,16 @@ If a desired state describes no resource at all (e.g. an empty grants list), imp
 
 The planner only consults it for nodes without a state entry: once state exists the node stays in the plan, so emptying it still plans an update, and the update is what removes the entry.
 
-## Adopting existing resources: import_on_plan
+## Resources without creation: IDFromState and DoUpdate
 
-Set `import_on_plan: true` in the resource's lifecycle config when the first
-deployment should manage what already exists at its `IDFromState` ID (grants,
-for example). The planner reads that ID only without a saved ID and after the
-ID fields resolve. A missing remote resource plans a create. `IDFromState`
-alone does not opt a resource into adoption.
+Omit `DoCreate` for resources that update an existing object, such as grants and
+permissions. Implement `IDFromState` and `DoUpdate` instead. The first deployment
+plans an update, even when its parent must first be created. Apply derives the ID
+after resolving those dependencies and records state after the update succeeds.
+
+When the ID fields resolve during planning, the planner reads the existing
+resource and plans its actual differences. `IDFromState` on a resource that
+implements `DoCreate` does not opt it into adoption.
 
 Planning only reads the resource. Apply persists the adopted state even when the
 remote already matches: a state-only update records it without a backend call,

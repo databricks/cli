@@ -116,7 +116,7 @@
           "label": "${resources.jobs.sample_job.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",
@@ -167,7 +167,7 @@
           "label": "${resources.pipelines.my_default_python_etl.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

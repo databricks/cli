@@ -19,7 +19,7 @@
           "label": "${resources.mcp_services.my_mcp_service.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "securable_type": "mcp_service",

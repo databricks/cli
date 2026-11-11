@@ -35,7 +35,7 @@
           "label": "${resources.jobs.job_b.permissions[1].level}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",
@@ -84,7 +84,7 @@
           "label": "${resources.jobs.job_b.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

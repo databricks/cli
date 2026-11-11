@@ -225,16 +225,8 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 	return &result, nil
 }
 
-// DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, *PermissionsState, error) {
-	// should we remember the default here?
-	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
-	if err != nil {
-		// Permissions Set is idempotent (PUT), so retrying on transient errors is safe.
-		return "", nil, retrySafe(err)
-	}
-
-	return newState.ObjectID, nil, nil
+func (*ResourcePermissions) IDFromState(state *PermissionsState) string {
+	return state.ObjectID
 }
 
 // DoUpdateWithID records the new ID when the parent is recreated under a new ID. Otherwise

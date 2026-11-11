@@ -2,9 +2,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.myschema
-Created schemas.myschema.grants
+Updated schemas.myschema.grants
 Files: 1 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity-catalog/permissions --sort
 {

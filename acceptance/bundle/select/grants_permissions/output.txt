@@ -1,15 +1,15 @@
 
 >>> [CLI] bundle plan --select jobs.my_job
 create jobs.my_job
-create jobs.my_job.permissions
+update jobs.my_job.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 2 not selected
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle plan --select schemas.my_schema
 create schemas.my_schema
-create schemas.my_schema.grants
+update schemas.my_schema.grants
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 2 not selected
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle plan --select jobs.my_job.permissions
 Error: no such resource: jobs.my_job.permissions
@@ -22,16 +22,16 @@ Error: no such resource: schemas.my_schema.grants
 === bundle deploy --select jobs.my_job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
-Created jobs.my_job.permissions
+Updated jobs.my_job.permissions
 Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 2 not selected
 
 === bundle deploy --select schemas.my_schema
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created schemas.my_schema
-Created schemas.my_schema.grants
+Updated schemas.my_schema.grants
 Files: 1 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> print_requests.py --sort //permissions
 {
