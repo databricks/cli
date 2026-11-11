@@ -55,4 +55,4 @@ Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-matset-settled-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 2 deleted, 1 removed from state

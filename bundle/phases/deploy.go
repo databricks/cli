@@ -137,6 +137,9 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 	if counts.Failed > 0 {
 		summary += fmt.Sprintf(", %d failed", counts.Failed)
 	}
+	if counts.Unbound > 0 {
+		summary += fmt.Sprintf(", %d removed from state", counts.Unbound)
+	}
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and
 	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.

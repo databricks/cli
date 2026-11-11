@@ -137,4 +137,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default
 
-Destroy: 4 deleted
+Destroy: 3 deleted, 1 removed from state

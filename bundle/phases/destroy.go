@@ -138,29 +138,35 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-// logDestroySummary reports completed deletions and failed attempts.
+// logDestroySummary reports deletions, failures, and resources removed only from state.
 // Called even on error, since partial deletions may have succeeded.
 func logDestroySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
 		// skips children). Gone resources are excluded to match that list: they were
 		// already deleted remotely, so applying their Delete only cleans up stale
-		// state and is not a destruction to report. Attempted operations that did not
-		// complete count as failed.
-		deleted, failed := 0, 0
+		// state and is not a destruction to report. Ignored delete errors report state
+		// removal; attempted operations that did not complete count as failed.
+		deleted, failed, unbound := 0, 0, 0
 		for _, a := range plan.GetActions() {
 			if a.ActionType != deployplan.Delete || a.IsChildResource() || a.IsStateOnlyDelete() {
 				continue
 			}
-			if a.Applied {
+			if a.Unbound {
+				unbound++
+			} else if a.Applied {
 				deleted++
-			} else if a.Attempted {
+			}
+			if a.Attempted && !a.Applied {
 				failed++
 			}
 		}
 		summary := fmt.Sprintf("Destroy: %d deleted", deleted)
 		if failed > 0 {
 			summary += fmt.Sprintf(", %d failed", failed)
+		}
+		if unbound > 0 {
+			summary += fmt.Sprintf(", %d removed from state", unbound)
 		}
 		cmdio.LogString(ctx, summary)
 	}

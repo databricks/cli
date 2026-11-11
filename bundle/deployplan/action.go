@@ -16,9 +16,11 @@ type Action struct {
 	// because the resource implements no DoDelete, including during a recreate.
 	StateOnly bool
 	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
-	// reached this resource, Applied means its operation completed.
+	// reached this resource, Applied means its operation completed (including unbinding).
 	Attempted bool
 	Applied   bool
+	// Unbound mirrors PlanEntry.Unbound: only the state entry was removed.
+	Unbound bool
 }
 
 func (a Action) String() string {

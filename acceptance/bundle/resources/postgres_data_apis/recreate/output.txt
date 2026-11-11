@@ -84,4 +84,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-pg-data-api-[UNIQUE_NAME]/default
 
-Destroy: 6 deleted
+Destroy: 5 deleted, 1 removed from state
