@@ -4,6 +4,7 @@
 
 # Bundles
 /bundle/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/bundle/configsync/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs @andersrexdb @ilyakuz-db @pavloKozlov
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
