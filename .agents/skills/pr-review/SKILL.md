@@ -179,24 +179,57 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      functions and helpers with unit tests next to the existing ones. Flag a
      unit test that should be an acceptance test, and logic with many input
      combinations that has no unit tests (name a case they would catch).
+   - Look at `gh pr checks` before running tests locally: the
+     `task test (linux, ...)` jobs run the whole suite and the windows and
+     macos cells always include the tests the PR changed, so a green build
+     shows them passing under the toolchain pinned in `go.mod`. No job runs
+     another Go version, so run the changed acceptance tests under one
+     (`GOTOOLCHAIN=goX.Y.Z` downloads it): a golden whose values change
+     across toolchains asserts the standard library, not the CLI, and would
+     fail only on the next `Bump Go toolchain` PR.
    - Does each new or changed test show the effect it claims? The output
      should include the state after the action (list or print it again after
      a sync, a deploy or a migration) and the exact value the change is
-     about, not just a successful exit.
+     about, not just a successful exit. For a test that pins a fix, read the
+     Regression test report comment on the PR first (`gh pr view --comments`):
+     it ran the changed acceptance tests against main and the latest release,
+     so a test under `regression=` or `unreleased=` fails without the fix,
+     and one under `coverage=` passes without it unless the fix is already
+     released. Revert the fix locally and run the test only when the report
+     cannot tell: a unit test, a test it did not select, or a released fix; a
+     variant that still passes does not assert the claim. For a test that
+     asserts an invariant over existing types or files, run a scratch
+     positive control to see the check fire, and compare the check with the
+     walker or helper the repo already uses for that traversal.
+   - When a script or helper changes only to keep goldens equal across
+     `EnvMatrix` variants (a `nostamp` pipe, a new scrub pattern), restore it
+     from `BASE` and run the variant it targets; a change that passes without
+     it is dead at this commit. For a change to a shared helper under
+     `acceptance/bin`, check that some golden shows each new option doing
+     something.
    - The fake server in `libs/testserver` only returns what its handlers were
      taught, so a test that records the request, or a handler that echoes a
      field back, shows what the CLI sends, not what the API accepts. When the
      change sends a new field, a new value format (paths, identifiers,
      durations) or a new call to a real API, and no test covering it has
-     `Cloud = true` (`Cloud` is inherited, so check `out.test.toml`) and the
-     description does not mention a run against a real workspace, ask whether
-     it was verified against one.
+     `Cloud = true` (`Cloud` is inherited, so check `out.test.toml`), look at
+     `gh pr checks` first: the PR cloud run selects the tests whose
+     directories changed (`DATABRICKS_TEST_SELECT_CHANGED`), so a passing
+     Integration Tests run answers the question for those. It does not cover
+     a test in another directory that picks the change up through a shared
+     template or helper; for that one, or when there is no cloud run and the
+     description does not mention a real workspace, ask whether it was
+     verified against one.
+   - In a `Cloud = true` test, scan the golden output for host-dependent
+     tokens (`?w=[WORKSPACE_ID]`, `?o=`) and check that a `Repls` entry
+     strips them; Azure and GCP hosts omit the workspace query parameter.
    - Are fixtures readable? Prefer generating archives and other binary
      inputs in the test script over committing opaque files.
    - Does the test reuse the repo's existing test helpers and scripts, and
      keep helpers that a planned follow-up will need again?
    - One long script that walks many failure modes is hard to review:
-     suggest splitting it by category.
+     suggest splitting it by category, unless its sections share setup that
+     is expensive to repeat in a cloud run (a deploy, a break-glass call).
 10. **User-facing text.** Read every new or changed changelog fragment
     (`.nextchanges/`), error message, warning and help text. It should be
     short, accurate and written for users, follow `.nextchanges/README.md`

@@ -1,5 +1,6 @@
 
 === Deploy a protected job: prevent_destroy is recorded in the state the service holds
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
 Created jobs.foo
@@ -23,6 +24,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Removing the job from the config: deploy and destroy refuse to delete it
+
 >>> [CLI] bundle plan
 delete jobs.foo
 
@@ -39,6 +41,7 @@ Error: resources.jobs.foo was removed from the configuration, but its last deplo
 
 
 === Adding it back with prevent_destroy: false leaves the job unchanged, but records the flag as an update of its state
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
@@ -64,6 +67,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === The job can now be removed
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
 Deleted jobs.foo
