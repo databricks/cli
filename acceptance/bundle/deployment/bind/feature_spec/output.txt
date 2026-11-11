@@ -29,7 +29,7 @@ Resources:
   Feature Specs:
     spec1:
       Name: main.fspec_[UNIQUE_NAME].boundspec
-      URL:  [DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/boundspec?w=[WORKSPACE_ID]
+      URL:  [DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/boundspec
 
 === The bound feature spec matches the config, so there is nothing to change
 >>> [CLI] bundle plan

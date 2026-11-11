@@ -6,3 +6,9 @@ Ignore = [
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
 Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+# Azure and GCP hosts carry the workspace ID, so their summary URLs have no ?w=<id>.
+[[Repls]]
+Old = '\?[ow]=\[WORKSPACE_ID\]'
+New = ''
+Order = 1000
