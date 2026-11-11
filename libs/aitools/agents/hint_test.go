@@ -61,7 +61,7 @@ func claudeCtx(t *testing.T, home string) (context.Context, *bytes.Buffer) {
 	return ctx, stderr
 }
 
-func regularCmd() *cobra.Command { return &cobra.Command{Use: "current-user"} }
+func regularCmd() *cobra.Command { return commandAt("clusters list") }
 
 func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
@@ -221,9 +221,10 @@ func TestIsHintExemptCommand(t *testing.T) {
 		{"configure", true},
 		{"current-user me", true},
 		{"completion bash", true},
-		{"help jobs", true},
+		{"help", true},
 		{cobra.ShellCompRequestCmd, true},
 		{"version", false},
+		{"authz", false},
 		{"current-user", false},
 		{"clusters list", false},
 		{"jobs run-now", false},

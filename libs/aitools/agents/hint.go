@@ -3,7 +3,6 @@ package agents
 import (
 	"context"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -88,30 +87,20 @@ var hintExemptCommands = []string{
 	"completion",
 	"help",
 	cobra.ShellCompRequestCmd,
-	cobra.ShellCompNoDescRequestCmd,
 }
 
 // IsHintExemptCommand reports whether cmd is one of hintExemptCommands or a
 // subcommand of one.
 func IsHintExemptCommand(cmd *cobra.Command) bool {
-	path := commandPath(cmd)
+	path := cmd.CommandPath()
+	root := cmd.Root().CommandPath()
 	for _, exempt := range hintExemptCommands {
-		if path == exempt || strings.HasPrefix(path, exempt+" ") {
+		full := root + " " + exempt
+		if path == full || strings.HasPrefix(path, full+" ") {
 			return true
 		}
 	}
 	return false
-}
-
-// commandPath returns cmd's path below the root command, e.g. "current-user me",
-// so hintExemptCommands holds whatever the root is named.
-func commandPath(cmd *cobra.Command) string {
-	var names []string
-	for c := cmd; c.HasParent(); c = c.Parent() {
-		names = append(names, c.Name())
-	}
-	slices.Reverse(names)
-	return strings.Join(names, " ")
 }
 
 // claudeToolingInstalled reports whether Databricks AI tooling is present for

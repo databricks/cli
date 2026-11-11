@@ -1,7 +1,8 @@
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
 
-# aitools commands skip the install hint; version exercises it without auth or network.
+# Hint-exempt commands (aitools, auth, lookups such as current-user me, completion) skip the
+# install hint; version exercises it without auth or network.
 sethome ./empty-home
 title "Plugin installed only in the custom config directory\n"
 trace CLAUDE_CONFIG_DIR=custom $CLI version
@@ -11,7 +12,7 @@ title "Custom directory takes precedence over the default installation\n"
 trace CLAUDE_CONFIG_DIR=missing $CLI version
 
 title "Exempt commands never hint, even without the tooling\n"
-trace CLAUDE_CONFIG_DIR=missing $CLI current-user me
+trace CLAUDE_CONFIG_DIR=missing $CLI current-user me | jq .userName
 
 title "Empty override uses the default installation\n"
 trace CLAUDE_CONFIG_DIR= $CLI version

@@ -13,10 +13,7 @@ Databricks CLI v[CLI_VERSION]
 === Exempt commands never hint, even without the tooling
 
 >>> CLAUDE_CONFIG_DIR=missing [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+"[USERNAME]"
 
 === Empty override uses the default installation
 
