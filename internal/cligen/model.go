@@ -143,6 +143,7 @@ type MethodJSON struct {
 	IsJsonOnly                     bool `json:"is_json_only,omitempty"`
 	IsCrudCreate                   bool `json:"is_crud_create,omitempty"`
 	IsCrudRead                     bool `json:"is_crud_read,omitempty"`
+	IsCrudUpdate                   bool `json:"is_crud_update,omitempty"`
 	IsHiddenCLI                    bool `json:"is_hidden_cli,omitempty"`
 	IsResponseByteStream           bool `json:"is_response_byte_stream,omitempty"`
 	HasRequiredPositionalArguments bool `json:"has_required_positional_arguments,omitempty"`
@@ -192,6 +193,7 @@ type FieldJSON struct {
 	IsQuery            bool `json:"is_query,omitempty"`
 	IsComputed         bool `json:"is_computed,omitempty"`
 	IsOutputOnly       bool `json:"is_output_only,omitempty"`
+	IsImmutable        bool `json:"is_immutable,omitempty"`
 	IsRequestBodyField bool `json:"is_request_body_field,omitempty"`
 	IsOptionalObject   bool `json:"is_optional_object,omitempty"`
 
