@@ -44,7 +44,7 @@ type Variable struct {
 	// redacted in the output of `bundle validate -o json` and `bundle summary -o json`, and
 	// it may only be referenced from sensitive resource fields or from other sensitive
 	// variables, so that the secret never ends up in plain text.
-	Sensitive bool `json:"sensitive,omitempty"`
+	Sensitive *bool `json:"sensitive,omitempty"`
 
 	// This field stores the resolved value for the variable. The variable are
 	// resolved in the following priority order (from highest to lowest)

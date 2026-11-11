@@ -1,5 +1,6 @@
 
 === foo.txt -> local
+
 >>> [CLI] fs cp foo.txt local/existing-from-local/
 foo.txt -> local/existing-from-local/foo.txt
 
@@ -9,6 +10,7 @@ Error: no such directory: local/nonexistent/mydir
 Exit code: 1
 
 === foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp foo.txt dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-local/
 foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-local/foo.txt
 
@@ -18,6 +20,7 @@ Error: no such directory: /tmp/fs-cp-test-[UNIQUE_NAME]/nonexistent
 Exit code: 1
 
 === foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-local/
 foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-local/foo.txt
 
@@ -27,6 +30,7 @@ Error: no such directory: /Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexis
 Exit code: 1
 
 === dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local
+
 >>> [CLI] fs cp dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt local/existing-from-dbfs/
 dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local/existing-from-dbfs/foo.txt
 
@@ -36,6 +40,7 @@ Error: no such directory: local/nonexistent/mydir
 Exit code: 1
 
 === dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-dbfs/
 dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-dbfs/foo.txt
 
@@ -45,6 +50,7 @@ Error: no such directory: /tmp/fs-cp-test-[UNIQUE_NAME]/nonexistent
 Exit code: 1
 
 === dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-dbfs/
 dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-dbfs/foo.txt
 
@@ -54,6 +60,7 @@ Error: no such directory: /Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexis
 Exit code: 1
 
 === dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local
+
 >>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt local/existing-from-volume/
 dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> local/existing-from-volume/foo.txt
 
@@ -63,6 +70,7 @@ Error: no such directory: local/nonexistent/mydir
 Exit code: 1
 
 === dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/
 dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/tmp/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/foo.txt
 
@@ -72,6 +80,7 @@ Error: no such directory: /tmp/fs-cp-test-[UNIQUE_NAME]/nonexistent
 Exit code: 1
 
 === dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]
+
 >>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/
 dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/src/foo.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/existing-from-volume/foo.txt
 
@@ -81,6 +90,7 @@ Error: no such directory: /Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/nonexis
 Exit code: 1
 
 === Copies landed in the existing directories
+
 >>> cat local/existing-from-local/foo.txt
 abc
 

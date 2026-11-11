@@ -41,10 +41,12 @@ Global Flags:
       --var strings      set values for variables defined in project config. Example: --var="foo=bar"
 
 === The command is experimental and off by default
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234
 Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
 
 === pytest arguments must be passed with --pytest-arg
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -k orders
 Error: -k is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
 
@@ -52,6 +54,7 @@ Error: -k is a pytest argument: pass pytest arguments with --pytest-arg, for exa
 Error: the -- separator is not supported: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
 
 === Invalid --pytest-arg values fail before any request
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x
 Error: unsupported pytest argument "-x": only -k and -m are supported
 
@@ -59,9 +62,11 @@ Error: unsupported pytest argument "-x": only -k and -m are supported
 Error: --pytest-arg requires a non-empty value
 
 === The pipeline ID must be a pipeline ID
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234
 Error: --pipeline-id "1234" is not a pipeline ID
 
 === JSON output is not supported
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
 Error: --output json is not supported by pipelines test

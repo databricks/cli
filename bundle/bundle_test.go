@@ -229,7 +229,7 @@ func TestBundleSyncMode(t *testing.T) {
 			b := &Bundle{Config: config.Root{
 				Workspace:    config.Workspace{SyncMode: tt.syncMode},
 				Presets:      config.Presets{SourceLinkedDeployment: tt.sourceLinked},
-				Experimental: &config.Experimental{ImmutableFolder: tt.immutable},
+				Experimental: &config.Experimental{ImmutableFolder: new(tt.immutable)},
 			}}
 			assert.Equal(t, tt.expected, b.SyncMode())
 			assert.Equal(t, tt.expected == config.SyncModeImmutable, b.IsImmutableFolder())

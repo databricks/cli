@@ -1,5 +1,6 @@
 
 === Deploy a schema with grants
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -38,6 +39,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
 
 === Rename the schema: its ID changes, and so does the ID of its grants
+
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 >>> [CLI] bundle plan --output json
@@ -52,6 +54,7 @@ schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
 }
 
 === Deploy moves the schema to the new name and applies the grants there
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 
@@ -105,6 +108,7 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 }
 
 === The grants are recorded under the new name, so the next plan is a no-op
+
 >>> read_state.py schemas schema1.grants id
 schemas schema1.grants id='schema/main.test-schema-renamed-[UNIQUE_NAME]'
 

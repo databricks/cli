@@ -29,6 +29,7 @@ Resource: resources.jobs.test_job
              python_file: ./hello.py
 
 === Synced config deploys and converges under the policy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated jobs.test_job
@@ -39,6 +40,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Add a task with user and policy cluster fields in the UI
+
 >>> [CLI] bundle config-remote-sync --save
 Detected changes in 1 resource(s):
 
@@ -67,6 +69,7 @@ Resource: resources.jobs.test_job
 +          task_key: added_in_ui
 
 === Synced config deploys and converges under the policy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated jobs.test_job

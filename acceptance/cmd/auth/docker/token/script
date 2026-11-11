@@ -4,30 +4,30 @@ workspace_id = 900800700600
 ENDCFG
 registry_host=900800700600.container.us-west-2.localhost
 
-title "Cached token\n"
+title "Cached token"
 printf '%s\n' "$registry_host" | trace $CLI auth docker token --no-force-refresh | jq -S .
 
-title "Refreshed token by default\n"
+title "Refreshed token by default"
 printf '%s\n' "$registry_host" | trace $CLI auth docker token | jq -S .
 
-title "No profile for the workspace\n"
+title "No profile for the workspace"
 printf '%s\n' "111222333.container.us-west-2.localhost" | trace musterr $CLI auth docker token
 
-title "Not an Artifact Registry host\n"
+title "Not an Artifact Registry host"
 printf '%s\n' "registry.example.test" | trace musterr $CLI auth docker token
 
-title "Profile flag not supported\n"
+title "Profile flag not supported"
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token --profile docker-test
 
-title "Positional argument not supported\n"
+title "Positional argument not supported"
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token docker-test
 
-title "Other authentication flags not supported\n"
+title "Other authentication flags not supported"
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token --host https://other.cloud.databricks.test
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token --account-id 00000000-0000-0000-0000-000000000000
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token --workspace-id 111222333
 
-title "Test-server registry never matches a remote workspace\n"
+title "Test-server registry never matches a remote workspace"
 cat >> "$HOME/.databrickscfg" <<'ENDCFG'
 
 [remote]
@@ -37,7 +37,7 @@ workspace_id = 444555666
 ENDCFG
 printf '%s\n' "444555666.container.us-west-2.localhost" | trace musterr $CLI auth docker token
 
-title "Multiple profiles for the workspace\n"
+title "Multiple profiles for the workspace"
 cat >> "$HOME/.databrickscfg" <<ENDCFG
 
 [duplicate]

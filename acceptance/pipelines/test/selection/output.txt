@@ -7,6 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WORKSPACE_ID]
 
 === Run all tests of the only pipeline
+
 >>> [CLI] pipelines test
 Recommendation: This command runs the last deployed version of the code
 
@@ -25,6 +26,7 @@ Update: [UUID][1]
 }
 
 === Select tests by relative path and test ID, with pytest arguments in both --pytest-arg forms
+
 >>> MSYS_NO_PATHCONV=1 [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/tests/test_other.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg -m --pytest-arg smoke,fast
 Recommendation: This command runs the last deployed version of the code
 
@@ -56,6 +58,7 @@ Update: [UUID][2]
 }
 
 === Relative paths resolve from the working directory
+
 >>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order
 Recommendation: This command runs the last deployed version of the code
 
@@ -79,5 +82,6 @@ Update: [UUID][3]
 }
 
 === Test selections require the pipeline KEY first
+
 >>> musterr [CLI] pipelines test tests/test_orders.py
 Error: "tests/test_orders.py" is not a pipeline in this bundle (pipelines: my_pipeline). Usage: databricks pipelines test my_pipeline tests/test_orders.py

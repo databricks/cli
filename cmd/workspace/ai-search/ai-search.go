@@ -1021,9 +1021,9 @@ Update an AI Search endpoint.
 
   Update an existing AI Search endpoint. Multi-bucket masks are supported and
   dispatched in deterministic bucket order: budget policy, custom tags,
-  throughput, then scaling/replicas. Per-bucket dispatch is not atomic across
-  buckets — if a later bucket fails, earlier buckets may already have been
-  applied.
+  throughput, scaling/replicas, then metrics export. Per-bucket dispatch is not
+  atomic across buckets — if a later bucket fails, earlier buckets may already
+  have been applied.
 
   Arguments:
     NAME: Name of the AI Search endpoint. Server-assigned full resource path

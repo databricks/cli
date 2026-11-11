@@ -1,6 +1,8 @@
 
 === Create policies outside the bundle
+
 === Deploy with the dev policy
+
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/dev/files...
 Created jobs.policy_sync
@@ -8,6 +10,7 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Sync the UI edit into shared YAML
+
 >>> [CLI] bundle config-remote-sync -t dev --save
 Detected changes in 1 resource(s):
 
@@ -28,6 +31,7 @@ Resource: resources.jobs.policy_sync
          - job_cluster_key: main
 
 === Deploy shared YAML with the prod policy
+
 >>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/prod/files...
 Created jobs.policy_sync
@@ -35,6 +39,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === A deleted policy leaves the job unchanged, including its unrelated edits
+
 >>> [CLI] cluster-policies delete [DEV_POLICY_ID]
 
 >>> [CLI] bundle config-remote-sync -t dev --save -o json
@@ -53,6 +58,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> diff.py databricks.yml.backup databricks.yml
 
 === The job stays skipped on the next sync
+
 >>> [CLI] bundle config-remote-sync -t dev -o json
 {
   "status": "partial",
@@ -67,6 +73,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Text output reports the incomplete sync
+
 >>> [CLI] bundle config-remote-sync -t dev
 Sync is incomplete: some remote changes were skipped.
 Left resources.jobs.policy_sync unchanged: cluster policy [DEV_POLICY_ID] was not found.

@@ -173,6 +173,25 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	}
 }
 
+func TestAppUpdateMask_ComputeSizeFollowsBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		computeSize apps.ComputeSize
+		wantCompute bool
+	}{
+		{name: "declared", computeSize: apps.ComputeSizeLarge, wantCompute: true},
+		{name: "undeclared", computeSize: "", wantCompute: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mask := strings.Split(appUpdateMask(&apps.App{ComputeSize: tt.computeSize}), ",")
+			assert.Equal(t, tt.wantCompute, slices.Contains(mask, "compute_size"))
+			assert.Contains(t, mask, "description")
+			assert.Contains(t, mask, "compute_min_instances")
+		})
+	}
+}
+
 // TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
 // appRequestBody removes SourceCodePath from ForceSendFields even when the plan
 // JSON round-trip has forced it in — reproduces the v1.14.0 regression where

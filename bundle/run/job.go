@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/run/progress"
@@ -207,7 +208,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 }
 
 func (r *jobRunner) convertPythonParams(opts *Options) error {
-	if r.bundle.Config.Experimental != nil && !r.bundle.Config.Experimental.PythonWheelWrapper {
+	if r.bundle.Config.Experimental != nil && !config.IsExplicitlyEnabled(r.bundle.Config.Experimental.PythonWheelWrapper) {
 		return nil
 	}
 

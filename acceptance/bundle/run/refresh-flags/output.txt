@@ -6,6 +6,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Running pipeline with --refresh flag and specific tables
+
 >>> [CLI] bundle run my_pipeline --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 
@@ -24,6 +25,7 @@ Update ID: [UUID][1]
 }
 
 === Running pipeline with --full-refresh-all flag
+
 >>> [CLI] bundle run my_pipeline --full-refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][2]
 
@@ -39,6 +41,7 @@ Update ID: [UUID][2]
 }
 
 === Running pipeline with --full-refresh flag and specific tables
+
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][3]
 
@@ -57,6 +60,7 @@ Update ID: [UUID][3]
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
+
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][4]
 
