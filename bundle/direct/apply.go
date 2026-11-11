@@ -268,6 +268,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	// A parent-managed resource may remain if its parent is kept or fails to delete.
 	unbound := isManagedByParent(err)
 	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
@@ -286,6 +287,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			return err
 		} else {
 			unbound = true
+			log.Warnf(ctx, "Ignoring error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		}
 	}
 

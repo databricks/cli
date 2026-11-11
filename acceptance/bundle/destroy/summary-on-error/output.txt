@@ -68,6 +68,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-destroy-summary-on-error/default
 
+Warn: destroying resources.jobs.job_01: Ignoring error when deleting resources.jobs.job_01 id=[JOB_01_ID_3]: Fault injected by test.
 Destroy: 2 deleted, 1 removed from state
 
 >>> [CLI] jobs get [JOB_01_ID_3]
