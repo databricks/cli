@@ -17,3 +17,10 @@
 # go/cli/dashboard/error/639: re-creating a synced table fails with 409 ALREADY_EXISTS (backend bug), added 2026-11-11
 acceptance TestAccept/bundle/resources/postgres_synced_tables/recreate/DMS=
 acceptance TestAccept/bundle/resources/postgres_synced_tables/recreate/DMS=true
+
+# go/cli/dashboard/error/648: app service principal reported missing after compute start (backend bug), added 2026-11-11
+acceptance TestAccept/bundle/resources/apps/lifecycle-started/DMS=
+acceptance TestAccept/bundle/resources/apps/lifecycle-started/DMS=true
+acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=true
+acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=
+acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=true
