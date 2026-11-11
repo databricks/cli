@@ -154,6 +154,7 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rows, 1)
 		assert.Equal(t, "training-run", rows[0].MLflowLabel)
+		assert.Equal(t, srv.URL+"/ml/experiments/exp1/runs/mlflow1/logs", rows[0].MLflowURL)
 	}
 
 	assert.Equal(t, 1, getHits, "warm cache must skip runs/get")
