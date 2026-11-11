@@ -28,22 +28,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-var deployApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
-	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
-	{group: "volumes", message: deleteOrRecreateVolumeMessage},
-	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
-	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
-	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
-	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
-	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
-	{group: "features", message: deleteOrRecreateFeatureMessage},
-}
-
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
