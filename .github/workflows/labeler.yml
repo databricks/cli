@@ -32,3 +32,10 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           # Only add labels; never remove labels that were applied manually or by other automation.
           sync-labels: false
+
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler-test-only.yml
+          # test-only-fix claims the PR changes no CLI code, so remove it once that stops being true.
+          sync-labels: true

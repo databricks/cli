@@ -1,0 +1,21 @@
+# Configuration for the test-only-fix step of the "PR Labeler" workflow
+# (.github/workflows/labeler.yml). Same format as .github/labeler.yml. It is a
+# separate file because this step runs with sync-labels, so the label is
+# removed again once a later push adds files outside this list.
+#
+# any-glob-to-all-files needs a single glob that matches every changed file,
+# so all test-only paths are alternatives of one brace expansion.
+#
+# The libs/ and internal/ entries are packages the CLI binary does not import
+# (not listed by `go list -deps .`).
+
+# The list-files API returns at most 3000 files, sorted by path. acceptance/
+# sorts before bundle/, cmd/ and libs/, so a truncated list could hide CLI
+# changes. Larger PRs skip this step and keep their current labels.
+# https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files
+max-files-changed: 2999
+
+test-only-fix:
+  - changed-files:
+      - any-glob-to-all-files:
+          - "{**/*_test.go,**/testdata/**,acceptance/**,integration/**,bundle/tests/**,bundle/internal/bundletest/**,internal/mocks/**,internal/testarchive/**,internal/testcli/**,internal/testutil/**,libs/appproxy/testutil/**,libs/cmdio/cmdiotest/**,libs/dyn/dynassert/**,libs/jsonschema/test_types/**,libs/testdiff/**,libs/testfile/**,libs/testproxy/**,libs/testserver/**,python/databricks_tests/**,python/codegen/codegen_tests/**}"
