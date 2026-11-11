@@ -21,7 +21,7 @@ Destroy: 1 deleted
 
 === and leaves the bundle state dir clean, with no empty scaffolding directories:
 
->>> find.py --dirs --prune terraform$ ^\.databricks(/|$)
+>>> find.py --dirs ^\.databricks(/|$)
 .databricks
 .databricks/.gitignore
 .databricks/bundle
