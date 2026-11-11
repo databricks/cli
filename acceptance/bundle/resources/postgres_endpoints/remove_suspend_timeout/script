@@ -22,7 +22,9 @@ trace update_file.py databricks.yml "      suspend_timeout_duration: 300s" ""
 # Terraform provider masks the whole spec, which the API accepts and then ignores. See
 # test.toml.
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.json
+# Whether GET echoes spec affects unchanged fields and remote metadata, not the
+# planned removal. The endpoint reads also assert that its value stays unchanged.
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes} | del(.changes[] | select(.action == "skip")) | del(.changes[].remote)' > out.plan.json
 rm -f "$OUT_REQUESTS"
 errcode $CLI bundle deploy &> out.deploy.txt
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
@@ -32,4 +34,4 @@ trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//po
 # fail again on every deploy, terraform applied it and is clean.
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 trace $CLI bundle plan &> out.plan.drift.txt
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.drift.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes} | del(.changes[] | select(.action == "skip")) | del(.changes[].remote)' > out.plan.drift.json
