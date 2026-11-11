@@ -17,10 +17,10 @@ const (
 
 const airHelpFooter = `
 Learn more:
-  Workload YAML fields  databricks air run -h config
-  Quickstart (AWS)      https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
-  Quickstart (Azure)    https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
-  Coding agent skill    databricks aitools install --skills-only --skills databricks-ai-runtime
+  YAML fields and example  databricks air run -h config
+  Quickstart (AWS)         https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
+  Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
 `
 
 // New returns the root command for the AI Runtime CLI.
@@ -31,18 +31,8 @@ func New() *cobra.Command {
 		GroupID: "development",
 		Long: `Run GPU workloads on Databricks serverless compute.
 
-Describe a workload in a YAML file, submit it with "air run", then follow it
-with "air list", "air get", and "air logs".
-
-Get started:
-  # workload.yaml
-  experiment_name: hello-gpu
-  compute:
-    num_accelerators: 1
-    accelerator_type: GPU_1xA10
-  command: nvidia-smi
-
-  databricks air run -f workload.yaml --watch`,
+Describe a workload in a YAML file and submit it with "air run". Follow its
+progress with "air list", "air get", and "air logs".`,
 	}
 
 	cmd.AddGroup(
