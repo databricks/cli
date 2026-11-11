@@ -7,6 +7,8 @@
 /bundle/configsync/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/acceptance/bundle/config-remote-sync/  @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
+/acceptance/bundle/telemetry/config-remote-sync*/ @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
