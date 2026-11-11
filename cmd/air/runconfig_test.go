@@ -794,7 +794,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 
 	var environment strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environment, "config.environment"))
-	assert.Contains(t, environment.String(), "version              Managed environment to start from: 4, 5, or 6 for the Standard environment, or databricks_ai_v5 or databricks_ai_v6 for the Databricks AI environment (default: 6).")
+	assert.Contains(t, environment.String(), "version              Managed environment to start from, e.g. 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6).")
 
 	var environmentVersion strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environmentVersion, "config.environment.version"))
