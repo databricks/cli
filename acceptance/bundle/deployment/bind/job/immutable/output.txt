@@ -26,7 +26,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 not selected
 
 >>> [CLI] jobs get [JOB_ID]
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/hello_world.py"
+"/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files/hello_world.py"
 
 === Bind the schema now that the state holds a snapshot the config does not declare:
 >>> [CLI] bundle deployment bind schema1 main.test-schema-[UNIQUE_NAME] --auto-approve
