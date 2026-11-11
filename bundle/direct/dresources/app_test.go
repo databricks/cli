@@ -192,14 +192,13 @@ func TestAppUpdateMask_ComputeSizeFollowsBody(t *testing.T) {
 	}
 }
 
-// TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
-// appRequestBody removes SourceCodePath from ForceSendFields even when the plan
-// JSON round-trip has forced it in — reproduces the v1.14.0 regression where
-// "source_code_path": "" was sent in the UpdateApp body, causing a 400.
-func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
-	config := &AppState{
-		Name:           "my-app",
-		SourceCodePath: "/Workspace/Users/me/app",
+// TestAppRequestBody_StripsEmptySourceCodePathFromForceSendFields verifies that an empty
+// SourceCodePath is removed from ForceSendFields even when the plan JSON round-trip has
+// forced it in — reproduces the v1.14.0 regression (#6401) where "source_code_path": ""
+// was sent in the UpdateApp body, causing a 400.
+func TestAppRequestBody_StripsEmptySourceCodePathFromForceSendFields(t *testing.T) {
+	app := apps.App{
+		Name: "my-app",
 		// Simulate ForceSendFields as populated by marshal.Unmarshal when the
 		// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
 		// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
