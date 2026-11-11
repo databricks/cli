@@ -3,6 +3,8 @@
 
 unset DATABRICKS_BUNDLE_ENGINE
 
+# The fixture replays the init script's requests too (see synced_database_table's init).
+export INVARIANT_REPLAY=1
 invariant_setup
 
 # Replay a prior terraform deployment (per-config fixture captured once from a real terraform run),
