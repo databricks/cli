@@ -494,7 +494,8 @@ func claudeAlreadyDisabled(err error) bool {
 // RecordPluginInstalls persists plugin install records into the state file for
 // the given CLI scope (global or project), creating state if none exists. ref
 // is the resolved skills release the install corresponds to. An empty ref
-// (release unresolved) keeps the existing state.Release.
+// leaves state.Release unchanged: the release could not be resolved, or the
+// skills install failed and the skills on disk are still at the old release.
 func RecordPluginInstalls(ctx context.Context, cliScope string, records map[string]PluginRecord, ref string) error {
 	dir, err := skillsDir(ctx, cliScope)
 	if err != nil {
