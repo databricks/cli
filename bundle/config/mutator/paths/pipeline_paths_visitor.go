@@ -44,6 +44,11 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 			mode:        TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},
+		{
+			pattern:     base.Append(dyn.Key("testing"), dyn.Key("sources"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			mode:        TranslateModeGlob,
+			skipRewrite: noSkipRewrite,
+		},
 	}
 
 	return allPatterns
@@ -65,6 +70,12 @@ func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 				return !libraries.IsLibraryLocal(s)
 			},
 		},
+		// Test dependencies take the same forms as the pipeline's environment dependencies.
+		{
+			pattern:     base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+			mode:        TranslateModeLocalRelativeWithPrefix,
+			skipRewrite: func(s string) bool { return !libraries.IsLibraryLocal(s) },
+		},
 	}
 
 	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
@@ -77,6 +88,14 @@ func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
+			TranslateModeEnvironmentPipFlag,
+			func(s string) bool {
+				_, _, ok := libraries.IsLocalPathInPipFlag(s)
+				return !ok
+			},
+		},
+		{
+			base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
 			TranslateModeEnvironmentPipFlag,
 			func(s string) bool {
 				_, _, ok := libraries.IsLocalPathInPipFlag(s)

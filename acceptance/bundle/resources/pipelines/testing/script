@@ -1,3 +1,4 @@
+title "Relative test paths resolve to the deployed workspace paths"
 trace $CLI bundle validate -o json | jq .resources.pipelines.orders.testing
 
 title "Without pipeline testing, the property is an error"
