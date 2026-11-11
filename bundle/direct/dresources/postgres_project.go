@@ -52,10 +52,9 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		ProjectId:       input.ProjectId,
-		PurgeOnDelete:   input.PurgeOnDelete,
-		ProjectSpec:     input.ProjectSpec,
-		ForceSendFields: input.ForceSendFields,
+		ProjectId:     input.ProjectId,
+		PurgeOnDelete: input.PurgeOnDelete,
+		ProjectSpec:   input.ProjectSpec,
 	}
 }
 
@@ -65,9 +64,8 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 		ProjectSpec: remote.ProjectSpec,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 	}
 }
 
@@ -200,7 +198,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
 		Name:            id,
-		Purge:           state.PurgeOnDelete,
+		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

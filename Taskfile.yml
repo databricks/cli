@@ -447,6 +447,7 @@ tasks:
       # internal/build reads these at test time.
       - NOTICE
       - .codegen/_openapi_sha
+      - .github/labeler-test-only.yml
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
       - bundle/internal/schema/annotations*.yml
     generates:

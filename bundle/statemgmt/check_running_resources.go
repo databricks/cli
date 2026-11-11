@@ -31,7 +31,7 @@ func (l *checkRunningResources) Name() string {
 }
 
 func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if !b.Config.Bundle.Deployment.FailOnActiveRuns {
+	if !config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.FailOnActiveRuns) {
 		return nil
 	}
 
