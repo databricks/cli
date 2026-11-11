@@ -20,7 +20,13 @@ var lookPath = exec.LookPath
 
 const (
 	// pluginProbeTimeout bounds the `<agent> plugin --help` capability check.
-	pluginProbeTimeout = 5 * time.Second
+	// Agent CLIs are large Node/Rust binaries whose cold start (first run,
+	// antivirus scan, slow container disk) can take several seconds, and a probe
+	// that times out reports the agent as unavailable, so leave headroom.
+	// It also bounds `<agent> plugin marketplace list` in marketplaceRegistered,
+	// where a timeout means the marketplace is assumed already registered, so
+	// install does not record it and uninstall leaves it registered.
+	pluginProbeTimeout = 20 * time.Second
 	// pluginCmdTimeout bounds an install/update/uninstall command, which may
 	// clone the marketplace repo, so it gets more headroom than the probe.
 	pluginCmdTimeout = 60 * time.Second
