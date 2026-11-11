@@ -56,10 +56,10 @@ config
   Required:
     experiment_name              Name of the experiment.
     compute                      Which accelerators to run on and how many.
+    command                      (unless containers is set) Shell command that starts the workload.
 
   Workload:
     environment                  Python dependencies, runtime version, or a Unity Catalog image for a single-command run.
-    command                      Shell command that starts the workload.
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
@@ -95,8 +95,8 @@ config.compute
     GPU_1xRTX6000 - 1 accelerator per node
 
   Fields:
-    num_accelerators  Total number of GPUs to allocate.
-    accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.
+    num_accelerators  (required) Total number of GPUs to allocate.
+    accelerator_type  (required) Which accelerator to run on, e.g. GPU_1xA10.
 
   Provisioned capacity (optional):
     pool_id           GPU pool to run on, by id.
@@ -153,7 +153,7 @@ config.compute.accelerator_type
     GPU_1xRTX6000 - 1 accelerator per node
 
   Type:     string
-  Required: no
+  Required: yes
 
 === code source fields
 
@@ -194,7 +194,7 @@ config.compute.num_accelerators
   Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types.
 
   Type:     int
-  Required: no
+  Required: yes
 
 === unknown field suggests the near match
 

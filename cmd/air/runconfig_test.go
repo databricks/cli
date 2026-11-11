@@ -651,8 +651,9 @@ func TestResolveConfigField(t *testing.T) {
 		wantType     string
 		wantRequired string
 	}{
-		{"leaf", "config.compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
-		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
+		{"leaf", "config.compute.accelerator_type", "config.compute.accelerator_type", "string", "yes"},
+		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", "yes"},
+		{"conditionally required", "config.command", "config.command", "string", "unless containers is set"},
 		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
 		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
 		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
@@ -777,7 +778,11 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	require.NoError(t, writeConfigFieldHelp(&leaf, "config.compute.num_accelerators"))
 	assert.Contains(t, leaf.String(), "config.compute.num_accelerators")
 	assert.Contains(t, leaf.String(), "Type:     int")
-	assert.Contains(t, leaf.String(), "Required: no")
+	assert.Contains(t, leaf.String(), "Required: yes")
+
+	var optional strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&optional, "config.timeout_minutes"))
+	assert.Contains(t, optional.String(), "Required: no")
 
 	var container strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&container, "config.compute"))
@@ -800,7 +805,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	var root strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&root, "config"))
 	rootHelp := root.String()
-	assert.Contains(t, rootHelp, "  Required:\n    experiment_name              Name of the experiment.\n    compute                      Which accelerators to run on and how many.\n")
+	assert.Contains(t, rootHelp, "  Required:\n    experiment_name              Name of the experiment.\n    compute                      Which accelerators to run on and how many.\n    command                      (unless containers is set) Shell command that starts the workload.\n")
 	assert.NotContains(t, rootHelp, "(required)", "the Required heading already marks required fields")
 	headings := []string{"  Required:", "  Workload:", "  Run behavior:", "  MLflow:", "  Advanced:"}
 	last := -1
@@ -816,8 +821,8 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	require.NoError(t, writeConfigFieldHelp(&compute, "config.compute"))
 	fields, capacity, found := strings.Cut(compute.String(), "  Provisioned capacity (optional):\n")
 	require.True(t, found)
-	assert.Contains(t, fields, "  Fields:\n    num_accelerators")
-	assert.Contains(t, fields, "    accelerator_type")
+	assert.Contains(t, fields, "  Fields:\n    num_accelerators  (required) ")
+	assert.Contains(t, fields, "    accelerator_type  (required) ")
 	assert.NotContains(t, fields, "pool_id")
 	assert.Contains(t, capacity, "    pool_id ")
 	assert.Contains(t, capacity, "    priority_class ")

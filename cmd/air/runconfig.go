@@ -56,7 +56,7 @@ type runConfig struct {
 	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes" group:"Required"`
 	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes" group:"Required"`
 	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, runtime version, or a Unity Catalog image for a single-command run." group:"Workload"`
-	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source." group:"Workload"`
+	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source." required:"unless containers is set" group:"Required"`
 	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command." group:"Advanced"`
 	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets." group:"Workload"`
 	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key." group:"Workload"`
@@ -990,9 +990,12 @@ func launchStageBadge(stage string) string {
 // first sentence of the help text, annotated when the field is required.
 func configFieldSummary(f configField) string {
 	summary := firstSentence(f.help)
-	// Under the "Required" heading the marker would be redundant.
-	if f.required == "yes" && f.group != "Required" {
+	// Under the "Required" heading only a conditional requirement needs a marker.
+	switch {
+	case f.required == "yes" && f.group != "Required":
 		summary = "(required) " + summary
+	case f.required != "" && f.required != "yes" && f.group == "Required":
+		summary = "(" + f.required + ") " + summary
 	}
 	return summary
 }
