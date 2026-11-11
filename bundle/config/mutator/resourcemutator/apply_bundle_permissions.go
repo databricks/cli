@@ -124,7 +124,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 				permissions,
 				key,
 				lm,
-				b.TargetPermissionsStart(),
+				b.TargetPermissionsStart,
 			)...)
 			writePermissions(field, permissions)
 		}
@@ -188,7 +188,7 @@ func convertPermissions(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 	lm map[string]string,
-	targetPermissionsStart int,
+	targetPermissionsStart *int,
 ) []resources.Permission {
 	var permissions []resources.Permission
 	for i, p := range bundlePermissions {
@@ -200,7 +200,7 @@ func convertPermissions(
 		}
 
 		overlap, diagnostics := isPermissionOverlap(p, resourcePermissions, resourceName)
-		if i < targetPermissionsStart {
+		if targetPermissionsStart == nil || i < *targetPermissionsStart {
 			for _, d := range diagnostics {
 				logdiag.LogDiag(ctx, d)
 			}

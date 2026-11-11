@@ -3,9 +3,13 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type selectTarget struct {
@@ -25,5 +29,47 @@ func (m *selectTarget) Name() string {
 }
 
 func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return diag.FromErr(b.SelectTarget(m.name))
+	if b.Config.Targets == nil {
+		return diag.Errorf("no targets defined")
+	}
+
+	// Get specified target
+	target, ok := b.Config.Targets[m.name]
+	if !ok {
+		return diag.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(slices.Collect(maps.Keys(b.Config.Targets)), ", "))
+	}
+
+	var targetPermissionsStart *int
+	if p := b.Config.Value().Get("targets").Get(m.name).Get("permissions"); p.IsValid() && p.Kind() != dyn.KindNil {
+		// Lists concatenate; a complex-variable reference replaces another reference.
+		start := len(b.Config.Permissions)
+		targetPermissionsStart = &start
+	}
+
+	// Merge specified target into root configuration structure.
+	err := b.Config.MergeTargetOverrides(m.name)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to perform target override for target=%s: %w", m.name, err))
+	}
+
+	// Store specified target in configuration for reference.
+	b.Target = target
+	b.TargetPermissionsStart = targetPermissionsStart
+	b.Config.Bundle.Target = m.name
+
+	// We do this for backward compatibility.
+	// TODO: remove when Environments section is not supported anymore.
+	b.Config.Bundle.Environment = b.Config.Bundle.Target
+
+	// Record number of targets in the bundle. This is then used downstream during
+	// telemetry upload. This value is always >= 1 since if no targets are defined
+	// in YAML, we create a "default" placeholder target upstream.
+	b.Metrics.TargetCount = int64(len(b.Config.Targets))
+
+	// Cleanup the original targets and environments sections since they
+	// show up in the JSON output of the 'summary' and 'validate' commands.
+	b.Config.Targets = nil
+	b.Config.Environments = nil
+
+	return nil
 }

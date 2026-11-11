@@ -8,13 +8,9 @@ package bundle
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 	"sync"
 	"time"
 	"uuid"
@@ -27,7 +23,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -161,8 +156,9 @@ type Bundle struct {
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
-	// Nil when no target permissions were merged. Recorded before variable resolution.
-	targetPermissionsStart *int
+	// TargetPermissionsStart is the first target permission index, recorded before variable resolution.
+	// Nil means no target permissions were merged.
+	TargetPermissionsStart *int
 
 	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
 	// name and target. Recorded before variable resolution, so a path that only happens
@@ -234,62 +230,6 @@ type Bundle struct {
 	Cache *cache.Cache
 
 	Metrics Metrics
-}
-
-// SelectTarget merges the target overrides and retains their permission boundary.
-// It must run in a mutator scope to keep typed and dynamic configuration synchronized.
-func (b *Bundle) SelectTarget(name string) error {
-	if b.Config.Targets == nil {
-		return errors.New("no targets defined")
-	}
-
-	// Get specified target
-	target, ok := b.Config.Targets[name]
-	if !ok {
-		return fmt.Errorf("%s: no such target. Available targets: %s", name, strings.Join(slices.Collect(maps.Keys(b.Config.Targets)), ", "))
-	}
-
-	var targetPermissionsStart *int
-	if p := b.Config.Value().Get("targets").Get(name).Get("permissions"); p.IsValid() && p.Kind() != dyn.KindNil {
-		// Lists concatenate; a complex-variable reference replaces another reference.
-		start := len(b.Config.Permissions)
-		targetPermissionsStart = &start
-	}
-
-	// Merge specified target into root configuration structure.
-	err := b.Config.MergeTargetOverrides(name)
-	if err != nil {
-		return fmt.Errorf("failed to perform target override for target=%s: %w", name, err)
-	}
-
-	// Store specified target in configuration for reference.
-	b.Target = target
-	b.targetPermissionsStart = targetPermissionsStart
-	b.Config.Bundle.Target = name
-
-	// We do this for backward compatibility.
-	// TODO: remove when Environments section is not supported anymore.
-	b.Config.Bundle.Environment = b.Config.Bundle.Target
-
-	// Record number of targets in the bundle. This is then used downstream during
-	// telemetry upload. This value is always >= 1 since if no targets are defined
-	// in YAML, we create a "default" placeholder target upstream.
-	b.Metrics.TargetCount = int64(len(b.Config.Targets))
-
-	// Cleanup the original targets and environments sections since they
-	// show up in the JSON output of the 'summary' and 'validate' commands.
-	b.Config.Targets = nil
-	b.Config.Environments = nil
-
-	return nil
-}
-
-// TargetPermissionsStart returns the first target permission index, or the list length if none were merged.
-func (b *Bundle) TargetPermissionsStart() int {
-	if b.targetPermissionsStart == nil {
-		return len(b.Config.Permissions)
-	}
-	return *b.targetPermissionsStart
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
