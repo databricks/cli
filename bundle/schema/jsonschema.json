@@ -1180,6 +1180,57 @@
                   }
                 ]
               },
+              "resources.FeatureSpec": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A named set of features to serve, stored as a Unity Catalog function.",
+                    "properties": {
+                      "exclude_columns": {
+                        "description": "[Private Preview] Output names of columns to leave out of the feature spec. Order is not significant, and\nGetFeatureSpec can return them in a different order.",
+                        "$ref": "#/$defs/slice/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "extra_pip_requirements": {
+                        "description": "[Private Preview] Extra pip requirements to install in the serving container, in addition to the defaults and\nthose resolved from the features.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.PipRequirements",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "features": {
+                        "description": "[Private Preview] The Features (either a declarative one, or a lookup from a feature table, or a feature\nfunction) to serve. A declarative feature (`DeclarativeFeature`) cannot be combined with\nlookups (`FeatureLookup`) and functions (`FeatureFunction`) in one feature spec.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.Features",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
+                      "grants": {
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "description": "[Private Preview] Three-part name (catalog.schema.feature_spec) of the feature spec.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.GenieSpace": {
                 "oneOf": [
                   {
@@ -4359,6 +4410,11 @@
                     },
                     "external_locations": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                    },
+                    "feature_specs": {
+                      "description": "The feature spec definitions for the bundle, where each key is the name of the feature spec.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.FeatureSpec",
+                      "markdownDescription": "The feature spec definitions for the bundle, where each key is the name of the feature spec."
                     },
                     "features": {
                       "description": "The feature definitions for the bundle, where each key is the name of the feature.",
@@ -14062,6 +14118,60 @@
                 }
               ]
             },
+            "ml.DeclarativeFeature": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A reference to a Feature.",
+                  "properties": {
+                    "feature": {
+                      "description": "[Private Preview] Three-part Unity Catalog name (catalog.schema.feature) of the Feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.DefaultValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A default value for a looked-up feature.",
+                  "properties": {
+                    "default_value": {
+                      "description": "[Private Preview] Default value for the feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "feature": {
+                      "description": "[Private Preview] Name of the feature: its output name if it is renamed, otherwise its name in the feature table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.DeltaTableSource": {
               "oneOf": [
                 {
@@ -14213,6 +14323,134 @@
                 }
               ]
             },
+            "ml.FeatureFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Python UDF that computes a feature.",
+                  "properties": {
+                    "input_bindings": {
+                      "description": "[Private Preview] Bindings of the UDF's parameters to features. Order is not significant, and GetFeatureSpec can\nreturn them in a different order.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FeatureFunctionInputBinding",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "output": {
+                      "description": "[Private Preview] Output name of the feature that the UDF computes.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "udf": {
+                      "description": "[Private Preview] Three-part name of the Python UDF.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "udf"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FeatureFunctionInputBinding": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Binds one parameter of the UDF to a feature.",
+                  "properties": {
+                    "bound_feature": {
+                      "description": "[Private Preview] Name of the feature bound to the parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "parameter": {
+                      "description": "[Private Preview] Name of the UDF parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "bound_feature",
+                    "parameter"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.FeatureLookup": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Features to look up from a feature table.",
+                  "properties": {
+                    "default_values": {
+                      "description": "[Private Preview] Default values for features. Order is not significant, and GetFeatureSpec can return them in a\ndifferent order.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.DefaultValue",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "feature_names": {
+                      "description": "[Private Preview] Names of the features to look up, or empty to look up every feature in the table.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lookback_window": {
+                      "description": "[Private Preview] Lookback window to use when performing point-in-time lookup.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lookup_keys": {
+                      "description": "[Private Preview] Keys to use when joining with the feature table.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "rename_outputs": {
+                      "description": "[Private Preview] Output names for features, in place of their names in the feature table. Order is not\nsignificant, and GetFeatureSpec can return them in a different order.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.RenameOutput",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "table": {
+                      "description": "[Private Preview] Three-part name of the feature table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timestamp_lookup_keys": {
+                      "description": "[Private Preview] Keys to use when performing point-in-time lookup.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "lookup_keys",
+                    "table"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.FeatureReference": {
               "oneOf": [
                 {
@@ -14246,6 +14484,39 @@
                     "feature_references": {
                       "description": "[Private Preview] The upstream Features this source reads. Must include at least one feature.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.Features": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "One entry of a feature spec: a Feature, a feature table lookup, or a feature function.",
+                  "properties": {
+                    "declarative_feature": {
+                      "description": "[Private Preview] A Feature, referenced by its three-part Unity Catalog name.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DeclarativeFeature",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "feature_function": {
+                      "description": "[Private Preview] A feature function.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "feature_lookup": {
+                      "description": "[Private Preview] A feature table lookup.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureLookup",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     }
@@ -15068,6 +15339,30 @@
                 }
               ]
             },
+            "ml.PipRequirements": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Pip requirements to install in a serving container.",
+                  "properties": {
+                    "requirements": {
+                      "description": "[Private Preview] Pip requirement strings (PEP 508) or UC Volume whl paths (/Volumes/...).",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "requirements"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "ml.RegisteredModelPermissionLevel": {
               "oneOf": [
                 {
@@ -15079,6 +15374,37 @@
                     "CAN_MANAGE_STAGING_VERSIONS",
                     "CAN_EDIT",
                     "CAN_READ"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.RenameOutput": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "An output name for a looked-up feature.",
+                  "properties": {
+                    "feature": {
+                      "description": "[Private Preview] Name of the feature in the feature table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "output": {
+                      "description": "[Private Preview] Output name for the feature.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "feature",
+                    "output"
                   ]
                 },
                 {
@@ -21742,6 +22068,20 @@
                     }
                   ]
                 },
+                "resources.FeatureSpec": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.FeatureSpec"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.GenieSpace": {
                   "oneOf": [
                     {
@@ -23061,6 +23401,20 @@
                   }
                 ]
               },
+              "ml.DefaultValue": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DefaultValue"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "ml.EntityColumn": {
                 "oneOf": [
                   {
@@ -23089,12 +23443,40 @@
                   }
                 ]
               },
+              "ml.FeatureFunctionInputBinding": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureFunctionInputBinding"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "ml.FeatureReference": {
                 "oneOf": [
                   {
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.Features": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.Features"
                     }
                   },
                   {
@@ -23165,6 +23547,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ModelTag"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "ml.RenameOutput": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RenameOutput"
                     }
                   },
                   {

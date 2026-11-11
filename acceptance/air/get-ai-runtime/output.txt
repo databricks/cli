@@ -1,5 +1,6 @@
 
 === get (text)
+
 >>> [CLI] air get 123
 
 ╭─ Configuration ────────────────────────────────────────────────╮
@@ -35,6 +36,7 @@ Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
+
 >>> [CLI] air get 123 -o json
 {
   "v": 1,

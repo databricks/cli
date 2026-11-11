@@ -153,6 +153,18 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"feature_specs": &resources.FeatureSpec{
+		Name: "main.default.my_feature_spec",
+		Features: []ml.Features{{
+			FeatureLookup: &ml.FeatureLookup{
+				Table:        "main.default.my_table",
+				LookupKeys:   []string{"id"},
+				FeatureNames: []string{"amount"},
+			},
+		}},
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
+	},
+
 	"experiments": &resources.MlflowExperiment{
 		Name: "my-experiment",
 		Tags: []ml.ExperimentTag{
@@ -738,6 +750,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "modelid",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"feature_specs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "function",
+			FullName:      "main.default.my_feature_spec",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "user@example.com",
 			}},
 		}, nil

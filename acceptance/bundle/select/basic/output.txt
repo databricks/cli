@@ -95,6 +95,7 @@ Resources:
       URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
 
 === Full plan after partial deploy
+
 >>> [CLI] bundle plan
 create jobs.baz
 
@@ -126,10 +127,12 @@ Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 }
 
 === Full plan again
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 === Destroy
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.bar

@@ -1,5 +1,6 @@
 
 === Deploy with started=true: warehouse created and running
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created sql_warehouses.mywarehouse
@@ -24,6 +25,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "RUNNING"
 
 === Stop warehouse externally while config says started=true: plan detects drift
+
 >>> errcode [CLI] warehouses stop [WAREHOUSE_ID]
 "STOPPED"
 
@@ -33,6 +35,7 @@ update sql_warehouses.mywarehouse
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Deploy fixes the drift: warehouse restarted
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated sql_warehouses.mywarehouse
@@ -55,6 +58,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "RUNNING"
 
 === Deploy with started=false while warehouse is stopped: warehouse stays stopped
+
 >>> errcode [CLI] warehouses stop [WAREHOUSE_ID]
 "STOPPED"
 
@@ -76,6 +80,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 "STOPPED"
 
 === Deploy with started=true: warehouse restarted
+
 >>> update_file.py databricks.yml started: false started: true
 
 >>> errcode [CLI] bundle deploy

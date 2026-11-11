@@ -5,9 +5,13 @@ Inserted sample data into main.myschema.src_[UNIQUE_NAME]
 Table main.myschema.src_[UNIQUE_NAME] is now visible (catalog_name=main)
 
 === A set cannot hold one feature that materializes in batch and one that materializes from a
+
 === stream, because the two need different triggers. The create endpoint reserves its operation
+
 === record before it reaches this rule, so the refusal settles that record and arrives as
+
 === HTTP 200 rather than as an error on the call.
+
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-mixed-triggers-[UNIQUE_NAME]/default/files...
 Created features.batchfeat

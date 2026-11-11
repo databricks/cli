@@ -1,5 +1,6 @@
 
 === Initial deployment with STANDARD endpoint_type
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
@@ -9,6 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --keep //vector-search/endpoints
 
 === Change endpoint_type (should trigger recreation)
+
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
 
 >>> [CLI] bundle plan

@@ -21,6 +21,7 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Stopping pipeline
+
 >>> [CLI] pipelines stop
 Stopping my_pipeline...
 my_pipeline has been stopped.
@@ -30,6 +31,7 @@ my_pipeline has been stopped.
 }
 
 === Stopping pipeline with KEY, expect same output as without KEY
+
 >>> [CLI] pipelines stop my_pipeline
 Stopping my_pipeline...
 my_pipeline has been stopped.

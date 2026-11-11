@@ -95,6 +95,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === Fetch pipeline ID and verify remote state
+
 >>> [CLI] pipelines get [MY_ID_2]
 {
   "creator_user_name": "[USERNAME]",
@@ -125,10 +126,12 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === Verify that original pipeline is gone
+
 >>> musterr [CLI] pipelines get [MY_ID]
 Error: The specified pipeline [MY_ID] was not found.
 
 === Destroy the pipeline and verify that it's removed from the state and from remote
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.my

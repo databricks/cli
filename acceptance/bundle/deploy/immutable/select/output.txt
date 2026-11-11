@@ -1,5 +1,6 @@
 
 === Deploying only a job that does not use the snapshot records no snapshot in the metadata
+
 >>> [CLI] bundle deploy --select jobs.other_job
 Created jobs.other_job
 Files: 0 uploaded, 0 deleted
@@ -9,6 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 null
 
 === Deploy the immutable snapshot
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
@@ -18,6 +20,7 @@ Metadata snapshot path: /Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[S
 OK: metadata points at the deployed snapshot
 
 === Deploying only that job after a content change keeps the deployed snapshot in the metadata
+
 >>> [CLI] bundle deploy --select jobs.other_job
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 2 not selected
@@ -25,6 +28,7 @@ Metadata snapshot path: /Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[S
 OK: metadata still points at the deployed snapshot
 
 === A full deploy moves the metadata to the new snapshot
+
 >>> [CLI] bundle deploy
 Recreated internal_immutable_snapshots.immutable
 Updated jobs.my_job
