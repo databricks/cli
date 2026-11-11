@@ -35,10 +35,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === UC lowercases the name, so the id is lowercase
+
 >>> [CLI] bundle summary -o json
 "main.fspec_[UNIQUE_NAME].myspec"
 
 === A plan on an unchanged bundle skips the name instead of recreating the feature spec
+
 >>> [CLI] bundle plan -o json
 {
   "resources.feature_specs.spec1": {
@@ -56,6 +58,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Renaming the feature spec still recreates it
+
 >>> update_file.py databricks.yml .MySpec .MyOtherSpec
 
 >>> [CLI] bundle plan
