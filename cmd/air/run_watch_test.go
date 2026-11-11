@@ -21,6 +21,8 @@ import (
 // watchServer serves submit, the auth probe, a terminal runs/get, and a single
 // page of Bricklens logs — everything `air run --watch` touches after submit.
 // resultState is the terminal result the run reports (e.g. SUCCESS, FAILED).
+// The run's command path is from an earlier submit's launch directory, so a
+// submit with an idempotency key sees it as an existing run.
 func watchServer(t *testing.T, resultState string) *httptest.Server {
 	t.Helper()
 	runGet := `{
@@ -28,7 +30,11 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 		"start_time": 1700000000000,
 		"end_time": 1700000012000,
 		"state": {"life_cycle_state": "TERMINATED", "result_state": "` + resultState + `"},
-		"tasks": [{"run_id": 778, "attempt_number": 0}]
+		"tasks": [{
+			"run_id": 778,
+			"attempt_number": 0,
+			"ai_runtime_task": {"deployments": [{"command_path": "/Users/u@example.com/.air/cli_launch/my-run/my-run_0123456789abcdef/command.sh"}]}
+		}]
 	}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -139,6 +145,34 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "step 1\nstep 2")
 }
 
+const idempotentWatchConfig = minimalConfig + "idempotency_token: watch-key\n"
+
+func TestRunWatchExistingRunStreamsLogs(t *testing.T) {
+	var buf bytes.Buffer
+	err := runWatchCmdWithConfig(t, flags.OutputText, &buf, watchServer(t, "SUCCESS").URL, idempotentWatchConfig)
+	require.NoError(t, err)
+
+	out := buf.String()
+	assert.Contains(t, out, `Returned existing workload with Job Run ID: 777 (idempotency key "watch-key" was already used)`)
+	assert.NotContains(t, out, "Submitted workload")
+	assert.Contains(t, out, "View job run at: ")
+	assert.Contains(t, out, "step 1\nstep 2")
+}
+
+func TestRunWatchJSONExistingRun(t *testing.T) {
+	var buf bytes.Buffer
+	err := runWatchCmdWithConfig(t, flags.OutputJSON, &buf, watchServer(t, "SUCCESS").URL, idempotentWatchConfig)
+	require.NoError(t, err)
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	require.GreaterOrEqual(t, len(lines), 2)
+	assert.Contains(t, lines[0], `"type":"SUBMITTED"`)
+	assert.Contains(t, lines[0], `"existing":true`)
+	assert.Contains(t, buf.String(), `"line":"step 1"`)
+	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
+	assert.Contains(t, lines[len(lines)-1], `"existing":true`)
+}
+
 func TestRunWatchMultinodeIdentifiesStreamedNode(t *testing.T) {
 	var buf bytes.Buffer
 	err := runWatchCmdWithConfig(t, flags.OutputText, &buf, watchServer(t, "SUCCESS").URL, multinodeWatchConfig)
@@ -158,6 +192,7 @@ func TestRunWatchJSONEmitsSubmittedThenLogs(t *testing.T) {
 	// First event is SUBMITTED with the run id; then STATUS + streamed LOG events.
 	assert.Contains(t, lines[0], `"type":"SUBMITTED"`)
 	assert.Contains(t, lines[0], `"run_id":"777"`)
+	assert.Contains(t, lines[0], `"existing":false`)
 	assert.Contains(t, all, `"type":"STATUS"`)
 	assert.Contains(t, all, `"type":"LOG"`)
 	assert.Contains(t, all, `"line":"step 1"`)
@@ -165,6 +200,7 @@ func TestRunWatchJSONEmitsSubmittedThenLogs(t *testing.T) {
 	// The last line is the closing terminal-status envelope carrying SUCCESS.
 	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
 	assert.Contains(t, lines[len(lines)-1], `"run_id":"777"`)
+	assert.Contains(t, lines[len(lines)-1], `"existing":false`)
 }
 
 func TestRunWatchJSONFailedRunTerminalEnvelope(t *testing.T) {

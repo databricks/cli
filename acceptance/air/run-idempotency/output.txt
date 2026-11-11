@@ -1,0 +1,52 @@
+
+=== first submit with a key starts a run
+
+>>> [CLI] air run -f run.yaml --idempotency-key flag-key
+Submitting experiment: idempotency-smoke
+Submitted workload with Job Run ID: [FLAG_KEY_RUN_ID]
+View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs [FLAG_KEY_RUN_ID]
+
+=== resubmitting with the same key returns the existing run
+
+>>> [CLI] air run -f run.yaml --idempotency-key flag-key
+Submitting experiment: idempotency-smoke
+Returned existing workload with Job Run ID: [FLAG_KEY_RUN_ID] (idempotency key "flag-key" was already used)
+View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs [FLAG_KEY_RUN_ID]
+
+=== JSON output reports the existing run
+
+>>> [CLI] air run -f run.yaml --idempotency-key flag-key -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "status": "PENDING",
+    "run_id": "[FLAG_KEY_RUN_ID]",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]",
+    "existing": true
+  }
+}
+
+=== a different key starts a new run
+
+>>> [CLI] air run -f run.yaml --idempotency-key other-key -o json
+false
+
+=== a YAML idempotency_token is deduplicated the same way
+
+>>> [CLI] air run -f run-token.yaml
+Submitting experiment: idempotency-smoke
+Returned existing workload with Job Run ID: [YAML_TOKEN_RUN_ID] (idempotency key "yaml-key" was already used)
+View job run at: [DATABRICKS_URL]/jobs/runs/[YAML_TOKEN_RUN_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs [YAML_TOKEN_RUN_ID]

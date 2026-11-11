@@ -89,7 +89,7 @@ func TestAirRunTelemetry(t *testing.T) {
 			cfgPath := writeConfigFile(t, "run.yaml", configYAML)
 			cfg, err := loadRunConfig(cfgPath)
 			require.NoError(t, err)
-			_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem", false)
+			_, _, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem", false)
 			if tc.fail || tc.failUpload {
 				require.Error(t, err)
 			} else {

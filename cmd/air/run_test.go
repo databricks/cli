@@ -128,8 +128,86 @@ func TestRunSubmitJSONStatusPending(t *testing.T) {
 	out := buf.String()
 	assert.Contains(t, out, `"status": "PENDING"`)
 	assert.Contains(t, out, `"run_id": "555"`)
+	assert.Contains(t, out, `"existing": false`)
 	// JSON stdout stays a clean envelope stream — no human-readable submit lines.
 	assert.NotContains(t, out, "Submitting experiment")
+}
+
+// idempotentSubmitServer runs the fake workspace, whose runs/submit returns the
+// run a repeated idempotency token started.
+func idempotentSubmitServer(t *testing.T) string {
+	t.Helper()
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", validateConfigPath, func(testserver.Request) any {
+		return validateConfigResponse{}
+	})
+	testserver.AddDefaultHandlers(server)
+	return server.URL
+}
+
+func runIdempotentSubmit(t *testing.T, srvURL string, out flags.Output, config string, args ...string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	cfgPath := writeConfigFile(t, "run.yaml", config)
+	cmd := withOutput(newRunCommand(), out)
+	require.NoError(t, cmd.ParseFlags(append([]string{"--file", cfgPath}, args...)))
+
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	require.NoError(t, cmd.RunE(cmd, nil))
+	return buf.String()
+}
+
+func TestRunSubmitIdempotencyKeyReturnsExistingRun(t *testing.T) {
+	srvURL := idempotentSubmitServer(t)
+
+	first := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "flag-key")
+	assert.Contains(t, first, "Submitted workload with Job Run ID: ")
+	assert.NotContains(t, first, "existing")
+
+	second := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "flag-key")
+	assert.Contains(t, second, "Returned existing workload with Job Run ID: ")
+	assert.Contains(t, second, `(idempotency key "flag-key" was already used)`)
+	assert.NotContains(t, second, "Submitted workload")
+	assert.Contains(t, second, "View job run at: ")
+
+	other := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "other-key")
+	assert.Contains(t, other, "Submitted workload with Job Run ID: ")
+}
+
+func TestRunSubmitYAMLIdempotencyTokenReturnsExistingRun(t *testing.T) {
+	srvURL := idempotentSubmitServer(t)
+	config := minimalConfig + "idempotency_token: yaml-key\n"
+
+	first := runIdempotentSubmit(t, srvURL, flags.OutputText, config)
+	assert.Contains(t, first, "Submitted workload with Job Run ID: ")
+
+	second := runIdempotentSubmit(t, srvURL, flags.OutputText, config)
+	assert.Contains(t, second, `(idempotency key "yaml-key" was already used)`)
+	assert.NotContains(t, second, "Submitted workload")
+}
+
+func TestRunSubmitJSONReportsExistingRun(t *testing.T) {
+	srvURL := idempotentSubmitServer(t)
+	decode := func(out string) runResult {
+		var envelope struct {
+			Data runResult `json:"data"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(out), &envelope), out)
+		require.NotNil(t, envelope.Data.Existing)
+		return envelope.Data
+	}
+
+	first := decode(runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	assert.False(t, *first.Existing)
+
+	second := decode(runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	assert.True(t, *second.Existing)
+	assert.Equal(t, first.RunID, second.RunID)
+	assert.Equal(t, "PENDING", second.Status)
 }
 
 type dryRunRequest struct {

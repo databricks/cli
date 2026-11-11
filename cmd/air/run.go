@@ -33,6 +33,8 @@ type runResult struct {
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
+	// Existing is nil for a dry run, which submits nothing.
+	Existing *bool `json:"existing,omitempty"`
 }
 
 const experimentalContainersWarning = `+--------------------------------------------------------------------+
@@ -187,9 +189,13 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
+		runID, dashboardURL, existing, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
+		}
+		existingKey := ""
+		if existing {
+			existingKey = userIdempotencyToken(idempotencyKey, cfg)
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
@@ -197,14 +203,14 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		if !watch {
 			if !jsonOut {
 				out := cmd.OutOrStdout()
-				printSubmitResult(ctx, out, runIDStr, dashboardURL)
+				printSubmitResult(ctx, out, runIDStr, dashboardURL, existingKey)
 				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 				return nil
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
 			// SUBMITTED event type below.
-			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL}); err != nil {
+			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: &existing}); err != nil {
 				return err
 			}
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
@@ -238,7 +244,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 				monitoringMessage = fmt.Sprintf("Monitoring run and streaming logs from node 0 of %d...", cfg.Compute.NumAccelerators/perNode)
 			}
 			// The MLflow links stream in via the logs below, so don't poll here.
-			printSubmitResult(ctx, out, runIDStr, dashboardURL)
+			printSubmitResult(ctx, out, runIDStr, dashboardURL, existingKey)
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
@@ -251,7 +257,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// STATUS events on each lifecycle transition, and a closing terminal-status
 		// envelope after streaming.
 		out := cmd.OutOrStdout()
-		printSubmittedEvent(out, runIDStr, dashboardURL)
+		printSubmittedEvent(out, runIDStr, dashboardURL, existing)
 		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
@@ -262,7 +268,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// the Bricklens path, so the terminal status must come from the run's
 		// actual state — correct whether Bricklens or the MLflow fallback served
 		// the logs.
-		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL, existing)
 		return err
 	}
 
@@ -364,12 +370,17 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 
 // printSubmitResult writes the green success line and Job Run link. The link is
 // styled (blue, underlined) and clickable, matching the `air get` view, and
-// degrades to plain text on non-rich terminals.
-func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
+// degrades to plain text on non-rich terminals. existingKey is the idempotency
+// key when it returned an existing run, else empty.
+func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL, existingKey string) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
-	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
+	line := "Submitted workload with Job Run ID: " + runIDStr
+	if existingKey != "" {
+		line = fmt.Sprintf("Returned existing workload with Job Run ID: %s (idempotency key %q was already used)", runIDStr, existingKey)
+	}
+	fmt.Fprintln(out, p.green.Render(line))
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, dashboardURL, dashboardURL))
 }
 

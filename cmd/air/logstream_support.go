@@ -127,15 +127,17 @@ type submittedEvent struct {
 	TS           string `json:"ts"`
 	RunID        string `json:"run_id"`
 	DashboardURL string `json:"dashboard_url"`
+	Existing     bool   `json:"existing"`
 }
 
 // printSubmittedEvent writes the SUBMITTED JSONL event.
-func printSubmittedEvent(out io.Writer, runID, dashboardURL string) {
+func printSubmittedEvent(out io.Writer, runID, dashboardURL string, existing bool) {
 	b, err := json.Marshal(submittedEvent{
 		Type:         "SUBMITTED",
 		TS:           time.Now().UTC().Format(time.RFC3339),
 		RunID:        runID,
 		DashboardURL: dashboardURL,
+		Existing:     existing,
 	})
 	if err != nil {
 		return
@@ -176,7 +178,7 @@ type terminalEvent struct {
 
 // printTerminalEvent writes the closing terminal-status envelope, matching the
 // shape of renderEnvelope(runResult).
-func printTerminalEvent(out io.Writer, runID, status, dashboardURL string) {
+func printTerminalEvent(out io.Writer, runID, status, dashboardURL string, existing bool) {
 	b, err := json.Marshal(terminalEvent{
 		V:  envelopeVersion,
 		TS: time.Now().UTC().Format(time.RFC3339),
@@ -184,6 +186,7 @@ func printTerminalEvent(out io.Writer, runID, status, dashboardURL string) {
 			Status:       status,
 			RunID:        runID,
 			DashboardURL: dashboardURL,
+			Existing:     &existing,
 		},
 	})
 	if err != nil {
