@@ -13,7 +13,7 @@ import (
 func TestApplyDMSState(t *testing.T) {
 	// The service stores state as an opaque string, so the envelope the write path sent
 	// arrives verbatim.
-	envelope := `{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`
+	envelope := `{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}],"prevent_destroy":true}`
 
 	// What the file loaded, for the cases that check it is replaced or survives.
 	fileState := map[string]ResourceEntry{
@@ -28,18 +28,20 @@ func TestApplyDMSState(t *testing.T) {
 		wantErr  string
 	}{
 		{
-			name: "the envelope is unwrapped, depends_on and all",
+			name: "the envelope is unwrapped, depends_on and prevent_destroy and all",
 			recorded: []dms.Resource{
 				{Key: "resources.jobs.foo", ID: "123", State: envelope},
 				{Key: "resources.pipelines.bar", ID: "456"},
 			},
-			// depends_on comes back from the envelope, so a bundle whose local state was
-			// wiped still has the edges needed for delete ordering.
+			// depends_on and prevent_destroy come back from the envelope, so a bundle whose local
+			// state was wiped still has the edges needed for delete ordering and the flag that
+			// protects a resource removed from the config.
 			want: map[string]ResourceEntry{
 				"resources.jobs.foo": {
-					ID:        "123",
-					State:     json.RawMessage(`{"name":"foo"}`),
-					DependsOn: []deployplan.DependsOnEntry{{Node: "resources.pipelines.bar", Label: "${resources.pipelines.bar.id}"}},
+					ID:             "123",
+					State:          json.RawMessage(`{"name":"foo"}`),
+					DependsOn:      []deployplan.DependsOnEntry{{Node: "resources.pipelines.bar", Label: "${resources.pipelines.bar.id}"}},
+					PreventDestroy: true,
 				},
 				"resources.pipelines.bar": {ID: "456"},
 			},

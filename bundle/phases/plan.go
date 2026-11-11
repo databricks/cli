@@ -51,6 +51,10 @@ func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool,
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
 // If it does, it returns an error.
+//
+// For a resource still in the configuration the configured value decides. A resource that was
+// removed from the configuration is protected by the value its last deployment recorded in the
+// state, which the plan carries; the configuration cannot be consulted for it anymore.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
 	root := b.Config.Value()
 	var errs []error
@@ -62,6 +66,13 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 		path, err := dyn.NewPathFromString(action.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
+		}
+
+		if _, err := dyn.GetByPath(root, path); err != nil {
+			if action.PreventDestroy {
+				errs = append(errs, fmt.Errorf("%s was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again", action.ResourceKey))
+			}
+			continue
 		}
 
 		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))

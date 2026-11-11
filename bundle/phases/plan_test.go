@@ -187,6 +187,53 @@ func TestCheckPreventDestroyNoError(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestCheckPreventDestroyRemovedFromConfig(t *testing.T) {
+	// resources.schemas.kept is still declared, without the flag. resources.schemas.removed is
+	// only in the state, so the plan carries the flag its last deployment recorded.
+	b := &bundle.Bundle{}
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, "resources", dyn.NewValue(map[string]dyn.Value{
+			"schemas": dyn.NewValue(map[string]dyn.Value{
+				"kept": dyn.NewValue(map[string]dyn.Value{}, nil),
+			}, nil),
+		}, nil))
+	})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		action  deployplan.Action
+		wantErr string
+	}{
+		{
+			name:    "removed resource recorded as protected",
+			action:  deployplan.Action{ResourceKey: "resources.schemas.removed", ActionType: deployplan.Delete, PreventDestroy: true},
+			wantErr: "resources.schemas.removed was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again",
+		},
+		{
+			name:   "removed resource recorded as unprotected",
+			action: deployplan.Action{ResourceKey: "resources.schemas.removed", ActionType: deployplan.Delete},
+		},
+		{
+			// bundle destroy plans every resource as a delete carrying the recorded flag. For a
+			// resource still declared the configuration decides, as before.
+			name:   "declared resource is governed by the configuration",
+			action: deployplan.Action{ResourceKey: "resources.schemas.kept", ActionType: deployplan.Delete, PreventDestroy: true},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkForPreventDestroy(b, []deployplan.Action{tt.action})
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 	b := &bundle.Bundle{}
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {

@@ -15,6 +15,13 @@ type Action struct {
 	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
 	// because the resource implements no DoDelete (deleting it has no backend effect).
 	StateOnly bool
+	// PreventDestroy mirrors PlanEntry.PreventDestroy: lifecycle.prevent_destroy as
+	// configured or, for a resource no longer in the configuration, as recorded by
+	// its last deployment.
+	PreventDestroy bool
+	// PreventDestroyChanged mirrors PlanEntry.PreventDestroyChanged: the skip still
+	// rewrites the state entry with the new PreventDestroy.
+	PreventDestroyChanged bool
 }
 
 func (a Action) String() string {

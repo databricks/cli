@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy a protected job: prevent_destroy is recorded in the state the service holds"
+trace $CLI bundle deploy
+replace_ids.py
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-prevent-destroy-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+add_repl "$deployment_id" DEPLOYMENT_ID
+trace print_requests.py --dms //versions/1/operations
+
+title "Removing the job from the config: deploy and destroy refuse to delete it"
+mv resources removed
+trace $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle destroy --auto-approve
+
+title "Adding it back with prevent_destroy: false leaves the job unchanged, but records the flag as an update of its state"
+mv removed resources
+update_file.py resources/job.yml 'prevent_destroy: true' 'prevent_destroy: false'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py --dms //versions/2/operations
+
+title "The job can now be removed"
+rm resources/job.yml
+trace $CLI bundle deploy
+trace print_requests.py --dms //versions/3/operations

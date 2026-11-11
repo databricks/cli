@@ -37,7 +37,7 @@ func SeedState(ctx context.Context, stateDB *dstate.DeploymentState, tfState *TF
 		return nil
 	}
 	for key, id := range tfState.IDs {
-		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
+		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil, false); err != nil {
 			return fmt.Errorf("seeding migrated state for %s: %w", key, err)
 		}
 	}
@@ -271,7 +271,7 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)
 		}
 
-		if err := stateDB.SaveState(ctx, node, id, compacted, dependsOn); err != nil {
+		if err := stateDB.SaveState(ctx, node, id, compacted, dependsOn, direct.LifecyclePreventDestroy(inputConfig)); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}

@@ -103,7 +103,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Save state with ID and empty state (like migrate does)
-	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil)
+	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil, false)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -138,8 +138,10 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	sv, ok := b.StateCache.Load(resourceKey)
 	if ok && sv != nil {
 		var dependsOn []deployplan.DependsOnEntry
+		var preventDestroy bool
 		if entry != nil {
 			dependsOn = entry.DependsOn
+			preventDestroy = entry.PreventDestroy
 		}
 
 		// Copy etag from remote state for resources that use etag-based drift
@@ -178,7 +180,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, compacted, dependsOn)
+		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, compacted, dependsOn, preventDestroy)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
