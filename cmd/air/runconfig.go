@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -27,25 +28,27 @@ import (
 // REGEX_TASK_KEY_CHARS: ASCII alphanumeric, hyphen, underscore only (no periods).
 // Explicit ASCII class, not \w: \w matches Unicode letters that the ASCII-only
 // Jobs API task_key rejects.
-var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var taskKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_-]+$`) })
 
 // gitRefRe guards the branch name against command injection (it flows into git
 // exec args). Only safe ref characters are allowed.
-var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
+var gitRefRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[\w./-]+$`) })
 
 // Canonical UUID (8-4-4-4-12 hex). Usage policy ids are server-generated UUIDs,
 // so an obviously-wrong value (e.g. a policy name pasted into usage_policy_id)
 // is rejected up front with a hint pointing at usage_policy_name.
-var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+var uuidRe = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+})
 
 // Unity Catalog image paths are submitted as <catalog>.<schema>.<image>:<tag>.
 // Keep validation structural only here: object existence and permissions are
 // workspace checks performed by the backend.
-var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
+var unityCatalogImageRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`) })
 
-var containerNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`)
+var containerNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`) })
 
-var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
+var secretTemplateRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`) })
 
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
@@ -159,7 +162,7 @@ func (c *runConfig) validate() error {
 		if len(v) > 100 {
 			return fmt.Errorf("mlflow_run_name must be 100 characters or less (got %d)", len(v))
 		}
-		if !taskKeyRe.MatchString(v) {
+		if !taskKeyRe().MatchString(v) {
 			return fmt.Errorf("invalid mlflow_run_name %q: only alphanumeric characters, hyphens, and underscores are allowed", v)
 		}
 	}
@@ -215,7 +218,7 @@ func (c *runConfig) validate() error {
 		if v == "" {
 			return errors.New("usage_policy_id must not be empty")
 		}
-		if !uuidRe.MatchString(v) {
+		if !uuidRe().MatchString(v) {
 			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
 		}
 	}
@@ -256,7 +259,7 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) {
+		if !containerNameRe().MatchString(container.Name) {
 			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
@@ -272,7 +275,7 @@ func (c *runConfig) validateContainers() error {
 		if len(container.Ranks) == 0 {
 			return fmt.Errorf("%s.ranks must contain at least one rank", prefix)
 		}
-		if !unityCatalogImageRe.MatchString(container.UnityCatalogImage) {
+		if !unityCatalogImageRe().MatchString(container.UnityCatalogImage) {
 			return fmt.Errorf("%s.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", prefix, container.UnityCatalogImage)
 		}
 		if container.EnvironmentVariables != nil {
@@ -280,7 +283,7 @@ func (c *runConfig) validateContainers() error {
 				return fmt.Errorf("%s.environment_variables.files is not supported while container environment variables use workspace sidecars; use environment_variables.variables", prefix)
 			}
 			for name, value := range container.EnvironmentVariables.Variables {
-				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe.MatchString(value) {
+				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe().MatchString(value) {
 					return fmt.Errorf("%s.environment_variables.variables.%s has an invalid secret reference %q; expected {{secrets/<scope>/<key>}}", prefix, name, value)
 				}
 			}
@@ -313,7 +316,7 @@ func validateExperimentName(v string) error {
 	if len(v) > 100 {
 		return fmt.Errorf("experiment_name must be 100 characters or less (got %d); this is the Jobs API task_key length limit", len(v))
 	}
-	if !taskKeyRe.MatchString(v) {
+	if !taskKeyRe().MatchString(v) {
 		return fmt.Errorf("invalid experiment_name %q: only alphanumeric characters, hyphens (-), and underscores (_) are allowed", v)
 	}
 	return nil
@@ -355,7 +358,7 @@ type environmentConfig struct {
 
 func (e *environmentConfig) validate() error {
 	unityCatalogImage := e.UnityCatalogImage
-	if unityCatalogImage != "" && !unityCatalogImageRe.MatchString(unityCatalogImage) {
+	if unityCatalogImage != "" && !unityCatalogImageRe().MatchString(unityCatalogImage) {
 		return fmt.Errorf("environment.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", e.UnityCatalogImage)
 	}
 
@@ -505,7 +508,7 @@ type gitRef struct {
 }
 
 func (g *gitRef) validate() error {
-	if g.Branch != nil && !gitRefRe.MatchString(*g.Branch) {
+	if g.Branch != nil && !gitRefRe().MatchString(*g.Branch) {
 		return fmt.Errorf("invalid git.branch format %q: only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed", *g.Branch)
 	}
 
@@ -655,11 +658,11 @@ func configSchema() configField {
 
   Install the skill locally for your coding agent:
 
-    databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+    databricks aitools install --skills-only --skills databricks-ai-runtime
 
   Follow the prompts to choose your coding agent and installation scope.
   Use --scope project to install into the current project.
-  See: https://github.com/databricks/databricks-agent-skills/tree/main/experimental/databricks-ai-runtime`,
+  See: https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }

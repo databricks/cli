@@ -1001,7 +1001,7 @@
                     "type": "object",
                     "properties": {
                       "resource": {
-                        "description": "Key of the resource to depend on, as `foo` or `jobs.foo`.",
+                        "description": "Key of the resource to depend on, as `foo` or `jobs.foo`, or of its grants or permissions, as `schemas.foo.grants`.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1291,7 +1291,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "node_type_id": {
-                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.\nThe node type cannot be changed after the pool is created.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1783,7 +1783,7 @@
                         "doNotSuggest": true
                       },
                       "materialized_features": {
-                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nUpdating the set with a materialized feature removed from this set will cause it to be deleted.",
+                        "description": "[Private Preview] The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
@@ -6751,7 +6751,7 @@
                   "description": "Configuration for an external-foundation-model destination. Provider auth\nand provider-specific cloud configuration are owned by a separate, governed\nModelProviderService entity referenced via `model_provider_service`; the\nplatform resolves the provider at invocation time.",
                   "properties": {
                     "model_provider_service": {
-                      "description": "Resource name of the governed ModelProviderService that owns provider\nauth and provider-specific configuration. The referenced\nModelProviderService also carries the provider type, so this message\ndoes not surface it directly.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+                      "description": "Resource name of the governed ModelProviderService that owns provider\nauth and provider-specific configuration.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7954,8 +7954,8 @@
                     "SEV_SNP"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -8270,10 +8270,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "confidential_compute_type": {
-                      "description": "[Private Preview] The confidential computing technology for this cluster's instances.\nCurrently only SEV_SNP is supported, and only on N2D instance types.\nWhen not set, no confidential computing is applied.",
+                      "description": "[Beta] The confidential computing technology for this cluster's instances.\nCurrently only SEV_SNP is supported, and only on N2D instance types.\nWhen not set, no confidential computing is applied.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ConfidentialComputeType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "first_on_demand": {
                       "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
@@ -9739,7 +9738,7 @@
                   "description": "Destination of the data quality monitoring notification.",
                   "properties": {
                     "destination_ids": {
-                      "description": "The notification-destination IDs (Slack / Teams / webhook) to send the notification to. The\ndestinations must already exist in the workspace; a workspace admin creates them. A maximum of\n25 destination IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
+                      "description": "The notification-destination IDs (Slack / Teams / webhook / Asana / ServiceNow / AWS\nEventBridge) to send the notification to. The destinations must already exist in the\nworkspace; a workspace admin creates them. A maximum of 25 destination IDs is supported.\nOnly supported on schema monitors, via `anomaly_detection_config`; rejected on table monitors.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -9892,40 +9891,34 @@
                   "description": "Configuration for a task that runs the `ai_classify` function.\n\nThe label set comes from exactly one of two places: `inline_labels`, which\nholds up to 10 labels, or a Unity Catalog table named by `label_table`. Use\n`label_table` for a larger label set.",
                   "properties": {
                     "enable_confidence_scores": {
-                      "description": "[Private Preview] When true, includes a per-label confidence score in the response.",
+                      "description": "[Beta] When true, includes a per-label confidence score in the response.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "enable_rationales": {
-                      "description": "[Private Preview] When true, includes a rationale explaining each classification in the response.",
+                      "description": "[Beta] When true, includes a rationale explaining each classification in the response.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "inline_labels": {
-                      "description": "[Private Preview] Labels listed inline, for a small label set.",
+                      "description": "[Beta] Labels listed inline, for a small label set.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiClassifyFunctionInlineLabels",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "instructions": {
-                      "description": "[Private Preview] Global description of the task and domain, passed to the model to improve\nclassification quality.",
+                      "description": "[Beta] Global description of the task and domain, passed to the model to improve\nclassification quality.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "multilabel": {
-                      "description": "[Private Preview] When true, more than one label can be returned for each input.",
+                      "description": "[Beta] When true, more than one label can be returned for each input.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "version": {
-                      "description": "[Private Preview] The ai_classify function version to invoke (for example, `2.1`).",
+                      "description": "[Beta] The ai_classify function version to invoke (for example, `2.1`).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -9946,10 +9939,9 @@
                   "description": "A label set listed inline.",
                   "properties": {
                     "labels": {
-                      "description": "[Private Preview] The labels an input can be classified as. At least two labels are required\nunless `multilabel` is true, which also accepts a single label.",
+                      "description": "[Beta] The labels an input can be classified as. At least two labels are required\nunless `multilabel` is true, which also accepts a single label.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AiClassifyFunctionLabel",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -9970,16 +9962,14 @@
                   "description": "One label the input can be classified as.",
                   "properties": {
                     "description": {
-                      "description": "[Private Preview] Guidance describing what belongs under this label.",
+                      "description": "[Beta] Guidance describing what belongs under this label.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "name": {
-                      "description": "[Private Preview] The name returned when an input is classified as this label.",
+                      "description": "[Beta] The name returned when an input is classified as this label.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -10000,40 +9990,34 @@
                   "description": "Configuration for a task that runs the `ai_extract` function.\n\nThe fields to extract come from exactly one of two places: an existing AI\nExtract agent, named by `agent_id`, or the inline `schema` and `instructions`.\nSet `agent_id` or the inline fields, not both.",
                   "properties": {
                     "enable_citations": {
-                      "description": "[Private Preview] When true, includes citation metadata locating each extracted value in the\nsource.",
+                      "description": "[Beta] When true, includes citation metadata locating each extracted value in the\nsource.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "enable_confidence_scores": {
-                      "description": "[Private Preview] When true, includes a per-field confidence score in the response.",
+                      "description": "[Beta] When true, includes a per-field confidence score in the response.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "instructions": {
-                      "description": "[Private Preview] Global description of the task and domain, passed to the model to improve\nextraction quality.",
+                      "description": "[Beta] Global description of the task and domain, passed to the model to improve\nextraction quality.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "mode": {
-                      "description": "[Private Preview] The extraction mode. Defaults to standard extraction when unspecified.",
+                      "description": "[Beta] The extraction mode. Defaults to standard extraction when unspecified.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiExtractFunctionMode",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema": {
-                      "description": "[Private Preview] The extraction schema defining the fields to extract, as a JSON string.\nEither an array of field names (e.g. [\"company\", \"valuation\"]) or an object\nmapping each field name to a type and an optional description. Supported\ntypes are string, integer, number, boolean, enum, object, and array; all\nfields are optional.",
+                      "description": "[Beta] The extraction schema defining the fields to extract, as a JSON string.\nEither an array of field names (e.g. [\"company\", \"valuation\"]) or an object\nmapping each field name to a type and an optional description. Supported\ntypes are string, integer, number, boolean, enum, object, and array; all\nfields are optional.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "version": {
-                      "description": "[Private Preview] The ai_extract function version to invoke (for example, `2.1`).",
+                      "description": "[Beta] The ai_extract function version to invoke (for example, `2.1`).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -10056,7 +10040,7 @@
                     "MODE_PRECISION"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]"
+                    "[Beta]"
                   ]
                 },
                 {
@@ -10072,40 +10056,34 @@
                   "description": "A task that applies an AI function to a set of input documents or rows.",
                   "properties": {
                     "ai_classify": {
-                      "description": "[Private Preview] Classifies each input document or row into one or more labels.",
+                      "description": "[Beta] Classifies each input document or row into one or more labels.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiClassifyFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "ai_extract": {
-                      "description": "[Private Preview] Extracts structured fields from the input documents or rows.",
+                      "description": "[Beta] Extracts structured fields from the input documents or rows.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiExtractFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "ai_parse_document": {
-                      "description": "[Private Preview] Parses the input documents into structured text.",
+                      "description": "[Beta] Parses the input documents into structured text.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiParseDocumentFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "delta_table": {
-                      "description": "[Private Preview] A Unity Catalog Delta table. The function is applied to each row.",
+                      "description": "[Beta] A Unity Catalog Delta table. The function is applied to each row.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DeltaTableSource",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "output": {
-                      "description": "[Private Preview] Output destination table. When `table` is unset the task generates a stable name from the\nfunction and task identity so a downstream task can reference it.",
+                      "description": "[Beta] Output destination table. When `table` is unset the task generates a stable name from the\nfunction and task identity so a downstream task can reference it.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QualifiedName",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "volume": {
-                      "description": "[Private Preview] A Unity Catalog volume. The function is applied to each file.",
+                      "description": "[Beta] A Unity Catalog volume. The function is applied to each file.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.VolumeSource",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -10126,28 +10104,24 @@
                   "description": "Configuration for a task that runs the `ai_parse_document` function.",
                   "properties": {
                     "description_element_types": {
-                      "description": "[Private Preview] Element types to generate AI descriptions for. Leave empty to generate no\ndescriptions; use ALL for every supported type, or list specific types to\nrestrict generation to only those.",
+                      "description": "[Beta] Element types to generate AI descriptions for. Leave empty to generate no\ndescriptions; use ALL for every supported type, or list specific types to\nrestrict generation to only those.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AiParseDocumentFunctionDescriptionElementType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "image_output_path": {
-                      "description": "[Private Preview] Unity Catalog volume path where rendered page and element images are written.",
+                      "description": "[Beta] Unity Catalog volume path where rendered page and element images are written.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "page_range": {
-                      "description": "[Private Preview] Pages to parse (1-indexed), as a comma-separated list of page numbers or\nranges (e.g. \"1,3,5-10\").",
+                      "description": "[Beta] Pages to parse (1-indexed), as a comma-separated list of page numbers or\nranges (e.g. \"1,3,5-10\").",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "version": {
-                      "description": "[Private Preview] The ai_parse_document output schema version to invoke (for example, `2.0`).",
+                      "description": "[Beta] The ai_parse_document output schema version to invoke (for example, `2.0`).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -10171,8 +10145,8 @@
                     "DESCRIPTION_ELEMENT_TYPE_FIGURE"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Beta]",
+                    "[Beta]"
                   ]
                 },
                 {
@@ -10256,11 +10230,9 @@
                   "description": "Scheduling priority class for a workload — its priority and preemptability\nwhen the scheduler ranks pending work.",
                   "enum": [
                     "BEST_EFFORT",
-                    "NORMAL",
-                    "CRITICAL"
+                    "NORMAL"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
                     "[Private Preview]",
                     "[Private Preview]"
                   ]
@@ -10646,10 +10618,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "sql_condition": {
-                      "description": "[Private Preview] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated\nafter the cron expression fires and must return a truthy result for the run to proceed.",
+                      "description": "[Beta] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated\nafter the cron expression fires and must return a truthy result for the run to proceed.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "timezone_id": {
                       "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
@@ -10866,22 +10837,19 @@
                   "description": "A Unity Catalog Delta table input source. The function is applied to each row.",
                   "properties": {
                     "input_column": {
-                      "description": "[Private Preview] Name of the column holding the content the function is applied to.",
+                      "description": "[Beta] Name of the column holding the content the function is applied to.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "merge_key_columns": {
-                      "description": "[Private Preview] Columns that together identify a row across incremental runs, so results can\nbe matched back to their source rows. When unset, the task derives an\nimplicit key from Delta row tracking. If row tracking is also disabled there\nis no stable key, so each run reprocesses the entire source (a full refresh)\nrather than only the changed rows; set a key column or enable row tracking to\nkeep runs incremental.",
+                      "description": "[Beta] Columns that together identify a row across incremental runs, so results can\nbe matched back to their source rows. When unset, the task derives an\nimplicit key from Delta row tracking. If row tracking is also disabled there\nis no stable key, so each run reprocesses the entire source (a full refresh)\nrather than only the changed rows; set a key column or enable row tracking to\nkeep runs incremental.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "table_name": {
-                      "description": "[Private Preview] Fully qualified three-part name of the source table (catalog.schema.table).",
+                      "description": "[Beta] Fully qualified three-part name of the source table (catalog.schema.table).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -12271,22 +12239,19 @@
                   "description": "A three-level Unity Catalog name (catalog.schema.table); any level may be unset.",
                   "properties": {
                     "catalog": {
-                      "description": "[Private Preview] Unity Catalog catalog.",
+                      "description": "[Beta] Unity Catalog catalog.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "schema": {
-                      "description": "[Private Preview] Unity Catalog schema, within the catalog.",
+                      "description": "[Beta] Unity Catalog schema, within the catalog.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "table": {
-                      "description": "[Private Preview] Table, within the catalog and schema.",
+                      "description": "[Beta] Table, within the catalog and schema.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false
@@ -12569,22 +12534,19 @@
                   "type": "object",
                   "properties": {
                     "sql_query_id": {
-                      "description": "[Private Preview] The ID of the SQL query to evaluate as the trigger condition.",
+                      "description": "[Beta] The ID of the SQL query to evaluate as the trigger condition.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "trigger_mode": {
-                      "description": "[Private Preview] Determines how the SQL query result is interpreted to decide whether the condition fires.\nMust be set to a recognized value when provided.\nWhen unset on an existing serialized configuration, the server preserves the original\nsemantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this\nexplicitly — explicit `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED` is rejected at validation.",
+                      "description": "[Beta] Determines how the SQL query result is interpreted to decide whether the condition fires.\nMust be set to a recognized value when provided.\nWhen unset on an existing serialized configuration, the server preserves the original\nsemantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this\nexplicitly — explicit `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED` is rejected at validation.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionTriggerMode",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "warehouse_id": {
-                      "description": "[Private Preview] The canonical identifier of the SQL warehouse to run the condition query against.",
+                      "description": "[Beta] The canonical identifier of the SQL warehouse to run the condition query against.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -12603,14 +12565,14 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The strategy used to evaluate a SQL condition trigger against a query result set.\n\n* `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED`: Sentinel zero-value. Not a valid input — the\nvalidator rejects this when sent explicitly. Internally treated as `QUERY_RETURNS_ROWS`\nwhen reading legacy data that predates this field.\n* `QUERY_RETURNS_ROWS`: Fires whenever the result set has at least one row. Zero rows means\nthe condition is not met. This is the original SQL condition behavior.\n* `RESULT_VALUE_CHANGES`: Fires whenever the query's single result value differs from the\nprevious evaluation. The first evaluation always fires. Queries must return exactly one\ncell (one row, one column).",
+                  "description": "The strategy used to evaluate a SQL condition trigger against a query result set.\n\n* `SQL_CONDITION_TRIGGER_MODE_UNSPECIFIED`: Sentinel zero-value. Not a valid input — the\nvalidator rejects this when sent explicitly. Internally treated as `QUERY_RETURNS_ROWS`\nwhen reading legacy data that predates this field.\n* `QUERY_RETURNS_ROWS`: Fires whenever the result set has at least one row. Zero rows means\nthe condition is not met. This is the original SQL condition behavior.\n* `RESULT_VALUE_CHANGES`: Fires whenever the query's single result value differs from the\nprevious evaluation. The first evaluation stores the result as a baseline and does not\nfire. Queries must return exactly one cell (one row, one column).",
                   "enum": [
                     "QUERY_RETURNS_ROWS",
                     "RESULT_VALUE_CHANGES"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview] Fires whenever the result set has at least one row. Zero rows means",
-                    "[Private Preview] Fires whenever the query's single result value differs from the"
+                    "[Beta] Fires whenever the result set has at least one row. Zero rows means",
+                    "[Beta] Fires whenever the query's single result value differs from the"
                   ]
                 },
                 {
@@ -12835,9 +12797,9 @@
                   "type": "object",
                   "properties": {
                     "attachment": {
-                      "description": "[Public Preview] Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
+                      "description": "Optional: The configuration for the files attached to the dashboard snapshot notification. It\ncontrols the underlying data of dashboard widgets that is attached as data files and which\npages are included in the attached PDF. If not specified, the notification is sent with only\nthe default snapshot.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachment",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "custom_subject": {
                       "description": "Optional: Allows users to specify a custom subject line on the email sent\nto subscribers.",
@@ -12870,14 +12832,14 @@
                   "description": "The configuration for the files attached to the dashboard snapshot notification sent to\nsubscribers. `data_attachment` describes the underlying data of dashboard widgets attached\nas data files, and `page_attachment` describes which dashboard pages are included in the\nattached PDF.",
                   "properties": {
                     "data_attachment": {
-                      "description": "[Public Preview] Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
+                      "description": "Optional: The configuration for the underlying data of dashboard widgets attached as tabular\ndata files. If not specified, no tabular data is attached.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachment",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "page_attachment": {
-                      "description": "[Public Preview] Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
+                      "description": "Optional: The selection of dashboard pages included in the attached PDF. If not specified,\nonly the first page is included.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachment",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -12895,19 +12857,19 @@
                   "description": "The configuration for the tabular data files attached to the dashboard snapshot. `widgets`\nlists the widgets whose data is exported and `file_format` is the output format; each\nreferenced widget's data is exported as a separate file.",
                   "properties": {
                     "file_format": {
-                      "description": "[Public Preview] The file format of the exported tabular data files.",
+                      "description": "The file format of the exported tabular data files.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentFileFormat",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "include_applied_filters": {
-                      "description": "[Public Preview] When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
+                      "description": "When true, the dashboard's applied filter values are included alongside the tabular data as\nan additional attached file.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "widgets": {
-                      "description": "[Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.",
+                      "description": "The widgets whose underlying data is exported. At least one widget must be referenced.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentDataAttachmentWidget",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12931,11 +12893,6 @@
                     "FILE_FORMAT_CSV",
                     "FILE_FORMAT_TSV",
                     "FILE_FORMAT_EXCEL"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12951,14 +12908,14 @@
                   "description": "Identifies a dashboard widget whose data to attach. `page_id` and `widget_id` are\nthe URL identifiers from the dashboard's serialized definition returned by the Get dashboard\nAPI (`serialized_dashboard`), and together they uniquely identify the widget.",
                   "properties": {
                     "page_id": {
-                      "description": "[Public Preview] The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "The URL identifier of the page containing the widget. This is the value of the `name`\nfield of the corresponding entry under `pages` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "widget_id": {
-                      "description": "[Public Preview] The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "The URL identifier of the widget. This is the value of the `name` field of the\ncorresponding widget under that page's `layout` in the serialized dashboard definition.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -12980,14 +12937,14 @@
                   "description": "The selection of dashboard pages included in the attached PDF. `page_selection` chooses\nbetween all pages, the first page only, or an explicit subset listed in `page_ids`.",
                   "properties": {
                     "page_ids": {
-                      "description": "[Public Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
+                      "description": "The identifiers of the pages to include in the PDF. Only specified when `page_selection` is\n`PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's\nserialized definition returned by the Get dashboard API (`serialized_dashboard`): the value\nof the `name` field of an entry under `pages`.\nFormat: alphanumeric, hyphen, and underscore characters allowed, max length 63.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "page_selection": {
-                      "description": "[Public Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
+                      "description": "How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to\ninclude are listed in `page_ids`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionAttachmentPageAttachmentPageSelection",
-                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -13006,10 +12963,6 @@
                   "enum": [
                     "PAGE_SELECTION_ALL",
                     "PAGE_SELECTION_SUBSET"
-                  ],
-                  "enumDescriptions": [
-                    "[Public Preview]",
-                    "[Public Preview]"
                   ]
                 },
                 {
@@ -13085,10 +13038,9 @@
                   "type": "object",
                   "properties": {
                     "ai_function_task": {
-                      "description": "[Private Preview] Applies an AI function to a set of input documents or rows.",
+                      "description": "[Beta] Applies an AI function to a set of input documents or rows.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiFunctionTask",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "ai_runtime_task": {
                       "description": "[Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify\nthe accelerator type and count, the command to run, and where the workload's\ncode and MLflow output are stored.",
@@ -13486,10 +13438,9 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "sql_condition": {
-                      "description": "[Private Preview] Optional SQL condition that gates whether this trigger fires.",
+                      "description": "[Beta] Optional SQL condition that gates whether this trigger fires.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "table_update": {
                       "description": "[Beta] Table update trigger configuration.",
@@ -13537,10 +13488,9 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "sql_condition": {
-                      "description": "[Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and\nruns *after* other trigger types conditions are evaluated.",
+                      "description": "[Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and\nruns *after* other trigger types conditions are evaluated.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "table_update": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
@@ -13562,10 +13512,9 @@
                   "description": "A Unity Catalog volume input source. The function is applied to each file.",
                   "properties": {
                     "volume_path": {
-                      "description": "[Private Preview] Unity Catalog volume path to the input files\n(e.g. `/Volumes/\u003ccatalog\u003e/\u003cschema\u003e/\u003cvolume\u003e/...`).",
+                      "description": "[Beta] Unity Catalog volume path to the input files\n(e.g. `/Volumes/\u003ccatalog\u003e/\u003cschema\u003e/\u003cvolume\u003e/...`).",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
                   },
                   "additionalProperties": false,
@@ -13957,7 +13906,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "A cron-based schedule trigger for the materialization pipeline.",
+                  "description": "A cron-based schedule trigger for batch materialization.",
                   "properties": {
                     "cron_expression": {
                       "description": "The cron expression defining the schedule (e.g., \"0 0 * * *\" for daily at midnight). The\nschedule is interpreted in timezone_id (defaults to UTC). Required when mode is MANUAL (or\nunset). Left empty when mode is DERIVED, where the service computes it (aligned to UTC) from\nthe features' window timing and fills it in on the response.",
@@ -13967,6 +13916,12 @@
                     "mode": {
                       "description": "[Private Preview] How the schedule is determined. Defaults to MANUAL when unset.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronScheduleMode",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "paused": {
+                      "description": "[Private Preview] Whether automatic materialization is paused. Defaults to `false`.\nSupported only for materializations in a materialization set.\nUse the `UpdateMaterializationSet` API to pause or resume the set.\n\nPausing does not cancel running or queued runs. Runs can still be\ntriggered through the `TriggerMaterializationSet` API. Resuming does\nnot submit a run. Creating a paused materialization skips its initial run.",
+                      "$ref": "#/$defs/bool",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
@@ -14218,6 +14173,19 @@
                       "doNotSuggest": true
                     }
                   },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.ExternalTrigger": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A trigger that disables automatic materialization, including the initial run\nat creation. Runs are instead triggered through the `TriggerMaterializationSet`\nAPI. Supported only for batch materializations in a materialization set.",
                   "additionalProperties": false
                 },
                 {
@@ -14847,9 +14815,15 @@
                       "deprecated": true
                     },
                     "cron_schedule_trigger": {
-                      "description": "A cron-based schedule trigger for the materialization pipeline.",
+                      "description": "A cron-based schedule trigger for batch materialization.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.CronSchedule",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "external_trigger": {
+                      "description": "[Private Preview] A trigger that disables automatic materialization, including the initial run\nat creation. Runs are instead triggered through the `TriggerMaterializationSet`\nAPI. Supported only for batch materializations in a materialization set.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExternalTrigger",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "feature_name": {
                       "description": "The full name of the feature in Unity Catalog.",
@@ -14885,7 +14859,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "table_trigger": {
-                      "description": "A trigger that fires when the upstream source table changes.",
+                      "description": "A trigger that starts batch materialization when the upstream source table changes.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.TableTrigger",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -15216,7 +15190,7 @@
                       "doNotSuggest": true
                     },
                     "input_tables": {
-                      "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. Feature Store doesn't confirm that the pipeline reads from these\ntables. At most 100 tables.",
+                      "description": "[Private Preview] The full three-part names of the tables the pipeline reads from. Required to materialize this\nfeature with a TableTrigger, which starts a run when these tables update. Each table must exist\nwhen the feature is created. Feature Store doesn't confirm that the pipeline reads from these\ntables. At most 25 tables.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -15490,7 +15464,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an\nSdpSource's input_tables.",
+                  "description": "A trigger that starts batch materialization when the feature's source table changes:\na DeltaTableSource's table, or an SdpSource's input_tables.",
                   "properties": {
                     "condition": {
                       "description": "[Private Preview] Which source table updates trigger a materialization run. If not set, any source table update\ntriggers a run.",
@@ -15501,6 +15475,12 @@
                     "min_time_between_triggers": {
                       "description": "[Private Preview] The minimum time between two triggered runs, so a frequently updated source table does not\ntrigger runs too often. If not set, a feature with a sliding window uses half its\nslide_duration and a feature with a tumbling window uses half its window_duration, clamped to\nbetween 5 minutes and 1 hour. Other features have no minimum.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "paused": {
+                      "description": "[Private Preview] Whether automatic materialization is paused. Defaults to `false`.\nSupported only for materializations in a materialization set.\nUse the `UpdateMaterializationSet` API to pause or resume the set.\n\nPausing does not cancel running or queued runs. Runs can still be\ntriggered through the `TriggerMaterializationSet` API. Resuming does\nnot submit a run. Creating a paused materialization skips its initial run.",
+                      "$ref": "#/$defs/bool",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },

@@ -61,7 +61,8 @@ Resource: resources.jobs.my_job
     "resource_job_ids": [
       "[MY_JOB_ID]"
     ]
-  }
+  },
+  "in_git_repo": false
 }
 
 >>> [CLI] bundle destroy --auto-approve

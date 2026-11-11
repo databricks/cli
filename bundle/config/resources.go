@@ -196,6 +196,25 @@ func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
 	}
 }
 
+// ResolveDependsOn returns the key of the node that a lifecycle.depends_on entry refers to:
+// "resources.jobs.foo" for "foo" or "jobs.foo", and "resources.schemas.foo.grants" for the
+// grants or permissions of a qualified key, as "schemas.foo.grants".
+func (r *Resources) ResolveDependsOn(ref string) (string, error) {
+	resourceRef, sub := ref, ""
+	if parts := strings.Split(ref, "."); len(parts) == 3 {
+		if _, ok := ResourcesTypes()[parts[0]+"."+parts[2]]; !ok {
+			return "", fmt.Errorf("no such resource: %s", ref)
+		}
+		resourceRef, sub = parts[0]+"."+parts[1], "."+parts[2]
+	}
+
+	res, key, err := r.ResolveKey(resourceRef)
+	if err != nil {
+		return "", err
+	}
+	return "resources." + res.ResourceDescription().PluralName + "." + key + sub, nil
+}
+
 func (r *Resources) HasInternalResources() bool {
 	return len(r.Snapshots) > 0
 }

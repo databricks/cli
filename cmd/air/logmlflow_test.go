@@ -57,12 +57,12 @@ func TestChunkFileName(t *testing.T) {
 }
 
 func TestChunkFilePattern(t *testing.T) {
-	m := chunkFilePattern.FindStringSubmatch("logs-12.chunk.txt")
+	m := chunkFilePattern().FindStringSubmatch("logs-12.chunk.txt")
 	require.NotNil(t, m)
 	assert.Equal(t, "12", m[1])
 
-	assert.Nil(t, chunkFilePattern.FindStringSubmatch("logs-12.chunk.txt.bak"))
-	assert.Nil(t, chunkFilePattern.FindStringSubmatch("node_0"))
+	assert.Nil(t, chunkFilePattern().FindStringSubmatch("logs-12.chunk.txt.bak"))
+	assert.Nil(t, chunkFilePattern().FindStringSubmatch("node_0"))
 }
 
 // artifactListServer serves a fixed artifacts/list response for any path.

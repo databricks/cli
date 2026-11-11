@@ -9,6 +9,9 @@ __all__ = [
     "DependsOn",
     "DependsOnDict",
     "DependsOnParam",
+    "ExternalTrigger",
+    "ExternalTriggerDict",
+    "ExternalTriggerParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -59,6 +62,11 @@ from databricks.bundles.materialization_sets._models.depends_on import (
     DependsOn,
     DependsOnDict,
     DependsOnParam,
+)
+from databricks.bundles.materialization_sets._models.external_trigger import (
+    ExternalTrigger,
+    ExternalTriggerDict,
+    ExternalTriggerParam,
 )
 from databricks.bundles.materialization_sets._models.lifecycle import (
     Lifecycle,

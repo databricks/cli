@@ -105,6 +105,70 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "reference does not exist: ${resources.volumes.missing.volume_path}")
 }
 
+func TestResolveVolumePathReferencesOnlyResources_RejectsUnprefixedSchemaReferences(t *testing.T) {
+	root, loadDiags := config.LoadFromBytes("databricks.yml", []byte(`resources:
+  schemas:
+    test:
+      name: myschema
+      catalog_name: main
+  volumes:
+    archive:
+      name: archive
+      schema_name: ${schemas.test.name}
+      catalog_name: ${schemas.test.catalog_name}
+    ingest:
+      name: ingest
+      schema_name: ${schemas.test.name}
+      catalog_name: ${schemas.test.catalog_name}
+`))
+	require.NoError(t, loadDiags.Error())
+	b := &bundle.Bundle{Config: *root}
+
+	diags := bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
+	require.Len(t, diags, 4)
+	require.Error(t, diags.Error())
+	for i, want := range []struct {
+		volume, field, reference, suggestion string
+		line                                 int
+	}{
+		{"archive", "schema_name", "schemas.test.name", "resources.schemas.test.name", 9},
+		{"archive", "catalog_name", "schemas.test.catalog_name", "resources.schemas.test.catalog_name", 10},
+		{"ingest", "schema_name", "schemas.test.name", "resources.schemas.test.name", 13},
+		{"ingest", "catalog_name", "schemas.test.catalog_name", "resources.schemas.test.catalog_name", 14},
+	} {
+		d := diags[i]
+		require.Equal(t, "volume \""+want.volume+"\" field \""+want.field+"\": reference does not exist: ${"+want.reference+"}", d.Summary)
+		require.Equal(t, "did you mean:\n  ${"+want.suggestion+"}", d.Detail)
+		require.Len(t, d.Paths, 1)
+		require.Equal(t, "resources.volumes."+want.volume+"."+want.field, d.Paths[0].String())
+		require.Len(t, d.Locations, 1)
+		require.Equal(t, "databricks.yml", d.Locations[0].File)
+		require.Equal(t, want.line, d.Locations[0].Line)
+	}
+
+	b = &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas: map[string]*resources.Schema{"test": {}},
+				Volumes: map[string]*resources.Volume{"foo": {}},
+			},
+		},
+	}
+	schema := b.Config.Resources.Schemas["test"]
+	schema.Name = "myschema"
+	schema.CatalogName = "main"
+	volume := b.Config.Resources.Volumes["foo"]
+	volume.SchemaName = "${resources.schemas.test.name}"
+	volume.CatalogName = "${resources.schemas.test.catalog_name}"
+
+	diags = bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
+	require.NoError(t, diags.Error())
+	diags = bundle.Apply(t.Context(), b, ResolveVariableReferencesOnlyResources("resources"))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "myschema", b.Config.Resources.Volumes["foo"].SchemaName)
+	require.Equal(t, "main", b.Config.Resources.Volumes["foo"].CatalogName)
+}
+
 func TestIsVolumePathReferencePath(t *testing.T) {
 	require.True(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.volume_path")))
 	require.False(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.name")))

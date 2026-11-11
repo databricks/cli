@@ -20,8 +20,8 @@ class TableTrigger:
     """
     :meta private: [EXPERIMENTAL]
 
-    A trigger that fires when the feature's source table changes: a DeltaTableSource's table, or an
-    SdpSource's input_tables.
+    A trigger that starts batch materialization when the feature's source table changes:
+    a DeltaTableSource's table, or an SdpSource's input_tables.
     """
 
     condition: VariableOrOptional[TableTriggerTableTriggerCondition] = None
@@ -40,6 +40,19 @@ class TableTrigger:
     trigger runs too often. If not set, a feature with a sliding window uses half its
     slide_duration and a feature with a tumbling window uses half its window_duration, clamped to
     between 5 minutes and 1 hour. Other features have no minimum.
+    """
+
+    paused: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
     """
 
     wait_after_last_change: VariableOrOptional[str] = None
@@ -77,6 +90,19 @@ class TableTriggerDict(TypedDict, total=False):
     trigger runs too often. If not set, a feature with a sliding window uses half its
     slide_duration and a feature with a tumbling window uses half its window_duration, clamped to
     between 5 minutes and 1 hour. Other features have no minimum.
+    """
+
+    paused: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
     """
 
     wait_after_last_change: VariableOrOptional[str]

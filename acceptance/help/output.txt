@@ -3,6 +3,9 @@ Databricks CLI
 Usage:
   databricks [command]
 
+Lakewatch
+  lakewatch                              *Beta* Manage Lakewatch: security-analytics data sources, detection rules, and per-catalog configuration.
+
 Databricks Workspace
   fs                                     Filesystem related commands
   git-credentials                        Registers personal access token for Databricks to do operations on behalf of the user.
@@ -19,9 +22,6 @@ Compute
   libraries                              The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.
   policy-compliance-for-clusters         The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.
   policy-families                        View available policy families.
-
-Sandbox
-  sandbox                                *Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.
 
 Lakeflow
   jobs                                   The Jobs API allows you to create, edit, and delete jobs.
@@ -95,6 +95,7 @@ Unity Catalog
   rfa                                    *Public Preview* Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   secrets-uc                             A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).
+  software-artifacts                     *Beta* Manage software artifacts and their versions in Unity Catalog.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
@@ -182,6 +183,7 @@ Domains
 Developer Tools
   air                                    *Public Preview* Run and manage AI Runtime training workloads
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

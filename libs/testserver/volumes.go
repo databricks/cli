@@ -94,8 +94,9 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 
 	if request.NewName != "" {
 		delete(s.Volumes, fullname)
-		existing.Name = request.NewName
-		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + request.NewName
+		// UC lowercases the new name, as on create.
+		existing.Name = strings.ToLower(request.NewName)
+		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + existing.Name
 	}
 
 	existing.UpdatedAt = nowMilli()

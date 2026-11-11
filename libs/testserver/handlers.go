@@ -798,7 +798,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return req.Workspace.SchemasDelete(req, req.Vars["full_name"])
 	})
 
 	// Grants:
@@ -826,7 +826,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+		return req.Workspace.CatalogsDelete(req, req.Vars["name"])
 	})
 
 	// External Locations:

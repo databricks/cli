@@ -1,0 +1,1 @@
+* Speed up `databricks air run` for git-pinned `code_source` snapshots by compressing the archive in parallel, which substantially shortens packaging on large repositories. ([#7402](https://github.com/databricks/cli/pull/7402))

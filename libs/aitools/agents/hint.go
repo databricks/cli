@@ -92,6 +92,9 @@ func isAIToolsCommand(cmd *cobra.Command) bool {
 // `claude plugin install`), and databricks skill files in the shared canonical
 // skills dir (written by `aitools install --skills-only`). Any read/parse
 // failure reports false, so an unreadable state errs toward hinting.
+// (*Agent).DatabricksTooling, which feeds the User-Agent, differs on purpose:
+// it ignores the shared store and out-of-project records, and counts
+// .claude/skills dirs, to report what the calling agent loads.
 func claudeToolingInstalled(ctx context.Context) bool {
 	claude := ByName(NameClaudeCode)
 	if claude == nil {

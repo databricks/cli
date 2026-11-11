@@ -35,6 +35,7 @@
           "[PIPELINE_ONE_ID]",
           "[PIPELINE_TWO_ID]"
         ],
+        "in_git_repo": false,
         "experimental": {
           "configuration_file_count": 1,
           "variable_count": 0,
