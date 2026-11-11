@@ -3,6 +3,7 @@
 package rfa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,24 +19,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "rfa",
-		Short: `*Public Preview* Request for Access enables users to request access for Unity Catalog securables.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "rfa",
+	Short:   `*Public Preview* Request for Access enables users to request access for Unity Catalog securables.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Request for Access enables users to request access for Unity Catalog
   securables.
 
   These APIs provide a standardized way for securable owners (or users with
-  MANAGE privileges) to manage access request destinations.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  MANAGE privileges) to manage access request destinations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newBatchCreateAccessRequests())
@@ -46,8 +51,6 @@ Request for Access enables users to request access for Unity Catalog
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start batch-create-access-requests command

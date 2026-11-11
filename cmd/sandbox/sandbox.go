@@ -1,16 +1,22 @@
 package sandbox
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-// New returns the root command for the sandbox subcommand.
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "sandbox",
-		Short:   "*Beta* Manage Databricks Sandbox environments",
-		GroupID: "development",
-		Long: `Manage Databricks Sandbox environments.
+// Spec declares the sandbox command.
+var Spec = root.CommandSpec{
+	Use:     "sandbox",
+	Short:   "*Beta* Manage Databricks Sandbox environments",
+	GroupID: "development",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage Databricks Sandbox environments.
 
 Sandbox provides SSH-accessible development environments backed by
 microVM isolation. Each sandbox is a personal sandbox with pre-installed
@@ -29,8 +35,7 @@ Common workflows:
   databricks sandbox create                  # create a new sandbox
   databricks sandbox delete my-project       # delete a sandbox
   databricks sandbox status my-project       # show sandbox status
-`,
-	}
+`
 
 	cmd.AddCommand(newRegisterCommand())
 	cmd.AddCommand(newSSHKeyCommand())
@@ -43,6 +48,4 @@ Common workflows:
 	cmd.AddCommand(newStartCommand())
 	cmd.AddCommand(newStatusCommand())
 	cmd.AddCommand(newConfigCommand())
-
-	return cmd
 }

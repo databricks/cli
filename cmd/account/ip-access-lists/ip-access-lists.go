@@ -3,6 +3,7 @@
 package ip_access_lists
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ip-access-lists",
-		Short: `The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.`,
-		Long: `The Accounts IP Access List API enables account admins to configure IP access
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ip-access-lists",
+	Short:   `The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Accounts IP Access List API enables account admins to configure IP access
   lists for access to the account console.
 
   Account IP Access Lists affect web application access and REST API access to
@@ -43,14 +49,13 @@ func New() *cobra.Command {
   of 1000 IP/CIDR values, where one CIDR counts as a single value.
 
   After changes to the account-level IP access lists, it can take a few minutes
-  for changes to take effect.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  for changes to take effect.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -64,8 +69,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

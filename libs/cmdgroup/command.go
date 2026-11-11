@@ -141,3 +141,20 @@ func FilterGroups(groups []cobra.Group, allCommands []*cobra.Command) []cobra.Gr
 
 	return filteredGroups
 }
+
+// Configure adds the groups that have at least one available command among
+// cmd's subcommands. When at most one group remains, the subcommands are
+// ungrouped so that cobra's default "Available Commands" heading is used, as
+// for commands that don't define groups at all.
+func Configure(cmd *cobra.Command, groups []cobra.Group) {
+	filtered := FilterGroups(groups, cmd.Commands())
+	if len(filtered) <= 1 {
+		for _, sub := range cmd.Commands() {
+			sub.GroupID = ""
+		}
+		return
+	}
+	for i := range filtered {
+		cmd.AddGroup(&filtered[i])
+	}
+}

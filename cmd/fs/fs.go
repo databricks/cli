@@ -1,16 +1,22 @@
 package fs
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "fs",
-		Short:   "Filesystem related commands",
-		Long:    `Commands to do file system operations on DBFS, UC Volumes and UC Skills.`,
-		GroupID: "workspace",
-	}
+// Spec declares the fs command.
+var Spec = root.CommandSpec{
+	Use:     "fs",
+	Short:   "Filesystem related commands",
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Commands to do file system operations on DBFS, UC Volumes and UC Skills.`
 
 	cmd.AddCommand(
 		newCatCommand(),
@@ -19,6 +25,4 @@ func New() *cobra.Command {
 		newMkdirCommand(),
 		newRmCommand(),
 	)
-
-	return cmd
 }

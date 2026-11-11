@@ -3,6 +3,7 @@
 package libraries
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "libraries",
-		Short: `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
-		Long: `The Libraries API allows you to install and uninstall libraries and get the
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "libraries",
+	Short:   `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Libraries API allows you to install and uninstall libraries and get the
   status of libraries on a cluster.
 
   To make third-party or custom code available to notebooks and jobs running on
@@ -37,14 +43,13 @@ func New() *cobra.Command {
 
   When you uninstall a library from a cluster, the library is removed only when
   you restart the cluster. Until you restart the cluster, the status of the
-  uninstalled library appears as Uninstall pending restart.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  uninstalled library appears as Uninstall pending restart.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAllClusterStatuses())
@@ -56,8 +61,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start all-cluster-statuses command

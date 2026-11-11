@@ -36,50 +36,23 @@ const (
 	permissionsGroup = "permissions"
 )
 
-// configureGroups adds groups to the command, only if a group
-// has at least one available command. When only one group survives
-// filtering, the grouping is dropped so Cobra's default "Available
-// Commands" heading is used — matching commands that don't define
-// groups at all.
-func configureGroups(cmd *cobra.Command, groups []cobra.Group) {
-	filteredGroups := cmdgroup.FilterGroups(groups, cmd.Commands())
-	if len(filteredGroups) <= 1 {
-		for _, sub := range cmd.Commands() {
-			sub.GroupID = ""
-		}
-		return
+// withGroups returns spec with a Build that also groups the command's
+// subcommands into groups, keeping only groups that have available commands.
+func withGroups(spec root.CommandSpec, groups []cobra.Group) root.CommandSpec {
+	build := spec.Build
+	spec.Build = func(ctx context.Context, cmd *cobra.Command) {
+		build(ctx, cmd)
+		cmdgroup.Configure(cmd, groups)
 	}
-	for i := range filteredGroups {
-		cmd.AddGroup(&filteredGroups[i])
-	}
+	return spec
 }
 
-func accountCommand() *cobra.Command {
-	cmd := account.New()
-	configureGroups(cmd, account.Groups())
-	return cmd
-}
-
-func New(ctx context.Context) *cobra.Command {
-	cli := root.New(ctx)
-
-	// Add account subcommand.
-	cli.AddCommand(accountCommand())
-
-	// Hand-written commands that replace a generated workspace command of the
-	// same name. Cobra resolves duplicate names by position after an unstable
-	// sort, so the generated command must not be registered at all.
-	sandboxCmd := sandbox.New()
-	replacedWorkspaceCommands := map[string]bool{
-		sandboxCmd.Name(): true,
-	}
-
-	// Add workspace subcommands.
-	workspaceCommands := workspace.All()
-	for _, cmd := range workspaceCommands {
-		if replacedWorkspaceCommands[cmd.Name()] {
-			continue
-		}
+// workspaceSpec returns spec with a Build that also groups the subcommands of
+// a generated workspace command and orders its permissions subcommands last.
+func workspaceSpec(spec root.CommandSpec) root.CommandSpec {
+	build := spec.Build
+	spec.Build = func(ctx context.Context, cmd *cobra.Command) {
+		build(ctx, cmd)
 
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
@@ -95,53 +68,58 @@ func New(ctx context.Context) *cobra.Command {
 				sub.GroupID = mainGroup
 			}
 		}
-
-		cli.AddCommand(cmd)
-
-		// Built-in groups for the workspace commands.
-		groups := []cobra.Group{
-			{
-				ID:    mainGroup,
-				Title: "Main Commands",
-			},
-			{
-				ID:    pipelines.ManagementGroupID,
-				Title: "Management Commands",
-			},
-			{
-				ID:    permissionsGroup,
-				Title: "Permission Commands",
-			},
-		}
-
-		configureGroups(cmd, groups)
 	}
+	return withGroups(spec, []cobra.Group{
+		{ID: mainGroup, Title: "Main Commands"},
+		{ID: pipelines.ManagementGroupID, Title: "Management Commands"},
+		{ID: permissionsGroup, Title: "Permission Commands"},
+	})
+}
 
-	// Add other subcommands.
-	cli.AddCommand(aircmd.New())
-	cli.AddCommand(aitoolscmd.NewAitoolsCmd())
-	cli.AddCommand(api.New())
-	cli.AddCommand(auth.New())
-	cli.AddCommand(completion.New())
-	cli.AddCommand(bundle.New())
-	cli.AddCommand(cache.New())
-	cli.AddCommand(experimental.New())
-	cli.AddCommand(psql.New())
-	cli.AddCommand(configure.New())
-	cli.AddCommand(fs.New())
-	cli.AddCommand(labs.New(ctx))
-	cli.AddCommand(sandboxCmd)
-	cli.AddCommand(sync.New())
-	cli.AddCommand(version.New())
-	cli.AddCommand(quickstart.New())
-	cli.AddCommand(selftest.New())
-	cli.AddCommand(ssh.New())
+// New returns the CLI's command tree.
+func New(ctx context.Context) *root.Tree {
+	cli := root.NewTree(ctx)
+
+	specs := []root.CommandSpec{
+		withGroups(account.Spec, account.Groups()),
+		aircmd.Spec,
+		aitoolscmd.Spec,
+		api.Spec,
+		auth.Spec,
+		completion.Spec,
+		bundle.Spec,
+		cache.Spec,
+		experimental.Spec,
+		psql.Spec,
+		configure.Spec,
+		fs.Spec,
+		labs.Spec,
+		sandbox.Spec,
+		sync.Spec,
+		version.Spec,
+		quickstart.Spec,
+		selftest.Spec,
+		ssh.Spec,
+	}
+	// Hand-written commands that replace a generated workspace command of the
+	// same name. Cobra resolves duplicate names by position after an unstable
+	// sort, so the generated command must not be added at all.
+	name := func(spec root.CommandSpec) string { return strings.Fields(spec.Use)[0] }
+	replaced := map[string]bool{
+		name(sandbox.Spec): true,
+	}
+	for _, spec := range workspace.All() {
+		if !replaced[name(spec)] {
+			specs = append(specs, workspaceSpec(spec))
+		}
+	}
+	cli.Add(specs...)
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
-	configureGroups(cli, append(workspace.Groups(), cobra.Group{
+	cli.AddGroups(append(workspace.Groups(), cobra.Group{
 		ID:    "development",
 		Title: "Developer Tools",
-	}))
+	})...)
 
 	return cli
 }

@@ -3,6 +3,7 @@
 package tokens
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tokens",
-		Short: `The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.`,
-		Long: `The Token API allows you to create, list, and revoke tokens that can be used
-  to authenticate and access Databricks REST APIs.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "tokens",
+	Short:   `The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Token API allows you to create, list, and revoke tokens that can be used
+  to authenticate and access Databricks REST APIs.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -42,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

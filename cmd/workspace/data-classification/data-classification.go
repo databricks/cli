@@ -3,6 +3,7 @@
 package data_classification
 
 import (
+	"context"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -18,21 +19,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "data-classification",
-		Short: `Manage data classification for Unity Catalog catalogs.`,
-		Long: `Manage data classification for Unity Catalog catalogs. Data classification
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "data-classification",
+	Short:   `Manage data classification for Unity Catalog catalogs.`,
+	GroupID: "dataclassification",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage data classification for Unity Catalog catalogs. Data classification
   automatically identifies and tags sensitive data (PII) in Unity Catalog
   tables. Each catalog can have at most one configuration resource that controls
-  scanning behavior and auto-tagging rules.`,
-		GroupID: "dataclassification",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  scanning behavior and auto-tagging rules.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateCatalogConfig())
@@ -44,8 +49,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-catalog-config command

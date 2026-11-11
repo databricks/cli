@@ -3,6 +3,7 @@
 package instance_pools
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "instance-pools",
-		Short: `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`,
-		Long: `Instance Pools API are used to create, edit, delete and list instance pools by
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "instance-pools",
+	Short:   `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Instance Pools API are used to create, edit, delete and list instance pools by
   using ready-to-use cloud instances which reduces a cluster start and
   auto-scaling times.
 
@@ -39,14 +45,13 @@ func New() *cobra.Command {
   the same pool for both.
 
   Databricks does not charge DBUs while instances are idle in the pool. Instance
-  provider billing does apply. See pricing.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  provider billing does apply. See pricing.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -63,8 +68,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

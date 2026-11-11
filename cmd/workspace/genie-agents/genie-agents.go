@@ -3,6 +3,7 @@
 package genie_agents
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,25 +21,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "genie-agents",
-		Short: `Genie provides a no-code experience for business users, powered by AI/BI.`,
-		Long: `Genie provides a no-code experience for business users, powered by AI/BI.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "genie-agents",
+	Short:   `Genie provides a no-code experience for business users, powered by AI/BI.`,
+	GroupID: "dashboards",
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Genie provides a no-code experience for business users, powered by AI/BI.
   Analysts set up Genie Agents that business users can use to ask questions
   using natural language. Genie uses data registered to Unity Catalog and
   requires at least CAN USE permission on a Pro or Serverless SQL warehouse.
-  Also, Databricks Assistant must be enabled.`,
-		GroupID: "dashboards",
+  Also, Databricks Assistant must be enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateGenieAgent())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-genie-agent command

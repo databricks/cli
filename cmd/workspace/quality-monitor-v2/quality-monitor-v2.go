@@ -3,6 +3,7 @@
 package quality_monitor_v2
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "quality-monitor-v2",
-		Short: `*Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "quality-monitor-v2",
+	Short:   `*Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
+	GroupID: "qualitymonitor",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 Deprecated: Please use the Data Quality Monitoring API instead (REST:
   /api/data-quality/v1/monitors). Manage data quality of UC objects (currently
-  support schema).`,
-		GroupID: "qualitymonitor",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  support schema).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateQualityMonitor())
@@ -46,8 +51,6 @@ Deprecated: Please use the Data Quality Monitoring API instead (REST:
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-quality-monitor command

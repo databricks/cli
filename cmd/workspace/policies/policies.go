@@ -3,6 +3,7 @@
 package policies
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "policies",
-		Short: `Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
-		Long: `Attribute-Based Access Control (ABAC) provides high leverage governance for
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "policies",
+	Short:   `Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Attribute-Based Access Control (ABAC) provides high leverage governance for
   enforcing compliance policies in Unity Catalog. With ABAC policies, access is
   controlled in a hierarchical and scalable manner, based on data attributes
   rather than specific resources, enabling more flexible and comprehensive
   access control. ABAC policies in Unity Catalog support conditions on securable
   properties, governance tags, and environment contexts. Callers must have the
   MANAGE privilege on a securable to view, create, update, or delete ABAC
-  policies.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  policies.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreatePolicy())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-policy command

@@ -3,6 +3,7 @@
 package disaster_recovery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,18 +21,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "disaster-recovery",
-		Short:   `Manage disaster recovery configurations and execute failover operations.`,
-		Long:    `Manage disaster recovery configurations and execute failover operations.`,
-		GroupID: "disasterrecovery",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "disaster-recovery",
+	Short:   `Manage disaster recovery configurations and execute failover operations.`,
+	GroupID: "disasterrecovery",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage disaster recovery configurations and execute failover operations.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateFailoverGroup())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-failover-group command

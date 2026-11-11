@@ -3,6 +3,7 @@
 package notification_destinations
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,22 +18,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "notification-destinations",
-		Short: `The notification destinations API lets you programmatically manage a workspace's notification destinations.`,
-		Long: `The notification destinations API lets you programmatically manage a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "notification-destinations",
+	Short:   `The notification destinations API lets you programmatically manage a workspace's notification destinations.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The notification destinations API lets you programmatically manage a
   workspace's notification destinations. Notification destinations are used to
   send notifications for query alerts and jobs to destinations outside of
   Databricks. Only workspace admins can create, update, and delete notification
-  destinations.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  destinations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

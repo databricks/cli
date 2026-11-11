@@ -3,6 +3,7 @@
 package agent_kit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,21 +21,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "agent-kit",
-		Short: `*Beta* APIs for managing agent memory and durable session state.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "agent-kit",
+	Short:   `*Beta* APIs for managing agent memory and durable session state.`,
+	GroupID: "agentbricks",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 APIs for managing agent memory and durable session state. This interface is
-  under active development and may change.`,
-		GroupID: "agentbricks",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  under active development and may change.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAppendSessionItems())
@@ -77,8 +82,6 @@ APIs for managing agent memory and durable session state. This interface is
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start append-session-items command

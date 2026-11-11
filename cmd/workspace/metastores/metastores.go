@@ -3,6 +3,7 @@
 package metastores
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "metastores",
-		Short: `A metastore is the top-level container of objects in Unity Catalog.`,
-		Long: `A metastore is the top-level container of objects in Unity Catalog. It stores
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "metastores",
+	Short:   `A metastore is the top-level container of objects in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A metastore is the top-level container of objects in Unity Catalog. It stores
   data assets (tables and views) and the permissions that govern access to them.
   Databricks account admins can create metastores and assign them to Databricks
   workspaces to control which workloads use each metastore. For a workspace to
@@ -34,14 +40,13 @@ func New() *cobra.Command {
   NOTE: This metastore is distinct from the metastore included in Databricks
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
-  catalog named hive_metastore.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  catalog named hive_metastore.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAssign())
@@ -60,8 +65,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start assign command

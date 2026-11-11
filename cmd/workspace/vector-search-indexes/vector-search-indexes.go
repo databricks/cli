@@ -3,6 +3,7 @@
 package vector_search_indexes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "vector-search-indexes",
-		Short: `**Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.`,
-		Long: `**Index**: An efficient representation of your embedding vectors that supports
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "vector-search-indexes",
+	Short:   `**Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.`,
+	GroupID: "vectorsearch",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `**Index**: An efficient representation of your embedding vectors that supports
   real-time and efficient approximate nearest neighbor (ANN) search queries.
 
   There are 2 types of AI Search indexes: - **Delta Sync Index**: An index that
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   updating the index as the underlying data in the Delta Table changes. -
   **Direct Vector Access Index**: An index that supports direct read and write
   of vectors and metadata through our REST and SDK APIs. With this model, the
-  user manages index updates.`,
-		GroupID: "vectorsearch",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  user manages index updates.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateIndex())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-index command

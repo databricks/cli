@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
+
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -13,18 +15,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Authentication related commands",
-		Long: `Authentication related commands. For more information regarding how
+// Spec declares the auth command.
+var Spec = root.CommandSpec{
+	Use:   "auth",
+	Short: "Authentication related commands",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Authentication related commands. For more information regarding how
 authentication for the Databricks CLI and SDKs work please refer to the documentation
 linked below.
 
 AWS: https://docs.databricks.com/dev-tools/auth/index.html
 Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
-GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
-	}
+GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`
 
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
@@ -39,7 +44,6 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	cmd.AddCommand(newDockerCommand())
 	cmd.AddCommand(newDescribeCommand())
 	cmd.AddCommand(newSwitchCommand())
-	return cmd
 }
 
 func promptForHost(ctx context.Context) (string, error) {

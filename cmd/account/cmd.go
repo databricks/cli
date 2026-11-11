@@ -3,6 +3,9 @@
 package account
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
@@ -47,52 +50,52 @@ import (
 	account_users "github.com/databricks/cli/cmd/account/users"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "account",
-		Short: `Databricks Account Commands`,
-	}
+// Spec declares the account command.
+var Spec = root.CommandSpec{
+	Use:   "account",
+	Short: `Databricks Account Commands`,
+	Build: buildCommand,
+}
 
-	cmd.AddCommand(account_access_control.New())
-	cmd.AddCommand(billable_usage.New())
-	cmd.AddCommand(budget_policy.New())
-	cmd.AddCommand(budgets.New())
-	cmd.AddCommand(credentials.New())
-	cmd.AddCommand(custom_app_integration.New())
-	cmd.AddCommand(disaster_recovery.New())
-	cmd.AddCommand(encryption_keys.New())
-	cmd.AddCommand(endpoints.New())
-	cmd.AddCommand(account_federation_policy.New())
-	cmd.AddCommand(account_groups_v2.New())
-	cmd.AddCommand(account_iam_v2.New())
-	cmd.AddCommand(account_ip_access_lists.New())
-	cmd.AddCommand(log_delivery.New())
-	cmd.AddCommand(account_metastore_assignments.New())
-	cmd.AddCommand(account_metastores.New())
-	cmd.AddCommand(network_connectivity.New())
-	cmd.AddCommand(network_policies.New())
-	cmd.AddCommand(networks.New())
-	cmd.AddCommand(o_auth_published_apps.New())
-	cmd.AddCommand(private_access.New())
-	cmd.AddCommand(private_network_gateways.New())
-	cmd.AddCommand(published_app_integration.New())
-	cmd.AddCommand(service_principal_federation_policy.New())
-	cmd.AddCommand(service_principal_secrets.New())
-	cmd.AddCommand(account_service_principals_v2.New())
-	cmd.AddCommand(account_settings.New())
-	cmd.AddCommand(account_settings_v2.New())
-	cmd.AddCommand(storage.New())
-	cmd.AddCommand(account_storage_credentials.New())
-	cmd.AddCommand(usage_dashboards.New())
-	cmd.AddCommand(account_users_v2.New())
-	cmd.AddCommand(vpc_endpoints.New())
-	cmd.AddCommand(workspace_assignment.New())
-	cmd.AddCommand(workspace_network_configuration.New())
-	cmd.AddCommand(workspaces.New())
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.AddCommand(root.NewCommand(ctx, account_access_control.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, billable_usage.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, budget_policy.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, budgets.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, credentials.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, custom_app_integration.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, disaster_recovery.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, encryption_keys.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, endpoints.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_federation_policy.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_groups_v2.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_iam_v2.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_ip_access_lists.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, log_delivery.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_metastore_assignments.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_metastores.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, network_connectivity.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, network_policies.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, networks.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, o_auth_published_apps.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, private_access.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, private_network_gateways.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, published_app_integration.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, service_principal_federation_policy.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, service_principal_secrets.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_service_principals_v2.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_settings.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_settings_v2.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, storage.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_storage_credentials.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, usage_dashboards.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_users_v2.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, vpc_endpoints.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, workspace_assignment.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, workspace_network_configuration.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, workspaces.Spec))
 
-	cmd.AddCommand(account_groups.New())
-	cmd.AddCommand(account_service_principals.New())
-	cmd.AddCommand(account_users.New())
-
-	return cmd
+	cmd.AddCommand(root.NewCommand(ctx, account_groups.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_service_principals.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_users.Spec))
 }

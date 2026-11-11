@@ -1,4 +1,4 @@
-package cmd_test
+package root_test
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
@@ -90,7 +91,7 @@ func newFuzzHarness(t *testing.T) *fuzzHarness {
 	baseCtx = cmdctx.SetAccountClient(baseCtx, ac)
 	baseCtx = cmdio.MockDiscard(baseCtx)
 
-	cli := cmd.New(baseCtx)
+	cli := root.BuildAll(baseCtx, cmd.New(baseCtx))
 
 	// Replace the real PersistentPreRunE (IO/logger/telemetry/user-agent init)
 	// with a no-op so it doesn't clobber the context we just set up.

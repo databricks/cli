@@ -12,22 +12,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// New returns the "completion" command with shell subcommands and
-// install/uninstall/status subcommands. Providing a command named
-// "completion" prevents Cobra's InitDefaultCompletionCmd from generating
-// its default, so we replicate the shell subcommands here with runtime
-// writer resolution to avoid the frozen-writer bug.
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "completion",
-		Short: "Generate the autocompletion script for the specified shell",
-		Long: `Generate the autocompletion script for databricks for the specified shell.
+// Spec declares the completion command.
+var Spec = root.CommandSpec{
+	Use:   "completion",
+	Short: "Generate the autocompletion script for the specified shell",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Generate the autocompletion script for databricks for the specified shell.
 See each sub-command's help for details on how to use the generated script.
-`,
-		Args:              cobra.NoArgs,
-		ValidArgsFunction: cobra.NoFileCompletions,
-		RunE:              root.ReportUnknownSubcommand,
-	}
+`
+	cmd.Args = cobra.NoArgs
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+	cmd.RunE = root.ReportUnknownSubcommand
 
 	cmd.AddCommand(
 		newBashCmd(),
@@ -38,8 +36,6 @@ See each sub-command's help for details on how to use the generated script.
 		newUninstallCmd(),
 		newStatusCmd(),
 	)
-
-	return cmd
 }
 
 func newBashCmd() *cobra.Command {

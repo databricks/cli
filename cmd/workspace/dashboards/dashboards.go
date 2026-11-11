@@ -3,6 +3,7 @@
 package dashboards
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dashboards",
-		Short: `In general, there is little need to modify dashboards using the API.`,
-		Long: `In general, there is little need to modify dashboards using the API. However,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "dashboards",
+	Short:   `In general, there is little need to modify dashboards using the API.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `In general, there is little need to modify dashboards using the API. However,
   it can be useful to use dashboard objects to look-up a collection of related
   query IDs. The API can also be used to duplicate multiple dashboards at once
   since you can get a dashboard definition with a GET request and then POST it
@@ -31,14 +37,13 @@ func New() *cobra.Command {
   **Warning**: This API is deprecated. Please use the AI/BI Dashboards API
   instead. [Learn more]
 
-  [Learn more]: https://docs.databricks.com/en/dashboards/`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Learn more]: https://docs.databricks.com/en/dashboards/`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

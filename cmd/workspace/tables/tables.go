@@ -3,6 +3,7 @@
 package tables
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tables",
-		Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
-		Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "tables",
+	Short:   `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A table resides in the third layer of Unity Catalog’s three-level namespace.
   It contains rows of data. To create a table, users must have CREATE_TABLE and
   USE_SCHEMA permissions on the schema, and they must have the USE_CATALOG
   permission on its parent catalog. To query a table, users must have the SELECT
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   parent catalog and the USE_SCHEMA permission on its parent schema.
 
   A table can be managed or external. From an API perspective, a __VIEW__ is a
-  particular kind of table (rather than a managed or external table).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  particular kind of table (rather than a managed or external table).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -52,8 +57,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

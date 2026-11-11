@@ -3,6 +3,7 @@
 package tag_policies
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,24 +19,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tag-policies",
-		Short: `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
-		Long: `The Tag Policy API allows you to manage policies for governed tags in
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "tag-policies",
+	Short:   `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
+	GroupID: "tags",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Tag Policy API allows you to manage policies for governed tags in
   Databricks. For Terraform usage, see the [Tag Policy Terraform documentation].
   Permissions for tag policies can be managed using the [Account Access Control
   Proxy API].
 
   [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
-  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`,
-		GroupID: "tags",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateTagPolicy())
@@ -48,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-tag-policy command

@@ -3,6 +3,7 @@
 package workspace_network_configuration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,24 +18,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspace-network-configuration",
-		Short: `These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.`,
-		Long: `These APIs allow configuration of network settings for Databricks workspaces
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-network-configuration",
+	Short:   `These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs allow configuration of network settings for Databricks workspaces
   by selecting which network policy to associate with the workspace. Each
   workspace is always associated with exactly one network policy that controls
   which network destinations can be accessed from the Databricks environment. By
   default, workspaces are associated with the 'default-policy' network policy.
   You cannot create or delete a workspace's network option, only update it to
-  associate the workspace with a different policy`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  associate the workspace with a different policy`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetWorkspaceNetworkOptionRpc())
@@ -44,8 +49,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-workspace-network-option-rpc command

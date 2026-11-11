@@ -1,15 +1,23 @@
 package bundle
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/bundle/deployment"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "bundle",
-		Short: "Declarative Automation Bundles let you express data/AI/analytics projects as code.",
-		Long: `Declarative Automation Bundles let you express data/AI/analytics projects as code.
+// Spec declares the bundle command.
+var Spec = root.CommandSpec{
+	Use:     "bundle",
+	Short:   "Declarative Automation Bundles let you express data/AI/analytics projects as code.",
+	GroupID: "development",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Declarative Automation Bundles let you express data/AI/analytics projects as code.
 
 Common workflows:
   databricks bundle init default-python      # Initialize new project
@@ -21,9 +29,7 @@ Import existing resources:
   databricks bundle generate job --existing-job-id 123 --key my_job # Generate job configuration
   databricks bundle deployment bind my_job 123                      # Link to an existing job
 
-Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html`,
-		GroupID: "development",
-	}
+Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html`
 
 	initVariableFlag(cmd)
 	cmd.AddCommand(newDeployCommand())
@@ -40,6 +46,4 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
-
-	return cmd
 }

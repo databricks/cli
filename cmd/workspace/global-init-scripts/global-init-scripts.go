@@ -3,6 +3,7 @@
 package global_init_scripts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "global-init-scripts",
-		Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
-		Long: `The Global Init Scripts API enables Workspace administrators to configure
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "global-init-scripts",
+	Short:   `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Global Init Scripts API enables Workspace administrators to configure
   global initialization scripts for their workspace. These scripts run on every
   node in every cluster in the workspace.
 
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   to global init scripts. Global init scripts are run in order. If the init
   script returns with a bad exit code, the Apache Spark container fails to
   launch and init scripts with later position are skipped. If enough containers
-  fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
