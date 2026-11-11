@@ -44,6 +44,7 @@ func resetUpdatePluginSeams(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsNoChanges(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	setupUpdateMock(t)
@@ -58,6 +59,7 @@ func TestUpdateCheckPrintsNoChanges(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsPluginState(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 
@@ -96,6 +98,7 @@ func TestUpdateCheckPrintsPluginState(t *testing.T) {
 }
 
 func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -170,6 +173,7 @@ func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 }
 
 func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -234,6 +238,7 @@ func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -280,6 +285,7 @@ func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
 }
 
 func TestUpdateDoesNotMigratePluginAgentWithoutManagedRawSkills(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -330,6 +336,7 @@ func TestUpdateDoesNotMigratePluginAgentWithoutManagedRawSkills(t *testing.T) {
 }
 
 func TestUpdateNoPruneFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	calls := setupUpdateMock(t)
 
@@ -344,6 +351,7 @@ func TestUpdateNoPruneFlag(t *testing.T) {
 }
 
 func TestUpdateScopeFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	tests := []struct {
 		name       string
 		args       []string
@@ -391,6 +399,7 @@ func TestUpdateScopeFlag(t *testing.T) {
 }
 
 func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	projectRoot := t.TempDir()

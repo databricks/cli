@@ -4,7 +4,7 @@ Error: resolve latest skills release: HTTP 403 fetching latest skills release
 
 === The lookup fails, so the manifest is never fetched
 
->>> print_requests.py --get
+>>> print_requests.py --get ^//telemetry-ext ^//.well-known
 {
   "method": "GET",
   "path": "/repos/databricks/databricks-agent-skills/releases/latest"

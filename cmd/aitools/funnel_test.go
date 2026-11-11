@@ -5,10 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
@@ -461,6 +465,89 @@ func TestInstallFunnelPluginSuccess(t *testing.T) {
 	assert.Equal(t, []protos.AitoolsAgentType{protos.AitoolsAgentTypeCodex}, events[len(events)-1].Agents)
 }
 
+func TestInstrumentedCommandsLogStartAndFinish(t *testing.T) {
+	isolateCommandEnv(t)
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := NewVersionCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+	require.NoError(t, cmd.Execute())
+
+	events := funnelEvents(ctx)
+	assert.Equal(t, []string{"STARTED", "FINISHED:SUCCESS:"}, funnelShape(events))
+	for _, e := range events {
+		assert.Equal(t, protos.AitoolsCommandVersion, e.Command)
+		assert.Empty(t, e.InstallMode)
+	}
+}
+
+// Every instrumented command must start the best-effort auth resolution, or
+// its events never upload (telemetry.Upload skips a command without auth
+// config). Each run ends early; the resolution starts before RunE anyway.
+func TestInstrumentedCommandsResolveAuth(t *testing.T) {
+	cases := []struct {
+		newCmd func() *cobra.Command
+		args   []string
+	}{
+		{newCmd: NewInstallCmd, args: []string{"--skills-only", "--path", "out"}},
+		{newCmd: NewUpdateCmd, args: []string{"--scope=bogus"}},
+		{newCmd: NewListCmd, args: []string{"--scope=bogus"}},
+		{newCmd: NewVersionCmd},
+		{newCmd: NewUninstallCmd, args: []string{"--scope=bogus"}},
+	}
+	for _, tc := range cases {
+		cmd := tc.newCmd()
+		t.Run(cmd.Name(), func(t *testing.T) {
+			isolateCommandEnv(t)
+			resolved := make(chan struct{}, 1)
+			setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error {
+				resolved <- struct{}{}
+				return nil
+			})
+
+			_, _, _ = runWithTelemetry(t, cmd, tc.args...)
+			select {
+			case <-resolved:
+			case <-time.After(5 * time.Second):
+				t.Fatal("the telemetry auth resolution never ran")
+			}
+		})
+	}
+}
+
+// list reports the scope a flag selects, and no scope (not the Unspecified
+// sentinel) when it shows both.
+func TestListFunnelFailure(t *testing.T) {
+	cases := []struct {
+		name      string
+		args      []string
+		wantScope protos.AitoolsInstallScope
+	}{
+		{name: "global", args: []string{"--scope=global"}, wantScope: protos.AitoolsInstallScopeGlobal},
+		{name: "no scope flag"},
+		{name: "both scopes", args: []string{"--scope=both"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := NewListCmd()
+			cmd.SetContext(ctx)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			require.NoError(t, cmd.ParseFlags(tc.args))
+			require.Error(t, cmd.RunE(cmd, nil))
+			events := funnelEvents(ctx)
+			assert.Equal(t, []string{"STARTED", "FINISHED:FAILURE:NETWORK"}, funnelShape(events))
+			assert.Equal(t, tc.wantScope, events[len(events)-1].Scope)
+		})
+	}
+}
+
 // A plugin failure for an auto-detected agent is only a warning (exit 0), but
 // when nothing got installed the funnel must not report SUCCESS.
 func TestInstallFunnelDetectedPluginFailureIsNotSuccess(t *testing.T) {
@@ -507,4 +594,319 @@ func TestNothingInstalledCategory(t *testing.T) {
 	assert.Equal(t, []protos.AitoolsCommandStep{protos.AitoolsCommandStepSkillsInstalled}, deliverySteps([]agentOutcome{failed, installed}))
 	assert.Equal(t, []protos.AitoolsCommandStep{protos.AitoolsCommandStepPluginsInstalled},
 		deliverySteps([]agentOutcome{failed, {agent: codex, delivery: deliveryPlugin, status: outcomeInstalled}}))
+}
+
+// isolateCommandEnv gives a full command run an empty HOME and cwd, no calling
+// agent (isolateAgents), the remaining config dir overrides derived from that
+// HOME, and a no-op telemetry auth resolver, so it reads no host state and
+// contacts nothing.
+func isolateCommandEnv(t *testing.T) {
+	isolateAgents(t)
+	noTelemetryAuth(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("AIDEVKIT_HOME", "")
+	t.Chdir(t.TempDir())
+}
+
+func TestUninstallDeclinedIsCancelled(t *testing.T) {
+	isolateCommandEnv(t)
+	globalDir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(globalDir, &installer.InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.2.6",
+		Skills:        map[string]string{"databricks-test": "1.0.0"},
+	}))
+	calls := setupUninstallMock(t)
+
+	ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+	go func() {
+		_, _ = test.Stdin.WriteString("n\n")
+		_ = test.Stdin.Flush()
+	}()
+
+	ctx := telemetry.WithNewLogger(ioCtx)
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+	require.NoError(t, cmd.Execute())
+
+	assert.Empty(t, *calls)
+	events := funnelEvents(ctx)
+	assert.Equal(t, []string{"STARTED", "FINISHED:CANCELLED:"}, funnelShape(events))
+	assert.True(t, events[0].Interactive)
+}
+
+// Update and uninstall with nothing installed keep their error (and exit code)
+// but report NOTHING_TO_DO, not an uncategorized failure.
+func TestNothingInstalledFinishesNothingToDo(t *testing.T) {
+	const projectNotInstalled = "no project-scoped skills found in the current directory."
+	const global, project = protos.AitoolsInstallScopeGlobal, protos.AitoolsInstallScopeProject
+	cases := []struct {
+		name      string
+		newCmd    func() *cobra.Command
+		args      []string
+		command   protos.AitoolsCommand
+		wantErr   string
+		wantScope protos.AitoolsInstallScope
+	}{
+		{name: "update", newCmd: NewUpdateCmd, command: protos.AitoolsCommandUpdate, wantErr: "no skills or plugins installed. Run 'databricks aitools install' to install", wantScope: global},
+		{name: "uninstall", newCmd: NewUninstallCmd, command: protos.AitoolsCommandUninstall, wantErr: "no skills or plugins installed", wantScope: global},
+		// The scope error comes before the scope is resolved; the flag still sets it.
+		{name: "update project scope", newCmd: NewUpdateCmd, args: []string{"--scope=project"}, command: protos.AitoolsCommandUpdate, wantErr: projectNotInstalled, wantScope: project},
+		{name: "uninstall project scope", newCmd: NewUninstallCmd, args: []string{"--scope=project"}, command: protos.AitoolsCommandUninstall, wantErr: projectNotInstalled, wantScope: project},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			// Nothing may be fetched; an unreachable source makes any fetch fail.
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := tc.newCmd()
+			cmd.SetContext(ctx)
+			cmd.SetArgs(append([]string{}, tc.args...))
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+
+			// The exact project-scope text is pinned by TestScopeNotInstalledError*.
+			err := cmd.Execute()
+			require.Error(t, err)
+			assert.True(t, strings.HasPrefix(err.Error(), tc.wantErr), err.Error())
+			if tc.args == nil {
+				assert.EqualError(t, err, tc.wantErr)
+			}
+			assert.ErrorIs(t, err, installer.ErrNothingInstalled)
+
+			events := funnelEvents(ctx)
+			assert.Equal(t, []string{"STARTED", "FINISHED:NOTHING_TO_DO:"}, funnelShape(events))
+			for _, e := range events {
+				assert.Equal(t, tc.command, e.Command)
+			}
+			assert.Equal(t, tc.wantScope, events[len(events)-1].Scope)
+		})
+	}
+}
+
+// Scope flag errors of update, list and uninstall finish INVALID_FLAGS, as
+// install's do, and keep their message.
+func TestScopeFlagErrorsFinishInvalidFlags(t *testing.T) {
+	cases := []struct {
+		name          string
+		newCmd        func() *cobra.Command
+		args          []string
+		bothInstalled bool
+		wantErr       string
+	}{
+		{name: "list invalid scope", newCmd: NewListCmd, args: []string{"--scope=bogus"}, wantErr: `invalid --scope "bogus": must be one of project, global, both`},
+		{name: "list project and global", newCmd: NewListCmd, args: []string{"--project", "--global"}, wantErr: "cannot use --global and --project together"},
+		{name: "update scope with project", newCmd: NewUpdateCmd, args: []string{"--scope=global", "--project"}, wantErr: "cannot use --scope with --project or --global; --project and --global are deprecated aliases for --scope"},
+		{name: "update both scopes installed", newCmd: NewUpdateCmd, bothInstalled: true, wantErr: "skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update"},
+		{name: "uninstall scope both", newCmd: NewUninstallCmd, args: []string{"--scope=both"}, wantErr: "--scope=both is not supported for this command; use 'project' or 'global'"},
+		{name: "uninstall project and global", newCmd: NewUninstallCmd, args: []string{"--project", "--global"}, wantErr: "cannot uninstall both scopes at once; run uninstall separately with --scope=global and --scope=project"},
+		{name: "uninstall both scopes installed", newCmd: NewUninstallCmd, bothInstalled: true, wantErr: "skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			// Nothing may be fetched; an unreachable source makes any fetch fail.
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+			if tc.bothInstalled {
+				globalDir, err := installer.GlobalSkillsDir(t.Context())
+				require.NoError(t, err)
+				projectDir, err := installer.ProjectSkillsDir(t.Context())
+				require.NoError(t, err)
+				for _, dir := range []string{globalDir, projectDir} {
+					require.NoError(t, installer.SaveState(dir, &installer.InstallState{SchemaVersion: 2, Release: "v0.2.6", Skills: map[string]string{"databricks": "0.2.6"}}))
+				}
+			}
+
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := tc.newCmd()
+			cmd.SetContext(ctx)
+			cmd.SetArgs(append([]string{}, tc.args...))
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+
+			assert.EqualError(t, cmd.Execute(), tc.wantErr)
+			assert.Equal(t, []string{"STARTED", "FINISHED:FAILURE:INVALID_FLAGS"}, funnelShape(funnelEvents(ctx)))
+		})
+	}
+}
+
+var errCodexNotOnPath = &installer.BlockedError{Agent: agents.NameCodex, Reason: installer.ReasonCLINotOnPath}
+
+// testPluginRecords are the plugins saveGlobalState records: Codex and Claude Code.
+var testPluginRecords = map[string]installer.PluginRecord{
+	agents.NameCodex:      {Plugin: "databricks", Version: "0.2.6"},
+	agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Version: "0.2.6"},
+}
+
+// saveGlobalState records a global install of testPluginRecords plus the given
+// file skills (none for a plugin-only install), and returns its dir.
+func saveGlobalState(t *testing.T, skills map[string]string) string {
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion: 2,
+		Release:       "v0.2.6",
+		Skills:        skills,
+		Plugins:       testPluginRecords,
+	}))
+	return dir
+}
+
+// Plugin failures are warnings (exit 0), but an update in which no plugin got
+// updated and nothing else ran did nothing and must not report SUCCESS.
+func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
+	codexFailed := installer.PluginUpdate{Agent: "Codex CLI", Err: errCodexNotOnPath}
+	cases := []struct {
+		name      string
+		skills    map[string]string
+		noPlugins bool
+		results   []installer.PluginUpdate
+		migrate   bool
+		check     bool
+		refErr    error
+		checkErr  error
+		want      string
+	}{
+		{name: "all plugins failed", results: []installer.PluginUpdate{codexFailed}, want: "FINISHED:FAILURE:CLI_NOT_ON_PATH"},
+		{name: "one of two plugins failed", results: []installer.PluginUpdate{{Agent: "Claude Code", Version: "0.2.7"}, codexFailed}, want: "FINISHED:SUCCESS:"},
+		{name: "plugin failed, file skills reconciled", skills: map[string]string{"databricks": "0.2.6"}, results: []installer.PluginUpdate{codexFailed}, want: "FINISHED:SUCCESS:"},
+		{name: "plugin failed, raw skills migrated", results: []installer.PluginUpdate{codexFailed}, migrate: true, want: "FINISHED:SUCCESS:"},
+		{name: "skills ref lookup failed", refErr: fmt.Errorf("resolve latest skills release: %w", context.DeadlineExceeded), want: "FINISHED:FAILURE:TIMEOUT"},
+		{name: "check, plugins checked", check: true, want: "FINISHED:SUCCESS:"},
+		{name: "check, skills ref lookup failed", check: true, refErr: fmt.Errorf("resolve latest skills release: %w", context.DeadlineExceeded), want: "FINISHED:FAILURE:TIMEOUT"},
+		{name: "check, skills manifest fetch failed", skills: map[string]string{"databricks": "0.2.6"}, noPlugins: true, check: true, checkErr: fmt.Errorf("fetch manifest: %w", context.DeadlineExceeded), want: "FINISHED:FAILURE:TIMEOUT"},
+		{name: "check, skills manifest fetch failed, plugins checked", skills: map[string]string{"databricks": "0.2.6"}, check: true, checkErr: fmt.Errorf("fetch manifest: %w", context.DeadlineExceeded), want: "FINISHED:SUCCESS:"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			dir := saveGlobalState(t, tc.skills)
+			if tc.noPlugins {
+				require.NoError(t, installer.SaveState(dir, &installer.InstallState{SchemaVersion: 2, Release: "v0.2.6", Skills: tc.skills}))
+			}
+			resetUpdatePluginSeams(t)
+			origRef, origUpdateSkills := updateGetSkillsRefFn, updateSkillsFn
+			t.Cleanup(func() { updateGetSkillsRefFn, updateSkillsFn = origRef, origUpdateSkills })
+
+			updateGetSkillsRefFn = func(context.Context) (string, bool, error) {
+				return "v0.2.7", true, tc.refErr
+			}
+			updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+				assert.False(t, tc.check, "--check must not update plugins")
+				return tc.results, nil
+			}
+			reconciled := 0
+			updateSkillsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.UpdateOptions) (*installer.UpdateResult, error) {
+				reconciled++
+				return &installer.UpdateResult{CheckErr: tc.checkErr}, nil
+			}
+			// Migrate Copilot's raw skills to a plugin, leaving no file skills
+			// behind, so only the migration counts as work done.
+			hasManagedRawSkillsForAgentFn = func(_ context.Context, a *agents.Agent, _ string) (bool, error) {
+				return tc.migrate && a.Name == agents.NameCopilot, nil
+			}
+			updateInstallPluginForAgentFn = func(context.Context, *agents.Agent, string, string) (installer.PluginRecord, error) {
+				return installer.PluginRecord{Plugin: "databricks", Version: "0.2.7"}, nil
+			}
+			updateRecordPluginInstallsFn = func(_ context.Context, _ string, records map[string]installer.PluginRecord, _ string) error {
+				plugins := maps.Clone(testPluginRecords)
+				maps.Copy(plugins, records)
+				return installer.SaveState(dir, &installer.InstallState{SchemaVersion: 2, Release: "v0.2.7", Plugins: plugins})
+			}
+			updateCleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := NewUpdateCmd()
+			cmd.SetContext(ctx)
+			args := []string{"--scope=global"}
+			if tc.check {
+				args = append(args, "--check")
+			}
+			cmd.SetArgs(args)
+			require.NoError(t, cmd.Execute())
+			events := funnelEvents(ctx)
+			assert.Equal(t, []string{"STARTED", tc.want}, funnelShape(events))
+			assert.Equal(t, protos.AitoolsInstallScopeGlobal, events[len(events)-1].Scope)
+			if tc.skills == nil {
+				assert.Zero(t, reconciled, "an install without file skills has nothing to reconcile")
+			}
+		})
+	}
+}
+
+// Plugin and skill removal failures are warnings (exit 0), but an uninstall
+// that removed nothing because every removal failed must not report SUCCESS.
+func TestUninstallFunnelWhenRemovalsFail(t *testing.T) {
+	skillFailed := fmt.Errorf("remove skill: %w", fs.ErrPermission)
+	cases := []struct {
+		name       string
+		args       []string
+		result     installer.UninstallResult
+		want       string
+		wantAgents []protos.AitoolsAgentType
+	}{
+		{name: "all plugins failed", result: installer.UninstallResult{PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:FAILURE:CLI_NOT_ON_PATH"},
+		{name: "nothing to remove for the targeted agent", args: []string{"--agents=cursor"}, want: "FINISHED:NOTHING_TO_DO:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeCursor}},
+		{name: "skill removed for the targeted agent", args: []string{"--agents=cursor"}, result: installer.UninstallResult{SkillsRemoved: 1}, want: "FINISHED:SUCCESS:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeCursor}},
+		{name: "one of two plugins failed", result: installer.UninstallResult{PluginsRemoved: 1, PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:SUCCESS:"},
+		{name: "plugin failed, skills removed", result: installer.UninstallResult{SkillsRemoved: 1, PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:SUCCESS:"},
+		{name: "all skill removals failed", result: installer.UninstallResult{SkillFailures: []error{skillFailed}}, want: "FINISHED:FAILURE:PERMISSION_DENIED"},
+		{name: "skill removal failed, plugin removed", result: installer.UninstallResult{PluginsRemoved: 1, SkillFailures: []error{skillFailed}}, want: "FINISHED:SUCCESS:"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			saveGlobalState(t, nil)
+			orig := uninstallSkillsFn
+			t.Cleanup(func() { uninstallSkillsFn = orig })
+			uninstallSkillsFn = func(context.Context, installer.UninstallOptions) (*installer.UninstallResult, error) {
+				return &tc.result, nil
+			}
+
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := NewUninstallCmd()
+			cmd.SetContext(ctx)
+			cmd.SetArgs(append([]string{"--scope=global"}, tc.args...))
+			require.NoError(t, cmd.Execute())
+			events := funnelEvents(ctx)
+			assert.Equal(t, []string{"STARTED", tc.want}, funnelShape(events))
+			finished := events[len(events)-1]
+			assert.Equal(t, protos.AitoolsInstallScopeGlobal, finished.Scope)
+			assert.Equal(t, tc.wantAgents, finished.Agents)
+		})
+	}
+}
+
+// A confirm prompt that fails (stdin closed, Ctrl-D) finishes PROMPT_FAILED,
+// as install's prompts do, not as an uncategorized failure.
+func TestUninstallConfirmPromptFailure(t *testing.T) {
+	isolateCommandEnv(t)
+	saveGlobalState(t, map[string]string{"databricks": "0.2.6"})
+	calls := setupUninstallMock(t)
+
+	ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, io.Discard))
+	ctx = telemetry.WithNewLogger(ctx)
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope=global"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	assert.ErrorIs(t, cmd.Execute(), io.EOF)
+
+	assert.Empty(t, *calls)
+	assert.Equal(t, []string{"STARTED", "FINISHED:FAILURE:PROMPT_FAILED"}, funnelShape(funnelEvents(ctx)))
 }

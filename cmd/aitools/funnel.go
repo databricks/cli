@@ -6,9 +6,11 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/spf13/cobra"
 )
 
 // commandFunnel emits the AitoolsCommandEvent funnel of one aitools subcommand
@@ -38,7 +40,15 @@ func startFunnel(ctx context.Context, command protos.AitoolsCommand, installMode
 }
 
 // setScope records the resolved scope (installer.ScopeGlobal/ScopeProject).
-func (f *commandFunnel) setScope(scope string) { f.scope = scopeType(scope) }
+// An empty scope (none or both selected) leaves the field unset, so the event
+// omits it rather than sending the Unspecified sentinel.
+func (f *commandFunnel) setScope(scope string) {
+	if scope == "" {
+		f.scope = ""
+		return
+	}
+	f.scope = scopeType(scope)
+}
 
 // setAgents records the plan's agents, reported on the FINISHED event.
 func (f *commandFunnel) setAgents(plan []agentPlanItem) { f.agents = agentsField(plan) }
@@ -56,13 +66,16 @@ func (f *commandFunnel) step(ctx context.Context, s protos.AitoolsCommandStep) {
 }
 
 // finish logs the FINISHED event for a run that returned err: SUCCESS for nil,
-// CANCELLED when the user aborted a prompt or picked no agents, FAILURE
-// otherwise. No-op once the run has finished, so it is safe to defer after an
-// explicit finishWith.
+// NOTHING_TO_DO when update or uninstall found nothing installed (the command
+// still exits non-zero), CANCELLED when the user aborted a prompt or picked no
+// agents, FAILURE otherwise. No-op once the run has finished, so it is safe to
+// defer after an explicit finishWith.
 func (f *commandFunnel) finish(ctx context.Context, err error) {
 	switch {
 	case err == nil:
 		f.finishWith(ctx, protos.AitoolsCommandOutcomeSuccess, protos.AitoolsErrorCategoryUnspecified)
+	case errors.Is(err, installer.ErrNothingInstalled):
+		f.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
 	case errors.Is(err, huh.ErrUserAborted):
 		f.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUserAborted)
 	case errors.Is(err, errNoAgentsSelected):
@@ -100,6 +113,27 @@ func (f *commandFunnel) log(ctx context.Context, e protos.AitoolsCommandEvent) {
 	e.InstallMode = f.installMode
 	e.Scope = f.scope
 	telemetry.Log(ctx, protos.DatabricksCliLog{AitoolsCommandEvent: &e})
+}
+
+// withCommandFunnel wraps a subcommand's RunE so every run logs STARTED and
+// FINISHED (outcome from the returned error).
+func withCommandFunnel(command protos.AitoolsCommand, runE func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) (err error) {
+		f := startFunnel(cmd.Context(), command, "")
+		defer func() { f.finish(cmd.Context(), err) }()
+		cmd.SetContext(context.WithValue(cmd.Context(), funnelKey{}, f))
+		return runE(cmd, args)
+	}
+}
+
+type funnelKey struct{}
+
+// funnelFrom returns the funnel withCommandFunnel put on ctx. Only the RunE of
+// a command wrapped by instrumentCommand calls it, for outcomes its returned
+// error does not tell (see finishWith) and for the scope and agents it
+// resolves.
+func funnelFrom(ctx context.Context) *commandFunnel {
+	return ctx.Value(funnelKey{}).(*commandFunnel)
 }
 
 // installModeType maps the install delivery flags to the telemetry enum.

@@ -306,3 +306,29 @@ func scopeType(scope string) protos.AitoolsInstallScope {
 		return protos.AitoolsInstallScopeUnspecified
 	}
 }
+
+// instrumentCommand makes an aitools subcommand log its STARTED and FINISHED
+// funnel events, and resolves auth best-effort so they can upload at exit.
+// The end of a run does not wait for an unfinished resolution (the events
+// upload only if it has already finished) unless RunE calls
+// waitForTelemetryAuth, once the run gets past its cheap early exits.
+func instrumentCommand(cmd *cobra.Command, command protos.AitoolsCommand) *cobra.Command {
+	runE := withCommandFunnel(command, cmd.RunE)
+	var auth *telemetryAuth
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(context.WithValue(cmd.Context(), telemetryAuthKey{}, auth))
+		return runE(cmd, args)
+	}
+	auth = withTelemetryAuth(cmd)
+	return cmd
+}
+
+type telemetryAuthKey struct{}
+
+// waitForTelemetryAuth makes the end of an instrumented run wait for the auth
+// resolution within telemetryAuthBudget, as install does past its plan
+// confirmation. Only the RunE of a command wrapped by instrumentCommand calls
+// it.
+func waitForTelemetryAuth(ctx context.Context) {
+	ctx.Value(telemetryAuthKey{}).(*telemetryAuth).waitAtExit = true
+}
