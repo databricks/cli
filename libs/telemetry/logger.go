@@ -31,6 +31,12 @@ const (
 	timeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_TIMEOUT"
 )
 
+// Disabled reports whether the user opted out of telemetry, in which case
+// Upload sends nothing.
+func Disabled(ctx context.Context) bool {
+	return env.Get(ctx, disableEnvVar) != ""
+}
+
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	// A missing logger means telemetry was never initialized on this context
 	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
@@ -98,7 +104,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	// Telemetry is disabled. We don't upload logs.
-	if env.Get(ctx, disableEnvVar) != "" {
+	if Disabled(ctx) {
 		log.Debugf(ctx, "telemetry upload is disabled. Not uploading any logs.")
 		return nil
 	}
@@ -334,7 +340,8 @@ func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs 
 
 // BufferedEvents returns the events logged on ctx, or nil when ctx has no
 // logger. Upload does not clear them. Tests in other packages use it to assert
-// what a command logs without uploading.
+// what a command logs without uploading; cmd/aitools uses it to skip waiting
+// for telemetry auth when there is nothing to upload.
 func BufferedEvents(ctx context.Context) []protos.DatabricksCliLog {
 	l, ok := loggerFromContext(ctx)
 	if !ok {
