@@ -1232,7 +1232,7 @@ resources:
               "$fields":
                 "resource":
                   "description": |-
-                    Key of the resource to depend on, as `foo` or `jobs.foo`.
+                    Key of the resource to depend on, as `foo` or `jobs.foo`, or of its grants or permissions, as `schemas.foo.grants`.
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.

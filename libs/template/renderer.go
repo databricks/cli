@@ -29,6 +29,9 @@ type renderer struct {
 	// this "dot" value
 	config map[string]any
 
+	// Exposed to templates as .workspace when set, see templateData.
+	workspace *workspaceContext
+
 	// A base template with helper functions and user defined templates in the
 	// library directory loaded. This is cloned for each project template computation
 	// during file tree walk
@@ -146,7 +149,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 
 	// Execute template and get result
 	result := strings.Builder{}
-	err = tmpl.Execute(&result, r.config)
+	err = tmpl.Execute(&result, templateData(r.config, r.workspace))
 	if err != nil {
 		// Parse and return a more readable error for missing values that are used
 		// by the template definition but are not provided in the passed config.

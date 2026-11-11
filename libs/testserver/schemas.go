@@ -86,7 +86,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		return *errResponse
 	}
 
-	var schemaUpdate catalog.SchemaInfo
+	var schemaUpdate catalog.UpdateSchema
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
 		return Response{
@@ -97,12 +97,80 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 
 	applyUpdatedFields(&existing, schemaUpdate, fields)
 
+	if schemaUpdate.NewName != "" {
+		delete(s.Schemas, name)
+		oldName := existing.Name
+		// UC normalizes schema names to lowercase.
+		existing.Name = strings.ToLower(schemaUpdate.NewName)
+		existing.FullName = existing.CatalogName + "." + existing.Name
+		s.moveSchemaChildren(existing.CatalogName, oldName, existing.Name)
+	}
+
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Schemas[name] = existing
+	s.Schemas[existing.FullName] = existing
 
 	return Response{
 		Body: existing,
 	}
+}
+
+// moveSchemaChildren mirrors UC, where the volumes, registered models and secrets of a renamed schema move with it.
+func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchemaName string) {
+	for key, volume := range s.Volumes {
+		if volume.CatalogName != catalogName || volume.SchemaName != oldSchemaName {
+			continue
+		}
+		delete(s.Volumes, key)
+		volume.SchemaName = newSchemaName
+		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
+		s.Volumes[volume.FullName] = volume
+	}
+	for key, model := range s.RegisteredModels {
+		if model.CatalogName != catalogName || model.SchemaName != oldSchemaName {
+			continue
+		}
+		model.SchemaName = newSchemaName
+		s.moveRegisteredModel(key, model)
+	}
+	for key, secret := range s.UCSecrets {
+		if secret.CatalogName != catalogName || secret.SchemaName != oldSchemaName {
+			continue
+		}
+		delete(s.UCSecrets, key)
+		secret.SchemaName = newSchemaName
+		secret.FullName = catalogName + "." + newSchemaName + "." + secret.Name
+		s.UCSecrets[secret.FullName] = secret
+	}
+}
+
+// SchemasDelete mirrors UC, where deleting a schema with force deletes the volumes, registered models and secrets in it too.
+func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
+	defer s.LockUnlock()()
+
+	schema, ok := s.Schemas[fullName]
+	if !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
+	delete(s.Schemas, fullName)
+	if req.URL.Query().Get("force") == "true" {
+		for key, volume := range s.Volumes {
+			if volume.CatalogName == schema.CatalogName && volume.SchemaName == schema.Name {
+				delete(s.Volumes, key)
+			}
+		}
+		for key, model := range s.RegisteredModels {
+			if model.CatalogName == schema.CatalogName && model.SchemaName == schema.Name {
+				delete(s.RegisteredModels, key)
+				delete(s.RegisteredModelVersions, key)
+			}
+		}
+		for key, secret := range s.UCSecrets {
+			if secret.CatalogName == schema.CatalogName && secret.SchemaName == schema.Name {
+				delete(s.UCSecrets, key)
+			}
+		}
+	}
+	return Response{}
 }

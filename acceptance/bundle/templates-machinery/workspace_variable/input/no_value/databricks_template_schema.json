@@ -1,0 +1,10 @@
+{
+    "welcome_message": "Welcome, {{ .workspace }}",
+    "properties": {
+        "workspace": {
+            "type": "string",
+            "description": "Workspace name",
+            "default": "team-prod"
+        }
+    }
+}

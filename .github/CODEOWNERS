@@ -10,8 +10,8 @@
 /python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
-/cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
-/acceptance/pipelines/                  @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/                         @databricks/eng-deco-cli @databricks/eng-pipelines
+/acceptance/pipelines/                  @databricks/eng-deco-cli @databricks/eng-pipelines
 
 # Labs
 /cmd/labs/                              @databricks/eng-deco-cli @alexott @asnare
