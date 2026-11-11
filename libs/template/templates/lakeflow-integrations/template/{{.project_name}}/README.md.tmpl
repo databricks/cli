@@ -20,8 +20,11 @@ Define jobs that run them under `resources/`.
 1. Open this bundle in a Databricks workspace.
 2. Click the **deployments rocket** 🚀 in the left sidebar to open the
    **Deployments** panel, then click **Deploy**.
-3. After you add a job under `resources/` and deploy it, run it: hover over the resource in the **Deployments** panel
-   and click **Run**.
+3. To make the deployed integrations appear in the task palette, add them to `/Workspace/Users/<user>/.lakeflow_integrations.yml`. For example:
+  ```yaml
+  integrations:
+    - '/Workspace/Users/<user>/.bundle/<bundle>/dev/artifacts/.internal/*.yml'
+  ```
 
 ## Documentation
 
