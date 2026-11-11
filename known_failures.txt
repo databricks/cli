@@ -13,3 +13,7 @@
 # We also support wildcards inside the path
 # acceptance TestAccept/bundle/*/DMS=true/    # all DMS=true permutations
 # acceptance TestAccept/bundle/*/something    # all test paths ending in /something
+
+# go/cli/dashboard/error/639: re-creating a synced table fails with 409 ALREADY_EXISTS (backend bug), added 2026-11-11
+acceptance TestAccept/bundle/resources/postgres_synced_tables/recreate/DMS=
+acceptance TestAccept/bundle/resources/postgres_synced_tables/recreate/DMS=true
