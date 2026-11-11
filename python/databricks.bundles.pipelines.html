@@ -74,6 +74,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.feature_specs.html">Feature Specs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
@@ -536,6 +537,25 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfidentialComputeType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConfidentialComputeType</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfidentialComputeType" title="Link to this definition">¶</a></dt>
+<dd><p>Confidential computing technology for GCP instances.
+Aligns with gcloud’s –confidential-compute-type flag and the REST API’s
+confidentialInstanceConfig.confidentialInstanceType field.
+See: <a class="reference external" href="https://cloud.google.com/confidential-computing/confidential-vm/docs/create-a-confidential-vm-instance">https://cloud.google.com/confidential-computing/confidential-vm/docs/create-a-confidential-vm-instance</a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfidentialComputeType.CONFIDENTIAL_COMPUTE_TYPE_NONE">
+<span class="sig-name descname"><span class="pre">CONFIDENTIAL_COMPUTE_TYPE_NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CONFIDENTIAL_COMPUTE_TYPE_NONE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConfidentialComputeType.CONFIDENTIAL_COMPUTE_TYPE_NONE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfidentialComputeType.SEV_SNP">
+<span class="sig-name descname"><span class="pre">SEV_SNP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SEV_SNP'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConfidentialComputeType.SEV_SNP" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluenceConnectorOptions">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConfluenceConnectorOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions" title="Link to this definition">¶</a></dt>
 <dd><p>Confluence specific options for ingestion</p>
@@ -792,7 +812,7 @@ If not specified all days of the week will be used.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.DependsOn.resource">
 <span class="sig-name descname"><span class="pre">resource</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.DependsOn.resource" title="Link to this definition">¶</a></dt>
-<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>.</p>
+<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>, or of its grants or permissions, as <cite>schemas.foo.grants</cite>.</p>
 </dd></dl>
 
 <dl class="py method">

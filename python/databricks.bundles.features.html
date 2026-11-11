@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Genie Spaces" href="databricks.bundles.genie_spaces.html" />
-    <link rel="prev" title="External Locations" href="databricks.bundles.external_locations.html" />
+    <link rel="prev" title="Feature Specs" href="databricks.bundles.feature_specs.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -74,6 +74,7 @@
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.feature_specs.html">Feature Specs</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Features</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.features">Classes</a></li>
 </ul>
@@ -105,7 +106,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="databricks.bundles.external_locations.html" title="previous chapter">External Locations</a></li>
+      <li>Previous: <a href="databricks.bundles.feature_specs.html" title="previous chapter">Feature Specs</a></li>
       <li>Next: <a href="databricks.bundles.genie_spaces.html" title="next chapter">Genie Spaces</a></li>
   </ul></li>
 </ul>
@@ -555,7 +556,7 @@ If transformation_sql is not provided, all columns of the delta table are presen
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.features.DependsOn.resource">
 <span class="sig-name descname"><span class="pre">resource</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.features.DependsOn.resource" title="Link to this definition">¶</a></dt>
-<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>.</p>
+<dd><p>Key of the resource to depend on, as <cite>foo</cite> or <cite>jobs.foo</cite>, or of its grants or permissions, as <cite>schemas.foo.grants</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
