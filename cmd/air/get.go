@@ -111,7 +111,7 @@ func newGetCommand() *cobra.Command {
 		Short: "Show a run's status, configuration, and timing",
 		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},

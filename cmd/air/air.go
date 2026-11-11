@@ -31,8 +31,9 @@ func New() *cobra.Command {
 		GroupID: "development",
 		Long: `Run GPU workloads on Databricks serverless compute.
 
-Describe a workload in a YAML file and submit it with "air run". Follow its
-progress with "air list", "air get", and "air logs".`,
+Describe a workload in a YAML file and submit it with "databricks air run".
+Follow a run with "databricks air logs" and "databricks air get", or see your
+active runs with "databricks air list".`,
 	}
 
 	cmd.AddGroup(

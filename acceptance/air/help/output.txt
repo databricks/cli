@@ -4,8 +4,9 @@
 >>> [CLI] air --help
 Run GPU workloads on Databricks serverless compute.
 
-Describe a workload in a YAML file and submit it with "air run". Follow its
-progress with "air list", "air get", and "air logs".
+Describe a workload in a YAML file and submit it with "databricks air run".
+Follow a run with "databricks air logs" and "databricks air get", or see your
+active runs with "databricks air list".
 
 Usage:
   databricks air [command]
@@ -85,7 +86,7 @@ Global Flags:
 >>> [CLI] air get --help
 Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run".
 
 Usage:
   databricks air get JOB_RUN_ID [flags]
@@ -190,7 +191,7 @@ Global Flags:
 Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run".
 
 Usage:
   databricks air logs JOB_RUN_ID [flags]
