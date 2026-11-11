@@ -108,6 +108,10 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err := json.Unmarshal(raw, &data); err != nil {
 		return false, fmt.Errorf("parsing migrated state: %w", err)
 	}
+	// The terraform state has no internal IDs (schema_id, volume_id); the plan check read them.
+	if err := direct.RecordMissingInternalIDs(plan, &data); err != nil {
+		return false, fmt.Errorf("recording internal ids in migrated state: %w", err)
+	}
 	b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
 
 	// Announce the migration only once the conversion and plan check succeeded, so a run with no
