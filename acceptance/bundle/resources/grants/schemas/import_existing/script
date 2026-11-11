@@ -1,0 +1,58 @@
+SCHEMA_NAME=schema_grants_import_$UNIQUE_NAME
+SCHEMA_FULL_NAME=main.$SCHEMA_NAME
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Deploy schema without managing grants"
+envsubst < schema_only.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+title "Add matching grants out of band"
+envsubst < update.json > update.rendered.json
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.rendered.json > LOG.seed
+print_requests.py //unity-catalog/permissions > LOG.seed_requests
+
+title "Plan matching grants without writing state"
+envsubst < with_grants_match.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+trace $CLI bundle plan -o json > plan.json
+jq '.plan["resources.schemas.grants_schema.grants"]' plan.json > out.plan.match.json
+trace print_state.py | jq '.state["resources.schemas.grants_schema.grants"]'
+
+title "Adopt matching grants without updating permissions"
+trace $CLI bundle deploy $(readplanarg plan.json)
+trace print_requests.py //unity-catalog/permissions
+trace print_state.py | jq '.state["resources.schemas.grants_schema.grants"]'
+trace $CLI bundle plan
+
+title "Empty the adopted grants and verify revocation"
+envsubst < with_grants_empty.yml.tmpl > databricks.yml
+trace $CLI bundle plan -o json > plan.json
+trace $CLI bundle deploy $(readplanarg plan.json)
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" | jq '[.privilege_assignments[]? | {principal, privileges}]'
+trace print_state.py | jq '.state["resources.schemas.grants_schema.grants"]'
+trace $CLI bundle plan
+
+title "Import differing grants, including an extra principal"
+envsubst < update_differ.json > update.rendered.json
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.rendered.json > LOG.seed_differ
+envsubst < with_grants_differ.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "update schemas.grants_schema.grants"
+trace $CLI bundle plan -o json > plan.json
+# The current principal is a UUID on cloud and an email locally. Sort by its role
+# before output replacements so both runs have the same assignment and change order.
+jq --arg principal "$CURRENT_USER_NAME" '
+    .plan["resources.schemas.grants_schema.grants"]
+    | .remote_state.__embed__ |= sort_by(.principal == $principal)
+    | .changes |= (to_entries | sort_by(.key | contains($principal)) | from_entries)
+' plan.json > out.plan.differ.json
+trace print_state.py | jq '.state["resources.schemas.grants_schema.grants"]'
+
+title "Apply the import and revoke grants absent from config"
+trace $CLI bundle deploy $(readplanarg plan.json)
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" | jq '[.privilege_assignments[]? | {principal, privileges}] | sort_by(.principal)'
+trace $CLI bundle plan

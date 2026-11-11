@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+update_file.py databricks.yml 'grants: []' "grants: [{principal: $CURRENT_USER_NAME, privileges: [USE_SCHEMA]}]"
+
+title "An unexpected read failure must fail planning and deployment"
+fault.py 'GET /api/2.1/unity-catalog/permissions/**' 403 0 2 PERMISSION_DENIED
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace print_state.py | jq '.state["resources.schemas.grants_schema.grants"]'
+
+title "A missing remote resource still plans a create"
+fault.py 'GET /api/2.1/unity-catalog/permissions/**' 404 0 1 RESOURCE_DOES_NOT_EXIST
+trace $CLI bundle plan -o json | jq '.plan["resources.schemas.grants_schema.grants"] | {action, id, import}'
+
+title "A transient read failure is retried before planning the import"
+fault.py 'GET /api/2.1/unity-catalog/permissions/**' 504 0 1
+trace $CLI bundle plan -o json | jq '.plan["resources.schemas.grants_schema.grants"] | {action, id, import}'
+trace print_requests.py //unity-catalog/permissions

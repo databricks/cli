@@ -1,0 +1,38 @@
+{
+  "id": "schema/main.schema_grants_import_[UNIQUE_NAME]",
+  "depends_on": [
+    {
+      "node": "resources.schemas.grants_schema",
+      "label": "${resources.schemas.grants_schema.id}"
+    }
+  ],
+  "action": "update",
+  "import": true,
+  "state_only": true,
+  "new_state": {
+    "value": {
+      "securable_type": "schema",
+      "full_name": "main.schema_grants_import_[UNIQUE_NAME]",
+      "__embed__": [
+        {
+          "principal": "[USERNAME]",
+          "privileges": [
+            "CREATE_TABLE"
+          ]
+        }
+      ]
+    }
+  },
+  "remote_state": {
+    "securable_type": "schema",
+    "full_name": "main.schema_grants_import_[UNIQUE_NAME]",
+    "__embed__": [
+      {
+        "principal": "[USERNAME]",
+        "privileges": [
+          "CREATE_TABLE"
+        ]
+      }
+    ]
+  }
+}

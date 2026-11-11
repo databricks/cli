@@ -423,6 +423,9 @@ func (a *Adapter) validate() error {
 	if a.idFromState != nil {
 		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
 	}
+	if a.resourceConfig.ImportOnPlan && a.idFromState == nil {
+		return errors.New("import_on_plan requires IDFromState")
+	}
 
 	if a.resourceConfig != nil && a.resourceConfig.InternalIDField != "" {
 		if a.idFromState == nil || a.doUpdateWithID == nil {

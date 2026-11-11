@@ -281,29 +281,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-		// Tolerate empty-ID entries from older partial-recreate failures
-		// (apply.Recreate now deletes state on the way through, but pre-fix
-		// state files may still carry a malformed entry). Treat as missing
-		// and let the resource be re-created on this plan.
-		if !hasEntry || dbentry.ID == "" {
-			entry.Action = deployplan.Create
-			return true
-		}
-
-		savedState, err := parseState(adapter.StateType(), dbentry.State)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
-			return false
-		}
-
-		// Compact the saved state so hashed_fields fields are hashes
-		compactedSavedState, err := dresources.CompactState(adapter.ResourceConfig(), savedState)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
-			return false
-		}
-
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -315,6 +292,43 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
+
+		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+		// Tolerate empty-ID entries from older partial-recreate failures
+		// (apply.Recreate now deletes state on the way through, but pre-fix
+		// state files may still carry a malformed entry). Treat as missing
+		// and let the resource be re-created on this plan.
+		if !hasEntry || dbentry.ID == "" {
+			entry.Action = deployplan.Create
+			if !adapter.ResourceConfig().ImportOnPlan || hasUnresolvedIDField(adapter, sv) {
+				return true
+			}
+			id, err := adapter.IDFromState(sv.Value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: determining import ID: %w", errorPrefix, err))
+				return false
+			}
+			dbentry.ID = id
+			entry.ID = id
+			entry.Import = true
+		}
+
+		var savedState, compactedSavedState any
+		if !entry.Import {
+			savedState, err = parseState(adapter.StateType(), dbentry.State)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+				return false
+			}
+
+			// Compact the saved state so hashed_fields fields are hashes.
+			compactedSavedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+				return false
+			}
+		}
+
 		// Compact a copy for comparison only; sv.Value keeps the full contents, which
 		// the deploy sends to the API.
 		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
@@ -322,12 +336,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
-			return false
-		}
-
 		remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
@@ -339,7 +347,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 		}
-		if remoteState == nil {
+		if remoteState == nil && !entry.Import {
 			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry.ID, savedState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -350,6 +358,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
 		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
 		entry.RemoteState = remoteState
+
+		if entry.Import && remoteState == nil {
+			entry.Import = false
+			entry.ID = ""
+			return true
+		}
 
 		var action deployplan.ActionType
 		var remoteDiff []structdiff.Change
@@ -377,6 +391,18 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
+		if entry.Import {
+			// There is no previously managed config; compare the first desired state
+			// against the remote assignments, including principals to revoke.
+			compactedSavedState = remoteStateComparable
+		}
+
+		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
+			return false
+		}
+
 		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, compactedSavedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -396,7 +422,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		} else {
 			action = getMaxAction(entry.Changes)
 		}
-		if entry.ID != "" {
+		if entry.ID != "" && !entry.Import {
 			// Found at a new ID: the state has to follow it there.
 			action = deployplan.GetHigherAction(action, deployplan.UpdateWithID)
 		}
@@ -411,9 +437,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
-			if missing {
-				// The state was recorded without the internal ID (by a CLI from before it was, or by
-				// bind): applying only records it, from the remote state.
+			if missing || entry.Import {
+				// Record an adopted resource or its missing internal ID without a backend update.
 				action = deployplan.Update
 				entry.StateOnly = true
 			}
@@ -1349,6 +1374,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
+			if targetEntry.Import {
+				return targetEntry.ID, nil
+			}
 			id := b.StateDB.GetResourceID(targetResourceKey)
 			if id == "" {
 				return nil, errors.New("internal error: no db entry")

@@ -53,6 +53,20 @@ func TestStagedOperationsEmptyPlan(t *testing.T) {
 	assert.Empty(t, staged)
 }
 
+func TestStagedOperationsImports(t *testing.T) {
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.schemas.match.grants":  {Action: deployplan.Update, Import: true, StateOnly: true},
+		"resources.schemas.differ.grants": {Action: deployplan.Update, Import: true},
+	}}
+
+	staged, err := stagedOperations(plan)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []bundledeployments.StagedOperation{
+		{ResourceKey: "schemas.match.grants", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBind},
+		{ResourceKey: "schemas.differ.grants", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate},
+	}, staged)
+}
+
 func TestActionToSDK(t *testing.T) {
 	cases := []struct {
 		action deployplan.ActionType

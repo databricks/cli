@@ -1,0 +1,12 @@
+{
+  "changes": [
+    {
+      "principal": "$CURRENT_USER_NAME",
+      "add": ["CREATE_TABLE", "MANAGE"]
+    },
+    {
+      "principal": "deco-test-user@databricks.com",
+      "add": ["USE_SCHEMA", "MANAGE"]
+    }
+  ]
+}

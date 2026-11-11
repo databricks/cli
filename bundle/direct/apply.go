@@ -41,14 +41,13 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
+	if planEntry.ID != "" {
+		// The plan found the resource through adoption or at its renamed ID.
+		oldID = planEntry.ID
+	}
 	if oldID == "" {
 		return errors.New("state entry not found")
 	}
-	if planEntry.ID != "" {
-		// The plan found the resource at the ID its config gives it: a rename moved it.
-		oldID = planEntry.ID
-	}
-
 	switch actionType {
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)

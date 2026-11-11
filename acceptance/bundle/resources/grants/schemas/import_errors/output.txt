@@ -1,0 +1,63 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-errors-[UNIQUE_NAME]/default/files...
+Created schemas.grants_schema
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== An unexpected read failure must fail planning and deployment
+>>> musterr [CLI] bundle plan
+Error: cannot plan resources.schemas.grants_schema.grants: reading id="schema/main.schema_grants_import_errors_[UNIQUE_NAME]": Fault injected by test. (403 PERMISSION_DENIED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.1/unity-catalog/permissions/schema/main.schema_grants_import_errors_[UNIQUE_NAME]?
+HTTP Status: 403 Forbidden
+API error_code: PERMISSION_DENIED
+API message: Fault injected by test.
+
+Error: planning failed
+
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-errors-[UNIQUE_NAME]/default/files...
+Error: cannot plan resources.schemas.grants_schema.grants: reading id="schema/main.schema_grants_import_errors_[UNIQUE_NAME]": Fault injected by test. (403 PERMISSION_DENIED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.1/unity-catalog/permissions/schema/main.schema_grants_import_errors_[UNIQUE_NAME]?
+HTTP Status: 403 Forbidden
+API error_code: PERMISSION_DENIED
+API message: Fault injected by test.
+
+Error: planning failed
+
+Files: 1 uploaded, 0 deleted
+
+>>> print_state.py
+null
+
+=== A missing remote resource still plans a create
+>>> [CLI] bundle plan -o json
+{
+  "action": "create",
+  "id": null,
+  "import": null
+}
+
+=== A transient read failure is retried before planning the import
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "id": "schema/main.schema_grants_import_errors_[UNIQUE_NAME]",
+  "import": true
+}
+
+>>> print_requests.py //unity-catalog/permissions
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/grants-import-errors-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
