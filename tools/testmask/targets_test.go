@@ -124,6 +124,13 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test"},
 		},
 		{
+			name: "embedded_template_readme_not_ignored",
+			files: []string{
+				"libs/template/templates/default-sql/template/{{.project_name}}/scratch/README.md",
+			},
+			targets: []string{"test"},
+		},
+		{
 			name: "nextchanges_version_not_ignored",
 			files: []string{
 				".nextchanges/version",
