@@ -43,7 +43,7 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 }
 
 // ValidatePlanAgainstState rejects a saved plan that no longer matches the state it was built
-// against: its features, its lineage and its serial.
+// against (features, lineage and serial), or requests creation of a resource that no longer supports it.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	stateDB.AssertOpenedForReadOrWrite()
 
@@ -64,6 +64,26 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	expected := stateDB.GetSerial()
 	if plan.Serial != expected {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
+	}
+
+	// Older saved plans used create for grants and permissions. Reject them before
+	// applying any resources now that these types only support updates.
+	adapters, err := dresources.InitAll(nil)
+	if err != nil {
+		return err
+	}
+	b := DeploymentBundle{Adapters: adapters}
+	for _, action := range plan.GetActions() {
+		if action.ActionType != deployplan.Create && action.ActionType != deployplan.Recreate {
+			continue
+		}
+		adapter, err := b.getAdapterForKey(action.ResourceKey)
+		if err != nil {
+			return fmt.Errorf("%s: %w", action.ResourceKey, err)
+		}
+		if !adapter.HasDoCreate() {
+			return fmt.Errorf("cannot %s %s: resource does not support creation; run 'bundle plan' again", action.ActionType, action.ResourceKey)
+		}
 	}
 
 	return nil

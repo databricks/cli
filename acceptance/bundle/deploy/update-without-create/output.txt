@@ -12,6 +12,19 @@ Plan: 2 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> print_state.py
 
+=== Reject old create actions before modifying resources
+>>> musterr [CLI] bundle deploy --plan legacy-plan.json
+Error: cannot create resources.jobs.job.permissions: resource does not support creation; run 'bundle plan' again
+
+
+>>> musterr [CLI] bundle deploy --plan legacy-plan.json
+Error: cannot recreate resources.jobs.job.permissions: resource does not support creation; run 'bundle plan' again
+
+
+>>> print_requests.py //jobs //unity-catalog
+
+>>> print_state.py
+
 === Create the parents and apply their dependent updates
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-without-create-[UNIQUE_NAME]/default/files...
