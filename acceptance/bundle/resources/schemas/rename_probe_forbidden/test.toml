@@ -1,5 +1,3 @@
-Badness = "When the schema is gone from its recorded name, the plan looks for it under the name in the config, and an error other than not-found there fails the plan. Before that lookup existed the plan created the schema."
-
 # Local only: the 403 on the new name is injected.
 
 Ignore = [
