@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy with target_qps set"
+trace $CLI bundle deploy
+
+title "Remove target_qps from config; plan proposes clearing it"
+update_file.py databricks.yml '      target_qps: 2' ''
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"
+
+# The CLI drops the zero value (omitempty), so the PATCH carries no target_qps and the backend keeps
+# the old value: the removal never takes effect.
+title "Deploy does not clear it, so the next plan still proposes the change (drift)"
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"

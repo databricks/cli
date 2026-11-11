@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  models:
+    foo:
+      name: test-model
+      description: This is a test model
