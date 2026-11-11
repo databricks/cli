@@ -1,0 +1,31 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    user_to_user:
+      name: user-to-user-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    user_to_creator:
+      name: user-to-creator-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    user_to_sp:
+      name: user-to-sp-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
