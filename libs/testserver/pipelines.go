@@ -18,6 +18,13 @@ func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
 		}
 	}
+	if testing, ok := s.pipelineTesting[pipelineId]; ok {
+		body, err := withPipelineTesting(value, testing)
+		if err != nil {
+			return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
+		}
+		return Response{Body: body}
+	}
 	return Response{
 		Body: value,
 	}
@@ -80,6 +87,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
+	s.setPipelineTesting(pipelineId, req.Body)
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
@@ -139,6 +147,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	}
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
+	s.setPipelineTesting(pipelineId, req.Body)
 
 	return Response{}
 }
