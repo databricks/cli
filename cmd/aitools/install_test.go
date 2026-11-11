@@ -196,6 +196,60 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	assert.NotContains(t, names, agents.NameAntigravity)
 }
 
+// choiceLabels returns the picker label of each offered agent, by agent name.
+func choiceLabels(ctx context.Context, scope string, skillsOnly bool) map[string]string {
+	m := map[string]string{}
+	for _, c := range agentChoices(ctx, scope, skillsOnly) {
+		m[c.agent.Name] = c.label
+	}
+	return m
+}
+
+func TestAgentChoicesSkillsOnlyLabelsPluginAgentsSkills(t *testing.T) {
+	setupTestAgents(t)
+	fakeBinsOnPath(t, "claude")
+	ctx := cmdio.MockDiscard(t.Context())
+
+	assert.Equal(t, "Claude Code  plugin", choiceLabels(ctx, installer.ScopeGlobal, false)[agents.NameClaudeCode])
+	// --skills-only installs raw skills for every agent, plugin agents included.
+	assert.Equal(t, "Claude Code  skills", choiceLabels(ctx, installer.ScopeGlobal, true)[agents.NameClaudeCode])
+	assert.Equal(t, "Claude Code  skills", choiceLabels(ctx, installer.ScopeProject, true)[agents.NameClaudeCode])
+}
+
+func TestAgentChoicesSkillsOnlyLabelsSkippedPluginAgentSkills(t *testing.T) {
+	setupTestAgents(t)
+	fakeBinsOnPath(t, "codex")
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+
+	// Codex has no project-scoped skills, so it is skipped and only listed.
+	agentChoices(ctx, installer.ScopeProject, true)
+	assert.Regexp(t, `Codex CLI +skills · does not support project-scoped skills`, stderr.String())
+	assert.NotContains(t, stderr.String(), "plugin")
+}
+
+func TestAgentChoicesSkillsOnlyPreselectsByConfigDir(t *testing.T) {
+	setupTestAgents(t) // ~/.claude and ~/.cursor
+	fakeBinsOnPath(t)  // no claude CLI on PATH
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Plugin delivery needs the CLI, so it starts unchecked.
+	assert.False(t, choicePreselected(t, agentChoices(ctx, installer.ScopeGlobal, false), agents.NameClaudeCode))
+	// Skills delivery only needs the config dir, as in a non-interactive run.
+	assert.True(t, choicePreselected(t, agentChoices(ctx, installer.ScopeGlobal, true), agents.NameClaudeCode))
+}
+
+// choicePreselected reports whether the named agent's picker row starts checked.
+func choicePreselected(t *testing.T, choices []agentChoice, name string) bool {
+	t.Helper()
+	for _, c := range choices {
+		if c.agent.Name == name {
+			return c.preselect
+		}
+	}
+	t.Fatalf("%s not offered", name)
+	return false
+}
+
 func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
@@ -387,19 +441,20 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Installing databricks plugin for Claude Code...")
 }
 
-func TestInstallInteractivePickerAndConfirm(t *testing.T) {
+func TestInstallInteractivePickerInstallsPickedAgent(t *testing.T) {
 	isolateAgents(t)
 	setupTestAgents(t)
 	fakeBinsOnPath(t, "claude")
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	plugins := setupPluginMock(t)
-	setupScopeMock(t, installer.ScopeGlobal)
+	// Project, not the global default, so the scope assertions below can fail.
+	setupScopeMock(t, installer.ScopeProject)
 
 	origPrompt := promptAgentSelection
 	t.Cleanup(func() { promptAgentSelection = origPrompt })
-	pickerCalled := false
-	promptAgentSelection = func(_ context.Context, choices []agentChoice) ([]*agents.Agent, error) {
-		pickerCalled = true
+	pickerScope := ""
+	promptAgentSelection = func(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
+		pickerScope = scope
 		for _, c := range choices {
 			if c.agent.Name == agents.NameClaudeCode {
 				return []*agents.Agent{c.agent}, nil
@@ -408,29 +463,24 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 		return nil, nil
 	}
 
-	// The confirm is a huh widget that reads the real terminal, so drive it via
-	// the override rather than piped stdin; assert it was consulted.
-	origProceed := promptProceed
-	t.Cleanup(func() { promptProceed = origProceed })
-	proceedCalled := false
-	promptProceed = func() (bool, error) {
-		proceedCalled = true
-		return true, nil
-	}
-
-	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
-	defer test.Done()
-	go drainReader(test.Stdout)
-	go drainReader(test.Stderr)
-
-	cmd := newTestInstallCmd()
-	cmd.SetContext(telemetry.WithNewLogger(ctx))
-
-	require.NoError(t, cmd.RunE(cmd, nil))
-	assert.True(t, pickerCalled)
-	assert.True(t, proceedCalled)
+	_, stderr := runInstallWithStderr(t, true)
+	// The picker gets the resolved scope for its title, and the scope line
+	// follows the picker.
+	assert.Equal(t, installer.ScopeProject, pickerScope)
+	assert.Contains(t, stderr, "Install scope: project")
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
+}
+
+func TestAgentPickerTitleNamesScope(t *testing.T) {
+	assert.Equal(t, "Select agents to set up (global scope)", agentPickerTitle(installer.ScopeGlobal))
+	assert.Equal(t, "Select agents to set up (project scope)", agentPickerTitle(installer.ScopeProject))
+}
+
+func TestPrintInstallScope(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	printInstallScope(ctx, installer.ScopeProject)
+	assert.Equal(t, "\nInstall scope: project\n\n", stderr.String())
 }
 
 func TestInstallExplicitAgentWorksUndetected(t *testing.T) {
@@ -665,7 +715,7 @@ func TestInstallInteractivePickerErrorPropagates(t *testing.T) {
 
 	origPrompt := promptAgentSelection
 	t.Cleanup(func() { promptAgentSelection = origPrompt })
-	promptAgentSelection = func(_ context.Context, _ []agentChoice) ([]*agents.Agent, error) {
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
 		return nil, errors.New("at least one agent must be selected")
 	}
 
@@ -927,15 +977,9 @@ func setupAgentCallerInstall(t *testing.T, agentEnv ...string) (plugins *[]plugi
 	scopePrompted = setupScopeMock(t, installer.ScopeProject)
 	origPrompt := promptAgentSelection
 	t.Cleanup(func() { promptAgentSelection = origPrompt })
-	promptAgentSelection = func(context.Context, []agentChoice) ([]*agents.Agent, error) {
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
 		t.Fatal("agent picker shown to an agent caller")
 		return nil, nil
-	}
-	origProceed := promptProceed
-	t.Cleanup(func() { promptProceed = origProceed })
-	promptProceed = func() (bool, error) {
-		t.Fatal("plan confirm shown to an agent caller")
-		return false, nil
 	}
 	return plugins, skills, scopePrompted
 }
