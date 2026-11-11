@@ -544,6 +544,9 @@ resources:
                 privileges:
                   - ALL_PRIVILEGES
             ```
+        "isolation_mode":
+          "description": |-
+            Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

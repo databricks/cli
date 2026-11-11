@@ -18,6 +18,10 @@ type Catalog struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateCatalog
 
+	// IsolationMode is declared here rather than taken from CreateCatalog because the
+	// Create API does not accept it; UC only takes it on update.
+	IsolationMode catalog.CatalogIsolationMode `json:"isolation_mode,omitempty"`
+
 	// List of grants to apply on this catalog.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
