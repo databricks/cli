@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "schemas": [
+    {
+      "id": "alpha",
+      "sha256": "13078068cac8b4fd973670a2a7f87f3915b31919435f5a6ac713aa51fc058ada"
+    },
+    {
+      "id": "zeta",
+      "sha256": "ddeaa0e675160ea6eff2060d6c49a757fc1980d3493e46c37bfbf55824353125"
+    }
+  ],
+  "services": [
+    {
+      "id": "zeta.Second",
+      "sha256": "216d35fcd0f961a5773151a4f76b5bf20b9c4686a894d2d51266cc4972da5869"
+    },
+    {
+      "id": "alpha.First",
+      "sha256": "1469ea40d614d09dcfed54a26b4b6af388ca80c36e9d8e1140f62ecc0567830e"
+    }
+  ],
+  "commands": {
+    "workspace_docs_groups": [
+      {
+        "key": "compute",
+        "display_name": "Compute"
+      }
+    ],
+    "account_docs_groups": [
+      {
+        "key": "iam",
+        "display_name": "Identity"
+      }
+    ]
+  }
+}

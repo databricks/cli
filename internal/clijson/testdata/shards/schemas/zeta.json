@@ -1,0 +1,14 @@
+{
+  "zeta.State": {
+    "enum": [
+      "READY",
+      "STOPPED"
+    ],
+    "enum_launch_stages": {
+      "STOPPED": "PUBLIC_PREVIEW"
+    },
+    "enum_descriptions": {
+      "READY": "Ready to run"
+    }
+  }
+}

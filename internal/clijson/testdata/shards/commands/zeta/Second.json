@@ -1,0 +1,8 @@
+{
+  "id": "zeta.Second",
+  "name": "Second",
+  "package": {
+    "name": "zeta"
+  },
+  "parent_service_id": "alpha.First"
+}

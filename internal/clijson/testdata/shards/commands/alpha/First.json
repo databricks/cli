@@ -1,0 +1,10 @@
+{
+  "id": "alpha.First",
+  "name": "First",
+  "package": {
+    "name": "alpha"
+  },
+  "subservice_ids": [
+    "zeta.Second"
+  ]
+}

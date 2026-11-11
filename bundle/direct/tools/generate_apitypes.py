@@ -8,11 +8,12 @@ Note, we could search for exact type but that may not always work if we create a
 """
 
 import argparse
-import json
 import re
 import sys
 from collections import Counter
 from pathlib import Path
+
+from clijson import load_schemas
 
 
 def parse_out_fields(path):
@@ -68,12 +69,11 @@ def main():
     parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
     parser.add_argument("apischema", type=Path, help="Path to the .codegen directory holding the sharded cli.json")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
+    parser.add_argument("--output", type=Path, help="Write output to this file instead of stdout")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)
-    schemas = {}
-    for path in sorted((args.apischema / "schemas").glob("*.json")):
-        schemas.update(json.loads(path.read_text()))
+    schemas = load_schemas(args.apischema)
     schema_fields = get_schema_fields(schemas)
 
     field_counts = Counter()
@@ -121,10 +121,14 @@ def main():
             print(f"         # in_resource_only: {sorted(missing)}", file=sys.stderr)
             print(f"         # in_schema_only: {sorted(extra)}", file=sys.stderr)
 
-    print("# Generated, do not edit. Override via apitypes.yml")
+    lines = ["# Generated, do not edit. Override via apitypes.yml"]
     for resource in sorted(top_matches):
-        print()
-        print(f"{resource}: {top_matches[resource]}")
+        lines.extend(["", f"{resource}: {top_matches[resource]}"])
+    content = "\n".join(lines) + "\n"
+    if args.output:
+        args.output.write_text(content)
+    else:
+        print(content, end="")
 
 
 if __name__ == "__main__":

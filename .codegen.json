@@ -1,5 +1,5 @@
 {
-    "mode": "cli_v1",
+    "mode": "cli_v2",
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
     "version": {
         "python/README.md": "version $VERSION or above",

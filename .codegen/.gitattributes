@@ -1,5 +1,4 @@
-# eol=lf: TestCommittedShardsAreCanonical compares the shards byte-for-byte
-# against freshly split output, which must hold on Windows checkouts too.
+# Shard checksums must match on Windows checkouts too.
 index.json linguist-generated=true eol=lf
 schemas/*.json linguist-generated=true eol=lf
 commands/**/*.json linguist-generated=true eol=lf

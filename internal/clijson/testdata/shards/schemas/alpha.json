@@ -1,0 +1,18 @@
+{
+  "alpha.Request": {
+    "description": "A request",
+    "fields": {
+      "state": {
+        "ref": "zeta.State",
+        "deprecated": true,
+        "launch_stage": "PUBLIC_PREVIEW",
+        "behaviors": [
+          "IMMUTABLE"
+        ]
+      }
+    }
+  },
+  "alpha.Unused": {
+    "description": "An unreferenced schema must not disappear"
+  }
+}

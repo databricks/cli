@@ -1,350 +1,1097 @@
 {
-  "account_docs_groups": [
+  "version": 1,
+  "schemas": [
     {
-      "key": "iam",
-      "display_name": "Identity and Access Management"
+      "id": "agentbricks",
+      "sha256": "c3fec2ea07a094ea87fd485898cd3b84fefc2ac0746dc4c787c1d8df4bfe2208"
     },
     {
-      "key": "catalog",
-      "display_name": "Unity Catalog"
+      "id": "agentkit",
+      "sha256": "c803d91fea6b0e5d40c76bee1edd431ac83914f560e438fa55a297205b496813"
     },
     {
-      "key": "settings",
-      "display_name": "Settings"
+      "id": "aifunctions",
+      "sha256": "674e82d67a7018118b65a73ff05d950411bae1fb9141c039e3454fc8446e9e23"
     },
     {
-      "key": "provisioning",
-      "display_name": "Provisioning"
+      "id": "aisearch",
+      "sha256": "d1c5bf617b057ed67a0a5a60af9d12aac43aea9f1702ad44d39ac99345d920cc"
     },
     {
-      "key": "billing",
-      "display_name": "Billing"
+      "id": "apps",
+      "sha256": "859f34d3d1d5c78a36bc6599c0961b1faf2425e7b3f0b1e990d1ad3677c53e82"
     },
     {
-      "key": "oauth2",
-      "display_name": "OAuth"
+      "id": "billing",
+      "sha256": "c9c68eeeb63d0c113d5709e990500fc414c0cd29069f4c91d3c8d20b3bd4ec83"
     },
     {
-      "key": "disasterrecovery",
-      "display_name": "Disaster Recovery"
+      "id": "bundledeployments",
+      "sha256": "09b16b8b47cacf2e635863ba16956ac1eef75956055437c06ed1273c22ecd86e"
+    },
+    {
+      "id": "catalog",
+      "sha256": "681961a0a9b925ae12f1c6ac1c9ab018b22c4a54a1dfb3f485e4ec8dfd9af9f5"
+    },
+    {
+      "id": "cleanrooms",
+      "sha256": "b2c8876f6b61a446e177c122ba3a2dc2e1bfcd5aa6e7e2e098569763f617e608"
+    },
+    {
+      "id": "compute",
+      "sha256": "f3c76fa92711dd5d6e30310946d9617fa638d9155dc5227956b46c4397e46b90"
+    },
+    {
+      "id": "dashboards",
+      "sha256": "9c1d219bbeda028a07cda8459b9cdd2eb7cb583540f1fde0fc3556e7edde2582"
+    },
+    {
+      "id": "database",
+      "sha256": "327a971697401fff623d8e52d8de7b83a5f43a70c5f90b01d57461f6830ccb21"
+    },
+    {
+      "id": "dataclassification",
+      "sha256": "94fc9cc79ab18d274c6bf8d588e5386b3257e7b38c522f6ff528f86fa756ad73"
+    },
+    {
+      "id": "dataquality",
+      "sha256": "53ad870e73b0ed8a56ebe7524da222c25bb88995624aae1bc451a6eaf5ef9ada"
+    },
+    {
+      "id": "disasterrecovery",
+      "sha256": "3414ee4dd740b283db5913504c7162396c7633117fb9d94de8ef6eecd811f3a7"
+    },
+    {
+      "id": "domains",
+      "sha256": "c7a1c92b56b2855291d3847762675675a4c8b206f5c5d7829560ac28c0c261dd"
+    },
+    {
+      "id": "environments",
+      "sha256": "067d42afefcc5f645a3cb32524c96d4fda6e781fcf1e537a0af38a7d981a863b"
+    },
+    {
+      "id": "files",
+      "sha256": "bb466955f0a222cbefc9f4156a08352e750de3287198ca6c341ff1f12a21e472"
+    },
+    {
+      "id": "iam",
+      "sha256": "f2c454cc5acfdd6dc038161b52220936988e09535917f09ca202bf3f4133e015"
+    },
+    {
+      "id": "iamv2",
+      "sha256": "d0a258a21da7063c1fafe982e56260d44a3cea71c0378d1a792006fe87831175"
+    },
+    {
+      "id": "jobs",
+      "sha256": "9bd2daa6886017b9fa08945d1190d3538f1ba60aeb503821e2d77f48ae6ae202"
+    },
+    {
+      "id": "knowledgeassistants",
+      "sha256": "927c1cd529b598e98e7aa6c509b6d12c68a4086414844cbe6c7ec0f5920dd994"
+    },
+    {
+      "id": "marketplace",
+      "sha256": "db06c73196c5f5ef95221f04404717323ec0660d1d42fe96b11087410569dde8"
+    },
+    {
+      "id": "ml",
+      "sha256": "9006ef3655baa0ff02177e59becfcd985532f4ab779a50a30c223c7341db4d1f"
+    },
+    {
+      "id": "networking",
+      "sha256": "70123d79c988e6fd9c1792111e8406d233bda9f53f362c630658516a62680778"
+    },
+    {
+      "id": "oauth2",
+      "sha256": "e4456542194b668f25394a92691e4a03119668b0afd421bf18d1eecba90f095c"
+    },
+    {
+      "id": "pipelines",
+      "sha256": "2733e877678b79d53168e4a52f7faaf45d310bfcf79678f9b104f5e7f1a0f9b2"
+    },
+    {
+      "id": "postgres",
+      "sha256": "20feb5d266407ffe0b6c657c83c2e4470c7f6fc63d77d5805e6a04fb521ecbaa"
+    },
+    {
+      "id": "provisioning",
+      "sha256": "f139756db213528f3184f1e0300000cc14ad216b92e01ad97fb3c82204e8b1c4"
+    },
+    {
+      "id": "qualitymonitorv2",
+      "sha256": "04ec71ff2926c5e7973785f7c63993927805cb29ee3b8928dc416593903320f3"
+    },
+    {
+      "id": "sandbox",
+      "sha256": "ddc68310194fa8c82cb9fc85e07ba5ce25152858931c2036d255dfdab9537665"
+    },
+    {
+      "id": "serving",
+      "sha256": "0f6e3e13ed72ba54e2cc7dc8aca0f66133b525ad980a3722c49f84257f96b962"
+    },
+    {
+      "id": "settings",
+      "sha256": "b65063b394570e936b419442bdb2e8b60e3ab480aede1208370512c2fd485760"
+    },
+    {
+      "id": "settingsv2",
+      "sha256": "4f50653d8f052ac42298d97253bc0efcaf52912310985e15361da4077c3e7494"
+    },
+    {
+      "id": "sharing",
+      "sha256": "b05717927341d37074e808d5215930afb3a7567b125f3474e334d502746226b9"
+    },
+    {
+      "id": "sql",
+      "sha256": "663e5f7d545ed14923a803d97703e2d697f8d559d1af5162c11c9941df949d3a"
+    },
+    {
+      "id": "supervisoragents",
+      "sha256": "0fa844978bb77241dc086b8b41b3ffed94b189d2441bca6fabe92357c94d0cc1"
+    },
+    {
+      "id": "tags",
+      "sha256": "af85ff453ca84462c203d852c55aded2bdefa7d055209d49b2244d4316f9950e"
+    },
+    {
+      "id": "vectorsearch",
+      "sha256": "483ba65badea8297db6954e02658286503ce3c8d5e295fbfa55ed06bf62328de"
+    },
+    {
+      "id": "workspace",
+      "sha256": "d65ff1525bc01404626cbec86c9541ce6555d658f753fcf112e0f31965dfc780"
     }
   ],
   "services": [
-    "iam.AccessControl",
-    "iam.AccountAccessControl",
-    "iam.AccountAccessControlProxy",
-    "agentbricks.AgentBricks",
-    "agentkit.AgentKit",
-    "aifunctions.AiFunctions",
-    "catalog.AiGateway",
-    "aisearch.AiSearch",
-    "settings.AibiDashboardEmbeddingAccessPolicy",
-    "settings.AibiDashboardEmbeddingApprovedDomains",
-    "sql.Alerts",
-    "sql.AlertsLegacy",
-    "sql.AlertsV2",
-    "apps.Apps",
-    "apps.AppsSettings",
-    "catalog.ArtifactAllowlists",
-    "settings.AutomaticClusterUpdate",
-    "billing.BillableUsage",
-    "billing.BudgetPolicy",
-    "billing.Budgets",
-    "bundledeployments.BundleDeployments",
-    "catalog.Catalogs",
-    "cleanrooms.CleanRoomAssetRevisions",
-    "cleanrooms.CleanRoomAssets",
-    "cleanrooms.CleanRoomAutoApprovalRules",
-    "cleanrooms.CleanRoomTaskRuns",
-    "cleanrooms.CleanRooms",
-    "compute.ClusterPolicies",
-    "compute.Clusters",
-    "compute.CommandExecution",
-    "settings.ComplianceSecurityProfile",
-    "catalog.Connections",
-    "marketplace.ConsumerFulfillments",
-    "marketplace.ConsumerInstallations",
-    "marketplace.ConsumerListings",
-    "marketplace.ConsumerPersonalizationRequests",
-    "marketplace.ConsumerProviders",
-    "catalog.Credentials",
-    "provisioning.Credentials",
-    "settings.CredentialsManager",
-    "settings.CspEnablementAccount",
-    "iam.CurrentUser",
-    "oauth2.CustomAppIntegration",
-    "settings.DashboardEmailSubscriptions",
-    "sql.DashboardWidgets",
-    "sql.Dashboards",
-    "dataclassification.DataClassification",
-    "dataquality.DataQuality",
-    "sql.DataSources",
-    "database.Database",
-    "files.Dbfs",
-    "sql.DbsqlPermissions",
-    "settings.DefaultNamespace",
-    "settings.DefaultWarehouseId",
-    "settings.DisableLegacyAccess",
-    "settings.DisableLegacyDbfs",
-    "settings.DisableLegacyFeatures",
-    "disasterrecovery.DisasterRecovery",
-    "domains.Domains",
-    "settings.EnableExportNotebook",
-    "settings.EnableIpAccessLists",
-    "settings.EnableNotebookTableClipboard",
-    "settings.EnableResultsDownloading",
-    "provisioning.EncryptionKeys",
-    "networking.Endpoints",
-    "settings.EnhancedSecurityMonitoring",
-    "catalog.EntityTagAssignments",
-    "environments.Environments",
-    "settings.EsmEnablementAccount",
-    "ml.Experiments",
-    "catalog.ExternalLineage",
-    "catalog.ExternalLocations",
-    "catalog.ExternalMetadata",
-    "ml.FeatureEngineering",
-    "ml.FeatureStore",
-    "oauth2.AccountFederationPolicy",
-    "files.Files",
-    "ml.Forecasting",
-    "catalog.Functions",
-    "dashboards.Genie",
-    "workspace.GitCredentials",
-    "compute.GlobalInitScripts",
-    "catalog.Grants",
-    "iam.GroupsV2",
-    "iam.AccountGroupsV2",
-    "iamv2.AccountIamV2",
-    "compute.InstancePools",
-    "compute.InstanceProfiles",
-    "settings.IpAccessLists",
-    "settings.AccountIpAccessLists",
-    "jobs.Jobs",
-    "knowledgeassistants.KnowledgeAssistants",
-    "dashboards.Lakeview",
-    "dashboards.LakeviewEmbedded",
-    "compute.Libraries",
-    "settings.LlmProxyPartnerPoweredAccount",
-    "settings.LlmProxyPartnerPoweredEnforce",
-    "settings.LlmProxyPartnerPoweredWorkspace",
-    "billing.LogDelivery",
-    "ml.MaterializedFeatures",
-    "catalog.AccountMetastoreAssignments",
-    "catalog.Metastores",
-    "catalog.AccountMetastores",
-    "ml.ModelRegistry",
-    "catalog.ModelVersions",
-    "settings.NetworkConnectivity",
-    "settings.NetworkPolicies",
-    "provisioning.Networks",
-    "settings.NotificationDestinations",
-    "oauth2.OAuthPublishedApps",
-    "catalog.OnlineTables",
-    "iam.PermissionMigration",
-    "iam.Permissions",
-    "settings.PersonalCompute",
-    "pipelines.Pipelines",
-    "catalog.Policies",
-    "compute.PolicyComplianceForClusters",
-    "jobs.PolicyComplianceForJobs",
-    "compute.PolicyFamilies",
-    "postgres.Postgres",
-    "provisioning.PrivateAccess",
-    "networking.PrivateNetworkGateways",
-    "marketplace.ProviderExchangeFilters",
-    "marketplace.ProviderExchanges",
-    "marketplace.ProviderFiles",
-    "marketplace.ProviderListings",
-    "marketplace.ProviderPersonalizationRequests",
-    "marketplace.ProviderProviderAnalyticsDashboards",
-    "marketplace.ProviderProviders",
-    "sharing.Providers",
-    "oauth2.PublishedAppIntegration",
-    "qualitymonitorv2.QualityMonitorV2",
-    "catalog.QualityMonitors",
-    "sql.Queries",
-    "sql.QueriesLegacy",
-    "sql.QueryHistory",
-    "sql.QueryVisualizations",
-    "sql.QueryVisualizationsLegacy",
-    "sharing.RecipientActivation",
-    "sharing.RecipientFederationPolicies",
-    "sharing.Recipients",
-    "sql.RedashConfig",
-    "catalog.RegisteredModels",
-    "workspace.Repos",
-    "catalog.ResourceQuotas",
-    "settings.RestrictWorkspaceAdmins",
-    "catalog.Rfa",
-    "sandbox.Sandbox",
-    "catalog.Schemas",
-    "workspace.Secrets",
-    "catalog.SecretsUc",
-    "oauth2.ServicePrincipalFederationPolicy",
-    "oauth2.ServicePrincipalSecrets",
-    "oauth2.ServicePrincipalSecretsProxy",
-    "iam.ServicePrincipalsV2",
-    "iam.AccountServicePrincipalsV2",
-    "serving.ServingEndpoints",
-    "serving.ServingEndpointsDataPlane",
-    "settings.Settings",
-    "settings.AccountSettings",
-    "settingsv2.AccountSettingsV2",
-    "sharing.Shares",
-    "settings.SqlResultsDownload",
-    "sql.StatementExecution",
-    "provisioning.Storage",
-    "catalog.StorageCredentials",
-    "catalog.AccountStorageCredentials",
-    "supervisoragents.SupervisorAgents",
-    "catalog.SystemSchemas",
-    "catalog.TableConstraints",
-    "catalog.Tables",
-    "tags.TagPolicies",
-    "catalog.TemporaryPathCredentials",
-    "catalog.TemporaryTableCredentials",
-    "catalog.TemporaryVolumeCredentials",
-    "settings.TokenManagement",
-    "settings.Tokens",
-    "billing.UsageDashboards",
-    "iam.UsersV2",
-    "iam.AccountUsersV2",
-    "vectorsearch.VectorSearchEndpoints",
-    "vectorsearch.VectorSearchIndexes",
-    "catalog.Volumes",
-    "provisioning.VpcEndpoints",
-    "sql.Warehouses",
-    "workspace.Workspace",
-    "iam.WorkspaceAssignment",
-    "catalog.WorkspaceBindings",
-    "settings.WorkspaceConf",
-    "tags.WorkspaceEntityTagAssignments",
-    "iamv2.WorkspaceIamV2",
-    "settings.WorkspaceNetworkConfiguration",
-    "settingsv2.WorkspaceSettingsV2",
-    "provisioning.Workspaces"
-  ],
-  "workspace_docs_groups": [
     {
-      "key": "workspace",
-      "display_name": "Databricks Workspace"
+      "id": "iam.AccessControl",
+      "sha256": "9282eee4a47c42c6fe065f03ad241ca1290167d7dff578681dc82f3aaacdb6f6"
     },
     {
-      "key": "compute",
-      "display_name": "Compute"
+      "id": "iam.AccountAccessControl",
+      "sha256": "fb1e8a2a28b28e237e70fbdfa2de648a6c7c0b36b73ad20f1ba1ef5831eb1893"
     },
     {
-      "key": "sandbox",
-      "display_name": "Sandbox"
+      "id": "iam.AccountAccessControlProxy",
+      "sha256": "4f5d31f63be4495a3c91e53e4cd633b1a9fcee32d57b2ee088d19902acb7c9a2"
     },
     {
-      "key": "lakeflow",
-      "display_name": "Lakeflow"
+      "id": "agentbricks.AgentBricks",
+      "sha256": "72989dc61d46ff6963724a0ceb6e6dc2d9fa0719b76f9f30d122687c6428a0b9"
     },
     {
-      "key": "files",
-      "display_name": "File Management"
+      "id": "agentkit.AgentKit",
+      "sha256": "c1275d693dd73383ded44e00b57e98e73bd549b85bff40624dec1eeba37edb7b"
     },
     {
-      "key": "ml",
-      "display_name": "Machine Learning"
+      "id": "aifunctions.AiFunctions",
+      "sha256": "634aaa04d08d4b8c09e197079adc67b54aa26c09da18dabeb3c2b762bd68e9ee"
     },
     {
-      "key": "serving",
-      "display_name": "Real-time Serving"
+      "id": "catalog.AiGateway",
+      "sha256": "3f92c8d1ae96648fbaca4133c0df3b94930d3ab3a42166c6661365b93d240176"
     },
     {
-      "key": "apps",
-      "display_name": "Apps"
+      "id": "aisearch.AiSearch",
+      "sha256": "93ba79c6056683c867b7510cdc4312526346b99177b6806a4de1e661931d6fb2"
     },
     {
-      "key": "vectorsearch",
-      "display_name": "Vector Search"
+      "id": "settings.AibiDashboardEmbeddingAccessPolicy",
+      "sha256": "88695e2fbbec0f5a04073655f343da14caa6cdfaed830a4ee74bde40e712a51c"
     },
     {
-      "key": "aisearch",
-      "display_name": "AI Search"
+      "id": "settings.AibiDashboardEmbeddingApprovedDomains",
+      "sha256": "309ab5f6ba525b4d59d16cab987c06172ba59eda3831a80a7be3cb81477f2fd4"
     },
     {
-      "key": "iam",
-      "display_name": "Identity and Access Management"
+      "id": "sql.Alerts",
+      "sha256": "b3f8c7cf4a5de844e9bc4496626df76ff24e83594a92691027d9d63111d11ddb"
     },
     {
-      "key": "sql",
-      "display_name": "Databricks SQL"
+      "id": "sql.AlertsLegacy",
+      "sha256": "ab5813e05f8a001603d9be1ea97ea5a5591ba0c380401e6eab67d9dcb8b8d99e"
     },
     {
-      "key": "dashboards",
-      "display_name": "AI/BI"
+      "id": "sql.AlertsV2",
+      "sha256": "6416aed0938e4e32cb1909cb9641e10aa26fb344f29f29bd3e8256df91f8d29d"
     },
     {
-      "key": "catalog",
-      "display_name": "Unity Catalog"
+      "id": "apps.Apps",
+      "sha256": "d0ff7dd525f57cee5967f6995f07d898af27cbefef44728b16477e519f8c41d1"
     },
     {
-      "key": "sharing",
-      "display_name": "Open Sharing"
+      "id": "apps.AppsSettings",
+      "sha256": "2f559fed67bbca9a016ad78dc7f7bb0895c3012d13065a4c1f08bea72e41c844"
     },
     {
-      "key": "settings",
-      "display_name": "Settings"
+      "id": "catalog.ArtifactAllowlists",
+      "sha256": "3d510ee856f2494c3b3bbb5e228c0fa303adb870651b0dec1082812e21fdba24"
     },
     {
-      "key": "oauth2",
-      "display_name": "OAuth"
+      "id": "settings.AutomaticClusterUpdate",
+      "sha256": "aef50c7b3eb043d0097df511531e56fd55d3471156bc92ef63d15c7f675e9c88"
     },
     {
-      "key": "marketplace",
-      "display_name": "Marketplace"
+      "id": "billing.BillableUsage",
+      "sha256": "2919a42888065ecc01373bb810890a00d856094de09166fb6003beba52646008"
     },
     {
-      "key": "cleanrooms",
-      "display_name": "Clean Rooms"
+      "id": "billing.BudgetPolicy",
+      "sha256": "825409bb9afa4f5931a423322d94bd7237ee40f3f80b918879f7bf62256eb74f"
     },
     {
-      "key": "qualitymonitor",
-      "display_name": "Quality Monitor"
+      "id": "billing.Budgets",
+      "sha256": "e967c65ff19ef49b2b6f69acb1b80b26a5d9d730a773b5c6e77623b877b88f58"
     },
     {
-      "key": "dataclassification",
-      "display_name": "Data Classification"
+      "id": "bundledeployments.BundleDeployments",
+      "sha256": "beef0452fda0af14fe33288cb84943a9b12cc3e6720a249531cf9eb408c28c00"
     },
     {
-      "key": "dataquality",
-      "display_name": "Data Quality Monitoring"
+      "id": "catalog.Catalogs",
+      "sha256": "f492a6067a9b014ce2d9992dd39799ab5cd1af19c84ba9610b51031f3d7c37f5"
     },
     {
-      "key": "database",
-      "display_name": "Database Instances"
+      "id": "cleanrooms.CleanRoomAssetRevisions",
+      "sha256": "88d49db88dc9dd0c01c419c90c999c5fbb917d5b98b467a7bb309a32fb259779"
     },
     {
-      "key": "agentbricks",
-      "display_name": "Agent Bricks"
+      "id": "cleanrooms.CleanRoomAssets",
+      "sha256": "9d1d0f241bbe3cd7d64bf203068599329d18223ec82e2ede5c80c588fc76ebdf"
     },
     {
-      "key": "aifunctions",
-      "display_name": "AI Functions"
+      "id": "cleanrooms.CleanRoomAutoApprovalRules",
+      "sha256": "40014bb35606500cbb086ac2fe8f88561906e4b4dc9d10c3d3c1feb61a0db1b3"
     },
     {
-      "key": "tags",
-      "display_name": "Tags"
+      "id": "cleanrooms.CleanRoomTaskRuns",
+      "sha256": "e28be0f387c45b23ea73785842988c30d666bd3125dcc8c963516173688dcdf5"
     },
     {
-      "key": "postgres",
-      "display_name": "Postgres"
+      "id": "cleanrooms.CleanRooms",
+      "sha256": "18ef5dde1a164cabaca4c985564257402f66a50552e26883db86102a2f89e3e7"
     },
     {
-      "key": "environments",
-      "display_name": "Environments"
+      "id": "compute.ClusterPolicies",
+      "sha256": "8b6dad1f3d2ac7939e66b663cbfe0a0e3c7e3ca211c322f28193991b695f736b"
     },
     {
-      "key": "bundledeployments",
-      "display_name": "Bundle Deployments"
+      "id": "compute.Clusters",
+      "sha256": "c6bdf25334295abc1204e693453cacf465887ac5387a08ae8ff8e55741d72c0d"
     },
     {
-      "key": "domains",
-      "display_name": "Domains"
+      "id": "compute.CommandExecution",
+      "sha256": "ef8811f2126b291f1102284178e613f647e7397af5927e2e9dfe73c37fb83cc3"
+    },
+    {
+      "id": "settings.ComplianceSecurityProfile",
+      "sha256": "29a2801c91c210c8c20188b10ca7d7f5068485fbfe00d9f917ccea9ba4864906"
+    },
+    {
+      "id": "catalog.Connections",
+      "sha256": "a2681b569d6d5b1ce94f6b3a3387bed873388eaf1903c8b8af306085e0b6a414"
+    },
+    {
+      "id": "marketplace.ConsumerFulfillments",
+      "sha256": "14a0a17fde54a309e81958caa0a3fd6bfde727e896d1224f6e84bc1d450571be"
+    },
+    {
+      "id": "marketplace.ConsumerInstallations",
+      "sha256": "43d17f011394a125f7a7f09f334d236018067921f8b74cc2edfcf20e07a505c8"
+    },
+    {
+      "id": "marketplace.ConsumerListings",
+      "sha256": "b41b7529b6d79b642245dddb51d863d449a7266c9a44f1bfc368105e55170608"
+    },
+    {
+      "id": "marketplace.ConsumerPersonalizationRequests",
+      "sha256": "b9b54a67875e4712c5ef2207c5c317547527c8f5572d64a883e43d1e4ec43075"
+    },
+    {
+      "id": "marketplace.ConsumerProviders",
+      "sha256": "73a128b673cddbef6d85d0e180acccd60ea615f579bde3e3de8f60115940b1e8"
+    },
+    {
+      "id": "catalog.Credentials",
+      "sha256": "cab2798218edd8eacd3fb5ae242b28396173c082c455a6a02a81170d7337000f"
+    },
+    {
+      "id": "provisioning.Credentials",
+      "sha256": "f3ee20dee0fffb3d58198a78ee2f1a40ceccf2994aa9f624be62a5324c82b4ed"
+    },
+    {
+      "id": "settings.CredentialsManager",
+      "sha256": "5d1578d22727c2b7b500d5bc3da6580f1e48cb63107419bd6656d6c28aaa1d60"
+    },
+    {
+      "id": "settings.CspEnablementAccount",
+      "sha256": "9d2cbe6c9700b8a762f9ee6a59a5c393d5a51dc84333046940b2aff0732d5479"
+    },
+    {
+      "id": "iam.CurrentUser",
+      "sha256": "5b1043f25860a5f8675d6a5f782269d17123c6b8662c56274d0800284419e1bf"
+    },
+    {
+      "id": "oauth2.CustomAppIntegration",
+      "sha256": "5455f243972eef2367faaba21ab4fa9cdcfe008047751dc983058b5d00cb0d60"
+    },
+    {
+      "id": "settings.DashboardEmailSubscriptions",
+      "sha256": "db12cd6d322323f2fe0d3311295bb2d8c1619e66e3e0ea2946ebdd7d73c9c09a"
+    },
+    {
+      "id": "sql.DashboardWidgets",
+      "sha256": "e9b94e1be1fca4b3e6343725f74a255ad1baa375e73841f45ba2e26c5f0a8ca5"
+    },
+    {
+      "id": "sql.Dashboards",
+      "sha256": "c7ae4b5e255f789ff958a6ecbb06ecb556c737ca7e453b7d5531d9a7c78aad06"
+    },
+    {
+      "id": "dataclassification.DataClassification",
+      "sha256": "bd36211055b77cbdc63e3eb7b34858881177f94ff7dcfb692189371505e15165"
+    },
+    {
+      "id": "dataquality.DataQuality",
+      "sha256": "fc49bab21f9b1f219728b34c6e2e2813d70c2f4a939e4bf782b0669ef681aa84"
+    },
+    {
+      "id": "sql.DataSources",
+      "sha256": "18884ca1bdb57bc8f2ca82036fe5546d7749a2ea8a42cb3771800d972927aefb"
+    },
+    {
+      "id": "database.Database",
+      "sha256": "7e02bdedca85995c42165da2f592d15cc3ed2464fbe0de445c6583d32c7d04cd"
+    },
+    {
+      "id": "files.Dbfs",
+      "sha256": "e68c493d0963e3692539e39d53d1d0dd5514385d3323964264cfcb779d78148b"
+    },
+    {
+      "id": "sql.DbsqlPermissions",
+      "sha256": "2d65f6fb7ec38619b8418967c1bd8fa427a764bcbbc3e52e56bddd190cc58455"
+    },
+    {
+      "id": "settings.DefaultNamespace",
+      "sha256": "231b014554c01d983819ee2888b80ff4b39f74e6309f3186e6125477577f8ad8"
+    },
+    {
+      "id": "settings.DefaultWarehouseId",
+      "sha256": "d826b3fcfb7b56d1423ebb8cda6c5cfe61c7385ff28ed9c81229e36a4e18ca96"
+    },
+    {
+      "id": "settings.DisableLegacyAccess",
+      "sha256": "3dbfc6c62be1b9483b59a373672ebc19bd120ff7ed55d640a023a43158900140"
+    },
+    {
+      "id": "settings.DisableLegacyDbfs",
+      "sha256": "71e60a25ae0ca6d289332b4f59f1321ec393e272c5ebd759471c3f1b3faa6f68"
+    },
+    {
+      "id": "settings.DisableLegacyFeatures",
+      "sha256": "965225bb5554036bf8b0c0f0d0594758b91268dd7e2b4a55aa435abe34439ca2"
+    },
+    {
+      "id": "disasterrecovery.DisasterRecovery",
+      "sha256": "95ee27fdc4d8058c0adc471c2ff092413766f9a29de11ae977d1f69eedede1b1"
+    },
+    {
+      "id": "domains.Domains",
+      "sha256": "a7eb0487ad4085a1f71e6fd2da73f7eeb6e2eda9fc0d1d57a50375e825eb0b7d"
+    },
+    {
+      "id": "settings.EnableExportNotebook",
+      "sha256": "0bc17a90e5f9d9c3730f2275f4f2a2e897385c4ddc402645649b23f5320d5d15"
+    },
+    {
+      "id": "settings.EnableIpAccessLists",
+      "sha256": "d56fdf01d1fad553de348279eda0ae040facdcc08fba8f7caa96d48cb138e3ac"
+    },
+    {
+      "id": "settings.EnableNotebookTableClipboard",
+      "sha256": "47b9fca80b8076e0d69a75b0a95c11459002221155b599e8fd4b7953829b62b2"
+    },
+    {
+      "id": "settings.EnableResultsDownloading",
+      "sha256": "aaca2ab66e5c086e2a325bb7f1ffd187943962f54dd87b898b04f3db5fcbebbd"
+    },
+    {
+      "id": "provisioning.EncryptionKeys",
+      "sha256": "3db350da45cf6e254db348b0619457c997393ff2fbb084a0d8d92f5a1d06e364"
+    },
+    {
+      "id": "networking.Endpoints",
+      "sha256": "71b0440e25bf3a070500978c257a6855952c5e503ef08a99b57e5bf642f35fae"
+    },
+    {
+      "id": "settings.EnhancedSecurityMonitoring",
+      "sha256": "e757c6b3ed675e965fe70121a5d6ead78492ba1be9b46e995bc51eea15ed28ca"
+    },
+    {
+      "id": "catalog.EntityTagAssignments",
+      "sha256": "850e2d52c180fa5bf4f008eea8897dd6734134452cd93ec4b35a478ed9b5147a"
+    },
+    {
+      "id": "environments.Environments",
+      "sha256": "a62465006be284af07f82ae479eabac3edad1a087094f9490d16a960ed280125"
+    },
+    {
+      "id": "settings.EsmEnablementAccount",
+      "sha256": "7710f5801b8c53b2451da9c79dbf4f45dd6495cf78aca53b8c6c2e70cb0f5665"
+    },
+    {
+      "id": "ml.Experiments",
+      "sha256": "7cefffd57f129e13b6c781770b94ecfa05e834ca36b117ade1a26c474afbb1b2"
+    },
+    {
+      "id": "catalog.ExternalLineage",
+      "sha256": "adfade2868c076286a77049ccc1785fd4190853a5f87c62c784a564bb6548b7f"
+    },
+    {
+      "id": "catalog.ExternalLocations",
+      "sha256": "6ab2698d92799afa15dfe0aed3a0755222f002e33f3ac7a6fbea5bd446a01954"
+    },
+    {
+      "id": "catalog.ExternalMetadata",
+      "sha256": "9f6bb769cabab69fba54ef26926d064de5e2162eaf1fe78a9fc5713c04d2f579"
+    },
+    {
+      "id": "ml.FeatureEngineering",
+      "sha256": "41e446027de30edbc7e565de207d1f5416b2decf55ea526c83ad6a62f267f81f"
+    },
+    {
+      "id": "ml.FeatureStore",
+      "sha256": "089e8c4b54f45ac5ad14f7eeb7cf3209a46e57659389c7cc59286031fe4e31c9"
+    },
+    {
+      "id": "oauth2.AccountFederationPolicy",
+      "sha256": "05a9b1e6c4643e4bb5cdeff93eb9df621f3cfd97b7336eec8f07fc5cb40881ad"
+    },
+    {
+      "id": "files.Files",
+      "sha256": "6cfdaafdf3db8c6d887fe802a08761be95d4a5334d8a0c310d7df46e6bb9b5a5"
+    },
+    {
+      "id": "ml.Forecasting",
+      "sha256": "0a193850715fe91ae3eda9482373d2c0815271f29f33d27655599168d74f7022"
+    },
+    {
+      "id": "catalog.Functions",
+      "sha256": "9cea691385808d21702fad9778fcaf4731cb34cac5480b20d9d28a8004d4dfc1"
+    },
+    {
+      "id": "dashboards.Genie",
+      "sha256": "8179b8097ff21b5f359688812eaac3629ef715f6f1adcb05dd637043b52795e6"
+    },
+    {
+      "id": "workspace.GitCredentials",
+      "sha256": "7da4128eaaed0e8490b365a4c18f79ba027e18f33ac4d267dd24390bfd6cdf51"
+    },
+    {
+      "id": "compute.GlobalInitScripts",
+      "sha256": "92d3ccbdbfee0e8f5dff06487d38faf8213a5fa1a4d1ed46c8405db89e2d675d"
+    },
+    {
+      "id": "catalog.Grants",
+      "sha256": "16156e8c11b9153eaa20f771162f1bae644d47a7f109a26e908184fdd9514d08"
+    },
+    {
+      "id": "iam.GroupsV2",
+      "sha256": "91b01211e3f5a8bdf6f70e6ab215d7753b5026c580d5652b6c14d01205de9114"
+    },
+    {
+      "id": "iam.AccountGroupsV2",
+      "sha256": "9d9dbbb297e81f15df3089d47dadce335503cf5d5bb936d7fdc8f0c2d3749058"
+    },
+    {
+      "id": "iamv2.AccountIamV2",
+      "sha256": "d612383a7b70071a2fc1b8b5f626349ec8ad6d03593654ea9024c2b52dd6b709"
+    },
+    {
+      "id": "compute.InstancePools",
+      "sha256": "7c69cb5581085c7490cc4751a7e6167ca3109d2e31dde45ee7947344266f57c3"
+    },
+    {
+      "id": "compute.InstanceProfiles",
+      "sha256": "0117efc3aa4f6a3647faf4fed6f45f154cb385f329b4295bd40b38156ab1653b"
+    },
+    {
+      "id": "settings.IpAccessLists",
+      "sha256": "713fb73517d301734243cb8ad8650ff89998a2e4a9457691a77a225032ad01b2"
+    },
+    {
+      "id": "settings.AccountIpAccessLists",
+      "sha256": "ee6a1e1cfbf396f8cfc5dba0ba66f40436d232e5a6fe26aaa325149229d0a999"
+    },
+    {
+      "id": "jobs.Jobs",
+      "sha256": "bf17dadc31c1a2b8fe4d57150ce6cd06a2f8ec3ff492fbcdd71b687b633da6cb"
+    },
+    {
+      "id": "knowledgeassistants.KnowledgeAssistants",
+      "sha256": "71a27dffcad84732a33192da50ebb26b838c4e517b4566e5e5bbec4954b0a816"
+    },
+    {
+      "id": "dashboards.Lakeview",
+      "sha256": "efcfa43f75549540c3c3d21f73a9d7282ab5649289a4690160a287473ded7882"
+    },
+    {
+      "id": "dashboards.LakeviewEmbedded",
+      "sha256": "4a3c78ce15eece72a571b65819b7a70591d9c01c0326c62e5222f4e3438c2316"
+    },
+    {
+      "id": "compute.Libraries",
+      "sha256": "d4fd279f8deb2da4d49e72e6866e57bdd0c46756fd169fe8b7ede6c383601ce0"
+    },
+    {
+      "id": "settings.LlmProxyPartnerPoweredAccount",
+      "sha256": "4677387cb12f575f45892ef62851bf7aad24854a70423b5fb8503c3c59150d34"
+    },
+    {
+      "id": "settings.LlmProxyPartnerPoweredEnforce",
+      "sha256": "19f5ee83b600db2c87451f16d5132c1ed47e3be8adc361540ffed8346ccf155e"
+    },
+    {
+      "id": "settings.LlmProxyPartnerPoweredWorkspace",
+      "sha256": "20b882ebbfb9b3933d7957c27c18816c1e97e8eb523614ea4447b80d2c0bfc98"
+    },
+    {
+      "id": "billing.LogDelivery",
+      "sha256": "b02845fa2c6525f3b27988c1ec26eb608ea50be6eeab5a48078a3b18c30a6be4"
+    },
+    {
+      "id": "ml.MaterializedFeatures",
+      "sha256": "d28365aa8c306a739f7643c1e3d9f3ecc3d7632f536b252a06162c5583787d15"
+    },
+    {
+      "id": "catalog.AccountMetastoreAssignments",
+      "sha256": "a596a3dc564c5c9148605952dba9a80b3a0f3e61081f1930a60eaf9dbb706815"
+    },
+    {
+      "id": "catalog.Metastores",
+      "sha256": "6da3a58cdb881907e216792a534d78ee33127876d12b8221730f5dae698a0dab"
+    },
+    {
+      "id": "catalog.AccountMetastores",
+      "sha256": "c0a4c18bdd63618cd2185a2efac20c7441caa6e566bb70a906876658e9e4d94c"
+    },
+    {
+      "id": "ml.ModelRegistry",
+      "sha256": "f7c127793bd90c101ba87225e8870a3f8f5411269b8015138ac6ff424c4a892d"
+    },
+    {
+      "id": "catalog.ModelVersions",
+      "sha256": "c3d1ca49c58b582df8cc411a985d29845d62e4390d00635749c97a7814b39bbb"
+    },
+    {
+      "id": "settings.NetworkConnectivity",
+      "sha256": "536f8dd88608327bc93fa34eaa075fcb46dd4a886eaa2c9e517019c5f3d576ba"
+    },
+    {
+      "id": "settings.NetworkPolicies",
+      "sha256": "5586504015323caa30d90f9391ad2e9464ac411cdcf9071fc55e4f7aab073541"
+    },
+    {
+      "id": "provisioning.Networks",
+      "sha256": "c5b8408aa6f0ecf1d66419e20ec1d8c71b7e261537e2cad4f43d300f404c3e8e"
+    },
+    {
+      "id": "settings.NotificationDestinations",
+      "sha256": "c9a20d6f0612243b329f2306ca9e3f4a91b95c582da23101e516094a54c88114"
+    },
+    {
+      "id": "oauth2.OAuthPublishedApps",
+      "sha256": "9f7f07ef01795642a3f4f9c2223a7f37b4ea5c3ec63d1854bab1b30ec3211bcb"
+    },
+    {
+      "id": "catalog.OnlineTables",
+      "sha256": "99ebfabd3d3ea9c50148e5a985d567aa46fb3e06276af4a3fa38a57c02b53663"
+    },
+    {
+      "id": "iam.PermissionMigration",
+      "sha256": "d5e1e1f5c7fc23cf2710b5bb4db6a8b4cdaf17655e22e2ddfbfbbe50f082a43c"
+    },
+    {
+      "id": "iam.Permissions",
+      "sha256": "ccd582de78927f01266995097c1127c30368cff3fffc86a5caf726a0d5bc1304"
+    },
+    {
+      "id": "settings.PersonalCompute",
+      "sha256": "b2043aca0ca624093b3dc16ea242f2e08797756dfdf89d0610032db23ffb24dc"
+    },
+    {
+      "id": "pipelines.Pipelines",
+      "sha256": "91e8c8b7d257c92389e63b76ffbb86c6e1dffd48f052e8c70500aba459299388"
+    },
+    {
+      "id": "catalog.Policies",
+      "sha256": "4ff6adddb6cb4ce328b5bdc790db76fa25849566ce23b00e2c1bf0dffa5591b0"
+    },
+    {
+      "id": "compute.PolicyComplianceForClusters",
+      "sha256": "9a2c99796d857dddf3b853d11f8e1e140832861581d076c3e04985b640e9c781"
+    },
+    {
+      "id": "jobs.PolicyComplianceForJobs",
+      "sha256": "f67037fb3035614993241996332dda720008c0ea2eaf05aecf148748a71c23fb"
+    },
+    {
+      "id": "compute.PolicyFamilies",
+      "sha256": "79b46bc3a852fd187853e1e6f7278d2b333697c7bcf8dfa8c05ba6958b03dd77"
+    },
+    {
+      "id": "postgres.Postgres",
+      "sha256": "63b5bb47c7c850d27a162a241aff5f3f865914cbe5ce27a85488995bb45774c4"
+    },
+    {
+      "id": "provisioning.PrivateAccess",
+      "sha256": "a6f2c9e84f882ad69e85e0cc0247b7c20a3c1c59edce866892a210102768148e"
+    },
+    {
+      "id": "networking.PrivateNetworkGateways",
+      "sha256": "1169416cc86921d7f9e4209619efc6b0fba7c54c69a5fd0d6a2a083b3e903a45"
+    },
+    {
+      "id": "marketplace.ProviderExchangeFilters",
+      "sha256": "8badd2d0922323adf903764c49705568a921f8795b013011b485230bcf9b5b21"
+    },
+    {
+      "id": "marketplace.ProviderExchanges",
+      "sha256": "03a76be52b6bf6f0f109222ab9d67bf7b6a98159117181d465e8119154ab97fa"
+    },
+    {
+      "id": "marketplace.ProviderFiles",
+      "sha256": "faac20ec7709f119674d22b4bea2b1737a31f2cc4cc909e6a89583e079f5ba62"
+    },
+    {
+      "id": "marketplace.ProviderListings",
+      "sha256": "4c1c80897f3e86f045c550b1ff3e84b08c4524c9d0248db54a4eadafde25f94f"
+    },
+    {
+      "id": "marketplace.ProviderPersonalizationRequests",
+      "sha256": "27fcaa274f6728491fba3b16a1f01bbc3ea885689561cdd0e6aeefef32d020f1"
+    },
+    {
+      "id": "marketplace.ProviderProviderAnalyticsDashboards",
+      "sha256": "a56bf00f2595a93dd73c29252389ba1aabca602fa2e89621f5ca3076f86cb608"
+    },
+    {
+      "id": "marketplace.ProviderProviders",
+      "sha256": "759b77e1ec18bf2c0332b43acff2e18a05f680dd53792469da91563b7d93c0e9"
+    },
+    {
+      "id": "sharing.Providers",
+      "sha256": "2ea5b51ecdd19ff58f6d8dd6a3858e41924f1ff1166b430109f86a05a56e973d"
+    },
+    {
+      "id": "oauth2.PublishedAppIntegration",
+      "sha256": "2cb38fea07b6fd8ac46ea9eb98918be32b503e69c12e4358be81d46e56e56852"
+    },
+    {
+      "id": "qualitymonitorv2.QualityMonitorV2",
+      "sha256": "898423623d365f0b8e4b803cbfc0eab88b47aa769c18eabba37edebf8082dacb"
+    },
+    {
+      "id": "catalog.QualityMonitors",
+      "sha256": "787b2c4492bc029fbea2bafe4beb8acfadc05bc05c2a0b094d82ef103ac7da99"
+    },
+    {
+      "id": "sql.Queries",
+      "sha256": "cf39352a2227d773192738cfaa77eab05d524792a579fab7569d9486810f76dd"
+    },
+    {
+      "id": "sql.QueriesLegacy",
+      "sha256": "0f5fa4d24a07264278e210113df541b7d512e3f0ee6c8c630fd452088ccaa0d0"
+    },
+    {
+      "id": "sql.QueryHistory",
+      "sha256": "e40d30a67a7395c6ecf50d57b08b3fa801e17b7fa05dad23b5f8dcd66535bcac"
+    },
+    {
+      "id": "sql.QueryVisualizations",
+      "sha256": "aeb073b355031b13363a23a2cf7ab888b532e29a6300985af45d246538c3b460"
+    },
+    {
+      "id": "sql.QueryVisualizationsLegacy",
+      "sha256": "629b1a92bc1081dd4459caca2d6d45e7b6cf7761decfb0501a00e29e9b825c0a"
+    },
+    {
+      "id": "sharing.RecipientActivation",
+      "sha256": "669a5d2d41f1b7b3d62a919eb3bb2cfb20ef824405a0271c08d4b55ffbdabf15"
+    },
+    {
+      "id": "sharing.RecipientFederationPolicies",
+      "sha256": "e54e610fee2fbf4d306809e9aa59c89d4ab9780aebf723113ffd5b89fe20e4a0"
+    },
+    {
+      "id": "sharing.Recipients",
+      "sha256": "1f15806b1979a6f6e0acafe095549024f50821c7a843b93e5cfdffa8f9113478"
+    },
+    {
+      "id": "sql.RedashConfig",
+      "sha256": "9832527a7ad674fa616f32a1a5325a7cc70b732b50a28ca5420aa5b046bff36e"
+    },
+    {
+      "id": "catalog.RegisteredModels",
+      "sha256": "4b6832acb5d79d5bf0148ea5c7e53192d9ba4d96a9ead8d34504243b9d2bd41e"
+    },
+    {
+      "id": "workspace.Repos",
+      "sha256": "d336b6ddb0eed676be301f6f8292c11e5772a7de4f7993eed791d38f6c11e466"
+    },
+    {
+      "id": "catalog.ResourceQuotas",
+      "sha256": "d0c20abdc163eb1efe78ddc42ec6f9549f9323c05b2cfbac2a5139855b06b320"
+    },
+    {
+      "id": "settings.RestrictWorkspaceAdmins",
+      "sha256": "7026241d1eaa4c4495d76e725f95b99bfcdc95fc4a9fe19195ec68a31d897308"
+    },
+    {
+      "id": "catalog.Rfa",
+      "sha256": "62d903a2cd3c5f8536edfc60ea9cbd82bf0c6416a08723209b0488ba6e26fbff"
+    },
+    {
+      "id": "sandbox.Sandbox",
+      "sha256": "29d8e6a2ef4b915016ea9860c69f273694dea2f675111782015840e1504d35e5"
+    },
+    {
+      "id": "catalog.Schemas",
+      "sha256": "65f31e5125dc8b6f8b8435b2a5428baa5dd67837f684b7403acb9c0b6faa0cc1"
+    },
+    {
+      "id": "workspace.Secrets",
+      "sha256": "01cbdfc7189593040cd21c079e803d9de8b7c869ecdaf32c0281362cfd8bc4ed"
+    },
+    {
+      "id": "catalog.SecretsUc",
+      "sha256": "4874015aa3f2aa143c4f1b2a239505283825cdac399936620617143300364ea6"
+    },
+    {
+      "id": "oauth2.ServicePrincipalFederationPolicy",
+      "sha256": "2827ddc6dc6db4778e5bfed66677c47931ca14f9e189fa5ba52467d16f73f8ff"
+    },
+    {
+      "id": "oauth2.ServicePrincipalSecrets",
+      "sha256": "4994ceca0618899decb2921f78e064eee5f5cb158bf90b7bfafbad81b21f4987"
+    },
+    {
+      "id": "oauth2.ServicePrincipalSecretsProxy",
+      "sha256": "957aa7c884deadd01d1a0f2aac9ecaae0618555761e1a44234f2eafd30b6748c"
+    },
+    {
+      "id": "iam.ServicePrincipalsV2",
+      "sha256": "ef69272c2672611c92599f5b963e15ceb9f7eb37647ea3c7996e6be095f76a1e"
+    },
+    {
+      "id": "iam.AccountServicePrincipalsV2",
+      "sha256": "d2279ece4771beb92d6844fb0938ce449a4836ff7c2f5d9d920d7bd3428fc127"
+    },
+    {
+      "id": "serving.ServingEndpoints",
+      "sha256": "9b7a17b1a0156390c037366675f7b22de03987600ce2ec0735b00bae3bdfc651"
+    },
+    {
+      "id": "serving.ServingEndpointsDataPlane",
+      "sha256": "ab00c14dd620cb8059e33660c962a2f235c44ae864bbfee67b4056599e3c2826"
+    },
+    {
+      "id": "settings.Settings",
+      "sha256": "88f2bed290cda023405dc02b9e080f567d5ec616219b071bbdab37d52bfc5322"
+    },
+    {
+      "id": "settings.AccountSettings",
+      "sha256": "7fb753e18fff5bcf236eecb788729e35a06a32cbf8aefa61d09675b520feec95"
+    },
+    {
+      "id": "settingsv2.AccountSettingsV2",
+      "sha256": "eee866d0b4c5f486e869bd645c4d2da2f9cfee0a4cbb2dce2d020bd73e73c5a0"
+    },
+    {
+      "id": "sharing.Shares",
+      "sha256": "4a6f7aedc883bd345f024b6436c726087b4846f3139fa51c66ba0b7582f40cca"
+    },
+    {
+      "id": "settings.SqlResultsDownload",
+      "sha256": "f13111fe23b5b78b7c9d0db54115c7e27b691af29bb47f139772cec216dd36b4"
+    },
+    {
+      "id": "sql.StatementExecution",
+      "sha256": "2cd01daadaacc2629b44396c75219f6175e2b4dda4a13b6dbd5222878bcc198a"
+    },
+    {
+      "id": "provisioning.Storage",
+      "sha256": "c4ab64564232f84e2d68643069391d0040342d7247e4fa6998c7a79995b6836b"
+    },
+    {
+      "id": "catalog.StorageCredentials",
+      "sha256": "31dd757591d90c0c7b116ed2cd3a313f7a4bc553d34fbefeb5f732bf5229a82c"
+    },
+    {
+      "id": "catalog.AccountStorageCredentials",
+      "sha256": "81dd81747772e287cf00036de58f895d0091d5ecd7591c6e6b7e66f271c63b96"
+    },
+    {
+      "id": "supervisoragents.SupervisorAgents",
+      "sha256": "f559fa768f7bc38629a0a2ff4db88d9384591d762d9e0d74b99c058b9900f658"
+    },
+    {
+      "id": "catalog.SystemSchemas",
+      "sha256": "c5321d2d60030b534d8b8851b0e2bf0a1bae6afa4540f6abb205540ed4cea828"
+    },
+    {
+      "id": "catalog.TableConstraints",
+      "sha256": "63de093aa65e03e0d9b8a5b88f2c836e1e82e608d3444687110a48587ab30d6c"
+    },
+    {
+      "id": "catalog.Tables",
+      "sha256": "cccb5cb4d93c9cd095061ce5f74aff382139f22d01642e2ce29db3edf4c03086"
+    },
+    {
+      "id": "tags.TagPolicies",
+      "sha256": "5928dbab596933af34bdfddcb6891ede85ba4f172ded390fb98fef86af010da5"
+    },
+    {
+      "id": "catalog.TemporaryPathCredentials",
+      "sha256": "b2ac6cbe7e14497e5fd6e721f27e86e5c7400890a6332e873303e71765281588"
+    },
+    {
+      "id": "catalog.TemporaryTableCredentials",
+      "sha256": "046363c7e656f5a6deae889b5419cc5eed3b1e70a6aed41688aa3d6c4665cfd9"
+    },
+    {
+      "id": "catalog.TemporaryVolumeCredentials",
+      "sha256": "6549bcfc7d711f9e3f348fb0281337b888049b9e61cd6395c8204c5c58ce2563"
+    },
+    {
+      "id": "settings.TokenManagement",
+      "sha256": "571a48b8d45493be543a5290aa6804037f9ace024661e9221b11e15a87006482"
+    },
+    {
+      "id": "settings.Tokens",
+      "sha256": "1dff8c8fe4a37898bbf2807858652f4c4116d28a218f3e2398dc07d13ae9af6d"
+    },
+    {
+      "id": "billing.UsageDashboards",
+      "sha256": "cbaa625c398d596a1e899e6ad9918f838fd53285aa40330227e7083f11596bb6"
+    },
+    {
+      "id": "iam.UsersV2",
+      "sha256": "8dafb47cd2fc8978e86f6b78898e9f4633f44a4dfb74c5a46d4ac9038d82c55a"
+    },
+    {
+      "id": "iam.AccountUsersV2",
+      "sha256": "91c36de7022b749e989b25d4dec015c8cb838da2f58b3d7fd99b02b3960f5e9e"
+    },
+    {
+      "id": "vectorsearch.VectorSearchEndpoints",
+      "sha256": "e3551dcc87eacda9159dfb44888e94742d7839e4118781ae6b7e9f900039d21a"
+    },
+    {
+      "id": "vectorsearch.VectorSearchIndexes",
+      "sha256": "0d458d837fe137a49e8e5d06392b9ef8095f6a3faf35bd5ad05a17df8e755fac"
+    },
+    {
+      "id": "catalog.Volumes",
+      "sha256": "096274241a1bb9de6f718aa0e0322d04873cfc5663c16d0a97a7ca660027a124"
+    },
+    {
+      "id": "provisioning.VpcEndpoints",
+      "sha256": "bc9b670f219cbd85bc3bace1f5659208a4f584f949c67ff0782d002f56900a2c"
+    },
+    {
+      "id": "sql.Warehouses",
+      "sha256": "6faabdc6bfd2b9b3b24b99d269ad34e4c222dd3537a5aee717888c65f6794325"
+    },
+    {
+      "id": "workspace.Workspace",
+      "sha256": "33da19ab68749155a37a1c805aa5e2678f5828ceba4170d4da2be46ca69ec1d7"
+    },
+    {
+      "id": "iam.WorkspaceAssignment",
+      "sha256": "de0bffa2591d915c40cba5053dc5e2cad423e9d90045228b39ae19a073f79743"
+    },
+    {
+      "id": "catalog.WorkspaceBindings",
+      "sha256": "8b92abdbad8e396785b91cd1ea4f81ca266851f25f3901e95d8fa4d94b70aa1f"
+    },
+    {
+      "id": "settings.WorkspaceConf",
+      "sha256": "51914b12206f53f290a0616452192fe38b62a03c1323ece5f9bdc0709bd6dc78"
+    },
+    {
+      "id": "tags.WorkspaceEntityTagAssignments",
+      "sha256": "9e8dfdf65eae79d00401893af81b92b7789aaa466f24a616ee908ce4eb40cb73"
+    },
+    {
+      "id": "iamv2.WorkspaceIamV2",
+      "sha256": "83d36f1174c4e77783b02add0cd5e2c51dbe9952bee20c642ef0efac71fe6f9c"
+    },
+    {
+      "id": "settings.WorkspaceNetworkConfiguration",
+      "sha256": "cb22f56d9de428eaf71daaa236b1538edae7a378cadecd39683dd4f26cc866f6"
+    },
+    {
+      "id": "settingsv2.WorkspaceSettingsV2",
+      "sha256": "3f5927d44b32d288e23f564f4efe5bcdc02021eb1f88e91375052d9824df9359"
+    },
+    {
+      "id": "provisioning.Workspaces",
+      "sha256": "96dee379a9a39397086d2ea1aaeff447ba502607f9899abd86eeb1dfc92d668a"
     }
-  ]
+  ],
+  "commands": {
+    "workspace_docs_groups": [
+      {
+        "key": "workspace",
+        "display_name": "Databricks Workspace"
+      },
+      {
+        "key": "compute",
+        "display_name": "Compute"
+      },
+      {
+        "key": "sandbox",
+        "display_name": "Sandbox"
+      },
+      {
+        "key": "lakeflow",
+        "display_name": "Lakeflow"
+      },
+      {
+        "key": "files",
+        "display_name": "File Management"
+      },
+      {
+        "key": "ml",
+        "display_name": "Machine Learning"
+      },
+      {
+        "key": "serving",
+        "display_name": "Real-time Serving"
+      },
+      {
+        "key": "apps",
+        "display_name": "Apps"
+      },
+      {
+        "key": "vectorsearch",
+        "display_name": "Vector Search"
+      },
+      {
+        "key": "aisearch",
+        "display_name": "AI Search"
+      },
+      {
+        "key": "iam",
+        "display_name": "Identity and Access Management"
+      },
+      {
+        "key": "sql",
+        "display_name": "Databricks SQL"
+      },
+      {
+        "key": "dashboards",
+        "display_name": "AI/BI"
+      },
+      {
+        "key": "catalog",
+        "display_name": "Unity Catalog"
+      },
+      {
+        "key": "sharing",
+        "display_name": "Open Sharing"
+      },
+      {
+        "key": "settings",
+        "display_name": "Settings"
+      },
+      {
+        "key": "oauth2",
+        "display_name": "OAuth"
+      },
+      {
+        "key": "marketplace",
+        "display_name": "Marketplace"
+      },
+      {
+        "key": "cleanrooms",
+        "display_name": "Clean Rooms"
+      },
+      {
+        "key": "qualitymonitor",
+        "display_name": "Quality Monitor"
+      },
+      {
+        "key": "dataclassification",
+        "display_name": "Data Classification"
+      },
+      {
+        "key": "dataquality",
+        "display_name": "Data Quality Monitoring"
+      },
+      {
+        "key": "database",
+        "display_name": "Database Instances"
+      },
+      {
+        "key": "agentbricks",
+        "display_name": "Agent Bricks"
+      },
+      {
+        "key": "aifunctions",
+        "display_name": "AI Functions"
+      },
+      {
+        "key": "tags",
+        "display_name": "Tags"
+      },
+      {
+        "key": "postgres",
+        "display_name": "Postgres"
+      },
+      {
+        "key": "environments",
+        "display_name": "Environments"
+      },
+      {
+        "key": "bundledeployments",
+        "display_name": "Bundle Deployments"
+      },
+      {
+        "key": "domains",
+        "display_name": "Domains"
+      }
+    ],
+    "account_docs_groups": [
+      {
+        "key": "iam",
+        "display_name": "Identity and Access Management"
+      },
+      {
+        "key": "catalog",
+        "display_name": "Unity Catalog"
+      },
+      {
+        "key": "settings",
+        "display_name": "Settings"
+      },
+      {
+        "key": "provisioning",
+        "display_name": "Provisioning"
+      },
+      {
+        "key": "billing",
+        "display_name": "Billing"
+      },
+      {
+        "key": "oauth2",
+        "display_name": "OAuth"
+      },
+      {
+        "key": "disasterrecovery",
+        "display_name": "Disaster Recovery"
+      }
+    ]
+  }
 }

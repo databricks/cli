@@ -12,12 +12,12 @@ previous run is removed.
 """
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
 import yaml
+from clijson import load_schemas
 
 
 def parse_apitypes(generated_path, override_path):
@@ -221,9 +221,7 @@ def main():
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
     state_fields, array_element_types = parse_out_fields(args.out_fields)
-    schemas = {}
-    for path in sorted((args.apischema / "schemas").glob("*.json")):
-        schemas.update(json.loads(path.read_text()))
+    schemas = load_schemas(args.apischema)
 
     resource_behaviors = {}
     for resource, type_name in sorted(resource_types.items()):
