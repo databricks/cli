@@ -1,5 +1,6 @@
 
 === Command should exit if the instance is not available
+
 >>> musterr [CLI] psql database-starting
 Instance: database-starting
 Instance status: STARTING

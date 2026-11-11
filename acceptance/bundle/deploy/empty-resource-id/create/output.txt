@@ -1,5 +1,6 @@
 
 === A successful create response without an ID fails the deployment
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot create resources.volumes.volume1: create returned an empty resource id
@@ -7,10 +8,12 @@ Error: cannot create resources.volumes.volume1: create returned an empty resourc
 Files: 0 uploaded, 0 deleted
 
 === The failed create does not save resource state
+
 >>> print_state.py
 {}
 
 === The next plan still creates the resource
+
 >>> [CLI] bundle plan
 create volumes.volume1
 

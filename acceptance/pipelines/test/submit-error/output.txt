@@ -1,5 +1,6 @@
 
 === A submit error from the service is shown as is, and no update ID is printed
+
 >>> musterr [CLI] pipelines test --pipeline-id [UUID][0]
 Error: An active update '[UUID][1]' already exists for pipeline '[UUID][0]'.
 

@@ -19,6 +19,7 @@ var resourceURLPatterns = map[string]string{
 	"database_instances":      "compute/database-instances/%s",
 	"experiments":             "ml/experiments/%s",
 	"features":                "explore/data/features/%s",
+	"feature_specs":           "explore/data/functions/%s",
 	"genie_spaces":            "genie/rooms/%s",
 	"jobs":                    "jobs/%s",
 	"mcp_services":            "explore/data/mcp-services/%s",
@@ -58,6 +59,7 @@ var resourceAliases = map[string]string{
 var dotSeparatedResources = map[string]bool{
 	"catalogs":                true,
 	"features":                true,
+	"feature_specs":           true,
 	"mcp_services":            true,
 	"model_services":          true,
 	"model_provider_services": true,

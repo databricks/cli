@@ -27,16 +27,16 @@ func TestRedactSensitiveConfigValues(t *testing.T) {
 				Variables: map[string]*variable.Variable{
 					"catalog": {Default: "main", Value: "main"},
 					"count":   {Default: 1, Value: 1},
-					"secret":  {Sensitive: true, Value: "top-secret"},
-					"header":  {Sensitive: true, Default: "Bearer top-secret", Value: "Bearer top-secret"},
+					"secret":  {Sensitive: new(true), Value: "top-secret"},
+					"header":  {Sensitive: new(true), Default: "Bearer top-secret", Value: "Bearer top-secret"},
 				},
 				Resources: config.Resources{Secrets: secrets},
 			},
 			expected: map[string]*variable.Variable{
 				"catalog": {Default: "main", Value: "main"},
 				"count":   {Default: 1, Value: 1},
-				"secret":  {Sensitive: true, Value: "[redacted]"},
-				"header":  {Sensitive: true, Default: "[redacted]", Value: "[redacted]"},
+				"secret":  {Sensitive: new(true), Value: "[redacted]"},
+				"header":  {Sensitive: new(true), Default: "[redacted]", Value: "[redacted]"},
 			},
 		},
 		{
@@ -44,12 +44,12 @@ func TestRedactSensitiveConfigValues(t *testing.T) {
 			root: config.Root{
 				Variables: map[string]*variable.Variable{
 					"catalog": {Default: "main", Value: "main"},
-					"secret":  {Sensitive: true, Value: "top-secret"},
+					"secret":  {Sensitive: new(true), Value: "top-secret"},
 				},
 			},
 			expected: map[string]*variable.Variable{
 				"catalog": {Default: "main", Value: "main"},
-				"secret":  {Sensitive: true, Value: "[redacted]"},
+				"secret":  {Sensitive: new(true), Value: "[redacted]"},
 			},
 		},
 	}

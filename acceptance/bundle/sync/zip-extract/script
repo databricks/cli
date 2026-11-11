@@ -13,12 +13,12 @@ list() {
   $CLI workspace list -o json "$1" | jq -r 'sort_by(.path)[] | "\(.object_type) \(.path | sub(".*/files"; ""))"'
 }
 
-title "Sync extracts the archive into the bundle's file path\n"
+title "Sync extracts the archive into the bundle's file path"
 trace $CLI bundle sync
 trace list "$remote"
 trace list "$remote/pkg"
 
-title "Syncing a changed archive overwrites the extracted files\n"
+title "Syncing a changed archive overwrites the extracted files"
 cp archive_v2.zip archive.zip
 trace $CLI bundle sync
 trace $CLI workspace export "$remote/inner.txt" --format AUTO

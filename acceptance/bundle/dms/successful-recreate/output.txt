@@ -1,5 +1,6 @@
 
 === Deploy: the state write records the resource
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/files...
 Created schemas.foo
@@ -60,6 +61,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op now and records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -75,6 +77,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The service lists the schema, recorded at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -85,6 +88,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === The raw recorded state the service holds for this deployment
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -107,6 +111,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Recreate writes state twice - the entry is dropped, then the new resource is saved
+
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
 >>> [CLI] bundle deploy --auto-approve
@@ -172,6 +177,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === The recreate is done: nothing left to plan, and the serial moved to 2
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -187,6 +193,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The service lists the schema at version 2 with recreate action
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -197,6 +204,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === The raw recorded state after recreate
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -219,6 +227,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Destroy: the delete is recorded with the id and no state
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.foo

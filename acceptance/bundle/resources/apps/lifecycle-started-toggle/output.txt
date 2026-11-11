@@ -1,5 +1,6 @@
 
 === Deploy with started=false: app created without compute (no_compute=true)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files...
 Created apps.mykey
@@ -23,6 +24,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "STOPPED"
 
 === Toggle started=false -> started=true: only Start should be called, no Update
+
 >>> update_file.py databricks.yml started: false started: true
 
 >>> [CLI] bundle deploy
@@ -50,6 +52,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "ACTIVE"
 
 === Toggle started=true -> started=false: only Stop should be called, no Update
+
 >>> update_file.py databricks.yml started: true started: false
 
 >>> [CLI] bundle deploy

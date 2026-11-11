@@ -1,5 +1,6 @@
 
 === submit with a Databricks AI environment and no dependencies
+
 >>> [CLI] air run -f run.yaml
 Submitting experiment: databricks-ai-v5-smoke
 Submitted workload with Job Run ID: 555
@@ -10,6 +11,7 @@ Stream logs after submission using:
   databricks air logs 555
 
 === submit includes the Databricks AI environment version and omits dependencies
+
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",

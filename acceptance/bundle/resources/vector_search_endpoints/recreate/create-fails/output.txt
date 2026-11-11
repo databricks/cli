@@ -1,5 +1,6 @@
 
 === Initial deploy creates two endpoints with distinct names
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.blocker_endpoint
@@ -8,11 +9,13 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit my_endpoint: rename onto blocker_endpoint's name and switch endpoint_type to trigger Recreate
+
 >>> update_file.py databricks.yml vs-endpoint-a-[UNIQUE_NAME] vs-endpoint-b-[UNIQUE_NAME]
 
 >>> update_file.py databricks.yml       endpoint_type: STANDARD       endpoint_type: STORAGE_OPTIMIZED
 
 === Deploy: Recreate of my_endpoint runs Delete (ok) then Create (409, name taken by blocker)
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
 Error: cannot recreate resources.vector_search_endpoints.my_endpoint: Vector search endpoint with name vs-endpoint-b-[UNIQUE_NAME] already exists (409 RESOURCE_ALREADY_EXISTS)
@@ -27,6 +30,7 @@ Files: 0 uploaded, 0 deleted
 Exit code: 1
 
 === Subsequent plan recovers: my_endpoint state was dropped, replan as Create
+
 >>> [CLI] bundle plan
 create vector_search_endpoints.my_endpoint
 

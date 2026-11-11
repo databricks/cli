@@ -1,4 +1,4 @@
-title 'Terraform state present: the direct default migrates it to the direct engine\n'
+title 'Terraform state present: the direct default migrates it to the direct engine'
 # Keep the committed fixtures (and generated files) out of `bundle deploy`'s upload.
 printf '%s\n' '.gitignore' 'out.*' 'terraform*.tfstate' 'terraform*-requests.json' > .gitignore
 
@@ -21,7 +21,7 @@ echo "{\"serial\": 0, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/r
 trace $CLI bundle plan
 
 rm "$OUT_REQUESTS"
-title 'A resources.json with a higher serial wins: the direct state is authoritative, no migration\n'
+title 'A resources.json with a higher serial wins: the direct state is authoritative, no migration'
 echo "{\"serial\": 10, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/resources.json
 # serial 10 outranks the terraform state (serial 1), so direct wins; its (empty) state plans to
 # create the schema, and every schemas request carries the direct-engine User-Agent, not terraform.

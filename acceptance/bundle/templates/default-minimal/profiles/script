@@ -18,7 +18,7 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
 for profile in classic custom_host; do
-  title "Profile $profile\n"
+  title "Profile $profile"
   trace $CLI bundle init default-minimal --config-file ./input.json --profile $profile
   cd my_default_minimal
   trace grep 'host:' databricks.yml

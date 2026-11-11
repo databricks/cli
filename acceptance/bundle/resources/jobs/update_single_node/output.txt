@@ -13,6 +13,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //jobs --nostamp
 
 === Update trigger.periodic.unit and re-deploy
+
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
@@ -32,6 +33,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Fetch job ID and verify remote state
+
 >>> [CLI] jobs get [FOO_ID]
 {
   "created_time": [UNIX_TIME_MILLIS],
@@ -80,6 +82,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Destroy the job and verify that it's removed from the state and from remote
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.foo

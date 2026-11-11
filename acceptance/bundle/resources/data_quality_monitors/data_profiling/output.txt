@@ -1,5 +1,6 @@
 
 === Development mode drops the schedule (its pause_status is read-only)
+
 >>> [CLI] bundle validate -o json -t dev
 null
 
@@ -29,6 +30,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify deployment, including server-computed fields
+
 >>> [CLI] data-quality get-monitor table [UUID][1]
 {
   "assets_dir": "/Workspace/Users/user@example.com/assets1",
@@ -41,10 +43,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Server-computed fields do not show up as drift
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Update the schedule (should update in place)
+
 >>> update_file.py databricks.yml 0 0 12 * * ? 0 0 6 * * ?
 
 >>> [CLI] bundle deploy
@@ -76,6 +80,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Change assets_dir (ignored by the update API, should plan a recreate)
+
 >>> update_file.py databricks.yml assets1 assets2
 
 >>> [CLI] bundle plan

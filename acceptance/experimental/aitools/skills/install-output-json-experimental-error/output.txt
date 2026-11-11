@@ -1,5 +1,6 @@
 
 === install --output json categorizes an experimental skill requested without --experimental
+
 >>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --skills=test-exp --output json
 {
   "scope": "global",
