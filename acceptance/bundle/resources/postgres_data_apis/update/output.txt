@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-pg-data-api-[UNIQUE_NAME]/default/files...
 Created postgres_branches.production
@@ -11,6 +12,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change a spec field
+
 >>> update_file.py databricks.yml db_max_rows: 100 db_max_rows: 500
 
 >>> [CLI] bundle plan
@@ -42,6 +44,7 @@ Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 }
 
 === Remove a spec field: update_mask=spec keeps a field the request omits, so it keeps its last value
+
 >>> [CLI] bundle plan
 update postgres_data_apis.my_data_api
 
@@ -69,6 +72,7 @@ Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 }
 
 === Plan after update shows no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 

@@ -72,6 +72,7 @@ A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dres
 Where a remote is rebuilt by hand from a GET response (e.g. `makeJobRunRemote` maps `jobs.Run` into the `jobs.RunNow`-shaped `JobRunRemote`), copy the new field from the response if the response has it, and list it with the request-only zero values otherwise.
 `job_runs.yml` must list every `jobs.RunNow` field under `ignore_remote_changes`; `TestJobRunIgnoresEveryRequestField` fails on a new one.
 A field the new spec now annotates as output-only may already be emitted into `<resource_type>.generated.yml`, making the manual entry in `<resource_type>.yml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.
+Keep one-off Python codegen fixes to a simple one-line override (e.g. `schemas["jobs.SqlConditionTriggerMode"].description = None` in `python/codegen/codegen/main.py`) and regenerate; do not expand patch helpers or add abstractions just to drop one malformed description, and keep the actual config field.
 Rerun `./task bump-sdk-post` after the fixes.
 
 **6. VERIFY.**

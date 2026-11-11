@@ -1,5 +1,6 @@
 
-=== run_as should succeed in all cases\nProcessing target: t_user_name
+=== run_as should succeed in all cases
+\nProcessing target: t_user_name
 
 >>> [CLI] bundle validate -t t_user_name
 Name: run_as

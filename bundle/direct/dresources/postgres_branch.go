@@ -55,7 +55,6 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 		ReplaceExisting: input.ReplaceExisting,
 		PurgeOnDelete:   input.PurgeOnDelete,
 		BranchSpec:      input.BranchSpec,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -65,13 +64,12 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 		Parent:   remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 
 		BranchSpec: remote.BranchSpec,
 	}
@@ -123,7 +121,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -203,7 +201,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
 		Name:            id,
-		Purge:           state.PurgeOnDelete,
+		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

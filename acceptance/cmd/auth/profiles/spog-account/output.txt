@@ -1,5 +1,6 @@
 
 === SPOG account profile should be valid
+
 >>> [CLI] auth profiles --output json
 {
   "profiles": [

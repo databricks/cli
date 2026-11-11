@@ -1,0 +1,20 @@
+bundle:
+  name: test-feature-specs-basic-$UNIQUE_NAME
+
+resources:
+  feature_specs:
+    spec1:
+      name: $SCHEMA_FULL_NAME.myspec
+      features:
+        - feature_lookup:
+            table: $SCHEMA_FULL_NAME.user_features
+            lookup_keys: [user_id]
+            feature_names: [age, country]
+        - feature_function:
+            udf: $SCHEMA_FULL_NAME.score
+            input_bindings:
+              - parameter: x
+                bound_feature: age
+            output: score
+      extra_pip_requirements:
+        requirements: ["numpy==2.1.0"]

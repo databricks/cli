@@ -15,11 +15,9 @@ r["tasks"].append({"task_key": "brand_new", "max_retries": 9,
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 title "brand_new is added even though the removal of shared was held back"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 errcode trace grep -c "task_key: brand_new" databricks.yml
 errcode trace grep -c "task_key: keep" databricks.yml

@@ -94,6 +94,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> title Check snapshot plan after deploy
 
 === Check snapshot plan after deploy
+
 >>> [CLI] bundle plan -o json
 Building python_artifact...
 
@@ -150,7 +151,7 @@ Building python_artifact...
     },
     "can_manage": {
       "action": "skip",
-      "reason": "missing_in_remote",
+      "reason": "spec:output_only",
       "old": [
         {
           "service_principal_name": "[USERNAME]"
@@ -193,7 +194,8 @@ Updated jobs.my_job
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
-=== Check that job uses a new snapshot: Snapshot changed as expected
+=== Check that job uses a new snapshot: 
+Snapshot changed as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

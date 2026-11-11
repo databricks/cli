@@ -8,7 +8,7 @@ type Lock struct {
 
 	// Force acquisition of deployment lock even if it is currently held.
 	// This may be necessary if a prior deployment failed to release the lock.
-	Force bool `json:"force,omitempty"`
+	Force *bool `json:"force,omitempty"`
 }
 
 // IsEnabled checks if the deployment lock is enabled.

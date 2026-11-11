@@ -18,6 +18,7 @@ type Resources struct {
 
 	Features                  map[string]*resources.Feature                  `json:"features,omitempty"`
 	MaterializationSets       map[string]*resources.MaterializationSet       `json:"materialization_sets,omitempty"`
+	FeatureSpecs              map[string]*resources.FeatureSpec              `json:"feature_specs,omitempty"`
 	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
 	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
 	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
@@ -120,6 +121,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["experiments"], r.Experiments),
 		collectResourceMap(descriptions["features"], r.Features),
 		collectResourceMap(descriptions["materialization_sets"], r.MaterializationSets),
+		collectResourceMap(descriptions["feature_specs"], r.FeatureSpecs),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["model_services"], r.ModelServices),
 		collectResourceMap(descriptions["mcp_services"], r.McpServices),
@@ -202,7 +204,7 @@ func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
 func (r *Resources) ResolveDependsOn(ref string) (string, error) {
 	resourceRef, sub := ref, ""
 	if parts := strings.Split(ref, "."); len(parts) == 3 {
-		if _, ok := ResourcesTypes[parts[0]+"."+parts[2]]; !ok {
+		if _, ok := ResourcesTypes()[parts[0]+"."+parts[2]]; !ok {
 			return "", fmt.Errorf("no such resource: %s", ref)
 		}
 		resourceRef, sub = parts[0]+"."+parts[1], "."+parts[2]
@@ -229,6 +231,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
 		"features":                     (&resources.Feature{}).ResourceDescription(),
 		"materialization_sets":         (&resources.MaterializationSet{}).ResourceDescription(),
+		"feature_specs":                (&resources.FeatureSpec{}).ResourceDescription(),
 		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"model_services":               (&resources.ModelService{}).ResourceDescription(),

@@ -1,5 +1,6 @@
 
 === Deploy a started app with config.env entries set via value and value_from
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps-config-env-no-drift/default/files...
 ✓ Deployment succeeded
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === The Apps API returns deployment env vars with their name only
+
 >>> [CLI] bundle plan -o json
 [
   {
@@ -19,6 +21,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Re-plan is clean: value and value_from are input-only and must not drift
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
@@ -39,6 +42,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A local change to an env value still plans an update
+
 >>> update_file.py databricks.yml value: hello value: goodbye
 
 >>> [CLI] bundle plan
@@ -62,6 +66,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 }
 
 === Deploy applies the change and the plan is clean again
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps-config-env-no-drift/default/files...
 ✓ Deployment succeeded

@@ -6,6 +6,7 @@
 ]
 
 === Logout without --delete
+
 >>> [CLI] auth logout --profile dev --auto-approve
 Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
 Logged out of profile "dev". Use --delete to also remove it from the config file.

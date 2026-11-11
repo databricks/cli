@@ -11,5 +11,5 @@ trace musterr $CLI pipelines test --pipeline-id $no_root_pipeline_id tests
 trace MSYS_NO_PATHCONV=1 $CLI pipelines test --pipeline-id $no_root_pipeline_id /Workspace/Users/someone@example.com/tests/test_other.py::test_x
 trace print_requests.py //updates
 
-title "--pipeline-id is required"
+title "Outside a project, --pipeline-id is required"
 trace musterr $CLI pipelines test tests
