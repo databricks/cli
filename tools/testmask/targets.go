@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path"
 	"slices"
 	"strings"
 
@@ -29,9 +30,21 @@ var commonTriggerPatterns = []string{
 	"tools/task/",
 }
 
-// ignoredFiles lists files that never affect test results.
-var ignoredFiles = []string{
+// ignoredPatterns lists files that never affect test results. Patterns use
+// path.Match syntax, and a trailing "/**" matches everything under a directory.
+// Nested READMEs are not listed because many are test fixtures or embedded templates.
+var ignoredPatterns = []string{
+	".agents/**",
+	".claude/**",
+	".cursor/**",
 	".github/CODEOWNERS",
+	".github/ISSUE_TEMPLATE/**",
+	".github/PULL_REQUEST_TEMPLATE.md",
+	".nextchanges/*/*.md",
+	"AGENTS.md",
+	"CHANGELOG.md",
+	"README.md",
+	"SECURITY.md",
 }
 
 type targetMapping struct {
@@ -106,13 +119,28 @@ func sourceToPrefix(src string) string {
 	return src
 }
 
+func isIgnored(file string) bool {
+	for _, pattern := range ignoredPatterns {
+		if dir, ok := strings.CutSuffix(pattern, "**"); ok {
+			if strings.HasPrefix(file, dir) {
+				return true
+			}
+			continue
+		}
+		if ok, _ := path.Match(pattern, file); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // GetTargets matches files to targets based on patterns and returns the matched targets.
 func GetTargets(files []string, mappings []targetMapping) []string {
 	targetSet := make(map[string]bool)
 	unmatchedFiles := []string{}
 
 	for _, file := range files {
-		if slices.Contains(ignoredFiles, file) {
+		if isIgnored(file) {
 			continue
 		}
 
