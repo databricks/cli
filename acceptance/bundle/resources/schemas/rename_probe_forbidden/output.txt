@@ -1,0 +1,30 @@
+
+=== Deploy a schema
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.schema1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Delete the schema out of band and rename it in the config. Reading the new name is forbidden
+>>> [CLI] schemas delete main.myschema
+
+>>> update_file.py databricks.yml name: myschema name: myschema2
+
+>>> errcode [CLI] bundle plan
+Error: cannot plan resources.schemas.schema1: reading id="main.myschema2": User does not have USE SCHEMA on Schema main.myschema2 (403 PERMISSION_DENIED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.1/unity-catalog/schemas/main.myschema2?
+HTTP Status: 403 Forbidden
+API error_code: PERMISSION_DENIED
+API message: User does not have USE SCHEMA on Schema main.myschema2
+
+Error: planning failed
+
+
+Exit code: 1
+
+>>> errcode [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
