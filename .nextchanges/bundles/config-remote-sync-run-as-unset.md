@@ -1,1 +1,1 @@
-* `bundle config-remote-sync` now syncs a `run_as` set remotely, for example in the Jobs UI, on a job whose config leaves it unset, unless it names the job's creator.
+* `bundle config-remote-sync` now syncs a `run_as` set remotely, for example in the Jobs UI, on a job whose config leaves it unset, unless it names the job's creator. ([#7494](https://github.com/databricks/cli/pull/7494))
