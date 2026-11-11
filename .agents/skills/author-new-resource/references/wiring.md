@@ -40,7 +40,7 @@ Run in this order after the Go types compile; `./task generate` runs all of them
 | `./task generate-schema` | `bundle/schema/jsonschema.json`, and rewrites `bundle/internal/schema/annotations.yml` adding `PLACEHOLDER` entries | Fill every placeholder for the type (resource-level description, `lifecycle`, each field without an upstream description), then run again. `TestRequiredAnnotationsForNewFields` in `bundle/internal/schema` fails on leftovers |
 | `./task generate-validation` | `bundle/internal/validation/generated/required_fields.go`, `enum_fields.go` | Entries for the type appear |
 | `./task generate-direct` | `bundle/direct/dresources/apitypes.generated.yml`, `configs/<plural>.generated.yml` | The plural has an entry naming the resource type; the generated rules match the proto's `IMMUTABLE`, `OUTPUT_ONLY`, `INPUT_ONLY`. A missing entry means the heuristic found nothing: pin it |
-| `./task pydabs-codegen` | `python/databricks/bundles/<plural>/`, `core/_generated/`, docs, test cases | Only produced for GA and public-preview stages. Regenerate the public API snapshot: `cd python && UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py`. The task deletes the generated packages before it fetches dependencies; if it fails on network access, restore with `git checkout -- python/`, sync the `python/` and `python/codegen/` environments first, and rerun |
+| `./task pydabs-codegen` | `python/databricks/bundles/<plural>/`, `core/_generated/`, docs, test cases | Produced for every resource except those with a `PRIVATE_PREVIEW` or `PUBLIC_BETA` entry in `launchStageOverrides` (`bundle/internal/annotation/preview.go`). Regenerate the public API snapshot: `cd python && UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py`. The task deletes the generated packages before it fetches dependencies; if it fails on network access, restore with `git checkout -- python/`, sync the `python/` and `python/codegen/` environments first, and rerun |
 | `./task generate-check` | nothing | Must be clean; CI runs it |
 
 Never edit `jsonschema.json`, `*.generated.yml`, the validation files or the Python packages by
@@ -56,7 +56,8 @@ hand. `annotations.yml` is the one hybrid file: generated structure, hand-writte
 
 ## 5. Bundle-wide behaviour (`bundle/config/mutator/resourcemutator`, `bundle/phases`, `libs/workspaceurls`)
 
-Each row is a decision, not a default. Write the decision in the PR description.
+Each row is a decision, not a default. The code records it: the entry in the test's list, the
+approval table, the exclusion line, with a one-line comment when the reason is not obvious.
 
 | Decision | Where | Caught by |
 |---|---|---|

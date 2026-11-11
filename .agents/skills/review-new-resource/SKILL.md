@@ -69,8 +69,9 @@ Apply the readiness gate to the result. For each row, cite the file and line.
 - `OverrideChangeDesc`: present? For each branch, which yml rule it stands in for and why that rule
   could not be written. Default position: it should not exist in a new resource.
 - `configs/<plural>.yml`: every hand-written rule has a comment naming the API behaviour; rules
-  that mirror `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` have an upstream annotation request
-  mentioned in the PR.
+  that mirror `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` are bridges, so the comment also names
+  the annotation the proto lacks. Whether the upstream request was filed is a question to the
+  author, not something the description has to state.
 - `configs/<plural>.generated.yml` and `apitypes.generated.yml`: the type picked is the resource
   type, not a request type; input-only and output-only fields match the API docs.
 - `DoUpdate`: present only if the API can update what the config can change; a removal-only or
@@ -134,27 +135,34 @@ Table: `behaviour modelled | needed by the CLI? | evidence (server ref or cloud 
 - Unit tests: `testConfig` entry populates every field; completeness-list tests updated rather than
   special-cased (`run_as_test.go`, `apply_bundle_permissions_test.go`, `workspace_open_test.go`,
   `all_test.go`). A branch on the resource name inside a shared harness is a comment.
-- Evidence of a cloud run in the PR description, with the environment.
+- Cloud coverage: the `lifecycle` directory (or the directory that plays its role) has
+  `Cloud = true` in its `out.test.toml`. The PR's Integration Tests check runs every changed
+  `Cloud = true` test, so that check is the evidence; do not ask for a run link, an environment, or
+  a statement about the run.
 - Bundle-wide behaviour the resource opted into (a dev-mode preset such as a prefix or a paused
   schedule, run_as rejection, UC dependency capture, approval prompts) has an acceptance test that
   shows it; a unit test alone is a comment.
 - Any claim in this review that a test exists, or that a file does something, cites `path:line`
   you read. Verify counts with a command before stating them.
-Table: `expected test | present? | ran? (out.test.toml / description) | note`
+Table: `expected test | present? | ran? (out.test.toml / CI check) | note`
 
 ### P7. Generated files and descriptions
 
 `annotations.yml` has real descriptions for the resource and its fields and was regenerated, not
 pasted; `jsonschema.json`, validation files, refschema output and PyDABs models follow from a
-generator run (`./task generate-schema`, `generate-direct`, `pydabs-codegen`). Launch stage in the
-schema matches the proto and PyDABs eligibility.
+generator run (`./task generate-schema`, `generate-direct`, `pydabs-codegen`). Launch stage: the
+resource-level `x-databricks-launch-stage` comes only from `launchStageOverrides` in
+`bundle/internal/annotation/preview.go`, so a resource without an entry ships in PyDABs whatever
+its fields' stages, like every non-Postgres resource today. Whether that is intended is a question
+to the author, not an upstream ask.
 Table: `generated file | consistent with source? | note`
 
 ### P8. User-facing text
 
 Changelog fragment under `.nextchanges/bundles/` in the required one-line form; approval messages
-short and actionable; error strings without trailing punctuation; PR description in the template's
-three sections, stating cloud coverage and any API changes requested.
+short and actionable; error strings without trailing punctuation. The PR description is read for
+intent only: the code carries decisions, API requests and test coverage, so a description that does
+not restate them is not a finding.
 Table: `text (file:line) | issue | suggested wording`
 
 ### P9. Comments and size
@@ -164,8 +172,20 @@ comments, comments that restate code, and comments describing planner internals 
 "move to the README" comment. Prose titles in scripts get the same.
 Table: `location | what the comment explains | keep / delete / move`
 
-Skip formatting, identifier naming, anything a linter catches, and defensive-check debates beyond
-what P3 lists.
+### P10. Consistency with siblings
+
+Resources copy their exemplar, so a block that repeats a sibling's (a setup function in a test
+script, a UC-name resolution loop in a mutator, an approval message, a fake handler) is the expected
+outcome, not a finding. For each repeated block, open the sibling and compare shape: same shape, no
+comment; different shape with no comment saying why, one comment that points at the sibling and asks
+for the same shape. When the repo already has a helper for the job (`acceptance/bin/`,
+`acceptance/script.prepare`, `libs/`), ask for that helper by name. Do not ask for a new shared
+helper, a new `script.prepare`, or a `libs/` function to remove the repetition; that is a separate
+PR if anyone wants it.
+Table: `block (file:line) | sibling it follows | same shape? | if not, reason given?`
+
+Skip formatting, identifier naming, anything a linter catches, defensive-check debates beyond what
+P3 lists, repetition that matches its sibling, and the completeness of the PR description.
 
 ## 4. Red flags
 
@@ -194,8 +214,9 @@ no verdict, no summary.
 
 Order: redesign and scope first, then correctness, then wiring and tests, then generated files and
 wording. Raise each issue once and list other locations inside that comment. The review body
-carries cross-cutting asks only: the API changes to request, the split, the design decision to
-make explicit.
+carries cross-cutting asks only: the split, and a design question that spans files. Asks to
+document decisions, API requests or test runs in the description are not comments; the code is
+leading, and the inline comment on the rule, mask or exclusion is where that fact lives.
 
 Before printing, re-check every comment against the code, drop any that misread it, and make sure
 every worksheet problem row is either a comment or listed under "Not raised" with the reason.
@@ -220,7 +241,7 @@ Not raised:
 - <worksheet row>: <why>
 
 ## Worksheet (not for posting)
-<the tables from P1 to P9, plus the triage numbers>
+<the tables from P1 to P10, plus the triage numbers>
 ```
 
 Use line numbers from `TARGET`. Only post if asked, and never to a PR you were told to dry-run.

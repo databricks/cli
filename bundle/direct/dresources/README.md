@@ -121,7 +121,7 @@ in normal drift detection and is no longer subject to the `missing_in_remote` su
 
 Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.
 
-A new resource should not need it. When one seems to, the cause is almost always upstream: a missing `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` annotation, an update endpoint that cannot replace the resource, or list elements without a key field. Raise those with the API team before writing an override, and if an override still lands, the PR description must say which yml rule it replaces and why that rule could not be written.
+A new resource should not need it. When one seems to, the cause is almost always upstream: a missing `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` annotation, an update endpoint that cannot replace the resource, or list elements without a key field. Raise those with the API team before writing an override, and if an override still lands, the comment on it must say which yml rule it replaces and why that rule could not be written.
 
 ## Nice to have
  - Add link to corresponding API documentation before each method.
@@ -141,4 +141,4 @@ A new resource should not need it. When one seems to, the cause is almost always
    - Register the file under `EnvMatrix.INPUT_CONFIG` in acceptance/bundle/invariant/test.toml, add exclusions for legs it cannot run (`DMS=true` if the type is not in the deployment-history allowlist, cloud if prerequisites are missing), and exclude it in `invariant/migrate` and `invariant/auto-migrate`. A config that is not in the matrix never runs; prove it ran with `go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift' -v -count=1 | grep INPUT_CONFIG=<resource>`.
  - Add bind/unbind tests in acceptance/bundle/deployment/bind/<resource>/
    - These verify that binding an existing resource and then deploying/destroying works correctly.
- - For new resource types, run at least one test on a live cloud environment, and say in the PR which test and which environment.
+ - For new resource types, at least one test runs on a live cloud environment: set `Cloud = true` on it (the `lifecycle` directory), and the PR's Integration Tests check runs it.

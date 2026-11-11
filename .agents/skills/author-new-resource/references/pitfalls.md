@@ -16,8 +16,8 @@ element, in the API. Not a composite key, not an engine change.
 **`OverrideChangeDesc` in a new resource.** It exists for the rare case the yml rules cannot
 express. In a new resource it almost always means one of: the key problem above, an update endpoint
 that supports only part of the resource, or a rule that belongs in the proto. Each of those is an API
-conversation. If you still need it, the PR description must say which yml rule it replaces and why
-that rule could not be written.
+conversation. If you still need it, the comment on the override must say which yml rule it replaces
+and why that rule could not be written.
 
 **`DoUpdate` for an endpoint that cannot update.** If the API's update can only remove list members,
 or only touch two fields, do not implement `DoUpdate` and classify the rest; recreate on any change
@@ -94,8 +94,8 @@ dependency). Fold the rest.
 **Dumping an API response into the golden.** The backend adds fields; the golden breaks. Project to
 the fields you assert.
 
-**Titles as paragraphs.** `title` takes one line. Explanation belongs in the PR description or a
-code comment, not in `output.txt`.
+**Titles as paragraphs.** `title` takes one line. Explanation belongs in a code comment, not in
+`output.txt`.
 
 **Goldens with unresolved `${resources...}` references.** The script printed config, not state.
 Print what the deploy produced.
@@ -126,6 +126,13 @@ tweak, a message rewording. Each is its own PR.
 the code is reacting to. How the planner matches patterns, or what `ignore_remote_changes` means,
 belongs in the engine's README, once.
 
-**PR descriptions that describe design.** Say what the resource is, what shape its identity and
-update have, which tests ran on cloud, and what API changes were requested. Leave the mechanism to
-the code.
+**A shared helper extracted from the exemplar's pattern.** Two resources carrying the same block in
+the same shape is the intended result of copying the exemplar. A new `script.prepare`, `libs/`
+function or `acceptance/bin/` script that exists only to deduplicate your copy widens the PR and
+gives review a second design to read. Copy the block, keep its shape, and use a helper only when the
+repo already has one for that job.
+
+**PR descriptions that carry what the code should.** Decisions, API requests and test runs belong
+in the code: a comment on the rule or mask, the test list entry, `Cloud = true` in `test.toml`. The
+description says what the resource is and the shape of its identity and update, in a few
+sentences, and stops.

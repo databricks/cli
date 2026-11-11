@@ -10,8 +10,9 @@ Each check ends in one of three verdicts:
 
 - **STOP**: do not start the CLI work until the API changes. Send the note in section 4.
 - **ASK**: file the API change, continue in parallel, and carry a small, commented hand-written rule
-  until the annotation lands. Say so in the PR.
-- **NOTE**: record the decision in the PR description. No API change needed.
+  until the annotation lands. The comment on the rule names the API behaviour and the request.
+- **NOTE**: record the decision in your notes; the code carries it from phase 2 on. No API change
+  needed.
 
 ## 1. How the CLI consumes the API
 
@@ -111,7 +112,7 @@ list each non-echoed field under `ignore_remote_changes` with `spec:input_only`.
   from the public surface or to implement it; check the create and update validators, not only
   the proto.
 - Whole configuration blocks are not echoed (the server keeps the intent private): **ASK** loudly.
-  The engine cannot detect drift on them at all; say so in the PR.
+  The engine cannot detect drift on them at all; say so in a comment on the rule that ignores them.
 - A field is returned only when a query flag asks for it: **NOTE**, and `DoRead` must pass the
   flag. If the server also rewrites the value (reformats a document, re-keys ids), the round-trip
   can never settle: **ASK** for a stable representation, and decide with the API team whether the
@@ -136,8 +137,8 @@ are evidence for an ASK, not a substitute for the annotation. After generation, 
 - Immutable only in some states (settable once, or fixed only after a sub-object exists): no
   annotation and no recreate rule, which would also fire on the allowed transition. **NOTE** when
   the API documents the condition; **ASK** for documentation when the only evidence is a server
-  validator. Either way, say in the PR that a later change fails at deploy with the server's
-  error, and test the allowed transition in the `lifecycle` test.
+  validator. Either way, a later change fails at deploy with the server's error; test the allowed
+  transition in the `lifecycle` test.
 - The API has a "cannot be changed" rule nobody has written down: **ASK**, and test it against a
   live workspace before relying on it.
 
@@ -175,7 +176,7 @@ against a live workspace once; some services accept the mask and ignore fields a
   only the proto comment.
 - A mask path the server rejects depending on the resource's state (a list field on a resource
   that has no principal, for example): **ASK**; a static mask then fails for some resources, and
-  the PR must say which.
+  the comment on the mask says which.
 - A full-body PATCH or PUT with no mask: **NOTE** if the server treats absent fields as cleared (that
   is full replacement). If absent fields keep their old value, removing a field from config can
   never clear it: **ASK** for a mask or for documented clearing semantics, and test clearing in the
@@ -186,7 +187,8 @@ against a live workspace once; some services accept the mask and ignore fields a
   the two apart: **ASK** for `IMMUTABLE` on the rest (2.4).
 - Membership changes only through custom add/remove methods, or an update that can remove members
   but not add them: **ASK** for full replacement through the standard Update (AIP-144). Until it
-  lands, do not implement `DoUpdate`: every change recreates the resource, and the PR says so. If a
+  lands, do not implement `DoUpdate`: every change recreates the resource, and the adapter's doc
+  comment says so. If a
   recreate is unacceptable for this resource (it drops data that takes hours to rebuild), that
   turns the ASK into a **STOP**. Never classify changes in Go to work around it.
 
@@ -222,7 +224,7 @@ either completes synchronously or is an operation with a documented completion s
 The declared error codes are on the RPC's `error_codes` list in the proto; a status enum with a
 pending-delete value is the usual hint that delete is asynchronous or soft. If Delete is refused while child objects exist, the children must be bundle resources the engine
 can order through `lifecycle.depends_on` or references; otherwise `bundle destroy` cannot succeed
-without manual steps. Say which in the PR.
+without manual steps. Say which in a comment on `DoDelete`.
 
 **Verdicts.** Standard: **NOTE**. Async delete with no completion signal, or a soft delete that
 keeps the resource readable for a while (GET still returns it, perhaps in a trashed or deleting
@@ -242,19 +244,23 @@ create-then-plan prove it against a real workspace. A 404 observed after create 
 
 ### 2.10 Launch stage
 
-**Check.** The resource, its methods and new fields carry a `stage`. PyDABs generates Python classes
-only for `GA` and `PUBLIC_PREVIEW` resources; `PRIVATE_PREVIEW` and `PUBLIC_BETA` are excluded, and
-fields at those stages are marked experimental.
+**Check.** New fields carry a `stage` in the proto; it reaches `cli.json` as `launch_stage` on the
+field and renders as a `[Private Preview]` or `[Public Preview]` tag on the field in the schema.
+The resource itself has no stage in `cli.json`. Its `x-databricks-launch-stage` in
+`bundle/schema/jsonschema.json` comes only from `launchStageOverrides` in
+`bundle/internal/annotation/preview.go`, which is a CLI-side decision: PyDABs generates a Python
+package for every resource without an entry there, whatever its fields' stages, and skips resources
+whose entry is `PRIVATE_PREVIEW` or `PUBLIC_BETA`.
 
-**Verify.** Eligibility is decided by the stage on the resource message, not on its fields. A
-resource whose fields are all private preview but whose message carries no stage is generated as
-GA. After `./task generate-schema`, check the `x-databricks-launch-stage` on the resource's entry
-in `bundle/schema/jsonschema.json`, and `bundle/internal/annotation/preview.go` for CLI-side
-overrides.
+**Verify.** `rg -n launch_stage .codegen/cli.json` around the resource's fields for the field
+stages. After `./task generate-schema`, read the resource's entry in `jsonschema.json` for
+`x-databricks-launch-stage` and check whether `python/databricks/bundles/<plural>/` was generated.
+The Postgres resources are the precedent for an override; every other resource ships without one.
 
-**Verdicts.** Set on the resource and matching the fields: **NOTE** the stage and the resulting
-PyDABs eligibility in the PR. Missing on the resource, or lower than its fields: **ASK**, and add
-the CLI-side override so a preview resource does not ship as a public Python API in the meantime.
+**Verdicts.** This is a CLI decision, not an API ask. The resource is meant to be public in PyDABs
+now: **NOTE**, no override. It is not: **NOTE**, add it to `launchStageOverrides` with the stage and
+a one-line reason, regenerate, and confirm the Python package is gone. Fields with no `stage` while
+the API is in preview: **ASK** for the field annotation so the schema tags them.
 
 ### 2.11 ETag
 
@@ -262,8 +268,8 @@ the CLI-side override so a preview resource does not ship as a public Python API
 (AIP-154) and Update honours it.
 
 **Verdicts.** Present, and Update or Delete honour it as a precondition (a mismatch fails with
-`ABORTED` or 409): **ASK** the team how the bundle should use it, and write in the PR which channel
-detects drift if the adapter does not send it. Present but recomputed by the server on its own
+`ABORTED` or 409): **ASK** the team how the bundle should use it, and write in a comment on
+`DoUpdate` which channel detects drift if the adapter does not send it. Present but recomputed by the server on its own
 schedule (content migrations, re-keying): **ASK** for a content-stable etag or a documented rule, and
 note that the adapter omits it on update. Absent: **NOTE**; drift detection falls back to full read
 comparison.
@@ -279,14 +285,14 @@ gives it nothing.
 the API deletes the referenced object only after its referrers are gone: **NOTE**, and add an
 acceptance test that deploys and destroys both. The referenced object's delete is refused or races
 while referrers exist and nothing signals completion: **ASK** for a completion signal, and record
-the destroy race in the PR.
+the destroy race in a comment on `DoDelete`.
 
 ### 2.13 Singletons
 
 **Check.** A singleton (one per parent, no id) defines Get and Update only (AIP-156).
 
 **Verdicts.** Clean singleton: **NOTE**. Create means update and Delete means reset; say so in the
-adapter and in the PR. Check `apitypes.generated.yml` picked the resource type and pin it in
+adapter's doc comment. Check `apitypes.generated.yml` picked the resource type and pin it in
 `apitypes.yml` if it picked a request type.
 
 ## 3. What the API linter already covers
@@ -321,7 +327,7 @@ The items below need an API change; the CLI does not work around them.
 7. Long-running Create (AIP-151): return the resource id in the operation metadata.
 8. Delete (AIP-135): NOT_FOUND unless allow_missing; document async completion.
 9. Read after Create: state when GET returns the new resource.
-10. Launch stage: set `stage` on the resource, methods and new fields.
+10. Launch stage: set `stage` on new fields. The CLI decides the resource's own stage.
 
 Items marked STOP block the bundle work; items marked ASK can land after the first PR.
 ```

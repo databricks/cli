@@ -35,7 +35,8 @@ Check: the verdict table exists and has no STOP.
 
 ## Phase 1: establish the contract
 
-Decide and write down, in the PR description draft:
+Decide and write down in your working notes (the code records each of these from phase 2 on; the PR
+description does not repeat them):
 
 1. **Names.** Bundle plural and singular (`resources.<plural>`, snake_case, matching the API's
    collection name), Go type, SDK service and types: the resource message, the create request, the
@@ -57,7 +58,9 @@ Decide and write down, in the PR description draft:
 4. **Asynchrony.** Does create, update or delete return an operation; is the id available before
    completion; is the resource readable right after create.
 5. **URL.** Does the workspace UI have a page for one instance; what is its path.
-6. **Launch stage** and therefore PyDABs eligibility (GA and public preview only).
+6. **Launch stage.** Field stages come from the proto. The resource's own stage is a CLI decision
+   in `launchStageOverrides` (`bundle/internal/annotation/preview.go`) and decides PyDABs
+   eligibility: no entry means a public Python package (readiness check 2.10).
 7. **Exemplar.** Pick the existing resource closest to your shape and copy its files, do not write
    from scratch. Current good choices on `main`:
    - server-assigned id, plain CRUD: `instance_pool.go` in `bundle/direct/dresources/` and
@@ -71,6 +74,11 @@ Decide and write down, in the PR description draft:
    If one of these does not exist at your base commit, take the newest resource that passes the
    phase 2 rules: no `OverrideChangeDesc`, no inline wait loop, a static or `*` mask, a fake under
    150 lines. Never copy an adapter because it is recent; copy it because it is clean.
+   Copy the exemplar's shape block for block, test scripts and fake included, and keep that shape
+   even where two resources now carry the same block: review checks that your copy matches the
+   sibling, not that it is unique. Use a helper when the repo already has one for the job
+   (`acceptance/bin/`, `acceptance/script.prepare`, `libs/`); do not add one to remove the
+   repetition, that is a separate PR.
 
 Check: the seven items are written down and the exemplar's files are open side by side.
 
@@ -118,9 +126,9 @@ go test ./bundle/direct/dresources -run 'TestAll/^<plural>$|TestResourceConfig|T
 plus: `./task generate-check` is clean, `grep -c PLACEHOLDER bundle/internal/schema/annotations.yml`
 did not grow, `acceptance/bundle/refschema/output/<plural>.txt` exists (the first
 `generate-refschema` run reports the new file as unexpected; run it again), and
-`python/databricks/bundles/<plural>/` exists exactly when the resource's launch stage makes it
-eligible (GA or public preview). A preview resource that produced a Python package needs the
-launch-stage override from the readiness reference, then a regeneration that removes the package.
+`python/databricks/bundles/<plural>/` exists exactly when you decided it should in phase 1 item 6:
+without a `launchStageOverrides` entry the package is generated; with a `PRIVATE_PREVIEW` or
+`PUBLIC_BETA` entry a regeneration removes it.
 
 ## Phase 4: tests
 
@@ -130,19 +138,24 @@ entry, the PyDABs support directory when eligible) and extend the completeness t
 reference lists. Copy the exemplar's directories and adapt them; keep `title` lines to one line and
 let `print_requests.py`, `replace_ids.py` and `musterr` do the work.
 
-Then prove the tests ran, with the commands in testing reference section 4, and run the `lifecycle`
-test against a real workspace (section 6). Record which environment.
+Then prove the tests ran, with the commands in testing reference section 4. `Cloud = true` on the
+`lifecycle` directory is what gets it run against a real workspace: the PR's Integration Tests check
+selects every changed cloud test once the PR is open. Section 6 says how to run it locally first
+when you have access and want a faster loop.
 
-Check: every proof command lists your tests; `./task test` passes locally; the cloud run passed.
+Check: every proof command lists your tests; `./task test` passes locally; once the PR is open, its
+Integration Tests check passes.
 
 ## Phase 5: bundle-wide decisions
 
 Go through `references/wiring.md` section 5 and make each decision explicitly: run_as, presets,
 permissions, UC dependencies, approval prompts in both deploy and destroy, workspace URL, state
-fixture, deployment-history allowlist or exclusion. Write each decision and its reason into the PR
-description. "Not applicable" is a valid decision when you say why.
+fixture, deployment-history allowlist or exclusion. Each decision is recorded where the code records
+it: the entry in the test's allow or carve-out list, the approval table entry, the `EnvMatrixExclude`
+line, with a one-line comment when the reason is not obvious from its neighbours. "Not applicable"
+is a valid decision when that comment says why.
 
-Check: the completeness tests named in that section pass; the PR description lists the decisions.
+Check: the completeness tests named in that section pass.
 
 ## Phase 6: the PR
 
@@ -152,12 +165,12 @@ Check: the completeness tests named in that section pass; the PR description lis
   separate PR.
 - Changelog fragment `.nextchanges/bundles/<plural>.md`, one line.
 - Run `.agents/skills/pr-checklist`.
-- Description, three sections from the PR template:
-  - Changes: the resource, its identity and update shape in two sentences, the decisions from
-    phase 5, the API changes requested in phase 0 and their status.
+- Description, three sections from the PR template, short; the diff carries the detail:
+  - Changes: what the resource is, and its identity and update shape, in two sentences.
   - Why: one sentence.
-  - Tests: the acceptance directories, which ran on cloud and where, the proof that the invariant
-    config ran.
+  - Tests: the acceptance directories, one line. Cloud coverage is visible from `Cloud = true` and
+    the Integration Tests check; decisions and API requests live in code comments. Do not restate
+    them here.
 - Read `references/pitfalls.md` once more against your diff.
 
 Check: the diff touches only the files in the wiring reference plus your acceptance directories, and
