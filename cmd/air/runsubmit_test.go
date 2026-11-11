@@ -95,6 +95,28 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayloadLiteSwapRouting(t *testing.T) {
+	for _, liteSwapID := range []string{"", " ", "agent-a", "testenv://liteswap/agent-b"} {
+		t.Run(liteSwapID, func(t *testing.T) {
+			cfg := &runConfig{
+				ExperimentName: "exp",
+				Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+				EnvVariables:   map[string]string{airLiteSwapIDEnvVar: liteSwapID, "FOO": "bar"},
+			}
+			payload := buildSubmitPayload(cfg, "/d/command.sh", "6", "", snapshotResult{}, nil)
+			if strings.TrimSpace(liteSwapID) == "" {
+				assert.Empty(t, payload.EnvironmentVariables)
+				assert.Empty(t, payload.Tasks[0].EnvironmentVariablesKey)
+				return
+			}
+			require.Len(t, payload.EnvironmentVariables, 1)
+			profile := payload.EnvironmentVariables[0]
+			assert.Equal(t, profile.EnvironmentVariablesKey, payload.Tasks[0].EnvironmentVariablesKey)
+			assert.Equal(t, map[string]string{airLiteSwapIDEnvVar: liteSwapID}, profile.Spec.Variables)
+		})
+	}
+}
+
 func TestBuildSubmitPayloadB300(t *testing.T) {
 	cfg := &runConfig{
 		ExperimentName: "b300",
@@ -155,6 +177,11 @@ func TestSubmitRun(t *testing.T) {
 				var body map[string]any
 				require.NoError(t, json.Unmarshal(req.Body, &body))
 				assert.Equal(t, "idem-key", body["idempotency_token"])
+				var submitted jobs.SubmitRun
+				require.NoError(t, json.Unmarshal(req.Body, &submitted))
+				require.Len(t, submitted.EnvironmentVariables, 1)
+				assert.Equal(t, map[string]string{airLiteSwapIDEnvVar: "agent-a"}, submitted.EnvironmentVariables[0].Spec.Variables)
+				assert.Equal(t, submitted.EnvironmentVariables[0].EnvironmentVariablesKey, submitted.Tasks[0].EnvironmentVariablesKey)
 				tasks := body["tasks"].([]any)
 				require.Len(t, tasks, 1)
 				task := tasks[0].(map[string]any)
@@ -188,6 +215,7 @@ func TestSubmitRun(t *testing.T) {
 			require.NoError(t, err)
 			payload := buildSubmitPayload(&runConfig{
 				ExperimentName: "exp",
+				EnvVariables:   map[string]string{airLiteSwapIDEnvVar: "agent-a", "FOO": "bar"},
 				Command:        new("x"),
 				Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 				MaxRetries:     new(0),

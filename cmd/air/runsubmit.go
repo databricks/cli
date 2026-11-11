@@ -33,6 +33,8 @@ const defaultDlRuntimeImage = "CLIENT-GPU-6"
 // carries the runtime channel.
 const aiRuntimeEnvironmentKey = "default"
 
+const airLiteSwapIDEnvVar = "AIR_LITESWAP_ID"
+
 // dlRuntimeImage resolves the bare runtime channel (config version, else env,
 // else default), always stripping the CLIENT-GPU- prefix.
 func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
@@ -114,7 +116,7 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// slices, so a no-deps run omits the key.
 	envSpec := buildRunEnvironment(dlImage, deps)
 
-	return jobs.SubmitRun{
+	payload := jobs.SubmitRun{
 		RunName: cfg.ExperimentName,
 		// budget_policy_id matches what the Python CLI and `ssh connect` send;
 		// usage_policy_id is the newer alias for the same thing on SubmitRun.
@@ -126,6 +128,18 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			Spec:           envSpec,
 		}},
 	}
+	// The scheduler needs the routing tag before it launches the workload and
+	// reads env_vars.json. Keep ordinary env vars and secrets on the sidecar path.
+	if liteSwapID := cfg.EnvVariables[airLiteSwapIDEnvVar]; strings.TrimSpace(liteSwapID) != "" {
+		payload.Tasks[0].EnvironmentVariablesKey = aiRuntimeEnvironmentKey
+		payload.EnvironmentVariables = []jobs.JobEnvironmentVariables{{
+			EnvironmentVariablesKey: aiRuntimeEnvironmentKey,
+			Spec: &jobs.JobEnvironmentVariablesSpec{
+				Variables: map[string]string{airLiteSwapIDEnvVar: liteSwapID},
+			},
+		}}
+	}
+	return payload
 }
 
 type submittedContainer struct {

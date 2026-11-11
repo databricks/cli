@@ -133,6 +133,7 @@ compute:
 command: echo hi
 env_variables:
   WANDB: demo
+  AIR_LITESWAP_ID: agent-a
 secrets:
   HF_TOKEN: myscope/hf
 `))
@@ -146,7 +147,7 @@ secrets:
 	for _, it := range items {
 		byName[it.name] = it.data
 	}
-	assert.JSONEq(t, `[{"name":"WANDB","value":"demo"}]`, string(byName[envVarsName]))
+	assert.JSONEq(t, `[{"name":"AIR_LITESWAP_ID","value":"agent-a"},{"name":"WANDB","value":"demo"}]`, string(byName[envVarsName]))
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
