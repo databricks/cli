@@ -46,6 +46,34 @@ func TestParseListFilters(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "positive integer")
 	})
+
+	for _, filter := range []string{"user=", "experiment=", "accelerator_type=", "num_accelerators="} {
+		t.Run("empty "+filter, func(t *testing.T) {
+			_, err := parseListFilters([]string{filter})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "value cannot be empty")
+		})
+	}
+
+	t.Run("malformed experiment glob", func(t *testing.T) {
+		_, err := parseListFilters([]string{"experiment=["})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid glob pattern")
+	})
+
+	t.Run("unsupported accelerator type", func(t *testing.T) {
+		_, err := parseListFilters([]string{"accelerator_type=GPU_1xV100"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "use a family name")
+	})
+
+	for _, acceleratorType := range []string{"GPU_1xA10", "GPU_1xH100", "GPU_8xH100"} {
+		t.Run("full accelerator type "+acceleratorType, func(t *testing.T) {
+			f, err := parseListFilters([]string{"accelerator_type=" + acceleratorType})
+			require.NoError(t, err)
+			assert.Equal(t, acceleratorType, f.AcceleratorType)
+		})
+	}
 }
 
 func TestListFiltersMatches(t *testing.T) {
@@ -61,7 +89,9 @@ func TestListFiltersMatches(t *testing.T) {
 		{"experiment suffix glob", listFilters{Experiment: "*-eval"}, true},
 		{"experiment case-insensitive", listFilters{Experiment: "QWEN*"}, true},
 		{"experiment no match", listFilters{Experiment: "llama*"}, false},
-		{"accelerator type substring", listFilters{AcceleratorType: "h100"}, true},
+		{"accelerator family", listFilters{AcceleratorType: "h100"}, true},
+		{"accelerator full type", listFilters{AcceleratorType: "gpu_8xh100"}, true},
+		{"accelerator full type other topology", listFilters{AcceleratorType: "GPU_1xH100"}, false},
 		{"accelerator type no match", listFilters{AcceleratorType: "a10"}, false},
 		{"num accelerators match", listFilters{NumAccelerators: new(8)}, true},
 		{"num accelerators no match", listFilters{NumAccelerators: new(4)}, false},

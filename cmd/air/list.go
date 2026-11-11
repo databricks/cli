@@ -96,11 +96,14 @@ func newListCommand() *cobra.Command {
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or exact full type. Examples: A10, H100,
+                    GPU_1xA10, GPU_8xH100.
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
 		Example: `  databricks air list --filter accelerator_type=H100
+
+  databricks air list --filter accelerator_type=GPU_8xH100
 
   databricks air list --all-status \
     --filter 'experiment=qwen*' \
