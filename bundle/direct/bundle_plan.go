@@ -881,7 +881,10 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 		return "", nil, nil
 	}
 	if err != nil {
-		return "", nil, fmt.Errorf("reading id=%q: %w", id, err)
+		// This read only looks for the resource. Failing it fails nothing: the plan goes on as if
+		// it were not there, as it did before this lookup existed.
+		log.Warnf(ctx, "looking for a moved resource at id=%q: %s", id, err)
+		return "", nil, nil
 	}
 	found, err := adapter.RemapState(remote)
 	if err != nil {

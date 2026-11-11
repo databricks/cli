@@ -6,7 +6,7 @@ trap cleanup EXIT
 title "Deploy a schema"
 trace $CLI bundle deploy
 
-title "Delete the schema out of band and rename it in the config. Reading the new name is forbidden"
+title "Delete the schema out of band and rename it in the config. Reading the new name is forbidden, so the plan only warns and creates the schema"
 trace $CLI schemas delete main.myschema
 trace update_file.py databricks.yml "name: myschema" "name: myschema2"
-trace errcode $CLI bundle plan
+trace $CLI bundle plan
