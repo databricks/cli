@@ -136,9 +136,9 @@ type Adapter struct {
 	prepareState *calladapt.BoundCaller
 	remapState   *calladapt.BoundCaller
 	doRefresh    *calladapt.BoundCaller
-	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	doCreate           *calladapt.BoundCaller
 	doDelete           *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
