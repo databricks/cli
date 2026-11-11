@@ -1,0 +1,2 @@
+title "--resume rejects an update that is not a test update"
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --resume 00000000-0000-0000-0000-0000000000a1

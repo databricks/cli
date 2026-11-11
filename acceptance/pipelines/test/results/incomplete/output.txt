@@ -1,0 +1,13 @@
+
+=== Compute ends before all results are received
+
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml
+Pipeline: [UUID][0]
+Update: [UUID][1]
+Running tests...
+1 of 2 PASSED tests/test_compute.py::test_small_order .......................... [PASSED]
+
+RUN INCOMPLETE: the update failed before all test results were received.
+JUnit report: out.report.xml
+Done. PASSED=1 FAILED=0 SKIPPED=0 ERROR=0 TOTAL=2
+Error: update [UUID][1] is FAILED: ComputeTerminatedException: Compute terminated unexpectedly.

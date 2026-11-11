@@ -1,0 +1,3 @@
+title "All tests pass"
+trace $CLI pipelines test --pipeline-id $pipeline_id --junit-xml out.report.xml
+trace print_requests.py --get //events

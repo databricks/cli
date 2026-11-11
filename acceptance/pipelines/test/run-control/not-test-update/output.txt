@@ -1,0 +1,5 @@
+
+=== --resume rejects an update that is not a test update
+
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --resume [UUID][1]
+Error: update [UUID][1] is not a test update; pass the update ID that pipelines test printed

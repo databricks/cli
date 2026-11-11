@@ -1,0 +1,17 @@
+
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-no-test-sources/default/files...
+Created pipelines.my_pipeline
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+
+=== The bundle now sets testing, so the service error comes with a hint to deploy
+
+>>> musterr [CLI] pipelines test --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: [PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources. Set `testing.sources` to the test files or folders to run.
+The bundle sets testing for my_pipeline, but the deployed pipeline has none. Run 'databricks pipelines deploy' first

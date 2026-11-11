@@ -1,0 +1,6 @@
+
+=== A project with errors names its first error in the report
+
+>>> musterr [CLI] pipelines test my_pipeline --junit-xml out.invalid.xml
+Error: reference does not exist: ${var.missing}
+

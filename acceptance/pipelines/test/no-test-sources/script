@@ -1,0 +1,11 @@
+# The pipeline is deployed before the bundle sets testing.
+trace $CLI pipelines deploy
+rm "$OUT_REQUESTS"
+update_file.py databricks.yml "            path: pipeline_file.py" "            path: pipeline_file.py
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**"
+
+title "The bundle now sets testing, so the service error comes with a hint to deploy"
+trace musterr $CLI pipelines test --no-wait

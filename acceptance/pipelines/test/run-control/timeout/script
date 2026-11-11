@@ -1,0 +1,2 @@
+title "--timeout stops waiting but not the update, and prints the command that reads the results"
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --resume 00000000-0000-0000-0000-0000000000a1 --timeout 1s --junit-xml out.report.xml
