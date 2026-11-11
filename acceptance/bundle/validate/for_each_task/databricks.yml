@@ -3,6 +3,16 @@ bundle:
 
 resources:
   jobs:
+    aaa_job:
+      name: "Job A"
+      tasks:
+        - task_key: "parent_task"
+          for_each_task:
+            inputs: "[1, 2, 3]"
+            task:
+              task_key: "child_task"
+              notebook_task:
+                notebook_path: "test.py"
     test_job:
       name: "Test Job"
       tasks:
@@ -18,6 +28,10 @@ targets:
   max_retries:
     resources:
       jobs:
+        aaa_job:
+          tasks:
+            - task_key: "parent_task"
+              max_retries: 3
         test_job:
           tasks:
             - task_key: "parent_task"

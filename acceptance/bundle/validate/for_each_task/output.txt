@@ -1,8 +1,14 @@
 
 >>> [CLI] bundle validate -t max_retries
-Error: Invalid max_retries configuration for for_each_task
+Error: max_retries is not supported on a for_each_task parent task
+  at resources.jobs.aaa_job.tasks[0].max_retries
+  in databricks.yml:34:28
+
+When using for_each_task, max_retries must be defined on the nested task (for_each_task.task.max_retries), not on the parent task.
+
+Error: max_retries is not supported on a for_each_task parent task
   at resources.jobs.test_job.tasks[0].max_retries
-  in databricks.yml:24:28
+  in databricks.yml:38:28
 
 When using for_each_task, max_retries must be defined on the nested task (for_each_task.task.max_retries), not on the parent task.
 
@@ -12,21 +18,21 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/for_each_task_validation/max_retries
 
-Found 1 error
+Found 2 errors
 
 Exit code: 1
 
 >>> [CLI] bundle validate -t retry_fields
-Warning: Invalid min_retry_interval_millis configuration for for_each_task
+Warning: min_retry_interval_millis has no effect on a for_each_task parent task
   at resources.jobs.test_job.tasks[0].min_retry_interval_millis
-  in databricks.yml:32:42
+  in databricks.yml:46:42
 
 min_retry_interval_millis is ignored on a for_each_task parent task.
 Define it on the nested task (for_each_task.task.min_retry_interval_millis) instead.
 
-Warning: Invalid retry_on_timeout configuration for for_each_task
+Warning: retry_on_timeout has no effect on a for_each_task parent task
   at resources.jobs.test_job.tasks[0].retry_on_timeout
-  in databricks.yml:33:33
+  in databricks.yml:47:33
 
 retry_on_timeout is ignored on a for_each_task parent task.
 Define it on the nested task (for_each_task.task.retry_on_timeout) instead.
