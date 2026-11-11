@@ -38,6 +38,19 @@ class CronSchedule:
     [Private Preview] How the schedule is determined. Defaults to MANUAL when unset.
     """
 
+    paused: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
+    """
+
     timezone_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -71,6 +84,19 @@ class CronScheduleDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] How the schedule is determined. Defaults to MANUAL when unset.
+    """
+
+    paused: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
     """
 
     timezone_id: VariableOrOptional[str]

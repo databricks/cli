@@ -61,6 +61,10 @@ A Feature View that has materialized features in a materialization set cannot be
 recreated. Remove its materialized features from the set in a separate deploy first, then delete
 or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
 not blocked, and leaves the FeatureSpec stale:`
+
+	deleteOrRecreateFeatureSpecMessage = `
+This action will result in the deletion or recreation of the following feature specs.
+Grants on them that are not declared in the bundle are lost:`
 )
 
 // DataLossWarning is the warning shown when a non-interactive command is about
@@ -114,4 +118,7 @@ The conversation history attached to them is permanently lost:`
 
 	deleteFeatureMessage = `This action will result in the deletion of the following Feature Views.
 Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:`
+
+	deleteFeatureSpecMessage = `This action will result in the deletion of the following feature specs.
+Feature Serving endpoints and training code that use them can no longer load them:`
 )

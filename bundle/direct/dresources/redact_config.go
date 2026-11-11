@@ -48,7 +48,7 @@ const sensitiveRedactedMarker = "[redacted]"
 // to the secret by the time the config is rendered.
 func redactSensitiveVariables(root *config.Root) {
 	for _, variable := range root.Variables {
-		if variable == nil || !variable.Sensitive {
+		if variable == nil || !config.IsExplicitlyEnabled(variable.Sensitive) {
 			continue
 		}
 		if variable.Default != nil {

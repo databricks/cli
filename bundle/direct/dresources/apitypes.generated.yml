@@ -22,11 +22,15 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+feature_specs: ml.FeatureSpec
+
 features: ml.Feature
 
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool
+
+internal_immutable_snapshots: compute.ServerlessCompute
 
 job_runs: jobs.RunNow
 

@@ -187,7 +187,19 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
-var updateMask = strings.Join(UpdateMaskFields, ",")
+// appUpdateMask returns the update mask for an app update request. compute_size is a
+// backend default (see configs/apps.yml), so when the bundle does not declare it the field
+// is left out of the mask. Naming it while the body omits it asks the backend to reset the
+// size to its default on every deploy, even when the app was resized out of band.
+func appUpdateMask(app *apps.App) string {
+	fields := UpdateMaskFields
+	if app.ComputeSize == "" {
+		fields = slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
+			return f == "compute_size"
+		})
+	}
+	return strings.Join(fields, ",")
+}
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// git_source is sent as part of the App body (in the update mask). source_code_path and
@@ -197,7 +209,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: updateMask,
+			UpdateMask: appUpdateMask(&app),
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
