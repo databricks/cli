@@ -1,0 +1,84 @@
+
+=== Deploy a schema
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Out of band, rename the schema away, and create another one under its name
+>>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-moved-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-moved-[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+=== The plan takes the other schema for the bundle's, though its schema_id differs, and plans to update it
+>>> [CLI] bundle plan --output json
+{
+  "resources.schemas.schema1": {
+    "action": "update",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "comment": "c1",
+        "name": "test-schema-[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_by": "[USERNAME]",
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-[UNIQUE_NAME]",
+      "name": "test-schema-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[FOREIGN_SCHEMA_ID]"
+    },
+    "changes": {
+      "comment": {
+        "action": "update",
+        "old": "c1",
+        "new": "c1"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[FOREIGN_SCHEMA_ID]"
+      }
+    }
+  }
+}
+
+=== Destroy deletes the other schema
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+
+>>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
+
+=== The bundle's own schema is left behind
+>>> [CLI] schemas get main.test-schema-moved-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-moved-[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
+}
