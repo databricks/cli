@@ -25,7 +25,7 @@ const testSandboxID = "happy-panda-1234"
 func TestParseForwards(t *testing.T) {
 	forwards, err := parseForwards([]string{"8080:10080", "0:10081"})
 	require.NoError(t, err)
-	assert.Equal(t, []portForward{{localPort: 8080, remotePort: 10080}, {localPort: 0, remotePort: 10081}}, forwards)
+	assert.Equal(t, []forwardSpec{{localPort: 8080, remotePort: 10080}, {localPort: 0, remotePort: 10081}}, forwards)
 }
 
 func TestParseForwardsRejectsMalformedSpecs(t *testing.T) {
@@ -87,18 +87,18 @@ func fakeAuth(r *http.Request) error {
 	return nil
 }
 
-// startForward serves a port-forward handler for remote port 10080 in front of upstream.
+// startForward serves a forward handler for remote port 10080 in front of upstream.
 func startForward(t *testing.T, upstream *httptest.Server, authenticate func(*http.Request) error) *httptest.Server {
 	workspace, err := url.Parse(upstream.URL)
 	require.NoError(t, err)
-	target := portForwardTarget{
+	target := forwardTarget{
 		workspace:    workspace,
 		sandboxID:    testSandboxID,
 		authenticate: authenticate,
 		headers:      map[string]string{"X-Databricks-Workspace-Id": "123"},
 		transport:    http.DefaultTransport,
 	}
-	forward := httptest.NewServer(newPortForwardHandler(target, 10080, slog.Default()))
+	forward := httptest.NewServer(newForwardHandler(target, 10080, slog.Default()))
 	t.Cleanup(forward.Close)
 	return forward
 }
@@ -119,7 +119,7 @@ func rawRequest(t *testing.T, addr, request string) (int, *bufio.Reader, net.Con
 	return resp.StatusCode, reader, conn
 }
 
-func TestPortForwardHandlerRewritesRequest(t *testing.T) {
+func TestForwardHandlerRewritesRequest(t *testing.T) {
 	var got *http.Request
 	var gotBody string
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +163,7 @@ func TestPortForwardHandlerRewritesRequest(t *testing.T) {
 	assert.Equal(t, "payload", gotBody)
 }
 
-func TestPortForwardHandlerRejectsAmbiguousPaths(t *testing.T) {
+func TestForwardHandlerRejectsAmbiguousPaths(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -181,7 +181,7 @@ func TestPortForwardHandlerRejectsAmbiguousPaths(t *testing.T) {
 	assert.Zero(t, calls.Load())
 }
 
-func TestPortForwardHandlerRejectsForeignHost(t *testing.T) {
+func TestForwardHandlerRejectsForeignHost(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -195,7 +195,7 @@ func TestPortForwardHandlerRejectsForeignHost(t *testing.T) {
 	assert.Zero(t, calls.Load())
 }
 
-func TestPortForwardHandlerRejectsCrossSiteRequests(t *testing.T) {
+func TestForwardHandlerRejectsCrossSiteRequests(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -218,7 +218,7 @@ func TestPortForwardHandlerRejectsCrossSiteRequests(t *testing.T) {
 	assert.Zero(t, calls.Load())
 }
 
-func TestPortForwardHandlerAllowsLocalOrigins(t *testing.T) {
+func TestForwardHandlerAllowsLocalOrigins(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -261,7 +261,7 @@ func TestIsLoopbackHost(t *testing.T) {
 	}
 }
 
-func TestPortForwardHandlerRelaysUpgrade(t *testing.T) {
+func TestForwardHandlerRelaysUpgrade(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Upgrade") != "websocket" {
 			http.Error(w, "expected an upgrade", http.StatusBadRequest)
@@ -291,7 +291,7 @@ func TestPortForwardHandlerRelaysUpgrade(t *testing.T) {
 	assert.Equal(t, "ping", string(echo))
 }
 
-func TestPortForwardHandlerReportsAuthFailure(t *testing.T) {
+func TestForwardHandlerReportsAuthFailure(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -310,26 +310,26 @@ func TestPortForwardHandlerReportsAuthFailure(t *testing.T) {
 	assert.Zero(t, calls.Load())
 }
 
-func TestServePortForwardsFailsWhenLocalPortInUse(t *testing.T) {
-	taken, err := net.Listen("tcp", net.JoinHostPort(portForwardBindHost, "0"))
+func TestServeForwardsFailsWhenLocalPortInUse(t *testing.T) {
+	taken, err := net.Listen("tcp", net.JoinHostPort(forwardBindHost, "0"))
 	require.NoError(t, err)
 	defer taken.Close()
 	port := taken.Addr().(*net.TCPAddr).Port
 
-	err = servePortForwards(cmdio.MockDiscard(t.Context()), testTarget(), []portForward{{localPort: 0, remotePort: 10080}, {localPort: port, remotePort: 10081}})
+	err = serveForwards(cmdio.MockDiscard(t.Context()), testTarget(), []forwardSpec{{localPort: 0, remotePort: 10080}, {localPort: port, remotePort: 10081}})
 	assert.ErrorContains(t, err, "failed to listen on local port "+strconv.Itoa(port))
 }
 
-func TestServePortForwardsStopsWhenContextIsDone(t *testing.T) {
+func TestServeForwardsStopsWhenContextIsDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 	cancel()
 
-	err := servePortForwards(ctx, testTarget(), []portForward{{localPort: 0, remotePort: 10080}})
+	err := serveForwards(ctx, testTarget(), []forwardSpec{{localPort: 0, remotePort: 10080}})
 	assert.NoError(t, err)
 }
 
-func testTarget() portForwardTarget {
-	return portForwardTarget{
+func testTarget() forwardTarget {
+	return forwardTarget{
 		workspace:    &url.URL{Scheme: "https", Host: "workspace.test"},
 		sandboxID:    testSandboxID,
 		authenticate: fakeAuth,

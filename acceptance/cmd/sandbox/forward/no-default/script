@@ -1,2 +1,2 @@
 # Without a sandbox ID the default sandbox is used; the fresh home has none.
-musterr $CLI sandbox port-forward -L 0:10080
+musterr $CLI sandbox forward -L 0:10080

@@ -27,16 +27,16 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// portForwardRoute is the workspace route that relays a request to an app
+// forwardRoute is the workspace route that relays a request to an app
 // listening on a sandbox port: <route>/<sandbox-id>/ports/<port>/<path>.
-const portForwardRoute = "/sandbox-proxy/sandboxes/"
+const forwardRoute = "/sandbox-proxy/sandboxes/"
 
 // Forwards listen only on loopback, since every request through them carries
 // the caller's credentials. Some clients (e.g. Node 17+) resolve localhost to
 // ::1 first, so the IPv6 loopback is served too when it is available.
 const (
-	portForwardBindHost     = "127.0.0.1"
-	portForwardBindHostIPv6 = "::1"
+	forwardBindHost     = "127.0.0.1"
+	forwardBindHostIPv6 = "::1"
 )
 
 // The sandbox only forwards to remote ports in this range.
@@ -45,22 +45,22 @@ const (
 	maxRemotePort = 65535
 )
 
-// portForwardReadHeaderTimeout bounds how long a local client may take to send
+// forwardReadHeaderTimeout bounds how long a local client may take to send
 // request headers. Bodies and upgraded connections are not bounded.
-const portForwardReadHeaderTimeout = time.Minute
+const forwardReadHeaderTimeout = time.Minute
 
 // platformHeaderPrefixes mark the platform's auth, identity, and routing
 // headers, in lowercase. Only the CLI's own values may reach the workspace.
 var platformHeaderPrefixes = []string{"x-databricks-", "s2s-"}
 
-// portForward is one parsed -L LOCAL:REMOTE spec.
-type portForward struct {
+// forwardSpec is one parsed -L LOCAL:REMOTE spec.
+type forwardSpec struct {
 	localPort  int
 	remotePort int
 }
 
-// portForwardTarget is where and how forwarded requests are sent.
-type portForwardTarget struct {
+// forwardTarget is where and how forwarded requests are sent.
+type forwardTarget struct {
 	workspace    *url.URL
 	sandboxID    string
 	authenticate func(*http.Request) error
@@ -68,11 +68,11 @@ type portForwardTarget struct {
 	transport    http.RoundTripper
 }
 
-func newPortForwardCommand() *cobra.Command {
+func newForwardCommand() *cobra.Command {
 	var specs []string
 
 	cmd := &cobra.Command{
-		Use:   "port-forward [sandbox-id] -L <local-port>:<remote-port>...",
+		Use:   "forward [sandbox-id] -L <local-port>:<remote-port>...",
 		Short: "Forward local ports to apps in a Sandbox environment",
 		Long: `Forward local ports to apps running in a Sandbox environment.
 
@@ -83,8 +83,8 @@ as the local port to pick a free one. A stopped sandbox is started first.
 Runs until interrupted.
 
 Examples:
-  databricks sandbox port-forward -L 8080:10080                         # default sandbox
-  databricks sandbox port-forward happy-panda-1234 -L 8080:10080 -L 8081:10081`,
+  databricks sandbox forward -L 8080:10080                         # default sandbox
+  databricks sandbox forward happy-panda-1234 -L 8080:10080 -L 8081:10081`,
 		Args:              cobra.MaximumNArgs(1),
 		PreRunE:           root.MustWorkspaceClient,
 		ValidArgsFunction: completeSandboxIDs,
@@ -124,11 +124,11 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to parse workspace host %q: %w", w.Config.Host, err)
 			}
-			transport, err := newPortForwardTransport(w.Config)
+			transport, err := newForwardTransport(w.Config)
 			if err != nil {
 				return err
 			}
-			target := portForwardTarget{
+			target := forwardTarget{
 				workspace:    workspace,
 				sandboxID:    sandboxID,
 				authenticate: w.Config.Authenticate,
@@ -138,7 +138,7 @@ Examples:
 
 			ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return servePortForwards(ctx, target, forwards)
+			return serveForwards(ctx, target, forwards)
 		},
 	}
 
@@ -150,8 +150,8 @@ Examples:
 
 // parseForwards parses -L LOCAL:REMOTE specs. LOCAL may be 0 to pick a free
 // port. A few platform ports inside the remote range are refused by the sandbox.
-func parseForwards(specs []string) ([]portForward, error) {
-	forwards := make([]portForward, 0, len(specs))
+func parseForwards(specs []string) ([]forwardSpec, error) {
+	forwards := make([]forwardSpec, 0, len(specs))
 	for _, spec := range specs {
 		local, remote, found := strings.Cut(spec, ":")
 		localPort, localErr := strconv.Atoi(local)
@@ -162,17 +162,17 @@ func parseForwards(specs []string) ([]portForward, error) {
 		if remotePort < minRemotePort || remotePort > maxRemotePort {
 			return nil, fmt.Errorf("invalid -L %q: remote port must be between %d and %d", spec, minRemotePort, maxRemotePort)
 		}
-		forwards = append(forwards, portForward{localPort: localPort, remotePort: remotePort})
+		forwards = append(forwards, forwardSpec{localPort: localPort, remotePort: remotePort})
 	}
 	return forwards, nil
 }
 
-// newPortForwardTransport returns the workspace config's transport, or the
+// newForwardTransport returns the workspace config's transport, or the
 // default one with the config's TLS verification setting.
-func newPortForwardTransport(cfg *config.Config) (http.RoundTripper, error) {
+func newForwardTransport(cfg *config.Config) (http.RoundTripper, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to configure port forward transport: %w", err)
+		return nil, fmt.Errorf("failed to configure forward transport: %w", err)
 	}
 	if clientCfg.Transport != nil {
 		return clientCfg.Transport, nil
@@ -184,13 +184,13 @@ func newPortForwardTransport(cfg *config.Config) (http.RoundTripper, error) {
 	return transport, nil
 }
 
-// servePortForwards listens on every forward's local port before serving any,
+// serveForwards listens on every forward's local port before serving any,
 // so a port that is already in use fails the command up front.
-func servePortForwards(ctx context.Context, target portForwardTarget, forwards []portForward) error {
+func serveForwards(ctx context.Context, target forwardTarget, forwards []forwardSpec) error {
 	var lc net.ListenConfig
 	listeners := make([][]net.Listener, 0, len(forwards))
 	for _, f := range forwards {
-		ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort(portForwardBindHost, strconv.Itoa(f.localPort)))
+		ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort(forwardBindHost, strconv.Itoa(f.localPort)))
 		if err != nil {
 			for _, group := range listeners {
 				for _, open := range group {
@@ -201,10 +201,10 @@ func servePortForwards(ctx context.Context, target portForwardTarget, forwards [
 		}
 		group := []net.Listener{ln}
 		port := strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
-		if ln6, err := lc.Listen(ctx, "tcp", net.JoinHostPort(portForwardBindHostIPv6, port)); err == nil {
+		if ln6, err := lc.Listen(ctx, "tcp", net.JoinHostPort(forwardBindHostIPv6, port)); err == nil {
 			group = append(group, ln6)
 		} else {
-			log.Debugf(ctx, "not forwarding [%s]:%s: %v", portForwardBindHostIPv6, port, err)
+			log.Debugf(ctx, "not forwarding [%s]:%s: %v", forwardBindHostIPv6, port, err)
 		}
 		listeners = append(listeners, group)
 	}
@@ -215,15 +215,15 @@ func servePortForwards(ctx context.Context, target portForwardTarget, forwards [
 	g, ctx := errgroup.WithContext(ctx)
 	for i, f := range forwards {
 		srv := &http.Server{
-			Handler:           newPortForwardHandler(target, f.remotePort, logger),
-			ReadHeaderTimeout: portForwardReadHeaderTimeout,
+			Handler:           newForwardHandler(target, f.remotePort, logger),
+			ReadHeaderTimeout: forwardReadHeaderTimeout,
 			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Forwarding http://%s -> %s:%d", listeners[i][0].Addr(), target.sandboxID, f.remotePort))
 		for _, ln := range listeners[i] {
 			g.Go(func() error {
 				if err := srv.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
-					return fmt.Errorf("port forward on %s failed: %w", ln.Addr(), err)
+					return fmt.Errorf("forward on %s failed: %w", ln.Addr(), err)
 				}
 				return nil
 			})
@@ -239,10 +239,10 @@ func servePortForwards(ctx context.Context, target portForwardTarget, forwards [
 	return g.Wait()
 }
 
-// newPortForwardHandler relays each request to remotePort in the sandbox
-// through the workspace's port-forward route.
-func newPortForwardHandler(target portForwardTarget, remotePort int, logger *slog.Logger) http.Handler {
-	base := strings.TrimSuffix(target.workspace.Path, "/") + portForwardRoute
+// newForwardHandler relays each request to remotePort in the sandbox
+// through the workspace's forward route.
+func newForwardHandler(target forwardTarget, remotePort int, logger *slog.Logger) http.Handler {
+	base := strings.TrimSuffix(target.workspace.Path, "/") + forwardRoute
 	port := "/ports/" + strconv.Itoa(remotePort)
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
@@ -264,18 +264,18 @@ func newPortForwardHandler(target portForwardTarget, remotePort int, logger *slo
 		Transport: &authenticatingTransport{authenticate: target.authenticate, base: target.transport},
 		ErrorLog:  slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
-			log.Debugf(r.Context(), "port forward to %s:%d failed: %v", target.sandboxID, remotePort, err)
-			http.Error(w, "port forward failed: "+err.Error(), http.StatusBadGateway)
+			log.Debugf(r.Context(), "forward to %s:%d failed: %v", target.sandboxID, remotePort, err)
+			http.Error(w, "forward failed: "+err.Error(), http.StatusBadGateway)
 		},
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case !isLoopbackHost(r.Host):
-			http.Error(w, "port forward only accepts requests addressed to localhost", http.StatusForbidden)
+			http.Error(w, "forward only accepts requests addressed to localhost", http.StatusForbidden)
 		case isCrossSiteRequest(r):
-			http.Error(w, "port forward does not accept cross-site browser requests", http.StatusForbidden)
+			http.Error(w, "forward does not accept cross-site browser requests", http.StatusForbidden)
 		case isAmbiguousPath(r.URL.EscapedPath()):
-			http.Error(w, "port forward does not accept . or .. path segments, malformed escapes, or segments containing ;, \\, control characters, or an encoded /, \\, %, ?, or #", http.StatusBadRequest)
+			http.Error(w, "forward does not accept . or .. path segments, malformed escapes, or segments containing ;, \\, control characters, or an encoded /, \\, %, ?, or #", http.StatusBadRequest)
 		default:
 			proxy.ServeHTTP(w, r)
 		}
@@ -313,7 +313,7 @@ func isCrossSiteRequest(r *http.Request) bool {
 
 // isAmbiguousPath reports whether a proxy on the way to the workspace could
 // resolve a segment of escapedPath as "." or "..", moving the request off the
-// port-forward route with the caller's credentials. Proxies also resolve forms
+// forward route with the caller's credentials. Proxies also resolve forms
 // such as a dot segment with path parameters, so only segments that decode
 // once to plain text other than "." and ".." are accepted.
 func isAmbiguousPath(escapedPath string) bool {
