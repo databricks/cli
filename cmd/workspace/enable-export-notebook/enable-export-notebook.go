@@ -3,6 +3,7 @@
 package enable_export_notebook
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,20 +18,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "enable-export-notebook",
-		Short: `*Public Preview* Controls whether users can export notebooks and files from the Workspace UI.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "enable-export-notebook",
+	Short: `*Public Preview* Controls whether users can export notebooks and files from the Workspace UI.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether users can export notebooks and files from the Workspace UI.
-  By default, this setting is enabled.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  By default, this setting is enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetEnableExportNotebook())
@@ -40,8 +45,6 @@ Controls whether users can export notebooks and files from the Workspace UI.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-enable-export-notebook command

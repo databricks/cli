@@ -3,6 +3,7 @@
 package alerts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "alerts",
-		Short: `The alerts API can be used to perform CRUD operations on alerts.`,
-		Long: `The alerts API can be used to perform CRUD operations on alerts. An alert is a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "alerts",
+	Short:   `The alerts API can be used to perform CRUD operations on alerts.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The alerts API can be used to perform CRUD operations on alerts. An alert is a
   Databricks SQL object that periodically runs a query, evaluates a condition of
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
-  the Jobs API, e.g. :method:jobs/create.`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  the Jobs API, e.g. :method:jobs/create.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
