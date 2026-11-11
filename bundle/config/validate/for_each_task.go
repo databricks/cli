@@ -6,11 +6,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// ForEachTask validates constraints for for_each_task configuration
+// ForEachTask reports retry settings set on a for_each_task parent instead of its nested task.
 func ForEachTask() bundle.ReadOnlyMutator {
 	return &forEachTask{}
 }
@@ -24,15 +24,10 @@ func (v *forEachTask) Name() string {
 func (v *forEachTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
-
 	for resourceName, job := range b.Config.Resources.Jobs {
-		resourcePath := jobsPath.Append(dyn.Key(resourceName))
-
 		for taskIndex, task := range job.Tasks {
-			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
-
 			if task.ForEachTask != nil {
+				taskPath := structpath.NewPath(nil, "resources", "jobs", resourceName, "tasks", taskIndex)
 				diags = diags.Extend(validateForEachTask(b, task, taskPath))
 			}
 		}
@@ -41,36 +36,38 @@ func (v *forEachTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	return diags
 }
 
-func validateForEachTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateForEachTask(b *bundle.Bundle, task jobs.Task, taskPath *structpath.PathNode) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
+	// The Jobs API rejects nonzero max_retries on the parent. It accepts the other
+	// retry settings, but they have no effect because the parent cannot be retried.
 	if task.MaxRetries != 0 {
-		diags = diags.Append(invalidRetryFieldDiag(b, task, taskPath, "max_retries", diag.Error))
+		diags = diags.Append(invalidRetryFieldDiag(b, taskPath, "max_retries", diag.Error))
 	}
 
 	if task.MinRetryIntervalMillis != 0 {
-		diags = diags.Append(invalidRetryFieldDiag(b, task, taskPath, "min_retry_interval_millis", diag.Warning))
+		diags = diags.Append(invalidRetryFieldDiag(b, taskPath, "min_retry_interval_millis", diag.Warning))
 	}
 
 	if task.RetryOnTimeout {
-		diags = diags.Append(invalidRetryFieldDiag(b, task, taskPath, "retry_on_timeout", diag.Warning))
+		diags = diags.Append(invalidRetryFieldDiag(b, taskPath, "retry_on_timeout", diag.Warning))
 	}
 
 	return diags
 }
 
-func invalidRetryFieldDiag(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path, fieldName string, severity diag.Severity) diag.Diagnostic {
-	detail := fmt.Sprintf(
-		"Task %q has %s defined at the parent level, but it uses for_each_task.\n"+
-			"When using for_each_task, %s must be defined on the nested task (for_each_task.task.%s), not on the parent task.",
-		task.TaskKey, fieldName, fieldName, fieldName,
-	)
+func invalidRetryFieldDiag(b *bundle.Bundle, taskPath *structpath.PathNode, fieldName string, severity diag.Severity) diag.Diagnostic {
+	fieldPath := structpath.NewDotString(taskPath, fieldName)
+	detail := fmt.Sprintf("When using for_each_task, %s must be defined on the nested task (for_each_task.task.%s), not on the parent task.", fieldName, fieldName)
+	if severity == diag.Warning {
+		detail = fmt.Sprintf("%s is ignored on a for_each_task parent task.\nDefine it on the nested task (for_each_task.task.%s) instead.", fieldName, fieldName)
+	}
 
 	return diag.Diagnostic{
 		Severity:  severity,
 		Summary:   fmt.Sprintf("Invalid %s configuration for for_each_task", fieldName),
 		Detail:    detail,
-		Locations: b.Config.GetLocations(taskPath.String()),
-		Paths:     []dyn.Path{taskPath},
+		Locations: b.Config.GetLocationsOf(fieldPath),
+		Paths:     []*structpath.PathNode{fieldPath},
 	}
 }

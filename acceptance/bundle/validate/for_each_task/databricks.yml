@@ -1,0 +1,54 @@
+bundle:
+  name: "for_each_task_validation"
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      tasks:
+        - task_key: "parent_task"
+          for_each_task:
+            inputs: "[1, 2, 3]"
+            task:
+              task_key: "child_task"
+              notebook_task:
+                notebook_path: "test.py"
+
+targets:
+  max_retries:
+    resources:
+      jobs:
+        test_job:
+          tasks:
+            - task_key: "parent_task"
+              max_retries: 3
+
+  retry_fields:
+    resources:
+      jobs:
+        test_job:
+          tasks:
+            - task_key: "parent_task"
+              min_retry_interval_millis: 1000
+              retry_on_timeout: true
+
+  valid:
+    resources:
+      jobs:
+        test_job:
+          tasks:
+            - task_key: "parent_task"
+              max_retries: 0
+              min_retry_interval_millis: 0
+              retry_on_timeout: false
+              for_each_task:
+                task:
+                  max_retries: 3
+                  min_retry_interval_millis: 1000
+                  retry_on_timeout: true
+            - task_key: "regular_task"
+              max_retries: 3
+              min_retry_interval_millis: 1000
+              retry_on_timeout: true
+              notebook_task:
+                notebook_path: "test.py"
