@@ -19,3 +19,8 @@ updatable_id_fields:
 backend_defaults:
   # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
   - field: properties['unity.catalog.managed.*.defaults.*']
+  # UC reports OPEN for a catalog created without isolation_mode and keeps the current
+  # mode when an update omits it. A config without the field therefore leaves the remote
+  # value alone (OPEN by default, or ISOLATED when set outside the bundle) rather than
+  # forcing it back to OPEN.
+  - field: isolation_mode
