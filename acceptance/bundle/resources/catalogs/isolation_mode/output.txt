@@ -1,5 +1,6 @@
 
 === Validate accepts isolation_mode
+
 >>> [CLI] bundle validate --output json
 {
   "name": "test-catalog-[UNIQUE_NAME]",
@@ -7,6 +8,7 @@
 }
 
 === Deploy: CreateCatalog does not accept isolation_mode, so the catalog is created and then patched
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
@@ -36,10 +38,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Removing isolation_mode from the config leaves the remote value alone
+
 >>> update_file.py databricks.yml isolation_mode: ISOLATED # isolation_mode removed
 
 >>> [CLI] bundle deploy
@@ -84,6 +88,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Setting OPEN patches the catalog
+
 >>> update_file.py databricks.yml # isolation_mode removed isolation_mode: OPEN
 
 >>> [CLI] bundle deploy
