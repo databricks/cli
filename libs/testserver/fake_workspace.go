@@ -234,6 +234,7 @@ type FakeWorkspace struct {
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
+	PurgedAlertIDs        map[string]bool
 	Experiments           map[string]ml.GetExperimentResponse
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
@@ -588,6 +589,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
+		PurgedAlertIDs:            map[string]bool{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},
