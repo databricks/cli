@@ -908,6 +908,43 @@ func missingInternalID(adapter *dresources.Adapter, savedState, remote any) (boo
 	return found != "", err
 }
 
+// RecordMissingInternalIDs adds to data the internal IDs that plan's state-only updates would
+// record (see missingInternalID). A migration uses it so the state it converts has them from the
+// start, instead of a state-only update in the next plan.
+func RecordMissingInternalIDs(plan *deployplan.Plan, data *dstate.Database) error {
+	adapters, err := dresources.InitAll(nil)
+	if err != nil {
+		return err
+	}
+	b := DeploymentBundle{Adapters: adapters}
+	for resourceKey, entry := range plan.Plan {
+		if entry.Action != deployplan.Update || !entry.StateOnly {
+			continue
+		}
+		record, ok := data.State[resourceKey]
+		if !ok {
+			continue
+		}
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return err
+		}
+		state, err := parseState(adapter.StateType(), record.State)
+		if err != nil {
+			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
+		}
+		if err := adapter.RecordInternalID(state, entry.RemoteState); err != nil {
+			return fmt.Errorf("%s: recording internal id: %w", resourceKey, err)
+		}
+		record.State, err = json.Marshal(state)
+		if err != nil {
+			return fmt.Errorf("%s: %w", resourceKey, err)
+		}
+		data.State[resourceKey] = record
+	}
+	return nil
+}
+
 // hasUnresolvedIDField reports whether a field the ID is built from is still an unresolved reference.
 func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) bool {
 	for pathString := range sv.Refs {
