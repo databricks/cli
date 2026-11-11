@@ -135,8 +135,10 @@ type AitoolsCommandEvent struct {
 	Outcome       AitoolsCommandOutcome `json:"outcome,omitempty"`
 	ErrorCategory AitoolsErrorCategory  `json:"error_category,omitempty"`
 
-	// Whether the CLI could show prompts (cmdio.IsPromptSupported). A
-	// measurable false, so no omitempty.
+	// Whether the command could prompt. For install: cmdio.IsPromptSupported
+	// and no coding agent detected, so an agent on a terminal reports false.
+	// For every other command: cmdio.IsPromptSupported. A measurable false, so
+	// no omitempty.
 	Interactive bool `json:"interactive"`
 
 	// Install only: delivery mode. Set on every install event once flags parse.
