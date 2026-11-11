@@ -1087,9 +1087,7 @@ func TestInstallOutputJSONThroughRoot(t *testing.T) {
 	var out, errOut bytes.Buffer
 	cli.SetOut(&out)
 	cli.SetErr(&errOut)
-	cli.SetArgs([]string{"install", "--agents", "codex", "--scope", "global", "--output", "json"})
-
-	err := root.Execute(ctx, cli)
+	err := root.Execute(ctx, cli, []string{"install", "--agents", "codex", "--scope", "global", "--output", "json"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.NotContains(t, errOut.String(), "Error:")
 
