@@ -794,12 +794,12 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 
 	var environment strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environment, "config.environment"))
-	assert.Contains(t, environment.String(), "version              Client image version to pin (default: 6).")
+	assert.Contains(t, environment.String(), "version              Managed environment to start from: 4, 5, or 6 for the Standard environment, or databricks_ai_v5 or databricks_ai_v6 for the Databricks AI environment (default: 6).")
 
 	var environmentVersion strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environmentVersion, "config.environment.version"))
-	assert.Contains(t, environmentVersion.String(), "Client image version to pin (default: 6).")
-	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/")
+	assert.Contains(t, environmentVersion.String(), "The Databricks AI environment adds PyTorch, Transformers, and other ML libraries.")
+	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment")
 
 	// Top-level fields are listed under headings, most commonly needed first.
 	var root strings.Builder

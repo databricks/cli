@@ -352,7 +352,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Client image version to pin (default: 6). See environment version release notes: https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/"`
+	Version           stringOrInt  `yaml:"version" help:"Managed environment to start from: 4, 5, or 6 for the Standard environment, or databricks_ai_v5 or databricks_ai_v6 for the Databricks AI environment (default: 6). Standard includes CUDA but, from version 5, not PyTorch; add it with dependencies. The Databricks AI environment adds PyTorch, Transformers, and other ML libraries. Package lists for each version: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment"`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
