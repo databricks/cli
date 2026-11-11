@@ -7,6 +7,8 @@ Ignore = [
 ]
 
 [[Repls]]
-# Snapshot paths embed the bundle ID and the content hash, both sha256 hex digests.
+# Snapshot paths embed two sha256 digests that change on every run: the bundle ID hashes
+# workspace.state_path and the content hash covers the rendered databricks.yml, and both
+# contain $UNIQUE_NAME.
 Old = "[0-9a-f]{64}"
 New = "[SNAPSHOT_HASH]"
