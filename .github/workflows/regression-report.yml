@@ -60,7 +60,7 @@ jobs:
               owner, repo, issue_number: context.issue.number,
             });
             const existing = comments.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body && c.body.includes('<!-- regression-test-report -->'));
+              c.user.login === 'github-actions[bot]' && c.body && c.body.includes('## Regression test report'));
             if (existing) {
               await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
             }
@@ -122,14 +122,14 @@ jobs:
             const path = process.env.GITHUB_WORKSPACE + '/regression_report.md';
 
             // Other comments by the same bot are left alone: ours is found by this marker.
-            const MARKER = '<!-- regression-test-report -->';
+            const HEADING = '## Regression test report';
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number,
             });
             const existing = comments.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body && c.body.includes(MARKER));
+              c.user.login === 'github-actions[bot]' && c.body && c.body.includes(HEADING));
 
             if (!fs.existsSync(path)) {
               if (existing) {
@@ -160,7 +160,7 @@ jobs:
               report = kept + `_${blocks.length - shown} more failure details omitted, see the full report in the [run](${runUrl})._\n`;
             }
 
-            const body = `## Regression test report\n\n${MARKER}\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n${report}`;
+            const body = report.replace(HEADING, `${HEADING}\n\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})`);
 
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
