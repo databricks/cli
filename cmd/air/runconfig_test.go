@@ -815,6 +815,9 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 		last = i
 	}
 	assert.NotContains(t, rootHelp, "  Fields:", "every top-level field belongs to a group")
+	// The agent skill pointer follows the fields, so it doesn't push them down.
+	assert.Greater(t, strings.Index(rootHelp, "databricks-ai-runtime skill"), strings.Index(rootHelp, "usage_policy_id"))
+	assert.Contains(t, rootHelp, "databricks aitools install --skills-only --skills databricks-ai-runtime")
 
 	// Pool fields are set apart from the fields every run needs.
 	var compute strings.Builder

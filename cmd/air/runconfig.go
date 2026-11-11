@@ -907,7 +907,19 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 		}
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+	if f.path == configHelpRoot {
+		fmt.Fprint(w, agentSkillHelp)
+	}
 }
+
+// agentSkillHelp closes `-h config`: users look up the schema while writing
+// YAML, which is when an agent skill that writes it for them is most useful.
+const agentSkillHelp = `
+Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
+  databricks aitools install --skills-only --skills databricks-ai-runtime
+  (add --scope project to install into the current project)
+  https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
+`
 
 // configFieldGroupOrder lists help headings from most to least commonly needed.
 // Ungrouped fields come first; unlisted groups follow in declaration order.
