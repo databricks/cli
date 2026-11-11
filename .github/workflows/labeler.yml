@@ -1,7 +1,7 @@
 name: PR Labeler
 
 # Applies labels to PRs based on the files they touch, using the glob->label
-# mapping in .github/labeler.yml.
+# mappings in .github/labeler.yml and .github/labeler-test-only.yml.
 #
 # WARNING:
 # This workflow uses pull_request_target so it can label PRs from forks (the
@@ -37,5 +37,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler-test-only.yml
-          # test-only-fix claims the PR changes no CLI code, so remove it once that stops being true.
+          # test-only-fix claims the PR changes no CLI code, so this step owns it: a push that
+          # changes any file outside the config removes it, even when it was added by hand.
           sync-labels: true

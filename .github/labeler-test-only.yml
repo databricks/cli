@@ -6,8 +6,8 @@
 # any-glob-to-all-files needs a single glob that matches every changed file,
 # so all test-only paths are alternatives of one brace expansion.
 #
-# The libs/ and internal/ entries are packages the CLI binary does not import
-# (not listed by `go list -deps .`).
+# The bundle/, internal/ and libs/ entries are packages the CLI binary does not
+# import. TestLabelerTestOnlyDirsNotInBinary in internal/build checks this.
 
 # The list-files API returns at most 3000 files, sorted by path. acceptance/
 # sorts before bundle/, cmd/ and libs/, so a truncated list could hide CLI
