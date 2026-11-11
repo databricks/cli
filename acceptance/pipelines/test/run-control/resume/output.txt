@@ -1,5 +1,6 @@
 
 === --resume reads the results of an existing update
+
 >>> [CLI] pipelines test --pipeline-id [UUID][0] --resume [UUID][1]
 Pipeline: [UUID][0]
 Update: [UUID][1]

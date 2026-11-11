@@ -1,0 +1,20 @@
+# Also runs against a real workspace, when that workspace has pipeline testing enabled.
+# The script skips the cloud run unless TEST_PIPELINES_TESTING_ENABLED is set.
+Cloud = true
+CloudSlow = true
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "junit.xml"]
+
+# Locally, the test server stands in for the service's test run. Start Update is the test server's.
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '{"update": {"update_id": "00000000-0000-0000-0000-0000000000a1", "state": "COMPLETED", "test_only": true}}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{"events": [
+  {"id": "e1", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:01.000Z", "origin": {"test_case_id": "/Workspace/tests/test_orders.py::test_order_total"}, "details": {"test_case_progress": {"status": "PASSED"}}},
+  {"id": "e2", "event_type": "test_run_summary", "timestamp": "2026-01-01T00:00:02.000Z", "details": {"test_run_summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0, "errored": 0}}}
+]}
+'''

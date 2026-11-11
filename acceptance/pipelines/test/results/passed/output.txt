@@ -1,5 +1,6 @@
 
 === All tests pass
+
 >>> [CLI] pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml
 Pipeline: [UUID][0]
 Update: [UUID][1]

@@ -1,0 +1,10 @@
+# The deployed pipeline has no test sources.
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.StatusCode = 400
+Response.Body = '''
+{
+    "error_code": "INVALID_PARAMETER_VALUE",
+    "message": "[PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources. Set `testing.sources` to the test files or folders to run."
+}
+'''

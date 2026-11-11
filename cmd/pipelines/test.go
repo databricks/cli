@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -269,12 +270,32 @@ func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelin
 	return response.UpdateId, nil
 }
 
+// pipelineTestNoTestSources is the error class of Start Update for a pipeline without testing.sources.
+const pipelineTestNoTestSources = "PIPELINE_TEST_NO_TEST_SOURCES"
+
+// withDeployHint adds a hint to deploy when Start Update says the pipeline has no test sources but
+// the bundle sets testing: the bundle was changed after its last deploy.
+func withDeployHint(cmd *cobra.Command, t testTarget, err error) error {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !t.bundleHasTesting || !ok {
+		return err
+	}
+	// The class is the error code or, for errors with a generic code, the [CLASS] prefix of the message.
+	if apiErr.ErrorCode != pipelineTestNoTestSources && !strings.Contains(apiErr.Message, pipelineTestNoTestSources) {
+		return err
+	}
+	return fmt.Errorf("%w\nThe bundle sets testing for %s, but the deployed pipeline has none. Run '%s deploy' first", err, t.key, cmd.Parent().CommandPath())
+}
+
 // testTarget is the pipeline a test run is submitted to.
 type testTarget struct {
 	key        string
 	pipelineID string
 	selections []string
 	w          *databricks.WorkspaceClient
+
+	// bundleHasTesting is true when the bundle sets testing for the pipeline.
+	bundleHasTesting bool
 
 	// projectFolder is the deployed folder that test IDs are shown relative to: the bundle's
 	// synchronized files, or root_path. It is "" when unknown.
@@ -366,7 +387,15 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), projectFolder: filesRoot}, nil
+	pipeline := b.Config.Resources.Pipelines[key]
+	return testTarget{
+		key:              key,
+		pipelineID:       pipelineID,
+		selections:       selections,
+		w:                b.WorkspaceClient(ctx),
+		bundleHasTesting: pipeline != nil && pipeline.Testing != nil,
+		projectFolder:    filesRoot,
+	}, nil
 }
 
 // resumeCommand returns the command that reads the result of the update later. It keeps the
@@ -699,7 +728,7 @@ of the deployed snapshot, which changes with each deployment.`,
 			req := newStartTestUpdateRequest(target.selections, f.pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return report.failed(ctx, err)
+				return report.failed(ctx, withDeployHint(cmd, target, err))
 			}
 		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
 			return report.failed(ctx, err)

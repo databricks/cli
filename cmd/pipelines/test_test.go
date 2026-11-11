@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/testserver"
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 
@@ -133,6 +134,23 @@ func TestNotPipelineKeyError(t *testing.T) {
 
 	err = notPipelineKeyError(cmd, &bundle.Bundle{}, "tests", []string{"tests"})
 	assert.EqualError(t, err, `"tests" is not a pipeline in this bundle, and the bundle has no pipelines`)
+}
+
+func TestWithDeployHint(t *testing.T) {
+	parent := &cobra.Command{Use: "pipelines"}
+	cmd := &cobra.Command{Use: "test"}
+	parent.AddCommand(cmd)
+	noSources := &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", Message: "[PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources."}
+	withTesting := testTarget{key: "orders", bundleHasTesting: true}
+
+	err := withDeployHint(cmd, withTesting, noSources)
+	assert.ErrorIs(t, err, noSources)
+	assert.EqualError(t, err, "[PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources.\nThe bundle sets testing for orders, but the deployed pipeline has none. Run 'pipelines deploy' first")
+
+	// No hint without testing in the bundle, or for another error.
+	assert.Same(t, error(noSources), withDeployHint(cmd, testTarget{key: "orders"}, noSources))
+	conflict := &apierr.APIError{ErrorCode: "RESOURCE_CONFLICT", Message: "An active update already exists."}
+	assert.Same(t, error(conflict), withDeployHint(cmd, withTesting, conflict))
 }
 
 func TestTestRunError(t *testing.T) {

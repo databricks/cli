@@ -64,6 +64,7 @@ Global Flags:
 Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
 
 === With the command off, an older report is still replaced
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --junit-xml out.gate-off.xml
 Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
 
@@ -94,6 +95,7 @@ Error: --pipeline-id "1234" is not a pipeline ID
 Error: --output json is not supported by pipelines test
 
 === Incompatible run-control flags
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 tests --resume 5678
 Error: --resume cannot be used with test selections
 
@@ -113,9 +115,11 @@ Error: --resume "5678' OR '1'='1" is not an update ID; pass the update ID that p
 Error: --resume "" is not an update ID; pass the update ID that pipelines test printed
 
 === --junit-xml needs the results
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --no-wait --junit-xml out.no-wait.xml
 Error: --junit-xml cannot be used with --no-wait because no results are available when the command returns
 
 === An invalid flag replaces an older report
+
 >>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x --junit-xml out.flag-error.xml
 Error: unsupported pytest argument "-x": only -k and -m are supported
