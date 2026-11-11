@@ -608,10 +608,20 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
-	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
+	server.Handle("POST", "/telemetry-ext", func(req Request) any {
+		var request struct {
+			ProtoLogs []string `json:"protoLogs"`
+		}
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return Response{
+				Body:       fmt.Sprintf("invalid request body: %s", err),
+				StatusCode: http.StatusBadRequest,
+			}
+		}
+		// Accept every log in the request, as the real endpoint does.
 		return map[string]any{
 			"errors":          []string{},
-			"numProtoSuccess": 1,
+			"numProtoSuccess": len(request.ProtoLogs),
 		}
 	})
 
