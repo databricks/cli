@@ -6,6 +6,7 @@ Installing Databricks skills for Cursor...
 Using skills version test-ref
 Fetching skills manifest...
 Error: skill "nonexistent" not found
+Run 'databricks aitools list' to see the available skills
 
 >>> print_telemetry
 {"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
@@ -23,6 +24,7 @@ Installing Databricks skills for Cursor...
 Using skills version missing-ref
 Fetching skills manifest...
 Error: skills manifest at databricks-agent-skills@missing-ref: not found
+No skills release exists at the version DATABRICKS_SKILLS_REF names. Unset it, or set it to a release tag from https://github.com/databricks/databricks-agent-skills/releases, then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'
 
 >>> print_telemetry
 {"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
@@ -40,6 +42,7 @@ Installing Databricks skills for Cursor...
 Using skills version broken-ref
 Fetching skills manifest...
 Error: failed to fetch manifest: HTTP 500
+[DATABRICKS_HOST] returned HTTP 500, a server-side error. Wait a few minutes and re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'
 
 >>> print_telemetry
 {"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
@@ -54,6 +57,7 @@ Error: failed to fetch manifest: HTTP 500
 
 >>> [CLI] aitools install --skills-only --scope=project --agents=cursor
 Skipped Cursor: does not support project-scoped skills
+  To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only
 Error: Cursor: does not support project-scoped skills
 
 >>> print_telemetry

@@ -1,0 +1,1 @@
+* `databricks aitools install` now ends a failed install with a step to recover, in the text output and in a new `recovery` field of `--output json`. ([#7480](https://github.com/databricks/cli/pull/7480))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -183,7 +184,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
 				written, err := installer.DumpSkillsToPath(ctx, src, pathFlag, opts)
 				if err != nil {
-					return err
+					return withRecovery(ctx, installInvocation{path: pathFlag, skills: skillsFlag, experimental: includeExperimental}, err)
 				}
 				if written == 0 {
 					// Every skill was filtered out (e.g. all experimental without
@@ -226,6 +227,18 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 			}
 
+			// Recovery steps repeat this run with the choices made so far, so a
+			// copied command never widens to every agent or the global scope.
+			// Agents chosen by flag or in the picker are named; without a
+			// choice the re-run detects the same agents again.
+			rerun := installInvocation{
+				scope:        scope,
+				skills:       skillsFlag,
+				skillsOnly:   skillsOnly,
+				experimental: includeExperimental,
+				jsonOutput:   jsonMode,
+			}
+
 			// Validate --agents with the other flags, before the scope prompt.
 			var targetAgents []*agents.Agent
 			explicit := agentsFlag != ""
@@ -235,6 +248,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 					return err
 				}
 				funnel.setTargets(targetAgents)
+				rerun.agents = joinAgentNames(targetAgents)
 			}
 			funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
 
@@ -257,8 +271,9 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			if scope == "" {
 				scope, err = resolveScopeWithPrompt(ctx, interactive)
 				if err != nil {
-					return err
+					return withRecovery(ctx, rerun, err)
 				}
+				rerun.scope = scope
 			}
 			opts.Scope = scope
 			funnel.setScope(scope)
@@ -267,12 +282,15 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			if !explicit {
 				targetAgents, err = selectAgents(ctx, scope, skillsOnly, interactive)
 				if err != nil {
-					return err
+					return withRecovery(ctx, rerun, err)
 				}
 				if len(targetAgents) == 0 {
-					printNoAgentsMessage(ctx)
+					printNoAgentsMessage(ctx, rerun)
 					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
 					return nil
+				}
+				if interactive {
+					rerun.agents = joinAgentNames(targetAgents)
 				}
 			}
 
@@ -302,7 +320,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}, classifyInstallError(topLevelFailure(runErr)), outcomes)
 			}()
 
-			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
+			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}
@@ -322,7 +340,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 
 			if jsonMode {
-				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes, runErr)); jerr != nil {
+				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(ctx, rerun, opts.Scope, outcomes, runErr)); jerr != nil {
 					// Rendering failed, so the JSON the caller parses is broken.
 					// Report the render error unless the run already failed for
 					// another reason.
@@ -341,7 +359,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 				return nil
 			}
-			return runErr
+			return withRecovery(ctx, rerun, runErr)
 		},
 	}
 
@@ -557,6 +575,7 @@ type agentOutcome struct {
 	status        outcomeStatus
 	errorCategory protos.AitoolsErrorCategory // Unspecified when status == outcomeInstalled
 	message       string                      // set when skipped or failed
+	recovery      string                      // next step for the user, when skipped or failed
 }
 
 type outcomeStatus string
@@ -589,8 +608,9 @@ func topLevelFailure(runErr error) error {
 // executePlan carries out the plan and returns each agent's outcome. Skills
 // installs go through the existing skills path. Plugin installs are reported but
 // never silently fall back to skills: a blocked install is a warning (exit 0),
-// unless the agent was explicitly named via --agents, which is an error.
-func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, quiet bool) ([]agentOutcome, error) {
+// unless the agent was explicitly named via --agents, which is an error. The
+// per-agent recovery steps repeat rerun for the agent at hand.
+func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
 	var pluginItems, skipItems []agentPlanItem
 	for _, it := range plan {
@@ -638,8 +658,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
 			if err != nil {
+				reason, recovery := pluginFailureText(ctx, rerun, it, err)
 				if !quiet {
-					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", it.agent.DisplayName, reason)))
+					cmdio.LogString(ctx, "  "+recovery)
 				}
 				outcomes = append(outcomes, agentOutcome{
 					agent:         it.agent,
@@ -647,9 +669,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 					status:        outcomeFailed,
 					errorCategory: classifyInstallError(err),
 					message:       err.Error(),
+					recovery:      recovery,
 				})
 				if it.explicit {
-					explicitErrs = append(explicitErrs, err)
+					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: err})
 				}
 				continue
 			}
@@ -686,8 +709,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	}
 
 	for _, it := range skipItems {
+		recovery := skipRecovery(rerun, it)
 		if !quiet {
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+it.agent.DisplayName+": "+it.reason))
+			cmdio.LogString(ctx, "  "+recovery)
 		}
 		outcomes = append(outcomes, agentOutcome{
 			agent:         it.agent,
@@ -695,6 +720,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			status:        outcomeSkipped,
 			errorCategory: it.skipErrorCategory,
 			message:       it.reason,
+			recovery:      recovery,
 		})
 		if it.explicit {
 			explicitErrs = append(explicitErrs, fmt.Errorf("%s: %s", it.agent.DisplayName, it.reason))
@@ -730,6 +756,8 @@ type installOutput struct {
 	// also records.
 	Error         string `json:"error,omitempty"`
 	ErrorCategory string `json:"error_category,omitempty"`
+	// Recovery is the next step for the top-level failure, local-only like Error.
+	Recovery string `json:"recovery,omitempty"`
 }
 
 type agentResultJSON struct {
@@ -738,9 +766,12 @@ type agentResultJSON struct {
 	Status        string `json:"status"`
 	ErrorCategory string `json:"error_category,omitempty"`
 	Message       string `json:"message,omitempty"`
+	Recovery      string `json:"recovery,omitempty"`
 }
 
-func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) installOutput {
+// buildInstallOutput builds the --output json result; the recovery steps
+// repeat rerun.
+func buildInstallOutput(ctx context.Context, rerun installInvocation, scope string, outcomes []agentOutcome, runErr error) installOutput {
 	out := installOutput{Scope: scope, Agents: make([]agentResultJSON, 0, len(outcomes))}
 	for _, o := range outcomes {
 		entry := agentResultJSON{
@@ -748,6 +779,7 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 			Delivery: o.delivery.String(),
 			Status:   string(o.status),
 			Message:  o.message,
+			Recovery: o.recovery,
 		}
 		// Only non-successful outcomes carry a category, keyed on status to match
 		// agentResultsField in telemetry.go so the JSON and telemetry views of the
@@ -765,8 +797,18 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()
 		out.ErrorCategory = string(classifyInstallError(e))
+		out.Recovery = installRecovery(ctx, rerun, e)
 	}
 	return out
+}
+
+// joinAgentNames is the --agents value that names targetAgents.
+func joinAgentNames(targetAgents []*agents.Agent) string {
+	names := make([]string, len(targetAgents))
+	for i, a := range targetAgents {
+		names[i] = a.Name
+	}
+	return strings.Join(names, ",")
 }
 
 // resolveAgentNames parses a comma-separated list of agent names and validates
@@ -800,10 +842,12 @@ func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error)
 	return result, nil
 }
 
-// printNoAgentsMessage prints the "no agents detected" message.
-func printNoAgentsMessage(ctx context.Context) {
+// printNoAgentsMessage prints the "no agents detected" message. Its commands
+// repeat rerun, so a named agent is set up in the scope and mode this run used.
+func printNoAgentsMessage(ctx context.Context, rerun installInvocation) {
 	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents found on PATH."))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
-	cmdio.LogString(ctx, "Install one, then re-run 'databricks aitools install'.")
+	named, _ := commandText(runtime.GOOS, rerun, nil, "--agents=<name>")
+	cmdio.LogString(ctx, "Install one, then re-run "+rerunPhrase(runtime.GOOS, rerun)+". To set up an agent that was not detected, name it: "+named)
 }

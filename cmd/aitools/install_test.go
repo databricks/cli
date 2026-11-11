@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -314,7 +315,7 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	// Non-explicit blocked install is a warning, not an error, but the agent's
 	// failure is still recorded in its outcome.
 	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, false)
-	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 	require.NoError(t, err)
 	require.Len(t, outcomes, 1)
 	assert.Equal(t, outcomeFailed, outcomes[0].status)
@@ -322,7 +323,7 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 
 	// Explicit (--agents) blocked install is an error.
 	planExplicit := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
-	_, err = executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	_, err = executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 	require.Error(t, err)
 }
 
@@ -362,7 +363,7 @@ func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
 
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
-	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 	require.NoError(t, err)
 	require.Len(t, outcomes, 1)
 	assert.Equal(t, outcomeInstalled, outcomes[0].status)
@@ -399,7 +400,7 @@ func TestExecutePlanSkillsFailureStillInstallsPlugins(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
 	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
-	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 
 	// The skills failure is still the command's error, but it no longer stops
 	// Claude Code's plugin install.
@@ -441,7 +442,7 @@ func TestExecutePlanSkillsFailureKeepsUntrackedSkillsVisible(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
 	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
-	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 
 	require.ErrorIs(t, err, fetchErr)
 	require.Len(t, *plugins, 1)
@@ -477,7 +478,7 @@ func TestExecutePlanSkillsAndStateWriteFailuresAreJoined(t *testing.T) {
 	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
 	ctx := cmdio.MockDiscard(t.Context())
 	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
-	_, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	_, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 
 	// Both failures reach the user, the skills one first.
 	require.ErrorIs(t, err, skillsErr)
@@ -1193,4 +1194,87 @@ func TestInstallAgentCallerNoteSilent(t *testing.T) {
 			require.Len(t, *plugins, 1)
 		})
 	}
+}
+
+func TestInstallPickerAbortSuggestsFlags(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t)
+	setupScopeMock(t, installer.ScopeGlobal)
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+		return nil, huh.ErrUserAborted
+	}
+
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
+	require.ErrorIs(t, err, huh.ErrUserAborted)
+	assert.Equal(t, "user aborted\nTo install without prompts, name the scope and agents, for example: databricks aitools install --scope=global --agents=<name>", err.Error())
+}
+
+func TestInstallPathFailureHasRecoveryForThePathRun(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+	// A relative destination keeps the printed command independent of how the
+	// host spells its temp dir; the space makes it need quoting in every shell.
+	t.Chdir(t.TempDir())
+	const out = "my skills"
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--path", out})
+	err := cmd.Execute()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "\nCould not download Databricks skills from 127.0.0.1:1.")
+	// The POSIX-quoted command contains single quotes, so backticks delimit it.
+	want := "`databricks aitools install --path='my skills'`"
+	if runtime.GOOS == "windows" {
+		want = `'databricks aitools install --path="my skills"'`
+	}
+	assert.Contains(t, err.Error(), "then re-run "+want)
+}
+
+func TestInstallFailureAfterPickerNamesTheSelectedAgents(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t)
+	setupScopeMock(t, installer.ScopeGlobal)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", "")
+	origPicker := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPicker })
+	// Claude Code and Cursor are detected; the user picks only Cursor.
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+		return []*agents.Agent{agents.ByName(agents.NameCursor)}, nil
+	}
+	origInstall := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origInstall })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: http.StatusBadGateway, Err: errors.New("failed to fetch manifest: HTTP 502")}
+	}
+
+	ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+	cmd := newTestInstallCmd()
+	cmd.SetContext(telemetry.WithNewLogger(ioCtx))
+	require.NoError(t, cmd.Flags().Set("skills-only", "true"))
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'")
+}
+
+func TestNoAgentsMessageKeepsTheRunsScopeAndMode(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeProject, skillsOnly: true})
+	assert.Contains(t, stderr.String(), "Install one, then re-run 'databricks aitools install --scope=project --skills-only'. To set up an agent that was not detected, name it: databricks aitools install --scope=project --skills-only --agents=<name>")
 }

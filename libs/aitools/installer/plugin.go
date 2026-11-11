@@ -528,6 +528,26 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 	return SaveState(dir, state)
 }
 
+// ManualPluginInstallCommands returns the commands, in order, that install the
+// databricks plugin through the agent's own CLI. When the headless install
+// fails, running them by hand shows the agent's full output. Returns nil for an
+// agent without a plugin or CLI binary.
+func ManualPluginInstallCommands(agent *agents.Agent, nativeScope string) []string {
+	if agent.Plugin == nil || agent.Binary == "" {
+		return nil
+	}
+	var cmds []string
+	if agent.Plugin.Source != "" {
+		cmds = append(cmds, strings.Join(prepend(agent.Binary, marketplaceAddArgs(agent.Plugin)), " "))
+	}
+	// The same refresh the headless install runs; a stale local marketplace
+	// reports the plugin as missing.
+	if args := marketplaceUpdateArgs(agent, agent.Plugin.Marketplace); args != nil {
+		cmds = append(cmds, strings.Join(prepend(agent.Binary, args), " "))
+	}
+	return append(cmds, strings.Join(prepend(agent.Binary, pluginInstallArgs(agent, nativeScope)), " "))
+}
+
 // prepend returns a fresh argv with bin as argv[0] followed by args.
 func prepend(bin string, args []string) []string {
 	argv := make([]string, 0, len(args)+1)

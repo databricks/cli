@@ -874,6 +874,19 @@ func TestRunAgentCmdReportsTimeout(t *testing.T) {
 	assert.Equal(t, "timed out after 1ms", blocked.Detail)
 }
 
+func TestManualPluginInstallCommands(t *testing.T) {
+	assert.Equal(t, []string{
+		"claude plugin marketplace add databricks/databricks-agent-skills",
+		"claude plugin marketplace update databricks-agent-skills",
+		"claude plugin install databricks@databricks-agent-skills --scope user",
+	}, ManualPluginInstallCommands(claudeAgent(), "user"))
+	assert.Equal(t, []string{
+		"codex plugin marketplace add databricks/databricks-agent-skills",
+		"codex plugin add databricks@databricks-agent-skills",
+	}, ManualPluginInstallCommands(codexAgent(), ""))
+	assert.Nil(t, ManualPluginInstallCommands(noPluginAgent(), ""))
+}
+
 // copilotPluginHelp is the commander-style shape of `copilot plugin --help`.
 const copilotPluginHelp = "Usage: copilot plugin [options] [command]\n\nManage plugins\n\nCommands:\n  install <plugin>     Install a plugin\n  uninstall <plugin>   Uninstall a plugin\n  marketplace          Manage marketplaces\n"
 

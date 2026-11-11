@@ -129,3 +129,14 @@ type StateError struct {
 
 func (e *StateError) Error() string { return e.Err.Error() }
 func (e *StateError) Unwrap() error { return e.Err }
+
+// RefusedError reports an install the installer declines to run in the
+// current state, such as a downgrade or a targeted install over untracked
+// skills. Its message already names what to do instead, so the command layer
+// adds no generic retry step to it.
+type RefusedError struct {
+	Err error
+}
+
+func (e *RefusedError) Error() string { return e.Err.Error() }
+func (e *RefusedError) Unwrap() error { return e.Err }
