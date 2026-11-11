@@ -65,7 +65,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "description": "best app",
-    "name": "myapp"
+    "name": "myapp",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
   }
 }
 {

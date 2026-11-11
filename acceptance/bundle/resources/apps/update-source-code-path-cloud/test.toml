@@ -1,0 +1,12 @@
+# Runs against a real workspace to establish whether UpdateApp accepts a non-empty
+# source_code_path. Locally the fake server enforces the rule from #6404; see libs/testserver/apps.go.
+Cloud = true
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
+
+# App deployment progress messages are non-deterministic on cloud (different status messages
+# per poll), so filter them out entirely.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""

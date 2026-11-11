@@ -173,14 +173,14 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	}
 }
 
-// TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
-// appRequestBody removes SourceCodePath from ForceSendFields even when the plan
-// JSON round-trip has forced it in — reproduces the v1.14.0 regression where
-// "source_code_path": "" was sent in the UpdateApp body, causing a 400.
-func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
-	config := &AppState{
-		Name:           "my-app",
-		SourceCodePath: "/Workspace/Users/me/app",
+// TestAppRequestBody_StripsEmptySourceCodePathFromForceSendFields verifies that an empty
+// SourceCodePath is removed from ForceSendFields even when the plan JSON round-trip has
+// forced it in — reproduces the v1.14.0 regression (#6401) where "source_code_path": ""
+// was sent in the UpdateApp body, causing a 400.
+func TestAppRequestBody_StripsEmptySourceCodePathFromForceSendFields(t *testing.T) {
+	config := &AppState{}
+	config.App = apps.App{
+		Name: "my-app",
 		// Simulate ForceSendFields as populated by marshal.Unmarshal when the
 		// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
 		// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
@@ -190,9 +190,7 @@ func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 
 	body := appRequestBody(config)
 
-	// SourceCodePath must be cleared and absent from ForceSendFields so that
-	// the SDK's marshal.Marshal omits it from the request body.
-	assert.Empty(t, body.SourceCodePath)
+	// Absent from ForceSendFields so that the SDK's marshal.Marshal omits it from the request body.
 	assert.NotContains(t, body.ForceSendFields, "SourceCodePath")
 
 	// Verify the field is absent from the marshaled JSON (the root cause of the 400).
@@ -200,8 +198,30 @@ func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 	require.NoError(t, err)
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(data, &m))
-	assert.NotContains(t, m, "source_code_path", "source_code_path must not appear in the UpdateApp request body")
+	assert.NotContains(t, m, "source_code_path", "source_code_path must not appear in the request body when empty")
 
 	// Other ForceSendFields entries must be preserved.
 	assert.Contains(t, body.ForceSendFields, "Name")
+	// The plan entry itself must not be modified.
+	assert.Contains(t, config.ForceSendFields, "SourceCodePath")
+}
+
+func TestAppRequestBody_SendsNonEmptySourceCodePath(t *testing.T) {
+	config := &AppState{}
+	config.App = apps.App{
+		Name:            "my-app",
+		SourceCodePath:  "/Workspace/Users/me/app",
+		ForceSendFields: []string{"SourceCodePath"},
+	}
+
+	body := appRequestBody(config)
+
+	assert.Equal(t, "/Workspace/Users/me/app", body.SourceCodePath)
+	assert.Contains(t, body.ForceSendFields, "SourceCodePath")
+}
+
+func TestAppUpdateMaskOmitsEmptySourceCodePath(t *testing.T) {
+	assert.Contains(t, updateMaskFor(apps.App{SourceCodePath: "/Workspace/Users/me/app"}), "source_code_path")
+	assert.NotContains(t, updateMaskFor(apps.App{}), "source_code_path")
+	assert.Contains(t, updateMaskFor(apps.App{}), "git_source")
 }

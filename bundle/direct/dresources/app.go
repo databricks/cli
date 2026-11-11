@@ -106,19 +106,18 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	return remote, nil
 }
 
-// appRequestBody returns config.App with the deploy-only fields cleared. source_code_path
-// and git_source became part of apps.App in SDK v0.175, but DABs applies them through the
-// Deploy API (see manageLifecycle), so they must not ride along in create/update bodies.
-// ForceSendFields is cloned and stripped of SourceCodePath because the SDK's JSON
-// unmarshal (used when loading the plan) adds every present basic-type field to
-// ForceSendFields, which would otherwise force "source_code_path": "" into the body.
+// appRequestBody returns config.App for the Create/Update request. An empty source_code_path
+// is never sent: the SDK's JSON unmarshal (used when loading the plan) adds every present
+// basic-type field to ForceSendFields, which would otherwise force "source_code_path": ""
+// into the body, and the API rejects that (see #6401, fixed in #6404). ForceSendFields is
+// cloned so the plan entry is not modified.
 func appRequestBody(config *AppState) apps.App {
 	app := config.App
-	app.SourceCodePath = ""
-	app.GitSource = nil
-	app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
-		return s == "SourceCodePath"
-	})
+	if app.SourceCodePath == "" {
+		app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
+			return s == "SourceCodePath"
+		})
+	}
 	return app
 }
 
@@ -127,7 +126,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
-		App:             config.App,
+		App:             appRequestBody(config),
 		NoCompute:       noCompute,
 		ForceSendFields: nil,
 	}
@@ -178,17 +177,24 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
-var updateMask = strings.Join(UpdateMaskFields, ",")
+// updateMaskFor returns the update mask for the request body. source_code_path is left out
+// when the body omits it, so the update never asks the API to change a field it was not sent.
+func updateMaskFor(app apps.App) string {
+	fields := slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(s string) bool {
+		return s == "source_code_path" && app.SourceCodePath == ""
+	})
+	return strings.Join(fields, ",")
+}
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// source_code_path and git_source are sent as part of the App body (in the update
 	// mask). Only config (command/env) is deploy-only and applied via manageLifecycle.
 	if hasAppChanges(entry) {
-		app := config.App
+		app := appRequestBody(config)
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: updateMask,
+			UpdateMask: updateMaskFor(app),
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {

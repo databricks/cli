@@ -47,7 +47,8 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		}
 	}
 
-	// The real API rejects source_code_path in the UpdateApp body at any value.
+	// The real API rejects an empty source_code_path in the UpdateApp body (#6401: the CLI
+	// sent "source_code_path": "" and got a 400). A non-empty value is accepted.
 	if updateReq.App != nil {
 		var rawBody struct {
 			App json.RawMessage `json:"app"`
@@ -55,7 +56,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		if err := json.Unmarshal(req.Body, &rawBody); err == nil {
 			var appFields map[string]json.RawMessage
 			if err := json.Unmarshal(rawBody.App, &appFields); err == nil {
-				if _, ok := appFields["source_code_path"]; ok {
+				if sourceCodePath, ok := appFields["source_code_path"]; ok && string(sourceCodePath) == `""` {
 					return Response{
 						StatusCode: http.StatusBadRequest,
 						Body: map[string]string{
