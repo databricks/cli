@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
@@ -45,6 +46,17 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 	if !engine.IsDirect() {
 		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
 		return
+	}
+
+	// In immutable sync mode, translated paths reference the snapshot (an internal resource,
+	// see resources.SnapshotFullPathRef) that only snapshot.PlanUpload registers in the config.
+	// The plans below cannot resolve those references without it, so register it as plan and
+	// deploy do.
+	if b.IsImmutableFolder() {
+		bundle.ApplyContext(ctx, b, snapshot.PlanUpload(snapshot.PlanUploadOptions{Clean: true}))
+		if logdiag.HasError(ctx) {
+			return
+		}
 	}
 
 	// Direct engine: import into temp state, run plan, check for changes.
