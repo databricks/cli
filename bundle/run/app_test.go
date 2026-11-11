@@ -146,6 +146,85 @@ func TestAppRunStoppedApp(t *testing.T) {
 	r.run(t)
 }
 
+func TestAppRunWaitsForComputeToSettle(t *testing.T) {
+	tests := []struct {
+		name      string
+		states    []apps.ComputeState
+		wantStart bool
+	}{
+		{
+			name:   "updating then active",
+			states: []apps.ComputeState{apps.ComputeStateUpdating, apps.ComputeStateActive},
+		},
+		{
+			name:      "stopping then stopped",
+			states:    []apps.ComputeState{apps.ComputeStateStopping, apps.ComputeStateStopped},
+			wantStart: true,
+		},
+		{
+			name:   "starting then active",
+			states: []apps.ComputeState{apps.ComputeStateStarting, apps.ComputeStateActive},
+		},
+		{
+			name:      "starting then stopped",
+			states:    []apps.ComputeState{apps.ComputeStateStarting, apps.ComputeStateStopped},
+			wantStart: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, b, mwc := setupBundle(t)
+			appApi := mwc.GetMockAppsAPI()
+
+			for _, state := range tc.states {
+				appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
+					Name: "my_app",
+				}).Return(&apps.App{
+					Name: "my_app",
+					ComputeStatus: &apps.ComputeStatus{
+						State: state,
+					},
+				}, nil).Once()
+			}
+
+			if tc.wantStart {
+				appApi.EXPECT().Start(mock.Anything, apps.StartAppRequest{
+					Name: "my_app",
+				}).Return(&apps.WaitGetAppActive[apps.App]{
+					Poll: func(_ time.Duration, _ func(*apps.App)) (*apps.App, error) {
+						return &apps.App{
+							Name: "my_app",
+							AppStatus: &apps.ApplicationStatus{
+								State: apps.ApplicationStateRunning,
+							},
+							ComputeStatus: &apps.ComputeStatus{
+								State: apps.ComputeStateActive,
+							},
+						}, nil
+					},
+				}, nil).Once()
+			}
+
+			wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
+				Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
+					return nil, nil
+				},
+			}
+			appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
+				AppName: "my_app",
+				AppDeployment: apps.AppDeployment{
+					Mode:           apps.AppDeploymentModeSnapshot,
+					SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
+				},
+			}).Return(wait, nil).Once()
+
+			r := &testAppRunner{m: mwc, b: b, ctx: ctx}
+			r.run(t)
+		})
+	}
+}
+
 func TestAppRunWithAnActiveDeploymentInProgress(t *testing.T) {
 	r := setupTestApp(t, apps.ApplicationStateCrashed, apps.ComputeStateStopped)
 
