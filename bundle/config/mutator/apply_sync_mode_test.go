@@ -169,7 +169,7 @@ func TestApplySyncMode(t *testing.T) {
 			name: "deprecated immutable_folder",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
-				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: new(true)}
 			},
 			expectedValue:   config.SyncModeImmutable,
 			expectedWarning: `experimental.immutable_folder is deprecated, please set workspace.sync_mode to "immutable" instead`,
@@ -178,7 +178,7 @@ func TestApplySyncMode(t *testing.T) {
 			name: "deprecated immutable_folder, dev mode true, bundle in Workspace, databricks runtime",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
-				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: new(true)}
 				b.Config.Bundle.Mode = config.Development
 			},
 			expectedValue:   config.SyncModeImmutable,
@@ -188,7 +188,7 @@ func TestApplySyncMode(t *testing.T) {
 			name: "deprecated immutable_folder, deprecated source_linked_deployment disabled",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
-				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: new(true)}
 				b.Config.Presets.SourceLinkedDeployment = &disabled
 			},
 			expectedValue:   config.SyncModeImmutable,
@@ -198,7 +198,7 @@ func TestApplySyncMode(t *testing.T) {
 			name: "deprecated immutable_folder, deprecated source_linked_deployment enabled",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
-				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: new(true)}
 				b.Config.Presets.SourceLinkedDeployment = &enabled
 			},
 			expectedValue:   config.SyncModeImmutable,
@@ -218,7 +218,7 @@ func TestApplySyncMode(t *testing.T) {
 			name: "deprecated immutable_folder with sync_mode",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
-				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: new(true)}
 			},
 			initialValue:    config.SyncModeOverwrite,
 			expectedValue:   config.SyncModeOverwrite,
