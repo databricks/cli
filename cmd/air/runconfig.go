@@ -902,25 +902,6 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
 }
 
-func fallbackComputeOptions() []computeOption {
-	options := make([]computeOption, 0, len(gpuTypes))
-	for _, acceleratorType := range gpuTypes {
-		// RTX6000 availability must be confirmed by the workspace API during rollout.
-		if acceleratorType == gpuType1xRTX6000 {
-			continue
-		}
-		perNode, err := gpusPerNode(acceleratorType)
-		if err != nil {
-			continue
-		}
-		options = append(options, computeOption{
-			HardwareAccelerator:     string(acceleratorType),
-			PerNodeAcceleratorCount: &perNode,
-		})
-	}
-	return options
-}
-
 func formatPerNodeAcceleratorCount(option computeOption) string {
 	count := option.PerNodeAcceleratorCount
 	if count == nil {

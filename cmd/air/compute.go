@@ -18,26 +18,15 @@ const (
 	gpuType1xRTX6000 gpuType = "GPU_1xRTX6000"
 )
 
-// gpuTypes lists every accelerator type understood by this CLI.
-// Workspace availability is enforced by the server.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300, gpuType1xRTX6000}
-
-func validGPUTypesHint() string {
-	names := make([]string, len(gpuTypes))
-	for i, g := range gpuTypes {
-		names[i] = string(g)
-	}
-	return "valid types are: " + strings.Join(names, ", ")
-}
-
 // parseGPUType resolves a YAML accelerator_type string to a gpuType. The match is
-// exact: the server's lookup is case-sensitive.
+// exact: the server's lookup is case-sensitive. The error lists no types because
+// which ones a workspace can use comes from the server, not this CLI.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
 	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300, gpuType1xRTX6000:
 		return gpuType(value), nil
 	}
-	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
+	return "", fmt.Errorf("%q is not a recognized accelerator type", value)
 }
 
 // priorityClass is the AI Runtime scheduling priority a run is given within its
@@ -101,7 +90,7 @@ type computeConfig struct {
 func (c *computeConfig) validate() error {
 	g, err := parseGPUType(c.AcceleratorType)
 	if err != nil {
-		return fmt.Errorf("compute.accelerator_type: %w", err)
+		return fmt.Errorf("compute.accelerator_type: %w. Run 'databricks air run -h config.compute' to see the types available in your workspace", err)
 	}
 
 	if c.NumAccelerators <= 0 {
