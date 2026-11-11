@@ -18,7 +18,7 @@ code is designed" never justifies a behavior on its own.
 ## 1. Collect the change
 
 The review target is `HEAD` unless you were given a commit. Set `TARGET` to it
-and `BASE` to its merge base with main:
+and `BASE` to its merge base with the PR's base branch:
 
 ```bash
 TARGET=HEAD
@@ -26,6 +26,10 @@ BASE=$(git merge-base "$TARGET" origin/main)
 git diff --stat "$BASE" "$TARGET"
 git diff "$BASE" "$TARGET"
 ```
+
+For a stacked PR (`gh pr view --json baseRefName` is not `main`), fetch that
+branch and take `BASE` from `git merge-base "$TARGET" origin/<baseRefName>`
+instead, so the parent PR's hunks are not reviewed again here.
 
 If the change has a PR, read its title and description to learn the intent.
 Do not read existing review comments before forming your own view. List the
