@@ -20,14 +20,14 @@ import (
 )
 
 func TestResourcesTypesMap(t *testing.T) {
-	assert.Greater(t, len(ResourcesTypes), 10, "expected ResourcesTypes to have more than 10 entries")
+	assert.Greater(t, len(ResourcesTypes()), 10, "expected ResourcesTypes() to have more than 10 entries")
 
-	typ, ok := ResourcesTypes["jobs"]
-	assert.True(t, ok, "resources type for 'jobs' not found in ResourcesTypes map")
+	typ, ok := ResourcesTypes()["jobs"]
+	assert.True(t, ok, "resources type for 'jobs' not found in ResourcesTypes() map")
 	assert.Equal(t, reflect.TypeFor[resources.Job](), typ, "resources type for 'jobs' mismatch")
 
-	typ, ok = ResourcesTypes["jobs.permissions"]
-	assert.True(t, ok, "resources type for 'jobs.permissions' not found in ResourcesTypes map")
+	typ, ok = ResourcesTypes()["jobs.permissions"]
+	assert.True(t, ok, "resources type for 'jobs.permissions' not found in ResourcesTypes() map")
 	assert.Equal(t, reflect.TypeFor[[]resources.JobPermission](), typ, "resources type for 'jobs.permissions' mismatch")
 }
 
@@ -43,15 +43,15 @@ func TestResourcesTypesMap(t *testing.T) {
 // trip the direct engine performs. Any newly added resource whose wrapper embeds
 // an SDK spec is covered automatically.
 func TestResourceTypesZeroValueFieldsSerialize(t *testing.T) {
-	names := make([]string, 0, len(ResourcesTypes))
-	for name := range ResourcesTypes {
+	names := make([]string, 0, len(ResourcesTypes()))
+	for name := range ResourcesTypes() {
 		names = append(names, name)
 	}
 	slices.Sort(names)
 
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
-			typ := ResourcesTypes[name]
+			typ := ResourcesTypes()[name]
 			zeros := zeroValueScalars(typ, 0, map[reflect.Type]bool{})
 			if zeros.Kind() != dyn.KindMap {
 				return

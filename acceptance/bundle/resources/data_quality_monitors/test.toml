@@ -1,0 +1,5 @@
+# Data quality monitors are deployed through the direct engine only.
+
+# Lifecycle tests also run against a real workspace. Tests that inspect the
+# recorded request stream (e.g. basic) can't run on cloud and override this.
+Cloud = true

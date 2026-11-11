@@ -20,7 +20,7 @@ The SDK bumper (eng-dev-ecosystem automation) does steps 1-4 for every new stabl
 It opens a PR from the `automation/go-sdk-vX.Y.Z` branch of `databricks/cli`, titled `Update Go SDK to vX.Y.Z`, containing the `go get` + `go mod tidy` result, `.codegen/_openapi_sha`, `.codegen/cli.json` (genkit, followed by `./task generate-clijson-post`), and a changelog fragment without a PR link.
 `generate-clijson-post` ends with `bump-sdk-post` (step 4), whose error it ignores so that the bumper, which aborts on any error there, still opens a PR. The PR therefore carries whatever got regenerated, and stays red while the bump needs hand fixes (step 5).
 Nothing logs the task's output in the bumper, so judge from the PR what got regenerated.
-The bumper's environment has `uv` and Python but no `ruff`, which the acceptance tests require, so `test-update` stops at `TestAccept/prerequisites` there and bumper PRs carry no golden updates.
+The bumper's image has `uv` and Python 3.12 but no `ruff`; `bump-sdk-post` runs `install-pythons` and `install-ruff` before refreshing the acceptance goldens, so `test-update` can run there. Bumper PRs up to #7277 predate that and carry no golden updates.
 Bumper PRs opened before `generate-clijson-post` ran `bump-sdk-post` (e.g. #7138) have nothing downstream of `cli.json`: their stale command stubs usually fail to compile, which fails lint and every test job.
 The bumper does not merge CLI PRs, and it reuses an open PR for the same release on later runs, keeping commits pushed to its branch.
 
@@ -37,7 +37,7 @@ Steps 1-4 are the manual equivalent of the bumper (no bumper PR yet, a pinned ve
 **1. Resolve the target versions.**
 Use the SDK version the user gave. If they didn't specify one, look up the latest released version yourself (the newest `vX.Y.Z` tag at `https://github.com/databricks/databricks-sdk-go/tags`) instead of prompting for it.
 If they want "the version the Terraform provider vX.Y.Z uses", read the provider's `go.mod` at that tag: `https://raw.githubusercontent.com/databricks/terraform-provider-databricks/vX.Y.Z/go.mod`.
-The accompanying OpenAPI SHA is pinned inside the SDK at that tag: `https://raw.githubusercontent.com/databricks/databricks-sdk-go/vX.Y.Z/.codegen/_openapi_sha`.
+The accompanying OpenAPI SHA is pinned inside the SDK at that tag: `https://raw.githubusercontent.com/databricks/databricks-sdk-go/vX.Y.Z/.codegen/_last_sha`.
 Always bump the spec SHA together with the SDK; they are expected to move as a pair.
 
 **2. Apply the core bump.**
@@ -52,13 +52,14 @@ Decide with the user whether to keep the tagging-producer drift or restore those
 The task ends with step 4 (`generate-clijson-post` runs `bump-sdk-post`) and ignores its error, so read the end of its output, or go on with step 4 directly.
 
 **4. Regenerate everything downstream: `./task bump-sdk-post`.**
-This is the whole mechanical part of the bump: `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML, pydabs), then `test-update` for the acceptance goldens.
+This is the whole mechanical part of the bump: `install-pythons` and `install-ruff`, then `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML, pydabs), then `test-update` for the acceptance goldens.
 Everything after it needs judgment.
 Run directly, it fails on errors: `generate-refschema` and `test-update` build the CLI, so it fails while the bump still breaks compilation; fix that (step 5) and rerun the task.
 
 Run it in CI's environment, or the goldens pick up local drift:
 - `uv` index: the acceptance tests build wheels offline from the vendored packages (`UV_OFFLINE`, `UV_FIND_LINKS`), but `uv` still reads its default index's pages from the shared cache. If a `uv.toml` (e.g. `/etc/uv/uv.toml`, which applies even under the tests' temporary `HOME`) makes an internal PyPI proxy the default index, `uv` picks versions from cached proxy pages that it cannot download offline and fails with `No solution found when resolving: hatchling`; `-update` then bakes that error into dozens of template goldens and deletes their `output/` trees. The same failure on `main` tells it apart from bump fallout. Set `UV_DEFAULT_INDEX=https://pypi.org/simple` for the acceptance runs only, so `uv` stops reading cached proxy pages (CI's test jobs point `UV_INDEX_URL` at a JFrog mirror instead): the generators fetch tools such as `ruff` and need the proxy where `pypi.org` is unreachable. On such a machine, run the task's two halves separately: `./task generate-check`, then `UV_DEFAULT_INDEX=https://pypi.org/simple ./task test-update` (and the same prefix for `./task test` later). If `generate-clijson` already ran `test-update` without it, first revert the `acceptance/` churn (`git checkout -- acceptance`, plus any stray untracked files it left).
-- Python: CI installs the managed interpreters with `./task install-pythons`; do the same.
+- Python: the managed interpreters from `./task install-pythons`, which `bump-sdk-post` runs first (CI runs it in setup-build-environment).
+- Ruff: `./task install-ruff` installs CI's version (0.9.1) via uv; `bump-sdk-post` adds uv's tool executable directory to `PATH` for `test-update`. The acceptance runner only checks that Ruff is available.
 - Go: the `toolchain` in `go.mod`. A newer local `go` also changes goldens and generated `gofmt` output; use `GOTOOLCHAIN=<pinned>` if they differ.
 
 Before going on, account for every changed file outside the generated set, including the bumper's (its environment is not CI's either): a bump without fallout changes `cmd/**`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `python/databricks/bundles/**`, `acceptance/bundle/refschema/output` and help-text goldens (`acceptance/help/output.txt`, `acceptance/cmd/account/account-help/output.txt`).

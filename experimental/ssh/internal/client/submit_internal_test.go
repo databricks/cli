@@ -33,6 +33,22 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Nil(t, got.Tasks[0].Compute)
 	})
 
+	t.Run("serverless environment version", func(t *testing.T) {
+		for _, tt := range []struct {
+			version int
+			want    string
+		}{
+			{0, "4"},
+			{5, "5"},
+		} {
+			opts := ClientOptions{ConnectionName: "conn", ServerTimeout: time.Hour, EnvironmentVersion: tt.version}
+			got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+
+			require.Len(t, got.Environments, 1)
+			assert.Equal(t, tt.want, got.Environments[0].Spec.EnvironmentVersion)
+		}
+	})
+
 	t.Run("serverless with accelerator", func(t *testing.T) {
 		opts := ClientOptions{
 			ConnectionName: "conn",

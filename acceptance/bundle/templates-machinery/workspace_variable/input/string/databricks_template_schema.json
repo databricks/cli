@@ -1,0 +1,19 @@
+{
+    "properties": {
+        "workspace": {
+            "type": "string",
+            "description": "Workspace name",
+            "default": "",
+            "pattern": "^[a-z-]*$",
+            "pattern_match_failure_message": "Use lowercase letters and dashes",
+            "order": 1
+        },
+        "message": {
+            "type": "string",
+            "description": "Message for {{ .workspace }}",
+            "default": "Deploying to {{ .workspace }}",
+            "order": 2
+        }
+    },
+    "success_message": "Created for \"{{ .workspace }}\""
+}

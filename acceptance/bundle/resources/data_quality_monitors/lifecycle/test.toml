@@ -1,0 +1,8 @@
+# Runs against a real workspace as well: a schema monitor needs only a schema,
+# which the bundle creates.
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

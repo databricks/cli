@@ -148,8 +148,9 @@ jobs:
             const MAX_REPORT = 60000;
             let report = fs.readFileSync(path, 'utf8');
             if (report.length > MAX_REPORT) {
-              const [head, ...blocks] = report.split('<details>\n');
-              let kept = head;
+              // The first <details> block is the table, which is always kept.
+              const [head, table, ...blocks] = report.split('<details>\n');
+              let kept = head + '<details>\n' + table;
               let shown = 0;
               for (const block of blocks) {
                 if (kept.length + block.length > MAX_REPORT) break;
