@@ -1,0 +1,72 @@
+
+>>> musterr [CLI] sync
+Error: accepts 2 arg(s), received 0
+
+Usage:
+  databricks sync [flags] SRC DST
+
+Flags:
+      --dry-run               simulate sync execution without making actual changes
+      --exclude strings       patterns to exclude from sync (can be specified multiple times)
+      --exclude-from string   file containing patterns to exclude from sync (one pattern per line)
+      --full                  perform full synchronization (default is incremental)
+  -h, --help                  help for sync
+      --include strings       patterns to include in sync (can be specified multiple times)
+      --include-from string   file containing patterns to include to sync (one pattern per line)
+      --interval duration     file system polling interval (for --watch) (default 1s)
+      --watch                 watch local file system for changes
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> musterr [CLI] sync foo
+Error: accepts 2 arg(s), received 1
+
+Usage:
+  databricks sync [flags] SRC DST
+
+Flags:
+      --dry-run               simulate sync execution without making actual changes
+      --exclude strings       patterns to exclude from sync (can be specified multiple times)
+      --exclude-from string   file containing patterns to exclude from sync (one pattern per line)
+      --full                  perform full synchronization (default is incremental)
+  -h, --help                  help for sync
+      --include strings       patterns to include in sync (can be specified multiple times)
+      --include-from string   file containing patterns to include to sync (one pattern per line)
+      --interval duration     file system polling interval (for --watch) (default 1s)
+      --watch                 watch local file system for changes
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> musterr [CLI] sync foo bar qux
+Error: accepts at most 2 arg(s), received 3
+
+Usage:
+  databricks sync [flags] SRC DST
+
+Flags:
+      --dry-run               simulate sync execution without making actual changes
+      --exclude strings       patterns to exclude from sync (can be specified multiple times)
+      --exclude-from string   file containing patterns to exclude from sync (one pattern per line)
+      --full                  perform full synchronization (default is incremental)
+  -h, --help                  help for sync
+      --include strings       patterns to include in sync (can be specified multiple times)
+      --include-from string   file containing patterns to include to sync (one pattern per line)
+      --interval duration     file system polling interval (for --watch) (default 1s)
+      --watch                 watch local file system for changes
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
