@@ -117,9 +117,9 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{},
 		},
 		{
-			name: "nested_readme_not_ignored",
+			name: "acceptance_output_readme_not_ignored",
 			files: []string{
-				"libs/template/templates/default/README.md",
+				"acceptance/bundle/templates/default-python/classic/output/my_default_python/README.md",
 			},
 			targets: []string{"test"},
 		},
