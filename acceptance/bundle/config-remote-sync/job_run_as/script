@@ -8,6 +8,12 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Change run_as remotely"
+edit_resource.py jobs "$(read_id.py no_run_as)" <<'PY'
+r["run_as"] = {"service_principal_name": "11111111-2222-3333-4444-555555555555"}
+PY
+edit_resource.py jobs "$(read_id.py no_run_as_creator)" <<PY
+r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
+PY
 edit_resource.py jobs "$(read_id.py user_to_user)" <<'PY'
 r["run_as"] = {"user_name": "second-user@example.com"}
 PY
