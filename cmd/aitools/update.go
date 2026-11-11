@@ -196,7 +196,30 @@ The command exits with code 1 when every update or check it attempts fails.`,
 						targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
 					}
 
-					result, err := updateSkillsFn(ctx, src, excludePluginAgents(targetAgents, state), opts)
+					fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
+					// Raw skills an earlier install gave an agent that now has the
+					// plugin would show every skill twice, so remove them as
+					// install does when it keeps the plugin.
+					if !check {
+						for _, a := range manifestPlugins {
+							if err := updateCleanupLegacyFn(ctx, a, scope); err != nil {
+								log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", a.DisplayName, err)
+							}
+						}
+					}
+					// The plugin agents left no agent that can take file skills in
+					// this scope, so there is nothing to reconcile. Without this, a
+					// project whose only project-capable agent has the plugin would
+					// fail the update with "no agents support project-scoped skills".
+					// Without install state the reconcile still runs, for the
+					// "no skills or plugins installed" and legacy-install guidance.
+					if state != nil && len(manifestPlugins) > 0 && !slices.ContainsFunc(fileAgents, func(a *agents.Agent) bool {
+						return scope != installer.ScopeProject || a.SupportsProjectScope
+					}) {
+						continue
+					}
+
+					result, err := updateSkillsFn(ctx, src, fileAgents, opts)
 					if err != nil {
 						return err
 					}
@@ -258,9 +281,13 @@ func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state 
 		if !ok {
 			continue
 		}
-		// Match install's non-interactive behavior: a raw install for a plugin
-		// agent should attempt migration and report a skip if its CLI is missing,
-		// rather than silently staying on raw skills forever.
+		// Match install's behavior: an agent whose CLI is not on PATH keeps its
+		// raw skills, which update refreshes, until the CLI is there to install
+		// the plugin with. An agent with the CLI attempts migration and reports
+		// a skip if it fails, rather than silently staying on raw skills forever.
+		if !agent.HasBinary(ctx) {
+			continue
+		}
 		hasRawSkills, err := hasManagedRawSkillsForAgentFn(ctx, agent, scope)
 		if err != nil {
 			return nil, err
@@ -341,19 +368,31 @@ func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
 	return merged
 }
 
-// excludePluginAgents drops agents that are managed as plugins in this scope, so
-// the file-skills reconcile never drops duplicate skill files onto a plugin agent.
-func excludePluginAgents(installed []*agents.Agent, state *installer.InstallState) []*agents.Agent {
-	if state == nil || len(state.Plugins) == 0 {
-		return installed
-	}
-	out := make([]*agents.Agent, 0, len(installed))
+// excludePluginAgents splits off agents that have the plugin in this scope, so
+// the file-skills reconcile never drops duplicate skill files onto a plugin
+// agent. That is an agent the CLI recorded a plugin install for, or one whose
+// own manifest shows a plugin serving the scope (see manifestPluginActive) while
+// its CLI is missing: install keeps such a plugin, without recording it. With
+// the CLI on PATH, raw skills next to the plugin are the user's choice (install
+// --skills-only), so they are refreshed as before. manifestPlugins lists the
+// agents excluded for their manifest.
+func excludePluginAgents(ctx context.Context, scope string, installed []*agents.Agent, state *installer.InstallState) (fileAgents, manifestPlugins []*agents.Agent) {
+	fileAgents = make([]*agents.Agent, 0, len(installed))
 	for _, a := range installed {
-		if _, isPlugin := state.Plugins[a.Name]; !isPlugin {
-			out = append(out, a)
+		if state != nil {
+			if _, isPlugin := state.Plugins[a.Name]; isPlugin {
+				continue
+			}
 		}
+		if !a.HasBinary(ctx) {
+			if active, err := manifestPluginActive(ctx, a, scope); err == nil && active {
+				manifestPlugins = append(manifestPlugins, a)
+				continue
+			}
+		}
+		fileAgents = append(fileAgents, a)
 	}
-	return out
+	return fileAgents, manifestPlugins
 }
 
 // hasKnownPluginRecord reports whether state records a plugin for an agent this

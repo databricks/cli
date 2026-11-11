@@ -331,6 +331,8 @@ func TestRecoveryCommandsKeepTheProjectScope(t *testing.T) {
 	notOnPath := &installer.BlockedError{Agent: claude.Name, Reason: installer.ReasonCLINotOnPath, Detail: "not found"}
 	_, recovery := pluginFailureText(t.Context(), inv, item, notOnPath)
 	assert.Equal(t, "Install or update the Claude Code CLI so 'claude' is on PATH, then re-run '"+want+"'. Or install skill files instead: "+want+" --skills-only", recovery)
+	assert.Contains(t, skillsFallbackText(inv, item), "run '"+want+"'.")
+	assert.Contains(t, pluginKeptText(inv, item), "run '"+want+"'.")
 
 	timedOut := &installer.BlockedError{Agent: claude.Name, Reason: installer.ReasonCLINotOnPath, Detail: "timed out after 20s", TimedOut: true}
 	_, recovery = pluginFailureText(t.Context(), inv, item, timedOut)

@@ -38,7 +38,8 @@ const (
 // BlockedError reports that a plugin operation could not be performed for an
 // agent. The command layer maps Reason to a user-facing message and decides
 // whether to skip-with-warning or hard-fail (per the non-TTY policy). It never
-// causes a silent fall back to skills.
+// causes a fall back to skills: install gives skill files to an agent whose
+// CLI is not on PATH when it plans the run, before any plugin install.
 type BlockedError struct {
 	Agent  string
 	Reason string
@@ -525,6 +526,52 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 	}
 	state.LastUpdated = time.Now()
 	state.Scope = cliScope
+	return SaveState(dir, state)
+}
+
+// PluginRecorded reports whether the CLI install state for cliScope records a
+// databricks plugin install for the agent. A scope without state, or a state
+// that cannot be read, has no record.
+func PluginRecorded(ctx context.Context, cliScope, agentName string) bool {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
+		return false
+	}
+	if state == nil {
+		return false
+	}
+	_, ok := state.Plugins[agentName]
+	return ok
+}
+
+// ForgetPluginInstalls removes the plugin install records of the named agents
+// from the state file for the given CLI scope, for agents that no longer have
+// the plugin. Agents without a record, or a scope without state, are left as
+// they are.
+func ForgetPluginInstalls(ctx context.Context, cliScope string, agentNames []string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil || state == nil {
+		return err
+	}
+	changed := false
+	for _, name := range agentNames {
+		if _, ok := state.Plugins[name]; ok {
+			delete(state.Plugins, name)
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
 	return SaveState(dir, state)
 }
 

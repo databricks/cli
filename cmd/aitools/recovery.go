@@ -173,6 +173,10 @@ func withRecovery(ctx context.Context, inv installInvocation, err error) error {
 	if err == nil {
 		return nil
 	}
+	// A step attached closer to the failure (see skillsBatchError) wins.
+	if _, ok := errors.AsType[*recoveryError](err); ok {
+		return err
+	}
 	step := installRecovery(ctx, inv, err)
 	if step == "" {
 		return err
@@ -453,7 +457,7 @@ func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanI
 			return fmt.Sprintf("'%s plugin' is not available (%s)", a.Binary, blocked.Detail),
 				fmt.Sprintf("Update the %s CLI to a version with the '%s plugin' command, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillsOnlyCommand(inv, it))
 		}
-		return fmt.Sprintf("'%s' is not on PATH", a.Binary),
+		return cliMissingReason(it),
 			fmt.Sprintf("Install or update the %s CLI so '%s' is on PATH, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillsOnlyCommand(inv, it))
 	case blocked.Reason == installer.ReasonShimExitedWithError:
 		// Detail carries the captured stderr and the commands that show the
@@ -475,4 +479,38 @@ func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanI
 func skipRecovery(inv installInvocation, it agentPlanItem) string {
 	inv.scope = installer.ScopeGlobal
 	return "To set up " + it.agent.DisplayName + " in the global scope, run: " + installCommand(inv, it)
+}
+
+// cliMissingReason is why an agent whose CLI is not on PATH does not get the
+// plugin.
+func cliMissingReason(it agentPlanItem) string {
+	return fmt.Sprintf("'%s' is not on PATH", it.agent.Binary)
+}
+
+// switchToPluginStep is how an agent whose CLI is missing gets the plugin later.
+func switchToPluginStep(inv installInvocation, it agentPlanItem) string {
+	return fmt.Sprintf("install the %s CLI so '%s' is on PATH and run %s", it.agent.DisplayName, it.agent.Binary, agentRerun(inv, it))
+}
+
+// skillsFallbackText is the notice printed when an agent gets skill files
+// instead of the plugin because its CLI is missing.
+func skillsFallbackText(inv installInvocation, it agentPlanItem) string {
+	return fmt.Sprintf("Skipped the plugin for %s: %s. Installing skill files instead; to switch to the plugin, %s.",
+		it.agent.DisplayName, cliMissingReason(it), switchToPluginStep(inv, it))
+}
+
+// projectPluginWarning is printed when a skills fallback runs in a directory
+// where the agent already loads a plugin that does not cover the install scope.
+func projectPluginWarning(scope string, it agentPlanItem) string {
+	if scope == installer.ScopeProject {
+		return it.agent.DisplayName + " has a personal databricks plugin, so you will see both the plugin and this project's skill files here."
+	}
+	return it.agent.DisplayName + " has the databricks plugin for this project, so this project will see both the plugin and the global skill files."
+}
+
+// pluginKeptText is the notice for an agent whose CLI is missing but which
+// already has the plugin, so no skill files are added next to it.
+func pluginKeptText(inv installInvocation, it agentPlanItem) string {
+	return fmt.Sprintf("%s already has the databricks plugin; it was not refreshed because %s. To refresh it, %s.",
+		it.agent.DisplayName, cliMissingReason(it), switchToPluginStep(inv, it))
 }
