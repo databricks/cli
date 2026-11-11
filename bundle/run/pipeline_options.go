@@ -95,11 +95,6 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		// using the pipeline-level development property while it is being deprecated.
 		Development: development,
 	}
-	// Legacy pipelines accept literal names rather than SQL identifiers.
-	if pipeline.Schema == "" {
-		payload.RefreshSelection = unquoteRefreshTables(payload.RefreshSelection)
-		payload.FullRefreshSelection = unquoteRefreshTables(payload.FullRefreshSelection)
-	}
 	return payload, nil
 }
 

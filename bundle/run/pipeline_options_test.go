@@ -52,29 +52,6 @@ func TestPipelineOptionsPathSelectionsPayload(t *testing.T) {
 	}
 }
 
-func TestPipelineOptionsQuotedTablesPayload(t *testing.T) {
-	for _, schema := range []string{"", "default"} {
-		t.Run("schema="+schema, func(t *testing.T) {
-			fs, opts := setupPipelineOptions(t)
-			err := fs.Parse([]string{"--refresh", "table:`a`` b,c` orders", "--full-refresh", "`daily rollup`"})
-			require.NoError(t, err)
-			require.NoError(t, opts.ResolveRefreshSelectors(t.Context(), nil))
-			pipeline := &resources.Pipeline{}
-			pipeline.Schema = schema
-			payload, err := opts.toPayload(pipeline, "pipeline-id", false)
-			require.NoError(t, err)
-			if schema == "" {
-				assert.Equal(t, []string{"a` b,c", "orders"}, payload.RefreshSelection)
-				assert.Equal(t, []string{"daily rollup"}, payload.FullRefreshSelection)
-			} else {
-				assert.Equal(t, []string{"`a`` b,c`", "orders"}, payload.RefreshSelection)
-				assert.Equal(t, []string{"`daily rollup`"}, payload.FullRefreshSelection)
-			}
-			assert.Equal(t, []string{"`a`` b,c`", "orders"}, opts.Refresh)
-		})
-	}
-}
-
 func TestPipelineOptionsRejectMixedSelectors(t *testing.T) {
 	tests := []struct {
 		name string

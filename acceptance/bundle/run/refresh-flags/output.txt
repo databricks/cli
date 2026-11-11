@@ -108,8 +108,8 @@ Update ID: [UUID][6]
   "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "refresh_selection": [
-      "table1",
-      "table2"
+      "`table1`",
+      "`table2`"
     ]
   }
 }

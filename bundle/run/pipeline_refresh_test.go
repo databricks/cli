@@ -261,3 +261,17 @@ func TestResolveRefreshSelectorsDeployedSnapshot(t *testing.T) {
 	assert.Equal(t, []string{"/Workspace/Shared/snapshots/deployed/snapshot/files/query.sql"}, opts.RefreshByPath)
 	assert.Equal(t, []string{"/Workspace/Shared/snapshots/deployed/snapshot/files/full_query.sql"}, opts.FullRefreshByPath)
 }
+
+func TestResolveRefreshSelectorsInPlaceExcludedFiles(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "query.sql"), []byte("SELECT 1;\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "notebook.py"), []byte("# Databricks notebook source\nprint('notebook')\n"), 0o600))
+	t.Chdir(root)
+	b := refreshTestBundle(root)
+	b.Config.Workspace.SyncMode = config.SyncModeInPlace
+	b.Config.Sync.Exclude = []string{"query.sql", "notebook.py"}
+	tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"file:query.sql", "file:notebook.py"})
+	require.NoError(t, err)
+	assert.Empty(t, tables)
+	assert.Equal(t, []string{filepath.ToSlash(filepath.Join(root, "query.sql")), filepath.ToSlash(filepath.Join(root, "notebook"))}, paths)
+}

@@ -157,6 +157,18 @@ func (r *refreshSelectorResolver) resolve(ctx context.Context, selectors []strin
 		if !filepath.IsLocal(rel) {
 			return nil, nil, fmt.Errorf("source file %q is outside the bundle sync root", selector)
 		}
+		if b.IsSourceLinkedDeployment() {
+			remoteName := filepath.ToSlash(rel)
+			isNotebook, _, err := notebook.DetectWithFS(b.SyncRoot, remoteName)
+			if err != nil {
+				return nil, nil, fmt.Errorf("cannot identify source file %q: %w", selector, err)
+			}
+			if isNotebook {
+				remoteName = notebook.StripExtension(remoteName)
+			}
+			paths = append(paths, path.Join(b.RemoteFilePath(), remoteName))
+			continue
+		}
 		if r.remoteNames == nil {
 			// Refresh uses the deployed snapshot.
 			if b.IsImmutableFolder() {
