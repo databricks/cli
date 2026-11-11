@@ -1,1 +1,1 @@
-* Rename a schema in place when its `name` changes, instead of deleting and recreating it. Schemas and volumes inside a renamed catalog or schema now follow it to the new name. ([#7343](https://github.com/databricks/cli/pull/7343))
+* Rename a schema in place when its `name` changes, instead of deleting and recreating it. Schemas and volumes inside a renamed catalog or schema now follow it to the new name, and one renamed outside the bundle is found under its new name. ([#7343](https://github.com/databricks/cli/pull/7343))
