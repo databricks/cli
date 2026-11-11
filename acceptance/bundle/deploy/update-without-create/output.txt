@@ -60,7 +60,7 @@ Resources: 2 created, 2 changed, 0 deleted, 0 unchanged
     "access_control_list": [
       {
         "permission_level": "IS_OWNER",
-        "user_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]"
       }
     ]
   }
@@ -75,7 +75,7 @@ Resources: 2 created, 2 changed, 0 deleted, 0 unchanged
       "__embed__": [
         {
           "level": "IS_OWNER",
-          "user_name": "[USERNAME]"
+          "service_principal_name": "[USERNAME]"
         }
       ]
     },
@@ -139,7 +139,7 @@ Resources: 1 created, 1 changed, 0 deleted, 2 unchanged
     "access_control_list": [
       {
         "permission_level": "IS_OWNER",
-        "user_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]"
       }
     ]
   }
