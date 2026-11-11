@@ -162,6 +162,9 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 					!keepSkippedRunAsChange(fullPath, changeDesc) {
 					continue
 				}
+				if skipJobRunAs(fullPath, changeDesc, entry.RemoteState) {
+					continue
+				}
 
 				change, err := convertChangeDesc(fullPath, changeDesc)
 				if err != nil {

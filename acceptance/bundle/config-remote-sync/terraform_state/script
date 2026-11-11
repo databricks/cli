@@ -8,8 +8,11 @@ title "Replay a terraform deployment of the bundle (captured from a real terrafo
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
 job_id="$(read_id.py test_job)"
 
+# Jobs updated by the terraform engine carry an explicit run_as naming the job's identity; that is
+# not a remote edit, so only max_concurrent_runs must be detected.
 edit_resource.py jobs $job_id <<EOF2
 r["max_concurrent_runs"] = 3
+r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
 EOF2
 
 title "config-remote-sync migrates the terraform state in memory and detects the remote change"

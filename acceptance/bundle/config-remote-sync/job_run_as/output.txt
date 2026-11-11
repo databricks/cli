@@ -1,18 +1,23 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.no_run_as
+Created jobs.no_run_as_creator
 Created jobs.user_to_creator
 Created jobs.user_to_sp
 Created jobs.user_to_user
 Files: 2 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change run_as remotely
 
 === Detect and save changes
 
 >>> [CLI] bundle config-remote-sync --save
-Detected changes in 3 resource(s):
+Detected changes in 4 resource(s):
+
+Resource: resources.jobs.no_run_as
+  run_as: add
 
 Resource: resources.jobs.user_to_creator
   run_as.user_name: replace
@@ -29,21 +34,28 @@ Resource: resources.jobs.user_to_user
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -7,5 +7,5 @@
+@@ -12,4 +12,6 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      run_as:
++        service_principal_name: [UUID]
+     # The terraform provider pins run_as to the job's identity on every update,
+     # so a remote run_as that names the creator is a default, not an edit.
+@@ -24,5 +26,5 @@
        name: user-to-user-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: second-user@example.com
        tasks:
          - task_key: main
-@@ -16,5 +16,5 @@
+@@ -34,5 +36,5 @@
        name: user-to-creator-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: [USERNAME]
        tasks:
          - task_key: main
-@@ -25,5 +25,5 @@
+@@ -43,5 +45,5 @@
        name: user-to-sp-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
@@ -60,14 +72,16 @@ No changes detected.
 === Plan after sync
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.jobs.no_run_as
+  delete resources.jobs.no_run_as_creator
   delete resources.jobs.user_to_creator
   delete resources.jobs.user_to_sp
   delete resources.jobs.user_to_user
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 5 deleted

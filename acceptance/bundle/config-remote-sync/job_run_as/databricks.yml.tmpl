@@ -3,6 +3,23 @@ bundle:
 
 resources:
   jobs:
+    # run_as is not set in config, so the backend defaults it to the deployer.
+    no_run_as:
+      name: no-run-as-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # The terraform provider pins run_as to the job's identity on every update,
+    # so a remote run_as that names the creator is a default, not an edit.
+    no_run_as_creator:
+      name: no-run-as-creator-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
     user_to_user:
       name: user-to-user-$UNIQUE_NAME
       run_as:
@@ -12,6 +29,7 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
 
+    # The creator default only applies when the config leaves run_as unset.
     user_to_creator:
       name: user-to-creator-$UNIQUE_NAME
       run_as:
