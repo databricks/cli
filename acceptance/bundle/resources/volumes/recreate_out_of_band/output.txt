@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,9 +9,11 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Out of band, delete the volume and create another one under a new name
+
 >>> [CLI] volumes delete main.test-schema-[UNIQUE_NAME].myvolume
 
 === With the config renamed to match, the plan finds a volume at the new name, but its volume_id differs, so it plans a create
+
 >>> update_file.py databricks.yml name: myvolume name: myvolume2
 
 >>> print_state.py

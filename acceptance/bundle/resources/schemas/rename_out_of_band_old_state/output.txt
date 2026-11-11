@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Drop schema_id and volume_id from the state, as a CLI from before they were recorded wrote it
+
 >>> jq .state | map_values(.state | {schema_id, volume_id} | with_entries(select(.value != null))) .databricks/bundle/default/resources.json
 {
   "resources.schemas.schema1": {},
@@ -15,6 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A deploy with nothing else to change records them, with a state-only update
+
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
@@ -102,6 +105,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 }
 
 === Rename the schema out of band, and the config to match. The plan finds both by their ids
+
 >>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
@@ -205,6 +209,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py //unity-catalog
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

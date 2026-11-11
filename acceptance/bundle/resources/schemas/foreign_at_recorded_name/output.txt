@@ -1,5 +1,6 @@
 
 === Deploy a schema
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -7,6 +8,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Out of band, rename the schema away, and create another one under its name
+
 >>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-moved-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-moved-[UNIQUE_NAME]",
@@ -14,6 +16,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan takes the other schema for the bundle's, though its schema_id differs, and plans to update it
+
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
@@ -53,6 +56,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Destroy deletes the other schema
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.schema1
@@ -77,6 +81,7 @@ Destroy: 1 deleted
 Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 
 === The bundle's own schema is left behind
+
 >>> [CLI] schemas get main.test-schema-moved-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-moved-[UNIQUE_NAME]",

@@ -1,5 +1,6 @@
 
 === Deploy two schemas and a volume in the first one
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -38,6 +39,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Rename the volume's schema: the volume is re-keyed without a request
+
 >>> update_file.py databricks.yml test-schema1- test-schema1-renamed-
 
 >>> [CLI] bundle deploy
@@ -58,6 +60,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === After the rename, update, update_id and recreate of the volume all reach it at its new path
+
 >>> update_file.py databricks.yml comment: c1 comment: c2
 
 >>> [CLI] bundle deploy
@@ -125,6 +128,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Rename the volume's new schema: the volume is re-keyed again
+
 >>> update_file.py databricks.yml test-schema2- test-schema2-renamed-
 
 >>> [CLI] bundle deploy
@@ -145,6 +149,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === Update, update_id and recreate work again, moving the volume back to the first schema
+
 >>> update_file.py databricks.yml comment: c2 comment: c3
 
 >>> [CLI] bundle deploy
@@ -212,6 +217,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Rename the first schema back: the volume is re-keyed to its original path
+
 >>> update_file.py databricks.yml test-schema1-renamed- test-schema1-
 
 >>> [CLI] bundle deploy
@@ -232,6 +238,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === The state tracks the current paths and the plan is a no-op
+
 >>> [CLI] bundle summary --output json
 {
   "schemas": {

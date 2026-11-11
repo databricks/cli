@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -28,9 +29,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Rename the schema
+
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 === UC moves the volume with the schema, so the plan re-keys the volume instead of recreating it
+
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
@@ -116,6 +119,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy renames the schema. UC moves the volume with it, so the volume gets no request
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
@@ -134,6 +138,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === The old schema is gone and the volume is under the new one, with its original volume_id
+
 >>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 
@@ -145,10 +150,12 @@ Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 }
 
 === The state tracks the new path
+
 >>> [CLI] bundle summary --output json
 "main.test-schema-renamed-[UNIQUE_NAME].myvolume"
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

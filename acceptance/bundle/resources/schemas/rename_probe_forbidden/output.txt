@@ -1,5 +1,6 @@
 
 === Deploy a schema
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.schema1
@@ -7,6 +8,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Delete the schema out of band and rename it in the config. Reading the new name is forbidden, so the plan only warns and creates the schema
+
 >>> [CLI] schemas delete main.myschema
 
 >>> update_file.py databricks.yml name: myschema name: myschema2

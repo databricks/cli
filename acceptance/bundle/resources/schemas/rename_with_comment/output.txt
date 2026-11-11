@@ -1,5 +1,6 @@
 
 === Deploy a schema with a comment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -7,6 +8,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the schema and change its comment in one deploy: both go in one PATCH
+
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 >>> update_file.py databricks.yml comment: c1 comment: c2
@@ -29,6 +31,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Both landed, so the redeploy is a no-op
+
 >>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",

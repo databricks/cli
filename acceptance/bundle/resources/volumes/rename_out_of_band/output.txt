@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the volume out of band
+
 >>> [CLI] volumes update main.test-schema-[UNIQUE_NAME].myvolume --new-name myvolume2
 {
   "full_name": "main.test-schema-[UNIQUE_NAME].myvolume2",
@@ -15,12 +17,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === With the config unchanged, the plan creates the volume again under its configured name
+
 >>> [CLI] bundle plan
 create volumes.volume1
 
 Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 === With the config renamed to match, the plan finds the volume at its new name, with the same volume_id
+
 >>> update_file.py databricks.yml name: myvolume name: myvolume2
 
 >>> [CLI] bundle plan --output json
@@ -96,6 +100,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Deploy only records the new name in the state
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Files: 3 uploaded, 0 deleted
@@ -113,6 +118,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 "main.test-schema-[UNIQUE_NAME].myvolume2"
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

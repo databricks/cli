@@ -1,5 +1,6 @@
 
 === Deploy the schema
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -18,9 +19,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Rename the schema
+
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 === The plan renames the schema in place instead of recreating it
+
 >>> [CLI] bundle plan --output json
 {
   "resources.schemas.schema1": {
@@ -65,6 +68,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy renames the schema without a deletion prompt
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
@@ -83,6 +87,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === The schema is only reachable under the new name, with its original schema_id
+
 >>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 
@@ -95,6 +100,7 @@ Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 }
 
 === The state and summary track the new name
+
 >>> [CLI] bundle summary --output json
 {
   "id": "main.test-schema-renamed-[UNIQUE_NAME]",
@@ -102,6 +108,7 @@ Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

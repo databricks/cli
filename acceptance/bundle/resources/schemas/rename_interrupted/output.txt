@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the schema and change the volume's comment. The CLI is killed on the volume's update, after the schema's rename is saved
+
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 >>> update_file.py databricks.yml comment: c1 comment: c2
@@ -30,6 +32,7 @@ Exit code: [KILLED]
 }
 
 === The volume is gone from its recorded path, so the plan looks for it at its path in config
+
 >>> print_state.py
 {
   "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
@@ -139,6 +142,7 @@ Exit code: [KILLED]
 }
 
 === The next deploy updates the volume at its new path
+
 >>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated volumes.volume1
@@ -162,6 +166,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

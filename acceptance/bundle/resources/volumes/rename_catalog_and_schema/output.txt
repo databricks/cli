@@ -1,5 +1,6 @@
 
 === Deploy a catalog with a schema and a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
@@ -9,11 +10,13 @@ Files: 2 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the catalog and the schema in one deploy
+
 >>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 >>> update_file.py databricks.yml name: myschema name: myschema2
 
 === Both of the volume's parents are renamed, so both its catalog_name and schema_name follow them
+
 >>> [CLI] bundle plan --output json
 {
   "resources.catalogs.catalog1": {
@@ -146,6 +149,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy renames the catalog, then the schema under it. UC moves the volume both times, so it gets no request
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated catalogs.catalog1
@@ -174,6 +178,7 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 }
 
 === The schema and the volume are under the new names, with their original ids
+
 >>> [CLI] schemas get test_catalog_renamed_[UNIQUE_NAME].myschema2
 {
   "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2",
@@ -200,6 +205,7 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 

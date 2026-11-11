@@ -28,7 +28,7 @@ title "Deploy renames the catalog. UC moves the schema and the volume with it, s
 trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 
-title "The old catalog is gone and the schema and the volume are under the new one, with their original ids\n"
+title "The old catalog is gone and the schema and the volume are under the new one, with their original ids"
 # Not traced: the "not found" message differs between UC and the test server.
 $CLI catalogs get "$OLD_CATALOG" &> /dev/null && echo "old catalog still exists" || echo "old catalog is gone"
 trace $CLI schemas get "$NEW_CATALOG.myschema" | jq '{full_name, catalog_name, schema_id}'

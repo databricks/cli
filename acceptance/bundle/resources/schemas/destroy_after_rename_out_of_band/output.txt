@@ -1,5 +1,6 @@
 
 === Deploy a schema with a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the schema out of band, and the config to match
+
 >>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
@@ -17,6 +19,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml test-schema- test-schema-renamed-
 
 === Destroy
+
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
@@ -25,6 +28,7 @@ Destroy: 0 deleted
 >>> print_requests.py //unity-catalog
 
 === The renamed schema is still there
+
 >>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
 {
   "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",

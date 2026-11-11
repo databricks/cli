@@ -1,5 +1,6 @@
 
 === Deploy a catalog with a schema and a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
@@ -9,15 +10,18 @@ Files: 2 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the catalog out of band. UC moves the schema and the volume with it
+
 >>> [CLI] catalogs update test_catalog_[UNIQUE_NAME] --new-name test_catalog_renamed_[UNIQUE_NAME]
 {
   "name": "test_catalog_renamed_[UNIQUE_NAME]"
 }
 
 === Rename the catalog in the config to match
+
 >>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 === The plan finds the schema and the volume at their new names by their ids. A catalog has no such id, so it is created again
+
 >>> [CLI] bundle plan --output json
 {
   "resources.catalogs.catalog1": {
@@ -130,6 +134,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The catalog's create fails because the renamed catalog has its name
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Error: cannot create resources.catalogs.catalog1: Catalog 'test_catalog_renamed_[UNIQUE_NAME]' already exists (400 CATALOG_ALREADY_EXISTS)

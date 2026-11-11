@@ -1,5 +1,6 @@
 
 === Deploy a volume with a lowercase name
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change only the case of the name. UC lowercases names, so it is the same name
+
 >>> update_file.py databricks.yml name: myvolume name: MyVolume
 
 >>> [CLI] bundle plan --output json
@@ -104,10 +106,12 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Redeploy
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Rename the schema. The volume is re-keyed without a request. Its recorded ID keeps the config's casing, which UC reads case-insensitively
+
 >>> update_file.py databricks.yml test_schema_ test_schema_renamed_
 
 >>> [CLI] bundle deploy

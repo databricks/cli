@@ -1,5 +1,6 @@
 
 === Deploy a catalog with a schema and a volume in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
@@ -36,9 +37,11 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Rename the catalog
+
 >>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 === UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them
+
 >>> [CLI] bundle plan --output json
 {
   "resources.catalogs.catalog1": {
@@ -158,6 +161,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy renames the catalog. UC moves the schema and the volume with it, so they get no request
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated catalogs.catalog1
@@ -193,6 +197,7 @@ old catalog is gone
 }
 
 === The state tracks the new paths
+
 >>> [CLI] bundle summary --output json
 {
   "catalogs": {
@@ -207,6 +212,7 @@ old catalog is gone
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
