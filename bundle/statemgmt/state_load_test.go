@@ -34,6 +34,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
 		"resources.features.test_feature":                                       {ID: "main.default.test_feature"},
 		"resources.materialization_sets.test_materialization_set":               {ID: "set1"},
+		"resources.feature_specs.test_feature_spec":                             {ID: "main.default.test_feature_spec"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
 		"resources.data_quality_monitors.test_data_quality_monitor":             {ID: "table,uuid-1"},
@@ -241,6 +242,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 						MaterializedFeatures: []ml.MaterializedFeature{
 							{FeatureName: "main.default.test_feature"},
 						},
+					},
+				},
+			},
+			FeatureSpecs: map[string]*resources.FeatureSpec{
+				"test_feature_spec": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec",
 					},
 				},
 			},
@@ -710,6 +718,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			FeatureSpecs: map[string]*resources.FeatureSpec{
+				"test_feature_spec": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec",
+					},
+				},
+				"test_feature_spec_new": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec_new",
+					},
+				},
+			},
 			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 				"test_model_serving": {
 					CreateServingEndpoint: serving.CreateServingEndpoint{
@@ -1142,6 +1162,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.experiments.test_mlflow_experiment_old":                  {ID: "2"},
 		"resources.features.test_feature":                                   {ID: "main.default.test_feature"},
 		"resources.features.test_feature_old":                               {ID: "main.default.test_feature_old"},
+		"resources.feature_specs.test_feature_spec":                         {ID: "main.default.test_feature_spec"},
+		"resources.feature_specs.test_feature_spec_old":                     {ID: "main.default.test_feature_spec_old"},
 		"resources.model_serving_endpoints.test_model_serving":              {ID: "1"},
 		"resources.model_serving_endpoints.test_model_serving_old":          {ID: "2"},
 		"resources.registered_models.test_registered_model":                 {ID: "1"},
@@ -1252,6 +1274,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Features["test_feature_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Features["test_feature_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Features["test_feature_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_feature_spec", config.Resources.FeatureSpecs["test_feature_spec"].ID)
+	assert.Empty(t, config.Resources.FeatureSpecs["test_feature_spec"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_feature_spec_old", config.Resources.FeatureSpecs["test_feature_spec_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.FeatureSpecs["test_feature_spec_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.FeatureSpecs["test_feature_spec_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.FeatureSpecs["test_feature_spec_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
 	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)

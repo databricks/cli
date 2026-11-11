@@ -1,0 +1,28 @@
+
+>>> [CLI] schemas create fspec_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.fspec_[UNIQUE_NAME]"
+}
+
+>>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-remote-delete-[UNIQUE_NAME]/default/files...
+Created feature_specs.spec1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Delete the feature spec out of band
+>>> [CLI] api delete /api/2.0/feature-engineering/feature-specs/main.fspec_[UNIQUE_NAME].myspec
+{}
+
+=== Plan should detect the feature spec is gone and re-create it
+>>> [CLI] bundle plan
+create feature_specs.spec1
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-remote-delete-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
