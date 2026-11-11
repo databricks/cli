@@ -921,27 +921,78 @@ func RecordMissingInternalIDs(plan *deployplan.Plan, data *dstate.Database) erro
 		if entry.Action != deployplan.Update || !entry.StateOnly {
 			continue
 		}
-		record, ok := data.State[resourceKey]
-		if !ok {
+		if _, ok := data.State[resourceKey]; !ok {
 			continue
 		}
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
 			return err
 		}
+		if err := recordInternalID(adapter, data, resourceKey, entry.RemoteState); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReadMissingInternalIDs reads each resource whose state in data lacks its internal ID, and records
+// it. bundle deployment migrate uses it: it plans nothing, and the terraform state has no volume_id.
+func ReadMissingInternalIDs(ctx context.Context, client *databricks.WorkspaceClient, data *dstate.Database) error {
+	adapters, err := dresources.InitAll(client)
+	if err != nil {
+		return err
+	}
+	b := DeploymentBundle{Adapters: adapters}
+	for _, resourceKey := range slices.Sorted(maps.Keys(data.State)) {
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return err
+		}
+		if !adapter.HasInternalID() {
+			continue
+		}
+		record := data.State[resourceKey]
 		state, err := parseState(adapter.StateType(), record.State)
 		if err != nil {
 			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
 		}
-		if err := adapter.RecordInternalID(state, entry.RemoteState); err != nil {
-			return fmt.Errorf("%s: recording internal id: %w", resourceKey, err)
+		if internalID, err := adapter.InternalID(state); err != nil || internalID != "" {
+			continue
 		}
-		record.State, err = json.Marshal(state)
+		remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+			return adapter.DoRead(ctx, record.ID)
+		})
+		if apierr.IsMissing(err) {
+			// Gone: the next plan creates or drops it.
+			continue
+		}
 		if err != nil {
-			return fmt.Errorf("%s: %w", resourceKey, err)
+			// The ID is optional: without it a state-only update in the next deploy records it.
+			log.Warnf(ctx, "%s: reading id=%q to record its internal id: %s", resourceKey, record.ID, err)
+			continue
 		}
-		data.State[resourceKey] = record
+		if err := recordInternalID(adapter, data, resourceKey, remote); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+// recordInternalID records in the state of resourceKey in data the internal ID of remote.
+func recordInternalID(adapter *dresources.Adapter, data *dstate.Database, resourceKey string, remote any) error {
+	record := data.State[resourceKey]
+	state, err := parseState(adapter.StateType(), record.State)
+	if err != nil {
+		return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
+	}
+	if err := adapter.RecordInternalID(state, remote); err != nil {
+		return fmt.Errorf("%s: recording internal id: %w", resourceKey, err)
+	}
+	record.State, err = json.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("%s: %w", resourceKey, err)
+	}
+	data.State[resourceKey] = record
 	return nil
 }
 
