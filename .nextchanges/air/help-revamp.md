@@ -1,1 +1,1 @@
-* Reorganize `databricks air` help: subcommands are grouped by task, `air run` has examples, and YAML fields are listed under headings, with pool fields marked optional. ([#7512](https://github.com/databricks/cli/pull/7512))
+* Reorganize `databricks air` help: subcommands are grouped by task, `air run` has examples, and YAML fields are listed under headings, with pool fields marked optional and `command`, `compute.num_accelerators`, and `compute.accelerator_type` correctly marked required. ([#7512](https://github.com/databricks/cli/pull/7512))
