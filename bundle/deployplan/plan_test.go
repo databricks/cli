@@ -109,13 +109,23 @@ func TestCountApplied(t *testing.T) {
 		},
 		{
 			name:  "recreate applied counts as both create and delete",
-			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, Applied: true},
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, Applied: true, RecreateDeleted: true},
 			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Create: 1, Delete: 1}},
 		},
 		{
-			name:  "recreate failed counts as a single failure",
+			name:  "recreate parent-managed resource without deleting it",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Create: 1}},
+		},
+		{
+			name:  "recreate delete failed",
 			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true},
 			want:  deployplan.AppliedCounts{Failed: 1},
+		},
+		{
+			name:  "recreate create failed after deleting old resource",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, RecreateDeleted: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Delete: 1}, Failed: 1},
 		},
 		{
 			name:  "skip is unchanged regardless of attempt",

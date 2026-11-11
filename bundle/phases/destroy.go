@@ -138,16 +138,15 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-// logDestroySummary prints the destroy summary showing how many resources were deleted
-// and, if the destroy errored partway, how many failed. Called even on error, since
-// partial deletions may have succeeded.
+// logDestroySummary reports completed deletions and failed attempts.
+// Called even on error, since partial deletions may have succeeded.
 func logDestroySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
 		// skips children). Gone resources are excluded to match that list: they were
 		// already deleted remotely, so applying their Delete only cleans up stale
-		// state and is not a destruction to report. A delete that was applied counts
-		// as deleted; an eligible one that was not counts as failed.
+		// state and is not a destruction to report. Attempted operations that did not
+		// complete count as failed.
 		deleted, failed := 0, 0
 		for _, a := range plan.GetActions() {
 			if a.ActionType != deployplan.Delete || a.IsChildResource() || a.IsStateOnlyDelete() {
@@ -169,7 +168,7 @@ func logDestroySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Ensure the destroy summary is printed even on error, since partial deletions
-	// may have succeeded (an accurate partial count is a follow-up).
+	// may have succeeded.
 	defer logDestroySummary(ctx, b, plan)
 	// Not reported per resource: destroy names them up front for consent and then
 	// reports only a count, so there is no per-resource output to report into.
@@ -228,7 +227,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// live terraform.tfstate with no direct state that the next deploy would pick up. Leaving any
 	// local state behind would also let a later fresh deploy (e.g. from another machine with no local
 	// state) mint a mismatched lineage. Log a removal failure but keep going; the destroy already
-	// succeeded and its summary is printed above.
+	// succeeded and its summary will be printed by the defer above.
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 	for _, path := range []string{localTerraformPath, localTerraformPath + ".backup", localDirectPath} {

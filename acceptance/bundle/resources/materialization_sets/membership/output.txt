@@ -31,6 +31,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Materialized features '[UUID][1]' of feature 'main.matset_[UNIQUE_NAME].feata_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID][2]', which the request does not supply. Remove those as well.
 
 Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged, 1 failed
 
 === And removing feata's offline member alone is refused for the same reason, from the other
 
@@ -46,6 +47,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Deleting materialized features '[UUID][2]' of feature 'main.matset_[UNIQUE_NAME].feata_[UNIQUE_NAME]' also deletes materialized features '[UUID][1]', which the request does not delete. Delete the unrequested materialized features as well.
 
 Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged, 1 failed
 
 === Removing a whole feature's pair plans as update, not recreate, and the other feature's
 

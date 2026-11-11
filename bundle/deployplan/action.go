@@ -16,7 +16,7 @@ type Action struct {
 	// because the resource implements no DoDelete (deleting it has no backend effect).
 	StateOnly bool
 	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
-	// reached this resource, Applied means its backend operation then succeeded.
+	// reached this resource, Applied means its operation completed.
 	Attempted bool
 	Applied   bool
 }

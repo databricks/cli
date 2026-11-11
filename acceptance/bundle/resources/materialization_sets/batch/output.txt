@@ -49,6 +49,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 === Writing no value instead of an empty list is the same declaration, and has to reach the same
 
@@ -73,6 +74,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Updating materialization set '[SET1_ID]' with no materialized features is not supported. Delete the set instead.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 >>> [CLI] bundle plan -o json
 

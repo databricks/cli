@@ -52,7 +52,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[M
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
 Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-on-bundle-deploy

@@ -1,5 +1,6 @@
 
 === Deploy three chained jobs
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-destroy-summary-on-error/default/files...
 Created jobs.job_01
@@ -8,7 +9,8 @@ Created jobs.job_03
 Files: 1 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Destroy: only one delete fails, yet the summary counts every planned deletion
+=== Destroy: report two successful deletions and one failure
+
 >>> fault.py POST /api/2.2/jobs/delete 400 2 1 INVALID_PARAMETER_VALUE
 
 >>> musterr [CLI] bundle destroy --auto-approve

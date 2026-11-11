@@ -6,6 +6,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Error: cannot create resources.volumes.volume1: create returned an empty resource id
 
 Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 === The failed create does not save resource state
 
