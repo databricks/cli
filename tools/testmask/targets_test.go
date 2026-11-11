@@ -88,6 +88,21 @@ func TestGetTargets(t *testing.T) {
 			files:   []string{},
 			targets: []string{"test"},
 		},
+		{
+			name: "codeowners_only",
+			files: []string{
+				".github/CODEOWNERS",
+			},
+			targets: []string{},
+		},
+		{
+			name: "codeowners_with_other_files",
+			files: []string{
+				".github/CODEOWNERS",
+				"bundle/config.go",
+			},
+			targets: []string{"test"},
+		},
 	}
 
 	for _, tt := range tests {

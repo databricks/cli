@@ -29,6 +29,11 @@ var commonTriggerPatterns = []string{
 	"tools/task/",
 }
 
+// ignoredFiles lists files that never affect test results.
+var ignoredFiles = []string{
+	".github/CODEOWNERS",
+}
+
 type targetMapping struct {
 	prefixes []string
 	target   string
@@ -107,6 +112,10 @@ func GetTargets(files []string, mappings []targetMapping) []string {
 	unmatchedFiles := []string{}
 
 	for _, file := range files {
+		if slices.Contains(ignoredFiles, file) {
+			continue
+		}
+
 		matched := false
 		for _, mapping := range mappings {
 			for _, prefix := range mapping.prefixes {
@@ -127,7 +136,10 @@ func GetTargets(files []string, mappings []targetMapping) []string {
 	}
 
 	if len(targetSet) == 0 {
-		return []string{"test"}
+		if len(files) == 0 {
+			return []string{"test"}
+		}
+		return []string{}
 	}
 
 	return slices.Sorted(maps.Keys(targetSet))
