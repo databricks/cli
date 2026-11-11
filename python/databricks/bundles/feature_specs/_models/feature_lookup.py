@@ -42,7 +42,8 @@ class FeatureLookup:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Default values for features.
+    [Private Preview] Default values for features. Order is not significant, and GetFeatureSpec can return them in a
+    different order.
     """
 
     feature_names: VariableOrList[str] = field(default_factory=list)
@@ -70,7 +71,8 @@ class FeatureLookup:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output names for features, in place of their names in the feature table.
+    [Private Preview] Output names for features, in place of their names in the feature table. Order is not
+    significant, and GetFeatureSpec can return them in a different order.
     """
 
     timestamp_lookup_keys: VariableOrList[str] = field(default_factory=list)
@@ -102,7 +104,8 @@ class FeatureLookupDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Default values for features.
+    [Private Preview] Default values for features. Order is not significant, and GetFeatureSpec can return them in a
+    different order.
     """
 
     feature_names: VariableOrList[str]
@@ -130,7 +133,8 @@ class FeatureLookupDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output names for features, in place of their names in the feature table.
+    [Private Preview] Output names for features, in place of their names in the feature table. Order is not
+    significant, and GetFeatureSpec can return them in a different order.
     """
 
     timestamp_lookup_keys: VariableOrList[str]

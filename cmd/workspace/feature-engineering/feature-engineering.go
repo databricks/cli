@@ -63,6 +63,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListMaterializedFeatures())
 	cmd.AddCommand(newListStreams())
 	cmd.AddCommand(newPurgeFeatureEntities())
+	cmd.AddCommand(newTriggerMaterializationSet())
 	cmd.AddCommand(newUpdateFeature())
 	cmd.AddCommand(newUpdateKafkaConfig())
 	cmd.AddCommand(newUpdateMaterializationSet())
@@ -702,6 +703,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
+	// TODO: complex arg: external_trigger
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
@@ -2133,6 +2135,140 @@ func newPurgeFeatureEntities() *cobra.Command {
 	return cmd
 }
 
+// start trigger-materialization-set command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var triggerMaterializationSetOverrides []func(
+	*cobra.Command,
+	*ml.TriggerMaterializationSetRequest,
+)
+
+func newTriggerMaterializationSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var triggerMaterializationSetReq ml.TriggerMaterializationSetRequest
+	var triggerMaterializationSetJson flags.JsonFlag
+
+	var triggerMaterializationSetSkipWait bool
+	var triggerMaterializationSetTimeout time.Duration
+
+	cmd.Flags().BoolVar(&triggerMaterializationSetSkipWait, "no-wait", triggerMaterializationSetSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&triggerMaterializationSetTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&triggerMaterializationSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&triggerMaterializationSetReq.RequestId, "request-id", triggerMaterializationSetReq.RequestId, `Idempotency token in UUID format.`)
+
+	cmd.Use = "trigger-materialization-set MATERIALIZATION_SET_ID"
+	cmd.Short = `Trigger a materialization set.`
+	cmd.Long = `Trigger a materialization set.
+
+  Requests materialization of all members of the set. The set must be nonempty
+  and contain only batch materializations. Runs are allowed while automatic
+  scheduling is paused. Requested runs may wait in a queue, subject to queue
+  limits and expiry.
+
+  Returns a long-running operation that completes when every requested run
+  reaches a terminal state. Success requires all runs and any required online
+  synchronization to succeed. Individual outcomes are available in
+  MaterializationSetTriggerProgress.
+
+  Use CancelOperation to request cancellation of this operation's unfinished
+  work. Cancellation is best effort and does not undo completed writes. Online
+  synchronization already in progress may continue.
+
+  Runs use the features' configured windows and settling delay.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    MATERIALIZATION_SET_ID: The ID of the materialization set to trigger.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := triggerMaterializationSetJson.Unmarshal(&triggerMaterializationSetReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		triggerMaterializationSetReq.MaterializationSetId = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case triggerMaterializationSetSkipWait:
+			wait, err := w.FeatureEngineering.TriggerMaterializationSet(ctx, triggerMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.TriggerMaterializationSet(ctx, triggerMaterializationSetReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for trigger-materialization-set to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(triggerMaterializationSetTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range triggerMaterializationSetOverrides {
+		fn(cmd, &triggerMaterializationSetReq)
+	}
+
+	return cmd
+}
+
 // start update-feature command
 
 // Slice with functions to override default command behavior.
@@ -2527,6 +2663,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
+	// TODO: complex arg: external_trigger
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config

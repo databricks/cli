@@ -18,7 +18,7 @@ resources.postgres_endpoints.*.modified_status	string	INPUT
 resources.postgres_endpoints.*.name	string	REMOTE
 resources.postgres_endpoints.*.no_suspension	bool	ALL
 resources.postgres_endpoints.*.parent	string	ALL
-resources.postgres_endpoints.*.replace_existing	bool	INPUT	STATE
+resources.postgres_endpoints.*.replace_existing	*bool	INPUT	STATE
 resources.postgres_endpoints.*.settings	*postgres.EndpointSettings	ALL
 resources.postgres_endpoints.*.settings.pg_settings	map[string]string	ALL
 resources.postgres_endpoints.*.settings.pg_settings.*	string	ALL

@@ -204,7 +204,7 @@ func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
 func (r *Resources) ResolveDependsOn(ref string) (string, error) {
 	resourceRef, sub := ref, ""
 	if parts := strings.Split(ref, "."); len(parts) == 3 {
-		if _, ok := ResourcesTypes[parts[0]+"."+parts[2]]; !ok {
+		if _, ok := ResourcesTypes()[parts[0]+"."+parts[2]]; !ok {
 			return "", fmt.Errorf("no such resource: %s", ref)
 		}
 		resourceRef, sub = parts[0]+"."+parts[1], "."+parts[2]

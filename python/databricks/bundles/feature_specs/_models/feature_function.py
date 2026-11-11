@@ -40,7 +40,8 @@ class FeatureFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Bindings of the UDF's parameters to features.
+    [Private Preview] Bindings of the UDF's parameters to features. Order is not significant, and GetFeatureSpec can
+    return them in a different order.
     """
 
     output: VariableOrOptional[str] = None
@@ -72,7 +73,8 @@ class FeatureFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Bindings of the UDF's parameters to features.
+    [Private Preview] Bindings of the UDF's parameters to features. Order is not significant, and GetFeatureSpec can
+    return them in a different order.
     """
 
     output: VariableOrOptional[str]

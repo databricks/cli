@@ -73,7 +73,7 @@ class TriggerSettings:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 
@@ -123,7 +123,7 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 

@@ -63,9 +63,9 @@ func TestSelectDefaultTargetMultipleDefaults(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
-				"foo": {Default: true},
-				"bar": {Default: true},
-				"qux": {Default: true},
+				"foo": {Default: new(true)},
+				"bar": {Default: new(true)},
+				"qux": {Default: new(true)},
 			},
 		},
 	}
@@ -78,7 +78,7 @@ func TestSelectDefaultTargetSingleDefault(t *testing.T) {
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": {},
-				"bar": {Default: true},
+				"bar": {Default: new(true)},
 				"qux": {},
 			},
 		},

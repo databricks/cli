@@ -24,7 +24,7 @@ class SubscriptionAttachmentPageAttachment:
 
     page_ids: VariableOrList[str] = field(default_factory=list)
     """
-    [Public Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
+    The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
     `PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's
     serialized definition returned by the Get dashboard API (`serialized_dashboard`): the value
     of the `name` field of an entry under `pages`.
@@ -35,7 +35,7 @@ class SubscriptionAttachmentPageAttachment:
         SubscriptionAttachmentPageAttachmentPageSelection
     ] = None
     """
-    [Public Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
+    How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
     include are listed in `page_ids`.
     """
 
@@ -52,7 +52,7 @@ class SubscriptionAttachmentPageAttachmentDict(TypedDict, total=False):
 
     page_ids: VariableOrList[str]
     """
-    [Public Preview] The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
+    The identifiers of the pages to include in the PDF. Only specified when `page_selection` is
     `PAGE_SELECTION_SUBSET`. Each value is the identifier of a page in the dashboard's
     serialized definition returned by the Get dashboard API (`serialized_dashboard`): the value
     of the `name` field of an entry under `pages`.
@@ -63,7 +63,7 @@ class SubscriptionAttachmentPageAttachmentDict(TypedDict, total=False):
         SubscriptionAttachmentPageAttachmentPageSelectionParam
     ]
     """
-    [Public Preview] How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
+    How the attached pages are selected. When set to `PAGE_SELECTION_SUBSET`, the pages to
     include are listed in `page_ids`.
     """
 

@@ -43,7 +43,8 @@ class FeatureSpec(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output names of columns to leave out of the feature spec.
+    [Private Preview] Output names of columns to leave out of the feature spec. Order is not significant, and
+    GetFeatureSpec can return them in a different order.
     """
 
     extra_pip_requirements: VariableOrOptional[PipRequirements] = None
@@ -95,7 +96,8 @@ class FeatureSpecDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Output names of columns to leave out of the feature spec.
+    [Private Preview] Output names of columns to leave out of the feature spec. Order is not significant, and
+    GetFeatureSpec can return them in a different order.
     """
 
     extra_pip_requirements: VariableOrOptional[PipRequirementsParam]
