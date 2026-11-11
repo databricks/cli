@@ -64,6 +64,9 @@ func resolveLocalID(ctx context.Context, profile, arg string) (string, error) {
 	}
 }
 
+// defaultSandboxHint ends the errors for a missing or stale default sandbox.
+const defaultSandboxHint = "run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to set an existing sandbox as the default"
+
 // resolveSandbox returns the ID of the sandbox named by arg, or of the
 // profile's default sandbox when arg is empty, and the sandbox as the server
 // reports it. The entry is nil when the lookup failed with an error other than
@@ -73,7 +76,7 @@ func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (
 	var sandboxID string
 	if arg == "" {
 		if sandboxID = getDefault(ctx, profile); sandboxID == "" {
-			return "", nil, errors.New("no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox")
+			return "", nil, errors.New("no default sandbox configured — " + defaultSandboxHint)
 		}
 	} else {
 		resolved, err := resolveLocalID(ctx, profile, arg)
@@ -95,13 +98,13 @@ func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (
 		// another machine, reaped by an admin); fail fast with an actionable
 		// message.
 		_ = clearDefault(ctx, profile)
-		return "", nil, fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", sandboxID)
+		return "", nil, fmt.Errorf("saved default %q no longer exists (cleared) — %s", sandboxID, defaultSandboxHint)
 	case errors.Is(err, apierr.ErrNotFound):
 		return "", nil, fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
 	case errors.Is(err, apierr.ErrBadRequest):
 		return "", nil, fmt.Errorf("failed to look up sandbox %s: %w", sandboxID, err)
 	default:
-		warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))
+		warn(ctx, fmt.Sprintf("Could not resolve sandbox %s: %v", sandboxID, err))
 		return sandboxID, nil, nil
 	}
 }

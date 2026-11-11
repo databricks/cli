@@ -1,1 +1,1 @@
-Error: no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox
+Error: no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to set an existing sandbox as the default

@@ -209,6 +209,7 @@ func TestForwardHandlerRejectsCrossSiteRequests(t *testing.T) {
 		"null origin":          "Origin: null\r\n",
 		"cross-site fetch":     "Sec-Fetch-Site: cross-site\r\n",
 		"cross-site websocket": "Origin: https://attacker.example\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n",
+		"cross-site iframe":    "Sec-Fetch-Site: cross-site\r\nSec-Fetch-Mode: navigate\r\nSec-Fetch-Dest: iframe\r\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			status, _, _ := rawRequest(t, addr, "GET / HTTP/1.1\r\nHost: "+addr+"\r\n"+headers+"Connection: close\r\n\r\n")
@@ -238,6 +239,25 @@ func TestForwardHandlerAllowsLocalOrigins(t *testing.T) {
 		assert.Equal(t, http.StatusOK, status, headers)
 	}
 	assert.Equal(t, int32(4), calls.Load())
+}
+
+func TestForwardHandlerAllowsCrossSiteNavigations(t *testing.T) {
+	var calls atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+	}))
+	defer upstream.Close()
+	forward := startForward(t, upstream, fakeAuth)
+	addr := strings.TrimPrefix(forward.URL, "http://")
+
+	navigation := "Sec-Fetch-Site: cross-site\r\nSec-Fetch-Mode: navigate\r\nSec-Fetch-Dest: document\r\n"
+	status, _, _ := rawRequest(t, addr, "GET / HTTP/1.1\r\nHost: "+addr+"\r\n"+navigation+"Connection: close\r\n\r\n")
+	assert.Equal(t, http.StatusOK, status, "a link or sign-in redirect from another site")
+
+	// Only GET and HEAD navigations: a form post from another site is refused.
+	status, _, _ = rawRequest(t, addr, "POST / HTTP/1.1\r\nHost: "+addr+"\r\n"+navigation+"Content-Length: 0\r\nConnection: close\r\n\r\n")
+	assert.Equal(t, http.StatusForbidden, status)
+	assert.Equal(t, int32(1), calls.Load())
 }
 
 func TestIsLoopbackHost(t *testing.T) {

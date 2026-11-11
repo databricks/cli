@@ -301,14 +301,21 @@ func isLoopbackHost(hostport string) bool {
 // outside this machine. WebSocket handshakes bypass CORS, so this is their only
 // guard. Pages from any loopback origin, such as a local frontend, are allowed:
 // browsers treat localhost and 127.0.0.1 as different sites, so their Origin
-// decides rather than Sec-Fetch-Site. Requests without an Origin, such as
-// navigations and image loads, fall back to Sec-Fetch-Site.
+// decides rather than Sec-Fetch-Site. Requests without an Origin fall back to
+// Sec-Fetch-Site, except that top-level GET navigations from other sites are
+// allowed, as in the SDK, so links and sign-in redirects to the app work.
 func isCrossSiteRequest(r *http.Request) bool {
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
 		return err != nil || !isLoopbackHost(u.Host)
 	}
-	return r.Header.Get("Sec-Fetch-Site") == "cross-site"
+	if r.Header.Get("Sec-Fetch-Site") != "cross-site" {
+		return false
+	}
+	navigation := (r.Method == http.MethodGet || r.Method == http.MethodHead) &&
+		r.Header.Get("Sec-Fetch-Mode") == "navigate" &&
+		r.Header.Get("Sec-Fetch-Dest") == "document"
+	return !navigation
 }
 
 // isAmbiguousPath reports whether a proxy on the way to the workspace could
