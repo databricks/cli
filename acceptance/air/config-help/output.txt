@@ -42,7 +42,9 @@ Global Flags:
 
 >>> [CLI] air run -h config
 config
-  Workload YAML schema. Pass a field path for details, e.g. config.compute.accelerator_type.
+  Workload YAML schema. For details on a field, pass its path to -h, for example:
+
+    databricks air run -h config.compute.accelerator_type
 
   Minimal example:
     experiment_name: my-run
@@ -81,7 +83,7 @@ config
     usage_policy_name            Usage policy to bill the run to, by name.
     usage_policy_id              Usage policy to bill the run to, by id.
 
-Use "-h config.<field>" for details on a field.
+For details on a field, run "databricks air run -h config.<field>".
 
 Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
   databricks aitools install --skills-only --skills databricks-ai-runtime
@@ -107,7 +109,7 @@ config.compute
     pool_id           GPU pool to run on, by id.
     priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL.
 
-Use "-h config.compute.<field>" for details on a field.
+For details on a field, run "databricks air run -h config.compute.<field>".
 
 === new submission fields are documented
 
@@ -172,7 +174,7 @@ config.code_source
     git            Pin the snapshot to a specific git revision.
     include_paths  Restrict the archive to these paths, relative to root_path and without "..".
 
-Use "-h config.code_source.<field>" for details on a field.
+For details on a field, run "databricks air run -h config.code_source.<field>".
 
 === union field
 

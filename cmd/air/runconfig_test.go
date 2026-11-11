@@ -790,7 +790,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, container.String(), "num_accelerators")
 	// A container lists its fields rather than printing a type/required pair.
 	assert.NotContains(t, container.String(), "Required:")
-	assert.Contains(t, container.String(), `Use "-h config.compute.<field>" for details`)
+	assert.Contains(t, container.String(), `For details on a field, run "databricks air run -h config.compute.<field>".`)
 
 	var environment strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environment, "config.environment"))
@@ -815,6 +815,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 		last = i
 	}
 	assert.NotContains(t, rootHelp, "  Fields:", "every top-level field belongs to a group")
+	assert.Contains(t, rootHelp, "    databricks air run -h config.compute.accelerator_type\n", "the example must be a runnable command")
 	// The agent skill pointer follows the fields, so it doesn't push them down.
 	assert.Greater(t, strings.Index(rootHelp, "databricks-ai-runtime skill"), strings.Index(rootHelp, "usage_policy_id"))
 	assert.Contains(t, rootHelp, "databricks aitools install --skills-only --skills databricks-ai-runtime")

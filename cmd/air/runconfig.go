@@ -653,7 +653,9 @@ type configField struct {
 func configSchema() configField {
 	return configField{
 		path: configHelpRoot,
-		help: "Workload YAML schema. Pass a field path for details, e.g. " + configHelpRoot + `.compute.accelerator_type.
+		help: `Workload YAML schema. For details on a field, pass its path to -h, for example:
+
+    databricks air run -h config.compute.accelerator_type
 
   Minimal example:
     experiment_name: my-run
@@ -906,7 +908,7 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 			fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 		}
 	}
-	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
 	if f.path == configHelpRoot {
 		fmt.Fprint(w, agentSkillHelp)
 	}
