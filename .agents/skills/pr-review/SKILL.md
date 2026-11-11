@@ -33,20 +33,18 @@ hunks the description does not explain: a fix riding along with the main
 change belongs in its own PR (`AGENTS.md`: one change per PR), so ask for
 the split.
 
-Check how far the branch is from main with
+Judge the code at `TARGET`. Separately, check what a merge would hit:
 `git rev-list --count "$BASE"..origin/main` and
-`git merge-tree --write-tree "$TARGET" origin/main`. When the base is far
-behind, files the change touches may have moved, split or been deleted on
-main, and conventions it follows (changelog location, test matrix variables)
-may have changed. Those are judged at merge time, not at `TARGET`, so name
-the new location in the review body.
+`git merge-tree --write-tree "$TARGET" origin/main`. If files the change
+touches were moved, split or deleted on main, or a convention it follows
+changed there (changelog location, test matrix variables), say so in the
+review body with the new location, so the author rebases before the next
+round. That is the only use of this check; do not re-review against main.
 
 Read every changed non-generated file in full at `TARGET`, not just the hunks
 (`git show "$TARGET":path`). Skim generated files (schemas, codegen output,
 acceptance test output) only to confirm they follow from the source change;
-when the generator is cheap to run, regenerate into a temporary directory and
-`diff -r` it against the committed tree, since stale generated files outside
-the diff never show up in the hunks.
+CI already fails on stale generated output, so do not regenerate locally.
 Read the repo's agent rules that apply to the changed files, under
 `.agents/rules/` (testing, comments, language style guides).
 
