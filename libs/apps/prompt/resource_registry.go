@@ -16,6 +16,7 @@ const (
 	ResourceTypeVectorSearchIndex = "vector_search_index"
 	ResourceTypeUCFunction        = "uc_function"
 	ResourceTypeUCConnection      = "uc_connection"
+	ResourceTypeModelService      = "model_service"
 	ResourceTypeDatabase          = "database" // Lakebase Provisioned (V1)
 	ResourceTypePostgres          = "postgres" // Lakebase Autoscaling (V2)
 	ResourceTypeGenieSpace        = "genie_space"
@@ -62,6 +63,8 @@ func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
 		return PromptForVectorSearchIndex, true
 	case ResourceTypeUCFunction:
 		return PromptForUCFunction, true
+	case ResourceTypeModelService:
+		return PromptForModelService, true
 	case ResourceTypeUCConnection:
 		return PromptForUCConnection, true
 	case ResourceTypeDatabase:
