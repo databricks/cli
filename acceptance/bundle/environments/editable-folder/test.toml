@@ -1,7 +1,0 @@
-Cloud = false
-Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING = "true"
-
-# Windows paths in the gate-off error.
-[[Repls]]
-Old = '\\'
-New = '/'
