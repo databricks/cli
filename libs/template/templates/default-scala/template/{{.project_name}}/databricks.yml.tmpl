@@ -3,7 +3,7 @@
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
-{{- template "experimental_record_deployment_history" record_deployment_history}}
+{{- template "experimental_deployment_history" deployment_history}}
 
 include:
   - resources/*.yml
@@ -22,7 +22,7 @@ variables:
 {{- end}}
 
 workspace:
-  host: {{workspace_host}}
+  host: {{.workspace.URL}}
   artifact_path: {{.artifacts_dest_path}}/${bundle.name}/${bundle.target}/${workspace.current_user.short_name}
 
 artifacts:
@@ -42,7 +42,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
+      host: {{.workspace.URL}}
     variables:
       catalog: {{.default_catalog}}
       schema: {{$dev_schema}}
@@ -50,7 +50,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
+      host: {{.workspace.URL}}
       # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     permissions:

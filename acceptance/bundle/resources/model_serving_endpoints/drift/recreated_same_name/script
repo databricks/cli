@@ -2,7 +2,6 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -37,5 +36,5 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace $CLI serving-endpoints get "${endpoint_name}" | jq '{name, creator}'
 
-title "Persistent drift after deploy: V1 permissions API leaves an ACL on the deleted endpoint id, so plan keeps showing an update."
+title "After deploy the permissions are recorded under the new endpoint id, so the plan is clean"
 trace $CLI bundle plan

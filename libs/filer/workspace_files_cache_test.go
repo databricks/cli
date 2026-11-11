@@ -133,9 +133,7 @@ func TestWorkspaceFilesCache_ReadDirCacheIsolation(t *testing.T) {
 	// Modify the entry to check that mutations are not reflected in the cache.
 	entries[0] = wsfsDirEntry{
 		wsfsFileInfo{
-			ObjectInfo: workspace.ObjectInfo{
-				Path: "tainted",
-			},
+			Path: "tainted",
 		},
 	}
 
@@ -258,18 +256,14 @@ func TestWorkspaceFilesCache_ReadDirTriggersReadahead(t *testing.T) {
 			"a": {
 				wsfsDirEntry{
 					wsfsFileInfo{
-						ObjectInfo: workspace.ObjectInfo{
-							Path:       "b1",
-							ObjectType: workspace.ObjectTypeDirectory,
-						},
+						Path:       "b1",
+						ObjectType: workspace.ObjectTypeDirectory,
 					},
 				},
 				wsfsDirEntry{
 					wsfsFileInfo{
-						ObjectInfo: workspace.ObjectInfo{
-							Path:       "b2",
-							ObjectType: workspace.ObjectTypeDirectory,
-						},
+						Path:       "b2",
+						ObjectType: workspace.ObjectTypeDirectory,
 					},
 				},
 			},

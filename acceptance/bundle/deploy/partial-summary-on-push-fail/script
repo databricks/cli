@@ -11,4 +11,7 @@ trap cleanup EXIT
 # because this fails before planning and there are no resource counts to report.
 fault.py "POST /api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" 403 0 1
 
-trace errcode $CLI bundle deploy
+# -q: the state-push 403 races resource apply, so whether "Created jobs.my_job" is
+# emitted before the failure is platform-dependent. This test asserts Files is reported
+# and Resources is not; -q drops the racing per-resource line while keeping both.
+trace errcode $CLI bundle deploy -q

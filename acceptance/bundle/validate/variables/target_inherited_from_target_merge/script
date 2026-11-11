@@ -1,0 +1,2 @@
+# Target variable shorthands inherited through a merge key on the target are applied.
+trace $CLI bundle validate -t dev -o json | jq .variables.x

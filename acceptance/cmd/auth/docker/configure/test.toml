@@ -1,0 +1,10 @@
+RecordRequests = true
+IncludeRequestHeaders = ["X-Databricks-Workspace-Id"]
+
+[[Repls]]
+Old = 'docker-credential-databricks\.cmd'
+New = 'docker-credential-databricks'
+
+[[Repls]]
+Old = '(?m)docker-credential-databricks only supports get +$'
+New = 'docker-credential-databricks only supports get'

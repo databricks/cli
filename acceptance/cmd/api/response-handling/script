@@ -1,0 +1,19 @@
+# Response-rendering edge cases. The errors are routed to LOG files (their
+# detail includes volatile request/response dumps); contains.py asserts the
+# stable part.
+
+title "Empty response body renders null"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/test/empty
+
+title "A trailing newline in the body does not add a blank line"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/test/trailing
+
+title "An HTML response surfaces the SDK's actionable error"
+MSYS_NO_PATHCONV=1 musterr $CLI api get /api/2.0/test/html &> LOG.html
+contains.py "received HTML response instead of JSON" < LOG.html > /dev/null
+printf '\n%s\n' "OK: HTML detected"
+
+title "A malformed JSON response surfaces an unmarshal error"
+MSYS_NO_PATHCONV=1 musterr $CLI api get /api/2.0/test/malformed &> LOG.malformed
+contains.py "failed to unmarshal response body" < LOG.malformed > /dev/null
+printf '\n%s\n' "OK: unmarshal error reported"

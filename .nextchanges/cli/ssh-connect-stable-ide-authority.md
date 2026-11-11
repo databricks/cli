@@ -1,1 +1,0 @@
-* Stop `databricks ssh connect --ide` from adding a duplicate entry to the IDE's Remote Explorer on every connect: the remote authority is now the SSH host alias alone, instead of embedding the per-instance remote OS user. ([#6550](https://github.com/databricks/cli/pull/6550))

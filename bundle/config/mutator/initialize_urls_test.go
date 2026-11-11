@@ -6,6 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -25,31 +27,31 @@ func TestInitializeURLs(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1"},
-						JobSettings:  jobs.JobSettings{Name: "job1"},
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						BaseResource:   resources.BaseResource{ID: "3"},
+						ID:             "3",
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1"},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						BaseResource:     resources.BaseResource{ID: "4"},
+						ID:               "4",
 						CreateExperiment: ml.CreateExperiment{Name: "experiment1"},
 					},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
-						BaseResource:       resources.BaseResource{ID: "a model uses its name for identifier"},
+						ID:                 "a model uses its name for identifier",
 						CreateModelRequest: ml.CreateModelRequest{Name: "a model uses its name for identifier"},
 					},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {
-						BaseResource: resources.BaseResource{ID: "my_serving_endpoint"},
+						ID: "my_serving_endpoint",
 						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
@@ -57,7 +59,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {
-						BaseResource: resources.BaseResource{ID: "8"},
+						ID: "8",
 						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 							Name: "my_registered_model",
 						},
@@ -71,7 +73,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"vectorsearchindex1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema.vectorsearchindex1"},
+						ID: "catalog.schema.vectorsearchindex1",
 						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
 							Name: "catalog.schema.vectorsearchindex1",
 						},
@@ -79,7 +81,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema"},
+						ID: "catalog.schema",
 						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
@@ -87,7 +89,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {
-						BaseResource: resources.BaseResource{ID: "1017-103929-vlr7jzcf"},
+						ID: "1017-103929-vlr7jzcf",
 						ClusterSpec: compute.ClusterSpec{
 							ClusterName: "cluster1",
 						},
@@ -95,7 +97,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						BaseResource: resources.BaseResource{ID: "01ef8d56871e1d50ae30ce7375e42478"},
+						ID: "01ef8d56871e1d50ae30ce7375e42478",
 						DashboardConfig: resources.DashboardConfig{
 							DisplayName: "My special dashboard",
 						},
@@ -124,7 +126,8 @@ func TestInitializeURLs(t *testing.T) {
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for key, r := range group.Resources {
-			require.Equal(t, expectedURLs[key], r.GetURL(), "Unexpected URL for "+key)
+			url, _ := r.GetURL()
+			require.Equal(t, expectedURLs[key], url, "Unexpected URL for "+key)
 		}
 	}
 }
@@ -135,8 +138,8 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1"},
-						JobSettings:  jobs.JobSettings{Name: "job1"},
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 			},
@@ -147,4 +150,119 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
+}
+
+// TestInitializeURLsApplyNonNumericConfigPassedThrough verifies that a
+// non-numeric Config.WorkspaceID (e.g. a UUID connection-style identifier) is
+// passed through unchanged into the ?w= parameter. The numeric-mismatch check
+// is skipped because such IDs cannot be compared against an integer org ID.
+func TestInitializeURLsApplyNonNumericConfigPassedThrough(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "testtoken",
+		WorkspaceID: "some-uuid-style-id",
+	})
+	require.NoError(t, err)
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
+					},
+				},
+			},
+		},
+	}
+	b.SetWorkpaceClient(w)
+
+	diags := InitializeURLs().Apply(t.Context(), b)
+	require.NoError(t, diags.Error())
+
+	// UUID flows through into ?w= unchanged — no numeric comparison is possible.
+	require.Equal(t,
+		server.URL+"/jobs/1?w=some-uuid-style-id",
+		b.Config.Resources.Jobs["job1"].URL,
+	)
+}
+
+// TestInitializeURLsApplyNoneSentinelResolvesViaAPI verifies that the "none"
+// sentinel (persisted to .databrickscfg when a user explicitly skips
+// workspace selection) is treated as unset rather than as a literal value: it
+// must not end up as ?w=none, and it must not be compared against the API
+// result (both would be wrong; the sentinel means "no preference").
+func TestInitializeURLsApplyNoneSentinelResolvesViaAPI(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	// /Me returns X-Databricks-Org-Id: 900800700600.
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "testtoken",
+		WorkspaceID: "none",
+	})
+	require.NoError(t, err)
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
+					},
+				},
+			},
+		},
+	}
+	b.SetWorkpaceClient(w)
+
+	diags := InitializeURLs().Apply(t.Context(), b)
+	require.NoError(t, diags.Error())
+
+	require.Equal(t,
+		server.URL+"/jobs/1?w=900800700600",
+		b.Config.Resources.Jobs["job1"].URL,
+	)
+}
+
+// TestInitializeURLsApplyErrorsOnNumericWorkspaceIDMismatch verifies that Apply
+// returns an error when Config.WorkspaceID is a numeric value that differs from
+// the workspace org ID returned by the API. This prevents silently embedding a
+// wrong ?w= parameter in resource URLs that would navigate to an unexpected workspace.
+func TestInitializeURLsApplyErrorsOnNumericWorkspaceIDMismatch(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	// /Me returns X-Databricks-Org-Id: 900800700600.
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "testtoken",
+		WorkspaceID: "12345", // numeric but does not match 900800700600
+	})
+	require.NoError(t, err)
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
+					},
+				},
+			},
+		},
+	}
+	b.SetWorkpaceClient(w)
+
+	diags := InitializeURLs().Apply(t.Context(), b)
+	require.ErrorContains(t, diags.Error(), "12345")
+	require.ErrorContains(t, diags.Error(), "900800700600")
+	require.ErrorContains(t, diags.Error(), "disambiguate")
 }

@@ -56,12 +56,13 @@ type Agent struct {
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
-	// pluginVersion reads the installed databricks plugin version from the
+	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
-	// DatabricksPluginVersion reports no version. New agents extend support by
-	// providing their own reader here.
-	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
+	// DatabricksPluginVersion reports no version and DatabricksTooling falls
+	// back to the CLI install state. New agents extend support by providing
+	// their own reader here.
+	pluginInstalls func(ctx context.Context, a *Agent) ([]pluginInstall, bool)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
@@ -132,6 +133,7 @@ const (
 	NamePi          = "pi"
 	NameGemini      = "gemini"
 	NameGoose       = "goose"
+	NameKiro        = "kiro"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -173,12 +175,12 @@ var Registry = []*Agent{
 	{
 		Name:                 NameClaudeCode,
 		DisplayName:          "Claude Code",
-		ConfigDir:            homeSubdir(".claude"),
+		ConfigDir:            claudeConfigDir,
 		SupportsProjectScope: true,
 		ProjectConfigDir:     ".claude",
 		Binary:               "claude",
 		Plugin:               claudePlugin(),
-		pluginVersion:        claudePluginVersion,
+		pluginInstalls:       claudePluginInstalls,
 	},
 	{
 		Name:        NameCursor,
@@ -254,6 +256,28 @@ var Registry = []*Agent{
 		// Goose reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
+	{
+		Name:                 NameKiro,
+		DisplayName:          "Kiro",
+		ConfigDir:            homeSubdir(".kiro"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".kiro",
+		Binary:               "kiro",
+		// Kiro reads agent skills (SKILL.md) but has no databricks plugin, so it is
+		// skills-only (Plugin nil). Kiro's own picker text documents both scopes:
+		// "Skills can be added to ~/.kiro/skills/ (user-level) or .kiro/skills/
+		// (workspace-level)". Kiro is IDE-first, so `kiro` is frequently absent from
+		// PATH; detection then falls back to ConfigDir and reports files-only.
+	},
+}
+
+// claudeConfigDir follows Claude Code's configuration directory override.
+// See https://code.claude.com/docs/en/env-vars for CLAUDE_CONFIG_DIR.
+func claudeConfigDir(ctx context.Context) (string, error) {
+	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
+		return dir, nil
+	}
+	return homeSubdir(".claude")(ctx)
 }
 
 // piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,

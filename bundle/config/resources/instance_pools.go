@@ -13,6 +13,7 @@ import (
 
 type InstancePool struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	compute.CreateInstancePool
 	Permissions []InstancePoolPermission `json:"permissions,omitempty"`
 }
@@ -52,8 +53,4 @@ func (s *InstancePool) InitializeURL(baseURL url.URL) {
 
 func (s *InstancePool) GetName() string {
 	return s.InstancePoolName
-}
-
-func (s *InstancePool) GetURL() string {
-	return s.URL
 }

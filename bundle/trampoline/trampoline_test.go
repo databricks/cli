@@ -104,14 +104,12 @@ func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
 
 	newJob := func(taskKey string) *resources.Job {
 		return &resources.Job{
-			JobSettings: jobs.JobSettings{
-				Tasks: []jobs.Task{
-					{
-						TaskKey: taskKey,
-						PythonWheelTask: &jobs.PythonWheelTask{
-							PackageName: "test",
-							EntryPoint:  "run",
-						},
+			Tasks: []jobs.Task{
+				{
+					TaskKey: taskKey,
+					PythonWheelTask: &jobs.PythonWheelTask{
+						PackageName: "test",
+						EntryPoint:  "run",
 					},
 				},
 			},

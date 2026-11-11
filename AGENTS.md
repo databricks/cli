@@ -68,7 +68,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 **bundle/** - Core bundle functionality for Declarative Automation Bundles
 - `bundle/bundle.go` - Main Bundle struct and lifecycle management
 - `bundle/config/` - Configuration loading, validation, and schema
-- `bundle/deploy/` - Deployment logic (Terraform and direct modes)
+- `bundle/deploy/` - Deployment logic (file upload, locking, state)
 - `bundle/mutator/` - Configuration transformation pipeline
 - `bundle/phases/` - High-level deployment phases
 
@@ -84,14 +84,18 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 **Mutators**: Transform bundle configuration through a pipeline. Located in `bundle/config/mutator/` and `bundle/mutator/`. Each mutator implements the `Mutator` interface.
 
-**Direct vs Terraform Deployment**: The CLI supports two deployment modes controlled by `DATABRICKS_BUNDLE_ENGINE` environment variable:
-- `direct` (default) - Direct API calls without Terraform
-- `terraform` - Uses Terraform for resource management
+**Direct deployment engine**: Bundles are deployed by the direct engine (`bundle/direct/`), which calls the APIs without Terraform. The Terraform engine was removed in v1.20.0: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` are rejected, and existing Terraform state is migrated to the direct engine before the command runs.
 
 # Development Tips
 
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
+
+**Stale golangci-lint cache across worktrees.** Triggered by `task lint` or a direct `go tool ... golangci-lint` run reporting issues in files under a *different* or deleted worktree, often with `no such file or directory` warnings. Fix — clear the cache and re-run, don't investigate the reported issues:
+
+```sh
+go tool -modfile=tools/go.mod golangci-lint cache clean
+```
 
 # Common Mistakes
 

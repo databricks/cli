@@ -9,12 +9,12 @@ from databricks.bundles.synced_database_tables._models.synced_database_table imp
 from databricks.bundles.synced_database_tables._models.synced_table_spec import (
     SyncedTableSpec,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_synced_database_table,
             dict_example={"lifecycle": {}, "name": "name", "spec": {}},
             dataclass_example=SyncedDatabaseTable(

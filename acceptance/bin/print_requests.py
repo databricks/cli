@@ -200,6 +200,19 @@ def filter_requests(
     return filtered_requests
 
 
+def summary_line(req):
+    """Format a request as "METHOD path key=value ...", query keys sorted.
+
+    >>> summary_line({"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/a", "return_export_info": "true"}})
+    'GET /api/2.0/workspace/get-status path=/a return_export_info=true'
+    >>> summary_line({"method": "POST", "path": "/api/2.1/jobs/create", "body": {"name": "x"}})
+    'POST /api/2.1/jobs/create'
+    """
+    parts = [req.get("method", ""), req.get("path", "")]
+    parts += [f"{k}={v}" for k, v in sorted(req.get("q", {}).items())]
+    return " ".join(parts)
+
+
 def del_path(body, field):
     """Delete field from body. A dotted field descends into nested objects, e.g.
     deployment.version_id removes only that key from the deployment block."""
@@ -231,6 +244,12 @@ def main():
     parser.add_argument("--method", metavar="METHOD", help="Only show requests with this HTTP method (e.g. DELETE)")
     parser.add_argument("--oneline", action="store_true", help="Print output with one request per line")
     parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print only method, path and query of each request, one per line, so a test can "
+        "assert which calls a command makes without their bodies.",
+    )
+    parser.add_argument(
         "--del-body",
         action="append",
         default=[],
@@ -255,7 +274,7 @@ def main():
         "bodies, so a test asserts the same requests whether or not deployment history "
         "recording is on. Shorthand for the --del-body fields it implies.",
     )
-    parser.add_argument("--fname", default="out.requests.txt")
+    parser.add_argument("--fname", default=os.environ["OUT_REQUESTS"])
     args = parser.parse_args()
 
     del_body_fields = [field for group in args.del_body for field in group.split(",")]
@@ -263,11 +282,12 @@ def main():
         del_body_fields += STAMP_FIELDS
     del_fields = [field for group in args.del_field for field in group.split(",")]
 
+    fname = Path(args.fname)
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
-    if test_tmp_dir:
-        requests_file = Path(test_tmp_dir) / args.fname
+    if test_tmp_dir and not fname.is_absolute():
+        requests_file = Path(test_tmp_dir) / fname
     else:
-        requests_file = Path(args.fname)
+        requests_file = fname
 
     if not requests_file.exists():
         sys.exit(f"File {requests_file.as_posix()} not found")
@@ -296,6 +316,16 @@ def main():
             file=sys.stderr,
             flush=True,
         )
+
+    if args.summary:
+        lines = [summary_line(req) for req in filtered_requests]
+        # Sorted after formatting: concurrent requests are recorded in arrival order, and the
+        # summary drops the fields --sort would otherwise break ties on.
+        if args.sort:
+            lines.sort()
+        for line in lines:
+            print(line)
+        filtered_requests = []
 
     for req in filtered_requests:
         if args.oneline:

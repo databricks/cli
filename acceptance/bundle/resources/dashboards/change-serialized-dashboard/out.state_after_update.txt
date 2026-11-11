@@ -1,0 +1,1 @@
+json.state.resources.dashboards.my_dashboard.state.serialized_dashboard = "sha256:[HASH]";

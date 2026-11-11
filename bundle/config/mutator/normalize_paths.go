@@ -84,7 +84,7 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	return jobs
 }
 
-func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {
+func normalizePath(path string, location diag.Location, bundleRootPath string) (string, error) {
 	// Handle local file paths used inside pip flags
 	for _, flag := range libraries.PipFlagsWithLocalPaths {
 		reqPath, ok := strings.CutPrefix(path, flag+" ")
@@ -134,7 +134,7 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 	return filepath.ToSlash(filepath.Join(relDir, path)), nil
 }
 
-func locationDirectory(l dyn.Location) (string, error) {
+func locationDirectory(l diag.Location) (string, error) {
 	if l.File == "" {
 		return "", errors.New("no file in location")
 	}

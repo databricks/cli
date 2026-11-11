@@ -157,6 +157,13 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		Message: "Deployment succeeded",
 	}
 
+	// The backend returns env vars with their name only: value and value_from are never
+	// read back, neither from get-deployment nor from the app's active_deployment. Mask
+	// them before storing so every read path agrees. See https://github.com/databricks/cli/issues/7301
+	for i, ev := range deployment.EnvVars {
+		deployment.EnvVars[i] = apps.EnvVar{Name: ev.Name}
+	}
+
 	app.ActiveDeployment = &deployment
 	app.DefaultSourceCodePath = deployment.SourceCodePath
 	app.DefaultGitSource = deployment.GitSource
@@ -177,19 +184,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 		return Response{StatusCode: 404}
 	}
 
-	// Return a copy so the masking below does not mutate the stored deployment.
-	deployment := *app.ActiveDeployment
-
-	// The real GET response strips env var values, returning only the name of
-	// each variable. Reproduce that masking so the local golden matches
-	// recorded cloud behavior.
-	maskedEnvVars := make([]apps.EnvVar, len(deployment.EnvVars))
-	for i, ev := range deployment.EnvVars {
-		maskedEnvVars[i] = apps.EnvVar{Name: ev.Name}
-	}
-	deployment.EnvVars = maskedEnvVars
-
-	return Response{Body: deployment}
+	return Response{Body: app.ActiveDeployment}
 }
 
 func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {

@@ -1,3 +1,12 @@
 
 >>> [CLI] repos get /Repos/me@databricks.com/doesnotexist -o json
 Error: failed to look up repo by path: Path (/Repos/me@databricks.com/doesnotexist) doesn't exist.
+
+>>> print_requests.py --get //repos //workspace/get-status
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/doesnotexist"
+  }
+}

@@ -22,5 +22,5 @@ Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_pydabs/my_pyd
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_pydabs/dev/files...
 Created jobs.sample_job
 Created pipelines.my_pydabs_etl
-Files: 22 uploaded, 0 deleted
+Files: 21 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged

@@ -7,12 +7,12 @@ from databricks.bundles.job_runs._models.job_run_lifecycle import JobRunLifecycl
 from databricks.bundles.job_runs._models.performance_target import PerformanceTarget
 from databricks.bundles.job_runs._models.pipeline_params import PipelineParams
 from databricks.bundles.job_runs._models.queue_settings import QueueSettings
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_job_run,
             dict_example={
                 "job_id": 0,

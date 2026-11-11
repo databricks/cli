@@ -1,0 +1,2 @@
+RecordRequests = false
+Env.DATABRICKS_BUNDLE_ENGINE = "direct"

@@ -3,6 +3,8 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -108,61 +108,63 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
-	patterns := make(map[string]dyn.Pattern, 0)
-	for key := range levelsMap {
-		patterns[key] = dyn.NewPattern(
-			dyn.Key("resources"),
-			dyn.Key(key),
-			dyn.AnyKey(),
-		)
-	}
-
-	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		for key, pattern := range patterns {
-			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				var permissions []resources.Permission
-				pv, err := dyn.Get(v, "permissions")
-				// If the permissions field is not found, we set to an empty array
-				if err != nil {
-					pv = dyn.V([]dyn.Value{})
-				}
-
-				err = convert.ToTyped(&permissions, pv)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to convert permissions: %w", err)
-				}
-
-				permissions = append(permissions, convertPermissions(
-					ctx,
-					b.Config.Permissions,
-					permissions,
-					key,
-					levelsMap[key],
-				)...)
-
-				if len(permissions) == 0 {
-					permissions = nil
-				}
-
-				pv, err = convert.FromTyped(permissions, dyn.NilValue)
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to convert permissions: %w", err)
-				}
-
-				return dyn.Set(v, "permissions", pv)
-			})
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+	for _, group := range b.Config.Resources.AllResources() {
+		key := group.Description.PluralName
+		lm, ok := levelsMap[key]
+		if !ok {
+			continue
 		}
 
-		return v, nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
+		for _, name := range slices.Sorted(maps.Keys(group.Resources)) {
+			field := reflect.ValueOf(group.Resources[name]).Elem().FieldByName("Permissions")
+			permissions := readPermissions(field)
+			permissions = append(permissions, convertPermissions(
+				ctx,
+				b.Config.Permissions,
+				permissions,
+				key,
+				lm,
+			)...)
+			writePermissions(field, permissions)
+		}
 	}
 
 	return nil
+}
+
+// readPermissions converts the permissions field of a resource to []resources.Permission.
+// The element type of the field differs between resources, but all have the same fields.
+func readPermissions(field reflect.Value) []resources.Permission {
+	var permissions []resources.Permission
+	for i := range field.Len() {
+		p := field.Index(i)
+		permissions = append(permissions, resources.Permission{
+			Level:                iam.PermissionLevel(p.FieldByName("Level").String()),
+			UserName:             p.FieldByName("UserName").String(),
+			ServicePrincipalName: p.FieldByName("ServicePrincipalName").String(),
+			GroupName:            p.FieldByName("GroupName").String(),
+		})
+	}
+	return permissions
+}
+
+// writePermissions sets the permissions field of a resource to permissions.
+// An empty list is stored as nil, so that the field is absent from the configuration.
+func writePermissions(field reflect.Value, permissions []resources.Permission) {
+	if len(permissions) == 0 {
+		field.SetZero()
+		return
+	}
+
+	out := reflect.MakeSlice(field.Type(), len(permissions), len(permissions))
+	for i, p := range permissions {
+		e := out.Index(i)
+		e.FieldByName("Level").SetString(string(p.Level))
+		e.FieldByName("UserName").SetString(p.UserName)
+		e.FieldByName("ServicePrincipalName").SetString(p.ServicePrincipalName)
+		e.FieldByName("GroupName").SetString(p.GroupName)
+	}
+	field.Set(out)
 }
 
 func validatePermissions(b *bundle.Bundle) error {

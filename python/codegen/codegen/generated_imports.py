@@ -44,7 +44,7 @@ def get_code(
     b = CodeBuilder()
 
     b.append(
-        "from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING\n"
+        "from typing import Any, Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING\n"
     )
     b.append("from enum import Enum\n")
     b.append("from dataclasses import dataclass, replace, field\n")

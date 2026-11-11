@@ -34,11 +34,11 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
 Created instance_pools.test_instance_pool
-Files: 5 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/create",
@@ -61,7 +61,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Update the instance pool name
 >>> update_file.py databricks.yml my_instance_pool my_instance_pool_2
@@ -69,11 +69,11 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
 Updated instance_pools.test_instance_pool
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/edit",
@@ -97,7 +97,7 @@ Resources:
   Instance Pools:
     test_instance_pool:
       Name: my_instance_pool_2
-      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[WORKSPACE_ID]
 
 === Destroy the instance pool
 >>> [CLI] bundle destroy --auto-approve
@@ -109,7 +109,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Verify the destroy request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/delete",

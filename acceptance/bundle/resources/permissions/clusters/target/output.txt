@@ -25,15 +25,15 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
       "permissions": [
         {
           "level": "CAN_ATTACH_TO",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][0]"
         },
         {
           "level": "CAN_RESTART",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][1]"
         },
         {
           "level": "CAN_MANAGE",
-          "service_principal_name": "[UUID]"
+          "service_principal_name": "[UUID][2]"
         },
         {
           "level": "CAN_MANAGE",
@@ -61,7 +61,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Created clusters.cluster1
 Created clusters.cluster1.permissions
-Files: 4 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters

@@ -13,12 +13,12 @@ from databricks.bundles.alerts._models.permission import Permission
 from databricks.bundles.alerts._models.permission_level import PermissionLevel
 from databricks.bundles.core import Resources, alert_mutator
 from databricks.bundles.core._generated.alerts import _resource_type
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_alert,
             dict_example={
                 "display_name": "display_name",

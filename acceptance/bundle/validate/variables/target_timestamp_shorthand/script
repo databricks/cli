@@ -1,0 +1,2 @@
+# A timestamp as a target variable shorthand.
+trace $CLI bundle validate -t dev -o json | jq .variables.x

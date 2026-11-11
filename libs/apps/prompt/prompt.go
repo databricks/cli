@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -118,6 +119,7 @@ type CreateProjectConfig struct {
 	Dependencies map[string]string // e.g., {"sql_warehouse_id": "abc123"}
 	Deploy       bool              // Whether to deploy the app after creation
 	RunMode      RunMode           // How to run the app after creation
+	AuthModes    map[string]string // resource AuthKey -> auth mode chosen in the prompt
 }
 
 // App name constraints.
@@ -851,6 +853,39 @@ func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool
 	return promptUCResource(ctx, r, required, "UC Function", "Fetching functions...", ListFunctionsInSchema)
 }
 
+const browseCatalogsID = "__browse_catalogs__"
+
+// listSystemAIModelServices lists system.ai model services plus the browse entry; no access yields only the latter.
+func listSystemAIModelServices(ctx context.Context) (*PagedFetcher, error) {
+	items, err := ListModelServicesInSchema(ctx, "system", "ai")
+	if errors.Is(err, apierr.ErrPermissionDenied) || errors.Is(err, apierr.ErrNotFound) {
+		items, err = nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{Items: append(items, ListItem{ID: browseCatalogsID, Label: "Browse other catalogs..."})}, nil
+}
+
+// PromptForModelService opens on system.ai, since paging to the system catalog is slow in large workspaces.
+func PromptForModelService(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	f, err := getFetcherByKey(ctx, cacheKeySystemAIModels, "Fetching model services...", listSystemAIModelServices)
+	if err != nil {
+		return nil, err
+	}
+	value := browseCatalogsID
+	if len(f.Items) > 1 {
+		value, err = PromptFromList(ctx, resourceTitle("Select Model Service", r), "", f.Items, required)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if value == browseCatalogsID {
+		return promptUCResource(ctx, r, required, "Model Service", "Fetching model services...", ListModelServicesInSchema)
+	}
+	return singleValueResult(r, value), nil
+}
+
 // PromptForUCConnection shows a picker for UC connections.
 func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	title := resourceTitle("Select UC Connection", r)
@@ -1206,7 +1241,7 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, successStyle.Render("✔ Project created successfully!"))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
+	cmdio.LogString(ctx, dimStyle.Render("  Location: "+filepath.ToSlash(outputDir)))
 	cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
 
 	if nextStepsCmd != "" {

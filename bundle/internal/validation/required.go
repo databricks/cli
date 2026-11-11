@@ -78,8 +78,12 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
+		// A struct that shadows an embedded field of the same JSON name (e.g. apps' lifecycle
+		// over BaseResource's) is walked twice, so the same field can be reported twice.
 		parentPath := path.Parent().String()
-		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
+		if !slices.Contains(fieldsByPattern[parentPath], fieldName) {
+			fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
+		}
 		return true
 	})
 

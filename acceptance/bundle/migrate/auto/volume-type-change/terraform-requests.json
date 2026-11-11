@@ -1,0 +1,12 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/volumes",
+    "body": {
+      "catalog_name": "main",
+      "name": "myvolume",
+      "schema_name": "default",
+      "volume_type": "MANAGED"
+    }
+  }
+]

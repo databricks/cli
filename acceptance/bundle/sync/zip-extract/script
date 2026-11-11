@@ -1,0 +1,24 @@
+# The import-file endpoint extracts a .zip into its parent folder instead of storing the
+# archive, and overwrites the extracted files on the next upload. archive.zip holds
+# inner.txt ("v1") and pkg/a.txt; archive_v2.zip is the same with inner.txt "v2".
+envsubst < databricks.yml.tmpl > databricks.yml
+remote=$($CLI bundle summary -o json | jq -r .workspace.file_path)
+
+cleanup() {
+  $CLI workspace delete "$($CLI bundle summary -o json | jq -r .workspace.root_path)" --recursive
+}
+trap cleanup EXIT
+
+list() {
+  $CLI workspace list -o json "$1" | jq -r 'sort_by(.path)[] | "\(.object_type) \(.path | sub(".*/files"; ""))"'
+}
+
+title "Sync extracts the archive into the bundle's file path\n"
+trace $CLI bundle sync
+trace list "$remote"
+trace list "$remote/pkg"
+
+title "Syncing a changed archive overwrites the extracted files\n"
+cp archive_v2.zip archive.zip
+trace $CLI bundle sync
+trace $CLI workspace export "$remote/inner.txt" --format AUTO

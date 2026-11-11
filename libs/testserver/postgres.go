@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -251,6 +252,8 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 	project.UpdateTime = nowTime()
 	s.PostgresProjects[name] = project
 
+	// Whole-spec mask + a body that omits default_endpoint_settings keeps the stored
+	// settings. Until 2026-11-02 the real API returned 500 here when they were non-default.
 	return Response{
 		Body: s.createOperationLocked(project.Name, project),
 	}
@@ -513,6 +516,72 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
+	}
+}
+
+var snapshotScheduleUpdateMaskPaths = []string{"schedule"}
+
+// PostgresSnapshotScheduleGet retrieves a branch's snapshot schedule. The
+// schedule is intrinsic to the branch: for a branch that never had one set, the
+// API returns an empty schedule rather than 404, so the fake mirrors that.
+func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	schedule, exists := s.PostgresSnapshotSchedules[name]
+	if !exists {
+		schedule = postgres.SnapshotSchedule{Name: name}
+	}
+
+	return Response{
+		Body: schedule,
+	}
+}
+
+// PostgresSnapshotScheduleUpdate sets a branch's snapshot schedule. There is no
+// create/delete endpoint; the schedule is managed entirely through this update.
+// An empty schedule set disables automatic snapshots.
+func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, snapshotScheduleUpdateMaskPaths, nil); resp != nil {
+		return *resp
+	}
+
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	branch, exists := s.PostgresBranches[branchName]
+	if !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	// Snapshots are only allowed on the root (default) branch; the backend
+	// rejects a schedule on any branch created off another.
+	if branch.Status == nil || !branch.Status.Default {
+		return postgresErrorResponse(400, "BAD_REQUEST", "not allowed to snapshot non-root branch")
+	}
+
+	var updateSchedule postgres.SnapshotSchedule
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateSchedule); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	schedule := postgres.SnapshotSchedule{
+		Name:     name,
+		Schedule: updateSchedule.Schedule,
+	}
+	s.PostgresSnapshotSchedules[name] = schedule
+
+	return Response{
+		Body: s.createOperationLocked(name, schedule),
 	}
 }
 
@@ -803,11 +872,11 @@ func maskCovers(mask, path string) bool {
 
 // parentPath returns path with its last segment removed, or "" when it has only one.
 func parentPath(path string) string {
-	i := strings.LastIndex(path, ".")
-	if i < 0 {
+	before, _, ok := strings.CutLast(path, ".")
+	if !ok {
 		return ""
 	}
-	return path[:i]
+	return before
 }
 
 // missingMaskedField returns the first update_mask path the API would reject
@@ -871,27 +940,86 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 	if mask == "" {
 		return nil
 	}
+	wildcard := false
 	for path := range strings.SplitSeq(mask, ",") {
 		path = strings.TrimSpace(path)
+		if path == "*" {
+			// The API accepts the wildcard, then requires every field populated;
+			// see wildcardMissingField.
+			wildcard = true
+			continue
+		}
 		if path == "" || slices.Contains(allowed, path) {
 			continue
 		}
 		resp := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Unknown field path in update_mask: '%s'", path))
 		return &resp
 	}
+	var body map[string]any
+	_ = json.Unmarshal(req.Body, &body)
+	if wildcard {
+		if path := wildcardMissingField(body, allowed, oneofGroups); path != "" {
+			resp := missingMaskedFieldResponse(path)
+			return &resp
+		}
+		return nil
+	}
 	// An unknown path is reported ahead of a missing one, matching the API.
 	if path := missingMaskedField(req, oneofGroups); path != "" {
 		resp := missingMaskedFieldResponse(path)
 		return &resp
 	}
-	var body map[string]any
-	if err := json.Unmarshal(req.Body, &body); err == nil {
-		if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
-			resp := missingMaskedFieldResponse(group)
-			return &resp
-		}
+	if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
+		resp := missingMaskedFieldResponse(group)
+		return &resp
 	}
 	return nil
+}
+
+// wildcardMissingField returns the first spec field that update_mask=* requires but the
+// body does not carry. The wildcard expands to every settable leaf, and — unlike a bare
+// message mask — the API then demands each one be present (probed against a real
+// workspace: * with a create-shaped body is rejected field by field). The required set is
+// the leaf paths of `allowed`: an entry with no more-specific entry beneath it, a oneof
+// group counting as satisfied by any of its members.
+func wildcardMissingField(body map[string]any, allowed []string, oneofGroups map[string][]string) string {
+	var required []string
+	for _, p := range allowed {
+		if !strings.HasPrefix(p, "spec.") {
+			// "spec" itself and the initial_* specs are not spec leaves.
+			continue
+		}
+		isParent := false
+		for _, q := range allowed {
+			if q != p && strings.HasPrefix(q, p+".") {
+				isParent = true
+				break
+			}
+		}
+		if !isParent {
+			required = append(required, p)
+		}
+	}
+	slices.Sort(required)
+	for _, p := range required {
+		if members, ok := oneofGroups[p]; ok {
+			satisfied := false
+			for _, m := range members {
+				if bodyHasPath(body, strings.Split(m, ".")) {
+					satisfied = true
+					break
+				}
+			}
+			if !satisfied {
+				return p
+			}
+			continue
+		}
+		if !bodyHasPath(body, strings.Split(p, ".")) {
+			return p
+		}
+	}
+	return ""
 }
 
 func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Response {
@@ -1188,6 +1316,264 @@ func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
 	}
 
 	delete(s.PostgresDatabases, name)
+	// The Data API is a sub-resource of the database and goes away with it.
+	delete(s.PostgresDataApis, name+dataApiSuffix)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
+// dataApiSuffix is the final segment of a Data API's resource name:
+// "projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api".
+const dataApiSuffix = "/data-api"
+
+// dataApiUpdateMaskPaths is the update_mask the fake accepts: the whole spec,
+// which is what the CLI sends. The real API also accepts leaf paths, which reset
+// an omitted field instead of keeping it; the CLI never sends them, so the fake
+// does not model them.
+var dataApiUpdateMaskPaths = []string{"spec"}
+
+// dataApiNotEnabledMessage is the message the real API answers a get, update, or
+// delete with when the database's Data API is not enabled.
+const dataApiNotEnabledMessage = "Data API is not enabled for this database"
+
+// dataApiNotEnabledResponse is the 404 the real API returns for a Data API that
+// is not enabled.
+func dataApiNotEnabledResponse() Response {
+	return postgresErrorResponse(404, "NOT_FOUND", dataApiNotEnabledMessage)
+}
+
+// readWriteEndpointLocked returns the read-write endpoint of a branch (caller
+// must hold lock).
+func (s *FakeWorkspace) readWriteEndpointLocked(branchName string) (postgres.Endpoint, bool) {
+	prefix := branchName + "/endpoints/"
+	for name, endpoint := range s.PostgresEndpoints {
+		if strings.HasPrefix(name, prefix) && endpoint.Status != nil && endpoint.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
+			return endpoint, true
+		}
+	}
+	return postgres.Endpoint{}, false
+}
+
+// withDataApiURLLocked returns the Data API with status.url set the way the real
+// API reports it: https://{read-write endpoint host}/api/2.0/workspace/{workspace
+// ID}/rest/{Postgres database name}. It is derived from the current endpoint and
+// database on every response rather than stored. The caller must hold the lock
+// and have passed dataApiPreconditionLocked.
+func (s *FakeWorkspace) withDataApiURLLocked(dataApi postgres.DataApi) postgres.DataApi {
+	branchName, _, _ := strings.Cut(dataApi.Parent, "/databases/")
+	endpoint, _ := s.readWriteEndpointLocked(branchName)
+	database := s.PostgresDatabases[dataApi.Parent]
+
+	status := *dataApi.Status
+	status.Url = fmt.Sprintf("https://%s/api/2.0/workspace/%d/rest/%s", endpoint.Status.Hosts.Host, TestWorkspaceID, database.Status.PostgresDatabase)
+	dataApi.Status = &status
+	return dataApi
+}
+
+// dataApiPreconditionLocked returns the error the API answers a Data API create,
+// get, or update with when its database is missing (404) or the database's
+// branch has no read-write endpoint (400), which the backend requires to serve
+// the Data API. Returns nil when the request may proceed (caller must hold lock).
+func (s *FakeWorkspace) dataApiPreconditionLocked(databaseName string) *Response {
+	// Project and branch deletion do not cascade to databases in this fake, so
+	// check the ancestors first, as PostgresDatabaseGet does.
+	branchName, _, _ := strings.Cut(databaseName, "/databases/")
+	projectName, _, _ := strings.Cut(branchName, "/branches/")
+	if _, exists := s.PostgresProjects[projectName]; !exists {
+		resp := postgresNotFoundResponse("project")
+		return &resp
+	}
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		resp := postgresNotFoundResponse("branch")
+		return &resp
+	}
+	if _, exists := s.PostgresDatabases[databaseName]; !exists {
+		resp := postgresNotFoundResponse("database")
+		return &resp
+	}
+	if _, ok := s.readWriteEndpointLocked(branchName); !ok {
+		resp := postgresErrorResponse(400, "BAD_REQUEST", "Data API requires a read-write endpoint on branch "+branchName)
+		return &resp
+	}
+	return nil
+}
+
+// dataApiDefaultStatus is the status the real API reports right after enabling
+// the Data API with only db_schemas set: the server defaults, which the status
+// echoes because it reports every setting in effect.
+func dataApiDefaultStatus() *postgres.DataApiDataApiStatus {
+	return &postgres.DataApiDataApiStatus{
+		AvailableSchemas:         []string{"public"},
+		DbAggregatesEnabled:      true,
+		DbSchemas:                []string{"public"},
+		JwtRoleClaimKey:          ".sub",
+		OpenapiMode:              postgres.OpenApiModeOpenApiModeDisabled,
+		ServerCorsAllowedOrigins: []string{"none"},
+	}
+}
+
+// applyDataApiSpec returns the status after applying the fields the spec sets,
+// the way the real API applies a create or an update_mask=spec update: a field
+// the request omits keeps its current value.
+func applyDataApiSpec(current *postgres.DataApiDataApiStatus, spec *postgres.DataApiDataApiSpec) *postgres.DataApiDataApiStatus {
+	status := *current
+	status.ForceSendFields = slices.Clone(current.ForceSendFields)
+	if spec == nil {
+		return &status
+	}
+	applyDataApiBool(&status, spec, "DbAggregatesEnabled", &status.DbAggregatesEnabled, spec.DbAggregatesEnabled)
+	applyDataApiBool(&status, spec, "ServerTimingEnabled", &status.ServerTimingEnabled, spec.ServerTimingEnabled)
+	if spec.DbExtraSearchPath != nil {
+		status.DbExtraSearchPath = spec.DbExtraSearchPath
+	}
+	if spec.DbMaxRows != 0 {
+		status.DbMaxRows = spec.DbMaxRows
+	}
+	if spec.DbSchemas != nil {
+		status.DbSchemas = spec.DbSchemas
+	}
+	if spec.JwtCacheMaxLifetime != nil {
+		status.JwtCacheMaxLifetime = spec.JwtCacheMaxLifetime
+	}
+	if spec.JwtRoleClaimKey != "" {
+		status.JwtRoleClaimKey = spec.JwtRoleClaimKey
+	}
+	if spec.OpenapiMode != "" {
+		status.OpenapiMode = spec.OpenapiMode
+	}
+	if spec.ServerCorsAllowedOrigins != nil {
+		status.ServerCorsAllowedOrigins = spec.ServerCorsAllowedOrigins
+	}
+	return &status
+}
+
+// applyDataApiBool sets a bool status field when the spec sets it. A false sent
+// explicitly is recorded in the spec's ForceSendFields, so it counts as set. Once
+// set, the real API reports the bool even when it is false, so the status forces
+// it too; a bool that was never set and is false is omitted.
+func applyDataApiBool(status *postgres.DataApiDataApiStatus, spec *postgres.DataApiDataApiSpec, field string, dst *bool, value bool) {
+	if !value && !slices.Contains(spec.ForceSendFields, field) {
+		return
+	}
+	*dst = value
+	if !slices.Contains(status.ForceSendFields, field) {
+		status.ForceSendFields = append(status.ForceSendFields, field)
+	}
+}
+
+// PostgresDataApiCreate enables the Data API on a database. At most one Data API
+// exists per database, so a second create returns ALREADY_EXISTS.
+func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Response {
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(parent); errResp != nil {
+		return *errResp
+	}
+
+	name := parent + dataApiSuffix
+	if _, exists := s.PostgresDataApis[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "Data API is already enabled for this database")
+	}
+
+	var dataApi postgres.DataApi
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &dataApi); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// The real API rejects enabling the Data API with an empty spec. A field sent
+	// explicitly with its zero value is recorded in ForceSendFields, so it counts.
+	if dataApi.Spec == nil || reflect.ValueOf(*dataApi.Spec).IsZero() {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'data_api' is required and must contain at least one subfield with a non-default value!")
+	}
+
+	now := nowTime()
+	dataApi.Name = name
+	dataApi.Parent = parent
+	dataApi.CreateTime = now
+	dataApi.UpdateTime = now
+	dataApi.Status = applyDataApiSpec(dataApiDefaultStatus(), dataApi.Spec)
+	// spec is INPUT_ONLY: GET only returns status.
+	dataApi.Spec = nil
+
+	s.PostgresDataApis[name] = dataApi
+
+	return Response{
+		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
+	}
+}
+
+// PostgresDataApiGet retrieves the Data API of a database.
+func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(strings.TrimSuffix(name, dataApiSuffix)); errResp != nil {
+		return *errResp
+	}
+
+	dataApi, exists := s.PostgresDataApis[name]
+	if !exists {
+		return dataApiNotEnabledResponse()
+	}
+
+	return Response{
+		Body: s.withDataApiURLLocked(dataApi),
+	}
+}
+
+// PostgresDataApiUpdate updates the Data API configuration of a database.
+func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, dataApiUpdateMaskPaths, nil); resp != nil {
+		return *resp
+	}
+
+	defer s.LockUnlock()()
+
+	if errResp := s.dataApiPreconditionLocked(strings.TrimSuffix(name, dataApiSuffix)); errResp != nil {
+		return *errResp
+	}
+
+	dataApi, exists := s.PostgresDataApis[name]
+	if !exists {
+		return dataApiNotEnabledResponse()
+	}
+
+	var updateDataApi postgres.DataApi
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateDataApi); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// The "spec" mask keeps the current value of a field the request omits.
+	dataApi.Status = applyDataApiSpec(dataApi.Status, updateDataApi.Spec)
+	dataApi.UpdateTime = nowTime()
+	s.PostgresDataApis[name] = dataApi
+
+	return Response{
+		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
+	}
+}
+
+// PostgresDataApiDelete disables the Data API of a database. The database and
+// its data are not affected.
+func (s *FakeWorkspace) PostgresDataApiDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresDataApis[name]; !exists {
+		return dataApiNotEnabledResponse()
+	}
+
+	delete(s.PostgresDataApis, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1566,6 +1952,10 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "Catalog"
 	case strings.HasPrefix(resourceName, "synced_tables/"):
 		resourceType = "SyncedTable"
+	case strings.HasSuffix(resourceName, "/snapshot-schedule"):
+		resourceType = "SnapshotSchedule"
+	case strings.HasSuffix(resourceName, dataApiSuffix):
+		resourceType = "DataApi"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
 	case strings.Contains(resourceName, "/databases/"):
@@ -1643,14 +2033,32 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	return Response{Body: table}
 }
 
-// PostgresSyncedTableDelete deletes a postgres synced table.
+// PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
+// simulates eventual consistency, deletion is asynchronous and slow: the record is
+// not removed but left in DELETING, so GET keeps returning it and a create for the
+// same name keeps hitting 409 — the stuck-teardown race WaitAfterDelete waits out.
+// Otherwise (the default, and terraform, which recreates without polling) it is
+// removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresSyncedTables[name]; !exists {
+	table, exists := s.PostgresSyncedTables[name]
+	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
-	delete(s.PostgresSyncedTables, name)
+
+	if !s.eventualConsistency {
+		delete(s.PostgresSyncedTables, name)
+		return Response{Body: s.createOperationLocked(name, nil)}
+	}
+
+	if table.Status == nil {
+		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+	}
+	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
+	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
+	s.PostgresSyncedTables[name] = table
+
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 

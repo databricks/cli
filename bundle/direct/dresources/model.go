@@ -103,19 +103,17 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 	// response so references against the post-update remote state resolve to
 	// real values until the next plan's DoRead.
 	return &MlflowModelRemote{
-		ModelDatabricks: ml.ModelDatabricks{
-			CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
-			Description:          response.RegisteredModel.Description,
-			Id:                   "",
-			LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
-			LatestVersions:       response.RegisteredModel.LatestVersions,
-			Name:                 response.RegisteredModel.Name,
-			PermissionLevel:      "",
-			Tags:                 response.RegisteredModel.Tags,
-			UserId:               response.RegisteredModel.UserId,
-			ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "Id", "PermissionLevel"),
-		},
-		ModelId: modelId,
+		CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
+		Description:          response.RegisteredModel.Description,
+		Id:                   "",
+		LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
+		LatestVersions:       response.RegisteredModel.LatestVersions,
+		Name:                 response.RegisteredModel.Name,
+		PermissionLevel:      "",
+		Tags:                 response.RegisteredModel.Tags,
+		UserId:               response.RegisteredModel.UserId,
+		ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "Id", "PermissionLevel"),
+		ModelId:              modelId,
 	}, nil
 }
 

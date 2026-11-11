@@ -10,5 +10,5 @@ trace print_requests.py //unity
 
 trap cleanup EXIT
 
-trace musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace musterr $CLI bundle deploy &> out.deploy.txt
 trace print_requests.py //unity

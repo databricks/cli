@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"golang.org/x/oauth2"
 )
@@ -50,6 +51,7 @@ const (
 // the historical bare-token format, leaving room for additive sibling fields.
 type fileEntry struct {
 	*oauth2.Token
+	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
 }
 
 // tokenStoreFile is the format of the token store file.
@@ -106,7 +108,7 @@ func (c *fileStore) Put(key string, e Entry) error {
 	if f.Tokens == nil {
 		f.Tokens = map[string]*fileEntry{}
 	}
-	f.Tokens[key] = &fileEntry{Token: e.Token}
+	f.Tokens[key] = &fileEntry{Token: e.Token, PendingLogin: e.PendingLogin}
 	return c.write(f)
 }
 
@@ -122,7 +124,7 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 	if !ok {
 		return Entry{}, ErrNotFound
 	}
-	return Entry{Token: fe.Token}, nil
+	return Entry{Token: fe.Token, PendingLogin: fe.PendingLogin}, nil
 }
 
 // Delete implements the Store interface. Removing a missing key is a no-op.
@@ -132,6 +134,9 @@ func (c *fileStore) Delete(key string) error {
 	f, err := c.load()
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
+	}
+	if _, ok := f.Tokens[key]; !ok {
+		return nil
 	}
 	delete(f.Tokens, key)
 	return c.write(f)
@@ -143,7 +148,7 @@ func (c *fileStore) write(f *tokenStoreFile) error {
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
-	if err := c.atomicWriteFile(raw); err != nil {
+	if err := atomicfile.Write(c.fileLocation, raw, ownerReadWrite); err != nil {
 		return fmt.Errorf("error storing token in local cache: %w", err)
 	}
 	return nil
@@ -179,7 +184,7 @@ func (c *fileStore) init(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
-		if err := c.atomicWriteFile(raw); err != nil {
+		if err := atomicfile.Write(c.fileLocation, raw, ownerReadWrite); err != nil {
 			return fmt.Errorf("error creating token store file: %w", err)
 		}
 	}
@@ -204,35 +209,4 @@ func (c *fileStore) load() (*tokenStoreFile, error) {
 		return nil, fmt.Errorf("needs version %d, got version %d", tokenStoreVersion, f.Version)
 	}
 	return f, nil
-}
-
-// atomicWriteFile writes data to the file atomically by first writing to a
-// temporary file in the same directory and then renaming it to the target.
-// This prevents corruption from interrupted writes.
-func (c *fileStore) atomicWriteFile(data []byte) error {
-	tmp, err := c.writeTmpFile(data)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp)
-	return os.Rename(tmp, c.fileLocation)
-}
-
-func (c *fileStore) writeTmpFile(data []byte) (string, error) {
-	tmp, err := os.CreateTemp(filepath.Dir(c.fileLocation), ".token-cache-*.tmp")
-	if err != nil {
-		return "", fmt.Errorf("create temp file: %w", err)
-	}
-	defer tmp.Close()
-
-	if _, err := tmp.Write(data); err != nil {
-		return "", err
-	}
-	if err := tmp.Chmod(ownerReadWrite); err != nil {
-		return "", err
-	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
-	return tmp.Name(), nil
 }

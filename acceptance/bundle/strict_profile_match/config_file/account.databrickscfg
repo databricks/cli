@@ -1,0 +1,7 @@
+[workspace_custom_host]
+host = $CUSTOM_HOST
+workspace_id = $WORKSPACE_ID
+
+[account_custom_host]
+host = $CUSTOM_HOST
+account_id = test-account

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -15,37 +16,45 @@ type Resources struct {
 	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
-	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
-	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
-	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
-	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
-	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
-	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
-	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
-	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
-	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
-	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
-	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
-	GenieSpaces           map[string]*resources.GenieSpace           `json:"genie_spaces,omitempty"`
-	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
-	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
-	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
-	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
-	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
-	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
-	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
-	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
-	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
-	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
-	PostgresCatalogs      map[string]*resources.PostgresCatalog      `json:"postgres_catalogs,omitempty"`
-	PostgresDatabases     map[string]*resources.PostgresDatabase     `json:"postgres_databases,omitempty"`
-	PostgresRoles         map[string]*resources.PostgresRole         `json:"postgres_roles,omitempty"`
-	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
-	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
-	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
-	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
-	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
-	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:"cluster_policies,omitempty"`
+	Features                  map[string]*resources.Feature                  `json:"features,omitempty"`
+	MaterializationSets       map[string]*resources.MaterializationSet       `json:"materialization_sets,omitempty"`
+	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
+	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
+	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
+	ModelServices             map[string]*resources.ModelService             `json:"model_services,omitempty"`
+	McpServices               map[string]*resources.McpService               `json:"mcp_services,omitempty"`
+	ModelProviderServices     map[string]*resources.ModelProviderService     `json:"model_provider_services,omitempty"`
+	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
+	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
+	DataQualityMonitors       map[string]*resources.DataQualityMonitor       `json:"data_quality_monitors,omitempty"`
+	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
+	Schemas                   map[string]*resources.Schema                   `json:"schemas,omitempty"`
+	Volumes                   map[string]*resources.Volume                   `json:"volumes,omitempty"`
+	ExternalLocations         map[string]*resources.ExternalLocation         `json:"external_locations,omitempty"`
+	Clusters                  map[string]*resources.Cluster                  `json:"clusters,omitempty"`
+	Dashboards                map[string]*resources.Dashboard                `json:"dashboards,omitempty"`
+	GenieSpaces               map[string]*resources.GenieSpace               `json:"genie_spaces,omitempty"`
+	Apps                      map[string]*resources.App                      `json:"apps,omitempty"`
+	SecretScopes              map[string]*resources.SecretScope              `json:"secret_scopes,omitempty"`
+	Alerts                    map[string]*resources.Alert                    `json:"alerts,omitempty"`
+	SqlWarehouses             map[string]*resources.SqlWarehouse             `json:"sql_warehouses,omitempty"`
+	DatabaseInstances         map[string]*resources.DatabaseInstance         `json:"database_instances,omitempty"`
+	DatabaseCatalogs          map[string]*resources.DatabaseCatalog          `json:"database_catalogs,omitempty"`
+	SyncedDatabaseTables      map[string]*resources.SyncedDatabaseTable      `json:"synced_database_tables,omitempty"`
+	PostgresProjects          map[string]*resources.PostgresProject          `json:"postgres_projects,omitempty"`
+	PostgresBranches          map[string]*resources.PostgresBranch           `json:"postgres_branches,omitempty"`
+	PostgresEndpoints         map[string]*resources.PostgresEndpoint         `json:"postgres_endpoints,omitempty"`
+	PostgresCatalogs          map[string]*resources.PostgresCatalog          `json:"postgres_catalogs,omitempty"`
+	PostgresDatabases         map[string]*resources.PostgresDatabase         `json:"postgres_databases,omitempty"`
+	PostgresRoles             map[string]*resources.PostgresRole             `json:"postgres_roles,omitempty"`
+	PostgresSyncedTables      map[string]*resources.PostgresSyncedTable      `json:"postgres_synced_tables,omitempty"`
+	PostgresSnapshotSchedules map[string]*resources.PostgresSnapshotSchedule `json:"postgres_snapshot_schedules,omitempty"`
+	PostgresDataApis          map[string]*resources.PostgresDataApi          `json:"postgres_data_apis,omitempty"`
+	VectorSearchEndpoints     map[string]*resources.VectorSearchEndpoint     `json:"vector_search_endpoints,omitempty"`
+	VectorSearchIndexes       map[string]*resources.VectorSearchIndex        `json:"vector_search_indexes,omitempty"`
+	InstancePools             map[string]*resources.InstancePool             `json:"instance_pools,omitempty"`
+	Secrets                   map[string]*resources.Secret                   `json:"secrets,omitempty"`
+	ClusterPolicies           map[string]*resources.ClusterPolicy            `json:"cluster_policies,omitempty"`
 
 	// Internal resources
 	Snapshots map[string]*resources.Snapshot `json:"internal_immutable_snapshots,omitempty" bundle:"internal"`
@@ -62,8 +71,10 @@ type ConfigResource interface {
 	// GetName returns the in-product name of the resource.
 	GetName() string
 
-	// GetURL returns the URL of the resource.
-	GetURL() string
+	// GetURL returns the resource's workspace URL and whether this resource type
+	// has one at all. A supported type that is not deployed yet returns ("", true);
+	// a type that never has a URL returns ("", false).
+	GetURL() (string, bool)
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
@@ -107,9 +118,15 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["pipelines"], r.Pipelines),
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
+		collectResourceMap(descriptions["features"], r.Features),
+		collectResourceMap(descriptions["materialization_sets"], r.MaterializationSets),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
+		collectResourceMap(descriptions["model_services"], r.ModelServices),
+		collectResourceMap(descriptions["mcp_services"], r.McpServices),
+		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["data_quality_monitors"], r.DataQualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
@@ -131,6 +148,8 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_databases"], r.PostgresDatabases),
 		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
+		collectResourceMap(descriptions["postgres_snapshot_schedules"], r.PostgresSnapshotSchedules),
+		collectResourceMap(descriptions["postgres_data_apis"], r.PostgresDataApis),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
@@ -140,29 +159,60 @@ func (r *Resources) AllResources() []ResourceGroup {
 	}
 }
 
-// FindResourceByConfigKey searches all resource maps for a resource with the given key.
-func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
+// ResolveKey finds a resource by "key" or "type.key", e.g. "foo" or "jobs.foo", and returns it
+// together with its key. A bare key must match exactly one resource across all types.
+func (r *Resources) ResolveKey(ref string) (ConfigResource, string, error) {
+	groups := r.AllResources()
+
+	if typeName, key, ok := strings.Cut(ref, "."); ok {
+		for _, group := range groups {
+			if group.Description.PluralName != typeName {
+				continue
+			}
+			if res, ok := group.Resources[key]; ok {
+				return res, key, nil
+			}
+			break
+		}
+		return nil, "", fmt.Errorf("no such resource: %s", ref)
+	}
+
 	var found []ConfigResource
-
-	for _, group := range r.AllResources() {
-		if res, ok := group.Resources[key]; ok {
+	var matches []string
+	for _, group := range groups {
+		if res, ok := group.Resources[ref]; ok {
 			found = append(found, res)
+			matches = append(matches, group.Description.PluralName+"."+ref)
 		}
 	}
 
-	if len(found) == 0 {
-		return nil, fmt.Errorf("no such resource: %s", key)
+	switch len(found) {
+	case 0:
+		return nil, "", fmt.Errorf("no such resource: %s", ref)
+	case 1:
+		return found[0], ref, nil
+	default:
+		return nil, "", fmt.Errorf("ambiguous resource: %s (can resolve to %s); use a qualified name to disambiguate", ref, strings.Join(matches, ", "))
 	}
+}
 
-	if len(found) > 1 {
-		keys := make([]string, 0, len(found))
-		for _, r := range found {
-			keys = append(keys, fmt.Sprintf("%s.%s", r.ResourceDescription().PluralName, key))
+// ResolveDependsOn returns the key of the node that a lifecycle.depends_on entry refers to:
+// "resources.jobs.foo" for "foo" or "jobs.foo", and "resources.schemas.foo.grants" for the
+// grants or permissions of a qualified key, as "schemas.foo.grants".
+func (r *Resources) ResolveDependsOn(ref string) (string, error) {
+	resourceRef, sub := ref, ""
+	if parts := strings.Split(ref, "."); len(parts) == 3 {
+		if _, ok := ResourcesTypes()[parts[0]+"."+parts[2]]; !ok {
+			return "", fmt.Errorf("no such resource: %s", ref)
 		}
-		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
+		resourceRef, sub = parts[0]+"."+parts[1], "."+parts[2]
 	}
 
-	return found[0], nil
+	res, key, err := r.ResolveKey(resourceRef)
+	if err != nil {
+		return "", err
+	}
+	return "resources." + res.ResourceDescription().PluralName + "." + key + sub, nil
 }
 
 func (r *Resources) HasInternalResources() bool {
@@ -177,10 +227,16 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"pipelines":                    (&resources.Pipeline{}).ResourceDescription(),
 		"models":                       (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
+		"features":                     (&resources.Feature{}).ResourceDescription(),
+		"materialization_sets":         (&resources.MaterializationSet{}).ResourceDescription(),
 		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
+		"model_services":               (&resources.ModelService{}).ResourceDescription(),
+		"mcp_services":                 (&resources.McpService{}).ResourceDescription(),
+		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
 		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
+		"data_quality_monitors":        (&resources.DataQualityMonitor{}).ResourceDescription(),
 		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                      (&resources.Schema{}).ResourceDescription(),
 		"external_locations":           (&resources.ExternalLocation{}).ResourceDescription(),
@@ -202,6 +258,8 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_databases":           (&resources.PostgresDatabase{}).ResourceDescription(),
 		"postgres_roles":               (&resources.PostgresRole{}).ResourceDescription(),
 		"postgres_synced_tables":       (&resources.PostgresSyncedTable{}).ResourceDescription(),
+		"postgres_snapshot_schedules":  (&resources.PostgresSnapshotSchedule{}).ResourceDescription(),
+		"postgres_data_apis":           (&resources.PostgresDataApi{}).ResourceDescription(),
 		"vector_search_endpoints":      (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),

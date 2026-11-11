@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle deploy
+Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: invalid character 'h' in literal true (expecting 'r')
+
+
+Exit code: 1

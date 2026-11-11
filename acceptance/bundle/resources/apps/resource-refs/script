@@ -1,4 +1,5 @@
 trace $CLI bundle deploy
+read_id.py example_job > /dev/null
 trace $CLI bundle run data_app
 # The create body diverges by engine: the direct engine sends source_code_path, the
 # Terraform provider cannot manage it (input_only), so record requests per engine.

@@ -3,16 +3,20 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
+	"strings"
 
+	"github.com/databricks/cli/libs/clusterpolicy"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // policyFamilyDefinition mimics the real backend: a policy created from a policy
 // family has its definition computed from the family and returned on read, even
 // though the config never sets definition. One fixed key is enough to reproduce a
 // non-empty server-computed definition so tests exercise the backend_defaults
-// suppression for definition (see resources.yml cluster_policies).
+// suppression for definition (see cluster_policies.yml).
 func policyFamilyDefinition(familyID string) string {
 	return fmt.Sprintf(`{"policy_family":{"type":"fixed","value":%q}}`, familyID)
 }
@@ -122,4 +126,143 @@ func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
 	delete(s.ClusterPolicies, request.PolicyId)
 
 	return Response{}
+}
+
+// applyClusterPolicy fills in attributes the request omitted from the policy attached via
+// policyID. It returns the backend's validation message when a supplied value contradicts a
+// "fixed" element, or "" when the spec is acceptable; callers must hold the workspace lock and
+// surface a non-empty message as a 400.
+//
+// spec is a pointer to any struct with cluster-spec JSON tags (compute.ClusterDetails or
+// compute.ClusterSpec); the policy's attribute paths are applied against its JSON shape so
+// one implementation covers both.
+func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefaults bool) string {
+	if policyID == "" {
+		return ""
+	}
+	policy, ok := s.ClusterPolicies[policyID]
+	if !ok {
+		return ""
+	}
+	definition, err := clusterpolicy.ParseDefinition(policy.Definition)
+	if err != nil || len(definition) == 0 {
+		return ""
+	}
+
+	// spec came from a successful decode of the request, so re-encoding it cannot fail.
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		return ""
+	}
+	// doc is only read, to test whether an attribute is already present; the spec itself is
+	// updated from patch below, so decoded numbers are never written back.
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return ""
+	}
+
+	// Collect only the attributes the request omitted, then unmarshal just those back onto
+	// the spec. Unmarshaling the whole document instead would rebuild ForceSendFields from
+	// every key present, which makes fields the backend omits (e.g. the Jobs API dropping
+	// apply_policy_default_values) serialize as explicit zeros.
+	patch := map[string]any{}
+	for _, path := range slices.Sorted(maps.Keys(definition)) {
+		element := definition[path]
+		value := element.EffectiveValue(applyDefaults)
+		if value == nil {
+			continue
+		}
+		segments := strings.Split(path, ".")
+		if existing, ok := lookup(doc, segments); ok {
+			// A "fixed" element enforces its value as well as supplying it; anything else
+			// only supplies a default, which the request is free to override.
+			if element.Type == "fixed" && !clusterpolicy.ValueEquals(value, existing) {
+				// Message shape copied from the real backend for a nested attribute
+				// ("custom_tags, CostCenter must be ..."); the wording for a top-level
+				// attribute has not been observed, so it is only approximated here.
+				return fmt.Sprintf("Cluster validation error: Validation failed for %s must be %v (is %q)",
+					strings.Join(segments, ", "), value, existing)
+			}
+			continue
+		}
+		setPatch(patch, segments, value)
+	}
+	if len(patch) == 0 {
+		return ""
+	}
+
+	if raw, err = json.Marshal(patch); err == nil {
+		_ = json.Unmarshal(raw, spec)
+	}
+	return ""
+}
+
+// lookup returns the value at the given key path in doc.
+func lookup(doc map[string]any, path []string) (any, bool) {
+	for _, key := range path[:len(path)-1] {
+		child, ok := doc[key].(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		doc = child
+	}
+	value, ok := doc[path[len(path)-1]]
+	return value, ok
+}
+
+// setPatch records value in patch at the given key path, creating intermediate maps.
+func setPatch(patch map[string]any, path []string, value any) {
+	for _, key := range path[:len(path)-1] {
+		next, ok := patch[key].(map[string]any)
+		if !ok {
+			next = map[string]any{}
+			patch[key] = next
+		}
+		patch = next
+	}
+	patch[path[len(path)-1]] = value
+}
+
+// applyPolicyDefaultValues reads apply_policy_default_values from a raw cluster request body.
+// compute.ClusterDetails has no such field, so it cannot be read off the decoded request.
+func applyPolicyDefaultValues(body []byte) bool {
+	var spec compute.ClusterSpec
+	if err := json.Unmarshal(body, &spec); err != nil {
+		return false
+	}
+	return spec.ApplyPolicyDefaultValues
+}
+
+// applyJobClusterPolicies applies attached cluster policies to every cluster spec a job can
+// carry. Callers must hold the workspace lock.
+//
+// The Pipelines API does not expand cluster policies into the stored spec: a pipeline cluster
+// with a policy_id reads back exactly as authored, verified against a real workspace by
+// acceptance/bundle/resources/pipelines/cluster_policy. So there is
+// deliberately no pipeline equivalent.
+func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) string {
+	for i := range settings.JobClusters {
+		if msg := s.applyClusterSpecPolicy(settings.JobClusters[i].NewCluster); msg != "" {
+			return msg
+		}
+	}
+	for i := range settings.Tasks {
+		task := &settings.Tasks[i]
+		if msg := s.applyClusterSpecPolicy(task.NewCluster); msg != "" {
+			return msg
+		}
+		if task.ForEachTask != nil {
+			if msg := s.applyClusterSpecPolicy(task.ForEachTask.Task.NewCluster); msg != "" {
+				return msg
+			}
+		}
+	}
+	return ""
+}
+
+func (s *FakeWorkspace) applyClusterSpecPolicy(spec *compute.ClusterSpec) string {
+	if spec == nil {
+		return ""
+	}
+	return s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues)
 }

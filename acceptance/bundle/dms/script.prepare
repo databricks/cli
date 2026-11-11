@@ -1,0 +1,13 @@
+# dms_plan prints the plan's header only (via jq del(.plan)), then the readable plan.
+# The per-resource plan body carries remote_state that diverges between the fake and a
+# real workspace, so the recording tests assert the header fields (cli_version, lineage,
+# serial, deployment_id, next/last_version_id, features) and the human-readable
+# summary instead of the full JSON. Pass through any flags, e.g. `dms_plan -t prod`.
+dms_plan() {
+    trace $CLI bundle plan "$@" -o json | jq 'del(.plan)'
+    trace $CLI bundle plan "$@"
+}
+
+deployment_history_telemetry() {
+    jq -r 'select(.path? == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "deployment_history_enabled") | "\(.key) \(.value)"' "$OUT_REQUESTS"
+}

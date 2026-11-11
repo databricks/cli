@@ -1,10 +1,10 @@
 cleanup() {
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 title "Zero cap: the create wait is skipped entirely"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 $CLI bundle deploy
 
 # Only the create POST is recorded. No GET means the cluster was left PENDING: the
@@ -15,7 +15,7 @@ trace print_requests.py --get --unique --oneline --del-field body,q //clusters
 trace $CLI bundle destroy --auto-approve
 
 title "No cap: the deployment polls until the cluster is RUNNING"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 trace print_requests.py --get --unique --oneline --del-field body,q //clusters

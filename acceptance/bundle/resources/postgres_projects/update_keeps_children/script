@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Initial deployment (project + branch + role)"
+trace $CLI bundle deploy
+
+# ES-2202624: an in-place project update (display_name only) must leave the
+# branch and role — which reference the project/branch .name as their immutable
+# parent — unchanged, not recreated.
+title "In-place project update must not recreate the branch or role"
+trace update_file.py databricks.yml "Original Name" "Updated Name"
+trace $CLI bundle plan
+trace $CLI bundle deploy

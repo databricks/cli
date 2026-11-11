@@ -10,7 +10,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -29,22 +29,22 @@ echo "$DASHBOARD" | jq '{lifecycle_state, parent_path, path}'
 echo "$DASHBOARD" | jq '.serialized_dashboard | fromjson | .datasets[] | {catalog, schema}'
 
 # Verify that there is no drift right after deploy.
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Save raw plan (with DMS headers), then apply nostamp for golden file
+trace $CLI bundle plan -o json > plan_raw.json
+cat plan_raw.json | nostamp > out.plan.json
 
-# Modify the direct plan to replace "serialized_dashboard" with a fixture.
+# Modify the plan to replace "serialized_dashboard" with a fixture.
 # It is normalized on the backend so we cannot compare reliably across local and cloud.
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    jq '.plan["resources.dashboards.dashboard1"].remote_state.serialized_dashboard |=
-       if . then "[SERIALIZED_FIXTURE]" else . end' \
-       out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
-    jq '.plan["resources.dashboards.dashboard1"].changes.serialized_dashboard |=
-       if . then {"action": .action, "old": "[SERIALIZED_FIXTURE_OLD]", "new": "[SERIALIZED_FIXTURE_NEW]"} else . end' \
-       out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
-fi
+jq '.plan["resources.dashboards.dashboard1"].remote_state.serialized_dashboard |=
+   if . then "[SERIALIZED_FIXTURE]" else . end' \
+   out.plan.json > out.plan.json.tmp && mv out.plan.json.tmp out.plan.json
+jq '.plan["resources.dashboards.dashboard1"].changes.serialized_dashboard |=
+   if . then {"action": .action, "old": "[SERIALIZED_FIXTURE_OLD]", "new": "[SERIALIZED_FIXTURE_NEW]"} else . end' \
+   out.plan.json > out.plan.json.tmp && mv out.plan.json.tmp out.plan.json
 
 # Print API requests made to create the dashboard.
 # This verifies that dataset_catalog and dataset_schema are passed to the API.
-cat out.requests.txt | \
+cat "$OUT_REQUESTS" | \
  jq 'select(.method == "POST")' | \
  jq 'select(.path | contains("/api/2.0/lakeview/dashboards"))' | \
  jq 'select(.path | contains("/published") | not)' \

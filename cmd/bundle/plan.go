@@ -58,7 +58,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			},
 		}
 
-		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
+		b, _, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				return root.ErrAlreadyPrinted
 			}
 		}
-		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
+		plan := phases.RunPlan(ctx, b)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
@@ -87,6 +87,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					if action.ActionType == deployplan.Skip {
+						continue
+					}
+					// A state-only delete has no backend effect; keep it in the JSON
+					// plan but omit it from the human-readable action list.
+					if action.IsStateOnlyDelete() {
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")

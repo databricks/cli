@@ -14,6 +14,26 @@ def parse_key_values(text):
 
     >>> parse_key_values("wall=10.316  ru_utime=19.207  ru_stime=0.505  ru_maxrss=573079552")
     {'wall': 10.316, 'ru_utime': 19.207, 'ru_stime': 0.505, 'ru_maxrss': 573079552.0}
+
+    Empty string returns empty dict:
+
+    >>> parse_key_values("")
+    {}
+
+    Single pair:
+
+    >>> parse_key_values("key=42")
+    {'key': 42.0}
+
+    Non-numeric values are kept as strings:
+
+    >>> parse_key_values("name=test  count=5")
+    {'name': 'test', 'count': 5.0}
+
+    Pairs without equals sign are skipped:
+
+    >>> parse_key_values("valid=1  invalid  also_valid=2")
+    {'valid': 1.0, 'also_valid': 2.0}
     """
     result = {}
     for kv_pair in text.split():
@@ -53,7 +73,24 @@ def parse_bench_output(file_path):
 
 
 def calculate_means(results):
-    """Calculate mean values for each metric."""
+    """Calculate mean values for each metric.
+
+    >>> calculate_means({"test1": {"wall": [10, 20]}})
+    {'test1': {'wall': 15}}
+
+    >>> calculate_means({"test1": {"wall": [1.5, 2.5, 3.0]}})  # doctest: +ELLIPSIS
+    {'test1': {'wall': 2.33...}}
+
+    Multiple tests and metrics:
+
+    >>> sorted(calculate_means({"t1": {"m1": [2, 4], "m2": [100]}, "t2": {"m1": [3]}}).items())
+    [('t1', {'m1': 3, 'm2': 100}), ('t2', {'m1': 3})]
+
+    Empty metrics list returns zero:
+
+    >>> calculate_means({"test": {"metric": []}})
+    {'test': {'metric': 0}}
+    """
     means = {}
     for test_name, metrics in results.items():
         means[test_name] = {metric: statistics.mean(values) if values else 0 for metric, values in metrics.items()}

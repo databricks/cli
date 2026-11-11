@@ -1,0 +1,6 @@
+# With standard cluster compute, default-scala renders classic-cluster job and
+# README content instead of their serverless variants. Compare the complete output
+# without committing a duplicate golden tree.
+trace $CLI bundle init default-scala --config-file ./input.json --output-dir actual
+mv actual/my_default_scala/.gitignore actual/my_default_scala/out.gitignore
+trace diff.py $TESTDIR/../default-scala/output actual

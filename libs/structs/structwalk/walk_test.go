@@ -1,7 +1,9 @@
 package structwalk
 
 import (
+	"encoding/json"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -144,11 +146,9 @@ func TestEmbeddedStruct(t *testing.T) {
 	}
 
 	parent := Parent{
-		Embedded: Embedded{
-			EmbeddedField: "embedded_value",
-			EmbeddedInt:   42,
-		},
-		ParentField: "parent_value",
+		EmbeddedField: "embedded_value",
+		EmbeddedInt:   42,
+		ParentField:   "parent_value",
 	}
 
 	result := flatten(t, parent)
@@ -177,12 +177,8 @@ func TestNestedEmbeddedStructs(t *testing.T) {
 	}
 
 	obj := Level3{
-		Level2: Level2{
-			Level1: Level1{
-				Field1: "one",
-			},
-			Field2: "two",
-		},
+		Field1: "one",
+		Field2: "two",
 		Field3: "three",
 	}
 
@@ -264,15 +260,80 @@ func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 	}
 
 	parent := Parent{
-		Embedded: Embedded{
-			SkipField:    "should_not_appear",
-			IncludeField: "should_appear",
-		},
-		ParentField: "parent",
+		SkipField:    "should_not_appear",
+		IncludeField: "should_appear",
+		ParentField:  "parent",
 	}
 
 	assert.Equal(t, map[string]any{
 		"included":     "should_appear",
 		"parent_field": "parent",
 	}, flatten(t, parent))
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object under that name rather than being flattened into the outer one. A field whose
+// tag sets only an option, leaving the name empty, is still flattened.
+type WalkEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type walkTaggedEmbed struct {
+	WalkEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+type walkOptionOnlyEmbed struct {
+	WalkEmbedLeaf `json:",omitempty"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestWalkTaggedEmbedIsANamedField(t *testing.T) {
+	value := &walkTaggedEmbed{Value: "v", Own: "o"}
+
+	blob, err := json.Marshal(value)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"v"},"own":"o"}`, string(blob))
+
+	assert.Equal(t, []string{"leaf.value", "own"}, walkPaths(t, value))
+}
+
+func TestWalkOptionOnlyEmbedIsStillFlattened(t *testing.T) {
+	value := &walkOptionOnlyEmbed{Value: "v", Own: "o"}
+
+	blob, err := json.Marshal(value)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"v","own":"o"}`, string(blob))
+
+	assert.Equal(t, []string{"own", "value"}, walkPaths(t, value))
+}
+
+// walkPaths returns the sorted paths Walk visits for v.
+func walkPaths(t *testing.T, value any) []string {
+	t.Helper()
+	var paths []string
+	require.NoError(t, Walk(value, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
+		paths = append(paths, path.String())
+	}))
+	slices.Sort(paths)
+	return paths
+}
+
+type PromotedInner struct {
+	A               string   `json:"a,omitempty"`
+	ForceSendFields []string `json:"-"`
+}
+
+type promotedOuter struct {
+	PromotedInner
+	Own string `json:"own,omitempty"`
+}
+
+// The embedded struct's ForceSendFields does not force the outer struct's own fields;
+// the SDK marshaller would reject a name its struct does not have.
+func TestEmbeddedForceSendFieldsDoNotApplyToOuterFields(t *testing.T) {
+	v := promotedOuter{ForceSendFields: []string{"A", "Own"}}
+	assert.Equal(t, map[string]any{"a": ""}, flatten(t, v))
 }

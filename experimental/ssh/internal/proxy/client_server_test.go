@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,27 +34,36 @@ func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration)
 }
 
 type testClient struct {
-	InputWriter io.WriteCloser
+	InputWriter *io.PipeWriter
 	Output      *testBuffer
-	Cleanup     func()
+	// Done is closed when RunClientProxy returns.
+	Done    <-chan struct{}
+	Cleanup func()
 }
 
 func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, errChan chan error) *testClient {
-	ctx := cmdio.MockDiscard(t.Context())
-	clientInput, clientInputWriter := io.Pipe()
-	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		url := fmt.Sprintf("%s?id=%s", wsURL, connID)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
 		return conn, err
 	}
+	return createTestClientWithDialer(t, createConn, requestHandoverTick, keepaliveInterval, false, errChan)
+}
+
+// createTestClientWithDialer is createTestClient with the websocket dialer supplied by the caller,
+// so a test can control which dials succeed - the initial connection's or a handover's.
+func createTestClientWithDialer(t *testing.T, createConn createWebsocketConnectionFunc, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, resumable bool, errChan chan error) *testClient {
+	ctx := cmdio.MockDiscard(t.Context())
+	clientInput, clientInputWriter := io.Pipe()
+	clientOutput := newTestBuffer(t)
 	if requestHandoverTick == nil {
 		requestHandoverTick = neverTick
 	}
-	wg := sync.WaitGroup{}
-	wg.Go(func() {
-		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, keepaliveInterval, createConn)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, keepaliveInterval, resumable, createConn)
 		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			if errChan != nil {
 				errChan <- err
@@ -61,14 +71,15 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 				t.Errorf("client error: %v", err)
 			}
 		}
-	})
+	}()
 	return &testClient{
 		InputWriter: clientInputWriter,
 		Output:      clientOutput,
+		Done:        done,
 		Cleanup: func() {
 			clientInput.Close()
 			clientInputWriter.Close()
-			wg.Wait()
+			<-done
 		},
 	}
 }
@@ -241,6 +252,235 @@ func TestQuickHandover(t *testing.T) {
 	assert.Equal(t, string(expectedOutput), client.Output.String())
 }
 
+// A handover that fails while dialing its replacement connection must not end the session: the
+// connection it was meant to replace is still live and carrying traffic. Until this was handled,
+// a single transient dial failure - a token refresh, a DNS blip, a proxy stumble - dropped an
+// otherwise healthy session once every handover interval.
+func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	var dials atomic.Int32
+	// Signalled the instant a handover dial is attempted (and made to fail). initiateHandover
+	// already holds handoverMutex by the time it dials, so a receive here proves the handover
+	// goroutine has entered the dial and taken the mutex. Buffered and sent non-blockingly so the
+	// dialer never stalls on it even if more dials than expected occur.
+	handoverDialAttempted := make(chan struct{}, 1)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		// Let the initial connection through and fail every handover dial after it.
+		if dials.Add(1) > 1 {
+			select {
+			case handoverDialAttempted <- struct{}{}:
+			default:
+			}
+			return nil, errors.New("simulated transient dial failure")
+		}
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		return conn, err
+	}
+
+	handoverChan := make(chan time.Time)
+	errChan := make(chan error, 1)
+	client := createTestClientWithDialer(t, createConn, func() <-chan time.Time {
+		return handoverChan
+	}, time.Hour, false, errChan)
+	defer client.Cleanup()
+
+	beforeMsg := []byte("before handover\n")
+	_, err := client.InputWriter.Write(beforeMsg)
+	require.NoError(t, err)
+	require.NoError(t, client.Output.AssertWrite(beforeMsg))
+
+	handoverChan <- time.Now()
+
+	// Completing the tick send only proves the handover goroutine received the tick; it does not
+	// prove it acquired handoverMutex and reached the dial. Wait for the dial to actually be
+	// attempted before sending more traffic - otherwise the payload below can traverse the
+	// original connection before the handover even starts, which is the macOS "dials == 1" flake.
+	select {
+	case <-handoverDialAttempted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the handover never attempted its replacement dial")
+	}
+
+	// The original connection must still be proxying both ways. sendMessage blocks on the
+	// handover mutex, so this write cannot overtake the failed handover.
+	afterMsg := []byte("after failed handover\n")
+	_, err = client.InputWriter.Write(afterMsg)
+	require.NoError(t, err)
+	require.NoError(t, client.Output.AssertWrite(afterMsg))
+
+	select {
+	case err := <-errChan:
+		t.Fatalf("session ended after a failed handover dial: %v", err)
+	default:
+	}
+	assert.Equal(t, int32(2), dials.Load(), "expected the initial dial plus exactly one handover dial")
+}
+
+// A failed dial never touches the live connection, whatever error it returns, so the handover loop
+// must check for it before it treats context.Canceled as the session ending. Later ticks must still
+// hand over.
+func TestHandoverDialCanceledKeepsHandingOver(t *testing.T) {
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	var dials atomic.Int32
+	handoverDialed := make(chan struct{}, 2)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		n := dials.Add(1)
+		if n > 1 {
+			handoverDialed <- struct{}{}
+		}
+		if n == 2 {
+			return nil, context.Canceled
+		}
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		return conn, err
+	}
+
+	handoverChan := make(chan time.Time)
+	client := createTestClientWithDialer(t, createConn, func() <-chan time.Time {
+		return handoverChan
+	}, time.Hour, false, nil)
+	defer client.Cleanup()
+
+	for i := range 2 {
+		select {
+		case handoverChan <- time.Now():
+		case <-time.After(10 * time.Second):
+			t.Fatalf("handover %d was never started: the handover loop has stopped", i+1)
+		}
+		// The tick only proves the loop received it. Wait for the dial, which runs under the
+		// handover mutex, so the write below cannot overtake the handover.
+		select {
+		case <-handoverDialed:
+		case <-time.After(10 * time.Second):
+			t.Fatalf("handover %d never dialed", i+1)
+		}
+		// sendMessage waits for the handover mutex, so this round trip also waits out the handover.
+		msg := fmt.Appendf(nil, "after handover %d\n", i+1)
+		_, err := client.InputWriter.Write(msg)
+		require.NoError(t, err)
+		require.NoError(t, client.Output.AssertWrite(msg))
+	}
+	assert.Equal(t, int32(3), dials.Load(), "expected the initial dial plus two handover dials")
+}
+
+// rawDrainServer accepts a websocket and reads its raw bytes without processing any frame, so it never
+// answers anything, not even a close frame.
+func rawDrainServer(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_, _ = io.Copy(io.Discard, conn.NetConn())
+	}))
+}
+
+// A session that ends while a handover is still waiting for the old connection to close must end
+// with the session's own outcome, not ErrHandoverFailed, and must not start another handover.
+func TestSessionEndDuringHandover(t *testing.T) {
+	errSourceFailed := errors.New("source failed")
+	tests := []struct {
+		name       string
+		resumable  bool
+		endSession func(w *io.PipeWriter)
+		wantErr    error
+	}{
+		{
+			name:       "clean exit",
+			endSession: func(w *io.PipeWriter) { w.Close() },
+		},
+		{
+			name:       "source error",
+			endSession: func(w *io.PipeWriter) { w.CloseWithError(errSourceFailed) },
+			wantErr:    errSourceFailed,
+		},
+		{
+			name:       "resumable clean exit",
+			resumable:  true,
+			endSession: func(w *io.PipeWriter) { w.Close() },
+		},
+		{
+			name:       "resumable source error",
+			resumable:  true,
+			endSession: func(w *io.PipeWriter) { w.CloseWithError(errSourceFailed) },
+			wantErr:    errSourceFailed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Both connections land on a server that never answers, so nobody closes the old
+			// connection and the handover stays in progress until the session ends. It does not
+			// even echo the close frame of the client's teardown: an echo that arrived before
+			// teardown closed the socket would complete the swap instead.
+			server := rawDrainServer(t)
+			defer server.Close()
+
+			wsURL := "ws" + server.URL[4:]
+			var dials atomic.Int32
+			handoverDialed := make(chan struct{}, 1)
+			createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+				isHandover := dials.Add(1) > 1
+				conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil) // nolint:bodyclose
+				// Only a successful dial leaves the handover in progress.
+				if isHandover && err == nil {
+					select {
+					case handoverDialed <- struct{}{}:
+					default:
+					}
+				}
+				return conn, err
+			}
+
+			// The second tick waits in the channel while the first handover is in progress, so a
+			// handover loop that keeps going after the session ended dials again.
+			ticks := make(chan time.Time, 2)
+			ticks <- time.Now()
+			ticks <- time.Now()
+			errChan := make(chan error, 1)
+			client := createTestClientWithDialer(t, createConn, func() <-chan time.Time {
+				return ticks
+			}, time.Hour, tt.resumable, errChan)
+			defer client.Cleanup()
+
+			select {
+			case <-handoverDialed:
+			case <-time.After(10 * time.Second):
+				t.Fatal("the handover never dialed its replacement connection")
+			}
+
+			// Wait for the session to end before Cleanup closes the reader too: a read that
+			// wakes up after that returns io.ErrClosedPipe instead of what endSession set.
+			tt.endSession(client.InputWriter)
+			select {
+			case <-client.Done:
+			case <-time.After(10 * time.Second):
+				t.Fatal("the session did not end")
+			}
+			var sessionErr error
+			select {
+			case sessionErr = <-errChan:
+			default:
+			}
+			assert.Equal(t, int32(2), dials.Load(), "expected no handover after the session ended")
+			if tt.wantErr == nil {
+				assert.NoError(t, sessionErr)
+				return
+			}
+			assert.ErrorIs(t, sessionErr, tt.wantErr)
+			assert.NotErrorIs(t, sessionErr, ErrHandoverFailed)
+		})
+	}
+}
+
 // TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
 // websocket but can't launch its command, so it closes the connection immediately. The client
 // proxy must exit promptly instead of hanging on the handover goroutine (which would leave the
@@ -255,8 +495,8 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
 		return conn, err
 	}
 	// Source is never closed by the test; only the server-side close must drive the client to exit.
@@ -265,7 +505,7 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, false, createConn)
 	}()
 
 	select {
@@ -303,8 +543,8 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
 		return conn, err
 	}
 	src, _ := io.Pipe()
@@ -312,7 +552,7 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, false, createConn)
 	}()
 
 	select {

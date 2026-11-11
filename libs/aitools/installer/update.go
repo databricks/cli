@@ -86,7 +86,8 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, errors.New("no skills or plugins installed. Run 'databricks aitools install' to install")
 	}
 
-	latestTag, explicit, err := GetSkillsRef(ctx)
+	installedRef, allowFallback := installedSkillsRelease(state)
+	latestTag, explicit, err := getSkillsRef(ctx, allowFallback)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +100,15 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
-	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, !explicit)
+	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)
 			return &UpdateResult{}, nil
 		}
+		return nil, err
+	}
+	if err := checkSkillsDowngrade(installedRef, latestTag, explicit); err != nil {
 		return nil, err
 	}
 

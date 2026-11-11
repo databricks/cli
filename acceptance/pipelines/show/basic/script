@@ -4,8 +4,11 @@ trace $CLI pipelines show main.default.people
 title "json output\n"
 trace $CLI pipelines show main.default.people --output json
 
+title "explicit limit does not show a hint\n"
+trace $CLI pipelines show main.default.people --limit 9
+
 title "invalid table name\n"
 musterr trace $CLI pipelines show people
 
-title "wire SQL pins quoting and default limit\n"
+title "wire SQL pins quoting and limits\n"
 trace print_requests.py //api/2.0/sql/statements

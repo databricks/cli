@@ -1,0 +1,41 @@
+
+=== Initial deployment (project + branch + role)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-keeps-children-[UNIQUE_NAME]/default/files...
+Created postgres_branches.my_branch
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== In-place project update must not recreate the branch or role
+>>> update_file.py databricks.yml Original Name Updated Name
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-keeps-children-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.my_branch
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.my_branch
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-keeps-children-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

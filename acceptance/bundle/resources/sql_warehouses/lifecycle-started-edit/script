@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -11,7 +11,7 @@ trace errcode $CLI bundle deploy
 WAREHOUSE_ID=$($CLI bundle summary -o json | jq -r '.resources.sql_warehouses.mywarehouse.id')
 add_repl "$WAREHOUSE_ID" "WAREHOUSE_ID"
 trace print_requests.py //sql/warehouses
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 { trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
 
 # Editing a warehouse restarts it: Edit's long-running op waits for RUNNING
@@ -21,5 +21,5 @@ title "Edit a field with started=false: Edit restarts the warehouse, so a Stop m
 trace update_file.py databricks.yml "auto_stop_mins: 10" "auto_stop_mins: 20"
 trace errcode $CLI bundle deploy
 trace print_requests.py //sql/warehouses
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 { trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true

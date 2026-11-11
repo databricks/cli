@@ -1,11 +1,5 @@
 Cloud = true
 
-# Lakebase v2 (postgres) is only available in AWS as of January 2026
-CloudEnvs.gcp = false
-CloudEnvs.azure = false
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
-
 Ignore = [
     "databricks.yml",
     ".databricks",
@@ -13,7 +7,7 @@ Ignore = [
 
 [[Repls]]
 # Clean up ?[ow]=<num> suffix after URL since not all workspaces have that
-Old = '\?[ow]=\[(NUMID|ALPHANUMID)\]'
+Old = '\?[ow]=\[(WORKSPACE_ID|ALPHANUMID)\]'
 New = ''
 Order = 1000
 

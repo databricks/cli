@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,10 +18,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -44,6 +48,8 @@ type ServerOptions struct {
 	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
 	// can tell which usage policy the running server was started under.
 	UsagePolicyID string
+	// KeepDetachedProcesses prevents idle shutdown while detached processes are running.
+	KeepDetachedProcesses bool
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -62,6 +68,10 @@ type ServerOptions struct {
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
 	ctx, logBuf := captureWarnLogs(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	startFuseRegistration(ctx, client, opts.Serverless)
 
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {
@@ -71,13 +81,20 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
 	log.Info(ctx, "Starting server on "+listenAddr)
 
+	// Resolved once and shared by the metadata write and the agent launchers.
+	wsHome, err := workspace.GetWorkspaceHomeDir(ctx, client)
+	if err != nil {
+		return fmt.Errorf("failed to resolve the workspace home directory: %w", err)
+	}
+
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
-		Port:          port,
-		ClusterID:     opts.ClusterID,
-		UsagePolicyID: opts.UsagePolicyID,
+		Port:                  port,
+		ClusterID:             opts.ClusterID,
+		UsagePolicyID:         opts.UsagePolicyID,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
 	}
-	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
+	err = workspace.SaveWorkspaceMetadata(ctx, client, wsHome, opts.Version, opts.SessionID, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
@@ -100,6 +117,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		log.Warnf(ctx, "Failed to seed environment activation, bare python/pip may resolve to the wrong interpreter in interactive sessions: %v", err)
 	}
 
+	// Best-effort for the same reason as seedEnvActivation: the tunnel works without them.
+	if err := installAgentLaunchers(ctx, wsHome); err != nil {
+		log.Warnf(ctx, "Failed to install agent launchers, the affected agents won't be available in SSH sessions: %v", err)
+	}
+
 	createServerCommand := func(ctx context.Context) *exec.Cmd {
 		return createSSHDProcess(ctx, sshdConfigPath)
 	}
@@ -107,18 +129,83 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
 	http.HandleFunc("/logs", logBuf.serveHTTP)
+	http.HandleFunc("/capabilities", serveCapabilities)
 
 	http.Handle("/driver-proxy-http/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/driver-proxy-http/metadata", serveMetadata)
 	http.HandleFunc("/driver-proxy-http/logs", logBuf.serveHTTP)
+	http.HandleFunc("/driver-proxy-http/capabilities", serveCapabilities)
 
-	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
+	listenErr := make(chan error, 1)
+	go func() {
+		listenErr <- http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
+			r.URL.Path = path.Clean(r.URL.Path)
+			http.DefaultServeMux.ServeHTTP(w, r)
+		}))
+	}()
 
-	return http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
-		r.URL.Path = path.Clean(r.URL.Path)
-		http.DefaultServeMux.ServeHTTP(w, r)
-	}))
+	idleErr := make(chan error, 1)
+	go func() {
+		idleErr <- waitForIdleShutdown(ctx, connections, opts.KeepDetachedProcesses, procRoot, os.Getpid())
+	}()
+
+	select {
+	case err := <-listenErr:
+		return err
+	case err := <-idleErr:
+		if err != nil {
+			return err
+		}
+		// Return rather than exiting in place, so the notebook that started us gets to run
+		// its teardown and this process reports the shutdown through the CLI's normal path.
+		log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", opts.ShutdownDelay))
+		reportDetachedDescendants(ctx, opts, procRoot, os.Getpid())
+		return nil
+	}
+}
+
+// reportDetachedDescendants records what the session leaves behind when the server shuts
+// down. Only the server can see this: the client that started the session is long gone by
+// the time the idle timer fires, and the notebook's teardown runs after this process exits.
+func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root string, selfPid int) {
+	pids, err := detachedDescendants(root, selfPid)
+	if err != nil {
+		log.Debugf(ctx, "Failed to look for detached processes: %v", err)
+		return
+	}
+
+	// Warning, not info: without --keep-detached-processes these processes do not outlive the
+	// run, and until now they vanished with no explanation anywhere. The client reads this
+	// back through /logs.
+	if len(pids) > 0 && !opts.KeepDetachedProcesses {
+		log.Warnf(ctx, "Shutting down with %d detached process(es) still running (pids %s). "+
+			"They do not survive the end of this run. To keep them, reconnect with "+
+			"\"databricks ssh connect --keep-detached-processes\", which keeps the SSH server running while they run.",
+			len(pids), formatPids(pids))
+	}
+
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.Serverless {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelTeardownEvent: &protos.SshTunnelTeardownEvent{
+			ComputeType:                      computeType,
+			KeepDetachedRequested:            opts.KeepDetachedProcesses,
+			HadDetachedDescendantsAtTeardown: len(pids) > 0,
+		},
+	})
+}
+
+// serveCapabilities tells the client which optional parts of the tunnel protocol this server
+// speaks. A server from an older CLI has no such route and returns 404, which the client reads as
+// "none of them" - the negotiation this endpoint exists for.
+func serveCapabilities(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]int{proxy.ResumeVersionParameter: proxy.ResumeProtocolVersion}); err != nil {
+		http.Error(w, "Failed to write capabilities", http.StatusInternalServerError)
+	}
 }
 
 func serveMetadata(w http.ResponseWriter, r *http.Request) {
@@ -131,12 +218,6 @@ func serveMetadata(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to write current user", http.StatusInternalServerError)
 	}
-}
-
-func handleTimeout(ctx context.Context, timedOutChannel chan bool, shutdownDelay time.Duration) {
-	<-timedOutChannel
-	log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", shutdownDelay))
-	os.Exit(0)
 }
 
 func findAvailablePort(startPort, maxAttempts int) (int, error) {
@@ -223,4 +304,15 @@ func seedEnvActivation(ctx context.Context) error {
 
 	log.Info(ctx, "Seeded environment activation in "+bashrcPath)
 	return nil
+}
+
+// installAgentLaunchers writes the agent launchers under $HOME; prepareSSHDConfig
+// puts them on PATH for every session. The launchers run the agent shim from the
+// same uploaded CLI binary this server runs from.
+func installAgentLaunchers(ctx context.Context, wsHome string) error {
+	binary, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to resolve the CLI binary: %w", err)
+	}
+	return agentlauncher.Install(ctx, binary, wsHome)
 }

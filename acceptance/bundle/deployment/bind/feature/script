@@ -1,0 +1,5 @@
+trace $CLI bundle deployment bind feature1 main.myschema.boundfeature --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind feature1
+trace $CLI bundle summary

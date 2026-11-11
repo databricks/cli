@@ -3,5 +3,6 @@
 
 [existing-profile]
 host         = [DATABRICKS_URL]
-workspace_id = [NUMID]
 auth_type    = databricks-cli
+workspace_id = [WORKSPACE_ID]
+client_id    = flag-client-id

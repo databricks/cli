@@ -1,0 +1,5 @@
+Env.DATABRICKS_BUNDLE_INIT_DEPLOYMENT_HISTORY = "true"
+
+# What is under test is what `bundle init` writes, so one engine is enough.
+
+EnvMatrix.DMS = ["true"]

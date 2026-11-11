@@ -35,6 +35,32 @@ func TestIsCompatible(t *testing.T) {
 	}, "14.0"))
 }
 
+func TestGetRuntimeVersion(t *testing.T) {
+	tests := []struct {
+		sparkVersion string
+		want         string
+		wantOk       bool
+	}{
+		{"13.3.x-scala2.12", "13.3", true},
+		// Newer clusters report the runtime without a minor version, e.g. 19.x.
+		{"19.x-scala2.13", "19", true},
+		{"14.x-snapshot-cpu-ml-scala2.12", "14.999", true},
+		{"custom-9.1.x-photon-scala2.12", "", false},
+	}
+	for _, tc := range tests {
+		got, ok := GetRuntimeVersion(compute.ClusterDetails{SparkVersion: tc.sparkVersion})
+		assert.Equal(t, tc.wantOk, ok, tc.sparkVersion)
+		assert.Equal(t, tc.want, got, tc.sparkVersion)
+	}
+}
+
+func TestIsCompatibleWithMajorOnlyVersion(t *testing.T) {
+	require.True(t, IsCompatibleWithUC(compute.ClusterDetails{
+		SparkVersion:     "19.x-scala2.13",
+		DataSecurityMode: compute.DataSecurityModeUserIsolation,
+	}, "13.0"))
+}
+
 func TestIsCompatibleWithSnapshots(t *testing.T) {
 	require.True(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "14.x-snapshot-cpu-ml-scala2.12",

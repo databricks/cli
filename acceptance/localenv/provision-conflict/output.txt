@@ -48,7 +48,7 @@
     },
     {
       "code": "W_USER_CONSTRAINT_CONFLICT",
-      "message": "dependency \"pip==24.0\" conflicts with the environment constraint \"pip\u003c24\""
+      "message": "dependency \"pip==[PIP_VERSION]\" conflicts with the environment constraint \"pip\u003c24\""
     }
   ],
   "error": {

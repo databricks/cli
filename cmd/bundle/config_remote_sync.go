@@ -7,9 +7,11 @@ import (
 	"maps"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -69,11 +71,12 @@ Examples:
 		// Populated by PostStateFunc on success; rendered after the run so an
 		// error raised anywhere in ProcessBundleRet takes the same output path.
 		var (
-			files   []configsync.FileChange
-			changes configsync.Changes
+			files          []configsync.FileChange
+			changes        configsync.Changes
+			skippedChanges []configsync.SkippedChange
 		)
 
-		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			ReadState:  true,
 			Build:      true,
 			AlwaysPull: true,
@@ -82,18 +85,10 @@ Examples:
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
-				stats.CollectStateStats(stateDesc)
+				stats.CollectStateStats(stateDesc, b.DeploymentBundle.StateDB.VersionID)
 
-				// Open the deployment state once and reuse it for both planning and
-				// selector resolution (avoids reading the terraform snapshot twice).
-				deployBundle, err := configsync.OpenDeploymentState(ctx, b, stateDesc.Engine)
-				if err != nil {
-					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
-					if errors.Is(err, configsync.ErrStateSnapshotNotFound) {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
-					}
-					return err
-				}
+				// ProcessBundleRet has already opened the direct state for reading.
+				deployBundle := &b.DeploymentBundle
 
 				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {
@@ -101,7 +96,7 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				detected, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
+				detected, err := configsync.ExtractChanges(ctx, b, plan)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -121,7 +116,25 @@ Examples:
 					if err != nil {
 						return err
 					}
+					// A selected resource planned as a delete was renamed or removed in the
+					// config, so its remote changes have nowhere to be written back.
+					var missing []string
+					for _, key := range selected {
+						if plan.Plan[key].Action == deployplan.Delete {
+							missing = append(missing, key)
+						}
+					}
+					if len(missing) > 0 {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResourceNotInConfig
+						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
+					}
 					detected = configsync.FilterChanges(detected, selected)
+				}
+
+				detected, policySkipped, err := configsync.FilterClusterPolicyValues(ctx, b, plan, detected)
+				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
+					return fmt.Errorf("failed to extract changes: %w", err)
 				}
 
 				// Loaded once and shared: ResolveChanges uses it to skip changes whose
@@ -134,6 +147,7 @@ Examples:
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 				stats.SkippedChangesCount = int64(skipped)
+				stats.CollectSkippedResources(policySkipped)
 
 				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
@@ -156,11 +170,15 @@ Examples:
 
 				files = applied
 				changes = detected
+				skippedChanges = policySkipped
 				return nil
 			},
 		})
+		if b != nil {
+			stats.InGitRepo = b.InGitRepo
+		}
 
-		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, err)
+		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)
 	}
 
 	return cmd

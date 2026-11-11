@@ -16,6 +16,7 @@ const (
 	AitoolsAgentTypePi          AitoolsAgentType = "PI"
 	AitoolsAgentTypeGemini      AitoolsAgentType = "GEMINI_CLI"
 	AitoolsAgentTypeGoose       AitoolsAgentType = "GOOSE"
+	AitoolsAgentTypeKiro        AitoolsAgentType = "KIRO"
 )
 
 // AitoolsInstallScope mirrors AitoolsInstallScope.Type in the databricks_cli
@@ -44,6 +45,34 @@ const (
 	AitoolsErrorCategoryUnsupportedScope    AitoolsErrorCategory = "UNSUPPORTED_SCOPE"
 	AitoolsErrorCategoryExperimentalSkill   AitoolsErrorCategory = "EXPERIMENTAL_SKILL"
 	AitoolsErrorCategoryUncategorized       AitoolsErrorCategory = "UNCATEGORIZED"
+
+	// Failures before any agent is touched.
+	AitoolsErrorCategoryInvalidFlags AitoolsErrorCategory = "INVALID_FLAGS"
+	AitoolsErrorCategoryUnknownAgent AitoolsErrorCategory = "UNKNOWN_AGENT"
+	AitoolsErrorCategoryPromptFailed AitoolsErrorCategory = "PROMPT_FAILED"
+	// The user aborted a prompt (Ctrl-C / Esc).
+	AitoolsErrorCategoryUserAborted AitoolsErrorCategory = "USER_ABORTED"
+
+	// Fetching skills. The typed installer errors (release lookup, skills
+	// fetch) win over the generic network/timeout classification.
+	AitoolsErrorCategoryReleaseLookupFailed AitoolsErrorCategory = "RELEASE_LOOKUP_FAILED"
+	AitoolsErrorCategoryRateLimited         AitoolsErrorCategory = "RATE_LIMITED"
+	AitoolsErrorCategorySkillsFetchFailed   AitoolsErrorCategory = "SKILLS_FETCH_FAILED"
+	AitoolsErrorCategoryManifestNotFound    AitoolsErrorCategory = "MANIFEST_NOT_FOUND"
+	AitoolsErrorCategoryManifestInvalid     AitoolsErrorCategory = "MANIFEST_INVALID"
+	AitoolsErrorCategoryNetwork             AitoolsErrorCategory = "NETWORK"
+	AitoolsErrorCategoryTimeout             AitoolsErrorCategory = "TIMEOUT"
+
+	// Local state and filesystem.
+	AitoolsErrorCategoryStateInvalid     AitoolsErrorCategory = "STATE_INVALID"
+	AitoolsErrorCategoryPermissionDenied AitoolsErrorCategory = "PERMISSION_DENIED"
+	AitoolsErrorCategoryFilesystem       AitoolsErrorCategory = "FILESYSTEM"
+
+	// The agent's plugin CLI did not answer in time.
+	AitoolsErrorCategoryPluginCLITimeout AitoolsErrorCategory = "PLUGIN_CLI_TIMEOUT"
+	// The command's context was cancelled. SIGINT outside a prompt is not
+	// counted here: it ends the process before telemetry is uploaded.
+	AitoolsErrorCategoryCommandInterrupted AitoolsErrorCategory = "COMMAND_INTERRUPTED"
 )
 
 // AitoolsAgentResult records one agent's failed or skipped outcome within an

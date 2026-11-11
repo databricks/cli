@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -37,8 +38,8 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{{File: "file", Line: 2, Column: 2}})
+	bundletest.SetLocation(b, "workspace.artifact_path", []diag.Location{{File: "file", Line: 1, Column: 1}})
+	bundletest.SetLocation(b, "resources.volumes.foo", []diag.Location{{File: "file", Line: 2, Column: 2}})
 
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
@@ -52,14 +53,14 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	assert.Equal(t, diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  "volume catalogN.schemaN.volumeN does not exist",
-		Locations: []dyn.Location{
+		Locations: []diag.Location{
 			{File: "file", Line: 1, Column: 1},
 			{File: "file", Line: 2, Column: 2},
 		},
-		Paths: []dyn.Path{
-			dyn.MustPathFromString("workspace.artifact_path"),
-			dyn.MustPathFromString("resources.volumes.foo"),
-		},
+		Paths: structpath.MustParsePaths(
+			"workspace.artifact_path",
+			"resources.volumes.foo",
+		),
 		Detail: `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
 the volume using 'bundle deploy' and then switch over to using it in
@@ -76,14 +77,14 @@ func TestValidateArtifactPath(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	bundletest.SetLocation(b, "workspace.artifact_path", []diag.Location{{File: "file", Line: 1, Column: 1}})
 	assertDiags := func(t *testing.T, diags diag.Diagnostics, expected string) {
 		assert.Len(t, diags, 1)
 		assert.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   expected,
-			Locations: []dyn.Location{{File: "file", Line: 1, Column: 1}},
-			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+			Locations: []diag.Location{{File: "file", Line: 1, Column: 1}},
+			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 
@@ -163,14 +164,14 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 			},
 		}
 
-		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+		bundletest.SetLocation(b, "workspace.artifact_path", []diag.Location{{File: "config.yml", Line: 1, Column: 2}})
 
 		diags := ValidateArtifactPath().Apply(t.Context(), b)
 		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,
-			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
-			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+			Locations: []diag.Location{{File: "config.yml", Line: 1, Column: 2}},
+			Paths:     structpath.NewPathSlice("workspace", "artifact_path"),
 		}}, diags)
 	}
 }
@@ -192,7 +193,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{
+	bundletest.SetLocation(b, "resources.volumes.foo", []diag.Location{
 		{
 			File:   "volume.yml",
 			Line:   1,
@@ -203,7 +204,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 	// volume is in DAB.
 	path, locations, ok := findVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
 	assert.True(t, ok)
-	assert.Equal(t, []dyn.Location{{
+	assert.Equal(t, []diag.Location{{
 		File:   "volume.yml",
 		Line:   1,
 		Column: 2,
@@ -232,7 +233,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema.name}"
 	path, locations, ok = findVolumeInBundle(b.Config, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
-	assert.Equal(t, []dyn.Location{{
+	assert.Equal(t, []diag.Location{{
 		File:   "volume.yml",
 		Line:   1,
 		Column: 2,

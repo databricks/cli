@@ -12,10 +12,22 @@ type Action struct {
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
 	// resource no longer exists remotely.
 	Gone bool
+	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
+	// because the resource implements no DoDelete (deleting it has no backend effect).
+	StateOnly bool
 }
 
 func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
+}
+
+// IsStateOnlyDelete reports whether applying this delete only drops the state entry
+// without any backend call: the resource is already gone remotely (Gone) or has no
+// delete operation (StateOnly). Such deletes are omitted from human output, excluded
+// from the resource counts, and need no destructive-action approval. See the same
+// method on PlanEntry.
+func (a Action) IsStateOnlyDelete() bool {
+	return a.Gone || a.StateOnly
 }
 
 func (a Action) IsChildResource() bool {
@@ -65,6 +77,16 @@ func (a ActionType) KeepsID() bool {
 func (a ActionType) StringShort() string {
 	items := strings.SplitN(string(a), "_", 2)
 	return items[0]
+}
+
+// AppliedLine renders the user-facing line reporting that action has been applied
+// to resourceKey, e.g. "Created jobs.foo". The past-tense verb is the short action
+// name plus "d" (create->Created, delete->Deleted, ...), capitalized to match the
+// sentence case of other output. "bundle plan" keeps the lower-case present tense,
+// so the two are still distinguishable at a glance.
+func AppliedLine(resourceKey string, action ActionType) string {
+	verb := action.StringShort() + "d"
+	return strings.ToUpper(verb[:1]) + verb[1:] + " " + strings.TrimPrefix(resourceKey, "resources.")
 }
 
 // GetHigherAction returns the action with higher severity between a and b.

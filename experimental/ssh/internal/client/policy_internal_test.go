@@ -24,3 +24,25 @@ func TestUsagePolicyMatches(t *testing.T) {
 		})
 	}
 }
+
+func TestKeepDetachedMatches(t *testing.T) {
+	tests := []struct {
+		name      string
+		stored    bool
+		requested bool
+		want      bool
+	}{
+		{name: "no request takes a server that holds the run open", stored: true, requested: false, want: true},
+		{name: "no request takes a server that does not", stored: false, requested: false, want: true},
+		{name: "request matches a server that holds the run open", stored: true, requested: true, want: true},
+		{name: "request against a server that does not does not match", stored: false, requested: true, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := keepDetachedMatches(tt.stored, tt.requested); got != tt.want {
+				t.Errorf("keepDetachedMatches(%v, %v) = %v, want %v", tt.stored, tt.requested, got, tt.want)
+			}
+		})
+	}
+}

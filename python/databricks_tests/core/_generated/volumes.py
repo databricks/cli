@@ -6,12 +6,12 @@ from databricks.bundles.volumes._models.lifecycle import Lifecycle
 from databricks.bundles.volumes._models.privilege_assignment import PrivilegeAssignment
 from databricks.bundles.volumes._models.volume import Volume
 from databricks.bundles.volumes._models.volume_type import VolumeType
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_volume,
             dict_example={
                 "catalog_name": "catalog_name",

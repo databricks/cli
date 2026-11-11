@@ -56,6 +56,34 @@ func TestUvArgs(t *testing.T) {
 		"python", "find", "--system", "--no-python-downloads", "cpython@==3.12.*",
 	}, m.pythonFindArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
+	assert.Equal(t, []string{"workspace", "dir"}, m.workspaceDirArgs())
+}
+
+func TestWorkspaceRootRunsInProjectDirAndTrimsOutput(t *testing.T) {
+	project := filepath.Join("p", "proj")
+	ctx, stub := process.WithStub(t.Context())
+	var dir string
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		dir = cmd.Dir
+		_, err := cmd.Stdout.Write([]byte("/repo\n"))
+		return err
+	})
+	m := &uvManager{bin: "uv"}
+
+	root, err := m.WorkspaceRoot(ctx, project)
+	require.NoError(t, err)
+	assert.Equal(t, "/repo", root)
+	assert.Equal(t, project, dir)
+	assert.Equal(t, []string{uvStubCommand("workspace dir")}, stub.Commands())
+}
+
+func TestWorkspaceRootReturnsUvError(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(`workspace dir`, errors.New("exit status 2"))
+	m := &uvManager{bin: "uv"}
+
+	_, err := m.WorkspaceRoot(ctx, "proj")
+	assert.Error(t, err)
 }
 
 func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
@@ -191,7 +219,7 @@ func TestEnsurePythonFailsWhenFallbackFindsNothing(t *testing.T) {
 func TestVenvPythonPath(t *testing.T) {
 	// Validate invokes this interpreter directly (not via `uv run`) so it observes
 	// exactly the .venv that was provisioned, ignoring any active VIRTUAL_ENV.
-	got := venvPython(filepath.Join("p", "proj"))
+	got := venvPython(filepath.Join("p", "proj", ".venv"))
 	var want string
 	if runtime.GOOS == "windows" {
 		want = filepath.Join("p", "proj", ".venv", "Scripts", "python.exe")
@@ -382,6 +410,49 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 	})
 }
 
+func TestIsUvResolutionConflict(t *testing.T) {
+	// Positive cases are uv's two resolver-failure headlines; negatives are
+	// unrelated sync failures that must stay E_PROVISION.
+	assert.True(t, isUvResolutionConflict("  × No solution found when resolving dependencies:\n  ╰─▶ Because ..."))
+	assert.True(t, isUvResolutionConflict("error: your project's requirements are unsatisfiable"))
+	assert.True(t, isUvResolutionConflict("NO SOLUTION FOUND"), "match is case-insensitive")
+	assert.False(t, isUvResolutionConflict("error: Connection refused"))
+	assert.False(t, isUvResolutionConflict("error: Failed to build `foo==1.0`"))
+	assert.False(t, isUvResolutionConflict("error: No interpreter found for Python 3.12"))
+	assert.False(t, isUvResolutionConflict(""))
+	// An offline cache miss carries the resolver banner ("... was not found in the
+	// cache ... No solution found") but is a reachability problem, not a dependency
+	// conflict; the "network was disabled" hint keeps it E_PROVISION.
+	assert.False(t, isUvResolutionConflict("× No solution found when resolving dependencies:\n  ╰─▶ Because foo was not found in the cache ...\nhint: Packages were unavailable because the network was disabled"))
+}
+
+func TestProvisionClassifiesResolutionConflict(t *testing.T) {
+	t.Run("resolver_failure_is_provision_conflict", func(t *testing.T) {
+		ctx, stub := process.WithStub(t.Context())
+		stub.WithStderrFor(`sync`, "  × No solution found when resolving dependencies:\n  ╰─▶ Because the requested pins are unsatisfiable.")
+		stub.WithFailureFor(`sync`, errors.New("exit status 1"))
+
+		err := (&uvManager{bin: "uv"}).Provision(ctx, t.TempDir(), "3.12")
+
+		var pe *PipelineError
+		require.ErrorAs(t, err, &pe)
+		assert.Equal(t, ErrProvisionConflict, pe.Code)
+		assert.Contains(t, pe.Msg, "No solution found")
+	})
+
+	t.Run("unrelated_failure_stays_provision", func(t *testing.T) {
+		ctx, stub := process.WithStub(t.Context())
+		stub.WithStderrFor(`sync`, "error: Connection refused")
+		stub.WithFailureFor(`sync`, errors.New("exit status 1"))
+
+		err := (&uvManager{bin: "uv"}).Provision(ctx, t.TempDir(), "3.12")
+
+		var pe *PipelineError
+		require.ErrorAs(t, err, &pe)
+		assert.Equal(t, ErrProvision, pe.Code)
+	})
+}
+
 func TestConfirmUvInstall(t *testing.T) {
 	t.Run("opt_in_env_var_consents_without_prompt", func(t *testing.T) {
 		// Non-interactive context, but the opt-in env var grants consent.
@@ -431,4 +502,32 @@ func TestLineWithPrefix(t *testing.T) {
 	// A missing prefix reports not-found rather than a wrong line.
 	_, ok = lineWithPrefix("PYVER:3.12\n", validateDBCPrefix)
 	assert.False(t, ok)
+}
+
+func TestPostProvisionAndValidateRunInProjectDir(t *testing.T) {
+	// The venv can live outside the project (a uv workspace root), but uv and the
+	// probe interpreter still run in the project folder: uv reads its settings
+	// from there, and `python -c` puts the working folder first on sys.path.
+	project := filepath.Join("p", "proj")
+	venv := filepath.Join("p", ".venv")
+	ctx, stub := process.WithStub(t.Context())
+	var dirs []string
+	var args [][]string
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		dirs = append(dirs, cmd.Dir)
+		args = append(args, cmd.Args)
+		// The validate probe parses its prefixed lines from stdout.
+		_, err := cmd.Stdout.Write([]byte("PYVER:3.12\nDBCVER:\nPYSPARKVER:\nDBCIMPORT:\n"))
+		return err
+	})
+	m := &uvManager{bin: "uv"}
+
+	require.NoError(t, m.PostProvision(ctx, project, venv))
+	_, err := m.Validate(ctx, project, venv)
+	require.NoError(t, err)
+	assert.Equal(t, []string{project, project}, dirs)
+	// Both commands use the interpreter of the venv folder, not of the project.
+	require.Len(t, args, 2)
+	assert.Contains(t, args[0], venvPython(venv), "pip seed")
+	assert.Equal(t, venvPython(venv), args[1][0], "validate probe")
 }

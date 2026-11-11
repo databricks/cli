@@ -1,0 +1,2 @@
+# resources: null is rejected.
+errcode trace $CLI bundle validate

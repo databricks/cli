@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Created jobs.sample_job
-Files: 5 uploaded, 0 deleted
+Created jobs.sample job's"quotes
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename task to new_task_2 remotely
@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Sync the rename into config (no redeploy)
 Detected changes in 1 resource(s):
 
-Resource: resources.jobs.sample_job
+Resource: resources.jobs.sample job's"quotes
   tasks[task_key='new_task']: remove
   tasks[task_key='new_task_2']: add
 
@@ -18,7 +18,7 @@ Resource: resources.jobs.sample_job
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -6,5 +6,5 @@
-     sample_job:
+     "sample job's\"quotes":
        tasks:
 -        - task_key: new_task
 +        - task_key: new_task_2
@@ -30,7 +30,7 @@ Resource: resources.jobs.sample_job
 === Sync the revert into config
 Detected changes in 1 resource(s):
 
-Resource: resources.jobs.sample_job
+Resource: resources.jobs.sample job's"quotes
   tasks[task_key='new_task']: add
   tasks[task_key='new_task_2']: remove
 
@@ -40,7 +40,7 @@ Resource: resources.jobs.sample_job
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -6,5 +6,5 @@
-     sample_job:
+     "sample job's\"quotes":
        tasks:
 -        - task_key: new_task_2
 +        - task_key: new_task
@@ -49,7 +49,7 @@ Resource: resources.jobs.sample_job
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.jobs.sample_job
+  delete resources.jobs.sample job's"quotes
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 

@@ -15,6 +15,7 @@ import (
 
 type Secret struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.Secret
 
 	// List of grants to apply on this secret.
@@ -61,10 +62,6 @@ func (s *Secret) InitializeURL(baseURL url.URL) {
 		return
 	}
 	s.URL = workspaceurls.ResourceURL(baseURL, "secrets", s.ID)
-}
-
-func (s *Secret) GetURL() string {
-	return s.URL
 }
 
 func (s *Secret) GetName() string {

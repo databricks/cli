@@ -51,7 +51,12 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 }
 
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
-var catalogForceSend = []string{"Comment"}
+//
+// CustomMaxRetentionHours is force-sent here even though schemaForceSend deliberately omits it:
+// that omission was for parity with the removed Terraform engine, which does not apply to catalogs
+// anyway. Verified against a real workspace: {"custom_max_retention_hours": 0} clears it (an empty PATCH is otherwise
+// rejected with "Nothing to update").
+var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {

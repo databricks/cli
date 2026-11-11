@@ -11,12 +11,12 @@ from databricks.bundles.experiments._models.mlflow_experiment import MlflowExper
 from databricks.bundles.experiments._models.mlflow_experiment_permission import (
     MlflowExperimentPermission,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_mlflow_experiment,
             dict_example={
                 "lifecycle": {},

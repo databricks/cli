@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,10 +51,10 @@ func TestElementByKey(t *testing.T) {
 }
 
 func TestElementByKeyPreservesLocations(t *testing.T) {
-	loc := dyn.Location{File: "config.yml", Line: 10, Column: 5}
+	loc := diag.Location{File: "config.yml", Line: 10, Column: 5}
 	vin := dyn.V([]dyn.Value{
 		dyn.V(map[string]dyn.Value{
-			"key":   dyn.NewValue("foo", []dyn.Location{loc}),
+			"key":   dyn.NewValue("foo", []diag.Location{loc}),
 			"value": dyn.V(42),
 		}),
 	})

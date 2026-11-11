@@ -13,7 +13,7 @@
 //
 // Each line is a `go test -run` pattern, so a selected test can be run as printed:
 //
-//	go test ./acceptance -run 'TestAccept/^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^INPUT_CONFIG=job.yml.tmpl$'
+//	go test ./acceptance -run 'TestAccept/^bundle$/^invariant$/^no_drift$/^INPUT_CONFIG=job.yml.tmpl$'
 //
 // Every element is anchored, because a -run element is a regexp matched against one level of
 // the test name: unanchored, `no_drift` would also run no_drift_extra, and `DMS=` would also

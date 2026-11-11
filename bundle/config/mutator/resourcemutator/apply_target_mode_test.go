@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -96,7 +97,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
+					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -107,6 +108,15 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
+				},
+				ModelServices: map[string]*resources.ModelService{
+					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},
+				},
+				McpServices: map[string]*resources.McpService{
+					"mcpservice1": {McpServiceConfig: resources.McpServiceConfig{Parent: "schemas/main.default", McpServiceId: "mcpservice1"}},
+				},
+				ModelProviderServices: map[string]*resources.ModelProviderService{
+					"modelproviderservice1": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: "schemas/main.default", ModelProviderServiceId: "modelproviderservice1"}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
@@ -135,6 +145,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				DataQualityMonitors: map[string]*resources.DataQualityMonitor{
+					"dataQualityMonitor1": {Monitor: dataquality.Monitor{
+						ObjectType:             "schema",
+						ObjectId:               "dataQualityMonitor1",
+						AnomalyDetectionConfig: &dataquality.AnomalyDetectionConfig{},
+					}},
+					"dataQualityMonitor2": {Monitor: dataquality.Monitor{
+						ObjectType: "table",
+						ObjectId:   "dataQualityMonitor2",
+						DataProfilingConfig: &dataquality.DataProfilingConfig{
+							Schedule: &dataquality.CronSchedule{QuartzCronExpression: "0 0 12 * * ?", TimezoneId: "UTC"},
+						},
+					}},
+				},
 				Catalogs: map[string]*resources.Catalog{
 					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
 				},
@@ -146,6 +170,16 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Volumes: map[string]*resources.Volume{
 					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
+				Features: map[string]*resources.Feature{
+					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
+				},
+				MaterializationSets: map[string]*resources.MaterializationSet{
+					"materialization_set1": {MaterializationSet: ml.MaterializationSet{
+						MaterializedFeatures: []ml.MaterializedFeature{
+							{FeatureName: "catalog1.schema1.feature1"},
+						},
+					}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
@@ -305,6 +339,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
+						},
+					},
+				},
+				PostgresDataApis: map[string]*resources.PostgresDataApi{
+					"postgres_data_api1": {
+						PostgresDataApiConfig: resources.PostgresDataApiConfig{
+							Parent: "projects/project1/branches/branch1/databases/database1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -359,7 +407,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
@@ -390,6 +438,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
 	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+	assert.Nil(t, b.Config.Resources.DataQualityMonitors["dataQualityMonitor2"].DataProfilingConfig.Schedule)
 
 	// Schema 1
 	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
@@ -468,13 +517,14 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
+	assert.Equal(t, "catalog1.schema1.feature1", b.Config.Resources.Features["feature1"].FullName)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
@@ -519,6 +569,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
 		"Apps",
+		"Features",
 		"SecretScopes",
 		"Secrets",
 		"DatabaseInstances",
@@ -654,5 +705,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 }

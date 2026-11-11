@@ -1,3 +1,4 @@
+RecordRequests = false
 # Companion to inherited-role-conflict: shows the supported escape hatch.
 # `bundle deployment bind` takes ownership of a pre-existing (e.g. inherited)
 # role so the next deploy manages it instead of trying to create it.
@@ -6,4 +7,3 @@
 Cloud = false
 
 # bind/deploy are engine-agnostic here; run on direct for a single stable output.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

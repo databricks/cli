@@ -1,14 +1,8 @@
 bundle:
   name: my-bundle
 
-experimental:
-  immutable_folder: true
-
-sync:
-  exclude:
-    # Test framework files that are not part of the bundle source.
-    - "script"
-    - "*.toml"
+workspace:
+  sync_mode: immutable
 
 resources:
   jobs:

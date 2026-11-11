@@ -25,8 +25,7 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"
@@ -37,6 +36,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -117,7 +117,25 @@ const (
 	ReplsEnvVar = "ACC_REPLS"
 )
 
-var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+var IsRunningOnCI = os.Getenv("GITHUB_WORKFLOW") != ""
+
+// MaxLogLines caps how many lines of each LOG.* file the harness echoes into the test
+// log. Some invariant tests write very large LOG.planjson files that otherwise drown out
+// the rest of the logs and overflow log viewers. Override with DATABRICKS_CLI_TEST_MAX_LOG;
+// a value <= 0 disables the limit.
+var MaxLogLines = func() int {
+	if v := os.Getenv("DATABRICKS_CLI_TEST_MAX_LOG"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			panic("invalid DATABRICKS_CLI_TEST_MAX_LOG=" + v + ": " + err.Error())
+		}
+		return n
+	}
+	if IsRunningOnCI {
+		return 100
+	}
+	return 1000
+}()
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -133,6 +151,10 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if RegrMain || RegrRelease {
+		runRegression(t)
+		return
+	}
 	testAccept(t, InprocessMode, nil, false)
 }
 
@@ -158,7 +180,7 @@ func TestInprocessMode(t *testing.T) {
 	// selftest/server too, which meant a second setup after StartDefaultServer had
 	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
 	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
-	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	// for the same reason - selftest/basic uses neither the wheel nor yamlfmt.
 	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
@@ -176,29 +198,8 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
-// helperScriptUsesEngineCache caches whether a _script helper in a given directory
-// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
-// Since _script helpers are shared across many tests, caching avoids redundant reads.
-var helperScriptUsesEngineCache sync.Map
-
-// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
-// contains $DATABRICKS_BUNDLE_ENGINE.
-func anyHelperScriptUsesEngine(dir string) bool {
-	if dir == "" || dir == "." {
-		return false
-	}
-	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
-		return v.(bool)
-	}
-	content, err := os.ReadFile(filepath.Join(dir, "_script"))
-	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
-		anyHelperScriptUsesEngine(filepath.Dir(dir))
-	helperScriptUsesEngineCache.Store(dir, result)
-	return result
-}
-
 // hasRunFilter returns true if the -run flag contains '=', indicating a specific
-// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+// EnvMatrix variant was requested (e.g. DMS=true).
 func hasRunFilter() bool {
 	f := flag.Lookup("test.run")
 	return f != nil && strings.Contains(f.Value.String(), "=")
@@ -217,6 +218,9 @@ func hasRunFilter() bool {
 // DBR runs will fail this check before any test runs.
 func requirePrerequisites(t *testing.T) bool {
 	return t.Run("prerequisites", func(t *testing.T) {
+		// A stray .git above the temp dir makes the CLI believe all temporary
+		// directories are git repositories; catch it here rather than chasing diffs.
+		internal.RequireTempDirNotInGitRepo(t)
 		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
 		internal.RequireJQ(t, "1.7")
 		// uv builds the databricks-bundles wheel and provides the test interpreter
@@ -232,7 +236,7 @@ func requirePrerequisites(t *testing.T) bool {
 
 // selectedTests, when non-empty, limits the run to those test directories.
 // skipToolBuilds skips building the tools that the selected tests do not use
-// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// (the databricks-bundles wheel, yamlfmt); it must stay false for a
 // full run.
 func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
@@ -271,11 +275,16 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"KIRO",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
+		"PI_CODING_AGENT",
 		"VSCODE_AGENT",
 		"WINDSURF_AGENT",
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
+
+	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
+	// from the host shell would move the venv the localenv tests expect.
+	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
 
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
@@ -288,9 +297,23 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
-	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir && !skipToolBuilds {
-		setupTerraform(t, cwd, buildDir, &repls)
+	// Download old CLI versions in parallel, overlapping with the builds below.
+	var cli293Path, cli18Path, cli1161Path string
+	var oldCLIs errgroup.Group
+	if !inprocessMode {
+		oldCLIs.Go(func() (err error) {
+			cli293Path, err = downloadCLI(buildDir, "0.293.0")
+			return err
+		})
+		oldCLIs.Go(func() (err error) {
+			cli18Path, err = downloadCLI(buildDir, "1.8.0")
+			return err
+		})
+		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
+		oldCLIs.Go(func() (err error) {
+			cli1161Path, err = downloadCLI(buildDir, "1.16.1")
+			return err
+		})
 	}
 
 	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
@@ -346,6 +369,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 			if version == "latest" {
 				version = resolveLatestVersion(t, buildDir)
 			}
+			// Wait for the old CLI downloads so the same version isn't downloaded concurrently.
+			require.NoError(t, oldCLIs.Wait())
 			execPath = DownloadCLI(t, buildDir, version)
 			// For a downloaded release the version string is already known.
 			cliVersion = version
@@ -378,9 +403,16 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	repls.SetPath(selectionPath, "[SELECTION]")
 
 	if !inprocessMode {
-		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		require.NoError(t, oldCLIs.Wait())
+
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
+
+		t.Setenv("CLI_1_8", cli18Path)
+		repls.SetPath(cli18Path, "[CLI_1_8]")
+
+		t.Setenv("CLI_1_16_1", cli1161Path)
+		repls.SetPath(cli1161Path, "[CLI_1_16_1]")
 	}
 
 	paths := []string{
@@ -443,6 +475,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	if base, _, found := strings.Cut(cliVersion, "+"); found {
 		repls.Set(base, "[CLI_VERSION]")
 	}
+	// A dev build may embed a +<git-sha> that the base-version replacement above leaves
+	// behind (e.g. "[CLI_VERSION]+abc123def456"), which would otherwise bake into a
+	// regenerated golden. Strip any such trailing suffix so goldens stay sha-independent.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\[CLI_VERSION\]\+[0-9a-f]{7,40}`), New: "[CLI_VERSION]"})
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -459,13 +495,12 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
-	// On cloud, tag every $UNIQUE_NAME with a per-process prefix (see
-	// newBundleNamePrefix) so this leg's bundles can be attributed and swept, and
-	// destroy them once all tests finish. Registered before the tests are spawned
-	// so it runs after they complete. Off cloud names need no attribution.
+	// On cloud, tag every $UNIQUE_NAME with a per-run prefix (see newBundleNamePrefix)
+	// so this run's bundles can be attributed and swept by the post-run cleanup step
+	// (TestCleanupLeakedBundles) after every matrix leg finishes. Off cloud names need
+	// no attribution: each local test gets a throwaway in-memory fake workspace.
 	if cloudEnv != "" {
 		bundleNamePrefix = newBundleNamePrefix()
-		setupBundleCleanup(t, execPath, bundleNamePrefix)
 	}
 
 	testDirs := getTests(t)
@@ -589,12 +624,13 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
 			}
 
+			if _, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok {
+				t.Fatalf("%s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE is not needed, the direct engine is the only engine; remove it from test.toml", dir)
+			}
+
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
-				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
-				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
-					anyHelperScriptUsesEngine(dir)
-				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
+				expanded = internal.SubsetExpanded(expanded, dir)
 			}
 
 			// If the matrix expands to a single empty envset, run the test directly
@@ -605,24 +641,27 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
+				matched := false
 				for ind, envset := range expanded {
+					// Under selection.EnvVar, an invariant dir re-enabled by a
+					// specific config change runs only its matching variants.
+					if selectChanged && !selection.MatchesFilters(envset, changedTests[dir]) {
+						continue
+					}
+					matched = true
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
-						}
-						// Under selection.EnvVar, an invariant dir re-enabled by a
-						// specific config change runs only its matching variants.
-						if selectChanged {
-							if variantFilters := changedTests[dir]; variantFilters != nil {
-								checkEnvFilters(t, envset, variantFilters)
-							}
 						}
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
+				}
+				if selectChanged && !matched {
+					t.Skip("No environment matrix variants match changed-test selection")
 				}
 			}
 		})
@@ -647,7 +686,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
-	outFilters := make([]string, len(filters))
+	outFilters := make([]string, 0, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
@@ -718,14 +757,14 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 // Cap at 11 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
 // minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") -
-// bundleLegSuffixLen = 11), so a longer GITHUB_RUN_ID falls through to a random
-// id rather than building a prefix ciUniqueName would silently drop.
+// bundleLegSuffixLen = 11), so a longer GITHUB_RUN_ID is treated as absent
+// rather than building a prefix ciUniqueName would silently drop.
 var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
 
-// bundleLegSuffixLen is the length of the per-process random suffix. 36^4 values
-// keep an accidental collision between the few matrix legs that share a workspace
-// within one run (which would let one leg destroy another's live bundles)
-// negligible, while still leaving >=8 random characters after an 11-digit run id.
+// bundleLegSuffixLen is the length of the per-process random suffix that keeps
+// each matrix leg's bundle names distinct within a run (useful when eyeballing
+// leaked deployments). The run-wide cleanup matches on the "ci<runID>x" prefix
+// alone, so it sweeps every leg regardless of the suffix.
 const bundleLegSuffixLen = 4
 
 // bundleNamePrefix is the sweepable prefix embedded into every $UNIQUE_NAME on
@@ -733,28 +772,34 @@ const bundleLegSuffixLen = 4
 // empty off cloud where names need no attribution.
 var bundleNamePrefix string
 
-// newBundleNamePrefix builds the "ci<runID>x<suffix>" prefix that attributes
-// deployed bundles to this test process so cleanup can sweep them.
-//
-// runID is the GitHub run id, or a random numeric id when it is unset/malformed
-// (e.g. a local `deco env run`). All matrix legs of a CI run share one GitHub run
-// id and legs of different OSes share a workspace, so a run-id-only prefix would
-// let one leg's cleanup destroy another leg's live bundles; the random
-// lowercase-alphanumeric suffix (bundleLegSuffixLen chars) makes each leg's prefix
-// distinct while keeping "ci<runID>x" a matchable substring for the run-wide
-// sweeper (sweep_test_resources.py). The run id (all digits) is delimited by "x"
-// so that prefix stays collision-free between runs whose ids share a prefix.
-func newBundleNamePrefix() string {
+// ciRunPrefix returns the run-wide "ci<runID>x" prefix that attributes every
+// bundle a cloud run deploys to its GitHub run, so they can be swept by
+// acceptance/cleanup and tools/sweep_test_resources.py. The run id (all digits)
+// is delimited by "x" so the prefix stays collision-free between runs whose ids
+// share a leading substring. Returns "" when GITHUB_RUN_ID is unset or not a
+// valid numeric id (e.g. a local `deco env run`).
+func ciRunPrefix() string {
 	runID := os.Getenv("GITHUB_RUN_ID")
 	if !ciRunID.MatchString(runID) {
-		runID = strconv.Itoa(rand.IntN(1_000_000_000))
+		return ""
+	}
+	return "ci" + runID + "x"
+}
+
+// newBundleNamePrefix builds the "ci<runID>x<suffix>" prefix that ciUniqueName
+// stamps into every $UNIQUE_NAME so deployed bundles can be attributed and swept.
+// Returns "" on non-CI runs (no GITHUB_RUN_ID), where cleanup is not automatic.
+func newBundleNamePrefix() string {
+	prefix := ciRunPrefix()
+	if prefix == "" {
+		return ""
 	}
 	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 	suffix := make([]byte, bundleLegSuffixLen)
 	for i := range suffix {
 		suffix[i] = alphabet[rand.IntN(len(alphabet))]
 	}
-	return "ci" + runID + "x" + string(suffix)
+	return prefix + string(suffix)
 }
 
 // ciUniqueName prepends prefix to the random unique name, preserving its length
@@ -832,10 +877,21 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
+	// Harness-owned files (the merged entry-point script, output.txt, out.requests.txt)
+	// live outside the test dir so the bundle sync doesn't upload them as bundle sources.
+	// Otherwise they land in the deploy and skew the synced "Files: N" set.
+	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
+	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
+	outputDir := t.TempDir()
+	repls.SetPath(outputDir, "[OUTPUT_DIR]")
+
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
-	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
+	// The merged script lives in outputDir (see above), and is run from there (cmd.Dir
+	// below). It cd's into the bundle dir first so relative paths inside the script
+	// resolve there, while $0 stays "script" (no temp path leaks into error output).
+	scriptContents := "cd \"$TEST_TMP_DIR\"\n" + readMergedScriptContents(t, dir)
+	testutil.WriteFile(t, filepath.Join(outputDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
 	inputs := make(map[string]bool, 2)
@@ -858,7 +914,7 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if ApplyCITimeoutMultipler {
+	if IsRunningOnCI {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
@@ -867,9 +923,10 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user, workspaceID := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+	repls.Set(workspaceID, "[WORKSPACE_ID]")
 
 	cmd.Env = auth.ProcessEnv(cfg)
 
@@ -884,6 +941,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	// Forward slashes: scripts pass $OUT_REQUESTS straight to bash tools, and a
+	// backslash Windows path would be mangled inside double quotes in Git Bash.
+	cmd.Env = append(cmd.Env, "OUT_REQUESTS="+filepath.ToSlash(filepath.Join(outputDir, "out.requests.txt")))
 
 	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
 	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
@@ -990,14 +1050,12 @@ func runTest(t *testing.T,
 		// (kill_after.py, callserver.py, …) would route their requests through
 		// the blocking proxy. NO_PROXY exempts them.
 		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
-		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
-		// check for updates. Disable it so these CONNECT requests don't reach the
-		// blocking proxy and fail every terraform-engine test.
-		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 	}
-	cmd.Dir = tmpDir
+	// Run from outputDir so the entry-point script isn't a bundle source; the script
+	// cd's into tmpDir (the bundle dir) as its first line.
+	cmd.Dir = outputDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -1017,14 +1075,27 @@ func runTest(t *testing.T,
 	printedRepls := false
 
 	pathFilter := preparePathFilter(config, customEnv)
+	sortLines := compileSortLines(t, config)
+	suppressLines := compileSuppressLines(t, config)
+
+	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
+	// compare it from there. Every run produces it, so compare it explicitly rather
+	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
+	// stays in outputDir and is never compared: tests assert on recorded requests
+	// through print_requests.py, not by committing the raw recording.
+	doComparison(t, repls, sortLines, suppressLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
+		if relPath == "output.txt" {
+			// Handled above: it is produced in outputDir, not tmpDir.
+			continue
+		}
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1044,6 +1115,7 @@ func runTest(t *testing.T,
 			prefix := relPath + ": "
 			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
 			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = truncateLines(messages, MaxLogLines)
 			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
 			if strings.Contains(messages, "\n") {
 				messages = "\n" + messages
@@ -1055,13 +1127,28 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+// truncateLines keeps at most maxLines lines of s, appending a note about how many were
+// dropped. maxLines <= 0 disables truncation.
+func truncateLines(s string, maxLines int) string {
+	if maxLines <= 0 {
+		return s
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= maxLines {
+		return s
+	}
+	dropped := len(lines) - maxLines
+	kept := strings.Join(lines[:maxLines], "\n")
+	return fmt.Sprintf("%s\n... (%d more lines truncated, raise DATABRICKS_CLI_TEST_MAX_LOG to see more)", kept, dropped)
 }
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
@@ -1078,7 +1165,7 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 // matrix key ends up in the variant's test name, so a long one makes every name that carries
 // it hard to read. Tests may still name the variable itself; the alias is only shorter.
 var envAliases = map[string]string{
-	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+	"DMS": "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.
@@ -1140,7 +1227,42 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSortLines compiles the enabled SortLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SortLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SortLines)) {
+		if on, ok := config.SortLinesOn[name]; ok && !on {
+			continue
+		}
+		re, err := regexp.Compile(config.SortLines[name])
+		if err != nil {
+			t.Fatalf("Invalid SortLines pattern %s = %#v: %s", name, config.SortLines[name], err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+// compileSuppressLines compiles the non-empty SuppressLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSuppressLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SuppressLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SuppressLines)) {
+		pattern := config.SuppressLines[name]
+		if pattern == "" {
+			continue
+		}
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			t.Fatalf("Invalid SuppressLines pattern %s = %#v: %s", name, pattern, err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines, suppressLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1157,6 +1279,25 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Move lines the test does not pin (e.g. retry warnings) from the compared output to the log.
+	// Applied to the reference too, so a golden that still contains them compares the same way.
+	for _, re := range suppressLines {
+		var removed []string
+		valueNew, removed = testdiff.RemoveLines(valueNew, re)
+		valueRef, _ = testdiff.RemoveLines(valueRef, re)
+		if len(removed) > 0 {
+			t.Logf("Suppressed from %s:\n%s", relPath, strings.Join(removed, "\n"))
+		}
+	}
+
+	// Canonicalize line runs whose order the command does not guarantee. Applied to
+	// the reference too so a hand-edited golden compares the same way; sorting is
+	// idempotent, so a stored reference is unaffected.
+	for _, re := range sortLines {
+		valueRef = testdiff.SortLineRuns(valueRef, re)
+		valueNew = testdiff.SortLineRuns(valueNew, re)
 	}
 
 	// In update mode, regenerating the reference files is the goal: each branch below
@@ -1404,7 +1545,13 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 	}
 
 	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+	require.NoError(t, err)
+	// Unauthenticated requests from shared CI runner IPs hit the GitHub API rate limit.
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
@@ -1423,9 +1570,19 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
+	execPath, err := downloadCLI(buildDir, version)
+	require.NoError(t, err)
+	return execPath
+}
+
+// downloadCLI is the error-returning version of [DownloadCLI], safe to call
+// from goroutines other than the test goroutine.
+func downloadCLI(buildDir, version string) (string, error) {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)
-	require.NoError(t, os.MkdirAll(versionDir, 0o755))
+	if err := os.MkdirAll(versionDir, 0o755); err != nil {
+		return "", err
+	}
 
 	execName := "databricks"
 	if runtime.GOOS == "windows" {
@@ -1435,7 +1592,7 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 
 	// If already downloaded, reuse
 	if _, err := os.Stat(execPath); err == nil {
-		return execPath
+		return execPath, nil
 	}
 
 	osName := runtime.GOOS
@@ -1446,55 +1603,70 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
 	zipPath := filepath.Join(versionDir, archiveName)
 
-	downloadToFile(t, url, zipPath)
-	extractFileFromZip(t, zipPath, execName, versionDir)
+	if err := downloadToFile(url, zipPath); err != nil {
+		return "", err
+	}
+	if err := extractFileFromZip(zipPath, execName, versionDir); err != nil {
+		return "", err
+	}
 
-	return execPath
+	return execPath, nil
 }
 
 // downloadToFile downloads contents from url into the given destination path
-func downloadToFile(t *testing.T, url, destPath string) {
-	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
+func downloadToFile(url, destPath string) error {
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return err
+	}
 	out, err := os.Create(destPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to download %s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download %s: %s", url, resp.Status)
+	}
 
 	_, err = io.Copy(out, resp.Body)
-	require.NoError(t, err)
+	return err
 }
 
 // extractFileFromZip finds a file by name inside a zip archive and writes it
-// into destDir using the file's base name. Fails the test if not found.
-func extractFileFromZip(t *testing.T, zipPath, fileName, destDir string) {
+// into destDir using the file's base name. Returns an error if not found.
+func extractFileFromZip(zipPath, fileName, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 
 	targetBase := filepath.Base(fileName)
 	destPath := filepath.Join(destDir, targetBase)
-	var found bool
 	for _, f := range r.File {
 		if filepath.Base(f.Name) != targetBase {
 			continue
 		}
 		rc, err := f.Open()
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		defer rc.Close()
 
 		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		_, err = io.Copy(out, rc)
 		_ = out.Close()
-		require.NoError(t, err)
-		found = true
-		break
+		return err
 	}
-	require.True(t, found, "file %s not found in archive %s", targetBase, zipPath)
+	return fmt.Errorf("file %s not found in archive %s", targetBase, zipPath)
 }
 
 func copyFile(src, dst string) error {
@@ -1523,7 +1695,7 @@ func formatOutput(w io.Writer, err error) {
 	if err == nil {
 		return
 	}
-	if exiterr, ok := err.(*exec.ExitError); ok {
+	if exiterr, ok := errors.AsType[*exec.ExitError](err); ok {
 		exitCode := exiterr.ExitCode()
 		fmt.Fprintf(w, "\nExit code: %d\n", exitCode)
 	} else {
@@ -1585,6 +1757,12 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 		}
 
 		if _, ok := Scripts[name]; ok {
+			return nil
+		}
+
+		// test.toml is harness config, not a bundle source; copying it into the test
+		// dir would upload it during "bundle deploy" and skew the synced file set.
+		if name == internal.ConfigFilename {
 			return nil
 		}
 
@@ -1728,7 +1906,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 				require.NoError(t, err)
 			}
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
@@ -1847,22 +2025,6 @@ func BuildYamlfmt(t *testing.T) {
 	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
-// setupTerraform installs terraform and configures environment variables for tests.
-func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.ReplacementsContext) {
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".", []string{})
-
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
-
-	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
-	t.Setenv("TERRAFORM", terraformExecPath)
-
-	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
-	repls.SetPath(terraformExecPath, "[TERRAFORM]")
-}
-
 // loadScriptReplacements adds the replacements appended to replsPath by the scripts.
 // The first offset lines were written by the harness itself and are already in repls.
 func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string, offset int) {
@@ -1894,8 +2056,8 @@ func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, r
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
+	// E.g. if EnvVaryOutput is MODE = ["a", "b"] and current test running MODE="a" then
+	// notSelected contains ".b." meaning if filename contains that (e.g. out.deploy.b.txt) then we ignore it here.
 	notSelected []string
 }
 

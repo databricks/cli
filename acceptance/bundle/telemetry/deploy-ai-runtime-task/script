@@ -1,0 +1,7 @@
+trace $CLI bundle deploy
+
+# Only the task-type / ai_runtime_task telemetry keys, so this golden does not
+# churn when unrelated bool_values change.
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values | map(select((.key | test("_task$")) or (.key | startswith("ai_runtime_")))) | sort_by(.key)'
+
+rm "$OUT_REQUESTS"

@@ -1,5 +1,8 @@
 Cloud = true
 
-# Each cloud has its specific storage url, we record AWS's one in the output (which is also emulated by Local):
+# Each cloud has its own storage URL; the output records AWS's (also emulated locally):
+#   -    "comment": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+#   +    "comment": "abfss://decotestprod-unity-iso@decotestprodunityiso.dfs.core.windows.net/[UUID]/volumes/[UUID]",
+#   +    "comment": "gs://deco-uc-prod-gcp-us-central1-isolated/metastore/[UUID]/volumes/[UUID]",
 CloudEnvs.gcp = false
 CloudEnvs.azure = false

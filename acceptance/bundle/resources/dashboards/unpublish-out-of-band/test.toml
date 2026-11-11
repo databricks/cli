@@ -4,4 +4,6 @@ RunsOnDbr = true
 
 Ignore = [
     "databricks.yml",
+    "plan_raw_initial.json",
+    "plan_raw.json",
 ]

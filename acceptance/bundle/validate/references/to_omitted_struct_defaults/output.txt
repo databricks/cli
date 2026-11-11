@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "default": {
+    "actual_branch": "",
+    "branch": "",
+    "bundle_root_path": ".",
+    "commit": "",
+    "origin_url": ""
+  },
+  "type": "complex",
+  "value": {
+    "actual_branch": "",
+    "branch": "",
+    "bundle_root_path": ".",
+    "commit": "",
+    "origin_url": ""
+  }
+}

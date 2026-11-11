@@ -11,16 +11,14 @@ import (
 func TestJobParameterArgs(t *testing.T) {
 	a := jobParameterArgs{
 		&resources.Job{
-			JobSettings: jobs.JobSettings{
-				Parameters: []jobs.JobParameterDefinition{
-					{
-						Name:    "foo",
-						Default: "value",
-					},
-					{
-						Name:    "bar",
-						Default: "value",
-					},
+			Parameters: []jobs.JobParameterDefinition{
+				{
+					Name:    "foo",
+					Default: "value",
+				},
+				{
+					Name:    "bar",
+					Default: "value",
 				},
 			},
 		},
@@ -70,14 +68,12 @@ func TestJobParameterArgs(t *testing.T) {
 func TestJobTaskNotebookParamArgs(t *testing.T) {
 	a := jobTaskNotebookParamArgs{
 		&resources.Job{
-			JobSettings: jobs.JobSettings{
-				Tasks: []jobs.Task{
-					{
-						NotebookTask: &jobs.NotebookTask{
-							BaseParameters: map[string]string{
-								"foo": "value",
-								"bar": "value",
-							},
+			Tasks: []jobs.Task{
+				{
+					NotebookTask: &jobs.NotebookTask{
+						BaseParameters: map[string]string{
+							"foo": "value",
+							"bar": "value",
 						},
 					},
 				},

@@ -1,5 +1,5 @@
 
->>> uv run [UV_ARGS] -q [CLI] bundle validate --var secret_value=my-secret-value --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --var secret_value=my-secret-value --var python_secret_value=my-python-secret-value --output json
 {
   "experimental": {
     "python": {
@@ -27,6 +27,18 @@
         "schema_name": "default",
         "value": "[redacted]"
       }
+    }
+  },
+  "variables": {
+    "python_secret_value": {
+      "description": "The value of the secret added from Python",
+      "sensitive": true,
+      "value": "[redacted]"
+    },
+    "secret_value": {
+      "description": "The value of the secret",
+      "sensitive": true,
+      "value": "[redacted]"
     }
   }
 }

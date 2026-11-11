@@ -5,8 +5,15 @@ resources:
   postgres_projects:
     foo:
       project_id: test-pg-project-$UNIQUE_NAME
+      # CANNOT_REMOVE: clearing display_name adds spec.display_name to the update_mask but drops
+      # the field from the request body (omitempty), which the backend rejects with 400
+      # "Field 'spec.display_name' is in update_mask but not provided in request".
       display_name: Test Postgres Project
       enable_pg_native_login: false
+      # CANNOT_REMOVE: same update_mask 400 as display_name above — clearing it adds
+      # spec.default_endpoint_settings to the update_mask but drops it from the request body.
+      # Kept on one line so a future fix can flip it to CAN_REMOVE and have grep -v strip it cleanly.
+      default_endpoint_settings: {"autoscaling_limit_max_cu": 4}
       permissions:
         - level: CAN_USE
           group_name: users

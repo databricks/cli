@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created volumes.volume1
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A successful rename response without an ID fails the deployment
+>>> update_file.py databricks.yml myvolume mynewvolume
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update_id resources.volumes.volume1: update returned an empty resource id
+
+Files: 0 uploaded, 0 deleted
+
+=== The failed rename preserves the original ID and state
+>>> print_state.py
+{
+  "resources.volumes.volume1": {
+    "__id__": "main.myschema.myvolume",
+    "state": {
+      "catalog_name": "main",
+      "name": "myvolume",
+      "schema_name": "myschema",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+=== The next plan still updates the existing resource
+>>> [CLI] bundle plan
+update volumes.volume1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

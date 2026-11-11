@@ -1,0 +1,33 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    my_policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
+
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        # The config sets the fixed attribute to a value the policy forbids.
+        - job_cluster_key: main
+          new_cluster:
+            policy_id: ${resources.cluster_policies.my_policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              CostCenter: not-what-the-policy-says
+      tasks:
+        - task_key: main
+          job_cluster_key: main
+          spark_python_task:
+            python_file: ./hello_world.py

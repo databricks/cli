@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -31,8 +32,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
@@ -65,29 +64,34 @@ const resourcesFilename = "resources.json"
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
 
-// Filename where config snapshot is stored for experimental YAML sync
-const configSnapshotFilename = "resources-config-sync-snapshot.json"
-
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount      int64
-	TargetCount                 int64
-	DeploymentId                uuid.UUID
-	BoolValues                  []protos.BoolMapEntry
-	PythonAddedResourcesCount   int64
-	PythonUpdatedResourcesCount int64
-	ExecutionTimes              []protos.IntMapEntry
-	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+	ConfigurationFileCount   int64
+	TargetCount              int64
+	DeploymentId             uuid.UUID
+	BoolValues               []protos.BoolMapEntry
+	ExecutionTimes           []protos.IntMapEntry
+	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
-	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
-	// telemetry is emitted without a deploy having run.
+	// Number of resources added and updated by the Python mutator, keyed by resource type.
+	PythonAddedResources   map[string]int64
+	PythonUpdatedResources map[string]int64
+
+	// Configuration section Python support is declared in.
+	PythonConfigSection protos.PydabsConfigSection
+
+	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
+	// requested engine as soon as it is resolved, then refined to the state's engine
+	// once the state is pulled, so deploy telemetry reports it even when the deploy
+	// fails or is cancelled before applying resources. Empty only when the deploy
+	// fails before the engine is resolved.
 	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
-	// the state file. Nil for terraform deploys.
+	// the state file.
 	ResourceState resourcestate.ExportedResourcesMap
 }
 
@@ -139,6 +143,10 @@ type Bundle struct {
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
 
+	// InGitRepo reports whether the bundle root is inside a git repository.
+	// Nil when git detection did not run or failed.
+	InGitRepo *bool
+
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
@@ -175,17 +183,8 @@ type Bundle struct {
 	// which lists everything tracked, this counts only what actually changed.
 	FileCounts libsync.FileCounts
 
-	// Stores an initialized copy of this bundle's Terraform wrapper.
-	Terraform *tfexec.Terraform
-
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
-
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformPlanIsEmpty bool
 
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
@@ -198,13 +197,16 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
-	// MigratingToDirect is set when the direct engine is requested but the existing
-	// state still uses terraform, so the state is migrated to the direct engine after
-	// this deploy. Resources that only the direct engine supports are skipped by this
-	// run rather than rejected: terraform cannot deploy them, and since terraform
-	// could never have deployed them they are absent from its state. The next deploy,
-	// which runs on the migrated state, creates them.
+	// MigratingToDirect is set when the existing state still uses terraform, so it is
+	// migrated to the direct engine in memory before the command runs (statemgmt.Migrate).
+	// Deploy and destroy commit the migration (statemgmt.CommitMigration); other commands
+	// leave the terraform state untouched.
 	MigratingToDirect bool
+
+	// AllowTerraformEngineConfig reports a terraform bundle.engine as a warning instead
+	// of an error and skips the DATABRICKS_BUNDLE_ENGINE check. Set by read-only commands
+	// (bundle summary) so users can still inspect a bundle that pins the removed engine.
+	AllowTerraformEngineConfig bool
 
 	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
 	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
@@ -435,12 +437,32 @@ func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
 }
 
-// StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
-func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
-	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
+// SyncMode returns workspace.sync_mode or, if it is not set, the sync mode selected by the
+// deprecated experimental.immutable_folder or presets.source_linked_deployment setting, in that
+// order of precedence. It returns "" if none of them is set.
+func (b *Bundle) SyncMode() config.SyncMode {
+	sourceLinked := b.Config.Presets.SourceLinkedDeployment
+	switch {
+	case b.Config.Workspace.SyncMode != "":
+		return b.Config.Workspace.SyncMode
+	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+		return config.SyncModeImmutable
+	case config.IsExplicitlyEnabled(sourceLinked):
+		return config.SyncModeInPlace
+	case config.IsExplicitlyDisabled(sourceLinked):
+		return config.SyncModeOverwrite
+	default:
+		return ""
+	}
 }
 
-// IsImmutableFolder reports whether experimental.immutable_folder is enabled.
+// IsImmutableFolder reports whether bundle files and artifacts are deployed as an immutable snapshot.
 func (b *Bundle) IsImmutableFolder() bool {
-	return b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder
+	return b.SyncMode() == config.SyncModeImmutable
+}
+
+// IsSourceLinkedDeployment reports whether deployed resources reference the source files in the
+// workspace directly instead of uploaded copies.
+func (b *Bundle) IsSourceLinkedDeployment() bool {
+	return b.SyncMode() == config.SyncModeInPlace
 }

@@ -1,0 +1,6 @@
+# snapshot_schedule_fields is the allow-list of snapshot-schedule fields the
+# acceptance tests assert on. Anything the backend returns outside this list is
+# dropped, so a new field in the API response does not break the golden.
+snapshot_schedule_fields() {
+    jq '{name, schedule}'
+}

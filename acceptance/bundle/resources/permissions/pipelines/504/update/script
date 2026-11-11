@@ -6,7 +6,7 @@ update_file.py databricks.yml CAN_VIEW CAN_MANAGE
 # The retrying adapter should retry after DATABRICKS_BUNDLE_RETRY_INTERVAL_MS and succeed.
 fault.py "PUT /api/2.0/permissions/pipelines/*" 504 0 1
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # Two PUT requests should appear: the initial 504 and the successful retry.

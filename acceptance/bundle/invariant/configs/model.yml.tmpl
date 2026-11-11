@@ -5,3 +5,7 @@ resources:
   models:
     foo:
       name: test-model-$UNIQUE_NAME
+      # CANNOT_REMOVE: the MLflow model registry rejects an empty description on update with
+      # 400 "Description cannot be empty" (only reproducible on cloud; the local testserver
+      # accepts the cleared value).
+      description: This is a test model

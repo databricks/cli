@@ -1,0 +1,38 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for materialization sets:
+# - a member's offline_store_config and online_store_config resolve the catalog and schema they
+#   name when the bundle defines them (the first two members)
+# - a destination the bundle does not define is left untouched (the third member)
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  materialization_sets:
+    set1:
+      materialized_features:
+        - feature_name: mycatalog.myschema.feat
+          offline_store_config:
+            catalog_name: mycatalog
+            schema_name: myschema
+            table_name_prefix: feat_off
+        - feature_name: mycatalog.myschema.feat
+          online_store_config:
+            online_store_name: store
+            catalog_name: mycatalog
+            schema_name: myschema
+            table_name_prefix: feat
+        - feature_name: other.other.feat
+          offline_store_config:
+            catalog_name: other
+            schema_name: other
+            table_name_prefix: feat_off
+
+targets:
+  dev:
+    mode: development

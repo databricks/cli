@@ -10,8 +10,8 @@ Ignore = [
 ]
 
 [[Repls]]
-Old = '\d{5,}'
-New = "[NUMID]"
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'
 
 [[Repls]]
 Old = '\\\\'

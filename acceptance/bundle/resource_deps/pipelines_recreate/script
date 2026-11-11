@@ -1,7 +1,6 @@
 
-echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_create.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle' > out.create.requests.json
 
@@ -14,9 +13,9 @@ trace $CLI bundle plan  # empty
 title "Update storage, triggering recreate for pipeline; this means updating downstream deps"
 trace update_file.py databricks.yml "storage: dbfs:/my-storage" "storage: dbfs:/my-new-storage"
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_update.json
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle' > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle' > out.update.requests.json
 
 foo_id_2=`read_id.py foo`
 
@@ -25,11 +24,11 @@ title "Fetch resource IDs and verify remote state"
 trace musterr $CLI pipelines get $foo_id
 trace $CLI pipelines get $foo_id_2 | nostamp
 trace $CLI jobs get $bar_id | nostamp| jq 'del(.settings.run_as)'
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_noop.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle'
 
@@ -39,4 +38,4 @@ trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle'
 trace musterr $CLI pipelines get $foo_id
 trace musterr $CLI pipelines get $foo_id_2
 trace musterr $CLI jobs get $bar_id
-rm out.requests.txt
+rm "$OUT_REQUESTS"

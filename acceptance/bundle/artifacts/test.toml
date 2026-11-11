@@ -19,6 +19,7 @@ Ignore = [
     'build',
     '*egg-info',
     '.databricks',
+    'tmp.plan.json',
 ]
 
 [[Server]]

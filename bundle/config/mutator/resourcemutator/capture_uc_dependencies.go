@@ -8,19 +8,18 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 type captureUCDependencies struct{}
 
-// If a user defines a UC schema in the bundle, they can refer to it in SDP pipelines,
-// UC Volumes, Registered Models, Quality Monitors, or Model Serving Endpoints using the
-// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows TF to capture
-// the deploy time dependency this resource has on the schema and deploy changes to the
-// schema before deploying the dependent resource.
+// If a user defines a UC schema in the bundle, other resources can refer to it using the
+// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
+// TF to capture the deploy time dependency this resource has on the schema and deploy changes
+// to the schema before deploying the dependent resource.
 //
-// Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
-// UC Volumes, Registered Models, or Model Serving Endpoints using the
-// `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
+// Similarly, if a user defines a UC catalog in the bundle, other resources can refer to it using
+// the `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
 // dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
@@ -88,6 +87,35 @@ func resolveCatalog(b *bundle.Bundle, catalogName string) string {
 	return catalogName
 }
 
+// splitUCName splits a compound UC identifier into exactly n dot-separated
+// components, returning false if it has a different number of components. Callers
+// skip names containing a ${...} reference beforehand, so this is a plain split:
+// a reference would push the component count past n and be rejected here anyway.
+func splitUCName(name string, n int) ([]string, bool) {
+	parts := strings.Split(name, ".")
+	if len(parts) != n {
+		return nil, false
+	}
+	return parts, true
+}
+
+// resolveAiGatewayParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
+// a catalog or schema defined in the same bundle becomes an explicit deploy-time
+// dependency. AI Gateway securables address their parent schema with this
+// compound field rather than separate catalog/schema fields.
+func resolveAiGatewayParent(b *bundle.Bundle, parent string) string {
+	rest, ok := strings.CutPrefix(parent, "schemas/")
+	if !ok {
+		return parent
+	}
+	parts, ok := splitUCName(rest, 2)
+	if !ok {
+		return parent
+	}
+	catalogName, schemaName := parts[0], parts[1]
+	return "schemas/" + resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
+}
+
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
@@ -127,15 +155,67 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if qm == nil || qm.OutputSchemaName == "" {
 			continue
 		}
+		// A name that already contains a reference is left as is: we only rewrite a
+		// fully literal name and do not support a mix of references and literals.
+		if dynvar.ContainsVariableReference(qm.OutputSchemaName) {
+			continue
+		}
 		// OutputSchemaName is a compound "catalog.schema" string.
-		parts := strings.SplitN(qm.OutputSchemaName, ".", 2)
-		if len(parts) != 2 {
+		parts, ok := splitUCName(qm.OutputSchemaName, 2)
+		if !ok {
 			continue
 		}
 		catalogName, schemaName := parts[0], parts[1]
 		resolved := resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
 		if resolved != qm.OutputSchemaName {
 			qm.OutputSchemaName = resolved
+		}
+	}
+	for _, idx := range b.Config.Resources.VectorSearchIndexes {
+		if idx == nil {
+			continue
+		}
+		// A name that already contains a reference is left as is; a mix of
+		// references and literals is not supported.
+		if dynvar.ContainsVariableReference(idx.Name) {
+			continue
+		}
+		// Name is a three-part "catalog.schema.index" UC identifier.
+		parts, ok := splitUCName(idx.Name, 3)
+		if !ok {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
+	for _, f := range b.Config.Resources.Features {
+		if f == nil {
+			continue
+		}
+		if dynvar.ContainsVariableReference(f.FullName) {
+			continue
+		}
+		parts, ok := splitUCName(f.FullName, 3)
+		if !ok {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		f.FullName = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
+	for _, set := range b.Config.Resources.MaterializationSets {
+		if set == nil {
+			continue
+		}
+		for i := range set.MaterializedFeatures {
+			member := &set.MaterializedFeatures[i]
+			if offline := member.OfflineStoreConfig; offline != nil {
+				offline.SchemaName = resolveSchema(b, offline.CatalogName, offline.SchemaName)
+				offline.CatalogName = resolveCatalog(b, offline.CatalogName)
+			}
+			if online := member.OnlineStoreConfig; online != nil {
+				online.SchemaName = resolveSchema(b, online.CatalogName, online.SchemaName)
+				online.CatalogName = resolveCatalog(b, online.CatalogName)
+			}
 		}
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
@@ -153,6 +233,29 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 			acc.SchemaName = resolveSchema(b, acc.CatalogName, acc.SchemaName)
 			acc.CatalogName = resolveCatalog(b, acc.CatalogName)
 		}
+	}
+	for _, ms := range b.Config.Resources.ModelServices {
+		if ms == nil {
+			continue
+		}
+		// A parent that already contains a reference is left as is; a mix of
+		// references and literals is not supported.
+		if dynvar.ContainsVariableReference(ms.Parent) {
+			continue
+		}
+		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
+	}
+	for _, ms := range b.Config.Resources.McpServices {
+		if ms == nil {
+			continue
+		}
+		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
+	}
+	for _, mps := range b.Config.Resources.ModelProviderServices {
+		if mps == nil {
+			continue
+		}
+		mps.Parent = resolveAiGatewayParent(b, mps.Parent)
 	}
 
 	// Schemas are resolved last because the schema catalog resolution modifies

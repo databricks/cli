@@ -1,0 +1,110 @@
+
+>>> [CLI] bundle deploy -qq
+
+=== Edit job with spaces remotely
+=== Sync only job with spaces
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job with spaces
+  description: add
+  tasks[task_key='main'].notebook_task.notebook_path: replace
+  tasks[task_key='main'].timeout_seconds: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -12,7 +12,8 @@
+       tasks:
+         - task_key: main
+-          timeout_seconds: 60
++          timeout_seconds: 900
+           notebook_task:
+-            notebook_path: ${var.notebook_root}/notebook
++            notebook_path: ${var.notebook_root}/notebook_updated
++      description: Remote description
+     "job's\"quotes":
+       name: quoted-job
+
+=== Syncing job with spaces again is idempotent
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
+No changes detected.
+
+
+=== Add a sibling task in job with spaces
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job with spaces
+  tasks[task_key='added']: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -15,4 +15,7 @@
+           notebook_task:
+             notebook_path: ${var.notebook_root}/notebook_updated
++        - notebook_task:
++            notebook_path: ${var.notebook_root}/notebook_updated_sibling
++          task_key: added
+       description: Remote description
+     "job's\"quotes":
+
+=== Edit job's"quotes remotely
+=== Sync only job's"quotes
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job's"quotes
+  description: add
+  tasks[task_key='main'].notebook_task.notebook_path: replace
+  tasks[task_key='main'].timeout_seconds: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -23,7 +23,8 @@
+       tasks:
+         - task_key: main
+-          timeout_seconds: 60
++          timeout_seconds: 900
+           notebook_task:
+-            notebook_path: ${var.notebook_root}/notebook
++            notebook_path: ${var.notebook_root}/notebook_updated
++      description: Remote description
+
+ targets:
+
+=== Syncing job's"quotes again is idempotent
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
+No changes detected.
+
+
+=== Add a sibling task in job's"quotes
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job's"quotes
+  tasks[task_key='added']: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -26,4 +26,7 @@
+           notebook_task:
+             notebook_path: ${var.notebook_root}/notebook_updated
++        - notebook_task:
++            notebook_path: ${var.notebook_root}/notebook_updated_sibling
++          task_key: added
+       description: Remote description
+
+
+>>> [CLI] bundle destroy --auto-approve -qq

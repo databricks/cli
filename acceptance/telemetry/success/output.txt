@@ -7,10 +7,10 @@ HH:MM:SS Debug: GET /.well-known/databricks-config
 < HTTP/1.1 200 OK
 < {
 <   "oidc_endpoint": "[DATABRICKS_URL]/oidc",
-<   "workspace_id": "[NUMID]"
+<   "workspace_id": "[WORKSPACE_ID]"
 < } pid=PID sdk=true
 HH:MM:SS Debug: [Local Cache] computed and stored result pid=PID
-HH:MM:SS Debug: Resolved workspace_id from host metadata: "[NUMID]" pid=PID sdk=true
+HH:MM:SS Debug: Resolved workspace_id from host metadata: "[WORKSPACE_ID]" pid=PID sdk=true
 HH:MM:SS Debug: Resolved cloud from hostname: "AWS" pid=PID sdk=true
 HH:MM:SS Debug: Resolved discovery_url from host metadata: "[DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server" pid=PID sdk=true
 HH:MM:SS Info: completed execution pid=PID exit_code=0
@@ -18,8 +18,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID][0]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID][1]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS]
 > }
@@ -30,9 +30,9 @@ HH:MM:SS Debug: POST /telemetry-ext
 < } pid=PID sdk=true
 HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][0]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
@@ -50,7 +50,7 @@ HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][1]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {

@@ -36,6 +36,7 @@ Connect to serverless:
   databricks ssh connect
   databricks ssh connect --accelerator=<GPU_type>   # AI Runtime
   databricks ssh connect --base-environment=<name>  # custom base environment
+  databricks ssh connect --environment-version=5    # serverless environment version
 
 Connect to a dedicated cluster:
   databricks ssh connect --cluster=<cluster-id>`,
@@ -53,19 +54,21 @@ Connect to a dedicated cluster:
 	var handoverTimeout time.Duration
 	var releasesDir string
 	var autoStartCluster bool
-	var userKnownHostsFile string
+	var knownHostsDir string
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
 	var baseEnvironment string
 	var autoApprove bool
 	var usagePolicyID string
+	var keepDetachedProcesses bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
+	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
@@ -82,8 +85,8 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory for local SSH tunnel development releases")
 	cmd.Flags().MarkHidden("releases-dir")
 
-	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to user known hosts file for SSH client")
-	cmd.Flags().MarkHidden("user-known-hosts-file")
+	cmd.Flags().StringVar(&knownHostsDir, "known-hosts-dir", "", "Directory for the known hosts files the CLI maintains for tunnel connections")
+	cmd.Flags().MarkHidden("known-hosts-dir")
 
 	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
 	cmd.Flags().MarkHidden("liteswap")
@@ -91,8 +94,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
 	cmd.Flags().MarkHidden("skip-settings-check")
 
-	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
-	cmd.Flags().MarkHidden("environment-version")
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", client.DefaultEnvironmentVersion, "Serverless environment version for the SSH server job (serverless only)")
 
 	cmd.Flags().StringVar(&baseEnvironment, "base-environment", "", "Custom base environment for serverless compute: an env.yaml path, a workspace-base-environments resource ID, or a display name")
 
@@ -112,8 +114,16 @@ Connect to a dedicated cluster:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
+		// Generate the name before resetting the version so that the default version
+		// maps to the same name whether it is set explicitly or implicitly.
 		if connectionName == "" && clusterID == "" && !proxyMode {
-			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment)
+			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator, baseEnvironment, environmentVersion)
+		}
+		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
+		// lets the submit path default to DefaultEnvironmentVersion and lets Validate
+		// detect a real --environment-version + --base-environment conflict.
+		if !cmd.Flags().Changed("environment-version") {
+			environmentVersion = 0
 		}
 		// Serverless GPU compute can take much longer to provision than CPU compute,
 		// so allow extra time for the SSH server job to start.
@@ -121,38 +131,34 @@ Connect to a dedicated cluster:
 		if accelerator != "" {
 			startupTimeout = gpuTaskStartupTimeout
 		}
-		// Only carry an explicitly-set environment version. Leaving it at 0 otherwise
-		// lets the submit path default to minEnvironmentVersion and lets Validate
-		// detect a real --environment-version + --base-environment conflict.
-		if !cmd.Flags().Changed("environment-version") {
-			environmentVersion = 0
-		}
 		opts := client.ClientOptions{
-			Profile:              wsClient.Config.Profile,
-			ClusterID:            clusterID,
-			ConnectionName:       connectionName,
-			Accelerator:          accelerator,
-			ProxyMode:            proxyMode,
-			IDE:                  ide,
-			ServerMetadata:       serverMetadata,
-			ShutdownDelay:        shutdownDelay,
-			MaxClients:           maxClients,
-			HandoverTimeout:      handoverTimeout,
-			KeepaliveInterval:    defaultKeepaliveInterval,
-			ReleasesDir:          releasesDir,
-			ServerTimeout:        resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
-			TaskStartupTimeout:   startupTimeout,
-			AutoStartCluster:     autoStartCluster,
-			ClientPublicKeyName:  clientPublicKeyName,
-			ClientPrivateKeyName: clientPrivateKeyName,
-			UserKnownHostsFile:   userKnownHostsFile,
-			Liteswap:             liteswap,
-			SkipSettingsCheck:    skipSettingsCheck,
-			EnvironmentVersion:   environmentVersion,
-			BaseEnvironment:      baseEnvironment,
-			AdditionalArgs:       args,
-			AutoApprove:          autoApprove,
-			UsagePolicyID:        usagePolicyID,
+			Profile:               wsClient.Config.Profile,
+			ClusterID:             clusterID,
+			ConnectionName:        connectionName,
+			Accelerator:           accelerator,
+			ProxyMode:             proxyMode,
+			IDE:                   ide,
+			ServerMetadata:        serverMetadata,
+			ShutdownDelay:         shutdownDelay,
+			MaxClients:            maxClients,
+			HandoverTimeout:       handoverTimeout,
+			KeepaliveInterval:     defaultKeepaliveInterval,
+			ReleasesDir:           releasesDir,
+			ServerTimeout:         resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
+			TaskStartupTimeout:    startupTimeout,
+			AutoStartCluster:      autoStartCluster,
+			ClientPublicKeyName:   clientPublicKeyName,
+			ClientPrivateKeyName:  clientPrivateKeyName,
+			ServerPublicKeyName:   serverPublicKeyName,
+			KnownHostsDir:         knownHostsDir,
+			Liteswap:              liteswap,
+			SkipSettingsCheck:     skipSettingsCheck,
+			EnvironmentVersion:    environmentVersion,
+			BaseEnvironment:       baseEnvironment,
+			AdditionalArgs:        args,
+			AutoApprove:           autoApprove,
+			UsagePolicyID:         usagePolicyID,
+			KeepDetachedProcesses: keepDetachedProcesses,
 		}
 		if err := opts.Validate(); err != nil {
 			return err

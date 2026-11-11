@@ -1,9 +1,11 @@
 package structdiff
 
 import (
+	"maps"
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -91,7 +93,7 @@ func equalValues(v1, v2 reflect.Value) bool {
 		}
 		return reflect.DeepEqual(v1.Interface(), v2.Interface())
 	default:
-		return reflect.DeepEqual(v1.Interface(), v2.Interface())
+		return equalLeaf(v1, v2)
 	}
 	return true
 }
@@ -107,8 +109,9 @@ func equalStruct(s1, s2 reflect.Value) bool {
 			continue
 		}
 
-		// Continue traversing embedded structs.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. A tagged anonymous field is a named field to
+		// encoding/json, so it goes through the path below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if !equalValues(s1.Field(i), s2.Field(i)) {
 				return false
 			}
@@ -118,7 +121,7 @@ func equalStruct(s1, s2 reflect.Value) bool {
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 
 		// Skip fields with json:"-"
-		if jsonTag.Name() == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 
@@ -151,15 +154,20 @@ func equalStruct(s1, s2 reflect.Value) bool {
 }
 
 func equalMapStringKey(m1, m2 reflect.Value) bool {
+	// map[string]string is the common case; reflect would copy every key and value to the heap.
+	if s1, ok := reflect.TypeAssert[map[string]string](m1); ok {
+		s2, _ := reflect.TypeAssert[map[string]string](m2)
+		return maps.Equal(s1, s2)
+	}
+
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		// Key is always string at this point
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		// Key kind is always String at this point; Value.String() also handles a
+		// named string key type, where a .(string) assertion panics.
+		keySet[k.String()] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		keySet[k.String()] = k
 	}
 
 	for _, k := range keySet {

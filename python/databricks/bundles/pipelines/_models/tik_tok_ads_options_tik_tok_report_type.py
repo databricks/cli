@@ -6,8 +6,6 @@ from typing import Literal
 
 class TikTokAdsOptionsTikTokReportType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Report type for TikTok Ads API.
     """
 

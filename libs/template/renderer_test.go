@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"context"
 	"io/fs"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
@@ -47,6 +49,10 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	helpers := loadHelpers(ctx)
 
 	renderer, err := newRenderer(ctx, settings, helpers, templateFS, templateDirName, libraryDirName)
+	require.NoError(t, err)
+	schema, err := jsonschema.LoadFS(templateFS, schemaFileName)
+	require.NoError(t, err)
+	renderer.workspace, err = loadWorkspaceContext(ctx, schema)
 	require.NoError(t, err)
 
 	// Evaluate template
@@ -134,6 +140,56 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 	}
 }
 
+func TestDefaultScalaSparkVersionCombinesVersionMacros(t *testing.T) {
+	tmpl, err := template.New("root").ParseFS(builtinTemplates, "templates/default-scala/library/*")
+	require.NoError(t, err)
+
+	var dbrVersion bytes.Buffer
+	require.NoError(t, tmpl.ExecuteTemplate(&dbrVersion, "dbr_version", nil))
+	var scalaVersion bytes.Buffer
+	require.NoError(t, tmpl.ExecuteTemplate(&scalaVersion, "scala_major_minor_version", nil))
+	var sparkVersion bytes.Buffer
+	require.NoError(t, tmpl.ExecuteTemplate(&sparkVersion, "spark_version", nil))
+
+	assert.Equal(t, strings.TrimSpace(dbrVersion.String()), dbrVersion.String())
+	assert.Equal(t, strings.TrimSpace(scalaVersion.String()), scalaVersion.String())
+	assert.Equal(t, strings.TrimSpace(sparkVersion.String()), sparkVersion.String())
+	assert.Equal(t,
+		dbrVersion.String()+".x-scala"+scalaVersion.String(),
+		sparkVersion.String(),
+	)
+}
+
+func TestDefaultScalaRenderedVersionsUseMacros(t *testing.T) {
+	// Define every macro referenced by the two template files parsed below.
+	tmpl := template.Must(template.New("root").Parse(`
+{{define "dbr_version"}}99.9{{end}}
+{{define "scala_version"}}9.9.9{{end}}
+{{define "spark_version"}}99.9.x-scala9.9{{end}}
+{{define "organization"}}com.example{{end}}
+{{define "version"}}0.1{{end}}
+{{define "main_class_name"}}com.example.Main{{end}}
+`))
+	tmpl, err := tmpl.ParseFS(
+		builtinTemplates,
+		"templates/default-scala/template/{{.project_name}}/build.sbt.tmpl",
+		"templates/default-scala/template/{{.project_name}}/resources/{{.project_name}}.job.yml.tmpl",
+	)
+	require.NoError(t, err)
+
+	config := map[string]any{
+		"compute_type": "standard cluster",
+		"project_name": "my_project",
+	}
+	var buildFile bytes.Buffer
+	require.NoError(t, tmpl.ExecuteTemplate(&buildFile, "build.sbt.tmpl", config))
+	assert.Contains(t, buildFile.String(), `"databricks-connect" % "99.9.+"`)
+
+	var jobFile bytes.Buffer
+	require.NoError(t, tmpl.ExecuteTemplate(&jobFile, "{{.project_name}}.job.yml.tmpl", config))
+	assert.Contains(t, jobFile.String(), "spark_version: 99.9.x-scala9.9")
+}
+
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -175,12 +231,15 @@ func TestRendererSharedLibraryAndOverride(t *testing.T) {
 	require.NoError(t, err)
 	got := string(b)
 
-	// agents_md is defined only in the shared library, so rendering it (a heading)
-	// without error proves the shared library is parsed into the template's namespace.
-	assert.Contains(t, got, "shared: #")
-	// claude_md is defined in both the shared library and this template's own
+	// agents_md is defined in both the shared library and this template's own
 	// library; the template's own definition must take precedence.
 	assert.Contains(t, got, "own: OWN WINS")
+
+	r, err = newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/no-library")
+	require.NoError(t, err)
+	got, err = r.executeTemplate(`{{template "agents_md" .}}`)
+	require.NoError(t, err)
+	assert.Contains(t, got, "# Declarative Automation Bundles Project")
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {

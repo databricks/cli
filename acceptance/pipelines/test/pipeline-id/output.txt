@@ -1,0 +1,50 @@
+
+=== Relative test selections resolve against the pipeline root_path
+>>> MSYS_NO_PATHCONV=1 [CLI] pipelines test --pipeline-id [UUID][0] tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/other/tests
+Pipeline: [UUID][0]
+Update: [UUID][1]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_backfill",
+        "/Workspace/Users/someone@example.com/other/tests"
+      ]
+    }
+  }
+}
+
+=== Without a root_path, test selections must be workspace paths
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][2] tests
+Error: cannot resolve test selection "tests": the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests
+
+>>> MSYS_NO_PATHCONV=1 [CLI] pipelines test --pipeline-id [UUID][2] /Workspace/Users/someone@example.com/tests/test_other.py::test_x
+Pipeline: [UUID][2]
+Update: [UUID][3]
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][2]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {
+      "test_selection": [
+        "/Workspace/Users/someone@example.com/tests/test_other.py::test_x"
+      ]
+    }
+  }
+}
+
+=== Outside a project, --pipeline-id is required
+>>> musterr [CLI] pipelines test tests
+Error: Unable to locate the bundle root: databricks.yml not found.
+
+Run this command from a directory that contains a bundle, or set the DATABRICKS_BUNDLE_ROOT environment variable to the bundle root directory.
+Alternatively, create a new bundle with 'databricks bundle init'.
+

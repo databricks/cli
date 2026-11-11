@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"slices"
 	"strings"
 
@@ -23,10 +22,6 @@ func recoverTelemetry(ctx context.Context) {
 		log.Debugf(ctx, "config-remote-sync telemetry panicked and was skipped: %v", r)
 	}
 }
-
-// ErrStateSnapshotNotFound indicates the deployed state snapshot required for
-// change detection does not exist (the bundle was likely never deployed).
-var ErrStateSnapshotNotFound = errors.New("state snapshot not found")
 
 // Stats accumulates aggregate counters for a single config-remote-sync run.
 // All values are counts, booleans, or enumerated categories; no resource
@@ -54,6 +49,11 @@ type Stats struct {
 	// could not be attributed to a single source location.
 	SkippedChangesCount int64
 
+	// Resources left unchanged because a cluster policy could not be read, by cause.
+	ClusterPolicyNotFoundCount         int64
+	ClusterPolicyPermissionDeniedCount int64
+	ClusterPolicyReadFailedCount       int64
+
 	Restore RestoreStats
 
 	// Identity of the resource state the run actually read. Without these, a
@@ -71,8 +71,25 @@ type Stats struct {
 	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
 	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
 
+	InGitRepo *bool
+
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
+}
+
+// CollectSkippedResources counts resources held back by cluster policy lookups, by
+// reason. Only counts are kept; the resource keys and policy IDs stay in the output.
+func (s *Stats) CollectSkippedResources(skipped []SkippedChange) {
+	for _, skip := range skipped {
+		switch skip.Reason {
+		case SkipReasonClusterPolicyNotFound:
+			s.ClusterPolicyNotFoundCount++
+		case SkipReasonClusterPolicyPermissionDenied:
+			s.ClusterPolicyPermissionDeniedCount++
+		default:
+			s.ClusterPolicyReadFailedCount++
+		}
+	}
 }
 
 // CollectStateStats records which resource state the run read. Only the
@@ -81,11 +98,17 @@ type Stats struct {
 //
 // None of these can contain PII: the lineage is an opaque random UUID minted by
 // the state layer, and the source is one of two fixed literals.
-func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
+// recordedVersion is the version the deployment metadata service holds, zero when the bundle does
+// not record deployment history. A recorded state file persists no serial of its own, so the
+// recorded version stands in for it and the field means the same thing for both backends.
+func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc, recordedVersion int) {
 	if desc == nil {
 		return
 	}
 	s.StateSerial = int64(desc.Serial)
+	if recordedVersion > 0 {
+		s.StateSerial = int64(recordedVersion)
+	}
 	s.StateLineage = desc.Lineage
 	s.StateSource = "remote"
 	if desc.IsLocal {
@@ -273,28 +296,32 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleConfigRemoteSyncEvent: &protos.BundleConfigRemoteSyncEvent{
-			Save:                   s.Save,
-			Engine:                 string(s.Engine),
-			ChangesTotal:           s.ChangesTotal,
-			AddCount:               s.AddCount,
-			ReplaceCount:           s.ReplaceCount,
-			RemoveCount:            s.RemoveCount,
-			RecreateForcingChanges: s.RecreateForcingChanges,
-			OverwrittenLocalEdits:  s.OverwrittenLocalEdits,
-			ResourceChanges:        resourceChanges,
-			FilesChangedCount:      s.FilesChangedCount,
-			FilesWrittenCount:      s.FilesWrittenCount,
-			SkippedChangesCount:    s.SkippedChangesCount,
-			RefsRetargeted:         s.Restore.Retargeted,
-			RefsFromSiblings:       s.Restore.FromSiblings,
-			StateSerial:            s.StateSerial,
-			StateLineage:           s.StateLineage,
-			StateSource:            s.StateSource,
-			StatesAvailableCount:   s.StatesAvailableCount,
-			StateResourceIDs:       s.StateResourceIDs,
-			SelectedResourceIDs:    s.SelectedResourceIDs,
-			ErrorMessage:           s.ErrorMessage,
-			ErrorCategory:          s.ErrorCategory,
+			Save:                               s.Save,
+			Engine:                             string(s.Engine),
+			ChangesTotal:                       s.ChangesTotal,
+			AddCount:                           s.AddCount,
+			ReplaceCount:                       s.ReplaceCount,
+			RemoveCount:                        s.RemoveCount,
+			RecreateForcingChanges:             s.RecreateForcingChanges,
+			OverwrittenLocalEdits:              s.OverwrittenLocalEdits,
+			ResourceChanges:                    resourceChanges,
+			FilesChangedCount:                  s.FilesChangedCount,
+			FilesWrittenCount:                  s.FilesWrittenCount,
+			SkippedChangesCount:                s.SkippedChangesCount,
+			ClusterPolicyNotFoundCount:         s.ClusterPolicyNotFoundCount,
+			ClusterPolicyPermissionDeniedCount: s.ClusterPolicyPermissionDeniedCount,
+			ClusterPolicyReadFailedCount:       s.ClusterPolicyReadFailedCount,
+			RefsRetargeted:                     s.Restore.Retargeted,
+			RefsFromSiblings:                   s.Restore.FromSiblings,
+			StateSerial:                        s.StateSerial,
+			StateLineage:                       s.StateLineage,
+			StateSource:                        s.StateSource,
+			StatesAvailableCount:               s.StatesAvailableCount,
+			StateResourceIDs:                   s.StateResourceIDs,
+			SelectedResourceIDs:                s.SelectedResourceIDs,
+			InGitRepo:                          s.InGitRepo,
+			ErrorMessage:                       s.ErrorMessage,
+			ErrorCategory:                      s.ErrorCategory,
 		},
 	})
 }

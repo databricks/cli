@@ -60,8 +60,6 @@ def test_generate_dataclass():
         extends=[],
         fields=[
             GeneratedField(
-                create_func_default=None,
-                create_func_type_name=variable_or_type(str_type(), is_required=True),
                 default=None,
                 default_factory=None,
                 description="task_key description",

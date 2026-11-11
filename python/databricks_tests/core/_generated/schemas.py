@@ -5,12 +5,12 @@ from databricks.bundles.core._generated.schemas import _resource_type
 from databricks.bundles.schemas._models.lifecycle import Lifecycle
 from databricks.bundles.schemas._models.privilege_assignment import PrivilegeAssignment
 from databricks.bundles.schemas._models.schema import Schema
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_schema,
             dict_example={
                 "catalog_name": "catalog_name",

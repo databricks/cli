@@ -1,0 +1,57 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/app"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/postgres/projects",
+    "q": {
+      "project_id": "test-pg-project-[UNIQUE_NAME]"
+    },
+    "body": {
+      "project_id": "test-pg-project-[UNIQUE_NAME]",
+      "spec": {
+        "display_name": "Test Postgres Project"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/postgres/projects/test-pg-project-[UNIQUE_NAME]/branches",
+    "q": {
+      "branch_id": "test-branch-[UNIQUE_NAME]"
+    },
+    "body": {
+      "branch_id": "test-branch-[UNIQUE_NAME]",
+      "parent": "projects/test-pg-project-[UNIQUE_NAME]",
+      "spec": {
+        "no_expiry": true
+      }
+    }
+  }
+]

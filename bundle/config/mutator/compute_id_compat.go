@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -23,12 +24,12 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 	// The "compute_id" key is set; rewrite it to "cluster_id".
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		v, d := rewriteComputeIdToClusterId(v, dyn.NewPath(dyn.Key("bundle")))
+		v, d := rewriteComputeIdToClusterId(v, dyn.NewPath(dyn.Key("bundle")), nil)
 		diags = diags.Extend(d)
 
 		// Check if the "compute_id" key is set in any target overrides.
 		return dyn.MapByPattern(v, dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			v, d := rewriteComputeIdToClusterId(v, dyn.Path{})
+			v, d := rewriteComputeIdToClusterId(v, dyn.Path{}, p)
 			diags = diags.Extend(d)
 			return v, nil
 		})
@@ -38,7 +39,9 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 	return diags
 }
 
-func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagnostics) {
+// rewriteComputeIdToClusterId rewrites p.compute_id to p.cluster_id in v; prefix is the
+// path of v in the configuration, used in the diagnostic.
+func rewriteComputeIdToClusterId(v dyn.Value, p, prefix dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	computeIdPath := p.Append(dyn.Key("compute_id"))
 	computeId, err := dyn.GetByPath(v, computeIdPath)
@@ -55,7 +58,7 @@ func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagn
 		Severity:  diag.Warning,
 		Summary:   "compute_id is deprecated, please use cluster_id instead",
 		Locations: computeId.Locations(),
-		Paths:     []dyn.Path{computeIdPath},
+		Paths:     dyn.ToStructPaths(slices.Concat(prefix, computeIdPath)),
 	})
 
 	clusterIdPath := p.Append(dyn.Key("cluster_id"))

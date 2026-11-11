@@ -31,11 +31,51 @@ def load_ignores():
 
 
 def count_trailing_newlines(s):
+    r"""Count consecutive newlines at the end of a string.
+
+    >>> count_trailing_newlines("hello")
+    0
+
+    >>> count_trailing_newlines("hello\n")
+    1
+
+    >>> count_trailing_newlines("hello\n\n")
+    2
+
+    >>> count_trailing_newlines("")
+    0
+    """
     match = re.search(r"(\n+)$", s)
     return len(match.group(1)) if match else 0
 
 
 def validate_contents(data):
+    r"""Validate file contents and yield error messages for issues found.
+
+    Valid content (single final newline, no trailing spaces) yields nothing:
+
+    >>> list(validate_contents(b'hello\nworld\n'))
+    []
+
+    Each kind of problem yields its own message:
+
+    >>> list(validate_contents(b'hello'))
+    [' File does not end with a newline']
+
+    >>> list(validate_contents(b'hello  \n'))
+    ["1: Trailing whitespace 'hello  '"]
+
+    >>> list(validate_contents(b'hello\n  \nworld\n'))
+    ['2: Whitespace-only line']
+
+    >>> list(validate_contents(b'hello\n\n\n'))
+    [' 3 newlines at the end']
+
+    Empty data yields nothing:
+
+    >>> list(validate_contents(b''))
+    []
+    """
     if not data:
         return
     try:
@@ -63,7 +103,31 @@ def validate_contents(data):
 
 
 def fix_contents(data):
-    """Fix whitespace issues in file contents."""
+    r"""Fix whitespace issues in file contents.
+
+    Trailing whitespace is stripped and the file ends with exactly one newline:
+
+    >>> fix_contents(b'hello  \nworld  \n\n\n')
+    b'hello\nworld\n'
+
+    A missing final newline is added:
+
+    >>> fix_contents(b'hello')
+    b'hello\n'
+
+    A whitespace-only line keeps its now-empty line break:
+
+    >>> fix_contents(b'hello\n  \nworld\n')
+    b'hello\n\nworld\n'
+
+    Empty and already-valid content are returned unchanged:
+
+    >>> fix_contents(b'')
+    b''
+
+    >>> fix_contents(b'hello\nworld\n')
+    b'hello\nworld\n'
+    """
     if not data:
         return data
     try:

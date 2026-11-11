@@ -15,12 +15,12 @@ from databricks.bundles.external_locations._models.lifecycle import Lifecycle
 from databricks.bundles.external_locations._models.privilege_assignment import (
     PrivilegeAssignment,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_external_location,
             dict_example={
                 "credential_name": "credential_name",

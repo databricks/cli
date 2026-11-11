@@ -19,6 +19,35 @@ __all__ = [
 
 _T = TypeVar("_T")
 
+# Same strings as normalizeBool in libs/dyn/convert/normalize.go.
+# See https://yaml.org/type/bool.html.
+_TRUE_STRINGS = [
+    "true",
+    "True",
+    "TRUE",
+    "y",
+    "Y",
+    "yes",
+    "Yes",
+    "YES",
+    "on",
+    "On",
+    "ON",
+]
+_FALSE_STRINGS = [
+    "false",
+    "False",
+    "FALSE",
+    "n",
+    "N",
+    "no",
+    "No",
+    "NO",
+    "off",
+    "Off",
+    "OFF",
+]
+
 
 def _find_union_arg(value: Any, tpe: type) -> Optional[type]:
     """
@@ -137,6 +166,12 @@ def _transform_field(cls: Type[_T], field: Field, value: Any) -> _T:
 def _transform(cls: Type[_T], value: Any) -> _T:
     origin = get_origin(cls)
 
+    # interface{} fields are generated as `Any`: there is no schema to normalize
+    # against, so pass the value through unchanged. The bundle config mutators
+    # validate it (string or map) on the Go side.
+    if cls is Any:
+        return value  # type:ignore
+
     if is_dataclass(cls) and isinstance(value, cls):  # type:ignore
         return value
 
@@ -201,8 +236,10 @@ def _transform(cls: Type[_T], value: Any) -> _T:
         if isinstance(value, bool):
             return value  # type:ignore
 
-        if value in ["true", "false"]:
-            return value == "true"  # type:ignore
+        if value in _TRUE_STRINGS:
+            return True  # type:ignore
+        if value in _FALSE_STRINGS:
+            return False  # type:ignore
 
         raise ValueError(f"Unexpected type: {cls} for '{value}'")
     elif issubclass(origin or cls, Enum):

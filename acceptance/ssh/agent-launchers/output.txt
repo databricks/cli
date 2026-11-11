@@ -1,0 +1,48 @@
+
+=== Serverless server
+
+=== SetEnv appends the launcher directory to PATH
+SetEnv
+HOME="[TEST_TMP_DIR]/server-home"
+PATH="/usr/bin:/bin:[TEST_TMP_DIR]/server-home/.agent-shim/bin"
+DATABRICKS_HOST="[DATABRICKS_URL]"
+DATABRICKS_TOKEN="[DATABRICKS_TOKEN]"
+DATABRICKS_CLI_PATH="[CLI]"
+DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel
+DATABRICKS_CLI_UPSTREAM_VERSION=
+DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel
+DATABRICKS_SDK_UPSTREAM_VERSION=
+GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config
+ENABLE_DATABRICKS_CLI=true
+PYTHONPYCACHEPREFIX=/tmp/pycache
+DATABRICKS_JUPYTER_SERVERLESS=true
+
+=== Each supported agent has a launcher that delegates to the agent shim
+
+>>> ls server-home/.agent-shim/bin
+claude
+codex
+
+>>> cat server-home/.agent-shim/bin/claude
+#!/usr/bin/env bash
+# "claude" launcher from "databricks ssh connect"; delegates to "ssh agent-shim claude".
+export DATABRICKS_WORKSPACE_HOME='/Workspace/Users/[USERNAME]'
+exec [CLI] ssh agent-shim claude "$@"
+
+=== A non-interactive session finds the launchers on PATH
+/usr/bin:/bin:[TEST_TMP_DIR]/server-home/.agent-shim/bin
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/claude
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/codex
+
+=== Dedicated server
+
+=== SetEnv appends the launcher directory to PATH
+PATH="/usr/bin:/bin:[TEST_TMP_DIR]/server-home/.agent-shim/bin"
+
+>>> ls server-home/.agent-shim/bin
+claude
+codex
+
+=== A non-interactive session finds the launchers on PATH
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/claude
+[TEST_TMP_DIR]/server-home/.agent-shim/bin/codex

@@ -99,8 +99,8 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
-	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
-	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances.`)
+	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
+	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
 	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
@@ -235,8 +235,10 @@ func newCreateSpace() *cobra.Command {
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create-space NAME"
-	cmd.Short = `Create an app space.`
-	cmd.Long = `Create an app space.
+	cmd.Short = `*Beta* Create an app space.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create an app space.
 
   Creates a new app space.
 
@@ -250,12 +252,9 @@ func newCreateSpace() *cobra.Command {
       alphanumeric characters and hyphens. It must be unique within the
       workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -601,8 +600,10 @@ func newDeleteSpace() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteSpaceTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-space NAME"
-	cmd.Short = `Delete an app space.`
-	cmd.Long = `Delete an app space.
+	cmd.Short = `*Beta* Delete an app space.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete an app space.
 
   Deletes an app space.
 
@@ -614,12 +615,9 @@ func newDeleteSpace() *cobra.Command {
   Arguments:
     NAME: The name of the app space.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -713,6 +711,7 @@ func newDeploy() *cobra.Command {
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
 	// TODO: array: env_vars
 	// TODO: complex arg: git_source
+	// TODO: complex arg: health_check
 	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
@@ -1047,20 +1046,19 @@ func newGetSpace() *cobra.Command {
 	var getSpaceReq apps.GetSpaceRequest
 
 	cmd.Use = "get-space NAME"
-	cmd.Short = `Get an app space.`
-	cmd.Long = `Get an app space.
+	cmd.Short = `*Beta* Get an app space.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an app space.
 
   Retrieves information for the app space with the supplied name.
 
   Arguments:
     NAME: The name of the app space.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1109,20 +1107,19 @@ func newGetSpaceOperation() *cobra.Command {
 	var getSpaceOperationReq apps.GetOperationRequest
 
 	cmd.Use = "get-space-operation NAME"
-	cmd.Short = `Get the status of an app space operation.`
-	cmd.Long = `Get the status of an app space operation.
+	cmd.Short = `*Beta* Get the status of an app space operation.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get the status of an app space operation.
 
   Gets the status of an app space update operation.
 
   Arguments:
     NAME: The name of the operation resource.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1389,17 +1386,16 @@ func newListSpaces() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-spaces"
-	cmd.Short = `List app spaces.`
-	cmd.Long = `List app spaces.
+	cmd.Short = `*Beta* List app spaces.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List app spaces.
 
   Lists all app spaces in the workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1699,8 +1695,8 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
-	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
-	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances.`)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
 	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
@@ -1721,7 +1717,8 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
 
-  Updates the app with the supplied name.
+  Updates the app with the supplied name. This is a full replacement: fields
+  omitted from the request are cleared, so send the complete app.
 
   Arguments:
     NAME: The name of the app. The name must contain only lowercase alphanumeric
@@ -1961,8 +1958,10 @@ func newUpdateSpace() *cobra.Command {
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update-space NAME UPDATE_MASK"
-	cmd.Short = `Update an app space.`
-	cmd.Long = `Update an app space.
+	cmd.Short = `*Beta* Update an app space.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update an app space.
 
   Updates an app space. The update process is asynchronous and the status of the
   update can be checked with the GetSpaceOperation method.
@@ -1988,12 +1987,9 @@ func newUpdateSpace() *cobra.Command {
       wildcards, as it can lead to unintended results if the API changes in the
       future.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

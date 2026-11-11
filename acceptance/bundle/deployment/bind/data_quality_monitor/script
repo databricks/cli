@@ -1,0 +1,8 @@
+trace $CLI bundle deployment bind monitor1 table,11111111-2222-3333-4444-555555555555 --auto-approve
+trace $CLI bundle summary
+
+title "A malformed id is rejected"
+trace musterr $CLI bundle deployment bind monitor1 11111111-2222-3333-4444-555555555555 --auto-approve
+
+trace $CLI bundle deployment unbind monitor1
+trace $CLI bundle summary

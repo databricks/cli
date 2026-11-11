@@ -1,6 +1,6 @@
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -20,7 +20,7 @@ trace $CLI cluster-policies set-permissions "$policy_id" --json '{"access_contro
 
 # Discard the out-of-band request so the verification below captures only the
 # reconciling Set issued by the redeploy.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Plan detects the permission drift"
 trace $CLI bundle plan

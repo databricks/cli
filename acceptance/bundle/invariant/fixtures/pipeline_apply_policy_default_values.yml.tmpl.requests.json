@@ -1,0 +1,30 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "clusters": [
+        {
+          "apply_policy_default_values": true,
+          "label": "default",
+          "node_type_id": "i3.xlarge",
+          "num_workers": 1
+        }
+      ],
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/pipeline.py"
+          }
+        }
+      ],
+      "name": "test-pipeline-[UNIQUE_NAME]"
+    }
+  }
+]

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import json
+import os
 import re
 from pathlib import Path
 
 
 def extract_cmd_exec_id():
-    requests_file = Path("out.requests.txt")
+    requests_file = Path(os.environ["OUT_REQUESTS"])
 
     # Read JSON objects one at a time and find the first one with a cmd-exec-id
     # in the User-Agent header. Some requests (e.g. .well-known/databricks-config)
@@ -31,7 +32,7 @@ def extract_cmd_exec_id():
             if match:
                 return match.group(1)
 
-    raise SystemExit("No command execution ID found in any request in out.requests.txt")
+    raise SystemExit(f"No command execution ID found in any request in {requests_file}")
 
 
 if __name__ == "__main__":

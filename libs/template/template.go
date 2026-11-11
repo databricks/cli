@@ -36,76 +36,78 @@ const (
 	DbtSql       TemplateName = "dbt-sql"
 	MlopsStacks  TemplateName = "mlops-stacks"
 	Pydabs       TemplateName = "pydabs"
+	AppKitApp    TemplateName = "app-appkit"
 	Custom       TemplateName = "custom"
 	Default      TemplateName = "default"
 )
+
+const appKitDescription = "Databricks App with AppKit (TypeScript)"
 
 var databricksTemplates = []Template{
 	{
 		name:        DefaultPython,
 		description: "The default Python template for Notebooks and Lakeflow",
 		Reader:      &builtinReader{name: string(DefaultPython)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
+		Writer:      &writerWithFullTelemetry{name: DefaultPython},
 	},
 	{
 		name:        DefaultSql,
 		description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: string(DefaultSql)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultSql}},
+		Writer:      &writerWithFullTelemetry{name: DefaultSql},
 	},
 	{
 		name:        DefaultMinimal,
 		description: "The minimal template, for advanced users",
 		aliases:     []string{"empty"},
 		Reader:      &builtinReader{name: string(DefaultMinimal)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultMinimal}},
+		Writer:      &writerWithFullTelemetry{name: DefaultMinimal},
 	},
 	{
 		name:        DefaultScala,
 		description: "The default Scala template for JAR jobs",
 		Reader:      &builtinReader{name: string(DefaultScala)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultScala}},
+		Writer:      &writerWithFullTelemetry{name: DefaultScala},
 	},
 	{
 		name:        LakeflowPipelines,
 		hidden:      true,
 		description: "The default template for Lakeflow Spark Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
+		Writer:      &writerWithFullTelemetry{name: LakeflowPipelines},
 	},
 	{
 		name:        LakeflowIntegrations,
-		hidden:      true,
 		description: "The template for Lakeflow integrations",
 		Reader:      &builtinReader{name: string(LakeflowIntegrations)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowIntegrations}},
+		Writer:      &writerWithFullTelemetry{name: LakeflowIntegrations},
 	},
 	{
 		name:        CLIPipelines,
 		hidden:      true,
 		description: "The default template for CLI pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: CLIPipelines}},
+		Writer:      &writerWithFullTelemetry{name: CLIPipelines},
 	},
 	{
 		name:        DbtSql,
 		description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
 		Reader:      &builtinReader{name: string(DbtSql)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DbtSql}},
+		Writer:      &writerWithFullTelemetry{name: DbtSql},
 	},
 	{
 		name:        MlopsStacks,
 		description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
 		Reader:      &gitReader{gitUrl: "https://github.com/databricks/mlops-stacks", cloneFunc: git.Clone},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: MlopsStacks}},
+		Writer:      &writerWithFullTelemetry{name: MlopsStacks},
 	},
 	{
 		name:        Pydabs,
 		hidden:      false,
 		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
 		Reader:      &builtinReader{name: string(Pydabs)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
+		Writer:      &writerWithFullTelemetry{name: Pydabs},
 	},
 }
 
@@ -116,6 +118,7 @@ func HelpDescriptions() string {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
+	lines = append(lines, fmt.Sprintf("- %s: %s", AppKitApp, appKitDescription))
 	return strings.Join(lines, "\n")
 }
 
@@ -133,6 +136,7 @@ func options() []cmdio.Tuple {
 		}
 		names = append(names, tuple)
 	}
+	names = append(names, cmdio.Tuple{Name: string(AppKitApp), Id: appKitDescription})
 
 	names = append(names, cmdio.Tuple{
 		Name: "custom...",
@@ -152,6 +156,9 @@ func SelectTemplate(ctx context.Context) (TemplateName, error) {
 
 	if description == customTemplateDescription {
 		return TemplateName(""), ErrCustomSelected
+	}
+	if description == appKitDescription {
+		return AppKitApp, nil
 	}
 
 	for _, template := range databricksTemplates {

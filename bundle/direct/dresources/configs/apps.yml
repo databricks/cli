@@ -1,0 +1,27 @@
+provided_id_fields:
+  - field: name
+    reason: id_field
+backend_defaults:
+  # Backend sets it "MEDIUM" when not specified in the config
+  - field: compute_size
+  # Backend enables token forwarding and reports true even when the config omits it,
+  # so an omitted field would otherwise plan an update on every deploy. An explicit
+  # value in the config still diffs normally.
+  - field: forward_user_access_token
+  # lifecycle.started is derived from remote compute status in RemapState, so the
+  # remote side always has a value. When the user omits lifecycle from config,
+  # both old and new are nil and backend_defaults correctly skips the remote value.
+  # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+  # drift detection applies (e.g. detecting out-of-band stop).
+  - field: lifecycle
+  - field: lifecycle.started
+ignore_remote_changes:
+  - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
+    reason: managed
+  # The Apps API returns deployment env vars with their name only: value and value_from are
+  # never read back, so the remote side is always empty and would otherwise plan an update
+  # on every run. See https://github.com/databricks/cli/issues/7301
+  - field: config.env[*].value
+    reason: input_only
+  - field: config.env[*].value_from
+    reason: input_only

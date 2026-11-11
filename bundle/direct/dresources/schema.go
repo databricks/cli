@@ -53,15 +53,16 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 // which made a schema undeployable once someone set a description on it outside the
 // bundle. Sending these explicitly is the only way to express "the bundle owns this".
 //
-// Only fields verified against a real workspace belong here: {"comment": ""} clears it. Do
-// not add a field without probing it -- UC rejects an empty value on some (owner: "" is
-// "Could not find principal with name .", new_name: "" is "not a valid name"), and
-// ForceSendFields is inert for maps, so listing properties would be a no-op.
+// Only fields verified against a real workspace belong here: {"comment": ""} and
+// {"custom_max_retention_hours": 0} both clear. Do not add a field without probing it -- UC rejects
+// an empty value on some (owner: "" is "Could not find principal with name .", new_name: "" is "not
+// a valid name"), and ForceSendFields is inert for maps, so listing properties would be a no-op.
 //
-// custom_max_retention_hours is deliberately absent even though {"...": 0} does clear it:
-// terraform never sends it, so force-sending would make the two engines produce different
-// payloads for the same config.
-var schemaForceSend = []string{"Comment"}
+// custom_max_retention_hours is force-sent so the direct engine can clear it. The terraform
+// databricks_schema resource cannot set this field at all, so a schema config that uses it deploys
+// differently under terraform (which drops it) than under direct; such configs are kept out of the
+// migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
+var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
 // DoUpdate updates the schema in place and returns remote state.
 func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {

@@ -1,0 +1,81 @@
+
+=== Deploy a started app with config.env entries set via value and value_from
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps-config-env-no-drift/default/files...
+✓ Deployment succeeded
+Created apps.myapp
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The Apps API returns deployment env vars with their name only
+>>> [CLI] bundle plan -o json
+[
+  {
+    "name": "GREETING"
+  },
+  {
+    "name": "API_TOKEN"
+  }
+]
+
+=== Re-plan is clean: value and value_from are input-only and must not drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "config.env[0].value": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": "hello",
+    "new": "hello"
+  },
+  "config.env[1].value_from": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": "my-secret",
+    "new": "my-secret"
+  }
+}
+
+=== A local change to an env value still plans an update
+>>> update_file.py databricks.yml value: hello value: goodbye
+
+>>> [CLI] bundle plan
+update apps.myapp
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "config.env[0].value": {
+    "action": "update",
+    "old": "hello",
+    "new": "goodbye"
+  },
+  "config.env[1].value_from": {
+    "action": "skip",
+    "reason": "input_only",
+    "old": "my-secret",
+    "new": "my-secret"
+  }
+}
+
+=== Deploy applies the change and the plan is clean again
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps-config-env-no-drift/default/files...
+✓ Deployment succeeded
+Updated apps.myapp
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/apps-config-env-no-drift/default
+
+Destroy: 1 deleted

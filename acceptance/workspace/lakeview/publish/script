@@ -1,7 +1,9 @@
-trace $CLI workspace mkdirs /Users/tester@databricks.com
+MSYS_NO_PATHCONV=1 trace $CLI workspace mkdirs /Users/tester@databricks.com
 
-trace $CLI lakeview create --json '{"display_name": "Test Dashboard", "parent_path": "/Users/tester@databricks.com", "warehouse_id": "test-warehouse"}' -o json > tmp.json
+MSYS_NO_PATHCONV=1 trace $CLI lakeview create --json '{"display_name": "Test Dashboard", "parent_path": "/Users/tester@databricks.com", "warehouse_id": "test-warehouse"}' -o json > tmp.json
 dashboard_id=$(jq -r .dashboard_id < tmp.json)
 rm tmp.json
 add_repl "$dashboard_id" DASHBOARD_ID
-trace $CLI lakeview publish $dashboard_id
+MSYS_NO_PATHCONV=1 trace $CLI lakeview publish $dashboard_id
+
+trace print_requests.py //lakeview

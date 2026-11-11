@@ -1,0 +1,54 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/app"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/postgres/synced_tables",
+    "q": {
+      "synced_table_id": "lakebase_[UNIQUE_NAME].public.trips_synced"
+    },
+    "body": {
+      "spec": {
+        "branch": "projects/test-pg-project-[UNIQUE_NAME]/branches/production",
+        "create_database_objects_if_missing": true,
+        "new_pipeline_spec": {
+          "storage_catalog": "main",
+          "storage_schema": "pipelines"
+        },
+        "postgres_database": "appdb",
+        "primary_key_columns": [
+          "id"
+        ],
+        "scheduling_policy": "SNAPSHOT",
+        "source_table_full_name": "main.raw.trips"
+      },
+      "synced_table_id": "lakebase_[UNIQUE_NAME].public.trips_synced"
+    }
+  }
+]

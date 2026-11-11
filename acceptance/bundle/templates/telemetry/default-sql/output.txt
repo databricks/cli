@@ -9,7 +9,7 @@ workspace_host: [DATABRICKS_URL]
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "frontend_log_event_id": "[UUID]",
   "entry": {

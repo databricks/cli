@@ -38,7 +38,26 @@ PROJECT_ROOT_SEG = "{{.input_root_dir}}"
 
 
 def render_path(rel_path, config):
-    """Map a path under the upstream template/ dir to its path in the rendered project."""
+    r"""Map a path under the upstream template/ dir to its path in the rendered project.
+
+    The result carries the OS path separator, so the examples normalize it with
+    ``.replace("\\", "/")`` to read the same on POSIX and Windows.
+
+    >>> render_path(Path("template/{{.input_root_dir}}/job.yml"), {"input_root_dir": "src", "input_project_name": "myproj"}).replace("\\", "/")
+    'template/src/job.yml'
+
+    >>> render_path(Path("template/{{.input_project_name}}/config.json.tmpl"), {"input_root_dir": "src", "input_project_name": "myproj"}).replace("\\", "/")
+    'template/myproj/config.json'
+
+    Handles both vendor and upstream project directory patterns:
+    >>> cfg = {"input_root_dir": ".", "input_project_name": "proj"}
+    >>> render_path(Path("template/{{.input_root_dir}}/{{template `project_name_alphanumeric_underscore` .}}/file"), cfg).replace("\\", "/")
+    'template/./proj/file'
+
+    Removes .tmpl suffix:
+    >>> render_path(Path("template/README.md.tmpl"), {"input_root_dir": ".", "input_project_name": "p"}).replace("\\", "/")
+    'template/README.md'
+    """
     subs = {
         PROJECT_ROOT_SEG: config["input_root_dir"],
         VENDORED_PROJECT_DIR: config["input_project_name"],
@@ -85,6 +104,20 @@ def keep_set(clone_dir, out_dir, config):
 
 
 def vendored_path(rel_path):
+    """Replace upstream project directory pattern with vendored pattern.
+
+    Returns a Path; the examples call ``.as_posix()`` so the separator (and the
+    Posix/Windows repr) reads the same on both platforms.
+
+    >>> vendored_path(Path("template/{{template `project_name_alphanumeric_underscore` .}}/config")).as_posix()
+    'template/{{.input_project_name}}/config'
+
+    >>> vendored_path(Path("library/helpers.py")).as_posix()
+    'library/helpers.py'
+
+    >>> vendored_path(Path("a/{{template `project_name_alphanumeric_underscore` .}}/b/{{template `project_name_alphanumeric_underscore` .}}/c")).as_posix()
+    'a/{{.input_project_name}}/b/{{.input_project_name}}/c'
+    """
     return Path(*[VENDORED_PROJECT_DIR if p == UPSTREAM_PROJECT_DIR else p for p in rel_path.parts])
 
 

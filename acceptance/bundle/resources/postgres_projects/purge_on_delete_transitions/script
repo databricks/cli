@@ -4,7 +4,7 @@ cleanup() {
    # After this test the destroy should be a soft delete; --purge here so the
    # trash entry doesn't linger past the test.
    $CLI postgres delete-project --purge "projects/test-pg-proj-${UNIQUE_NAME}" 2>>LOG.delete-project || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -12,7 +12,7 @@ trap cleanup EXIT
 # resources.json. The field is omitted from JSON when unset (omitempty +
 # ForceSendFields tracking), so an absent value falls back to "(unset)".
 get_purge() {
-  gron.py < .databricks/bundle/default/resources.json | grep purge_on_delete || echo '(unset)'
+  print_state.py | gron.py | grep purge_on_delete || echo '(unset)'
 }
 
 title "Step 1: deploy with purge_on_delete unset"
@@ -34,7 +34,7 @@ update_file.py databricks.yml "purge_on_delete: false" "# PURGE_ON_DELETE"
 trace $CLI bundle deploy
 trace get_purge
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "bundle destroy (must be a plain DELETE, no ?purge=true)"
 $CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true

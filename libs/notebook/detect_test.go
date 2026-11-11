@@ -1,6 +1,7 @@
 package notebook
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -126,4 +127,35 @@ func TestDetectWithObjectInfo(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, nb)
 	assert.Equal(t, workspace.LanguagePython, lang)
+}
+
+func TestDetectBytes(t *testing.T) {
+	ipynb, err := os.ReadFile("testdata/py_ipynb.ipynb")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		content  []byte
+		notebook bool
+		language workspace.Language
+	}{
+		{"nb.py", []byte("# Databricks notebook source\nprint(1)\n"), true, workspace.LanguagePython},
+		{"nb.sql", []byte("-- Databricks notebook source\nSELECT 1\n"), true, workspace.LanguageSql},
+		{"marker_mid_line.sql", []byte("-- MAGIC Databricks notebook source\nSELECT 1\n"), true, workspace.LanguageSql},
+		{"other_comment.py", []byte("// Databricks notebook source\nprint(1)\n"), true, workspace.LanguagePython},
+		{"second_line.py", []byte("print(1)\n# Databricks notebook source\n"), false, ""},
+		{"past_buffer.py", append(bytes.Repeat([]byte("#"), headerLength), []byte(" Databricks notebook source\n")...), false, ""},
+		{"nb.ipynb", ipynb, true, workspace.LanguagePython},
+		{"plain.py", []byte("print(1)\n"), false, ""},
+		{"space.geniespace.json", []byte("{}"), false, ""},
+		{"empty.py", nil, false, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nb, lang, err := DetectBytes(tc.name, tc.content)
+			require.NoError(t, err)
+			assert.Equal(t, tc.notebook, nb)
+			assert.Equal(t, tc.language, lang)
+		})
+	}
 }

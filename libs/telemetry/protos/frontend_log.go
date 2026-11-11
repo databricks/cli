@@ -20,7 +20,10 @@ type DatabricksCliLog struct {
 	BundleInitEvent             *BundleInitEvent             `json:"bundle_init_event,omitempty"`
 	BundleDeployEvent           *BundleDeployEvent           `json:"bundle_deploy_event,omitempty"`
 	SshTunnelEvent              *SshTunnelEvent              `json:"ssh_tunnel_event,omitempty"`
+	SshTunnelTeardownEvent      *SshTunnelTeardownEvent      `json:"ssh_tunnel_teardown_event,omitempty"`
+	SshAgentShimEvent           *SshAgentShimEvent           `json:"ssh_agent_shim_event,omitempty"`
 	BundleConfigRemoteSyncEvent *BundleConfigRemoteSyncEvent `json:"bundle_config_remote_sync_event,omitempty"`
 	AitoolsInstallEvent         *AitoolsInstallEvent         `json:"aitools_install_event,omitempty"`
 	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
+	AirRunEvent                 *AirRunEvent                 `json:"air_run_event,omitempty"`
 }

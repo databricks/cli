@@ -13,7 +13,8 @@ import (
 
 type Alert struct {
 	BaseResource
-	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
+	sql.AlertV2        //nolint:govet // AlertV2.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
+	ID          string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []Permission `json:"permissions,omitempty"`
 
@@ -58,8 +59,4 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 
 func (a *Alert) GetName() string {
 	return a.DisplayName
-}
-
-func (a *Alert) GetURL() string {
-	return a.URL
 }

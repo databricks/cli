@@ -1,0 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
+
+# Disabling file-backed history must not depend on DMS being available.
+rm -f "$OUT_REQUESTS"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 500 0 1
+trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle plan
+trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle deploy
+trace jq '.features // {}' .databricks/bundle/default/resources.json

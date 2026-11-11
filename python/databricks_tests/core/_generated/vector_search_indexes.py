@@ -18,12 +18,12 @@ from databricks.bundles.vector_search_indexes._models.vector_index_type import (
 from databricks.bundles.vector_search_indexes._models.vector_search_index import (
     VectorSearchIndex,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_vector_search_index,
             dict_example={
                 "delta_sync_index_spec": {},

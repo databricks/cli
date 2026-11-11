@@ -40,6 +40,9 @@ __all__ = [
     "DbfsStorageInfoParam",
     "DependencyMode",
     "DependencyModeParam",
+    "DependsOn",
+    "DependsOnDict",
+    "DependsOnParam",
     "DockerBasicAuth",
     "DockerBasicAuthDict",
     "DockerBasicAuthParam",
@@ -61,6 +64,9 @@ __all__ = [
     "InitScriptInfoParam",
     "Kind",
     "KindParam",
+    "Library",
+    "LibraryDict",
+    "LibraryParam",
     "LifecycleWithStarted",
     "LifecycleWithStartedDict",
     "LifecycleWithStartedParam",
@@ -70,9 +76,18 @@ __all__ = [
     "LogAnalyticsInfo",
     "LogAnalyticsInfoDict",
     "LogAnalyticsInfoParam",
+    "MavenLibrary",
+    "MavenLibraryDict",
+    "MavenLibraryParam",
     "NodeTypeFlexibility",
     "NodeTypeFlexibilityDict",
     "NodeTypeFlexibilityParam",
+    "PythonPyPiLibrary",
+    "PythonPyPiLibraryDict",
+    "PythonPyPiLibraryParam",
+    "RCranLibrary",
+    "RCranLibraryDict",
+    "RCranLibraryParam",
     "RuntimeEngine",
     "RuntimeEngineParam",
     "S3StorageInfo",
@@ -159,6 +174,11 @@ from databricks.bundles.clusters._models.dependency_mode import (
     DependencyMode,
     DependencyModeParam,
 )
+from databricks.bundles.clusters._models.depends_on import (
+    DependsOn,
+    DependsOnDict,
+    DependsOnParam,
+)
 from databricks.bundles.clusters._models.docker_basic_auth import (
     DockerBasicAuth,
     DockerBasicAuthDict,
@@ -193,6 +213,11 @@ from databricks.bundles.clusters._models.init_script_info import (
     InitScriptInfoParam,
 )
 from databricks.bundles.clusters._models.kind import Kind, KindParam
+from databricks.bundles.clusters._models.library import (
+    Library,
+    LibraryDict,
+    LibraryParam,
+)
 from databricks.bundles.clusters._models.lifecycle_with_started import (
     LifecycleWithStarted,
     LifecycleWithStartedDict,
@@ -208,10 +233,25 @@ from databricks.bundles.clusters._models.log_analytics_info import (
     LogAnalyticsInfoDict,
     LogAnalyticsInfoParam,
 )
+from databricks.bundles.clusters._models.maven_library import (
+    MavenLibrary,
+    MavenLibraryDict,
+    MavenLibraryParam,
+)
 from databricks.bundles.clusters._models.node_type_flexibility import (
     NodeTypeFlexibility,
     NodeTypeFlexibilityDict,
     NodeTypeFlexibilityParam,
+)
+from databricks.bundles.clusters._models.python_py_pi_library import (
+    PythonPyPiLibrary,
+    PythonPyPiLibraryDict,
+    PythonPyPiLibraryParam,
+)
+from databricks.bundles.clusters._models.r_cran_library import (
+    RCranLibrary,
+    RCranLibraryDict,
+    RCranLibraryParam,
 )
 from databricks.bundles.clusters._models.runtime_engine import (
     RuntimeEngine,

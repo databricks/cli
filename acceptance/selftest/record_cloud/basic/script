@@ -1,2 +1,4 @@
 # Proxy server successfully records a requests and returns a response.
 trace $CLI current-user me | jq .userName
+
+trace print_requests.py --get //

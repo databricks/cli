@@ -159,6 +159,10 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		}
 	}
 
+	// Which fields the caller actually sent, so an explicit "description": "" (the CLI
+	// force-sends it) clears the value instead of being treated as "not provided".
+	fields, _ := parseUpdateFields(req.Body)
+
 	// Optimistic concurrency: if the caller sent an etag, it must match the
 	// current one. Empty etag means apply unconditionally.
 	if updateReq.Etag != "" && updateReq.Etag != genieSpace.Etag {
@@ -174,7 +178,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	if updateReq.Title != "" {
 		genieSpace.Title = updateReq.Title
 	}
-	if updateReq.Description != "" {
+	if _, ok := fields["description"]; ok {
 		genieSpace.Description = updateReq.Description
 	}
 	if updateReq.WarehouseId != "" {

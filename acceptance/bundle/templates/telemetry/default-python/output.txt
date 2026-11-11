@@ -10,7 +10,7 @@ Note that [DATABRICKS_URL] is used for initialization.
 
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "frontend_log_event_id": "[UUID]",
   "entry": {

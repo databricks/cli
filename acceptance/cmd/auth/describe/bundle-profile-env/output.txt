@@ -8,14 +8,14 @@ Authenticated with: pat
 -----
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from bundle)
-  ✓ workspace_id: [NUMID]
+  ✓ workspace_id: [WORKSPACE_ID]
   ✓ token: ******** (from .databrickscfg config file)
   ✓ profile: env-profile (from DATABRICKS_CONFIG_PROFILE environment variable)
   ✓ config_file: .databrickscfg (from DATABRICKS_CONFIG_FILE environment variable)
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: pat
   ✓ http_timeout_seconds: 90 (from bundle)
-  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ rate_limit: 1000000000 (from DATABRICKS_RATE_LIMIT environment variable)
   ✓ retry_timeout_seconds: 900 (from bundle)
   ✓ cloud: AWS
   ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server

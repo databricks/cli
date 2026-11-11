@@ -22,6 +22,11 @@ const (
 // be attributed without logging the error text, which carries cluster names, paths and user
 // names.
 //
+// It also classifies how an established session ended, for the ends the CLI can attribute
+// (the WEBSOCKET_* and HANDOVER_* categories). Those rows carry is_success = true, because
+// the tunnel was established: use is_success to separate a failed connection attempt from a
+// session that connected and was later cut short, and this field for the cause of either.
+//
 // IDE_SSH_EXTENSION_MISSING was retired in favour of the four IDE_SSH_EXTENSION_* categories
 // below: it reported all four outcomes as one, and they call for different fixes. Rows written
 // before the split still carry it, so a query spanning that release has to accept both.
@@ -33,6 +38,11 @@ const (
 	// The IDE's shell command ("code"/"cursor") is not on PATH. A permanent per-machine
 	// condition rather than a transient failure, so it is distinguished from the rest.
 	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
+
+	// The IDE command override (DATABRICKS_SSH_IDE_COMMAND, set by the VS Code extension) names
+	// a command that can't be run. Distinct from IDE_COMMAND_NOT_ON_PATH because it points at
+	// whatever set the override rather than at the user's PATH.
+	SshTunnelErrorCategoryIDECommandOverrideInvalid SshTunnelErrorCategory = "IDE_COMMAND_OVERRIDE_INVALID"
 
 	// The IDE's installed-extension list could not be read, so whether the Remote SSH
 	// extension was present is unknown. Distinct from the install failures below because it
@@ -75,10 +85,35 @@ const (
 	// its metadata never appeared before the timeout.
 	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
 
+	// An administrator turned off port forwarding to serverless compute
+	// (port_fwd_serverless_enabled), read from the setting before any compute was started.
+	SshTunnelErrorCategoryPortForwardingDisabled SshTunnelErrorCategory = "PORT_FORWARDING_DISABLED"
+
+	// The driver proxy refused a request to the SSH server with a 403, for a server that was
+	// already running or for one that this connection started. Usually port forwarding to
+	// serverless compute is off where the CLI cannot read that setting, but the 403 is not
+	// specific to it, so this names what happened rather than the likely cause.
+	SshTunnelErrorCategoryDriverProxyForbidden SshTunnelErrorCategory = "DRIVER_PROXY_FORBIDDEN"
+
 	// The user interrupted the connection (Ctrl-C or a termination signal). Takes precedence
 	// over the category of whichever step observed the interruption, including steps that shell
 	// out to the IDE and see only a killed child process.
 	SshTunnelErrorCategoryUserAborted SshTunnelErrorCategory = "USER_ABORTED"
+
+	// The proxy could not establish its websocket to the SSH server at all. Distinguished
+	// from WEBSOCKET_DROPPED so "never connected" is not counted as a mid-session drop.
+	SshTunnelErrorCategoryWebsocketConnectFailed SshTunnelErrorCategory = "WEBSOCKET_CONNECT_FAILED"
+
+	// An established proxy websocket stopped carrying traffic mid-session, ending the SSH
+	// session with it. Typically a TCP reset from somewhere on the path between the client
+	// and the workspace; the CLI cannot yet resume from it, so every occurrence is a
+	// user-visible dropped session.
+	SshTunnelErrorCategoryWebsocketDropped SshTunnelErrorCategory = "WEBSOCKET_DROPPED"
+
+	// The periodic auth handover failed in a way that ended the session. A handover that
+	// only failed to dial its replacement is not reported here: the session continues on
+	// its existing connection.
+	SshTunnelErrorCategoryHandoverFailed SshTunnelErrorCategory = "HANDOVER_FAILED"
 
 	// A failure that does not correspond to any of the categories above. The connect path
 	// attributes every per-environment blocker, so a rise here points at a CLI bug (or a new
@@ -126,13 +161,27 @@ type SshTunnelEvent struct {
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success"`
 
+	// Serverless environment version the SSH server job is submitted with: the
+	// --environment-version value or the CLI default. Unset for dedicated clusters and
+	// for a custom base environment, which carries its own version.
+	EnvironmentVersion int `json:"environment_version,omitempty"`
+
 	// Whether a serverless usage policy was set via --usage-policy-id.
 	// Only the presence is recorded, not the policy ID itself.
 	HasUsagePolicy bool `json:"has_usage_policy"`
 
-	// Why the connection attempt failed, or TYPE_UNSPECIFIED on success. Deliberately
-	// without omitempty: the field is what identifies a failure's cause, so an empty value
-	// must not be silently dropped into an indistinguishable NULL. Every failure path sets
-	// a category, falling back to UNKNOWN.
+	// Whether the connection asked for detached processes (tmux, setsid, nohup) to
+	// outlive the server via --keep-detached-processes. Only the request is recorded, not
+	// the duration. Whether any such process actually existed at teardown is reported
+	// separately by the server, in SshTunnelTeardownEvent.
+	KeepDetachedRequested bool `json:"keep_detached_requested"`
+
+	// Why the connection attempt failed, how an established session ended, or
+	// TYPE_UNSPECIFIED when neither applies. Deliberately without omitempty: the field is
+	// what identifies a failure's cause, so an empty value must not be silently dropped into
+	// an indistinguishable NULL. Every failed connection attempt sets a category, falling
+	// back to UNKNOWN; an established session sets one only for the ends the CLI can
+	// attribute, since the ssh client and the user's own remote command also exit non-zero
+	// here and neither is a tunnel failure.
 	ErrorCategory SshTunnelErrorCategory `json:"error_category"`
 }

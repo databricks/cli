@@ -42,6 +42,16 @@ class JobRun(Resource):
     The ID of the job to be executed
     """
 
+    duration_target: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
     """
     Job-level parameters used in the run. for example `"param": "overriding_val"`
@@ -65,8 +75,9 @@ class JobRun(Resource):
     """
     The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     pipeline_params: VariableOrOptional[PipelineParams] = None
@@ -95,6 +106,16 @@ class JobRunDict(TypedDict, total=False):
     The ID of the job to be executed
     """
 
+    duration_target: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The window the run aims to finish within, in hours, for a Cost-optimized serverless run.
+    Required only when `performance_target` is `COST_OPTIMIZED`. Must be one of the
+    supported values: `NO_FLEXIBILITY`, `4h`, `12h`, `24h`, `72h`. `NO_FLEXIBILITY` means the run
+    uses the default cost-optimized performance level without additional cost-saving optimizations.
+    """
+
     job_parameters: VariableOrDict[str]
     """
     Job-level parameters used in the run. for example `"param": "overriding_val"`
@@ -118,8 +139,9 @@ class JobRunDict(TypedDict, total=False):
     """
     The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     pipeline_params: VariableOrOptional[PipelineParamsParam]

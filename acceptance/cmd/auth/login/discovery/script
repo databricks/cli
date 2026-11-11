@@ -2,8 +2,9 @@ sethome "./home"
 
 # Use the discovery browser script that simulates login.databricks.com
 export BROWSER="discovery_browser.py"
+export DATABRICKS_TEST_CLIENT_ID="discovery-client-id"
 
-trace $CLI auth login --profile discovery-test
+trace $CLI auth login --profile discovery-test --client-id discovery-client-id
 
 trace $CLI auth profiles
 

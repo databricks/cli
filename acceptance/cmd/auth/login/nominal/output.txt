@@ -1,4 +1,9 @@
 
+>>> [CLI] auth login --host [DATABRICKS_URL]
+
+>>> [CLI] auth token --host [DATABRICKS_URL]
+json.access_token = "oauth-token";
+
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile test
 Profile test was successfully saved
 

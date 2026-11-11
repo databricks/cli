@@ -2,11 +2,11 @@
 === first deploy triggers a run
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Created jobs.my_job
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
-Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
@@ -17,7 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "job_id": [MY_JOB_ID]
   }
 }
@@ -30,25 +30,11 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
+  "lifecycle.triggers_state.on_bundle_deploy": {
     "action": "recreate",
     "reason": "immutable",
-    "old": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    },
-    "new": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    }
-  },
-  "lifecycle.triggers.on_bundle_deploy": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": "[UUID]",
-    "new": "[UUID]"
+    "old": "[UUID][1]",
+    "new": "[UUID][2]"
   },
   "result_state": {
     "action": "skip",
@@ -60,10 +46,10 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[WORKSPACE_ID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
@@ -76,28 +62,21 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[WORKSPACE_ID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 === second run-now after recreate
 >>> print_requests.py --keep //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}
 
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][3]",
     "job_id": [MY_JOB_ID]
   }
 }
@@ -108,15 +87,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
-    "action": "skip",
-    "reason": "trigger removed",
-    "old": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    }
-  },
   "result_state": {
     "action": "skip",
     "reason": "remote_already_set",
@@ -127,16 +97,15 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted

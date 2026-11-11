@@ -319,7 +319,7 @@ Response.Body = '<response body here>'
 	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
 		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
-			"workspace_id":  "900800700600",
+			"workspace_id":  strconv.Itoa(TestWorkspaceID),
 		}
 	})
 
@@ -372,7 +372,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	fault := s.faults.Check(r.Method, r.URL.Path, token)
+	fault := s.faults.Check(r.Method, r.URL.Path, token, request.Body)
 
 	if fault == nil || fault.AfterHandler {
 		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {

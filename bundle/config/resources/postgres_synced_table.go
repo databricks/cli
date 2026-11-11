@@ -31,6 +31,7 @@ func (c PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresSyncedTable struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresSyncedTableConfig
 }
 
@@ -70,10 +71,6 @@ func (s *PostgresSyncedTable) GetName() string {
 		return id
 	}
 	return s.SyncedTableId
-}
-
-func (s *PostgresSyncedTable) GetURL() string {
-	return s.URL
 }
 
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {

@@ -9,7 +9,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -508,7 +512,7 @@ func TestValidateProjectNameForPrompt(t *testing.T) {
 
 func TestPrintSuccessInPlace(t *testing.T) {
 	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
-	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", true)
+	PrintSuccess(ctx, "my-app", filepath.FromSlash("/abs/path/my-app"), 12, "npm run dev", true)
 	got := out.String()
 	assert.Contains(t, got, "Location: /abs/path/my-app")
 	assert.Contains(t, got, "Files: 12")
@@ -518,8 +522,36 @@ func TestPrintSuccessInPlace(t *testing.T) {
 
 func TestPrintSuccessNotInPlace(t *testing.T) {
 	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
-	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", false)
+	PrintSuccess(ctx, "my-app", filepath.FromSlash("/abs/path/my-app"), 12, "npm run dev", false)
 	got := out.String()
+	assert.Contains(t, got, "Location: /abs/path/my-app")
 	assert.Contains(t, got, "cd my-app")
 	assert.Contains(t, got, "npm run dev")
+}
+
+func TestListSystemAIModelServices(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	m.GetMockAiGatewayAPI().EXPECT().
+		ListModelServicesAll(ctx, catalog.ListModelServicesRequest{Parent: "schemas/system.ai"}).
+		Return([]catalog.ModelService{{Name: "model-services/system.ai.chat"}}, nil)
+
+	f, err := listSystemAIModelServices(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []ListItem{
+		{ID: "system.ai.chat", Label: "system.ai.chat"},
+		{ID: browseCatalogsID, Label: "Browse other catalogs..."},
+	}, f.Items)
+}
+
+func TestListSystemAIModelServicesWithoutAccess(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	m.GetMockAiGatewayAPI().EXPECT().
+		ListModelServicesAll(ctx, catalog.ListModelServicesRequest{Parent: "schemas/system.ai"}).
+		Return(nil, apierr.ErrPermissionDenied)
+
+	f, err := listSystemAIModelServices(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []ListItem{{ID: browseCatalogsID, Label: "Browse other catalogs..."}}, f.Items)
 }

@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -26,7 +27,7 @@ func tarEntries(t *testing.T, b []byte) map[string]string {
 	out := map[string]string{}
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
@@ -76,4 +77,31 @@ func TestTarballFromGitRequiresRef(t *testing.T) {
 	a := &config.Artifact{Path: b.SyncRootPath, Git: &config.ArtifactGit{}}
 	err := tarballFromGit(t.Context(), b, a, io.Discard)
 	require.ErrorContains(t, err, "git.commit or git.branch")
+}
+
+// The tarball is content-addressed on upload, so the same tree must always compress to
+// the same bytes. We now gzip with parallel pgzip; this guards that its output stays
+// deterministic (pgzip only parallelizes across fixed-size blocks, so core count doesn't
+// leak into the bytes) and that it decompresses cleanly.
+func TestTarballFromGitIsReproducible(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	runGit(t, repo, "config", "core.autocrlf", "false")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "train.py"), []byte("print('x')\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "big.txt"), bytes.Repeat([]byte("compress me\n"), 200000), 0o644))
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "init")
+
+	b := &bundle.Bundle{SyncRootPath: repo}
+	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
+
+	var buf1, buf2 bytes.Buffer
+	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf1))
+	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf2))
+
+	assert.Equal(t, buf1.Bytes(), buf2.Bytes(), "identical tree must compress to identical bytes")
+	// Round-trips through gzip and carries the packed file.
+	assert.Equal(t, "print('x')", strings.TrimSpace(tarEntries(t, buf1.Bytes())["train.py"]))
 }

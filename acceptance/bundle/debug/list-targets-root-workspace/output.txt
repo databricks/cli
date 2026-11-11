@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle debug list-targets
+inherited (default) https://custom.test workspace_id:5678
+null_target https://custom.test workspace_id:5678
+target_query_id https://custom.test workspace_id:5678
+target_workspace_id https://custom.test workspace_id:9012
+
+>>> [CLI] bundle debug list-targets --output json
+{
+  "targets": [
+    {
+      "name": "inherited",
+      "default": true,
+      "host": "https://custom.test",
+      "workspace_id": "5678"
+    },
+    {
+      "name": "null_target",
+      "host": "https://custom.test",
+      "workspace_id": "5678"
+    },
+    {
+      "name": "target_query_id",
+      "host": "https://custom.test",
+      "workspace_id": "5678"
+    },
+    {
+      "name": "target_workspace_id",
+      "host": "https://custom.test",
+      "workspace_id": "9012"
+    }
+  ]
+}

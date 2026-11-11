@@ -193,8 +193,27 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 }
 
 func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) {
-	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
+	if !equalLeaf(v1, v2) {
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+	}
+}
+
+// equalLeaf compares values that are not walked into. Basic kinds are compared
+// directly: reflect.DeepEqual needs Interface(), which allocates for each of them.
+func equalLeaf(v1, v2 reflect.Value) bool {
+	switch v1.Kind() {
+	case reflect.String:
+		return v1.String() == v2.String()
+	case reflect.Bool:
+		return v1.Bool() == v2.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() == v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() == v2.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() == v2.Float()
+	default:
+		return reflect.DeepEqual(v1.Interface(), v2.Interface())
 	}
 }
 
@@ -209,11 +228,18 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		// Continue traversing embedded structs. Do not add the key to the path though.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. Do not add the key to the path though. An
+		// anonymous field carrying a json name is not one of these: encoding/json serializes it
+		// as a nested object, so it is handled as a named field below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
+			continue
+		}
+
+		// Only the exact tag json:"-" skips a field; json:"-," names it "-".
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 
@@ -221,9 +247,6 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 
 		// Resolve field name from JSON tag or fall back to Go field name
 		fieldName := jsonTag.Name()
-		if fieldName == "-" {
-			continue
-		}
 
 		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
 
@@ -268,15 +291,21 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 }
 
 func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
+	if s1, ok := reflect.TypeAssert[map[string]string](m1); ok {
+		s2, _ := reflect.TypeAssert[map[string]string](m2)
+		diffStringMaps(path, s1, s2, changes)
+		return nil
+	}
+
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		// Key is always string at this point
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		// Caller guarantees the key kind is String; use Value.String() rather
+		// than a .(string) assertion, which panics on a named string key type
+		// (e.g. `type ScriptHook string`) whose dynamic type is not string.
+		keySet[k.String()] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		keySet[k.String()] = k
 	}
 
 	keys := slices.Sorted(maps.Keys(keySet))
@@ -293,12 +322,48 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 	return nil
 }
 
+// diffStringMaps is diffMapStringKey for map[string]string, the most common map
+// type in configs (tags, spark_conf, ...). Going through reflect would copy every
+// key and value to the heap.
+func diffStringMaps(path *structpath.PathNode, m1, m2 map[string]string, changes *[]Change) {
+	keys := slices.Sorted(maps.Keys(m1))
+	for k := range m2 {
+		if _, ok := m1[k]; !ok {
+			keys = append(keys, k)
+		}
+	}
+	slices.Sort(keys)
+
+	for _, k := range keys {
+		s1, ok1 := m1[k]
+		s2, ok2 := m2[k]
+		if ok1 && ok2 && s1 == s2 {
+			continue
+		}
+		node := structpath.NewBracketString(path, k)
+		switch {
+		case !ok1:
+			*changes = append(*changes, Change{Path: node, Old: nil, New: s2})
+		case !ok2:
+			*changes = append(*changes, Change{Path: node, Old: s1, New: nil})
+		default:
+			*changes = append(*changes, Change{Path: node, Old: s1, New: s2})
+		}
+	}
+}
+
 func getForceSendFields(v reflect.Value) []string {
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return nil
 	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
+	// Only the struct's own ForceSendFields: one promoted from an embedded struct names that
+	// struct's fields, since the SDK marshaller rejects names its struct does not have.
+	sf, ok := v.Type().FieldByName("ForceSendFields")
+	if !ok || len(sf.Index) != 1 {
+		return nil
+	}
+	fsField := v.Field(sf.Index[0])
+	if fsField.Kind() != reflect.Slice {
 		return nil
 	}
 	result, ok := reflect.TypeAssert[[]string](fsField)

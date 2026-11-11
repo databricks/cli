@@ -13,6 +13,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
+      - ".github/workflows/changelog-preview.yml"
       - ".nextchanges/**"
       - "internal/genkit/**"
       - "tools/validate_nextchanges.py"
@@ -37,7 +38,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version: "0.8.9"
 
@@ -47,10 +48,13 @@ jobs:
       # names the right PR. PR_NUMBER is the authoritative event PR (empty on push
       # to main, where each fragment's PR is inferred from its squash-merge
       # commit); it must have full history to attribute fragments, hence the
-      # fetch-depth: 0 checkout above.
+      # fetch-depth: 0 checkout above. BASE_REF is the PR's base branch, so a
+      # gh-stacked PR's inherited fragments (which already carry the earlier PR's
+      # link) aren't attributed to this PR.
       - name: Validate .nextchanges placement
         env:
           PR_NUMBER: ${{ github.event.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: uv run tools/validate_nextchanges.py
 
       - name: Render changelog preview
@@ -58,7 +62,11 @@ jobs:
           # Render into a variable first so a renderer error fails this step
           # (rather than being swallowed by a pipe), then emit the .md directly
           # into the job summary so GitHub renders it as the changelog.
-          preview=$(uv run --locked internal/genkit/tagging.py --preview)
+          # --frozen installs from the committed lock as-is. --locked re-validates
+          # it against a requires-python that uv infers from the runner's default
+          # interpreter (the genkit-synced script declares none), so it broke when
+          # ubuntu-latest moved to 26.04 (Python 3.14).
+          preview=$(uv run --frozen internal/genkit/tagging.py --preview)
           {
             echo '## Changelog preview'
             echo ''

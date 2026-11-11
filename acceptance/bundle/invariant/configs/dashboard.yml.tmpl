@@ -5,6 +5,7 @@ resources:
   dashboards:
     foo:
       warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      # CANNOT_REMOVE: display_name is required; removing it fails validation ("dashboard display_name is required").
       display_name: test-dashboard-$UNIQUE_NAME
       file_path: ./dashboard.lvdash.json
       permissions:

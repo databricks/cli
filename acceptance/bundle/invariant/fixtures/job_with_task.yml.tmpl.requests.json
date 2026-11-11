@@ -1,0 +1,33 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job-[UNIQUE_NAME]",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "instance_pool_id": "0123-456789-pool0",
+            "num_workers": 1,
+            "spark_version": "13.3.x-snapshot-scala2.12"
+          },
+          "notebook_task": {
+            "notebook_path": "/Shared/notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "only_task"
+        }
+      ]
+    }
+  }
+]

@@ -28,16 +28,9 @@ var noticeExclude = map[string]bool{
 	"github.com/databricks/sdk-go/options":    true,
 }
 
-// Additional entries required in the NOTICE file that are not direct go.mod
-// dependencies (e.g. bundled binaries).
-var noticeExtra = map[string][]string{
-	"hashicorp/terraform": {"MPL-2.0"},
-}
-
 // Expected order of license sections in the NOTICE file.
 var expectedSectionOrder = []string{
 	"Apache-2.0",
-	"MPL-2.0",
 	"BSD-2-Clause",
 	"BSD-3-Clause",
 	"MIT",
@@ -151,11 +144,6 @@ func TestNoticeFileCompleteness(t *testing.T) {
 		}
 		ids, _ := parseSPDXExpression(license)
 		for _, id := range ids {
-			expected[id] = append(expected[id], slug)
-		}
-	}
-	for slug, licenses := range noticeExtra {
-		for _, id := range licenses {
 			expected[id] = append(expected[id], slug)
 		}
 	}

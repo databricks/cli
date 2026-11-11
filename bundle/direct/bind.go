@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -62,17 +63,22 @@ type BindResult struct {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err == nil {
-		existingID := checkStateDB.GetResourceID(resourceKey)
-		if _, err := checkStateDB.Finalize(ctx); err != nil {
-			log.Warnf(ctx, "failed to finalize state: %v", err)
-		}
-		if existingID != "" {
-			return nil, ErrResourceAlreadyBound{
-				ResourceKey: resourceKey,
-				ExistingID:  existingID,
-				NewID:       resourceID,
-			}
+	if err := checkStateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+		// State that cannot be read is not the same as state without a binding:
+		// the resource may well be managed already, and binding on top of it
+		// would take over a resource whose ownership was never checked. A state
+		// file that does not exist yet opens successfully as an empty one.
+		return nil, fmt.Errorf("cannot check whether %s is already bound: %w", resourceKey, err)
+	}
+	existingID := checkStateDB.GetResourceID(resourceKey)
+	if _, err := checkStateDB.Finalize(ctx); err != nil {
+		log.Warnf(ctx, "failed to finalize state: %v", err)
+	}
+	if existingID != "" {
+		return nil, ErrResourceAlreadyBound{
+			ResourceKey: resourceKey,
+			ExistingID:  existingID,
+			NewID:       resourceID,
 		}
 	}
 
@@ -86,14 +92,18 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{})
 	if err != nil {
+		os.Remove(tmpStatePath)
+		return nil, err
+	}
+	if err := b.StateDB.UpgradeToWrite(); err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
 
 	// Save state with ID and empty state (like migrate does)
-	err = b.StateDB.SaveState(resourceKey, resourceID, struct{}{}, nil)
+	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -109,7 +119,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
 	// First plan + update: populate state with resolved config
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false))
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -145,13 +155,30 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			}
 		}
 
-		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true))
+		// Compact hashed_fields fields so the persisted state stays small. Not needed for
+		// correctness — the next plan (CalculatePlan) compacts the saved state on read.
+		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
 		}
+		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			os.Remove(tmpStatePath)
+			return nil, fmt.Errorf("compacting state: %w", err)
+		}
 
-		err = b.StateDB.SaveState(resourceKey, resourceID, sv.Value, dependsOn)
+		err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
+		if err != nil {
+			os.Remove(tmpStatePath)
+			return nil, err
+		}
+		if err := b.StateDB.UpgradeToWrite(); err != nil {
+			os.Remove(tmpStatePath)
+			return nil, err
+		}
+
+		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, compacted, dependsOn)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -165,7 +192,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false))
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -215,13 +242,15 @@ func (result *BindResult) Cancel() {
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true))
-	if err != nil {
+	if err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+		return err
+	}
+	if err := b.StateDB.UpgradeToWrite(); err != nil {
 		return err
 	}
 
 	// Delete the main resource
-	err = b.StateDB.DeleteState(resourceKey)
+	err := b.StateDB.DeleteState(ctx, resourceKey, false)
 	if err != nil {
 		return err
 	}
@@ -235,7 +264,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 
 	for key := range b.StateDB.Data.State {
 		if key == permissionsKey || key == grantsKey || strings.HasPrefix(key, resourceKey+".") {
-			err = b.StateDB.DeleteState(key)
+			err = b.StateDB.DeleteState(ctx, key, false)
 			if err != nil {
 				return err
 			}

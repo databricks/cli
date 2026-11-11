@@ -1,0 +1,13 @@
+bundle:
+  name: change-serialized-space-$UNIQUE_NAME
+
+sync:
+  exclude:
+    - "out.*"
+
+resources:
+  genie_spaces:
+    my_space:
+      title: test genie space
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      file_path: ./space.geniespace.json

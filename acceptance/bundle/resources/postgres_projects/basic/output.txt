@@ -18,7 +18,6 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Postgres Project
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default/files...
@@ -31,7 +30,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "name": "projects/test-pg-proj-[UNIQUE_NAME]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
-    "branch_logical_size_limit_bytes": [NUMID],
+    "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
     "default_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
@@ -59,7 +58,6 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Postgres Project
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

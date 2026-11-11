@@ -13,6 +13,7 @@ import (
 
 type ClusterPolicy struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	compute.CreatePolicy
 
 	// Shadows the embedded compute.CreatePolicy.Definition (a string). `any` lets the
@@ -62,8 +63,4 @@ func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 
 func (s *ClusterPolicy) GetName() string {
 	return s.Name
-}
-
-func (s *ClusterPolicy) GetURL() string {
-	return s.URL
 }

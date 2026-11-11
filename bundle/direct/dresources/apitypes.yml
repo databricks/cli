@@ -11,6 +11,12 @@
 # caller-supplied optimistic-concurrency token and that behavior is lost.
 genie_spaces: dashboards.GenieSpace
 
+mcp_services: catalog.McpService
+
+model_provider_services: catalog.ModelProviderService
+
+model_services: catalog.ModelService
+
 postgres_branches: postgres.BranchSpec
 
 postgres_databases: postgres.DatabaseDatabaseSpec
@@ -24,3 +30,9 @@ postgres_catalogs: postgres.CatalogCatalogSpec
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 
 postgres_roles: postgres.RoleRoleSpec
+
+# No generated rules for postgres_data_apis. The API marks spec INPUT_ONLY, which
+# would generate ignore_remote_changes for every spec field, but DoRead fills
+# the spec from status, which echoes the configuration in effect. The field
+# rules are hand-written in configs/postgres_data_apis.yml instead.
+postgres_data_apis: null

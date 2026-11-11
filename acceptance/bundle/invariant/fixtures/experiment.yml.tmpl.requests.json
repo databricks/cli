@@ -1,0 +1,25 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/mlflow/experiments/create",
+    "body": {
+      "name": "/Users/tester@databricks.com/test-experiment-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/experiments/8790683810185760000",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_READ"
+        },
+        {
+          "permission_level": "CAN_MANAGE",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

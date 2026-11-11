@@ -1,0 +1,13 @@
+bundle:
+  name: replace-node-type-$UNIQUE_NAME
+
+# Only sync bom.sql and plain.sql.
+sync:
+  exclude:
+    - databricks.yml
+    - databricks.yml.tmpl
+    - script
+    - test.toml
+    - output.txt
+    - out.*
+    - repls.json

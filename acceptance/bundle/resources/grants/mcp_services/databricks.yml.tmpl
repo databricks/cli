@@ -1,0 +1,12 @@
+bundle:
+  name: deploy-mcp-service-grants-$UNIQUE_NAME
+
+resources:
+  mcp_services:
+    my_mcp_service:
+      parent: schemas/main.myschema
+      mcp_service_id: myservice
+      comment: mycomment
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: ["APPLY_TAG"]

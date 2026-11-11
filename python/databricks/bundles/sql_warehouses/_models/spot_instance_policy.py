@@ -12,13 +12,10 @@ class SpotInstancePolicy(Enum):
     The breakdown of how the EndpointSpotInstancePolicy converts to per cloud
     configurations is:
 
-    +-------+--------------------------------------+--------------------------------+
-    | Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |
-    +-------+--------------------------------------+--------------------------------+
-    | AWS   | On Demand Driver with Spot Executors | On Demand Driver and
-    Executors | | AZURE | On Demand Driver and Executors       | On Demand Driver
-    and Executors |
-    +-------+--------------------------------------+--------------------------------+
+    - AWS, COST_OPTIMIZED: On Demand Driver with Spot Executors.
+    - AWS, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.
+    - AZURE, COST_OPTIMIZED: On Demand Driver and Executors.
+    - AZURE, RELIABILITY_OPTIMIZED: On Demand Driver and Executors.
     """
 
     POLICY_UNSPECIFIED = "POLICY_UNSPECIFIED"

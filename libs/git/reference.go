@@ -86,7 +86,7 @@ func (ref *Reference) ResolvePath() (string, error) {
 // `ref: refs/heads/my-branch` returns `my-branch`
 func (ref *Reference) CurrentBranch() (string, error) {
 	branchRefPath, err := ref.ResolvePath()
-	if err == ErrNotAReferencePointer {
+	if errors.Is(err, ErrNotAReferencePointer) {
 		return "", ErrNotABranch
 	}
 	if err != nil {

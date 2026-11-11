@@ -9,12 +9,20 @@ import (
 func Groups() []cobra.Group {
 	return []cobra.Group{
 		{
+			ID:    "lakewatch",
+			Title: "Lakewatch",
+		},
+		{
 			ID:    "workspace",
 			Title: "Databricks Workspace",
 		},
 		{
 			ID:    "compute",
 			Title: "Compute",
+		},
+		{
+			ID:    "sandbox",
+			Title: "Sandbox",
 		},
 		{
 			ID:    "lakeflow",
@@ -101,6 +109,10 @@ func Groups() []cobra.Group {
 			Title: "Agent Bricks",
 		},
 		{
+			ID:    "aifunctions",
+			Title: "AI Functions",
+		},
+		{
 			ID:    "tags",
 			Title: "Tags",
 		},
@@ -115,6 +127,10 @@ func Groups() []cobra.Group {
 		{
 			ID:    "bundledeployments",
 			Title: "Bundle Deployments",
+		},
+		{
+			ID:    "domains",
+			Title: "Domains",
 		},
 	}
 }

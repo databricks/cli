@@ -1,0 +1,11 @@
+# Deploy both by re-planning and from a plan saved on disk, so the hashes
+# computed during planning survive plan serialization.
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = ["tmp.plan.json", "tmp.002.txt", "tmp.databricks.yml", ".gitignore"]
+
+# See on_file_change/test.toml: mask content hashes, keeping distinct hashes distinguishable.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[FILE_HASH]'
+Distinct = true

@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -21,7 +21,7 @@ trace $CLI cluster-policies edit --json '{"policy_id":"'"$policy_id"'","name":"m
 
 # Discard the out-of-band request so the verification below captures only the
 # reconciling edit issued by the redeploy.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Plan detects the drift"
 trace $CLI bundle plan

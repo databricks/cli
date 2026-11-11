@@ -1,0 +1,9 @@
+Fruit: quince
+Fruit: zucchini
+Not a fruit: rock
+Fruit: apple
+Fruit: banana
+Not a fruit: spoon
+Fruit: melon
+Created jobs.z
+Created jobs.a

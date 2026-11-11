@@ -1,0 +1,37 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Deploy 1: create the cluster with gcp_attributes but no use_preemptible_executors\n"
+trace $CLI bundle deploy -qq
+title "gcp_attributes sent on create (use_preemptible_executors absent):\n"
+print_requests.py //clusters/create | jq '.body.gcp_attributes'
+
+title "Now the user adds an explicit use_preemptible_executors: false to the config\n"
+update_file.py databricks.yml "#use_preemptible_executors: false" "use_preemptible_executors: false"
+
+title "Deploy 2: bundle should detect and apply the use_preemptible_executors change\n"
+trace $CLI bundle plan
+title "use_preemptible_executors change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.use_preemptible_executors"]'
+trace $CLI bundle deploy -qq
+
+title "gcp_attributes sent on update (empty means the change was NOT applied):\n"
+print_requests.py //clusters/edit | jq '.body.gcp_attributes'
+
+title "Deploy 3: no config change, should converge to a no-op\n"
+trace $CLI bundle plan
+
+title "Now the user removes use_preemptible_executors again\n"
+update_file.py databricks.yml "use_preemptible_executors: false" "#use_preemptible_executors: false"
+
+title "Deploy 4: removing the explicit false is a change, symmetric with setting it\n"
+trace $CLI bundle plan
+title "use_preemptible_executors change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.use_preemptible_executors"]'
+trace $CLI bundle deploy -qq
+
+title "Deploy 5: no config change, should converge to a no-op\n"
+trace $CLI bundle plan

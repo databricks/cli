@@ -1,0 +1,5 @@
+EnvMatrix.READPLAN = ["", "1"]
+
+# Migrating an existing deployment is not supported with deployment-history recording, so this
+# test only runs without it (recording is covered by bundle/dms).
+EnvMatrix.DMS = [""]

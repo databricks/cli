@@ -1,0 +1,5 @@
+trace $CLI bundle deploy --select foo,bar --auto-approve
+# The app's ${resources.jobs.bar.id} reference IS resolved here (bar is deployed). bundle
+# run resolves references only within the app being run, so unrelated_job's reference to the
+# not-deployed baz is left untouched and no longer breaks the run.
+trace $CLI bundle run foo
