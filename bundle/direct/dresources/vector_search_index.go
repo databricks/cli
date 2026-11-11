@@ -83,16 +83,14 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
 	state := &VectorSearchIndexState{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			DeltaSyncIndexSpec:    nil, // need to remap below
-			DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
-			IndexSubtype:          remote.IndexSubtype,
-			Name:                  remote.Name,
-			EndpointName:          remote.EndpointName,
-			IndexType:             remote.IndexType,
-			PrimaryKey:            remote.PrimaryKey,
-		},
-		EndpointUuid: remote.EndpointUuid,
+		DeltaSyncIndexSpec:    nil, // need to remap below
+		DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
+		IndexSubtype:          remote.IndexSubtype,
+		Name:                  remote.Name,
+		EndpointName:          remote.EndpointName,
+		IndexType:             remote.IndexType,
+		PrimaryKey:            remote.PrimaryKey,
+		EndpointUuid:          remote.EndpointUuid,
 	}
 	if remote.DeltaSyncIndexSpec != nil {
 		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{

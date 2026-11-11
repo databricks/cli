@@ -24,7 +24,7 @@ func TestWorkspaceID(t *testing.T) {
 		assert.Equal(t, "123", got)
 	})
 
-	for _, id := range []string{"", auth.WorkspaceIDNone} {
+	for _, id := range []string{"", profile.WorkspaceIDNone} {
 		t.Run(id, func(t *testing.T) {
 			server := testserver.New(t)
 			server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {

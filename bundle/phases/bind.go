@@ -47,11 +47,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	if stateDesc.IsDMS() {
-		logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-		return
-	}
-
 	// Direct engine: import into temp state, run plan, check for changes.
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)

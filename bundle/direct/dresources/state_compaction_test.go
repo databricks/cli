@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
@@ -64,7 +63,7 @@ func TestHashedFieldsAreValid(t *testing.T) {
 // hashed_fields path rather than mutating memory shared with the deploy value.
 func TestCompactStateRejectsNestedField(t *testing.T) {
 	cfg := &ResourceLifecycleConfig{HashedFields: []string{"foo.bar"}}
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: `{"a":1}`}}
+	state := &DashboardState{SerializedDashboard: `{"a":1}`}
 
 	_, err := CompactState(cfg, state)
 	require.ErrorContains(t, err, "must be a top-level field")
@@ -74,9 +73,9 @@ func TestCompactStateRejectsNestedField(t *testing.T) {
 // value is not a string. hashed_fields values are serialized to a string before the deploy
 // engine runs, so a non-string here is a broken invariant, not a user error.
 func TestCompactStateRejectsNonStringField(t *testing.T) {
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{
+	state := &DashboardState{
 		SerializedDashboard: map[string]any{"pages": []any{}},
-	}}
+	}
 
 	assert.Panics(t, func() {
 		_, _ = CompactState(GetResourceConfig("dashboards"), state)
@@ -86,7 +85,7 @@ func TestCompactStateRejectsNonStringField(t *testing.T) {
 // TestCompactStateSkipsNilField verifies an unset hashed_fields value passes through
 // untouched, since there is nothing to hash.
 func TestCompactStateSkipsNilField(t *testing.T) {
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: nil}}
+	state := &DashboardState{SerializedDashboard: nil}
 
 	out, err := CompactState(GetResourceConfig("dashboards"), state)
 	require.NoError(t, err)
@@ -97,7 +96,7 @@ func TestCompactStateSkipsNilField(t *testing.T) {
 // type with no hashed_fields declaration and for a nil config, returning the same
 // value untouched.
 func TestCompactStateNoDeclaredFields(t *testing.T) {
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: `{"a":1}`}}
+	state := &DashboardState{SerializedDashboard: `{"a":1}`}
 
 	out, err := CompactState(GetResourceConfig("jobs"), state)
 	require.NoError(t, err)
@@ -115,8 +114,8 @@ func TestCompactStateNoDeclaredFields(t *testing.T) {
 func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 	requireLargeEnoughToHash(t, largeDashboard)
 
-	legacy := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: largeDashboard}}
-	config := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: largeDashboard}}
+	legacy := &DashboardState{SerializedDashboard: largeDashboard}
+	config := &DashboardState{SerializedDashboard: largeDashboard}
 
 	cfg := GetResourceConfig("dashboards")
 	compactedLegacy, err := CompactState(cfg, legacy)
@@ -242,7 +241,7 @@ func TestStateHashing(t *testing.T) {
 
 			// CompactState delegates to hashStateValue, so a dashboard's serialized_dashboard
 			// compacts to the same value.
-			state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: tc.content}}
+			state := &DashboardState{SerializedDashboard: tc.content}
 			out, err := CompactState(GetResourceConfig("dashboards"), state)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, out.(*DashboardState).SerializedDashboard)

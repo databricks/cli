@@ -1,0 +1,10 @@
+export PATH="$PWD/bin:$PATH"
+
+title "Warn but continue on conflicting lockfiles"
+trace $CLI apps validate --path conflicting
+
+title "Warn but continue on unsupported lockfiles"
+trace $CLI apps validate --path unsupported
+
+title "Declared package manager wins over a pnpm lockfile"
+trace $CLI apps validate --path metadata-npm

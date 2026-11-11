@@ -1,6 +1,7 @@
 package statemgmt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,9 +22,13 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shortid"
 )
 
 type AlwaysPull bool
+
+// zipMagic starts every ZIP archive; a state file is JSON and never does.
+var zipMagic = []byte("PK\x03\x04")
 
 type StateDesc struct {
 	Serial   int                 `json:"serial"`
@@ -46,6 +51,15 @@ func (s *StateDesc) String() string {
 		source = "local"
 	}
 	return fmt.Sprintf("%s: %s %s state serial=%d lineage=%q", s.SourcePath, source, s.Engine, s.Serial, s.Lineage)
+}
+
+// LineageHash returns the lineage in the compact form reported in the user agent
+// and telemetry, or "" when the state has no lineage yet (nothing deployed).
+func (s *StateDesc) LineageHash() string {
+	if s.Lineage == "" {
+		return ""
+	}
+	return shortid.Hash(s.Lineage)
 }
 
 func (s *StateDesc) HasRemoteTerraformState() bool {
@@ -103,6 +117,11 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
+		// The workspace exports a directory as a ZIP archive rather than failing, so a directory
+		// at the state path reads fine and only shows up here.
+		if bytes.HasPrefix(content, zipMagic) {
+			return nil, errors.New("not a file: the workspace has a directory at this path")
+		}
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 

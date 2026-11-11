@@ -18,6 +18,34 @@ import (
 // with a raw client.Do because the SDK does not model the AiTrainingService.
 const aiTrainingWorkflowsPath = "/api/2.0/ai-training/workflows"
 
+const computeOptionsPath = "/api/2.0/ai-training/compute-options"
+
+type computeOption struct {
+	HardwareAccelerator     string `json:"hardware_accelerator"`
+	DisplayName             string `json:"display_name"`
+	MultiNodeSupported      *bool  `json:"multi_node_supported"`
+	PerNodeAcceleratorCount *int   `json:"per_node_accelerator_count"`
+	LaunchStage             string `json:"launch_stage"`
+}
+
+type computeOptionsResponse struct {
+	ComputeOptions []computeOption `json:"compute_options"`
+}
+
+func listWorkspaceComputeOptions(ctx context.Context, w *databricks.WorkspaceClient) ([]computeOption, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	var resp computeOptionsResponse
+	err = apiClient.Do(ctx, http.MethodGet, computeOptionsPath, auth.WorkspaceIDHeaders(w.Config), nil, nil, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list compute options: %w", err)
+	}
+	return resp.ComputeOptions, nil
+}
+
 // workflowRef is one run from the index: its Jobs run id and submission time.
 type workflowRef struct {
 	jobRunID     int64

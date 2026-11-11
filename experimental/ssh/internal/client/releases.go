@@ -121,6 +121,11 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 			}
 		}
 
+		err := workspaceFiler.Mkdir(ctx, remoteSubFolder)
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s in workspace: %w", remoteSubFolder, err)
+		}
+
 		releaseReader, err := getRelease(ctx, arch, version, releasesDir)
 		if err != nil {
 			return fmt.Errorf("failed to get archive for architecture %s: %w", arch, err)

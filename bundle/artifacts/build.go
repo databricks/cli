@@ -79,7 +79,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			}
 		}
 
-		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
+		if a.Type == "whl" && config.IsExplicitlyEnabled(a.DynamicVersion) && cacheDir != "" {
 			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
 			for ind, artifactFile := range a.Files {
 				patchedWheel := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
@@ -118,7 +118,7 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 
 	out, err := executor.Exec(ctx, a.BuildCommand)
 	if err != nil {
-		return fmt.Errorf("build failed %s, error: %v, output: %s", artifactName, err, out)
+		return fmt.Errorf("build failed %s, error: %w, output: %s", artifactName, err, out)
 	}
 
 	log.Debugf(ctx, "build output for %s:\n%s", artifactName, out)

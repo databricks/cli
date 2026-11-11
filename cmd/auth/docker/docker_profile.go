@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	authlib "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
@@ -62,7 +61,7 @@ func loadDockerWorkspace(ctx context.Context, name string, region *string) (*doc
 		return nil, fmt.Errorf("locate databricks executable: %w", err)
 	}
 	var client *databricks.WorkspaceClient
-	if region == nil || p.WorkspaceID == "" || p.WorkspaceID == authlib.WorkspaceIDNone {
+	if region == nil || p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
 		client, err = databricks.NewWorkspaceClient(&databricks.Config{
 			Profile:           p.Name,
 			Host:              p.Host,

@@ -308,7 +308,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			SkipInitContext: true,
 			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = false
+				b.Config.Bundle.Deployment.Lock.Force = new(false)
 			},
 		})
 		if err != nil {
@@ -316,7 +316,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Find the app resource
-		resource, err := b.Config.Resources.FindResourceByConfigKey(appKey)
+		resource, _, err := b.Config.Resources.ResolveKey(appKey)
 		if err != nil {
 			return fmt.Errorf("failed to find resource: %w", err)
 		}

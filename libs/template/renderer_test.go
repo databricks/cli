@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
@@ -48,6 +49,10 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	helpers := loadHelpers(ctx)
 
 	renderer, err := newRenderer(ctx, settings, helpers, templateFS, templateDirName, libraryDirName)
+	require.NoError(t, err)
+	schema, err := jsonschema.LoadFS(templateFS, schemaFileName)
+	require.NoError(t, err)
+	renderer.workspace, err = loadWorkspaceContext(ctx, schema)
 	require.NoError(t, err)
 
 	// Evaluate template
@@ -226,12 +231,15 @@ func TestRendererSharedLibraryAndOverride(t *testing.T) {
 	require.NoError(t, err)
 	got := string(b)
 
-	// agents_md is defined only in the shared library, so rendering it (a heading)
-	// without error proves the shared library is parsed into the template's namespace.
-	assert.Contains(t, got, "shared: #")
-	// claude_md is defined in both the shared library and this template's own
+	// agents_md is defined in both the shared library and this template's own
 	// library; the template's own definition must take precedence.
 	assert.Contains(t, got, "own: OWN WINS")
+
+	r, err = newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/no-library")
+	require.NoError(t, err)
+	got, err = r.executeTemplate(`{{template "agents_md" .}}`)
+	require.NoError(t, err)
+	assert.Contains(t, got, "# Declarative Automation Bundles Project")
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {

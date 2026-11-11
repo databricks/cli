@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -18,8 +19,8 @@ import (
 func NewRefSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "refschema",
-		Short: "Dump all relevant fields all bundle resources",
-		Long: `Dumps all available fields for each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
+		Short: "Dump all relevant fields of the bundle config and its resources",
+		Long: `Dumps all available fields of the bundle config and of each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
 - INPUT: field is present in bundle config.
 - STATE: field is present in the state of the resource (direct deployment only).
 - REMOTE: field is present in the remote state of the resource (direct deployment only).
@@ -35,8 +36,12 @@ func NewRefSchemaCommand() *cobra.Command {
 	return cmd
 }
 
-// dumpRemoteSchemas walks through all supported resources and dumps their schema fields.
+// dumpRemoteSchemas dumps the schema fields of the bundle config followed by those of all supported resources.
 func dumpRemoteSchemas(out io.Writer) error {
+	if err := dumpRootSchema(out); err != nil {
+		return err
+	}
+
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
@@ -118,6 +123,33 @@ func dumpRemoteSchemas(out io.Writer) error {
 		}
 	}
 
+	return nil
+}
+
+// dumpRootSchema dumps fields of the bundle config outside of resources.
+// Resource fields are dumped per resource type by dumpRemoteSchemas.
+func dumpRootSchema(out io.Writer) error {
+	var lines []string
+	err := structwalk.WalkType(reflect.TypeFor[config.Root](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path == nil {
+			return true
+		}
+		p := path.String()
+		if p == "resources" || strings.HasSuffix(p, ".resources") {
+			return false
+		}
+		t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
+		lines = append(lines, fmt.Sprintf("%s\t%s\tINPUT\n", p, t))
+		return true
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk root type: %w", err)
+	}
+
+	slices.Sort(lines)
+	for _, l := range lines {
+		fmt.Fprint(out, l)
+	}
 	return nil
 }
 

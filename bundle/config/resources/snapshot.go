@@ -47,12 +47,15 @@ type Snapshot struct {
 	// ACL is the access control list applied to the uploaded snapshot, granting
 	// CAN_READ to the deploying user and to every principal in bundle.permissions.
 	ACL []snapshot.ACLEntry `json:"acl"`
+	// CanManage lists the principals allowed to break the glass on the snapshot, derived
+	// from top-level bundle.permissions entries with level CAN_MANAGE.
+	CanManage []snapshot.ManagePrincipal `json:"can_manage,omitempty"`
 	// ZipPath is the local path of the bundle zip staged by the deploy pipeline.
-	// The file is named "<sha256>.zip", so its base name is the content hash used
-	// as the last component of RelativePath. Storing the path (not the bytes) keeps
-	// the zip off the config, the state, and the plan file, and lets DoCreate stream
-	// it straight from disk at upload time.
-	// Example: "/.../.databricks/bundle/default/snapshots/e3b0c4...zip".
+	// The file is named "<sha256>-<uuid>.zip", and its base name is the last component
+	// of RelativePath. Storing the path (not the bytes) keeps the zip off the config,
+	// the state, and the plan file, and lets DoCreate stream it straight from disk at
+	// upload time.
+	// Example: "/.../.databricks/bundle/default/snapshots/e3b0c4...-0199e2c1-....zip".
 	ZipPath string `json:"zip_path"`
 	// RemoteRoot is the workspace directory that holds every snapshot for this user,
 	// returned by the snapshot rootpath API.
@@ -62,19 +65,20 @@ type Snapshot struct {
 	Lifecycle Lifecycle `json:"-"`
 }
 
-// RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<zip_hash>".
-// It is the resource ID; the last component is the zip content hash (the ZipPath base
-// name), which makes the pre-computed path match the uploaded content.
-// Example: "1a2b3c4d-.../e3b0c4...".
+// RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<name>". It is the
+// resource ID. The name is the ZipPath base name, "<zip hash>-<uuid>": every new snapshot gets a
+// fresh one, because a path can be uploaded to only once (see snapshot.PlanUpload).
+// Example: "1a2b3c4d-.../e3b0c4...-0199e2c1-...".
 func (s *Snapshot) RelativePath() string {
-	hash := strings.TrimSuffix(path.Base(s.ZipPath), ".zip")
-	return path.Join(s.BundleID, hash)
+	return path.Join(s.BundleID, strings.TrimSuffix(path.Base(s.ZipPath), ".zip"))
 }
 
-// FullPath is the absolute workspace path of the snapshot: RemoteRoot + "/" + RelativePath.
-// Example: "/Workspace/Users/<user>/.snapshots/1a2b3c4d-.../e3b0c4...".
+// FullPath is the absolute workspace content path of the snapshot:
+// RemoteRoot + "/" + RelativePath + "/" + ContentSubdir. The API stores the content under a
+// fixed "snapshot" subfolder, and downstream resources / the inspect check reference it.
+// Example: "/Workspace/Users/<user>/.snapshots/1a2b3c4d-.../e3b0c4.../snapshot".
 func (s *Snapshot) FullPath() string {
-	return path.Join(s.RemoteRoot, s.RelativePath())
+	return path.Join(s.RemoteRoot, s.RelativePath(), snapshot.ContentSubdir)
 }
 
 func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

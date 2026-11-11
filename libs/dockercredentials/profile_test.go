@@ -22,7 +22,7 @@ type invalidRefreshTokenError struct {
 	error
 }
 
-func (e *invalidRefreshTokenError) As(target any) bool {
+func (e invalidRefreshTokenError) As(target any) bool {
 	invalidRefreshToken, ok := target.(**u2m.InvalidRefreshTokenError)
 	if !ok {
 		return false
@@ -152,7 +152,7 @@ func TestEnsureUniqueProfile(t *testing.T) {
 			name:     "duplicate workspace ID",
 			profiles: profile.Profiles{selected, workspaceProfile("dev")},
 			selected: selected,
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 		{
 			name: "unsupported duplicate",
@@ -172,7 +172,7 @@ func TestEnsureUniqueProfile(t *testing.T) {
 				Host:     workspaceHost,
 				AuthType: auth.AuthTypeDatabricksCli,
 			},
-			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 	}
 
@@ -204,7 +204,7 @@ func TestProfileForRegistry(t *testing.T) {
 		{
 			name:     "duplicate workspace ID",
 			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete",
 		},
 		{
 			name: "ignores unsupported duplicate",
@@ -236,7 +236,7 @@ func TestProfileForRegistry(t *testing.T) {
 }
 
 func TestRewriteProfileErrorPreservesInvalidRefreshTokenCause(t *testing.T) {
-	cause := &invalidRefreshTokenError{error: errors.New("raw token refresh error")}
+	cause := invalidRefreshTokenError{error: errors.New("raw token refresh error")}
 	err := dockercredentials.RewriteProfileError(t.Context(), workspaceProfile("workspace"), fmt.Errorf("refresh token: %w", cause))
 
 	assert.EqualError(t, err, `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:

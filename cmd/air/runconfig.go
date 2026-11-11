@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -27,25 +28,27 @@ import (
 // REGEX_TASK_KEY_CHARS: ASCII alphanumeric, hyphen, underscore only (no periods).
 // Explicit ASCII class, not \w: \w matches Unicode letters that the ASCII-only
 // Jobs API task_key rejects.
-var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var taskKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_-]+$`) })
 
 // gitRefRe guards the branch name against command injection (it flows into git
 // exec args). Only safe ref characters are allowed.
-var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
+var gitRefRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[\w./-]+$`) })
 
 // Canonical UUID (8-4-4-4-12 hex). Usage policy ids are server-generated UUIDs,
 // so an obviously-wrong value (e.g. a policy name pasted into usage_policy_id)
 // is rejected up front with a hint pointing at usage_policy_name.
-var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+var uuidRe = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+})
 
 // Unity Catalog image paths are submitted as <catalog>.<schema>.<image>:<tag>.
 // Keep validation structural only here: object existence and permissions are
 // workspace checks performed by the backend.
-var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
+var unityCatalogImageRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`) })
 
-var containerNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var containerNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`) })
 
-var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
+var secretTemplateRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`) })
 
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
@@ -159,7 +162,7 @@ func (c *runConfig) validate() error {
 		if len(v) > 100 {
 			return fmt.Errorf("mlflow_run_name must be 100 characters or less (got %d)", len(v))
 		}
-		if !taskKeyRe.MatchString(v) {
+		if !taskKeyRe().MatchString(v) {
 			return fmt.Errorf("invalid mlflow_run_name %q: only alphanumeric characters, hyphens, and underscores are allowed", v)
 		}
 	}
@@ -215,7 +218,7 @@ func (c *runConfig) validate() error {
 		if v == "" {
 			return errors.New("usage_policy_id must not be empty")
 		}
-		if !uuidRe.MatchString(v) {
+		if !uuidRe().MatchString(v) {
 			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
 		}
 	}
@@ -228,7 +231,7 @@ func (c *runConfig) validate() error {
 // staged beside it because PuPr workspaces cannot consume the DEVELOPMENT API
 // field yet.
 type containerConfig struct {
-	Name                 string                               `yaml:"name" help:"Unique container name: at most 16 letters, digits, or underscores, not starting with a digit." required:"yes"`
+	Name                 string                               `yaml:"name" help:"Unique container name: 1–32 lowercase letters, digits, or hyphens; start with a letter and end with a letter or digit." required:"yes"`
 	Command              *string                              `yaml:"command" help:"Shell command run on every rank assigned to this container." required:"yes"`
 	Ranks                []int                                `yaml:"ranks" help:"Zero-based node ranks assigned to this container." required:"yes"`
 	UnityCatalogImage    string                               `yaml:"unity_catalog_image" help:"Unity Catalog image as <catalog>.<schema>.<image>:<tag>." required:"yes"`
@@ -256,8 +259,8 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) || len(container.Name) > 16 {
-			return fmt.Errorf("%s.name must be at most 16 letters, digits, or underscores and must not start with a digit, got %q", prefix, container.Name)
+		if !containerNameRe().MatchString(container.Name) {
+			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
 			return fmt.Errorf("%s.name %q is duplicated; container names must be unique", prefix, container.Name)
@@ -272,7 +275,7 @@ func (c *runConfig) validateContainers() error {
 		if len(container.Ranks) == 0 {
 			return fmt.Errorf("%s.ranks must contain at least one rank", prefix)
 		}
-		if !unityCatalogImageRe.MatchString(container.UnityCatalogImage) {
+		if !unityCatalogImageRe().MatchString(container.UnityCatalogImage) {
 			return fmt.Errorf("%s.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", prefix, container.UnityCatalogImage)
 		}
 		if container.EnvironmentVariables != nil {
@@ -280,7 +283,7 @@ func (c *runConfig) validateContainers() error {
 				return fmt.Errorf("%s.environment_variables.files is not supported while container environment variables use workspace sidecars; use environment_variables.variables", prefix)
 			}
 			for name, value := range container.EnvironmentVariables.Variables {
-				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe.MatchString(value) {
+				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe().MatchString(value) {
 					return fmt.Errorf("%s.environment_variables.variables.%s has an invalid secret reference %q; expected {{secrets/<scope>/<key>}}", prefix, name, value)
 				}
 			}
@@ -313,7 +316,7 @@ func validateExperimentName(v string) error {
 	if len(v) > 100 {
 		return fmt.Errorf("experiment_name must be 100 characters or less (got %d); this is the Jobs API task_key length limit", len(v))
 	}
-	if !taskKeyRe.MatchString(v) {
+	if !taskKeyRe().MatchString(v) {
 		return fmt.Errorf("invalid experiment_name %q: only alphanumeric characters, hyphens (-), and underscores (_) are allowed", v)
 	}
 	return nil
@@ -355,7 +358,7 @@ type environmentConfig struct {
 
 func (e *environmentConfig) validate() error {
 	unityCatalogImage := e.UnityCatalogImage
-	if unityCatalogImage != "" && !unityCatalogImageRe.MatchString(unityCatalogImage) {
+	if unityCatalogImage != "" && !unityCatalogImageRe().MatchString(unityCatalogImage) {
 		return fmt.Errorf("environment.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", e.UnityCatalogImage)
 	}
 
@@ -505,7 +508,7 @@ type gitRef struct {
 }
 
 func (g *gitRef) validate() error {
-	if g.Branch != nil && !gitRefRe.MatchString(*g.Branch) {
+	if g.Branch != nil && !gitRefRe().MatchString(*g.Branch) {
 		return fmt.Errorf("invalid git.branch format %q: only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed", *g.Branch)
 	}
 
@@ -610,7 +613,7 @@ func writeConfigFieldHelp(w io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field)
+	renderConfigField(w, field, nil)
 	return nil
 }
 
@@ -655,11 +658,11 @@ func configSchema() configField {
 
   Install the skill locally for your coding agent:
 
-    databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+    databricks aitools install --skills-only --skills databricks-ai-runtime
 
   Follow the prompts to choose your coding agent and installation scope.
   Use --scope project to install into the current project.
-  See: https://github.com/databricks/databricks-agent-skills/tree/main/experimental/databricks-ai-runtime`,
+  See: https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
@@ -712,11 +715,11 @@ func configLeafName(path string) string {
 
 // cutLast splits s around the final instance of sep.
 func cutLast(s, sep string) (before, after string, found bool) {
-	i := strings.LastIndex(s, sep)
-	if i < 0 {
+	before, after, ok := strings.CutLast(s, sep)
+	if !ok {
 		return s, "", false
 	}
-	return s[:i], s[i+len(sep):], true
+	return before, after, true
 }
 
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
@@ -857,10 +860,19 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField) {
+func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
+	}
+	if (f.path == "config.compute" || f.path == "config.compute.accelerator_type") && computeOptions != nil {
+		fmt.Fprintln(w, "\n  Supported accelerator types:")
+		if len(computeOptions) == 0 {
+			fmt.Fprintln(w, "    No accelerator types are currently available for AI Runtime in this workspace.")
+		}
+		for _, option := range computeOptions {
+			fmt.Fprintf(w, "    %s - %s%s\n", option.HardwareAccelerator, formatPerNodeAcceleratorCount(option), launchStageBadge(option.LaunchStage))
+		}
 	}
 
 	if len(f.children) == 0 {
@@ -888,6 +900,57 @@ func renderConfigField(w io.Writer, f configField) {
 		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 	}
 	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+}
+
+func fallbackComputeOptions() []computeOption {
+	options := make([]computeOption, 0, len(gpuTypes))
+	for _, acceleratorType := range gpuTypes {
+		// RTX6000 availability must be confirmed by the workspace API during rollout.
+		if acceleratorType == gpuType1xRTX6000 {
+			continue
+		}
+		perNode, err := gpusPerNode(acceleratorType)
+		if err != nil {
+			continue
+		}
+		options = append(options, computeOption{
+			HardwareAccelerator:     string(acceleratorType),
+			PerNodeAcceleratorCount: &perNode,
+		})
+	}
+	return options
+}
+
+func formatPerNodeAcceleratorCount(option computeOption) string {
+	count := option.PerNodeAcceleratorCount
+	if count == nil {
+		acceleratorType, err := parseGPUType(option.HardwareAccelerator)
+		if err == nil {
+			if fallback, err := gpusPerNode(acceleratorType); err == nil {
+				count = &fallback
+			}
+		}
+	}
+	if count == nil {
+		return "accelerator count per node unavailable"
+	}
+	unit := "accelerators"
+	if *count == 1 {
+		unit = "accelerator"
+	}
+	return fmt.Sprintf("%d %s per node", *count, unit)
+}
+
+func launchStageBadge(stage string) string {
+	labels := map[string]string{
+		"PRIVATE_PREVIEW": "Private Preview",
+		"PUBLIC_BETA":     "Beta",
+		"PUBLIC_PREVIEW":  "Public Preview",
+	}
+	if label := labels[stage]; label != "" {
+		return " [" + label + "]"
+	}
+	return ""
 }
 
 // configFieldSummary is the one-line description used in a field listing: the

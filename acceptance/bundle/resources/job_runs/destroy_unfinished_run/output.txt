@@ -1,5 +1,6 @@
 
 === the deploy stops waiting before the run finishes
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-destroy-unfinished-run/default/files...
 Created jobs.my_job
@@ -19,6 +20,7 @@ Exit code: 1
 [MY_RUN_ID]
 
 === destroy leaves the unfinished run alone
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job

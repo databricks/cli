@@ -24,8 +24,8 @@ func WrapperWarning() bundle.Mutator {
 
 func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if isPythonWheelWrapperOn(b) {
-		if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-			return diag.Warningf("Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'presets.source_linked_deployment: false'")
+		if b.IsSourceLinkedDeployment() {
+			return diag.Warningf("Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'workspace.sync_mode: overwrite'")
 		}
 		return nil
 	}
@@ -41,7 +41,7 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 }
 
 func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
-	return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	return b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 }
 
 func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

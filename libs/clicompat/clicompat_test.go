@@ -23,6 +23,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+const pinnedAgentSkillsVersion = "0.2.32"
+
 // roundTripFunc adapts a function into an http.RoundTripper.
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
@@ -297,6 +299,31 @@ func TestResolveEntry_RemoteFailUsesEmbedded(t *testing.T) {
 	assert.NotEmpty(t, entry.AppKit)
 }
 
+func TestResolveAgentSkillsVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		manifest string
+		want     string
+	}{
+		{name: "pinned", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30"}}`, want: "0.2.30"},
+		{name: "latest sentinel", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`, want: AgentSkillsLatest},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := testContext(t)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(tc.manifest))
+			}))
+			defer srv.Close()
+			redirectToServer(t, srv)
+
+			v, err := ResolveAgentSkillsVersion(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
 // --- ResolveEmbeddedAppKitVersion ---
 
 func TestResolveEmbeddedAppKitVersion(t *testing.T) {
@@ -304,6 +331,27 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, v, "embedded manifest should resolve an appkit version")
 	assert.True(t, semver.IsValid("v"+v), "embedded resolved version should be valid semver")
+}
+
+func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
+	for _, tc := range []struct {
+		version string
+		want    string
+	}{
+		{version: "1.0.0", want: "0.2.10"},
+		{version: "1.22.0", want: pinnedAgentSkillsVersion},
+		{version: "0.0.0-dev+test", want: pinnedAgentSkillsVersion},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			original := build.GetInfo().Version
+			build.SetBuildVersion(tc.version)
+			t.Cleanup(func() { build.SetBuildVersion(original) })
+
+			v, err := ResolveEmbeddedAgentSkillsVersion()
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, v)
+		})
+	}
 }
 
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
@@ -324,6 +372,13 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 	slices.SortFunc(keys, func(a, b string) int {
 		return semver.Compare("v"+a, "v"+b)
 	})
+
+	// Pinning the newest range (e.g. after a breaking skills release) must
+	// update this assertion in the same change.
+	assert.Equal(t, pinnedAgentSkillsVersion, m[keys[len(keys)-1]].AgentSkills,
+		"the newest CLI range must stay pinned until all callers support latest-release fallback")
+	assert.True(t, semver.IsValid("v"+build.AgentSkillsFallbackVersion),
+		"compiled skills fallback must be a concrete version")
 
 	// Keys must be in ascending semver order.
 	for i := 1; i < len(keys); i++ {

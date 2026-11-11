@@ -3,6 +3,7 @@ package aircmd
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"os"
 	"path/filepath"
 	"slices"
@@ -122,6 +123,29 @@ func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testin
 	assert.NotContains(t, entries, "subpkg/configs/train.yaml")
 }
 
+func TestCreateGitArchiveSnapshot_GitFailureSurfacesStderr(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	commitAll(t, repo, "init")
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), "0000000000000000000000000000000000000000", out, "repo", nil, "")
+	require.ErrorContains(t, err, "failed to create git archive")
+	assert.ErrorContains(t, err, "fatal")
+}
+
+func TestCreateGitArchiveSnapshotStopsWhenCancelled(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	sha := commitAll(t, repo, "init")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, filepath.Join(t.TempDir(), "snap.tar.gz"), "repo", nil, "")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
 func TestCreatePlainTarball(t *testing.T) {
 	ctx := t.Context()
 	repo := t.TempDir()
@@ -144,6 +168,18 @@ func TestCreatePlainTarball(t *testing.T) {
 	for _, e := range entries {
 		assert.NotContains(t, e, "/.git/")
 	}
+}
+
+func TestCreatePlainTarballStopsWhenCancelled(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "a.txt", "1")
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err = createPlainTarball(ctx, repo, filepath.Join(t.TempDir(), "snap.tar.gz"), files)
+	require.ErrorIs(t, err, context.Canceled)
 }
 
 func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {

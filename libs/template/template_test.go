@@ -12,9 +12,11 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - default-minimal: The minimal template, for advanced users
 - default-scala: The default Scala template for JAR jobs
+- lakeflow-integrations: The template for Lakeflow integrations
 - dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
-- pydabs: A variant of the 'default-python' template that defines resources in Python instead of YAML`
+- pydabs: A variant of the 'default-python' template that defines resources in Python instead of YAML
+- app-appkit: Databricks App with AppKit (TypeScript)`
 	assert.Equal(t, expected, HelpDescriptions())
 }
 
@@ -24,9 +26,11 @@ func TestTemplateOptions(t *testing.T) {
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "default-minimal", Id: "The minimal template, for advanced users"},
 		{Name: "default-scala", Id: "The default Scala template for JAR jobs"},
+		{Name: "lakeflow-integrations", Id: "The template for Lakeflow integrations"},
 		{Name: "dbt-sql", Id: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
 		{Name: "pydabs", Id: "A variant of the 'default-python' template that defines resources in Python instead of YAML"},
+		{Name: "app-appkit", Id: "Databricks App with AppKit (TypeScript)"},
 		{Name: "custom...", Id: "Bring your own template"},
 	}
 	assert.Equal(t, expected, options())

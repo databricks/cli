@@ -96,6 +96,13 @@ type TestConfig struct {
 	// to true; set it to false to drop an inherited pattern for this test.
 	SortLinesOn map[string]bool
 
+	// Map of name -> regexp. Output lines matching an enabled regexp are removed from the
+	// compared output and written to the test log instead. Use for lines that depend on
+	// timing or fault injection, e.g. retry warnings. Entries are keyed by name so an inner
+	// test.toml can replace an inherited pattern by reusing its name, or disable it by
+	// setting it to "".
+	SuppressLines map[string]string
+
 	// List of gitignore patterns to ignore when checking output files
 	Ignore []string
 

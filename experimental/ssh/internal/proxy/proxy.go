@@ -12,9 +12,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
@@ -247,7 +247,7 @@ type createWebsocketConnectionFunc func(ctx context.Context, req DialRequest) (*
 
 func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
 	return &proxyConnection{
-		connID:                    uuid.NewString(),
+		connID:                    uuid.New().String(),
 		createWebsocketConnection: createConn,
 		ready:                     make(chan struct{}),
 	}

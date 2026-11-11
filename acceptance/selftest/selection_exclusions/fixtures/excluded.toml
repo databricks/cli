@@ -1,0 +1,2 @@
+Cloud = false
+EnvMatrixExclude.new = ["INPUT_CONFIG=new.yml.tmpl"]

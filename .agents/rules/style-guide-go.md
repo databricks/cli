@@ -173,6 +173,14 @@ func GetConfig() (*Config, error) {
 
 Caveats that apply to both: results are cached forever (including errors), and a panic is rethrown on every subsequent call. Create a new instance if you need retry semantics.
 
+**RULE: Do not compile regexps, call `reflect`, or do other non-trivial work in package-level `var` initializers or `init()`.** They run on every CLI invocation for every linked package. Wrap the value in `sync.OnceValue` (as above) and make sure a test calls it, so a bad pattern panics in tests rather than at runtime.
+
+BAD:
+
+```go
+var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+```
+
 ### Constructors
 
 When a constructor's parameter list is long enough that callers forget the order or misread positional arguments, consider grouping dependencies into a struct. This is a judgment call. The CLI has many ordinary constructors with 4+ parameters, and that's fine when the arguments are obvious at the call site. The signal for switching is readability, not parameter count.

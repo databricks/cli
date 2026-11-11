@@ -8,7 +8,9 @@ type Experimental struct {
 	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
 	// workspace.file_path and workspace.artifact_path to the returned content-addressed
 	// path.
-	ImmutableFolder bool `json:"immutable_folder,omitempty"`
+	//
+	// ImmutableFolder is deprecated, use workspace.sync_mode: immutable instead.
+	ImmutableFolder *bool `json:"immutable_folder,omitempty"`
 
 	// By default Python wheel tasks deployed as is to Databricks platform.
 	// If notebook wrapper required (for example, used in DBR < 13.1 or other configuration differences), users can provide a following experimental setting
@@ -16,7 +18,7 @@ type Experimental struct {
 	//    python_wheel_wrapper: true
 	// In this case the configured wheel task will be deployed as a notebook task which install defined wheel in runtime and executes it.
 	// For more details see https://github.com/databricks/cli/pull/797 and https://github.com/databricks/cli/pull/635
-	PythonWheelWrapper bool `json:"python_wheel_wrapper,omitempty"`
+	PythonWheelWrapper *bool `json:"python_wheel_wrapper,omitempty"`
 
 	// Enable legacy run_as behavior. That is:
 	// - Set the run_as identity as the owner of any pipelines in the bundle.
@@ -29,7 +31,7 @@ type Experimental struct {
 	// made in https://github.com/databricks/cli/pull/1233. This flag might
 	// be removed in the future once we have a proper workaround like allowing IS_OWNER
 	// as a top-level permission in the DAB.
-	UseLegacyRunAs bool `json:"use_legacy_run_as,omitempty"`
+	UseLegacyRunAs *bool `json:"use_legacy_run_as,omitempty"`
 
 	// PyDABs is deprecated use Python instead.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
@@ -40,7 +42,7 @@ type Experimental struct {
 	// SkipArtifactCleanup determines whether to skip cleaning up the .internal folder
 	// containing build artifacts such as wheels. When set to true, the .internal folder
 	// and its contents will be preserved after bundle operations complete.
-	SkipArtifactCleanup bool `json:"skip_artifact_cleanup,omitempty"`
+	SkipArtifactCleanup *bool `json:"skip_artifact_cleanup,omitempty"`
 
 	// SkipNamePrefixForSchema skips adding the `presets.name_prefix` prefix
 	// to UC schemas defined in the bundle. Currently this is a opt-in behavior
@@ -48,15 +50,16 @@ type Experimental struct {
 	// customer data.
 	// Eventually this can be made the default once we have native CRUD in DABs
 	// at which point we can deprecate or remove this field all together.
-	SkipNamePrefixForSchema bool `json:"skip_name_prefix_for_schema,omitempty"`
+	SkipNamePrefixForSchema *bool `json:"skip_name_prefix_for_schema,omitempty"`
 
 	// DeploymentHistory opts the bundle into the deployment metadata
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
 	//
-	// Only for bundles with no deployed resources yet: DMS becomes the source of
-	// truth for their state.
-	DeploymentHistory bool `json:"deployment_history,omitempty"`
+	// Resource state remains in resources.json. History uploads are best effort:
+	// DMS errors do not fail file-backed deployments.
+	// An explicit value takes priority over the environment setting.
+	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }
 
 type Python struct {
@@ -81,7 +84,7 @@ type Python struct {
 // PyDABs is deprecated use Python instead
 type PyDABs struct {
 	// Enabled is a flag to enable the feature.
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type (

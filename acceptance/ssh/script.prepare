@@ -1,0 +1,5 @@
+# Writes a stand-in release archive. The import-file endpoint unzips uploaded .zip files,
+# so it has to be a valid archive holding the `databricks` binary.
+fake_release() {
+  python3 -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1], 'w').writestr('databricks', '')" "$1"
+}

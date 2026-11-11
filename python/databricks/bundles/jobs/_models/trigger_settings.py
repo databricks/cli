@@ -10,6 +10,10 @@ from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (
     FileArrivalTriggerConfiguration,
     FileArrivalTriggerConfigurationParam,
 )
+from databricks.bundles.jobs._models.job_completion_trigger_configuration import (
+    JobCompletionTriggerConfiguration,
+    JobCompletionTriggerConfigurationParam,
+)
 from databricks.bundles.jobs._models.model_trigger_configuration import (
     ModelTriggerConfiguration,
     ModelTriggerConfigurationParam,
@@ -41,6 +45,13 @@ class TriggerSettings:
     File arrival trigger settings.
     """
 
+    job_completion: VariableOrOptional[JobCompletionTriggerConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Job completion trigger settings.
+    """
+
     model: VariableOrOptional[ModelTriggerConfiguration] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -62,7 +73,7 @@ class TriggerSettings:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 
@@ -82,6 +93,13 @@ class TriggerSettingsDict(TypedDict, total=False):
     file_arrival: VariableOrOptional[FileArrivalTriggerConfigurationParam]
     """
     File arrival trigger settings.
+    """
+
+    job_completion: VariableOrOptional[JobCompletionTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Job completion trigger settings.
     """
 
     model: VariableOrOptional[ModelTriggerConfigurationParam]
@@ -105,7 +123,7 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 

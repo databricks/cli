@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -164,6 +165,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			//
 			// Success is recorded by the state writes inside Deploy, so a recreate reports
 			// each of its steps.
+			start := time.Now()
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
 				// Empty for a create that never got an ID, and for a recreate whose delete
@@ -173,6 +175,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
+			b.DeployDurations.Store(resourceKey, time.Since(start))
 
 			// Marked (and reported) before the remote-state refresh below: the resource is
 			// already deployed at this point, so the summary count and the line are accurate

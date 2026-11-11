@@ -20,15 +20,6 @@ EnvRepl.UV_PYTHON = true
 Old = '0\.0\.1\+\d+'
 New = '0.0.1+[WHEEL_BUILD]'
 
-# Job ids; the resource keys embed $UNIQUE_NAME, so replace_ids.py names would vary per run.
-[[Repls]]
-Old = '/jobs/\d+'
-New = '/jobs/[JOB_ID]'
-
-[[Repls]]
-Old = '"id": "\d+"'
-New = '"id": "[JOB_ID]"'
-
 [[Repls]]
 Old = 'Standard_D3_v2'
 New = '[NODE_TYPE_ID]'

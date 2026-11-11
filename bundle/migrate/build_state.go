@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -152,6 +153,15 @@ func BuildStateFromTF(
 				}
 			}
 		}
+		lifecycleDeps, err := direct.LifecycleDependsOn(configRoot, inputConfig)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: %w", node, err)
+		}
+		for _, dep := range lifecycleDeps {
+			if !slices.Contains(dependsOn, dep) {
+				dependsOn = append(dependsOn, dep)
+			}
+		}
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -193,6 +203,25 @@ func BuildStateFromTF(
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
 				return warningsSeen, fmt.Errorf("%s: parsing field path %q: %w", node, pending.fieldPathStr, err)
+			}
+
+			// The referenced resource was never deployed (new in config), so the deployed
+			// resource cannot have the field set either. Record it as unset: the first direct
+			// plan sees the difference and applies it once the referenced resource exists.
+			if referencesUndeployed(pending.refTemplate, tfIDs) {
+				current, err := structaccess.Get(sv.Value, fieldPath)
+				if err != nil {
+					return warningsSeen, fmt.Errorf("%s: reading field %q: %w", node, pending.fieldPathStr, err)
+				}
+				// A nil value means the field is already unset (e.g. an unresolved ref in a number).
+				if current != nil {
+					zero := reflect.Zero(reflect.TypeOf(current)).Interface()
+					if err := structaccess.Set(sv.Value, fieldPath, zero); err != nil {
+						return warningsSeen, fmt.Errorf("%s: cannot unset field %q: %w", node, pending.fieldPathStr, err)
+					}
+				}
+				delete(sv.Refs, pending.fieldPathStr)
+				continue
 			}
 
 			// ResolveFieldRef returns the fully resolved value for this field,
@@ -248,6 +277,29 @@ func BuildStateFromTF(
 	}
 
 	return warningsSeen, nil
+}
+
+// referencesUndeployed reports whether refTemplate references a resource that is not in the terraform state.
+func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
+	ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+	if !ok {
+		return false
+	}
+	for _, targetPath := range ref.References() {
+		path, err := dyn.NewPathFromString(targetPath)
+		if err != nil {
+			continue
+		}
+		targetNode, _ := config.GetNodeAndType(path)
+		// Not a resource reference (e.g. ${var.x}).
+		if len(targetNode) == 0 {
+			continue
+		}
+		if _, ok := tfIDs[targetNode.String()]; !ok {
+			return true
+		}
+	}
+	return false
 }
 
 // reconcileIDFields aligns each id-composing field (provided_id_fields, updatable_id_fields)

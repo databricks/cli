@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
@@ -13,8 +14,8 @@ func newAgentShimCommand() *cobra.Command {
 		Short:  "Launch a coding agent configured against Unity AI Gateway (invoked on the remote)",
 		Hidden: true,
 	}
-	for _, agent := range client.SupportedAgentNames() {
-		cmd.AddCommand(newAgentShimAgentCommand(agent))
+	for _, agent := range agentlauncher.SupportedAgents {
+		cmd.AddCommand(newAgentShimAgentCommand(agent.Name))
 	}
 	return cmd
 }

@@ -34,6 +34,55 @@ const dmsDeploymentNodeName = "resources.deployment.json"
 // created.
 var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
+// dmsResourceTypes lists the resource_key prefixes accepted by DMS.
+// NOTE: When adding a type here, also add the corresponding enum in bundle/metadata-service/service.proto
+// and prefix mapping in parser/ResourceTypes.java in Universe.
+var dmsResourceTypes = []string{
+	"agent_services",
+	"alerts",
+	"apps",
+	"catalogs",
+	"cluster_policies",
+	"clusters",
+	"dashboards",
+	"data_quality_monitors",
+	"database_catalogs",
+	"database_instances",
+	"experiments",
+	"external_locations",
+	"features",
+	"genie_spaces",
+	"instance_pools",
+	"internal_immutable_folders",
+	"internal_immutable_snapshots",
+	"job_runs",
+	"jobs",
+	"mcp_services",
+	"model_provider_services",
+	"model_services",
+	"model_serving_endpoints",
+	"models",
+	"pipelines",
+	"postgres_branches",
+	"postgres_catalogs",
+	"postgres_databases",
+	"postgres_endpoints",
+	"postgres_projects",
+	"postgres_roles",
+	"postgres_snapshot_schedules",
+	"postgres_synced_tables",
+	"quality_monitors",
+	"registered_models",
+	"schemas",
+	"secret_scopes",
+	"secrets",
+	"sql_warehouses",
+	"synced_database_tables",
+	"vector_search_endpoints",
+	"vector_search_indexes",
+	"volumes",
+}
+
 // DmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
 // can serve back what deploys wrote.
@@ -74,7 +123,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	if resp, ok := s.requireParentDirectory(nodePath); !ok {
 		return resp
 	}
-	objectID := nextID()
+	objectID := nextTreenodeID()
 	s.files[nodePath] = FileEntry{
 		Info: workspace.ObjectInfo{
 			// The service registers its own node type, which get-status reports back;
@@ -178,8 +227,16 @@ type dmsWorkspaceInfo struct {
 var dmsUpdatableDeploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
 // checkWorkspaceInfo rejects a bundle_root_path without the git_folder_path it is relative to,
-// which is what the service does.
+// and a root_path or file_path that is not absolute, which is what the service does.
 func checkWorkspaceInfo(ws *bundledeployments.WorkspaceInfo) (Response, bool) {
+	if ws != nil {
+		if ws.RootPath != "" && !strings.HasPrefix(ws.RootPath, "/") {
+			return dmsInvalidArgument("workspace_info.root_path must be an absolute workspace path"), false
+		}
+		if ws.FilePath != "" && !strings.HasPrefix(ws.FilePath, "/") {
+			return dmsInvalidArgument("workspace_info.file_path must be an absolute workspace path"), false
+		}
+	}
 	if ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
 		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together"), false
 	}
@@ -319,10 +376,11 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	}
 	seen := make(map[string]bool, len(staged.Operations))
 	for _, staged := range staged.Operations {
+		resourceType, _, hasPrefix := strings.Cut(staged.ResourceKey, ".")
 		switch {
 		case staged.ResourceKey == "":
 			return dmsInvalidArgument("operations.resource_key is required")
-		case !strings.Contains(staged.ResourceKey, "."):
+		case !hasPrefix || !slices.Contains(dmsResourceTypes, resourceType):
 			return dmsInvalidArgument("operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): " + staged.ResourceKey)
 		case staged.ActionType == "":
 			return dmsInvalidArgument("operations.action_type is required and must not be UNSPECIFIED for resource " + staged.ResourceKey)

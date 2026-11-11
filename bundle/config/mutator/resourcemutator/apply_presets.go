@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -197,11 +198,22 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				q.Schedule = nil
 			}
 		}
+		// Same as quality monitors: the schedule's pause_status is read-only, so a
+		// paused preset can only drop the schedule.
+		for _, m := range r.DataQualityMonitors {
+			if m == nil || m.DataProfilingConfig == nil {
+				continue
+			}
+			s := m.DataProfilingConfig.Schedule
+			if s != nil && s.PauseStatus != dataquality.CronSchedulePauseStatusCronSchedulePauseStatusUnpaused {
+				m.DataProfilingConfig.Schedule = nil
+			}
+		}
 	}
 
 	// Schemas: Prefix
 	for _, s := range r.Schemas {
-		if b.Config.Experimental != nil && b.Config.Experimental.SkipNamePrefixForSchema {
+		if b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.SkipNamePrefixForSchema) {
 			break
 		}
 

@@ -38,7 +38,7 @@ type Workspace struct {
 
 	// Azure specific attributes.
 	AzureResourceID  string `json:"azure_workspace_resource_id,omitempty"`
-	AzureUseMSI      bool   `json:"azure_use_msi,omitempty"`
+	AzureUseMSI      *bool  `json:"azure_use_msi,omitempty"`
 	AzureClientID    string `json:"azure_client_id,omitempty"`
 	AzureTenantID    string `json:"azure_tenant_id,omitempty"`
 	AzureEnvironment string `json:"azure_environment,omitempty"`
@@ -50,7 +50,7 @@ type Workspace struct {
 	// detected automatically from /.well-known/databricks-config. The field is
 	// retained so existing databricks.yml files using it still validate against
 	// the bundle schema.
-	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
+	ExperimentalIsUnifiedHost *bool  `json:"experimental_is_unified_host,omitempty"`
 	AccountID                 string `json:"account_id,omitempty"`
 	WorkspaceID               string `json:"workspace_id,omitempty"`
 
@@ -79,6 +79,36 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+
+	// SyncMode determines how bundle files are made available to deployed resources.
+	// Unset means [SyncModeOverwrite], except for development deployments from the
+	// Databricks Workspace, which default to [SyncModeInPlace].
+	SyncMode SyncMode `json:"sync_mode,omitempty"`
+}
+
+type SyncMode string
+
+const (
+	// SyncModeOverwrite uploads bundle files to [Workspace.FilePath], replacing the
+	// files of the previous deployment.
+	SyncModeOverwrite SyncMode = "overwrite"
+
+	// SyncModeInPlace skips the upload: deployed resources reference the source files
+	// in the workspace directly (source-linked deployment). Works only in the Databricks Workspace.
+	SyncModeInPlace SyncMode = "in-place"
+
+	// SyncModeImmutable uploads bundle files and artifacts as a single immutable snapshot
+	// and points [Workspace.FilePath] and [Workspace.ArtifactPath] at it.
+	SyncModeImmutable SyncMode = "immutable"
+)
+
+// Values returns all valid SyncMode values.
+func (SyncMode) Values() []SyncMode {
+	return []SyncMode{
+		SyncModeOverwrite,
+		SyncModeInPlace,
+		SyncModeImmutable,
+	}
 }
 
 type User struct {
@@ -132,11 +162,11 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 
 		// Azure
 		AzureResourceID:  w.AzureResourceID,
-		AzureUseMSI:      w.AzureUseMSI,
+		AzureUseMSI:      IsExplicitlyEnabled(w.AzureUseMSI),
 		AzureClientID:    w.AzureClientID,
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,
-		AzureLoginAppID:  w.AzureLoginAppID,
+		AzureLoginAppID:  w.AzureLoginAppID, //nolint:staticcheck // SA1019: still accepted in bundle config; forwarded until the SDK drops the field
 
 		// Unified host
 		AccountID:   w.AccountID,
@@ -179,6 +209,11 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 	cfg := w.Config(ctx)
 
 	switch {
+	case env.StrictProfileMatch(ctx) && (w.Host != "" || w.WorkspaceID != ""):
+		// The target's host and workspace ID must match a profile, even when
+		// auth env vars are set. A target with neither has nothing to match, so
+		// it resolves as without strict mode.
+		cfg.Loaders = databrickscfg.StrictProfileLoaders
 	case w.Profile != "":
 		// An explicit profile wins over auth env vars (#5096).
 		// ValidateConfigAndProfileHost below still checks host agreement.

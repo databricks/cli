@@ -1,5 +1,10 @@
 name: release-build
 
+# `brew install --HEAD databricks/tap/databricks` installs the "cli" artifact of the latest
+# successful run of this workflow on main. Renaming this file or the artifact, or changing the
+# snapshot archive names or layout, breaks it. The test-head workflow in databricks/homebrew-tap
+# checks this daily. See https://github.com/databricks/homebrew-tap/blob/main/Formula/databricks.rb.
+
 on:
   push:
     tags:
@@ -68,7 +73,7 @@ jobs:
         run: go mod download
 
       - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'
@@ -107,7 +112,7 @@ jobs:
 
       # Use --snapshot for branch builds (non-tag refs).
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           version: v2.14.3
           args: release ${{ !inputs.publish && '--skip=publish' || '' }} --config .workflow-actions/.goreleaser.yaml --skip=docker ${{ (!startsWith(github.ref, 'refs/tags/') && !inputs.tag) && '--snapshot' || '' }}
@@ -127,8 +132,9 @@ jobs:
       - name: Stage bundle JSON schema for upload
         run: cp bundle/schema/jsonschema.json dist/
 
+      # The Homebrew tap downloads this artifact; see the comment at the top of this file.
       - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cli
           path: |
@@ -170,7 +176,7 @@ jobs:
         uses: ./.workflow-actions/.github/actions/setup-jfrog
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version: "0.6.5"
 
@@ -181,7 +187,7 @@ jobs:
           uv build .
 
       - name: Upload Python wheel
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wheel
           path: python/dist/*

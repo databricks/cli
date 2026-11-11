@@ -51,25 +51,21 @@ func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSec
 
 func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScope: workspace.CreateScope{
-			Scope:                  input.Name,
-			ScopeBackendType:       input.BackendType,
-			BackendAzureKeyvault:   input.KeyvaultMetadata,
-			InitialManagePrincipal: "",
-			ForceSendFields:        nil,
-		},
+		Scope:                  input.Name,
+		ScopeBackendType:       input.BackendType,
+		BackendAzureKeyvault:   input.KeyvaultMetadata,
+		InitialManagePrincipal: "",
+		ForceSendFields:        nil,
 	}
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		CreateScope: workspace.CreateScope{
-			Scope:                  remote.Scope,
-			ScopeBackendType:       remote.ScopeBackendType,
-			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-			InitialManagePrincipal: "",
-			ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
-		},
+		Scope:                  remote.Scope,
+		ScopeBackendType:       remote.ScopeBackendType,
+		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
+		InitialManagePrincipal: "",
+		ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
 	}
 }
 

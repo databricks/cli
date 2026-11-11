@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,11 @@ var unsupportedResources = []string{
 	"external_locations",
 	"volumes",
 	"schemas",
+	"features",
+	"materialization_sets",
+	"feature_specs",
 	"quality_monitors",
+	"data_quality_monitors",
 	"registered_models",
 	"model_services",
 	"mcp_services",
@@ -31,6 +36,7 @@ var unsupportedResources = []string{
 	"database_catalogs",
 	"synced_database_tables",
 	"postgres_branches",
+	"postgres_data_apis",
 	"postgres_databases",
 	"postgres_endpoints",
 	"postgres_catalogs",
@@ -234,5 +240,34 @@ func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 		if !slices.Contains(unsupportedResources, resource.Description.PluralName) && !ok {
 			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", resource.Description.PluralName))
 		}
+	}
+}
+
+func TestApplyBundlePermissionsEmpty(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"empty": {
+						JobSettings: jobs.JobSettings{Name: "empty"},
+						Permissions: []resources.JobPermission{},
+					},
+					"unset": {
+						JobSettings: jobs.JobSettings{Name: "unset"},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
+	require.NoError(t, diags.Error())
+
+	// An empty list of permissions is dropped, an unset one stays unset.
+	for _, name := range []string{"empty", "unset"} {
+		require.Nil(t, b.Config.Resources.Jobs[name].Permissions)
+		v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs."+name))
+		require.NoError(t, err)
+		assert.False(t, v.Get("permissions").IsValid(), name)
 	}
 }

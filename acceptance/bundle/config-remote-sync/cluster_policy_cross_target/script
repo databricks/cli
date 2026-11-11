@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy -t prod --auto-approve
+    trace $CLI bundle destroy -t dev --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy with the dev policy"
+trace $CLI bundle deploy -t dev
+job_id=$(read_id.py -t dev policy_sync)
+
+edit_resource.py jobs "$job_id" <<'EOF'
+r["description"] = "Edited in the UI"
+EOF
+
+title "Sync the UI edit into shared YAML"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Deploy shared YAML with the prod policy"
+trace $CLI bundle deploy -t prod
+
+title "Add a user tag beside the policy tag in the UI"
+edit_resource.py jobs "$job_id" <<'EOF'
+r["job_clusters"][0]["new_cluster"]["custom_tags"]["UserTag"] = "edited-in-ui"
+EOF
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+
+title "Deploy the user tag with the prod policy"
+trace $CLI bundle deploy -t prod
+prod_job_id=$(read_id.py -t prod policy_sync)
+trace $CLI jobs get "$prod_job_id" -o json | jq '.settings.job_clusters[0].new_cluster.custom_tags'

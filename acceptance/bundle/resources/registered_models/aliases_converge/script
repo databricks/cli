@@ -2,19 +2,26 @@
 trace export COMMENT="original comment"
 envsubst < databricks.yml.tmpl > databricks.yml
 
+MODEL="main.default.my-registered-model-aliases-$UNIQUE_NAME"
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 }
 trap cleanup EXIT
 
-title "Initial deployment with aliases set"
+title "Initial deployment with aliases set: the model is created, but has no version 1 for the alias yet"
+trace musterr $CLI bundle deploy
+
+title "The model is tracked: the next plan retries the alias as an update instead of creating the model again"
+trace $CLI bundle plan
+
+title "A training run registers version 1, and the deploy sets the alias"
+trace register_model_version "$MODEL"
 trace $CLI bundle deploy
+trace $CLI registered-models get "$MODEL" --include-aliases | alias_fields
 
-title "Plan is a no-op: GET never echoes aliases, so they must not drift"
+title "Plan is a no-op: the fields the backend fills in on the alias do not drift"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
-
-title "The config-set aliases are skipped as input_only (confirms the matched rule)"
-trace $CLI bundle plan --output json | nostamp | jq '.plan[].changes.aliases'
 
 title "Edit the comment: an in-place update, not a recreate"
 export COMMENT="updated comment"

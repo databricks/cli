@@ -19,7 +19,7 @@ import (
 const maxWaitUnset = time.Duration(-1)
 
 // resourceMaxWait returns the cap on waiting for a resource to reach its target state, or
-// maxWaitUnset when the environment variable is absent. Unlike retryInterval, a malformed
+// maxWaitUnset when the environment variable is absent. Unlike the retry interval, a malformed
 // value is an error rather than a silent fallback: ignoring a typo would restore the
 // multi-hour default wait that the user was trying to shorten.
 func resourceMaxWait(ctx context.Context) (time.Duration, error) {
@@ -86,7 +86,7 @@ func waitCapped[T any](ctx context.Context, maxWait time.Duration, description s
 
 // isWaitTimeout reports whether err is a wait that ran out of time rather than a resource
 // that failed. Two shapes reach here: retries.Poll reports a deadline as ErrTimedOut wrapping
-// the last poll message, while retryWith returns a bare context error when the deadline lands
+// the last poll message, while retry.With returns a bare context error when the deadline lands
 // while it sleeps between transient-error retries.
 func isWaitTimeout(err error) bool {
 	if _, ok := errors.AsType[*retries.ErrTimedOut](err); ok {

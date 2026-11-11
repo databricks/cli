@@ -18,6 +18,10 @@ from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (
     FileArrivalTriggerConfiguration,
     FileArrivalTriggerConfigurationParam,
 )
+from databricks.bundles.jobs._models.job_completion_trigger_configuration import (
+    JobCompletionTriggerConfiguration,
+    JobCompletionTriggerConfigurationParam,
+)
 from databricks.bundles.jobs._models.model_trigger_configuration import (
     ModelTriggerConfiguration,
     ModelTriggerConfigurationParam,
@@ -63,6 +67,13 @@ class TriggerConfiguration:
     [Beta] File arrival trigger configuration.
     """
 
+    job_completion: VariableOrOptional[JobCompletionTriggerConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Job completion trigger configuration.
+    """
+
     model: VariableOrOptional[ModelTriggerConfiguration] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -96,7 +107,7 @@ class TriggerConfiguration:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional SQL condition that gates whether this trigger fires.
+    [Beta] Optional SQL condition that gates whether this trigger fires.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
@@ -129,6 +140,13 @@ class TriggerConfigurationDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Beta] File arrival trigger configuration.
+    """
+
+    job_completion: VariableOrOptional[JobCompletionTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Job completion trigger configuration.
     """
 
     model: VariableOrOptional[ModelTriggerConfigurationParam]
@@ -164,7 +182,7 @@ class TriggerConfigurationDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional SQL condition that gates whether this trigger fires.
+    [Beta] Optional SQL condition that gates whether this trigger fires.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/libs/dyn"
@@ -64,7 +63,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	// Without this, substring matching against the typed value misses the
 	// actual deployed path and variables are lost on Replace. Keep this in
 	// sync with mutator.lookup if new overrides are added there.
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+	if b.IsSourceLinkedDeployment() {
 		fpPath := dyn.NewPath(dyn.Key("workspace"), dyn.Key("file_path"))
 		if updated, err := dyn.SetByPath(resolved, fpPath, dyn.V(b.SyncRootPath)); err == nil {
 			resolved = updated
@@ -557,8 +556,12 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 // preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
 // if the field exists in the merged pre-resolved config.
 func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, bool) {
-	p, err := dyn.NewPathFromString(fieldPath)
+	node, err := structpath.ParsePath(fieldPath)
 	if err != nil {
+		return dyn.InvalidValue, false
+	}
+	p, ok := dyn.FromStructPath(node)
+	if !ok {
 		return dyn.InvalidValue, false
 	}
 	v, err := dyn.GetByPath(preResolved, p)
@@ -568,26 +571,25 @@ func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, boo
 	return v, true
 }
 
-// parentIsVariableReference reports whether the parent of fieldPath resolves to a
+// ancestorIsVariableReference reports whether an ancestor of fieldPath resolves to a
 // scalar variable reference in the pre-resolved config (e.g. spark_conf:
 // ${var.spark_conf}). A nested key or index cannot be written into such a scalar,
 // so config-remote-sync skips the change. fieldPath is a merged-index path, the
 // same space as FieldChange.originalPath.
-func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
+func ancestorIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
 	node, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return false
 	}
-	parent := node.Parent()
-	if parent == nil {
-		return false
+	for parent := node.Parent(); parent != nil; parent = parent.Parent() {
+		v, ok := preResolvedValueAt(preResolved, parent.String())
+		if !ok {
+			continue
+		}
+		s, ok := v.AsString()
+		return ok && dynvar.ContainsVariableReference(s)
 	}
-	v, ok := preResolvedValueAt(preResolved, parent.String())
-	if !ok {
-		return false
-	}
-	s, ok := v.AsString()
-	return ok && dynvar.ContainsVariableReference(s)
+	return false
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when
@@ -604,12 +606,8 @@ func sequenceSiblings(preResolved dyn.Value, fieldPath string) ([]dyn.Value, boo
 	if !hasIndex && !node.BracketStar() {
 		return nil, false
 	}
-	p, err := dyn.NewPathFromString(node.Parent().String())
-	if err != nil {
-		return nil, false
-	}
-	parentValue, err := dyn.GetByPath(preResolved, p)
-	if err != nil {
+	parentValue, ok := preResolvedValueAt(preResolved, node.Parent().String())
+	if !ok {
 		return nil, false
 	}
 	seq, ok := parentValue.AsSequence()

@@ -163,9 +163,9 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 	return entry.AppKit, nil
 }
 
-// ResolveEmbeddedAgentSkillsVersion resolves the Agent Skills version from only
-// the embedded manifest for the current CLI version. Used as a fallback when the
-// primary version points to a non-existent tag.
+// ResolveEmbeddedAgentSkillsVersion resolves the fallback for the current CLI
+// without fetching compatibility data. Ranges tracking latest use the tested
+// release compiled into the binary.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	m, err := parseEmbeddedManifest()
 	if err != nil {
@@ -174,6 +174,9 @@ func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	entry, err := Resolve(m, build.GetInfo().Version)
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
+	}
+	if entry.AgentSkills == AgentSkillsLatest {
+		return build.AgentSkillsFallbackVersion, nil
 	}
 	return entry.AgentSkills, nil
 }

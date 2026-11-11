@@ -24,6 +24,9 @@ class ModelProviderServiceConfigExternalModelProviderType(Enum):
     EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE = (
         "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE"
     )
+    EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE = (
+        "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE"
+    )
 
 
 ModelProviderServiceConfigExternalModelProviderTypeParam = (
@@ -35,6 +38,7 @@ ModelProviderServiceConfigExternalModelProviderTypeParam = (
         "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
         "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY",
         "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE",
+        "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE",
     ]
     | ModelProviderServiceConfigExternalModelProviderType
 )

@@ -173,14 +173,15 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			WarehouseId: alert.WarehouseId,
 
 			// Fields with the same schema in file vs API.
-			CustomSummary:  dbalertFromFile.CustomSummary,
-			Schedule:       dbalertFromFile.Schedule,
-			Evaluation:     dbalertFromFile.Evaluation,
-			EffectiveRunAs: dbalertFromFile.EffectiveRunAs,
-			RunAs:          dbalertFromFile.RunAs,
-			RunAsUserName:  dbalertFromFile.RunAsUserName,
-			ParentPath:     dbalertFromFile.ParentPath,
-			Parameters:     dbalertFromFile.Parameters,
+			CustomSummary:        dbalertFromFile.CustomSummary,
+			Schedule:             dbalertFromFile.Schedule,
+			Evaluation:           dbalertFromFile.Evaluation,
+			EffectiveRunAs:       dbalertFromFile.EffectiveRunAs,
+			RunAs:                dbalertFromFile.RunAs,
+			RunAsUserName:        dbalertFromFile.RunAsUserName,
+			ParentPath:           dbalertFromFile.ParentPath,
+			Parameters:           dbalertFromFile.Parameters,
+			CustomTemplateFormat: dbalertFromFile.CustomTemplateFormat,
 
 			// Output only fields.
 			CreateTime:     dbalertFromFile.CreateTime,

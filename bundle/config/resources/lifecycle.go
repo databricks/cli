@@ -3,17 +3,38 @@ package resources
 // LifecycleConfig is implemented by Lifecycle and LifecycleWithStarted.
 type LifecycleConfig interface {
 	HasPreventDestroy() bool
+	GetDependsOn() []DependsOn
 }
 
 // Lifecycle contains base lifecycle settings supported by all resources.
 type Lifecycle struct {
 	// Lifecycle setting to prevent the resource from being destroyed.
 	PreventDestroy bool `json:"prevent_destroy,omitempty"`
+
+	// ForceSendFields records which fields were explicitly set so that zero-value
+	// overrides can replace non-zero base values (e.g., prevent_destroy: false in a target
+	// can override prevent_destroy: true in the base).
+	// This field is not serialized to JSON.
+	ForceSendFields []string `json:"-"`
+
+	// Resources that must be deployed before this resource and deleted after it.
+	DependsOn []DependsOn `json:"depends_on,omitempty"`
+}
+
+// DependsOn is a single lifecycle.depends_on entry.
+type DependsOn struct {
+	// Key of the resource to depend on, "foo" or "jobs.foo", or of its grants or permissions, "schemas.foo.grants".
+	Resource string `json:"resource"`
 }
 
 // HasPreventDestroy returns true if prevent_destroy is set.
 func (l Lifecycle) HasPreventDestroy() bool {
 	return l.PreventDestroy
+}
+
+// GetDependsOn returns the lifecycle.depends_on entries.
+func (l Lifecycle) GetDependsOn() []DependsOn {
+	return l.DependsOn
 }
 
 // LifecycleWithStarted contains lifecycle settings for resources that support lifecycle.started.

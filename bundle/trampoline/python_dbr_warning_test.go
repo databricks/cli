@@ -304,7 +304,7 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Experimental: &config.Experimental{
-				PythonWheelWrapper: true,
+				PythonWheelWrapper: new(true),
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

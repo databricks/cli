@@ -33,6 +33,7 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 		return ctx
 	}
 	ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
+	ctx = utils.WithLineage(ctx, stateDesc)
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {

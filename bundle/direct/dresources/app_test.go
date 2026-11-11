@@ -61,7 +61,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -117,7 +117,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -173,21 +173,38 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	}
 }
 
+func TestAppUpdateMask_ComputeSizeFollowsBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		computeSize apps.ComputeSize
+		wantCompute bool
+	}{
+		{name: "declared", computeSize: apps.ComputeSizeLarge, wantCompute: true},
+		{name: "undeclared", computeSize: "", wantCompute: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mask := strings.Split(appUpdateMask(&apps.App{ComputeSize: tt.computeSize}), ",")
+			assert.Equal(t, tt.wantCompute, slices.Contains(mask, "compute_size"))
+			assert.Contains(t, mask, "description")
+			assert.Contains(t, mask, "compute_min_instances")
+		})
+	}
+}
+
 // TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
 // appRequestBody removes SourceCodePath from ForceSendFields even when the plan
 // JSON round-trip has forced it in — reproduces the v1.14.0 regression where
 // "source_code_path": "" was sent in the UpdateApp body, causing a 400.
 func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 	config := &AppState{
-		App: apps.App{
-			Name:           "my-app",
-			SourceCodePath: "/Workspace/Users/me/app",
-			// Simulate ForceSendFields as populated by marshal.Unmarshal when the
-			// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
-			// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
-			// every basic-type field present in the JSON to ForceSendFields).
-			ForceSendFields: []string{"Name", "SourceCodePath"},
-		},
+		Name:           "my-app",
+		SourceCodePath: "/Workspace/Users/me/app",
+		// Simulate ForceSendFields as populated by marshal.Unmarshal when the
+		// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
+		// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
+		// every basic-type field present in the JSON to ForceSendFields).
+		ForceSendFields: []string{"Name", "SourceCodePath"},
 	}
 
 	body := appRequestBody(config)

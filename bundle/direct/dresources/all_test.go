@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,9 +24,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -40,133 +41,155 @@ import (
 
 var testConfig map[string]any = map[string]any{
 	"apps": &resources.App{
-		App: apps.App{
-			Name: "myapp",
-		},
+		Name: "myapp",
 	},
 
 	"catalogs": &resources.Catalog{
-		CreateCatalog: catalog.CreateCatalog{
-			Name:    "mycatalog",
-			Comment: "Test catalog",
-		},
+		Name:    "mycatalog",
+		Comment: "Test catalog",
 		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
 		// only during updates. They are not included in the test config.
 	},
 
 	"external_locations": &resources.ExternalLocation{
-		CreateExternalLocation: catalog.CreateExternalLocation{
-			Name:           "myexternallocation",
-			Url:            "s3://mybucket/mypath",
-			CredentialName: "mycredential",
-			Comment:        "Test external location",
-		},
+		Name:           "myexternallocation",
+		Url:            "s3://mybucket/mypath",
+		CredentialName: "mycredential",
+		Comment:        "Test external location",
 	},
 
 	"schemas": &resources.Schema{
-		CreateSchema: catalog.CreateSchema{
-			CatalogName: "main",
-			Name:        "myschema",
-			Comment:     "Test schema",
-		},
+		CatalogName: "main",
+		Name:        "myschema",
+		Comment:     "Test schema",
 	},
 
 	"volumes": &resources.Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			CatalogName: "main",
-			SchemaName:  "myschema",
-			Name:        "myvolume",
-			Comment:     "Test volume",
-		},
+		CatalogName: "main",
+		SchemaName:  "myschema",
+		Name:        "myvolume",
+		Comment:     "Test volume",
 	},
 
 	"database_instances": &resources.DatabaseInstance{
-		DatabaseInstance: database.DatabaseInstance{
-			Name: "mydbinstance",
-		},
+		Name: "mydbinstance",
 	},
 
 	"instance_pools": &resources.InstancePool{
-		CreateInstancePool: compute.CreateInstancePool{
-			InstancePoolName: "my-instance-pool",
-			NodeTypeId:       "i3.xlarge",
-		},
+		InstancePoolName: "my-instance-pool",
+		NodeTypeId:       "i3.xlarge",
 	},
 
 	"synced_database_tables": &resources.SyncedDatabaseTable{
-		SyncedDatabaseTable: database.SyncedDatabaseTable{
-			Name: "main.myschema.my_synced_table",
-		},
+		Name: "main.myschema.my_synced_table",
 	},
 
 	"model_services": &resources.ModelService{
-		ModelServiceConfig: resources.ModelServiceConfig{
-			Parent:         "schemas/main.default",
-			ModelServiceId: "my_model_service",
-			Comment:        "Test model service",
-		},
+		Parent:         "schemas/main.default",
+		ModelServiceId: "my_model_service",
+		Comment:        "Test model service",
 	},
 
 	"mcp_services": &resources.McpService{
-		McpServiceConfig: resources.McpServiceConfig{
-			Parent:       "schemas/main.default",
-			McpServiceId: "my_mcp_service",
-			Comment:      "Test mcp service",
-		},
+		Parent:       "schemas/main.default",
+		McpServiceId: "my_mcp_service",
+		Comment:      "Test mcp service",
 	},
 
 	"model_provider_services": &resources.ModelProviderService{
-		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
-			Parent:                 "schemas/main.default",
-			ModelProviderServiceId: "my_model_provider_service",
-			Comment:                "Test model provider service",
-		},
+		Parent:                 "schemas/main.default",
+		ModelProviderServiceId: "my_model_provider_service",
+		Comment:                "Test model provider service",
 	},
 
 	"registered_models": &resources.RegisteredModel{
-		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-			Name:            "my_registered_model",
-			Comment:         "Test registered model",
-			CatalogName:     "main",
-			SchemaName:      "default",
-			StorageLocation: "s3://my-bucket/my-path",
+		Name:            "my_registered_model",
+		Comment:         "Test registered model",
+		CatalogName:     "main",
+		SchemaName:      "default",
+		StorageLocation: "s3://my-bucket/my-path",
+	},
+
+	"features": &resources.Feature{
+		FullName:    "main.default.my_feature",
+		Description: "Test feature",
+		Source: ml.DataSource{
+			DeltaTableSource: &ml.DeltaTableSource{
+				FullName: "main.default.my_source",
+			},
 		},
+		Function: ml.Function{
+			ColumnSelection: &ml.ColumnSelection{Column: "amount"},
+		},
+		Entities:         []ml.EntityColumn{{Name: "id"}},
+		TimeseriesColumn: &ml.TimeseriesColumn{Name: "ts"},
+	},
+
+	// A feature materialized to both an offline table and one online store: the two members
+	// share a feature name, so they exercise the member key's online-store discriminator.
+	"materialization_sets": &resources.MaterializationSet{
+		MaterializedFeatures: []ml.MaterializedFeature{
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OfflineStoreConfig: &ml.OfflineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					TableNamePrefix: "offline",
+				},
+			},
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OnlineStoreConfig: &ml.OnlineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					OnlineStoreName: "my_store",
+				},
+			},
+		},
+	},
+
+	"feature_specs": &resources.FeatureSpec{
+		Name: "main.default.my_feature_spec",
+		Features: []ml.Features{{
+			FeatureLookup: &ml.FeatureLookup{
+				Table:        "main.default.my_table",
+				LookupKeys:   []string{"id"},
+				FeatureNames: []string{"amount"},
+			},
+		}},
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
 	},
 
 	"experiments": &resources.MlflowExperiment{
-		CreateExperiment: ml.CreateExperiment{
-			Name: "my-experiment",
-			Tags: []ml.ExperimentTag{
-				{
-					Key:   "my-tag",
-					Value: "my-value",
-				},
+		Name: "my-experiment",
+		Tags: []ml.ExperimentTag{
+			{
+				Key:   "my-tag",
+				Value: "my-value",
 			},
-			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
+		ArtifactLocation: "s3://my-bucket/my-experiment",
 	},
 
 	"models": &resources.MlflowModel{
-		CreateModelRequest: ml.CreateModelRequest{
-			Name:        "my_mlflow_model",
-			Description: "my_mlflow_model_description",
-			Tags: []ml.ModelTag{
-				{
-					Key:   "k1",
-					Value: "v1",
-				},
+		Name:        "my_mlflow_model",
+		Description: "my_mlflow_model_description",
+		Tags: []ml.ModelTag{
+			{
+				Key:   "k1",
+				Value: "v1",
 			},
 		},
 	},
 
 	"secrets": &resources.Secret{
-		Secret: catalog.Secret{
-			CatalogName: "main",
-			SchemaName:  "default",
-			Name:        "my_secret",
-			Value:       "my_secret_value",
-			Comment:     "Test secret",
-		},
+		CatalogName: "main",
+		SchemaName:  "default",
+		Name:        "my_secret",
+		Value:       "my_secret_value",
+		Comment:     "Test secret",
 	},
 
 	"secret_scopes": &resources.SecretScope{
@@ -185,44 +208,42 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"model_serving_endpoints": &resources.ModelServingEndpoint{
-		CreateServingEndpoint: serving.CreateServingEndpoint{
+		Name: "my-endpoint",
+		Config: &serving.EndpointCoreConfigInput{
 			Name: "my-endpoint",
-			Config: &serving.EndpointCoreConfigInput{
-				Name: "my-endpoint",
-				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
-					CatalogName:     "main",
-					SchemaName:      "myschema",
-					TableNamePrefix: "my_table",
-					Enabled:         true,
-					ForceSendFields: nil,
+			//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
+			AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+				CatalogName:     "main",
+				SchemaName:      "myschema",
+				TableNamePrefix: "my_table",
+				Enabled:         true,
+				ForceSendFields: nil,
+			},
+			ServedModels: nil,
+			ServedEntities: []serving.ServedEntityInput{
+				{
+					EntityName:                "entity-name",
+					EntityVersion:             "1",
+					WorkloadSize:              "Small",
+					ScaleToZeroEnabled:        true,
+					WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+					EnvironmentVars:           map[string]string{"key": "value"},
+					InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
+					MaxProvisionedConcurrency: 10,
+					MaxProvisionedThroughput:  100,
+					MinProvisionedConcurrency: 1,
+					MinProvisionedThroughput:  10,
+					Name:                      "entity-name",
+					ProvisionedModelUnits:     100,
+					ExternalModel:             nil,
+					ForceSendFields:           nil,
 				},
-				ServedModels: nil,
-				ServedEntities: []serving.ServedEntityInput{
+			},
+			TrafficConfig: &serving.TrafficConfig{
+				Routes: []serving.Route{
 					{
-						EntityName:                "entity-name",
-						EntityVersion:             "1",
-						WorkloadSize:              "Small",
-						ScaleToZeroEnabled:        true,
-						WorkloadType:              serving.ServingModelWorkloadTypeCpu,
-						EnvironmentVars:           map[string]string{"key": "value"},
-						InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
-						MaxProvisionedConcurrency: 10,
-						MaxProvisionedThroughput:  100,
-						MinProvisionedConcurrency: 1,
-						MinProvisionedThroughput:  10,
-						Name:                      "entity-name",
-						ProvisionedModelUnits:     100,
-						ExternalModel:             nil,
-						ForceSendFields:           nil,
-					},
-				},
-				TrafficConfig: &serving.TrafficConfig{
-					Routes: []serving.Route{
-						{
-							ServedModelName:   "model-name-1",
-							TrafficPercentage: 100,
-						},
+						ServedModelName:   "model-name-1",
+						TrafficPercentage: 100,
 					},
 				},
 			},
@@ -230,96 +251,86 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"postgres_projects": &resources.PostgresProject{
-		PostgresProjectConfig: resources.PostgresProjectConfig{
-			ProjectId: "test-project",
-			ProjectSpec: postgres.ProjectSpec{
-				DisplayName: "Test Project",
-				PgVersion:   16,
-			},
-		},
+		ProjectId:   "test-project",
+		DisplayName: "Test Project",
+		PgVersion:   16,
 	},
 
 	"postgres_catalogs": &resources.PostgresCatalog{
-		PostgresCatalogConfig: resources.PostgresCatalogConfig{
-			CatalogId: "test_catalog",
-		},
+		CatalogId: "test_catalog",
 	},
 
 	"postgres_synced_tables": &resources.PostgresSyncedTable{
-		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-			SyncedTableId: "main.public.trips_synced",
-		},
+		SyncedTableId: "main.public.trips_synced",
 	},
 
 	"alerts": &resources.Alert{
-		AlertV2: sql.AlertV2{
-			DisplayName: "my-alert",
-			QueryText:   "SELECT 1",
-			WarehouseId: "test-warehouse-id",
-			Schedule: sql.CronSchedule{
-				QuartzCronSchedule: "0 0 12 * * ?",
-				TimezoneId:         "UTC",
+		DisplayName: "my-alert",
+		QueryText:   "SELECT 1",
+		WarehouseId: "test-warehouse-id",
+		Schedule: sql.CronSchedule{
+			QuartzCronSchedule: "0 0 12 * * ?",
+			TimezoneId:         "UTC",
+		},
+		Evaluation: sql.AlertV2Evaluation{
+			ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+			Source: sql.AlertV2OperandColumn{
+				Name: "column1",
 			},
-			Evaluation: sql.AlertV2Evaluation{
-				ComparisonOperator: sql.ComparisonOperatorGreaterThan,
-				Source: sql.AlertV2OperandColumn{
-					Name: "column1",
-				},
-				Threshold: &sql.AlertV2Operand{
-					Column: &sql.AlertV2OperandColumn{
-						Name: "column2",
-					},
+			Threshold: &sql.AlertV2Operand{
+				Column: &sql.AlertV2OperandColumn{
+					Name: "column2",
 				},
 			},
 		},
 	},
 
 	"quality_monitors": &resources.QualityMonitor{
-		TableName: "main.myschema.mytable",
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir:        "/Workspace/Users/user@example.com/assets",
-			OutputSchemaName: "main.myschema",
+		TableName:        "main.myschema.mytable",
+		AssetsDir:        "/Workspace/Users/user@example.com/assets",
+		OutputSchemaName: "main.myschema",
+	},
+
+	"data_quality_monitors": &resources.DataQualityMonitor{
+		ObjectType: "table",
+		ObjectId:   "11111111-2222-3333-4444-555555555555",
+		DataProfilingConfig: &dataquality.DataProfilingConfig{
+			AssetsDir:      "/Workspace/Users/user@example.com/assets",
+			OutputSchemaId: "66666666-7777-8888-9999-000000000000",
+			Snapshot:       &dataquality.SnapshotConfig{},
 		},
 	},
 
 	"dashboards": &resources.Dashboard{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         "my-dashboard",
-			ParentPath:          "/Workspace/Users/user@example.com",
-			WarehouseId:         "test-warehouse-id",
-			SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
+		DisplayName:         "my-dashboard",
+		ParentPath:          "/Workspace/Users/user@example.com",
+		WarehouseId:         "test-warehouse-id",
+		SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
 
-			DatasetCatalog: "main",
-			DatasetSchema:  "myschema",
-		},
+		DatasetCatalog: "main",
+		DatasetSchema:  "myschema",
 	},
 
 	"genie_spaces": &resources.GenieSpace{
-		GenieSpaceConfig: resources.GenieSpaceConfig{
-			Title:           "my-genie-space",
-			WarehouseId:     "test-warehouse-id",
-			ParentPath:      "/Workspace/Users/user@example.com",
-			SerializedSpace: "{}",
-		},
+		Title:           "my-genie-space",
+		WarehouseId:     "test-warehouse-id",
+		ParentPath:      "/Workspace/Users/user@example.com",
+		SerializedSpace: "{}",
 	},
 
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
-		CreateEndpoint: vectorsearch.CreateEndpoint{
-			Name:         "my-endpoint",
-			EndpointType: vectorsearch.EndpointTypeStandard,
-		},
+		Name:         "my-endpoint",
+		EndpointType: vectorsearch.EndpointTypeStandard,
 	},
 
 	"vector_search_indexes": &resources.VectorSearchIndex{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			Name:         "main.default.my_index",
-			EndpointName: "my-index-endpoint",
-			PrimaryKey:   "id",
-			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
-			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-				SourceTable:  "main.default.source_table",
-				PipelineType: vectorsearch.PipelineTypeTriggered,
-			},
+		Name:         "main.default.my_index",
+		EndpointName: "my-index-endpoint",
+		PrimaryKey:   "id",
+		IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+		DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+			SourceTable:  "main.default.source_table",
+			PipelineType: vectorsearch.PipelineTypeTriggered,
 		},
 		Grants: []catalog.PrivilegeAssignment{{
 			Principal:  "user@example.com",
@@ -328,7 +339,7 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"internal_immutable_snapshots": &resources.Snapshot{
-		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		RemoteRoot: "/Workspace/Users/" + testserver.SnapshotRootUUID + "/.snapshots",
 		BundleID:   "test-bundle-id",
 		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
@@ -346,10 +357,8 @@ var testDeps = map[string]prepareWorkspace{
 		})
 
 		return &resources.DatabaseCatalog{
-			DatabaseCatalog: database.DatabaseCatalog{
-				Name:                 "mydbcatalog",
-				DatabaseInstanceName: "mydbinstance1",
-			},
+			Name:                 "mydbcatalog",
+			DatabaseInstanceName: "mydbinstance1",
 		}, err
 	},
 
@@ -383,9 +392,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.JobRun{
-			RunNow: jobs.RunNow{
-				JobId: resp.JobId,
-			},
+			JobId: resp.JobId,
 		}, nil
 	},
 
@@ -745,6 +752,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"feature_specs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "function",
+			FullName:      "main.default.my_feature_spec",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "table",
@@ -840,11 +858,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresBranch{
-			PostgresBranchConfig: resources.PostgresBranchConfig{
-				Parent:     "projects/test-project-for-branch",
-				BranchId:   "test-branch",
-				BranchSpec: postgres.BranchSpec{},
-			},
+			Parent:     "projects/test-project-for-branch",
+			BranchId:   "test-branch",
+			BranchSpec: postgres.BranchSpec{},
 		}, nil
 	},
 
@@ -865,9 +881,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresSnapshotSchedule{
-			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
-			},
+			Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 		}, nil
 	},
 
@@ -897,13 +911,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresEndpoint{
-			PostgresEndpointConfig: resources.PostgresEndpointConfig{
-				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
-				EndpointId: "test-endpoint",
-				EndpointSpec: postgres.EndpointSpec{
-					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-				},
-			},
+			Parent:       "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+			EndpointId:   "test-endpoint",
+			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
 		}, nil
 	},
 
@@ -933,14 +943,50 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresDatabase{
-			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
-				DatabaseId: "test-database",
-				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
-					PostgresDatabase: "app_db",
-					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
+			DatabaseId:       "test-database",
+			PostgresDatabase: "app_db",
+			Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+		}, nil
+	},
+
+	"postgres_data_apis": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the "production" branch and
+		// its primary read-write endpoint, which the Data API requires.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-data-api",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Data API",
+					PgVersion:   16,
 				},
 			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		waiter, err := client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
+			Parent:     "projects/test-project-for-data-api/branches/production",
+			DatabaseId: "test-database",
+			Database: postgres.Database{
+				Spec: &postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-data-api/branches/production/roles/owner",
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		database, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDataApi{
+			Parent:    database.Name,
+			DbSchemas: []string{"public"},
 		}, nil
 	},
 
@@ -970,13 +1016,9 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresRole{
-			PostgresRoleConfig: resources.PostgresRoleConfig{
-				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
-				RoleId: "test-role",
-				RoleRoleSpec: postgres.RoleRoleSpec{
-					PostgresRole: "test_role",
-				},
-			},
+			Parent:       "projects/test-project-for-role/branches/test-branch-for-role",
+			RoleId:       "test-role",
+			PostgresRole: "test_role",
 		}, nil
 	},
 }
@@ -1001,22 +1043,27 @@ func TestAll(t *testing.T) {
 
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
-	ignoreFields map[string]bool
-	adapter      *Adapter
+	ignoreFields   map[string]bool
+	ignorePatterns []*structpath.PatternNode
+	adapter        *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
 // It also ignores fields that exist in StateType but not in RemoteType, because
 // those are automatically suppressed by the planner (reason: missing_in_remote)
 // and RemapState cannot populate them from remote state.
-func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+func newTestIgnoreFilter(adapter *Adapter, group string) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
+	var ignorePatterns []*structpath.PatternNode
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 		if cfg == nil {
 			continue
 		}
 		for _, p := range cfg.IgnoreRemoteChanges {
 			ignoreFields[p.Field.String()] = true
+			if group == "materialization_sets" {
+				ignorePatterns = append(ignorePatterns, p.Field)
+			}
 		}
 	}
 	// Auto-include fields present in StateType but absent from RemoteType.
@@ -1030,7 +1077,7 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 		}
 		return true
 	})
-	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
+	return &testIgnoreFilter{ignoreFields: ignoreFields, ignorePatterns: ignorePatterns, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -1049,7 +1096,19 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 		topLevelField = parts[0]
 	}
 
-	return f.ignoreFields[topLevelField]
+	if f.ignoreFields[topLevelField] {
+		return true
+	}
+
+	// Pattern rules are collected for materialization_sets alone, so this loop is empty for every
+	// other resource. A rule inside a slice (foo[*].bar) never matches the indexed path a walk
+	// produces (foo[0].bar); jobs, apps and database_instances carry such rules too, so widening
+	// the comparison to them is its own change.
+	parsed, err := structpath.ParsePath(path)
+	if err != nil {
+		return false
+	}
+	return slices.ContainsFunc(f.ignorePatterns, parsed.HasPatternPrefix)
 }
 
 // filterChanges returns only the changes that should not be ignored.
@@ -1112,7 +1171,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
 		ss.ZipPath = filepath.ToSlash(zipPath)
 		ss.RelativePath = ss.BundleID + "/" + hash
-		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
 
 	ctx := t.Context()
@@ -1140,7 +1199,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NotNil(t, remappedState)
 
 	// Create filter for fields that should be ignored based on ignore_remote_changes config.
-	ignoreFilter := newTestIgnoreFilter(adapter)
+	ignoreFilter := newTestIgnoreFilter(adapter, group)
 
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)

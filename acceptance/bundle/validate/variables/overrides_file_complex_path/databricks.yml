@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+variables:
+  task:
+    type: complex
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - ${var.task}
+
+targets:
+  default:
+    default: true

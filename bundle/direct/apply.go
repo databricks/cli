@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -62,10 +63,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	var newID string
 	var remoteState any
-	_, err := retryWith(ctx, func(err error) bool {
+	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
 		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
 		_, ok := errors.AsType[*dresources.RetrySafeError](err)
-		return ok && isTransient(ctx, err)
+		return ok && retry.IsTransient(ctx, err)
 	}, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
@@ -75,6 +76,10 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
+	}
+	// An empty id would be saved as-is, and the next plan would treat the resource as missing and create it again.
+	if newID == "" {
+		return errors.New("create returned an empty resource id")
 	}
 
 	log.Infof(ctx, "Created %s id=%#v", d.ResourceKey, newID)
@@ -90,7 +95,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	waitRemoteState, err := waitCapped(ctx, d.MaxWait, "creation of "+d.ResourceKey, func(ctx context.Context) (any, error) {
-		return retryOnTransient(ctx, func() (any, error) {
+		return retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 			return d.Adapter.WaitAfterCreate(ctx, newID, newState)
 		})
 	})
@@ -116,7 +121,9 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
 	// replace_existing=true will reconfigure the parent-managed resource in
 	// place, matching the Terraform provider's recreate behaviour.
-	err = retryOnTransientErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
+	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
+	})
 	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
 		if !d.deleteConfirmedGone(ctx, oldID) {
 			return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -154,7 +161,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+	remoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
 		return d.Adapter.DoUpdate(ctx, id, newState, planEntry)
 	})
 	if err != nil {
@@ -186,7 +193,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+	waitRemoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.WaitAfterUpdate(ctx, id, newState)
 	})
 	if err != nil {
@@ -205,13 +212,17 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
 	var newID string
 	var remoteState any
-	err := retryOnTransientErr(ctx, func() error {
+	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoUpdateWithID(ctx, oldID, newState, planEntry)
-		return e
+		return struct{}{}, e
 	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
+	}
+	// Same reason as in Create: an empty id must not replace the saved one.
+	if newID == "" {
+		return errors.New("update returned an empty resource id")
 	}
 
 	if oldID != newID {
@@ -230,7 +241,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+	waitRemoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.WaitAfterUpdate(ctx, newID, newState)
 	})
 	if err != nil {
@@ -262,7 +273,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
-		} else if db.IsDeploymentMetadataService() {
+		} else if db.RecordsHistory() {
 			// When using the deployment metadata service, record the error.
 			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
 			db.RecordFailure(d.ResourceKey, oldID, err)
@@ -311,7 +322,9 @@ func (d *DeploymentUnit) deleteConfirmedGone(ctx context.Context, id string) boo
 }
 
 func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any, entry *deployplan.PlanEntry) error {
-	err := retryOnTransientErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState, entry) })
+	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		return struct{}{}, d.Adapter.DoResize(ctx, id, newState, entry)
+	})
 	if err != nil {
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
@@ -370,7 +383,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+	remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return d.Adapter.DoRead(ctx, id)
 	})
 	if err != nil {

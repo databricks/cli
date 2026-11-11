@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -22,7 +23,7 @@ func WorkspaceIDHeaders(cfg *sdkconfig.Config) map[string]string {
 		return nil
 	}
 	wsID := cfg.WorkspaceID
-	if wsID == "" || wsID == WorkspaceIDNone {
+	if wsID == "" || wsID == profile.WorkspaceIDNone {
 		return nil
 	}
 	return map[string]string{

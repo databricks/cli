@@ -27,12 +27,10 @@ r["max_concurrent_runs"] = 6
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "job_b is updated, and job_a's rename is written in both blocks"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 trace grep -c "max_concurrent_runs: 6" databricks.yml
 trace grep -c "task_key: shared_renamed" databricks.yml

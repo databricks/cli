@@ -1,5 +1,6 @@
 
 === a run that finishes FAILED fails the deploy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.my_job
@@ -14,6 +15,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed
 
 === the failed run is recorded, and not having succeeded is drift
+
 >>> read_id.py my_run
 [MY_RUN_ID]
 
@@ -56,6 +58,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed
 }
 
 === so a redeploy runs the job again, and fails again
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [RUN_URL]
@@ -69,12 +72,13 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 2 failed
 
 === run-now was issued once per deploy, and the recreate left the failed run alone
+
 >>> print_requests.py --keep //jobs/run-now
 {
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "job_id": [MY_JOB_ID]
   }
 }
@@ -82,7 +86,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 2 failed
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][1]",
     "job_id": [MY_JOB_ID]
   }
 }

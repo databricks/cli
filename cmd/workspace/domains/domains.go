@@ -231,7 +231,7 @@ Get a domain.
 
   Get a domain by resource name.
 
-  Authorization: external callers must have the MANAGE DISCOVERY permission.
+  Authorization: external callers must have the MANAGE DISCOVER permission.
 
   Arguments:
     NAME: Full resource name of the domain to retrieve. Format:
@@ -310,7 +310,7 @@ List domains.
   List domains in the account. Set parent_domain_id to return only the direct
   subdomains of a given domain.
 
-  Authorization: external callers must have the MANAGE DISCOVERY permission;
+  Authorization: external callers must have the MANAGE DISCOVER permission;
   only domains the caller is authorized to read are returned.`
 
 	cmd.Annotations = make(map[string]string)

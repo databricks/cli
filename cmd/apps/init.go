@@ -220,6 +220,11 @@ Environment variables:
 	return cmd
 }
 
+// NewInitCommand creates the AppKit initializer for use by other CLI commands.
+func NewInitCommand() *cobra.Command {
+	return newInitCmd()
+}
+
 type createOptions struct {
 	templatePath          string
 	branch                string

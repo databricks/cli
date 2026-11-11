@@ -1,0 +1,22 @@
+bundle:
+  name: strict-profile-match
+
+include:
+  - scripts.yml
+
+targets:
+  classic:
+    default: true
+    workspace:
+      host: $CLASSIC_HOST
+  classic_with_matching_profile:
+    workspace:
+      host: $CLASSIC_HOST
+      profile: workspace_classic
+  classic_with_profile:
+    workspace:
+      host: $CLASSIC_HOST
+      profile: my-local-profile
+  custom_host:
+    workspace:
+      host: $CUSTOM_HOST/?o=$WORKSPACE_ID

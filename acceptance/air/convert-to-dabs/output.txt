@@ -1,5 +1,6 @@
 
 === convert an AIR run YAML into a DABs bundle (in place, next to the source)
+
 >>> [CLI] air convert-to-dabs train.yaml
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
@@ -20,6 +21,7 @@ job and its uploaded files with:
   [CLI] bundle destroy
 
 === emitted databricks.yml (code_source packaged as a tgz artifact; no code is copied)
+
 >>> cat databricks.yml
 bundle:
   name: torchrun-a10-smoke-test
@@ -57,7 +59,7 @@ resources:
                   provisioned_capacity_id: capacity-1
             code_source_path: ./dist/code_source.tgz
             mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
-            priority_class: CRITICAL
+            priority_class: NORMAL
             unity_catalog_image_path: main.air.training:prod
       environments:
         - environment_key: default
@@ -65,11 +67,13 @@ resources:
             environment_version: "6"
 
 === the generated command.sh carries the run command
+
 >>> cat generated_artifacts/command.sh
 cd $CODE_SOURCE_PATH
 torchrun --nproc_per_node=1 train.py
 
 === the emitted bundle validates
+
 >>> [CLI] bundle validate
 Name: torchrun-a10-smoke-test
 Target: dev
@@ -80,12 +84,14 @@ Workspace:
 Validation OK!
 
 === re-converting refuses to clobber the generated bundle
+
 >>> [CLI] air convert-to-dabs train.yaml
 Error: databricks.yml already exists in .; pass --force to overwrite or remove it
 
 Exit code: 1
 
 === --force overwrites it
+
 >>> [CLI] air convert-to-dabs train.yaml --force
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
@@ -106,6 +112,7 @@ job and its uploaded files with:
   [CLI] bundle destroy
 
 === convert a B300 run using the current SDK
+
 >>> [CLI] air convert-to-dabs b300.yaml --output-dir generated-b300
 Wrote a Databricks Asset Bundle to generated-b300:
   databricks.yml
@@ -127,6 +134,7 @@ job and its uploaded files with:
   [CLI] bundle destroy
 
 === the B300 bundle preserves its accelerator and AI Runtime version
+
 >>> cat generated-b300/databricks.yml
 bundle:
   name: b300-smoke-test
@@ -159,6 +167,7 @@ resources:
             environment_version: "6"
 
 === the current SDK recognizes B300 so bundle validation is clean
+
 >>> [CLI] bundle validate
 Name: b300-smoke-test
 Target: dev
@@ -169,6 +178,7 @@ Workspace:
 Validation OK!
 
 === databricks_ai versions use a base environment
+
 >>> [CLI] air convert-to-dabs databricks-ai.yaml --force
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
@@ -192,6 +202,7 @@ job and its uploaded files with:
             base_environment: workspace-base-environments/databricks_ai_v5
 
 === the Databricks AI bundle validates
+
 >>> [CLI] bundle validate
 Name: databricks-ai-v5-smoke-test
 Target: dev

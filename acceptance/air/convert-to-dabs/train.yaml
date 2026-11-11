@@ -6,7 +6,7 @@ compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 1
   pool_id: capacity-1
-  priority_class: CRITICAL
+  priority_class: NORMAL
 mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
 environment:
   unity_catalog_image: main.air.training:prod

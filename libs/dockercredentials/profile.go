@@ -32,7 +32,7 @@ func isAccountOnlyProfile(p profile.Profile) bool {
 	if auth.IsClassicAccountHost(cfg.CanonicalHostName()) {
 		return true
 	}
-	return p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone)
+	return p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone)
 }
 
 // LoadProfile loads and validates the named Docker credential helper profile.
@@ -59,7 +59,7 @@ func EnsureUniqueProfile(ctx context.Context, profiler profile.Profiler, p profi
 		return err
 	}
 
-	if p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone {
+	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
 		matches = append(matches, p)
 	}
 	var names []string
@@ -72,7 +72,7 @@ func EnsureUniqueProfile(ctx context.Context, profiler profile.Profiler, p profi
 		return nil
 	}
 
-	return fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", workspaceID, strings.Join(names, " and "))
+	return duplicateProfilesError(workspaceID, names)
 }
 
 // ProfileForRegistry returns the Docker credential helper profile for registry.
@@ -99,8 +99,12 @@ func ProfileForRegistry(ctx context.Context, profiler profile.Profiler, registry
 	case 1:
 		return matchingProfiles[0], nil
 	default:
-		return profile.Profile{}, fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", registry.WorkspaceID, strings.Join(matchingProfiles.Names(), " and "))
+		return profile.Profile{}, duplicateProfilesError(registry.WorkspaceID, matchingProfiles.Names())
 	}
+}
+
+func duplicateProfilesError(workspaceID string, names []string) error {
+	return fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete", workspaceID, strings.Join(names, " and "))
 }
 
 // RewriteProfileError adds Docker profile context to authentication errors.

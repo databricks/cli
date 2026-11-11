@@ -51,16 +51,14 @@ func TestVisitJobLibrariesPaths(t *testing.T) {
 	}
 
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Tasks: []jobs.Task{
-				task0,
-				task1,
-				task2,
-				task3,
-				task4,
-				task5,
-				task6,
-			},
+		Tasks: []jobs.Task{
+			task0,
+			task1,
+			task2,
+			task3,
+			task4,
+			task5,
+			task6,
 		},
 	}
 
@@ -91,10 +89,8 @@ func TestVisitJobLibrariesPaths_environments(t *testing.T) {
 		},
 	}
 	job0 := &resources.Job{
-		JobSettings: jobs.JobSettings{
-			Environments: []jobs.JobEnvironment{
-				environment0,
-			},
+		Environments: []jobs.JobEnvironment{
+			environment0,
 		},
 	}
 

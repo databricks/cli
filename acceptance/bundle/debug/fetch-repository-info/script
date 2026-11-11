@@ -20,14 +20,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "the root of a Git folder under /Repos\n"
+title "the root of a Git folder under /Repos"
 trace $CLI bundle debug fetch-repository-info --path "$repo"
 
-title "a subdirectory of it, which resolves to the same root\n"
+title "a subdirectory of it, which resolves to the same root"
 trace $CLI bundle debug fetch-repository-info --path "$repo/subdir"
 
-title "the root of a Git folder outside /Repos\n"
+title "the root of a Git folder outside /Repos"
 trace $CLI bundle debug fetch-repository-info --path "$folder"
 
-title "a path in no Git folder at all\n"
+title "a path in no Git folder at all"
 trace $CLI bundle debug fetch-repository-info --path "/Workspace/Users/$CURRENT_USER_NAME"

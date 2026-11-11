@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle validate
 Name: update-postgres-role-[UNIQUE_NAME]
 Target: default
@@ -47,6 +48,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
@@ -60,6 +62,7 @@ Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Toggle attributes.createdb and re-deploy
+
 >>> update_file.py databricks.yml createdb: false createdb: true
 
 >>> cat databricks.yml
@@ -125,6 +128,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === Restore attributes.createdb to original value
+
 >>> update_file.py databricks.yml createdb: true createdb: false
 
 >>> [CLI] bundle plan
