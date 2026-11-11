@@ -107,16 +107,29 @@ func TestCatalogsCreate_RequestCoversEveryAcceptedField(t *testing.T) {
 	}
 }
 
+// UC reports OPEN for a new catalog; isolation_mode is only settable on update.
+func TestCatalogsCreate_DefaultsIsolationModeToOpen(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.CatalogsCreate(Request{Body: []byte(createCatalogRequest)})
+	require.Equal(t, 0, response.StatusCode)
+
+	info, ok := response.Body.(catalog.CatalogInfo)
+	require.True(t, ok)
+	assert.Equal(t, catalog.CatalogIsolationModeOpen, info.IsolationMode)
+}
+
 func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	require.Equal(t, 0, workspace.CatalogsCreate(Request{Body: []byte(createCatalogRequest)}).StatusCode)
 
-	// UpdateCatalog also accepts enable_predictive_optimization and isolation_mode,
-	// which DABs deliberately leaves unset (see dresources.ResourceCatalog.DoUpdate),
-	// so the fake does not model them.
+	// UpdateCatalog also accepts enable_predictive_optimization, which DABs
+	// deliberately leaves unset (see dresources.ResourceCatalog.DoUpdate), so the
+	// fake does not model it.
 	response := workspace.CatalogsUpdate(Request{Body: []byte(`{
 		"comment": "updated",
 		"custom_max_retention_hours": 72,
+		"isolation_mode": "ISOLATED",
 		"managed_encryption_settings": {"customer_managed_key_id": "key-2"},
 		"options": {"opt": "3"},
 		"properties": {"prop": "4"}
@@ -128,6 +141,7 @@ func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 
 	assert.Equal(t, "updated", info.Comment)
 	assert.Equal(t, int64(72), info.CustomMaxRetentionHours)
+	assert.Equal(t, catalog.CatalogIsolationModeIsolated, info.IsolationMode)
 	require.NotNil(t, info.ManagedEncryptionSettings)
 	assert.Equal(t, "key-2", info.ManagedEncryptionSettings.CustomerManagedKeyId)
 	assert.Equal(t, map[string]string{"opt": "3"}, info.Options)
