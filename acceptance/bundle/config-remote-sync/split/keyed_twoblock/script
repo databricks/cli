@@ -22,12 +22,10 @@ for task in r["tasks"]:
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "Only omega changes; shared is untouched in both blocks"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
@@ -47,11 +45,9 @@ for task in r["tasks"]:
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "Each edit lands on the definition that was deployed"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

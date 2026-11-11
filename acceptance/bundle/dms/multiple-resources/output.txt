@@ -1,5 +1,6 @@
 
 === Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; other bundle/dms tests cover it.
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Created jobs.five
@@ -11,6 +12,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 === History telemetry survives version completion and counts all five staged operations
+
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "staged_operation_count": 5,
@@ -31,6 +33,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[TWO_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -46,6 +49,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === The service lists all five resources at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -76,6 +80,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 ]
 
 === The raw recorded state the service holds for this deployment
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -180,18 +185,21 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 }
 
 === Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 
 === A deploy with no version omits operation buffer telemetry
+
 >>> cat [OUTPUT_DIR]/out.requests.txt
 false
 
 >>> print_requests.py --dms //api/2.0/bundle --sort --oneline
 
 === The plan records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -207,6 +215,7 @@ false
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === The service still lists all five resources, now at version 2
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -237,6 +246,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 ]
 
 === The raw recorded state after redeploy
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,

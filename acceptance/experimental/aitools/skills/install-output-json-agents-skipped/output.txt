@@ -1,5 +1,6 @@
 
 === install --output json: every named agent skipped, each with its own category
+
 >>> [CLI] aitools install --skills-only --scope=project --agents=cursor,codex --output json
 {
   "scope": "project",

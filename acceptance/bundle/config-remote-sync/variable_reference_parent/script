@@ -13,7 +13,6 @@ $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
 title "Edit fields under complex variables"
-echo
 edit_resource.py jobs $job_id <<'EOF'
 r["max_concurrent_runs"] = 5
 
@@ -29,17 +28,14 @@ del cluster["custom_tags"]["removed"]
 EOF
 
 title "Detect and save all changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "Telemetry"
-echo
 # The engine name is dropped because both EnvMatrix variants share this output.
 # skipped_changes_count includes changes under both immediate and distant variable ancestors.
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'

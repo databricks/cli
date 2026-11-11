@@ -1,5 +1,6 @@
 
 === Fail to deploy OSS Spark pipelines-formatted YAML file
+
 >>> musterr [CLI] pipelines deploy
 Error: [TEST_TMP_DIR]/oss-pipeline.yml seems to be formatted for open-source Spark Declarative Pipelines.
 Pipelines CLI currently only supports Lakeflow Spark Declarative Pipelines development.

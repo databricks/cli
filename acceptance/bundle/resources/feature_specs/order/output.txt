@@ -13,10 +13,12 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Reorder the lists whose order means nothing: no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Also reorder the lookup keys, which must follow the table's primary key: recreate
+
 >>> [CLI] bundle plan
 recreate feature_specs.spec1
 

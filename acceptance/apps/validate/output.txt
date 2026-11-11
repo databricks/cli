@@ -1,5 +1,6 @@
 
 === Validate the directory selected by --path
+
 >>> withdir app [CLI] apps validate --path ..
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
@@ -11,6 +12,7 @@ Validating project using pnpm...
 ✅ All validation checks passed ([DURATION])
 
 === Skip tests
+
 >>> [CLI] apps validate --skip-tests
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
@@ -22,6 +24,7 @@ Validating project using pnpm...
 ✅ All validation checks passed ([DURATION])
 
 === Report a failed script
+
 >>> VALIDATION_TEST_FAIL=run --if-present test musterr [CLI] apps validate
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
@@ -41,6 +44,7 @@ validation stderr
 Error: validation failed
 
 === Deploy validates with the same package manager before uploading
+
 >>> VALIDATION_TEST_FAIL=run --if-present build musterr [CLI] apps deploy
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
@@ -59,6 +63,7 @@ validation stderr
 Error: validation failed - fix errors before deploying
 
 === Commands executed in the project directory
+
 >>> cat commands.log
 pnpm install
 pnpm run --if-present typegen

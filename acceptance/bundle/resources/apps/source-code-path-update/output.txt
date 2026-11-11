@@ -1,5 +1,6 @@
 
 === Deploy: source_code_path is sent on Create
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-source-code-path-update/default/files...
 Created apps.myapp
@@ -21,6 +22,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change source_code_path: plan detects an update
+
 >>> update_file.py databricks.yml source_code_path: ./app source_code_path: ./app2
 
 >>> [CLI] bundle plan
@@ -29,6 +31,7 @@ update apps.myapp
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Redeploy: UpdateApp rejects source_code_path, so no app request is sent; the next Deploy applies it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-source-code-path-update/default/files...
 Updated apps.myapp
@@ -38,6 +41,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //apps
 
 === Change description: App Update omits source_code_path from the body and the update mask
+
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
 >>> [CLI] bundle deploy

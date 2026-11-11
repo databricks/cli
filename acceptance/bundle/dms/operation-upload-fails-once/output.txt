@@ -1,5 +1,6 @@
 
 === Deploy so there is a recorded resource to recreate
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
 Created schemas.foo
@@ -7,6 +8,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === The plan records the deployment_history feature and the schema
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -22,6 +24,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The service lists the schema at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -32,6 +35,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === The raw recorded state after deploy
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -54,6 +58,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
+
 >>> fault.py PATCH /api/2.0/bundle/** 500 0 1
 
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
@@ -69,6 +74,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 === A failed history upload is counted separately from the queued operations
+
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "staged_operation_count": 1,
@@ -81,6 +87,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === The service lists the schema with the failure
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -91,6 +98,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 ]
 
 === The raw recorded state after the failure
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -166,6 +174,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === A completion failure does not block destroy or remote file cleanup
+
 >>> fault.py POST /api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/complete 400 0 1
 
 >>> [CLI] bundle destroy --auto-approve

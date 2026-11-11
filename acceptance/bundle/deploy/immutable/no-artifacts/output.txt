@@ -26,6 +26,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> title Check snapshot plan after deploy: 
 
 === Check snapshot plan after deploy: 
+
 >>> [CLI] bundle plan -o json
 
 >>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json

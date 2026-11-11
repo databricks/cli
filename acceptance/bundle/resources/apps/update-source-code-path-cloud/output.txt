@@ -1,5 +1,6 @@
 
 === Deploy: create the app with source_code_path
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-source-code-path-cloud-[UNIQUE_NAME]/default/files...
 Created apps.myapp
@@ -21,6 +22,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change source_code_path on an existing app: no UpdateApp request is sent
+
 >>> update_file.py databricks.yml source_code_path: ./app source_code_path: ./app2
 
 >>> errcode [CLI] bundle deploy
