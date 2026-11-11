@@ -114,19 +114,27 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    (often: an error, not a silent fallback).
    Table: `value (line) | written when | updated when | read by | can it
    disagree with the source of truth, and what happens then?`
-8. **Every new doc comment.** List them:
+8. **Every new doc comment.** List them. For Go:
 
    ```bash
    git diff "$BASE" "$TARGET" -- '*.go' ':!*_test.go' | grep -E '^\+(//|func |type |var |const )'
    ```
 
+   `.agents/rules/comments.md` applies to Python, shell and YAML as well, so
+   when the change touches those, list their added comments the same way
+   (`'*.py'` with `^\+(#|def |class )`, `'*.sh'` and `'*.yml'` with `^\+#`).
+   Docstrings and `--help` text in `acceptance/bin/*.py` count, and so does
+   the doc comment of a new test function when the change is test-only;
+   otherwise those passes come up empty for exactly the changes where the
+   comment is the point.
    Each comment above a new top-level declaration goes in the table. It
    should say what is decided, from which input, and where the result comes
    from. Flag comments that are wrong, that blur similar nouns, or that
    describe the mechanism but not the intent. Offer the sharper sentence.
    Also look for code that works around surprising behavior of an API or
    tool (adds a suffix, strips a prefix, retries a specific error) without
-   a comment saying why; ask why it happens.
+   a comment saying why; ask why it happens. When a new comment states such
+   a quirk, check that the other callers of the same API agree with it.
    Table: `line | what the comment claims | what the code does | precise
    enough?`
 9. **Tests.** Review test code as carefully as the code under test.
