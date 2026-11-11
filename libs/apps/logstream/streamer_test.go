@@ -373,9 +373,11 @@ func (d *waitDialer) DialContext(ctx context.Context, urlStr string, requestHead
 	}
 	select {
 	case <-d.wait:
+		return conn, resp, nil
 	case <-ctx.Done():
+		_ = conn.Close()
+		return nil, resp, ctx.Err()
 	}
-	return conn, resp, nil
 }
 
 func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptest.Server {
@@ -429,8 +431,6 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 
 	sent := make(chan struct{})
 	release := make(chan struct{})
-	// Deferred calls run before t.Cleanup, which waits for the handler to return.
-	defer close(release)
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
 		defer conn.Close()
@@ -444,13 +444,15 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 	})
 	defer server.Close()
+	// Deferred calls run before t.Cleanup, which waits for the handler to return.
+	defer close(release)
 
 	writer := &syncBuffer{}
 	streamer := &logStreamer{
 		// The prefetch timer starts once the connection is established. Waiting
-		// for the server to finish writing means all entries are already buffered
-		// on the client socket when it starts, so a slow runner cannot fire the
-		// timer before they are read and flush a partial tail.
+		// for the server to finish writing means all entries are already on the
+		// wire when it starts, so a slow server cannot make the timer flush a
+		// partial tail.
 		dialer:    &waitDialer{inner: &websocket.Dialer{}, wait: sent},
 		url:       toWebSocketURL(server.URL),
 		token:     "token",
@@ -467,7 +469,7 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 	// Without follow, Run returns once the prefetch timer flushes the tail.
 	// The server never closes the socket on its own, so a flush that depends on
 	// the close would hang here until the context deadline.
-	require.NoError(t, streamer.Run(ctx), "expected tail logs to flush before the server closed the socket")
+	require.NoError(t, streamer.Run(ctx), "expected the prefetch timer to flush the tail while the server keeps the socket open")
 	lines := strings.Split(strings.TrimSpace(writer.String()), "\n")
 	require.Len(t, lines, 2)
 	assert.Contains(t, lines[0], "line3")
