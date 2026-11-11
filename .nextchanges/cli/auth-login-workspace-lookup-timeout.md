@@ -1,0 +1,1 @@
+* `databricks auth login` now gives up on the optional workspace lookup after about 5 seconds instead of retrying for about 5 minutes, and explains the fallback to the manual workspace ID prompt ([#7522](https://github.com/databricks/cli/pull/7522)). ([#7522](https://github.com/databricks/cli/pull/7522))
