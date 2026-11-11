@@ -80,10 +80,6 @@ var knownMissingInStateType = map[string][]string{
 	"alerts": {
 		"file_path",
 	},
-	"pipelines": {
-		// The experimental testing property is not deployed yet.
-		"testing",
-	},
 	"apps": {
 		"lifecycle.prevent_destroy",
 		"lifecycle.depends_on",
