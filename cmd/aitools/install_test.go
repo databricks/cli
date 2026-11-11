@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -305,26 +306,60 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	origRec := recordPluginInstallsFn
 	t.Cleanup(func() { installPluginForAgentFn = orig; recordPluginInstallsFn = origRec })
 	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
-		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonCLINotOnPath}
+		if a.Name == agents.NameClaudeCode {
+			return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonCLINotOnPath}
+		}
+		return installer.PluginRecord{Version: "0.2.6"}, nil
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
 
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Non-explicit blocked install is a warning, not an error, but the agent's
-	// failure is still recorded in its outcome.
-	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	// Non-explicit blocked install is a warning, not an error, as long as another
+	// agent was set up; the agent's failure is still recorded in its outcome.
+	plan := buildPlan([]*agents.Agent{claude, codex}, installer.ScopeGlobal, false, false)
 	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 	require.NoError(t, err)
-	require.Len(t, outcomes, 1)
+	require.Len(t, outcomes, 2)
 	assert.Equal(t, outcomeFailed, outcomes[0].status)
 	assert.Equal(t, protos.AitoolsErrorCategoryCLINotOnPath, outcomes[0].errorCategory)
+	assert.Equal(t, outcomeInstalled, outcomes[1].status)
 
-	// Explicit (--agents) blocked install is an error.
-	planExplicit := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
+	// Explicit (--agents) blocked install is an error, even when another named
+	// agent was set up.
+	planExplicit := buildPlan([]*agents.Agent{claude, codex}, installer.ScopeGlobal, false, true)
 	_, err = executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
 	require.Error(t, err)
+	assert.NotErrorIs(t, err, errNoAgentSetUp)
+}
+
+func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	orig := installPluginForAgentFn
+	t.Cleanup(func() { installPluginForAgentFn = orig })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed, Detail: "fatal: could not read from remote repository"}
+	}
+
+	// Nothing named via --agents and the only agent's plugin install fails. This
+	// used to exit 0 with only a warning, so an agent caller believed it worked.
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
+
+	require.ErrorIs(t, err, errNoAgentSetUp)
+	// The failure is reported per agent, so it must not also be a top-level one.
+	assert.NoError(t, topLevelFailure(err))
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, "Run 'claude plugin marketplace add databricks/databricks-agent-skills', then 'claude plugin marketplace update databricks-agent-skills', then 'claude plugin install databricks@databricks-agent-skills --scope user' to see the full error. Once they succeed, re-run 'databricks aitools install --scope=global --agents=claude-code' so the CLI records the plugin. Or install skill files instead: databricks aitools install --scope=global --agents=claude-code --skills-only", outcomes[0].recovery)
+	assert.Contains(t, stderr.String(), "Skipped Claude Code: 'claude plugin' failed: fatal: could not read from remote repository")
+	assert.Contains(t, stderr.String(), "  Run 'claude plugin marketplace add")
 }
 
 func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
@@ -371,6 +406,89 @@ func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
 	// The marketplace picks the plugin version, so a failed lookup records it as unknown.
 	assert.Empty(t, installRef)
 	assert.Empty(t, recordRef)
+}
+
+func TestExecutePlanNoSkillsToInstall(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	plugins := setupPluginMock(t)
+	origSkills := installSkillsForAgentsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills; cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return installer.ErrNoSkillsResolved
+	}
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
+	inv := installInvocation{scope: installer.ScopeGlobal}
+
+	// Only a skills agent: the run sets up nothing and fails, like an empty
+	// --path dump.
+	plan := buildPlan([]*agents.Agent{cursor}, installer.ScopeGlobal, true, false)
+	_, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, inv, false)
+	require.ErrorIs(t, err, installer.ErrNoSkillsResolved)
+	assert.Error(t, topLevelFailure(err))
+
+	// A plugin was installed too: the run succeeds and Cursor is skipped with
+	// the step.
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	plan = buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, inv, false)
+	require.NoError(t, err)
+	require.Len(t, *plugins, 1)
+	require.Len(t, outcomes, 2)
+	assert.Equal(t, outcomeInstalled, outcomes[0].status)
+	assert.Equal(t, agents.NameCursor, outcomes[1].agent.Name)
+	assert.Equal(t, outcomeSkipped, outcomes[1].status)
+	// Same category the run's error gets when no plugin was installed.
+	assert.Equal(t, classifyInstallError(installer.ErrNoSkillsResolved), outcomes[1].errorCategory)
+	assert.NotEmpty(t, outcomes[1].errorCategory)
+	assert.Contains(t, stderr.String(), "Skipped Cursor: no skills to install")
+	assert.Contains(t, stderr.String(), "  No skill in this release can be installed by this CLI.")
+
+	// Named via --agents, the skipped skills agent is an error even so.
+	plan = buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, true)
+	_, err = executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, inv, false)
+	require.ErrorIs(t, err, installer.ErrNoSkillsResolved)
+	assert.NoError(t, topLevelFailure(err))
+}
+
+func TestExecutePlanNoSkillsToInstallWithPluginFailures(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	setupPluginMock(t)
+	origSkills := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return installer.ErrNoSkillsResolved
+	}
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
+	inv := installInvocation{scope: installer.ScopeGlobal}
+	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
+
+	// The plugin install failed: the run failed to set anything up, which is a
+	// FAILURE with the plugin's category, not "nothing to do".
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+	}
+	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, inv, false)
+	require.ErrorIs(t, err, errNoAgentSetUp)
+	assert.NotErrorIs(t, err, installer.ErrNoSkillsResolved)
+	assert.Equal(t, protos.AitoolsErrorCategoryPluginInstallFailed, firstFailureCategory(outcomes))
+
+	// The plugin installed but its record could not be saved: the record
+	// failure is the error, without the no-skills sentinel.
+	installPluginForAgentFn = func(_ context.Context, _ *agents.Agent, scope, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{Plugin: "databricks", Scope: scope, Version: "0.2.6"}, nil
+	}
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	stateErr := &installer.StateError{Path: ".state.json", Err: fs.ErrPermission}
+	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return stateErr }
+	_, err = executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, inv, false)
+	require.ErrorIs(t, err, stateErr)
+	assert.NotErrorIs(t, err, installer.ErrNoSkillsResolved)
 }
 
 func TestExecutePlanSkillsFailureStillInstallsPlugins(t *testing.T) {
@@ -807,7 +925,11 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 
-	require.NoError(t, cmd.Execute())
+	// Nothing was set up, so the run fails; the message above it says what to do,
+	// so no generic recovery step is appended.
+	err := cmd.Execute()
+	require.ErrorIs(t, err, errNoAgentSetUp)
+	assert.Equal(t, "nothing was installed; follow the steps above", err.Error())
 	assert.Empty(t, *plugins)
 	assert.Empty(t, *skills)
 }
@@ -1277,4 +1399,17 @@ func TestNoAgentsMessageKeepsTheRunsScopeAndMode(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeProject, skillsOnly: true})
 	assert.Contains(t, stderr.String(), "Install one, then re-run 'databricks aitools install --scope=project --skills-only'. To set up an agent that was not detected, name it: databricks aitools install --scope=project --skills-only --agents=<name>")
+}
+
+// --skills-only detects agents by their config dir, so the message must not
+// blame PATH.
+func TestNoAgentsMessageMatchesTheDetection(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeGlobal, skillsOnly: true})
+	assert.Contains(t, stderr.String(), "No supported coding agent config directories found.")
+	assert.NotContains(t, stderr.String(), "on PATH")
+
+	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
+	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeGlobal})
+	assert.Contains(t, stderr.String(), "No supported coding agents found on PATH.")
 }

@@ -98,7 +98,7 @@ const (
 	AitoolsCommandOutcomeCancelled AitoolsCommandOutcome = "CANCELLED"
 	// The command had nothing to act on (e.g. no coding agents detected, a
 	// --path dump where every skill was filtered out, or nothing installed to
-	// update or uninstall).
+	// update or uninstall). The command can still exit non-zero.
 	AitoolsCommandOutcomeNothingToDo AitoolsCommandOutcome = "NOTHING_TO_DO"
 )
 

@@ -161,6 +161,16 @@ func TestInstallRecovery(t *testing.T) {
 			want: "",
 		},
 		{
+			name: "no agent set up, each agent's step is printed above",
+			err:  &agentErrors{err: errNoAgentSetUp},
+			want: "",
+		},
+		{
+			name: "dump wrote no skill",
+			err:  installer.ErrNoSkillsResolved,
+			want: "No skill in this release can be installed by this CLI. Re-run 'databricks aitools install --debug' to see why each skill was skipped. To include experimental skills, add --experimental.",
+		},
+		{
 			name: "unknown error",
 			err:  errors.New("boom"),
 			want: "Re-run 'databricks aitools install --debug' to see details. If it keeps failing, report it at https://github.com/databricks/cli/issues.",
@@ -171,6 +181,12 @@ func TestInstallRecovery(t *testing.T) {
 			assert.Equal(t, tc.want, installRecovery(t.Context(), installInvocation{}, tc.err))
 		})
 	}
+}
+
+func TestNoSkillsWrittenRecoveryWithExperimental(t *testing.T) {
+	// --experimental was already given, so the step does not suggest it again.
+	inv := installInvocation{path: "dump", experimental: true}
+	assert.Equal(t, "No skill in this release can be installed by this CLI. Re-run 'databricks aitools install --path=dump --experimental --debug' to see why each skill was skipped.", installRecovery(t.Context(), inv, installer.ErrNoSkillsResolved))
 }
 
 func TestWithRecoveryKeepsCauseAndAppendsStep(t *testing.T) {

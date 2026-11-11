@@ -400,7 +400,7 @@ func TestUpdateAndUninstallWorkWaitsForTelemetryAuth(t *testing.T) {
 		t.Cleanup(func() { uninstallSkillsFn = orig })
 		uninstallSkillsFn = func(context.Context, installer.UninstallOptions) (*installer.UninstallResult, error) {
 			time.AfterFunc(200*time.Millisecond, release)
-			return &installer.UninstallResult{SkillsRemoved: 1}, nil
+			return &installer.UninstallResult{SkillsChanged: 1}, nil
 		}
 
 		ctx, _, err := runWithTelemetry(t, NewUninstallCmd(), "--scope=global")

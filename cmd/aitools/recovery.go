@@ -189,6 +189,13 @@ func installRecovery(ctx context.Context, inv installInvocation, err error) stri
 		// Each agent's failure was printed with its own step.
 		return ""
 	}
+	if errors.Is(err, installer.ErrNoSkillsResolved) {
+		step := installer.NoSkillsResolvedMessage + " Re-run " + rerunPhrase(runtime.GOOS, inv, debugFlag) + " to see why each skill was skipped."
+		if !inv.experimental {
+			step += " To include experimental skills, add --experimental."
+		}
+		return step
+	}
 	// An empty picker selection has no category of its own: the funnel
 	// reports it as CANCELLED.
 	if errors.Is(err, errNoAgentsSelected) {

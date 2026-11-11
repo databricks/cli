@@ -394,6 +394,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
+	if len(targetSkills) == 0 {
+		return ErrNoSkillsResolved
+	}
 
 	params := installParams{
 		baseDir: baseDir,
@@ -576,7 +579,14 @@ func InstallAllSkills(ctx context.Context) error {
 
 	PrintInstallingFor(ctx, installed)
 	src := &GitHubManifestSource{}
-	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
+	err := InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
+	// An optional setup step (apps init) has nothing to install; that is no
+	// failure for it.
+	if errors.Is(err, ErrNoSkillsResolved) {
+		cmdio.LogString(ctx, NoSkillsResolvedMessage)
+		return nil
+	}
+	return err
 }
 
 // PrintInstallingFor prints the "Installing..." header with agent names.

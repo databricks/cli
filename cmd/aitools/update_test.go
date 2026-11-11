@@ -463,3 +463,9 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NameGoose)
 	assert.Contains(t, names, agents.NameKiro)
 }
+
+func TestHasKnownPluginRecord(t *testing.T) {
+	assert.False(t, hasKnownPluginRecord(&installer.InstallState{}))
+	assert.False(t, hasKnownPluginRecord(&installer.InstallState{Plugins: map[string]installer.PluginRecord{"aider": {}}}))
+	assert.True(t, hasKnownPluginRecord(&installer.InstallState{Plugins: map[string]installer.PluginRecord{"aider": {}, agents.NameCodex: {}}}))
+}
