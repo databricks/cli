@@ -275,3 +275,38 @@ func TestResolveRefreshSelectorsInPlaceExcludedFiles(t *testing.T) {
 	assert.Empty(t, tables)
 	assert.Equal(t, []string{filepath.ToSlash(filepath.Join(root, "query.sql")), filepath.ToSlash(filepath.Join(root, "notebook"))}, paths)
 }
+
+func TestResolveRefreshSelectorsInPlaceWorkspacePaths(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "notebook.py"), []byte("# Databricks notebook source\nprint('notebook')\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "module.py"), []byte("print('file')\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "invalid.ipynb"), []byte(`{}`), 0o600))
+	b := refreshTestBundle(root)
+	b.SyncRootPath = filepath.FromSlash("/Workspace/Users/test/project")
+	b.Config.Workspace.SyncMode = config.SyncModeInPlace
+	b.Config.Sync.Exclude = []string{"notebook.py"}
+
+	for _, tt := range []struct {
+		name string
+		path string
+		want string
+		err  string
+	}{
+		{name: "source notebook", path: "/Workspace/Users/test/project/notebook.py", want: "/Workspace/Users/test/project/notebook"},
+		{name: "regular file", path: "/Workspace/Users/test/project/module.py", want: "/Workspace/Users/test/project/module.py"},
+		{name: "deployed notebook", path: "/Workspace/Users/test/project/notebook", want: "/Workspace/Users/test/project/notebook"},
+		{name: "outside sync root", path: "/Workspace/Users/test/project-other/notebook.py", want: "/Workspace/Users/test/project-other/notebook.py"},
+		{name: "invalid notebook", path: "/Workspace/Users/test/project/invalid.ipynb", err: "invalid Jupyter notebook file"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tables, paths, err := (&refreshSelectorResolver{bundle: b}).resolve(t.Context(), []string{"file:" + tt.path})
+			if tt.err != "" {
+				require.ErrorContains(t, err, tt.err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Empty(t, tables)
+			assert.Equal(t, []string{tt.want}, paths)
+		})
+	}
+}

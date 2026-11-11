@@ -131,6 +131,19 @@ func (r *refreshSelectorResolver) resolve(ctx context.Context, selectors []strin
 		selector = file
 		// /Workspace/ distinguishes remote paths from local paths like /Users/... on macOS.
 		if strings.HasPrefix(selector, "/Workspace/") {
+			if b.IsSourceLinkedDeployment() {
+				rel, err := filepath.Rel(b.SyncRootPath, filepath.FromSlash(selector))
+				if err == nil && filepath.IsLocal(rel) {
+					remotePath, err := r.resolveInPlacePath(selector, rel)
+					if err == nil {
+						paths = append(paths, remotePath)
+						continue
+					}
+					if !errors.Is(err, fs.ErrNotExist) {
+						return nil, nil, err
+					}
+				}
+			}
 			paths = append(paths, selector)
 			continue
 		}
@@ -158,15 +171,11 @@ func (r *refreshSelectorResolver) resolve(ctx context.Context, selectors []strin
 			return nil, nil, fmt.Errorf("source file %q is outside the bundle sync root", selector)
 		}
 		if b.IsSourceLinkedDeployment() {
-			remoteName := filepath.ToSlash(rel)
-			isNotebook, _, err := notebook.DetectWithFS(b.SyncRoot, remoteName)
+			remotePath, err := r.resolveInPlacePath(selector, rel)
 			if err != nil {
-				return nil, nil, fmt.Errorf("cannot identify source file %q: %w", selector, err)
+				return nil, nil, err
 			}
-			if isNotebook {
-				remoteName = notebook.StripExtension(remoteName)
-			}
-			paths = append(paths, path.Join(b.RemoteFilePath(), remoteName))
+			paths = append(paths, remotePath)
 			continue
 		}
 		if r.remoteNames == nil {
@@ -195,6 +204,18 @@ func (r *refreshSelectorResolver) resolve(ctx context.Context, selectors []strin
 		paths = append(paths, path.Join(remoteRoot, remoteName))
 	}
 	return tables, paths, nil
+}
+
+func (r *refreshSelectorResolver) resolveInPlacePath(selector, rel string) (string, error) {
+	remoteName := filepath.ToSlash(rel)
+	isNotebook, _, err := notebook.DetectWithFS(r.bundle.SyncRoot, remoteName)
+	if err != nil {
+		return "", fmt.Errorf("cannot identify source file %q: %w", selector, err)
+	}
+	if isNotebook {
+		remoteName = notebook.StripExtension(remoteName)
+	}
+	return path.Join(r.bundle.RemoteFilePath(), remoteName), nil
 }
 
 // refreshSourcePaths maps local files to their deployed names.

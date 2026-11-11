@@ -56,9 +56,8 @@ For a path containing spaces:
 
 Each refresh mode accepts either tables or files.
 Local file paths are relative to the current directory and map to deployed files.
-Absolute /Workspace/ paths must match the deployed file path.
-Deploy local changes before running.
-With --restart, file selectors require a triggered pipeline.`
+Absolute /Workspace/ paths are also accepted.
+Deploy local changes before running.`
 
 func (o *PipelineOptions) DefineRefreshFlags(fs *flag.FlagSet) {
 	fs.Var((*refreshSelectionFlag)(&o.Refresh), "refresh", "Space-separated table:<name> or file:<path> selectors to update. Quote lists or repeat the flag.")
