@@ -3,6 +3,7 @@ package selection
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,6 +21,7 @@ func TestParseCommitMessage(t *testing.T) {
 		"dbr: TestAccept/unknown/prefix\n" +
 		"AWS: TestAccept/uppercase/prefix\n" +
 		"see aws: TestAccept/not/at/line/start\n" +
+		"aws: fix flaky TestAccept retries\n" +
 		"Co-authored-by: Someone <someone@example.com>\n" +
 		"aws:\n"
 
@@ -35,6 +37,7 @@ func TestParseCommitMessage(t *testing.T) {
 func TestParseCommitMessageNoMatches(t *testing.T) {
 	assert.Empty(t, ParseCommitMessage(""))
 	assert.Empty(t, ParseCommitMessage("Fix a bug\n\nThe aws: prefix is mentioned mid-line only.\n"))
+	assert.Empty(t, ParseCommitMessage("cloud: make TestAccept faster\n"))
 }
 
 func TestNamesForCloud(t *testing.T) {
@@ -54,6 +57,10 @@ func TestNamesForCloud(t *testing.T) {
 }
 
 func TestResolveNames(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "cmd", "version"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "cmd", "version", "out.test.toml"), []byte("EnvMatrix.DMS = [\"\", \"true\"]\nEnvMatrix.X = [\"1\", \"2\"]\n"), 0o600))
+
 	testDirs := map[string]bool{
 		"bundle/resources/jobs":            true,
 		"bundle/resources/jobs/update":     true,
@@ -62,7 +69,7 @@ func TestResolveNames(t *testing.T) {
 		"cmd/version":                      true,
 	}
 
-	named, unmatched := ResolveNames([]string{
+	named, unmatched := ResolveNames(root, []string{
 		// A dir and everything under it, but not a sibling that shares the prefix.
 		"TestAccept/bundle/resources/jobs",
 		// A path that is not itself a test dir selects the dirs under it.
@@ -72,6 +79,11 @@ func TestResolveNames(t *testing.T) {
 		"TestAccept/cmd/version/DMS=",
 		"TestAccept/bundle/nothing",
 		"TestAccept/cmd/version/notavariant",
+		// A misspelled key or value matches no variant.
+		"TestAccept/cmd/version/DSM=true",
+		"TestAccept/cmd/version/DMS=ture",
+		// A dir without a matrix has no variants to name.
+		"TestAccept/bundle/resources/jobsx/DMS=true",
 		"TestAcceptance/cmd/version",
 		"TestFoo",
 	}, testDirs)
@@ -85,11 +97,14 @@ func TestResolveNames(t *testing.T) {
 	assert.Equal(t, []string{
 		"TestAccept/bundle/nothing",
 		"TestAccept/cmd/version/notavariant",
+		"TestAccept/cmd/version/DSM=true",
+		"TestAccept/cmd/version/DMS=ture",
+		"TestAccept/bundle/resources/jobsx/DMS=true",
 		"TestAcceptance/cmd/version",
 		"TestFoo",
 	}, unmatched)
 
-	all, unmatched := ResolveNames([]string{"TestAccept"}, testDirs)
+	all, unmatched := ResolveNames(root, []string{"TestAccept"}, testDirs)
 	assert.Len(t, all, len(testDirs))
 	assert.Empty(t, unmatched)
 }

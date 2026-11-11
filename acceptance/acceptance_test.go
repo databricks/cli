@@ -539,10 +539,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		if cloudEnv != "" {
 			namedCloud = getCloudEnvBase(cloudEnv)
 		}
-		named, summary, unmatched, err := selection.FromCommitMessage(testDirsSet, namedCloud)
+		named, summary, unmatched, err := selection.FromCommitMessage(".", testDirsSet, namedCloud)
 		require.NoError(t, err)
 		namedTests = named
-		if len(namedTests) > 0 || len(unmatched) > 0 {
+		if len(namedTests) > 0 {
 			t.Log(summary)
 		}
 		for _, name := range unmatched {

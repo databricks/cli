@@ -26,6 +26,7 @@ func TestNamesTests(t *testing.T) {
 		"see aws: TestAccept/a",
 		"aws: TestAcceptance/a",
 		"aws: TestFoo",
+		"aws: fix flaky TestAccept retries",
 		"aws:",
 	} {
 		assert.False(t, NamesTests(msg), msg)

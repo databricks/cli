@@ -27,12 +27,12 @@ cloud: TestAccept/bundle/resources/pipelines TestAccept/cmd/fs/cp/file-to-file
 gcp: TestAccept/bundle/validate/enum/DMS=true
 ```
 
-- `aws:`, `azure:`, `gcp:` run the test on that cloud only; `cloud:` runs it on every cloud. Prefixes are lowercase and must start the line (surrounding whitespace is ignored). Lines with any other prefix are ignored.
+- `aws:`, `azure:`, `gcp:` run the test on that cloud only; `cloud:` runs it on every cloud. Prefixes are lowercase and must start the line (surrounding whitespace is ignored). Lines with any other prefix are ignored, and so is a line with a word that does not start with `Test` (so `aws: fix flaky TestAccept retries` is prose, not a request to run the suite).
 - Every named test is also selected for the local (testserver) runs, whatever its prefix.
-- `TestAccept/<path>` selects every test dir that is `<path>` or under `<path>/`, with all its variants. `TestAccept/<dir>/KEY=value[/KEY=value...]` selects only the matching variants of test dir `<dir>`, as `go test` names them. `TestAccept` alone selects every test. A name that matches no acceptance test (including non-acceptance test names) is logged as a warning and otherwise ignored.
-- The named tests are added to the changed-test selection (`DATABRICKS_TEST_SELECT_CHANGED`, used by the PR cloud run and `./task local-select`) and to the windows/macOS PR subset (`TESTS_SELECT_SUBSET_PCT`), without counting toward their limits. Runs with neither selection already run every test.
-- On cloud, a named test still needs `Cloud = true` (and a matching `CloudEnvs`), but it runs even if it is `CloudSlow`.
-- Such a line makes PR CI (`tools/testmask`) run the tests and trigger the cloud run even if the changed files alone would not.
+- `TestAccept/<path>` selects every test dir that is `<path>` or under `<path>/`, with all its variants. `TestAccept/<dir>/KEY=value[/KEY=value...]` selects only the matching variants of test dir `<dir>`, as `go test` names them; each `KEY=value` must be in one of the dir's variants (per its `out.test.toml`). `TestAccept` alone selects every test. A name that matches no acceptance test (including non-acceptance test names) is logged as a warning and otherwise ignored.
+- The named tests are added to the changed-test selection (`DATABRICKS_TEST_SELECT_CHANGED`, used by the PR cloud run and `./task local-select`) and to the windows/macOS PR subset (`TESTS_SELECT_SUBSET_PCT`), without counting toward their limits. Runs with neither selection (Linux PR cell, nightly) do not read the commit message: they run every test.
+- On cloud, a named test still needs `Cloud = true` (and a matching `CloudEnvs`), but it runs even if it is `CloudSlow` (naming any variant of a dir lifts this for the dir).
+- On pull requests, such a line makes `tools/testmask` select the tests and the cloud run even if the changed files alone would not. The merge queue ignores it.
 - On the merge commit GitHub creates for a PR (`refs/pull/N/merge`), the message of the PR's head commit is used. The parser is in `acceptance/internal/selection/commit.go`.
 
 ## Authoring

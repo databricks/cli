@@ -1,6 +1,7 @@
 package selection
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -8,12 +9,13 @@ import (
 	"strings"
 )
 
-// CommitClouds are the prefixes a commit message line can name tests with. "cloud" names a
-// test for every cloud; the others name it for that cloud only.
-var CommitClouds = []string{"aws", "azure", "gcp", "cloud"}
+// commitClouds are the prefixes a commit message line can name tests with. "cloud" names a
+// test for every cloud; the others name it for that cloud only. tools/testmask/commit.go
+// repeats this list (the tools module cannot import this package); keep the two in sync.
+var commitClouds = []string{"aws", "azure", "gcp", "cloud"}
 
 // commitLineRe matches a "<cloud>: <test names>" line once surrounding whitespace is trimmed.
-var commitLineRe = regexp.MustCompile(`^(aws|azure|gcp|cloud):(.*)$`)
+var commitLineRe = regexp.MustCompile(`^(` + strings.Join(commitClouds, "|") + `):(.*)$`)
 
 // githubMergeRe matches the message of the merge commit GitHub creates for refs/pull/N/merge,
 // which is what pull_request CI checks out: "Merge <head sha> into <base sha>".
@@ -25,7 +27,7 @@ const testAcceptName = "TestAccept"
 
 // CommitName is one test name from a commit message line, with the cloud it was named for.
 type CommitName struct {
-	// Cloud is one of CommitClouds.
+	// Cloud is one of commitClouds.
 	Cloud string
 
 	// Name is the test name as written, e.g. TestAccept/bundle/resources/jobs.
@@ -33,7 +35,9 @@ type CommitName struct {
 }
 
 // ParseCommitMessage returns the test names on the "<cloud>: <names>" lines of msg. A line may
-// list several whitespace-separated names. Lines with any other prefix are ignored.
+// list several whitespace-separated names. Lines with any other prefix are ignored, and so are
+// lines with a word that is not a go test name: "aws: fix flaky TestAccept retries" is prose,
+// and taking its bare TestAccept as a name would run the whole suite.
 func ParseCommitMessage(msg string) []CommitName {
 	var names []CommitName
 	for line := range strings.SplitSeq(msg, "\n") {
@@ -41,7 +45,11 @@ func ParseCommitMessage(msg string) []CommitName {
 		if m == nil {
 			continue
 		}
-		for name := range strings.FieldsSeq(m[2]) {
+		words := strings.Fields(m[2])
+		if len(words) == 0 || slices.ContainsFunc(words, func(word string) bool { return !strings.HasPrefix(word, "Test") }) {
+			continue
+		}
+		for _, name := range words {
 			names = append(names, CommitName{Cloud: m[1], Name: name})
 		}
 	}
@@ -94,19 +102,21 @@ func (n Named) add(dir string, filters []string) {
 //   - "TestAccept": every test;
 //   - "TestAccept/<path>": every test dir that is <path> or under <path>/, with all variants;
 //   - "TestAccept/<dir>/<KEY=value>[/<KEY=value>...]": the variants of test dir <dir> that
-//     have those values, i.e. a variant subtest name as go test prints it.
-func ResolveNames(names []string, testDirs map[string]bool) (Named, []string) {
+//     have those values, i.e. a variant subtest name as go test prints it. root is the
+//     acceptance directory, read for the variants each dir runs, so a misspelled key or value
+//     is reported rather than selecting every variant or none.
+func ResolveNames(root string, names []string, testDirs map[string]bool) (Named, []string) {
 	named := Named{}
 	var unmatched []string
 	for _, name := range names {
-		if !resolveName(name, testDirs, named) {
+		if !resolveName(root, name, testDirs, named) {
 			unmatched = append(unmatched, name)
 		}
 	}
 	return named, unmatched
 }
 
-func resolveName(name string, testDirs map[string]bool, named Named) bool {
+func resolveName(root, name string, testDirs map[string]bool, named Named) bool {
 	rest, ok := strings.CutPrefix(name, testAcceptName)
 	if !ok || (rest != "" && !strings.HasPrefix(rest, "/")) {
 		return false
@@ -131,15 +141,24 @@ func resolveName(name string, testDirs map[string]bool, named Named) bool {
 			continue
 		}
 		filters := strings.Split(rest[i+1:], "/")
-		for _, filter := range filters {
-			if key, _, ok := strings.Cut(filter, "="); !ok || key == "" {
-				return false
-			}
+		if !slices.ContainsFunc(Variants(root, dir), func(envset []string) bool { return hasAll(envset, filters) }) {
+			return false
 		}
 		named.add(dir, filters)
 		return true
 	}
 	return false
+}
+
+// hasAll reports whether every KEY=value filter is literally in envset. Unlike MatchesFilters,
+// a key the envset lacks does not match, so a misspelled key selects nothing.
+func hasAll(envset, filters []string) bool {
+	for _, filter := range filters {
+		if !slices.Contains(envset, filter) {
+			return false
+		}
+	}
+	return true
 }
 
 // LastCommitMessage returns the message of the commit at HEAD. On the merge commit GitHub
@@ -157,27 +176,32 @@ func LastCommitMessage() (string, error) {
 }
 
 func commitMessage(rev string) (string, error) {
-	out, err := exec.Command("git", "log", "-1", "--format=%B", rev).CombinedOutput()
+	out, err := exec.Command("git", "log", "-1", "--format=%B", rev).Output()
 	if err != nil {
-		return "", fmt.Errorf("git log -1 %s failed: %w: %s", rev, err, strings.TrimSpace(string(out)))
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			return "", fmt.Errorf("git log -1 %s failed: %w: %s", rev, err, strings.TrimSpace(string(exitErr.Stderr)))
+		}
+		return "", fmt.Errorf("git log -1 %s failed: %w", rev, err)
 	}
 	return string(out), nil
 }
 
 // FromCommitMessage selects among testDirs the tests the last commit message names for cloud
-// (empty for a local run, see NamesForCloud). It returns the selection, a one-line summary for
-// the test log, and the names that matched no test.
-func FromCommitMessage(testDirs map[string]bool, cloud string) (Named, string, []string, error) {
+// (empty for a local run, see NamesForCloud). root is the acceptance directory. It returns the
+// selection, a one-line summary of the names that matched for the test log, and the names that
+// matched no test.
+func FromCommitMessage(root string, testDirs map[string]bool, cloud string) (Named, string, []string, error) {
 	msg, err := LastCommitMessage()
 	if err != nil {
 		return nil, "", nil, err
 	}
 	names := NamesForCloud(ParseCommitMessage(msg), cloud)
-	named, unmatched := ResolveNames(names, testDirs)
+	named, unmatched := ResolveNames(root, names, testDirs)
+	matched := slices.DeleteFunc(names, func(name string) bool { return slices.Contains(unmatched, name) })
 	where := "local"
 	if cloud != "" {
 		where = cloud
 	}
-	summary := fmt.Sprintf("Selected %d test dirs named in the last commit message (%s): %s", len(named), where, strings.Join(names, " "))
+	summary := fmt.Sprintf("Selected %d test dirs named in the last commit message (%s): %s", len(named), where, strings.Join(matched, " "))
 	return named, summary, unmatched, nil
 }
