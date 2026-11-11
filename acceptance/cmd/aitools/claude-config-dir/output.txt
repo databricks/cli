@@ -1,14 +1,18 @@
 
 === Plugin installed only in the custom config directory
 
->>> CLAUDE_CONFIG_DIR=custom [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR=custom [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
 
 === Custom directory takes precedence over the default installation
 
->>> CLAUDE_CONFIG_DIR=missing [CLI] version
+>>> CLAUDE_CONFIG_DIR=missing [CLI] clusters list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
-Databricks CLI v[CLI_VERSION]
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
 
 === Exempt commands never hint, even without the tooling
 
@@ -17,10 +21,14 @@ Databricks CLI v[CLI_VERSION]
 
 === Empty override uses the default installation
 
->>> CLAUDE_CONFIG_DIR= [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR= [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
 
 === Unset override uses the default installation
 
->>> [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  

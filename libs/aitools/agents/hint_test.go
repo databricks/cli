@@ -223,7 +223,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 		{"completion bash", true},
 		{"help", true},
 		{cobra.ShellCompRequestCmd, true},
-		{"version", false},
+		{"version", true},
 		{"authz", false},
 		{"current-user", false},
 		{"clusters list", false},
@@ -231,7 +231,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
-			assert.Equal(t, tc.want, IsHintExemptCommand(commandAt(tc.path)))
+			assert.Equal(t, tc.want, isHintExemptCommand(commandAt(tc.path)))
 		})
 	}
 }
