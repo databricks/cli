@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# A replayed terraform fixture already makes these requests: it was captured with this script.
-if [ -n "$INVARIANT_REPLAY" ]; then
-    return
-fi
-
 # Create a unique source table for this test run to avoid hitting the 20-table-per-source limit
 echo "Creating temporary source table: main.test_synced_$UNIQUE_NAME.trips_source"
 
