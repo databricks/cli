@@ -40,6 +40,8 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "MODEL_SERVICE", "TABLE", "VOLUME"},
 
+	"resources.catalogs.*.isolation_mode": {"ISOLATED", "OPEN"},
+
 	"resources.cluster_policies.*.permissions[*].level": {"CAN_USE"},
 
 	"resources.clusters.*.aws_attributes.availability":              {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
