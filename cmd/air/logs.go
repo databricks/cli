@@ -31,7 +31,7 @@ func newLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Stream or fetch logs for a run",
+		Short: "Stream or fetch a run's logs",
 		Long: `Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 

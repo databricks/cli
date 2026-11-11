@@ -2,29 +2,35 @@
 === command help
 
 >>> [CLI] air run --help
-Submit a training workload to Databricks serverless GPU compute.
+Submit a workload to Databricks serverless GPU compute.
 
-The workload is described by a YAML config file (see --file).
+The workload is described by a YAML file (see --file). To look up a YAML
+field, pass its path to -h as a separate argument:
 
-To look up a config field, pass its path to -h:
-
-  databricks air run -h config
-  databricks air run -h config.compute
-  databricks air run -h config.compute.accelerator_type
-
-The path must be a separate argument: cobra reserves -h as a boolean, so
--h=config.compute and -hconfig.compute are not accepted.
+  databricks air run -h config                            all fields
+  databricks air run -h config.compute                    one section
+  databricks air run -h config.compute.accelerator_type   one field
 
 Usage:
   databricks air run [flags]
 
+Examples:
+  # Submit and stream logs until the run finishes
+  databricks air run -f workload.yaml --watch
+
+  # Validate the config against the workspace without submitting
+  databricks air run -f workload.yaml --dry-run
+
+  # Try a different GPU without editing the file
+  databricks air run -f workload.yaml --override compute.accelerator_type=GPU_1xH100
+
 Flags:
-      --dry-run                  Validate the config against the workspace without submitting a run
   -f, --file string              Path to the workload YAML config
-  -h, --help                     help for run
-      --idempotency-key string   Return the existing run if this key was already used
-      --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
       --watch                    Stream logs until the run completes
+      --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
+      --dry-run                  Validate the config against the workspace without submitting a run
+      --idempotency-key string   Return the existing run if this key was already used
+  -h, --help                     help for run
 
 Global Flags:
       --debug            enable debug logging
@@ -36,35 +42,41 @@ Global Flags:
 
 >>> [CLI] air run -h config
 config
-  The run YAML schema. Pass a field path for details, e.g. config.compute.accelerator_type.
+  Workload YAML schema. Pass a field path for details, e.g. config.compute.accelerator_type.
 
-  AI coding agents can use the databricks-ai-runtime skill to write workload
-  YAML, submit runs, and monitor progress.
+  Minimal example:
+    experiment_name: my-run
+    compute:
+      num_accelerators: 1
+      accelerator_type: GPU_1xA10
+    code_source:
+      root_path: .
+    command: python "$CODE_SOURCE_PATH/train.py"
 
-  Install the skill locally for your coding agent:
+  Required:
+    experiment_name              Name of the experiment.
+    compute                      Which accelerators to run on and how many.
 
-    databricks aitools install --skills-only --skills databricks-ai-runtime
-
-  Follow the prompts to choose your coding agent and installation scope.
-  Use --scope project to install into the current project.
-  See: https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
-
-  Fields:
-    experiment_name              (required) Name of the experiment.
-    compute                      (required) Which accelerators to run on and how many.
+  Workload:
     environment                  Python dependencies, runtime version, or a Unity Catalog image for a single-command run.
     command                      Shell command that starts the workload.
-    containers                   Rank-partitioned containers for heterogeneous workloads.
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
+
+  Run behavior:
     max_retries                  How many times to retry a failed run.
     timeout_minutes              Wall-clock limit for the run in minutes.
-    idempotency_token            Reuse token: a repeat submission with the same token returns the existing run instead of starting another.
     parameters                   Free-form values passed through to the workload.
+
+  MLflow:
     mlflow_run_name              Name for the MLflow run.
     mlflow_experiment_directory  Workspace directory holding the MLflow experiment.
     mlflow_artifact_location     DBFS location where MLflow artifacts are written.
+
+  Advanced:
+    containers                   Rank-partitioned containers for heterogeneous workloads.
+    idempotency_token            Reuse token: a repeat submission with the same token returns the existing run instead of starting another.
     permissions                  Who may view or manage the run, as a list of principal plus level grants.
     usage_policy_name            Usage policy to bill the run to, by name.
     usage_policy_id              Usage policy to bill the run to, by id.
@@ -85,6 +97,8 @@ config.compute
   Fields:
     num_accelerators  Total number of GPUs to allocate.
     accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.
+
+  Provisioned capacity (optional):
     pool_id           GPU pool to run on, by id.
     priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL.
 

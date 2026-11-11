@@ -796,10 +796,31 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, environmentVersion.String(), "Client image version to pin (default: 6).")
 	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/")
 
-	// Required top-level fields are flagged in a listing.
+	// Top-level fields are listed under headings, most commonly needed first.
 	var root strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&root, "config"))
-	assert.Contains(t, root.String(), "(required) Which accelerators to run on")
+	rootHelp := root.String()
+	assert.Contains(t, rootHelp, "  Required:\n    experiment_name              Name of the experiment.\n    compute                      Which accelerators to run on and how many.\n")
+	assert.NotContains(t, rootHelp, "(required)", "the Required heading already marks required fields")
+	headings := []string{"  Required:", "  Workload:", "  Run behavior:", "  MLflow:", "  Advanced:"}
+	last := -1
+	for _, h := range headings {
+		i := strings.Index(rootHelp, h)
+		require.Greater(t, i, last, "heading %q is missing or out of order", h)
+		last = i
+	}
+	assert.NotContains(t, rootHelp, "  Fields:", "every top-level field belongs to a group")
+
+	// Pool fields are set apart from the fields every run needs.
+	var compute strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&compute, "config.compute"))
+	fields, capacity, found := strings.Cut(compute.String(), "  Provisioned capacity (optional):\n")
+	require.True(t, found)
+	assert.Contains(t, fields, "  Fields:\n    num_accelerators")
+	assert.Contains(t, fields, "    accelerator_type")
+	assert.NotContains(t, fields, "pool_id")
+	assert.Contains(t, capacity, "    pool_id ")
+	assert.Contains(t, capacity, "    priority_class ")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
 }
