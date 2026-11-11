@@ -97,6 +97,13 @@ func TestMLflowIDs(t *testing.T) {
 		// A run still starting its next retry must not link to the previous attempt.
 		running := &jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}, Tasks: tasks}
 		assert.Nil(t, mlflowIDs(ctx, w, running))
+
+		// In a multi-task job, an earlier task is not a retry of the last one.
+		multiTask := &jobs.Run{
+			State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated},
+			Tasks: []jobs.RunTask{{TaskKey: "train", RunId: 99}, {TaskKey: "report", RunId: 100}},
+		}
+		assert.Nil(t, mlflowIDs(ctx, w, multiTask))
 	})
 }
 

@@ -4,7 +4,7 @@
 Pattern = "HEAD /"
 Response.Body = ''
 
-# A failed run whose second attempt failed before it started.
+# A failed run whose second and third attempts failed before they started.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -15,7 +15,8 @@ Response.Body = '''
   "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Out of capacity"},
   "tasks": [
     {"task_key": "train", "run_id": 456, "attempt_number": 0},
-    {"task_key": "train", "run_id": 457, "attempt_number": 1}
+    {"task_key": "train", "run_id": 457, "attempt_number": 1},
+    {"task_key": "train", "run_id": 458, "attempt_number": 2}
   ]
 }
 '''

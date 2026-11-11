@@ -548,7 +548,13 @@ func TestEmitNoLogs(t *testing.T) {
 			name:   "latest retry of a terminal run",
 			req:    logRequest{attempt: -1},
 			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "Out of capacity.", latestAttempt: 2},
-			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry 1 to see them\n",
+			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry N, from 0 to 1, to see them\n",
+		},
+		{
+			name:   "latest retry of a terminal run with one earlier retry",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 1},
+			want:   "No logs available for run 7. Run terminated in state FAILED. Earlier retries may have logs; pass --retry 0 to see them\n",
 		},
 		{
 			name:   "latest retry of a running run",
