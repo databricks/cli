@@ -18,7 +18,9 @@ Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === A member field the endpoint cannot alter is caught by the planner as a recreate, so the
+
 === request never reaches the server
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -27,7 +29,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The endpoint cannot add a member either, so adding one plans a recreate of the whole set
+
 === and warns that every member is dropped and recomputed
+
 >>> [CLI] bundle plan -o json
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
 
@@ -37,6 +41,7 @@ Warn: planning resources.materialization_sets.set1: the member for feature "main
 }
 
 === A recreate needs approval, so a deploy that cannot prompt stops before changing anything
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
@@ -52,6 +57,7 @@ To proceed, use --auto-approve after reviewing the plan above.
 Files: 2 uploaded, 0 deleted
 
 === With approval the set is rebuilt holding both members, and the rebuilt set plans clean
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
@@ -72,6 +78,7 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Removing a member is still an update
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -86,7 +93,9 @@ Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 === Changing the feature name the set's materialized feature member references, from feata's to
+
 === featb's, reads as one member removed and another added, so it plans a recreate as well
+
 >>> [CLI] bundle plan -o json
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
 
@@ -96,7 +105,9 @@ Warn: planning resources.materialization_sets.set1: the member for feature "main
 }
 
 === That recreate needs approval too, and with it the set is rebuilt with its member referencing
+
 === featb's feature name
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-matset-immutable-[UNIQUE_NAME]/default/files...
 Warn: planning resources.materialization_sets.set1: the member for feature "main.matset_[UNIQUE_NAME].immb_[UNIQUE_NAME]" is not in the deployed set, and members cannot be added to an existing set, so the whole set will be recreated: every member is dropped and recomputed
@@ -131,7 +142,9 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 }
 
 === Switching the trigger from a manual cron expression to a DERIVED schedule is a recreate as
+
 === well, and the deploy asks for approval before rebuilding the set
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
