@@ -1,5 +1,5 @@
-Warning: 'jobs' already has permissions set for 'overlap@example.com' user name
 
+>>> [CLI] bundle validate -o json
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -44,8 +44,6 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 }
 
 >>> [CLI] bundle validate --strict
-Warning: 'jobs' already has permissions set for 'overlap@example.com' user name
-
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -64,5 +62,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning and 1 recommendation
-Error: 1 warning was found. Warnings are treated as errors in strict mode
+Found 1 recommendation

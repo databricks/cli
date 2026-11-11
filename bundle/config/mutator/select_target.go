@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 type selectTarget struct {
@@ -39,13 +38,6 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 		return diag.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(slices.Collect(maps.Keys(b.Config.Targets)), ", "))
 	}
 
-	var targetPermissionsStart *int
-	if p := b.Config.Value().Get("targets").Get(m.name).Get("permissions"); p.IsValid() && p.Kind() != dyn.KindNil {
-		// Lists concatenate; a complex-variable reference replaces another reference.
-		start := len(b.Config.Permissions)
-		targetPermissionsStart = &start
-	}
-
 	// Merge specified target into root configuration structure.
 	err := b.Config.MergeTargetOverrides(m.name)
 	if err != nil {
@@ -54,7 +46,6 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	// Store specified target in configuration for reference.
 	b.Target = target
-	b.TargetPermissionsStart = targetPermissionsStart
 	b.Config.Bundle.Target = m.name
 
 	// We do this for backward compatibility.

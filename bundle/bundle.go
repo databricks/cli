@@ -156,10 +156,6 @@ type Bundle struct {
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
-	// TargetPermissionsStart is the first target permission index, recorded before variable resolution.
-	// Nil means no target permissions were merged.
-	TargetPermissionsStart *int
-
 	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
 	// name and target. Recorded before variable resolution, so a path that only happens
 	// to end in those two segments does not count.
