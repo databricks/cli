@@ -1616,7 +1616,6 @@ func newUpdateMcpService() *cobra.Command {
 	cmd.Flags().StringVar(&updateMcpServiceReq.Etag, "etag", updateMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Comment, "comment", updateMcpServiceReq.McpService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Name, "name", updateMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
 
 	cmd.Use = "update-mcp-service NAME UPDATE_MASK"
 	cmd.Short = `Update an MCP service.`
@@ -1715,7 +1714,6 @@ func newUpdateModelProviderService() *cobra.Command {
 	cmd.Flags().StringVar(&updateModelProviderServiceReq.Etag, "etag", updateModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Comment, "comment", updateModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Name, "name", updateModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
 
 	cmd.Use = "update-model-provider-service NAME UPDATE_MASK"
 	cmd.Short = `Update a model provider service.`
@@ -1829,7 +1827,6 @@ func newUpdateModelService() *cobra.Command {
 	cmd.Flags().StringVar(&updateModelServiceReq.Etag, "etag", updateModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Comment, "comment", updateModelServiceReq.ModelService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Name, "name", updateModelServiceReq.ModelService.Name, `Resource name of the model service.`)
 	// TODO: array: supported_api_types
 
 	cmd.Use = "update-model-service NAME UPDATE_MASK"
@@ -1935,7 +1932,6 @@ func newUpdateSkill() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateSkillReq.Etag, "etag", updateSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill.`)
-	cmd.Flags().StringVar(&updateSkillReq.Skill.Name, "name", updateSkillReq.Skill.Name, `Resource name of the skill.`)
 
 	cmd.Use = "update-skill NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update a skill.`

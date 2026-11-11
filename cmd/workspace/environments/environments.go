@@ -644,7 +644,6 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.CpuWorkspaceBaseEnvironment, "cpu-workspace-base-environment", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.CpuWorkspaceBaseEnvironment, `The default workspace base environment for CPU compute.`)
 	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.GpuWorkspaceBaseEnvironment, "gpu-workspace-base-environment", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.GpuWorkspaceBaseEnvironment, `The default workspace base environment for GPU compute.`)
-	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name, "name", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name, `The resource name of this singleton resource.`)
 
 	cmd.Use = "update-default-workspace-base-environment NAME UPDATE_MASK"
 	cmd.Short = `Update the default workspace base environment configuration.`

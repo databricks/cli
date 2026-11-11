@@ -770,7 +770,6 @@ func newUpdateFailoverGroup() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateFailoverGroupReq.Etag, "etag", updateFailoverGroupReq.Etag, `Optional opaque version string for optimistic locking, obtained from a prior read of the failover group.`)
 	// TODO: complex arg: initial_replication_progress
-	cmd.Flags().StringVar(&updateFailoverGroupReq.FailoverGroup.Name, "name", updateFailoverGroupReq.FailoverGroup.Name, `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
 	// TODO: complex arg: unity_catalog_assets
 
 	cmd.Use = "update-failover-group NAME UPDATE_MASK REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
