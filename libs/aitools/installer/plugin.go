@@ -40,6 +40,11 @@ type BlockedError struct {
 	Agent  string
 	Reason string
 	Detail string
+	// TimedOut is set when the agent CLI was killed for exceeding its timeout,
+	// so the failure can be told apart from a missing or broken CLI. It takes
+	// precedence over Reason: Reason still names the step that timed out, so
+	// check TimedOut before switching on Reason.
+	TimedOut bool
 }
 
 // Reasons a plugin operation can be blocked.
@@ -62,20 +67,54 @@ func (e *BlockedError) Error() string {
 }
 
 // runAgentCmd runs an agent CLI command with a timeout, returning stdout and any
-// error. Errors are *process.ProcessError, which carries the captured stderr.
+// error. Errors wrap a *process.ProcessError, which carries the captured stderr;
+// on timeout the error is an *agentCmdTimeoutError that wraps it, so callers
+// must use errors.AsType rather than a type assertion.
 func runAgentCmd(ctx context.Context, timeout time.Duration, argv []string) (string, error) {
 	cctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return process.Background(cctx, argv)
+	out, err := process.Background(cctx, argv)
+	if err != nil && errors.Is(cctx.Err(), context.DeadlineExceeded) {
+		return out, &agentCmdTimeoutError{timeout: timeout, err: err}
+	}
+	return out, err
+}
+
+// agentCmdTimeoutError reports an agent CLI command killed by its timeout.
+type agentCmdTimeoutError struct {
+	timeout time.Duration
+	err     error
+}
+
+func (e *agentCmdTimeoutError) Error() string {
+	return fmt.Sprintf("timed out after %s", e.timeout)
+}
+
+func (e *agentCmdTimeoutError) Unwrap() error { return e.err }
+
+// newBlockedError builds the BlockedError for a failed agent CLI command.
+func newBlockedError(agent *agents.Agent, reason string, err error) *BlockedError {
+	_, timedOut := errors.AsType[*agentCmdTimeoutError](err)
+	return &BlockedError{Agent: agent.Name, Reason: reason, Detail: stderrOf(err), TimedOut: timedOut}
 }
 
 // stderrOf returns the captured stderr of a failed agent command, falling back
 // to the error's own message. Callers must not branch on this string.
 func stderrOf(err error) string {
+	var stderr string
 	if perr, ok := errors.AsType[*process.ProcessError](err); ok {
-		if s := strings.TrimSpace(perr.Stderr); s != "" {
-			return s
+		stderr = strings.TrimSpace(perr.Stderr)
+	}
+	// The timeout is the real cause of a killed process. Whatever it wrote to
+	// stderr before the kill (a prompt waiting for input, say) follows it.
+	if terr, ok := errors.AsType[*agentCmdTimeoutError](err); ok {
+		if stderr != "" {
+			return terr.Error() + ": " + stderr
 		}
+		return terr.Error()
+	}
+	if stderr != "" {
+		return stderr
 	}
 	return err.Error()
 }
@@ -269,7 +308,7 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
 	if _, err := runAgentCmd(ctx, pluginProbeTimeout, []string{bin, "plugin", "--help"}); err != nil {
-		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: stderrOf(err)}
+		return "", newBlockedError(agent, ReasonCLINotOnPath, err)
 	}
 	return bin, nil
 }
@@ -308,7 +347,7 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 				log.Warnf(ctx, "%s plugin install failed and the marketplace could not be de-registered: %v", agent.DisplayName, rmErr)
 			}
 		}
-		return PluginRecord{}, withRefreshError(&BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}, refreshErr)
+		return PluginRecord{}, withRefreshError(newBlockedError(agent, ReasonInstallFailed, err), refreshErr)
 	}
 
 	// A marketplace we just added is a fresh copy, so a failed refresh right
@@ -345,7 +384,7 @@ func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRe
 	}
 	refreshErr = refreshMarketplace(ctx, bin, pluginRefreshArgs(agent, rec))
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUpdateArgs(agent, rec))); err != nil {
-		return nil, withRefreshError(&BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}, refreshErr)
+		return nil, withRefreshError(newBlockedError(agent, ReasonInstallFailed, err), refreshErr)
 	}
 	return refreshErr, nil
 }
@@ -369,11 +408,11 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	}
 	if args := pluginDisableArgs(agent, rec); args != nil {
 		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, args)); err != nil && !claudeAlreadyDisabled(err) {
-			return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
+			return newBlockedError(agent, ReasonInstallFailed, err)
 		}
 	}
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUninstallArgs(agent, rec))); err != nil {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
+		return newBlockedError(agent, ReasonInstallFailed, err)
 	}
 	// Never de-register a Shared marketplace, it is shared infrastructure we don't own
 	if rec.InstalledMarketplace && !keepMarketplace && !agent.Plugin.Shared {
