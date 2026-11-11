@@ -1,0 +1,57 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_feature_spec"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "feature_specs": {
+      "my_feature_spec_1": {
+        "features": [
+          {
+            "feature_lookup": {
+              "feature_names": [
+                "age"
+              ],
+              "lookup_keys": [
+                "user_id"
+              ],
+              "table": "main.default.user_features"
+            }
+          }
+        ],
+        "grants": [
+          {
+            "principal": "account users",
+            "privileges": [
+              "EXECUTE"
+            ]
+          }
+        ],
+        "name": "main.default.my_feature_spec_1_updated"
+      },
+      "my_feature_spec_2": {
+        "extra_pip_requirements": {
+          "requirements": [
+            "numpy==2.1.0"
+          ]
+        },
+        "features": [
+          {
+            "declarative_feature": {
+              "feature": "main.default.my_feature"
+            }
+          }
+        ],
+        "name": "main.default.my_feature_spec_2_updated"
+      }
+    }
+  }
+}

@@ -3,6 +3,8 @@ package installer
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
@@ -14,6 +16,13 @@ const aiToolsUserAgentKey = "aitools"
 // (github.com/databricks-solutions/ai-dev-kit). Its skills have been subsumed
 // into databricks-agent-skills, but we track ai-dev-kit installs separately.
 const aiDevKitUserAgentKey = "aidevkit"
+
+// callingAgentToolingUserAgentKey is the user-agent key for the Databricks AI
+// tooling of the agent calling the CLI, read from that agent's own locations
+// (see agents.Agent.DatabricksTooling). Paired with the SDK's agent/<name> key
+// it gives a per-calling-agent install rate, which the aitools/ pairs cannot:
+// they report plugins of every tool on the machine.
+const callingAgentToolingUserAgentKey = "aitools-agent"
 
 // WithAiToolsInUserAgent adds one aitools/<tool>_<version> pair to the user
 // agent for each coding tool that has the Databricks plugin installed, e.g.
@@ -44,4 +53,37 @@ func WithAiDevKitInUserAgent(ctx context.Context) context.Context {
 		version = "unknown"
 	}
 	return useragent.InContext(ctx, aiDevKitUserAgentKey, version)
+}
+
+// WithCallingAgentToolingInUserAgent adds "aitools-agent/<plugin|skills|none>"
+// for the registry agent calling the CLI. Nothing is added when no agent is
+// detected, several are, or the CLI cannot install into the agent.
+func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
+	a := agents.CallingAgent()
+	if a == nil {
+		return ctx
+	}
+	tooling := a.DatabricksTooling(ctx, func() bool { return globalPluginRecorded(ctx, a.Name) })
+	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, tooling.String())
+}
+
+// globalPluginRecorded reports whether the global CLI install state records a
+// databricks plugin install for the agent. Only the global state is read: the
+// CLI installs plugins in project scope only for agents with SupportsProjectScope
+// (see mapAgentScope in cmd/aitools), and those have a manifest reader.
+func globalPluginRecorded(ctx context.Context, agentName string) bool {
+	dir, err := GlobalSkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
+		return false
+	}
+	if state == nil {
+		return false
+	}
+	_, ok := state.Plugins[agentName]
+	return ok
 }

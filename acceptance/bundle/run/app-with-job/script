@@ -15,7 +15,7 @@ APP_URL=$($CLI apps get "app-${UNIQUE_NAME}" | jq -r '.url')
 title "Check app config"
 trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/app-with-job-${UNIQUE_NAME}/files/app/app.yml"
 
-title "Try to run the app\n"
+title "Try to run the app"
 $CLI bundle run test_app &> LOG.run.txt
 trace cat LOG.run.txt | grep -q "${APP_URL}"
 
@@ -26,7 +26,7 @@ title "Stop the app"
 trace $CLI apps stop "app-${UNIQUE_NAME}" | jq '{compute_status}'
 trace $CLI apps get "app-${UNIQUE_NAME}" | jq '{app_status,compute_status}'
 
-title "Try to run the app again\n"
+title "Try to run the app again"
 $CLI bundle run test_app &> LOG.run.txt
 trace cat LOG.run.txt | grep -q "${APP_URL}"
 

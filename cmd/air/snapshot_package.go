@@ -21,9 +21,11 @@ import (
 // load-bearing — the remote entry_script extracts to /databricks/code_source/<dir> — so
 // both forms prefix every entry with it.
 
-// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball via
-// `git archive`, with every entry prefixed by directoryName/. When subtreePrefix is
-// set, only that repository subtree is archived and includePaths are relative to it.
+// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball, with every
+// entry prefixed by directoryName/. The tar is streamed from `git archive --format=tar`
+// into a parallel pgzip writer: git's own tar.gz format compresses on one thread, which
+// dominates packaging time on a large repo. When subtreePrefix is set, only that
+// repository subtree is archived and includePaths are relative to it.
 func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string) error {
 	treeish := commitSHA
 	archiveGit := git
@@ -38,16 +40,31 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 
 	args := []string{
 		"archive",
-		"--format=tar.gz",
+		"--format=tar",
 		"--prefix=" + directoryName + "/",
-		"-o", outputTarball,
 		treeish,
 	}
 	args = append(args, includePaths...)
-	if _, err := archiveGit.run(ctx, args...); err != nil {
+
+	out, err := os.Create(outputTarball)
+	if err != nil {
+		return fmt.Errorf("failed to create tarball: %w", err)
+	}
+	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
+	if err != nil {
+		out.Close()
+		return err
+	}
+	if err := archiveGit.runTo(ctx, ctxWriter{ctx, gz}, args...); err != nil {
+		gz.Close()
+		out.Close()
 		return fmt.Errorf("failed to create git archive: %w", err)
 	}
-	return nil
+	if err := gz.Close(); err != nil {
+		out.Close()
+		return fmt.Errorf("failed to finalize gzip: %w", err)
+	}
+	return out.Close()
 }
 
 // createPlainTarball writes a gzipped tar of the given working-tree files to

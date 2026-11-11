@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle validate
 Name: update-postgres-branch-[UNIQUE_NAME]
 Target: default
@@ -45,6 +46,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify no_change (no changes)
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
@@ -58,6 +60,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Update is_protected to true and re-deploy
+
 >>> update_file.py databricks.yml is_protected: false is_protected: true
 
 >>> cat databricks.yml
@@ -120,6 +123,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Restore is_protected to false
+
 >>> update_file.py databricks.yml is_protected: true is_protected: false
 
 >>> [CLI] bundle plan

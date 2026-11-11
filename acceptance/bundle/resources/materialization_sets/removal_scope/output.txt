@@ -17,8 +17,13 @@ Created materialization_sets.set1
 Files: 3 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
+>>> read_id.py set1
+[SET1_ID]
+
 === A feature contributing one member can have it removed alone: the cascade set is that one
+
 === member, and the feature the request says nothing about is untouched
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -41,16 +46,17 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 ]
 
 === The update returns a long-running operation, and the reconciled set is read back from it
+
 >>> print_requests.py --keep //materialization-sets
 {
   "method": "PATCH",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[SET1_ID]",
   "q": {
-    "request_id": "[UUID]",
+    "request_id": "[UUID][0]",
     "update_mask": "*"
   },
   "body": {
-    "materialization_set_id": "[UUID]",
+    "materialization_set_id": "[SET1_ID]",
     "materialized_features": [
       {
         "cron_schedule_trigger": {
@@ -71,5 +77,5 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> print_requests.py --get //feature-engineering/operations
 {
   "method": "GET",
-  "path": "/api/2.0/feature-engineering/operations/[UUID]"
+  "path": "/api/2.0/feature-engineering/operations/[UUID][1]"
 }

@@ -12,6 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Make local changes: update max_concurrent_runs to 2
+
 === Make remote changes via CLI: add a new tag and set timeout
 
 >>> [CLI] bundle plan

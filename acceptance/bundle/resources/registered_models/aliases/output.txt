@@ -1,5 +1,6 @@
 
 === Deploy a model that declares no aliases
+
 >>> print_requests.py //unity-catalog/models
 {
   "method": "POST",
@@ -12,6 +13,7 @@
 }
 
 === Out of band: a training run registers two versions and points 'champion' at version 1
+
 >>> register_model_version main.default.model-aliases-[UNIQUE_NAME]
 1
 
@@ -28,6 +30,7 @@
 }
 
 === No aliases section: 'champion' is skipped as unmanaged, not drift
+
 >>> plan_aliases
 {
   "aliases": {
@@ -37,7 +40,7 @@
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][0]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1
@@ -50,6 +53,7 @@
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Declare aliases: 'champion' moves to version 2 and 'challenger' points at version 1
+
 >>> plan_aliases
 {
   "aliases": {
@@ -68,7 +72,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][0]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1
@@ -90,7 +94,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][0]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -148,6 +152,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === Redeploy is a no-op: the fields the backend fills in on each alias are skipped as output_only
+
 >>> plan_aliases
 {
   "aliases[alias_name='challenger'].catalog_name": {
@@ -158,7 +163,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='challenger'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][1]"
   },
   "aliases[alias_name='challenger'].model_name": {
     "action": "skip",
@@ -178,7 +183,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][2]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -196,6 +201,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Drift: out of band, 'champion' moves back to version 1 and 'challenger' is deleted; deploy restores both
+
 >>> print_requests.py //unity-catalog/models
 {
   "method": "PUT",
@@ -230,7 +236,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][3]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -289,6 +295,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === Drop 'challenger' from the config: it is deleted, and so is 'staging', set out of band meanwhile
+
 >>> print_requests.py //unity-catalog/models
 {
   "method": "PUT",
@@ -309,7 +316,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "challenger",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][4]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 1
@@ -323,7 +330,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "aliases[alias_name='champion'].id": {
     "action": "skip",
     "reason": "output_only",
-    "remote": "[UUID]"
+    "remote": "[UUID][5]"
   },
   "aliases[alias_name='champion'].model_name": {
     "action": "skip",
@@ -340,7 +347,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "staging",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][6]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 1
@@ -377,6 +384,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === An empty aliases list keeps the aliases managed and deletes them all
+
 >>> plan_aliases
 {
   "aliases[alias_name='champion']": {
@@ -388,7 +396,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "remote": {
       "alias_name": "champion",
       "catalog_name": "main",
-      "id": "[UUID]",
+      "id": "[UUID][5]",
       "model_name": "model-aliases-[UNIQUE_NAME]",
       "schema_name": "default",
       "version_num": 2
@@ -416,6 +424,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 []
 
 === Remove the aliases section: aliases are unmanaged again, so one set out of band stays
+
 >>> print_requests.py //unity-catalog/models
 {
   "method": "PUT",
@@ -434,7 +443,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       {
         "alias_name": "champion",
         "catalog_name": "main",
-        "id": "[UUID]",
+        "id": "[UUID][7]",
         "model_name": "model-aliases-[UNIQUE_NAME]",
         "schema_name": "default",
         "version_num": 1

@@ -19,15 +19,15 @@
             "main.default.excluded"
           ]
         },
-        "object_id": "[UUID] (updated)",
+        "object_id": "[UUID][0] (updated)",
         "object_type": "schema"
       },
       "my_data_quality_monitor_2": {
         "data_profiling_config": {
           "assets_dir": "/Workspace/Users/user@example.com/assets",
-          "output_schema_id": "[UUID]"
+          "output_schema_id": "[UUID][0]"
         },
-        "object_id": "[UUID] (updated)",
+        "object_id": "[UUID][1] (updated)",
         "object_type": "table"
       }
     }

@@ -1,9 +1,12 @@
 
 === Replay a prior terraform deployment of a job only
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Add a new alert and a job task that references it
+
 === Plan shows the new alert and the job update (the terraform state is migrated in memory)
+
 >>> [CLI] bundle plan -o json
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 {
@@ -147,6 +150,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 }
 
 === Deploy migrates to direct, creates the alert and updates the job
+
 >>> [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -157,11 +161,13 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 === The job update carries the new alert id and timeout
+
 >>> print_requests.py //api/2.2/jobs/reset
 json.body.new_settings.tasks[0].alert_task.alert_id = "[NEW_ALERT_ID]";
 json.body.new_settings.timeout_seconds = 300;
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

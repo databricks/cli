@@ -12,7 +12,9 @@ resources.materialization_sets.*.materialized_features[*].cron_schedule	string	A
 resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger	*ml.CronSchedule	ALL
 resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.cron_expression	string	ALL
 resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.mode	ml.CronScheduleMode	ALL
+resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.paused	bool	ALL
 resources.materialization_sets.*.materialized_features[*].cron_schedule_trigger.timezone_id	string	ALL
+resources.materialization_sets.*.materialized_features[*].external_trigger	*ml.ExternalTrigger	ALL
 resources.materialization_sets.*.materialized_features[*].feature_name	string	ALL
 resources.materialization_sets.*.materialized_features[*].is_online	bool	ALL
 resources.materialization_sets.*.materialized_features[*].job_id	int64	ALL
@@ -51,6 +53,7 @@ resources.materialization_sets.*.materialized_features[*].table_name	string	ALL
 resources.materialization_sets.*.materialized_features[*].table_trigger	*ml.TableTrigger	ALL
 resources.materialization_sets.*.materialized_features[*].table_trigger.condition	ml.TableTriggerTableTriggerCondition	ALL
 resources.materialization_sets.*.materialized_features[*].table_trigger.min_time_between_triggers	*duration.Duration	ALL
+resources.materialization_sets.*.materialized_features[*].table_trigger.paused	bool	ALL
 resources.materialization_sets.*.materialized_features[*].table_trigger.wait_after_last_change	*duration.Duration	ALL
 resources.materialization_sets.*.materialized_features[*].tags	map[string]string	ALL
 resources.materialization_sets.*.materialized_features[*].tags.*	string	ALL

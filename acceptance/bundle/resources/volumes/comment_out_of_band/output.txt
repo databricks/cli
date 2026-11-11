@@ -1,5 +1,6 @@
 
 === Deploy a volume that does not declare a comment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
@@ -8,7 +9,9 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Set the comment out of band, the way Catalog Explorer does
+
 === The remote comment is drift, so the plan updates the volume
+
 >>> [CLI] bundle plan --output json
 {
   "comment": {
@@ -18,11 +21,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "storage_location": {
     "action": "skip",
     "reason": "immutable_backend_value",
-    "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+    "remote": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]"
   }
 }
 
 === Redeploy clears the comment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated volumes.volume1
@@ -30,16 +34,19 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === The comment is gone
+
 >>> [CLI] api get /api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]
 ""
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 === The UpdateVolume payloads the deploys sent
+
 >>> print_requests.py --method PATCH //unity-catalog/volumes
 {
   "method": "PATCH",

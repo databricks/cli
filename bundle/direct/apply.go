@@ -77,6 +77,10 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
 	}
+	// An empty id would be saved as-is, and the next plan would treat the resource as missing and create it again.
+	if newID == "" {
+		return errors.New("create returned an empty resource id")
+	}
 
 	log.Infof(ctx, "Created %s id=%#v", d.ResourceKey, newID)
 
@@ -215,6 +219,10 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
+	}
+	// Same reason as in Create: an empty id must not replace the saved one.
+	if newID == "" {
+		return errors.New("update returned an empty resource id")
 	}
 
 	if oldID != newID {

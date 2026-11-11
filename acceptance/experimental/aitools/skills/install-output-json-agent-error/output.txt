@@ -1,5 +1,6 @@
 
 === install --output json records a per-agent error category
+
 >>> [CLI] aitools install --skills-only --scope=project --agents=claude-code,cursor --output json
 {
   "scope": "project",

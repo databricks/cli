@@ -1,5 +1,6 @@
 
 === The first deploy resolves status.url into the job parameter
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/url-ref-pg-data-api-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
@@ -25,6 +26,7 @@ Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === An in-place update of the Data API does not update the job that references status.url
+
 >>> update_file.py databricks.yml db_max_rows: 100 db_max_rows: 500
 
 >>> [CLI] bundle plan
@@ -47,6 +49,7 @@ Resources: 0 created, 1 changed, 0 deleted, 5 unchanged
 ]
 
 === Plan after update shows no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 

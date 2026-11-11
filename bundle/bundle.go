@@ -143,6 +143,10 @@ type Bundle struct {
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
 
+	// InGitRepo reports whether the bundle root is inside a git repository.
+	// Nil when git detection did not run or failed.
+	InGitRepo *bool
+
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
@@ -441,7 +445,7 @@ func (b *Bundle) SyncMode() config.SyncMode {
 	switch {
 	case b.Config.Workspace.SyncMode != "":
 		return b.Config.Workspace.SyncMode
-	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+	case b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.ImmutableFolder):
 		return config.SyncModeImmutable
 	case config.IsExplicitlyEnabled(sourceLinked):
 		return config.SyncModeInPlace

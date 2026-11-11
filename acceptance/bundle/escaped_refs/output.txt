@@ -1,5 +1,6 @@
 
 === Validate: escapes are still escaped in the config
+
 >>> [CLI] bundle validate -o json
 {
   "generic_config": "{\"source\": {\"path\": \"landing/$${p_folder}/$${source_file}_*.csv\"}, \"schema\": {\"columns\": [{\"name\": \"w_batch_id\", \"expression\": \"$${batch_id}\"}, {\"name\": \"w_business_dt\", \"expression\": \"cast('$${business_date[0..9]}' as date)\"}]}, \"target\": {\"table\": \"main.$${p_env_stg}.$${target_table}\"}}",
@@ -7,6 +8,7 @@
 }
 
 === Plan (json)
+
 >>> [CLI] bundle plan -o json
 
 === Deploy: payload sent to the jobs API

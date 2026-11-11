@@ -1,5 +1,6 @@
 
 === A malformed value is rejected instead of falling back to the default wait
+
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1m musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: invalid DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT="1m": expected a non-negative number of seconds
@@ -13,6 +14,7 @@ Error: invalid DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT="-5": expected a non-negative
 Files: 0 uploaded, 0 deleted
 
 === A valid value is accepted
+
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=60 [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.my_job

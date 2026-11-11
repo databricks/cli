@@ -14,6 +14,10 @@ from databricks.bundles.materialization_sets._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
+from databricks.bundles.materialization_sets._models.external_trigger import (
+    ExternalTrigger,
+    ExternalTriggerParam,
+)
 from databricks.bundles.materialization_sets._models.offline_store_config import (
     OfflineStoreConfig,
     OfflineStoreConfigParam,
@@ -59,6 +63,15 @@ class MaterializedFeature:
     cron_schedule_trigger: VariableOrOptional[CronSchedule] = None
     """
     A cron-based schedule trigger for batch materialization.
+    """
+
+    external_trigger: VariableOrOptional[ExternalTrigger] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A trigger that disables automatic materialization, including the initial run
+    at creation. Runs are instead triggered through the `TriggerMaterializationSet`
+    API. Supported only for batch materializations in a materialization set.
     """
 
     materialized_feature_id: VariableOrOptional[str] = None
@@ -130,6 +143,15 @@ class MaterializedFeatureDict(TypedDict, total=False):
     cron_schedule_trigger: VariableOrOptional[CronScheduleParam]
     """
     A cron-based schedule trigger for batch materialization.
+    """
+
+    external_trigger: VariableOrOptional[ExternalTriggerParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A trigger that disables automatic materialization, including the initial run
+    at creation. Runs are instead triggered through the `TriggerMaterializationSet`
+    API. Supported only for batch materializations in a materialization set.
     """
 
     materialized_feature_id: VariableOrOptional[str]

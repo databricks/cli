@@ -1,0 +1,18 @@
+trace $CLI pipelines test --help
+
+title "The command is experimental and off by default"
+(unset DATABRICKS_CLI_PIPELINES_TEST; trace musterr $CLI pipelines test --pipeline-id 1234)
+
+title "pytest arguments must be passed with --pytest-arg"
+trace musterr $CLI pipelines test --pipeline-id 1234 -k orders
+trace musterr $CLI pipelines test --pipeline-id 1234 -- -k orders
+
+title "Invalid --pytest-arg values fail before any request"
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=-x
+trace musterr $CLI pipelines test --pipeline-id 1234 --pytest-arg=""
+
+title "The pipeline ID must be a pipeline ID"
+trace musterr $CLI pipelines test --pipeline-id 1234
+
+title "JSON output is not supported"
+trace musterr $CLI pipelines test --pipeline-id 1234 -o json

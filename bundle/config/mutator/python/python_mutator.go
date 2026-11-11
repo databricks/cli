@@ -129,7 +129,7 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	}
 
 	// using reflect.DeepEquals in case we add more fields
-	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
+	pydabsEnabled := config.IsExplicitlyEnabled(experimental.PyDABs.Enabled)
 	experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
 

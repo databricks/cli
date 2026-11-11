@@ -798,7 +798,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return req.Workspace.SchemasDelete(req, req.Vars["full_name"])
 	})
 
 	// Grants:
@@ -826,7 +826,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+		return req.Workspace.CatalogsDelete(req, req.Vars["name"])
 	})
 
 	// External Locations:
@@ -955,6 +955,17 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
 		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
+	})
+
+	// Feature Engineering feature specs:
+	server.Handle("POST", "/api/2.0/feature-engineering/feature-specs", func(req Request) any {
+		return req.Workspace.FeatureSpecsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.FeatureSpecs, req.Vars["name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return req.Workspace.FeatureSpecsDelete(req.Vars["name"])
 	})
 
 	// Model Provider Services (AI Gateway):

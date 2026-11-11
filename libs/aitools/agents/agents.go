@@ -56,12 +56,13 @@ type Agent struct {
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
-	// pluginVersion reads the installed databricks plugin version from the
+	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
-	// DatabricksPluginVersion reports no version. New agents extend support by
-	// providing their own reader here.
-	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
+	// DatabricksPluginVersion reports no version and DatabricksTooling falls
+	// back to the CLI install state. New agents extend support by providing
+	// their own reader here.
+	pluginInstalls func(ctx context.Context, a *Agent) ([]pluginInstall, bool)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
@@ -179,7 +180,7 @@ var Registry = []*Agent{
 		ProjectConfigDir:     ".claude",
 		Binary:               "claude",
 		Plugin:               claudePlugin(),
-		pluginVersion:        claudePluginVersion,
+		pluginInstalls:       claudePluginInstalls,
 	},
 	{
 		Name:        NameCursor,
