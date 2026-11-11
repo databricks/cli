@@ -1,17 +1,19 @@
 
+=== Relative test paths resolve to the deployed workspace paths
+
 >>> [CLI] bundle validate -o json
 {
   "environment": {
     "dependencies": [
-      "-e .[test]",
-      "-r ./tests/requirements.txt",
+      "-e /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files[test]",
+      "-r /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/requirements.txt",
       "./dist/*.whl"
     ]
   },
   "sources": [
     {
       "glob": {
-        "include": "./tests/**"
+        "include": "/Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default/files/tests/**"
       }
     }
   ]
