@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -47,16 +48,27 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		}
 	}
 
-	// The real API rejects an empty source_code_path in the UpdateApp body (#6401: the CLI
-	// sent "source_code_path": "" and got a 400). A non-empty value is accepted.
+	// The real API rejects source_code_path on UpdateApp both in the update mask
+	// (production returns 400 INVALID_PARAMETER_VALUE "Invalid update mask", see
+	// https://github.com/databricks/cli/pull/6399) and in the body at any value (#6401:
+	// the CLI sent "source_code_path": "" and got a 400).
 	if updateReq.App != nil {
+		if slices.Contains(strings.Split(updateReq.UpdateMask, ","), "source_code_path") {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "Invalid update mask: source_code_path cannot be updated.",
+				},
+			}
+		}
 		var rawBody struct {
 			App json.RawMessage `json:"app"`
 		}
 		if err := json.Unmarshal(req.Body, &rawBody); err == nil {
 			var appFields map[string]json.RawMessage
 			if err := json.Unmarshal(rawBody.App, &appFields); err == nil {
-				if sourceCodePath, ok := appFields["source_code_path"]; ok && string(sourceCodePath) == `""` {
+				if _, ok := appFields["source_code_path"]; ok {
 					return Response{
 						StatusCode: http.StatusBadRequest,
 						Body: map[string]string{

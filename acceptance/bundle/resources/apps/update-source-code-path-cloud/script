@@ -11,7 +11,7 @@ trace errcode $CLI bundle deploy
 trace print_requests.py //apps
 rm -f out.requests.txt
 
-title "Update an existing app with a new non-empty source_code_path"
+title "Change source_code_path on an existing app: no UpdateApp request is sent"
 trace update_file.py databricks.yml "source_code_path: ./app" "source_code_path: ./app2"
 trace errcode $CLI bundle deploy
 trace print_requests.py //apps

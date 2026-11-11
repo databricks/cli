@@ -99,20 +99,19 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	if app.ActiveDeployment != nil {
 		// config (command/env) is not part of apps.App, so it is read back from the
 		// active deployment for drift detection. source_code_path and git_source are
-		// sent on Create/Update and classified input_only, so their remote value is
-		// ignored (see resources.generated.yml) and does not need populating here.
+		// classified input_only, so their remote value is ignored (see
+		// apps.generated.yml) and does not need populating here.
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
 	return remote, nil
 }
 
-// appRequestBody returns config.App for the Create/Update request. An empty source_code_path
+// appRequestBody returns app for the Create/Update request body. An empty source_code_path
 // is never sent: the SDK's JSON unmarshal (used when loading the plan) adds every present
 // basic-type field to ForceSendFields, which would otherwise force "source_code_path": ""
 // into the body, and the API rejects that (see #6401, fixed in #6404). ForceSendFields is
 // cloned so the plan entry is not modified.
-func appRequestBody(config *AppState) apps.App {
-	app := config.App
+func appRequestBody(app apps.App) apps.App {
 	if app.SourceCodePath == "" {
 		app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
 			return s == "SourceCodePath"
@@ -121,12 +120,22 @@ func appRequestBody(config *AppState) apps.App {
 	return app
 }
 
+// appUpdateBody returns config.App for the Update request. UpdateApp rejects source_code_path
+// (400 INVALID_PARAMETER_VALUE: invalid update mask), so it is sent on Create only and is not
+// in UpdateMaskFields; a changed source_code_path reaches the app through the Deploy API
+// (see manageLifecycle). git_source is accepted on Update and stays in the body.
+func appUpdateBody(config *AppState) apps.App {
+	app := config.App
+	app.SourceCodePath = ""
+	return appRequestBody(app)
+}
+
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
-		App:             appRequestBody(config),
+		App:             appRequestBody(config.App),
 		NoCompute:       noCompute,
 		ForceSendFields: nil,
 	}
@@ -162,6 +171,8 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
+// UpdateMaskFields lists the App fields UpdateApp may change. source_code_path is absent
+// because the API rejects it in the update mask; see appUpdateBody.
 var UpdateMaskFields = []string{
 	"description",
 	"budget_policy_id",
@@ -173,28 +184,20 @@ var UpdateMaskFields = []string{
 	"compute_max_instances",
 	"git_repository",
 	"git_source",
-	"source_code_path",
 	"telemetry_export_destinations",
 }
 
-// updateMaskFor returns the update mask for the request body. source_code_path is left out
-// when the body omits it, so the update never asks the API to change a field it was not sent.
-func updateMaskFor(app apps.App) string {
-	fields := slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(s string) bool {
-		return s == "source_code_path" && app.SourceCodePath == ""
-	})
-	return strings.Join(fields, ",")
-}
+var updateMask = strings.Join(UpdateMaskFields, ",")
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
-	// source_code_path and git_source are sent as part of the App body (in the update
-	// mask). Only config (command/env) is deploy-only and applied via manageLifecycle.
+	// git_source is sent as part of the App body (in the update mask). source_code_path and
+	// config (command/env) are deploy-only on update and applied via manageLifecycle.
 	if hasAppChanges(entry) {
-		app := appRequestBody(config)
+		app := appUpdateBody(config)
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: updateMaskFor(app),
+			UpdateMask: updateMask,
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
@@ -235,9 +238,9 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 				return err
 			}
 		}
-		// source_code_path and git_source are also sent on Create/Update (so they are
-		// recorded on the app and drift-detected), but the Deploy API requires a
-		// deployment source, so the deployment carries them too.
+		// source_code_path is recorded on the app at Create and git_source at Create/Update,
+		// but the Deploy API requires a deployment source, so the deployment carries them
+		// too. This is also the only way a changed source_code_path reaches the app.
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
 			return err
@@ -258,11 +261,11 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	return nil
 }
 
-// hasAppChanges reports whether the plan entry contains any Update changes
-// to fields that belong to the App Update API. config (command/env) is deploy-only
-// and applied via manageLifecycle; lifecycle drives compute start/stop.
+// hasAppChanges reports whether the plan entry contains any Update changes to fields that
+// belong to the App Update API. source_code_path and config (command/env) are deploy-only
+// on update and applied via manageLifecycle; lifecycle drives compute start/stop.
 func hasAppChanges(entry *PlanEntry) bool {
-	return entry.Changes.HasChangeExcept("config", "lifecycle", "lifecycle.started")
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "lifecycle", "lifecycle.started")
 }
 
 // OverrideChangeDesc skips drift on config (command/env) while the app has no active

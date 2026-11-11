@@ -1,5 +1,6 @@
-# Runs against a real workspace to establish whether UpdateApp accepts a non-empty
-# source_code_path. Locally the fake server enforces the rule from #6404; see libs/testserver/apps.go.
+# Runs against a real workspace: production rejects source_code_path in the UpdateApp mask
+# (400 INVALID_PARAMETER_VALUE), so changing it on an existing app must not call UpdateApp.
+# Locally the fake server enforces the same rule; see libs/testserver/apps.go.
 Cloud = true
 RecordRequests = true
 
