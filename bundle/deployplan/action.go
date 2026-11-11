@@ -12,8 +12,8 @@ type Action struct {
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
 	// resource no longer exists remotely.
 	Gone bool
-	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
-	// because the resource implements no DoDelete (deleting it has no backend effect).
+	// StateOnly mirrors PlanEntry.StateOnly: the delete step has no backend effect
+	// because the resource implements no DoDelete, including during a recreate.
 	StateOnly bool
 	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
 	// reached this resource, Applied means its operation completed.
@@ -31,7 +31,7 @@ func (a Action) String() string {
 // from the resource counts, and need no destructive-action approval. See the same
 // method on PlanEntry.
 func (a Action) IsStateOnlyDelete() bool {
-	return a.Gone || a.StateOnly
+	return a.ActionType == Delete && (a.Gone || a.StateOnly)
 }
 
 func (a Action) IsChildResource() bool {

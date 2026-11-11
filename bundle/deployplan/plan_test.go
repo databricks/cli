@@ -66,6 +66,16 @@ func TestHasChange(t *testing.T) {
 	}
 }
 
+func TestCountActionsRecreateWithoutDelete(t *testing.T) {
+	entry := &deployplan.PlanEntry{Action: deployplan.Recreate, StateOnly: true}
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.job_runs.a": entry}}
+	assert.Equal(t, deployplan.ActionCounts{Create: 1}, plan.CountActions())
+	// A recreate still creates a resource, so it must remain visible in plan output
+	// and approval prompts even though its delete step only cleans up state.
+	assert.False(t, entry.IsStateOnlyDelete())
+	assert.False(t, plan.GetActions()[0].IsStateOnlyDelete())
+}
+
 func TestCountApplied(t *testing.T) {
 	tests := []struct {
 		name  string

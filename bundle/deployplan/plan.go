@@ -43,7 +43,7 @@ type Plan struct {
 }
 
 // ActionCounts summarizes a plan's actions by category. A recreate counts as
-// both a create and a delete, matching how plan and deploy report changes.
+// a create and, if the resource has a backend delete operation, a delete.
 type ActionCounts struct {
 	Create    int
 	Change    int
@@ -71,8 +71,9 @@ func (p *Plan) CountActions() ActionCounts {
 			}
 			c.Delete++
 		case Recreate:
-			// A recreate counts as both a delete and a create.
-			c.Delete++
+			if !entry.StateOnly {
+				c.Delete++
+			}
 			c.Create++
 		case Skip, Undefined:
 			c.Unchanged++
@@ -181,12 +182,12 @@ type PlanEntry struct {
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
 	Gone bool `json:"gone,omitempty"`
-	// StateOnly is set on Delete entries for resources that implement no DoDelete:
-	// deleting them has no backend effect. Like Gone, applying such an entry only
-	// removes it from the state and it is excluded from destructive-action prompts,
-	// textual plan output and the deleted count — but unlike Gone it is a property of
-	// the resource type, not of the current remote state, so planning skips the
-	// remote read that Gone detection needs.
+	// StateOnly is set on Delete and Recreate entries for resources with no DoDelete:
+	// their delete step has no backend effect. A Delete only removes state and is
+	// excluded from destructive-action prompts, textual plan output and counts.
+	// A Recreate still creates a resource and remains visible, but counts no deletion.
+	// Unlike Gone, this is a property of the resource type, not remote state, so
+	// planning a Delete skips the remote read that Gone detection needs.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
@@ -210,7 +211,7 @@ type PlanEntry struct {
 // delete operation (StateOnly). Such deletes are omitted from human output, excluded
 // from the resource counts, and need no destructive-action approval.
 func (e *PlanEntry) IsStateOnlyDelete() bool {
-	return e.Gone || e.StateOnly
+	return e.Action == Delete && (e.Gone || e.StateOnly)
 }
 
 type DependsOnEntry struct {

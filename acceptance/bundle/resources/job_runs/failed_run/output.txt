@@ -28,6 +28,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed
     }
   ],
   "action": "recreate",
+  "state_only": true,
   "new_state": {
     "value": {
       "job_id": [MY_JOB_ID],

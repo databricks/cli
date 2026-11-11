@@ -153,6 +153,8 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
+	// Older saved plans omit StateOnly on recreates, so use the adapter's capability
+	// when recording the actual outcome.
 	entry.RecreateDeleted = d.Adapter.HasDoDelete() && !managedByParent
 
 	return d.Create(ctx, db, newState)

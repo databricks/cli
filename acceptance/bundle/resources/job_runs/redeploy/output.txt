@@ -55,6 +55,7 @@ Resources:
     }
   ],
   "action": "recreate",
+  "state_only": true,
   "new_state": {
     "value": {
       "job_id": [MY_JOB_ID],
