@@ -18,12 +18,12 @@ EXTRA_REQUIRED_FIELDS: dict[str, list[str]] = {
     "jobs.SparkJarTask": ["main_class_name"],
 }
 
-# Burn-down list of upstream property descriptions that aren't valid
+# Burn-down lists of upstream descriptions that aren't valid
 # reStructuredText and break the Sphinx docs build. We can't render them and don't
 # want to maintain a hand-copied RST version, so drop the description entirely
-# until the proto comment is fixed upstream. Keyed by schema name, then the field
-# names whose descriptions to drop. drop_field_descriptions flags entries that
-# upstream has already fixed (the description is now empty).
+# until the proto comment is fixed upstream. Field descriptions are keyed by schema
+# name, then the field names whose descriptions to drop. drop_descriptions flags
+# entries that upstream has already fixed (the description is now empty).
 #
 # jobs.DeploymentSpec.command_path: embeds a Markdown ```bash code fence, which
 # docutils parses as an unterminated inline literal.
@@ -33,6 +33,8 @@ DROP_FIELD_DESCRIPTIONS: dict[str, list[str]] = {
     "jobs.DeploymentSpec": ["command_path"],
     "compute.InstancePoolGcpAttributes": ["gcp_availability"],
 }
+
+DROP_SCHEMA_DESCRIPTIONS: set[str] = {"jobs.SqlConditionTriggerMode"}
 
 
 def add_extra_required_fields(schemas: dict[str, Schema]):
@@ -57,14 +59,23 @@ def add_extra_required_fields(schemas: dict[str, Schema]):
     return output
 
 
-def drop_field_descriptions(schemas: dict[str, Schema]):
-    if missing := DROP_FIELD_DESCRIPTIONS.keys() - schemas.keys():
-        raise ValueError(
-            f"Cannot drop field descriptions for unknown schemas: {missing}"
-        )
+def drop_descriptions(schemas: dict[str, Schema]):
+    if (
+        missing := (DROP_FIELD_DESCRIPTIONS.keys() | DROP_SCHEMA_DESCRIPTIONS)
+        - schemas.keys()
+    ):
+        raise ValueError(f"Cannot drop descriptions for unknown schemas: {missing}")
 
     output = {}
     for name, schema in schemas.items():
+        if name in DROP_SCHEMA_DESCRIPTIONS:
+            if not schema.description:
+                raise ValueError(
+                    f"Schema description drop for {name} is a no-op; "
+                    "the upstream description is already empty, so remove the entry"
+                )
+            schema = replace(schema, description=None)
+
         if drop_fields := DROP_FIELD_DESCRIPTIONS.get(name):
             if unknown := set(drop_fields) - schema.properties.keys():
                 raise ValueError(

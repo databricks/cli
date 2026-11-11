@@ -1,84 +1,233 @@
-sh: 1: envsubst: not found
 
 === resources.jobs.rname ===
-Error: unable to define default workspace root: bundle name not defined
-
-null
-sh: 1: envsubst: not found
+{
+  "jobs": {
+    "rname": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+}
 
 === resources.pipelines.rname ===
-Error: unable to define default workspace root: bundle name not defined
-
-null
-sh: 1: envsubst: not found
+{
+  "pipelines": {
+    "rname": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/state/metadata.json"
+      },
+      "edition": "ADVANCED"
+    }
+  }
+}
 
 === resources.models.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: required field "name" is not set
+  at resources.models.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+{
+  "models": {
+    "rname": {}
+  }
+}
 
 === resources.experiments.rname ===
-Error: unable to define default workspace root: bundle name not defined
-
-null
-sh: 1: envsubst: not found
+{
+  "experiments": {
+    "rname": {
+      "name": "."
+    }
+  }
+}
 
 === resources.registered_models.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: unknown field: permissions
+  at resources.registered_models.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+{
+  "registered_models": {
+    "rname": {}
+  }
+}
 
 === resources.quality_monitors.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: unknown field: permissions
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+Warning: required field "assets_dir" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+Warning: required field "output_schema_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+Warning: required field "table_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:7:7
+
+{
+  "quality_monitors": {
+    "rname": {}
+  }
+}
 
 === resources.schemas.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: unknown field: permissions
+  at resources.schemas.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+Warning: required field "catalog_name" is not set
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
+Warning: required field "name" is not set
+  at resources.schemas.rname
+  in databricks.yml:7:7
+
+{
+  "schemas": {
+    "rname": {}
+  }
+}
 
 === resources.volumes.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: unknown field: permissions
+  at resources.volumes.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+Warning: required field "catalog_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+Warning: required field "name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+Warning: required field "schema_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:7:7
+
+{
+  "volumes": {
+    "rname": {
+      "volume_path": "/Volumes///",
+      "volume_type": "MANAGED"
+    }
+  }
+}
 
 === resources.clusters.rname ===
-Error: unable to define default workspace root: bundle name not defined
-
-null
-sh: 1: envsubst: not found
+{
+  "clusters": {
+    "rname": {
+      "autotermination_minutes": 60
+    }
+  }
+}
 
 === resources.dashboards.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Error: dashboard display_name is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+Error: dashboard warehouse_id is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
+{
+  "dashboards": {
+    "rname": {
+      "embed_credentials": false,
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources"
+    }
+  }
+}
 
 === resources.apps.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: required field "name" is not set
+  at resources.apps.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+Error: Missing app source code path or git source
+  in databricks.yml:7:7
+
+app resource 'rname' should have either source_code_path or git_source field
+
+{
+  "apps": {
+    "rname": {
+      "description": ""
+    }
+  }
+}
 
 === resources.sql_warehouses.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Error: sql_warehouse name is required
+  at resources.sql_warehouses.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+{
+  "sql_warehouses": {
+    "rname": {
+      "auto_stop_mins": 120,
+      "enable_photon": true,
+      "max_num_clusters": 1,
+      "spot_instance_policy": "COST_OPTIMIZED"
+    }
+  }
+}
 
 === resources.secret_scopes.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: required field "name" is not set
+  at resources.secret_scopes.rname
+  in databricks.yml:7:7
 
-null
-sh: 1: envsubst: not found
+{
+  "secret_scopes": {
+    "rname": {}
+  }
+}
 
 === resources.alerts.rname ===
-Error: unable to define default workspace root: bundle name not defined
+Warning: required field "display_name" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
 
-null
+Warning: required field "evaluation" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "query_text" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "schedule" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "warehouse_id" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+{
+  "alerts": {
+    "rname": {
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources"
+    }
+  }
+}
