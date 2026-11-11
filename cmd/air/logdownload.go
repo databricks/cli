@@ -26,6 +26,16 @@ const downloadConcurrency = 8
 // input, so the caller reports it as an invalid argument rather than a failure.
 var errNodeOutOfRange = errors.New("invalid --node")
 
+func validateNodeIndex(node, numNodes int) error {
+	if node < numNodes {
+		return nil
+	}
+	if numNodes == 1 {
+		return fmt.Errorf("%w %d: this run has 1 node (valid node index: 0)", errNodeOutOfRange, node)
+	}
+	return fmt.Errorf("%w %d: this run has %d nodes (valid node indices: 0 through %d)", errNodeOutOfRange, node, numNodes, numNodes-1)
+}
+
 // resolveNodeCount returns how many nodes a run used.
 func resolveNodeCount(run *jobs.Run) (int, error) {
 	accelType, count := jobCompute(run)
@@ -68,8 +78,8 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	nodes := make([]int, 0, numNodes)
 	if req.nodeSet {
-		if req.node >= numNodes {
-			return false, fmt.Errorf("%w %d: run has %d node(s), indexed 0 to %d", errNodeOutOfRange, req.node, numNodes, numNodes-1)
+		if err := validateNodeIndex(req.node, numNodes); err != nil {
+			return false, err
 		}
 		nodes = append(nodes, req.node)
 	} else {

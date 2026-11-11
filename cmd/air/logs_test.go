@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -101,6 +102,60 @@ func TestLogsFlagValidation(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantMsg)
 		})
 	}
+}
+
+func invalidNodeLogsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{
+				"run_id": 5,
+				"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+				"tasks": [{
+					"run_id": 456,
+					"ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]}
+				}]
+			}`))
+		case strings.Contains(r.URL.Path, "/logs"):
+			t.Errorf("logs endpoint called for an invalid node index")
+		default:
+			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestLogsRejectsOutOfRangeNode(t *testing.T) {
+	srv := invalidNodeLogsServer(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 1, nodeSet: true, attempt: -1, tailLines: -1})
+	require.Error(t, err)
+	assert.Equal(t, "invalid --node 1: this run has 1 node (valid node index: 0)", err.Error())
+}
+
+func TestLogsRejectsOutOfRangeNodeJSON(t *testing.T) {
+	srv := invalidNodeLogsServer(t)
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputJSON)
+	cmd.SetContext(ctx)
+
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 1, nodeSet: true, attempt: -1, tailLines: -1, jsonOutput: true})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, jsonError{
+		Code:    "INVALID_ARGS",
+		Kind:    "PERMANENT",
+		Message: "invalid --node 1: this run has 1 node (valid node index: 0)",
+	}, got.Error)
 }
 
 // completedRunLogsServer serves the auth probe, a terminal runs/get, and a
