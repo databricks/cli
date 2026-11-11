@@ -6,8 +6,9 @@
       "label": "${resources.schemas.grants_schema.id}"
     }
   ],
-  "action": "skip",
+  "action": "update",
   "import": true,
+  "state_only": true,
   "new_state": {
     "value": {
       "securable_type": "schema",
