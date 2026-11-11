@@ -16,17 +16,19 @@ type PipelineOptions struct {
 	// Perform a full graph update.
 	RefreshAll bool
 
-	// List of tables or source files to update.
+	// Refresh holds CLI selectors before resolution and table names afterward.
 	Refresh []string
 
+	// Workspace file paths resolved from Refresh.
 	RefreshByPath []string
 
 	// Perform a full graph reset and recompute.
 	FullRefreshAll bool
 
-	// List of tables or source files to reset and recompute.
+	// FullRefresh holds CLI selectors before resolution and table names afterward.
 	FullRefresh []string
 
+	// Workspace file paths resolved from FullRefresh.
 	FullRefreshByPath []string
 
 	// Perform an update to validate graph correctness.
@@ -38,6 +40,25 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 	o.DefineRefreshFlags(fs)
 	fs.BoolVar(&o.ValidateOnly, "validate-only", false, "Perform an update to validate graph correctness.")
 }
+
+// PipelineRefreshHelp describes table and file refresh selectors.
+const PipelineRefreshHelp = `For pipeline runs, --refresh and --full-refresh accept:
+  Tables: orders or table:orders
+  Source files: file:./src/pipeline.py (file: is required)
+
+Put multiple selectors in quotes, or repeat the flag:
+  --refresh "orders payments"
+  --refresh "file:./src/a.py file:./src/b.py"
+  --refresh table:orders --refresh table:payments
+
+For a path containing spaces:
+  --refresh 'file:` + "`./src/my pipeline.py`" + `'
+
+Each refresh mode accepts either tables or files.
+Local file paths are relative to the current directory and map to deployed files.
+Absolute /Workspace/ paths must match the deployed file path.
+Deploy local changes before running.
+With --restart, file selectors require a triggered pipeline.`
 
 func (o *PipelineOptions) DefineRefreshFlags(fs *flag.FlagSet) {
 	fs.Var((*refreshSelectionFlag)(&o.Refresh), "refresh", "Space-separated table:<name> or file:<path> selectors to update. Quote lists or repeat the flag.")

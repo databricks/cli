@@ -32,7 +32,10 @@ For a path containing spaces:
   --refresh 'file:`./src/my pipeline.py`'
 
 Each refresh mode accepts either tables or files.
-Deploy local file changes before running.
+Local file paths are relative to the current directory and map to deployed files.
+Absolute /Workspace/ paths must match the deployed file path.
+Deploy local changes before running.
+With --restart, file selectors require a triggered pipeline.
 
 ---------------------------------------------------------
 

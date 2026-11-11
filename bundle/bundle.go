@@ -410,7 +410,8 @@ func (b *Bundle) GetSyncFiles(ctx context.Context) ([]fileset.File, error) {
 	return list.Files(ctx)
 }
 
-// RemoteFilePath returns the initialized sync destination.
+// RemoteFilePath returns the workspace root for bundle files:
+// the sync root for in-place deployments, otherwise workspace.file_path.
 func (b *Bundle) RemoteFilePath() string {
 	if b.IsSourceLinkedDeployment() {
 		return filepath.ToSlash(b.SyncRootPath)

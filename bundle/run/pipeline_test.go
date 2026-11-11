@@ -170,11 +170,12 @@ func TestPipelineRunnerRestartFileSelections(t *testing.T) {
 		getErr     error
 		err        string
 	}{
-		{name: "continuous refresh", continuous: true, err: "file selectors are not supported for continuous pipelines"},
-		{name: "continuous full refresh", continuous: true, full: true, err: "file selectors are not supported for continuous pipelines"},
+		{name: "continuous refresh", continuous: true, err: "file selectors with --restart require a triggered pipeline"},
+		{name: "continuous full refresh", continuous: true, full: true, err: "file selectors with --restart require a triggered pipeline"},
 		{name: "triggered refresh"},
 		{name: "triggered full refresh", full: true},
-		{name: "wildcard rollout is checked by backend", continuous: true, full: true, wildcard: true},
+		{name: "continuous file selection with wildcard", continuous: true, full: true, wildcard: true, err: "file selectors with --restart require a triggered pipeline"},
+		{name: "triggered file selection with wildcard", full: true, wildcard: true},
 		{name: "cannot read deployed pipeline", getErr: errors.New("cannot read pipeline"), err: "cannot read pipeline"},
 	}
 	for _, tt := range tests {
@@ -185,11 +186,9 @@ func TestPipelineRunnerRestartFileSelections(t *testing.T) {
 			m.WorkspaceClient.Config = &sdk_config.Config{Host: "https://test.test"}
 			b.SetWorkpaceClient(m.WorkspaceClient)
 			api := m.GetMockPipelinesAPI()
-			if !tt.wildcard {
-				api.EXPECT().GetByPipelineId(mock.Anything, "123").Return(&pipelines.GetPipelineResponse{
-					Spec: &pipelines.PipelineSpec{Continuous: tt.continuous}, //nolint:staticcheck // Exercise the supported legacy pipeline mode.
-				}, tt.getErr).Once()
-			}
+			api.EXPECT().GetByPipelineId(mock.Anything, "123").Return(&pipelines.GetPipelineResponse{
+				Spec: &pipelines.PipelineSpec{Continuous: tt.continuous}, //nolint:staticcheck // Exercise the supported legacy pipeline mode.
+			}, tt.getErr).Once()
 			opts := &Options{NoWait: true}
 			if tt.full {
 				opts.Pipeline.FullRefreshByPath = []string{"/Workspace/Shared/orders.py"}

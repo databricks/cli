@@ -113,6 +113,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		if err != nil {
 			return nil, err
 		}
+		// Legacy mode takes raw names; default publishing mode parses SQL identifiers.
 		// Unset modes follow the backend's schema-based legacy detection.
 		if pipeline.EffectivePublishingMode == pipelines.PublishingModeLegacyPublishingMode ||
 			(pipeline.EffectivePublishingMode == "" && pipeline.Spec.Schema == "") {
@@ -204,13 +205,14 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 
 func (r *pipelineRunner) Restart(ctx context.Context, opts *Options) (output.RunOutput, error) {
 	hasFiles := len(opts.Pipeline.RefreshByPath) > 0 || len(opts.Pipeline.FullRefreshByPath) > 0
-	if hasFiles && !slices.Contains(opts.Pipeline.Refresh, "*") {
+	// Check before stopping the active update.
+	if hasFiles {
 		pipeline, err := r.bundle.WorkspaceClient(ctx).Pipelines.GetByPipelineId(ctx, r.pipeline.ID)
 		if err != nil {
 			return nil, err
 		}
 		if pipeline.Spec.Continuous { //nolint:staticcheck // Direct pipeline runs honor this setting.
-			return nil, errors.New("file selectors are not supported for continuous pipelines; use a triggered pipeline")
+			return nil, errors.New("file selectors with --restart require a triggered pipeline")
 		}
 	}
 

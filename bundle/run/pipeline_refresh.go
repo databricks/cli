@@ -82,7 +82,7 @@ func unquoteRefreshSelector(value string) string {
 	return result.String()
 }
 
-// ResolveRefreshSelectors resolves source files to workspace paths.
+// ResolveRefreshSelectors separates table names and workspace file paths, then validates flag combinations.
 func (o *PipelineOptions) ResolveRefreshSelectors(ctx context.Context, b *bundle.Bundle) error {
 	r := refreshSelectorResolver{bundle: b}
 	var err error

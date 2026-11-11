@@ -9,6 +9,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSP
 View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_refresh_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
 === Initialize all tables with --full-refresh-all
+
 >>> run_pipeline --full-refresh-all
 • All tables are fully refreshed
 
@@ -23,6 +24,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Running pipeline with --refresh flag and specific tables
+
 >>> run_pipeline --refresh table1 table2
 • Refreshed [table1, table2]
 
@@ -40,6 +42,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Running pipeline with --full-refresh flag and specific tables
+
 >>> run_pipeline --full-refresh table1 table2
 • Full refreshed [table1, table2]
 
@@ -57,6 +60,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
+
 >>> run_pipeline --full-refresh table:table1 table:table2 --refresh table:table3 table:table4
 • Refreshed [table3, table4]
 • Full refreshed [table1, table2]
@@ -79,6 +83,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing tables and fully refreshing a source file together
+
 >>> run_pipeline --refresh table:table3 table:table4 --full-refresh file:pipeline_file.py
 • Refreshed [table3, table4]
 • Full refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
@@ -100,6 +105,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing tables defined in a source file
+
 >>> run_pipeline --refresh file:pipeline_file.py
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
 
@@ -116,6 +122,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Fully refreshing tables defined in a source file
+
 >>> run_pipeline --full-refresh file:pipeline_file.py
 • Full refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
 
@@ -132,6 +139,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing a source notebook
+
 >>> run_pipeline --refresh file:src/pipeline_notebook.sql
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook]
 
@@ -148,6 +156,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing an absolute workspace path
+
 >>> run_pipeline --refresh file:/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
 
@@ -164,6 +173,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing from a subdirectory
+
 >>> withdir src run_pipeline --refresh file:../pipeline_file.py
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
 
@@ -180,6 +190,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Bundle run supports both file flags
+
 >>> print_requests.py //pipelines
 {
   "method": "POST",
@@ -196,6 +207,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Refreshing a source file and fully refreshing tables together
+
 >>> run_pipeline --refresh file:pipeline_file.py --full-refresh table:table3 table:table4
 • Full refreshed [table3, table4]
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
@@ -217,6 +229,7 @@ View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_r
 }
 
 === Rejecting missing sources and incompatible refresh modes
+
 >>> musterr [CLI] pipelines run --refresh table: --restart --no-wait
 Error: invalid --refresh: table: requires a table name
 
@@ -235,6 +248,7 @@ Error: invalid --full-refresh: source file "./missing.sql" not found; use an exi
 >>> print_requests.py //pipelines
 
 === Rejecting mixed selectors before restarting the pipeline
+
 >>> musterr [CLI] pipelines run --refresh table:table1 file:pipeline_file.py --restart --no-wait
 Error: cannot mix table names and source files in --refresh; use only table names or only source files
 
@@ -249,6 +263,7 @@ Error: cannot mix table names and source files in --refresh; use only table name
 >>> print_requests.py //pipelines
 
 === Repeated table selectors and backtick quoting
+
 >>> run_pipeline --refresh table:table1 --refresh table2
 • Refreshed [table1, table2]
 
@@ -282,6 +297,7 @@ Error: cannot mix table names and source files in --refresh; use only table name
 }
 
 === Selecting multiple source files
+
 >>> run_pipeline --refresh file:`pipeline_file.py` file:src/pipeline_notebook.sql
 • Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py, /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook]
 
@@ -311,7 +327,8 @@ Error: cannot mix table names and source files in --refresh; use only table name
   }
 }
 
-=== Rejecting invalid selector syntax before restart>>> musterr [CLI] pipelines run --refresh table1,table2 --restart --no-wait
+=== Rejecting invalid selector syntax before restart
+>>> musterr [CLI] pipelines run --refresh table1,table2 --restart --no-wait
 Error: invalid argument "table1,table2" for "--refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas
 >>> musterr [CLI] pipelines run --full-refresh table1,table2 --restart --no-wait
 Error: invalid argument "table1,table2" for "--full-refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas

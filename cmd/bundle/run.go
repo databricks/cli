@@ -108,20 +108,7 @@ parameter names.
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
 
-For pipeline runs, --refresh and --full-refresh accept:
-  Tables: orders or table:orders
-  Source files: file:./src/pipeline.py (file: is required)
-
-Put multiple selectors in quotes, or repeat the flag:
-  --refresh "orders payments"
-  --refresh "file:./src/a.py file:./src/b.py"
-  --refresh table:orders --refresh table:payments
-
-For a path containing spaces:
-  --refresh 'file:` + "`./src/my pipeline.py`" + `'
-
-Each refresh mode accepts either tables or files.
-Deploy local file changes before running.
+` + run.PipelineRefreshHelp + `
 
 ---------------------------------------------------------
 
