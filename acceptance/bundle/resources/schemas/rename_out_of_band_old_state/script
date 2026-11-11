@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # Drop the remote_state fields that differ between clouds or from the test server.
 plan() {
-    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+    trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
 }
 
 recorded_ids() {
@@ -36,7 +36,7 @@ recorded_ids
 
 title "A deploy with nothing else to change records them, with a state-only update"
 plan
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 recorded_ids
 
@@ -45,7 +45,7 @@ trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE
 print_requests.py //unity-catalog &> LOG.rename_requests
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 plan
-trace $CLI bundle deploy
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
 trace print_requests.py //unity-catalog
 
 title "Redeploy is a no-op"

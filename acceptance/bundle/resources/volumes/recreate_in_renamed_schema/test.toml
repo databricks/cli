@@ -1,3 +1,4 @@
+EnvMatrix.READPLAN = ["", "1"]
 
 # Local only: an EXTERNAL volume needs an external location, which the test workspaces do not have.
 # volumes/move_from_renamed_schema covers the same recreate on a real workspace.
@@ -7,3 +8,9 @@ Ignore = [
     ".gitignore",
     "databricks.yml",
 ]
+
+# When READPLAN=1, "bundle deploy" is called as "bundle deploy --plan .databricks/plan.json".
+# Normalize so both variants produce identical output.
+[[Repls]]
+Old = ' --plan .databricks/plan.json'
+New = ''

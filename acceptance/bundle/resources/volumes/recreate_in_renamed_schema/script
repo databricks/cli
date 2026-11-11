@@ -15,8 +15,8 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 title "Rename the schema and change the volume's type in one deploy. The type change recreates the volume"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 trace update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
-trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at
-trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py created_at updated_at
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json) --auto-approve
 trace print_requests.py //unity-catalog
 
 title "Redeploy is a no-op"
