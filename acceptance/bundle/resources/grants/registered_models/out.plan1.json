@@ -26,7 +26,7 @@
           "label": "${resources.registered_models.my_registered_model.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "securable_type": "function",

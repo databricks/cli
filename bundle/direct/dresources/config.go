@@ -62,10 +62,6 @@ type RemoteAdditionRule struct {
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
 type ResourceLifecycleConfig struct {
-	// ImportOnPlan adopts existing resources on the first deployment using IDFromState.
-	// Deriving an ID alone does not opt a resource into adoption.
-	ImportOnPlan bool `yaml:"import_on_plan,omitempty"`
-
 	// IgnoreRemoteChanges: field patterns where remote changes are ignored (output-only, policy-set).
 	IgnoreRemoteChanges []FieldRule `yaml:"ignore_remote_changes,omitempty"`
 
@@ -164,7 +160,6 @@ const (
 )
 
 var empty = ResourceLifecycleConfig{
-	ImportOnPlan:          false,
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
 	InternalIDField:       "",

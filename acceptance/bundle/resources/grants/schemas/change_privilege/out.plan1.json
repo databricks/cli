@@ -18,7 +18,7 @@
           "label": "${resources.schemas.grants_schema.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "securable_type": "schema",

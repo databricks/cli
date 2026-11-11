@@ -204,13 +204,6 @@ func TestGrantsIDFromState(t *testing.T) {
 	}
 }
 
-func TestImportOnPlanRequiresIDFromState(t *testing.T) {
-	adapter, err := NewAdapter((*ResourceJob)(nil), "jobs", nil)
-	require.NoError(t, err)
-	adapter.resourceConfig = &ResourceLifecycleConfig{ImportOnPlan: true}
-	assert.EqualError(t, adapter.validate(), "import_on_plan requires IDFromState")
-}
-
 func TestNormalizeAssignments(t *testing.T) {
 	tests := []struct {
 		name     string

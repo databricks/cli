@@ -1,16 +1,16 @@
 
 >>> [CLI] bundle plan
 create jobs.foo
-create jobs.foo.permissions
+update jobs.foo.permissions
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/test-bundle/files...
 Created jobs.foo
-Created jobs.foo.permissions
+Updated jobs.foo.permissions
 Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

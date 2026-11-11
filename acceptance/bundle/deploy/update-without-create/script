@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Plan updates for grants and permissions before their parents exist"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json > plan.json
+jq '.plan | with_entries(.value |= {action})' plan.json > out.actions.json
+trace print_state.py
+
+title "Create the parents and apply their dependent updates"
+trace $CLI bundle deploy $(readplanarg plan.json)
+replace_ids.py
+trace print_requests.py //api/2.0/permissions/jobs //unity-catalog/permissions --sort
+trace print_state.py | jq '.state | with_entries(select(.key | endswith(".permissions") or endswith(".grants")))'
+
+title "A second plan is unchanged"
+trace $CLI bundle plan
+
+title "Recreate a deleted parent and move its permissions to the new ID"
+job_id="$(read_id.py job)"
+trace $CLI jobs delete "$job_id"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json > plan.json
+trace $CLI bundle deploy $(readplanarg plan.json)
+replace_ids.py
+trace print_requests.py //api/2.0/permissions/jobs
+trace $CLI bundle plan

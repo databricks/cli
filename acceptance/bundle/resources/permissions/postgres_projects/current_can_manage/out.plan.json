@@ -12,17 +12,45 @@
       }
     },
     "resources.postgres_projects.foo.permissions": {
+      "id": "/database-[FOO_ID]",
       "depends_on": [
         {
           "node": "resources.postgres_projects.foo",
           "label": "${resources.postgres_projects.foo.project_id}"
         }
       ],
-      "action": "create",
+      "action": "update",
+      "import": true,
       "new_state": {
         "value": {
           "object_id": "/database-[FOO_ID]",
           "__embed__": [
+            {
+              "level": "CAN_USE",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "object_id": "/database-[FOO_ID]"
+      },
+      "changes": {
+        "": {
+          "action": "update",
+          "new": [
             {
               "level": "CAN_USE",
               "user_name": "viewer@example.com"

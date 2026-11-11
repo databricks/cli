@@ -32,13 +32,15 @@
       }
     },
     "resources.pipelines.foo.permissions": {
+      "id": "/pipelines/[FOO_ID]",
       "depends_on": [
         {
           "node": "resources.pipelines.foo",
           "label": "${resources.pipelines.foo.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
+      "import": true,
       "new_state": {
         "value": {
           "object_id": "/pipelines/[FOO_ID]",
@@ -56,6 +58,34 @@
               "user_name": "[USERNAME]"
             }
           ]
+        }
+      },
+      "remote_state": {
+        "object_id": "/pipelines/[FOO_ID]",
+        "__embed__": [
+          {
+            "level": "CAN_MANAGE",
+            "user_name": "viewer@example.com"
+          },
+          {
+            "level": "IS_OWNER",
+            "user_name": "[USERNAME]"
+          }
+        ]
+      },
+      "changes": {
+        "[group_name='data-team']": {
+          "action": "update",
+          "new": {
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
+          }
+        },
+        "[user_name='viewer@example.com'].level": {
+          "action": "update",
+          "old": "CAN_MANAGE",
+          "new": "CAN_VIEW",
+          "remote": "CAN_MANAGE"
         }
       }
     }

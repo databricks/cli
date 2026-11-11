@@ -299,8 +299,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
 		if !hasEntry || dbentry.ID == "" {
-			entry.Action = deployplan.Create
-			if !adapter.ResourceConfig().ImportOnPlan || hasUnresolvedIDField(adapter, sv) {
+			if adapter.HasDoCreate() {
+				entry.Action = deployplan.Create
+				return true
+			}
+			entry.Action = deployplan.Update
+			if hasUnresolvedIDField(adapter, sv) {
 				return true
 			}
 			id, err := adapter.IDFromState(sv.Value)
@@ -416,9 +420,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if remoteState == nil {
-			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
-			// because we know remote does not exist.
-			action = deployplan.Create
+			// A missing object is created again. Resources without creation update
+			// their parent instead, preserving any planned change to its ID.
+			action = deployplan.GetHigherAction(deployplan.Update, getMaxAction(entry.Changes))
+			if adapter.HasDoCreate() {
+				action = deployplan.Create
+			}
 		} else {
 			action = getMaxAction(entry.Changes)
 		}
@@ -1379,6 +1386,13 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 			}
 			id := b.StateDB.GetResourceID(targetResourceKey)
 			if id == "" {
+				adapter, err := b.getAdapterForKey(targetResourceKey)
+				if err != nil {
+					return nil, err
+				}
+				if !adapter.HasDoCreate() {
+					return nil, errDelayed
+				}
 				return nil, errors.New("internal error: no db entry")
 			}
 			return id, nil

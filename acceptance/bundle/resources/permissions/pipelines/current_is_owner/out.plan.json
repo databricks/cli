@@ -23,7 +23,7 @@
           "label": "${resources.pipelines.foo.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

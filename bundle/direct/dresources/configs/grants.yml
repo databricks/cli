@@ -1,5 +1,3 @@
-import_on_plan: true
-
 updatable_id_fields:
   # The ID embeds the parent's full name, which changes when the parent is renamed or
   # recreated under a new name. UpdateWithID records the new ID, so DoRead does not keep

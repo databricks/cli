@@ -3,9 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
-Created schemas.schema1.grants
+Updated schemas.schema1.grants
 Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity-catalog
 {

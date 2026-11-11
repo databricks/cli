@@ -1,0 +1,8 @@
+Cloud = true
+RecordRequests = true
+EnvMatrix.READPLAN = ["", "1"]
+Ignore = [".databricks", "databricks.yml", "plan.json"]
+
+[[Repls]]
+Old = " --plan plan.json"
+New = ""

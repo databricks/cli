@@ -45,6 +45,15 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		// The plan found the resource through adoption or at its renamed ID.
 		oldID = planEntry.ID
 	}
+	if oldID == "" && !d.Adapter.HasDoCreate() {
+		// A new parent's ID becomes available only after its creation. The caller
+		// has now resolved the references in newState, so its dependent can update.
+		var err error
+		oldID, err = d.Adapter.IDFromState(newState)
+		if err != nil {
+			return err
+		}
+	}
 	if oldID == "" {
 		return errors.New("state entry not found")
 	}

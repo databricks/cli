@@ -36,7 +36,7 @@
           "label": "${resources.jobs.job_with_permissions.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

@@ -1,0 +1,148 @@
+
+=== Plan updates for grants and permissions before their parents exist
+>>> [CLI] bundle plan
+create jobs.job
+update jobs.job.permissions
+create schemas.schema
+update schemas.schema.grants
+
+Plan: 2 to add, 2 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> print_state.py
+
+=== Create the parents and apply their dependent updates
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-without-create-[UNIQUE_NAME]/default/files...
+Created jobs.job
+Created schemas.schema
+Updated jobs.job.permissions
+Updated schemas.schema.grants
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 2 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //api/2.0/permissions/jobs //unity-catalog/permissions --sort
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/[SCHEMA_ID]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "[USERNAME]",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+>>> print_state.py
+{
+  "resources.jobs.job.permissions": {
+    "__id__": "/jobs/[JOB_ID]",
+    "state": {
+      "object_id": "/jobs/[JOB_ID]",
+      "__embed__": [
+        {
+          "level": "IS_OWNER",
+          "user_name": "[USERNAME]"
+        }
+      ]
+    },
+    "depends_on": [
+      {
+        "node": "resources.jobs.job",
+        "label": "${resources.jobs.job.id}"
+      }
+    ]
+  },
+  "resources.schemas.schema.grants": {
+    "__id__": "schema/[SCHEMA_ID]",
+    "state": {
+      "securable_type": "schema",
+      "full_name": "[SCHEMA_ID]",
+      "__embed__": [
+        {
+          "principal": "[USERNAME]",
+          "privileges": [
+            "USE_SCHEMA"
+          ]
+        }
+      ]
+    },
+    "depends_on": [
+      {
+        "node": "resources.schemas.schema",
+        "label": "${resources.schemas.schema.id}"
+      }
+    ]
+  }
+}
+
+=== A second plan is unchanged
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+=== Recreate a deleted parent and move its permissions to the new ID
+>>> [CLI] jobs delete [JOB_ID]
+
+>>> [CLI] bundle plan
+create jobs.job
+update jobs.job.permissions
+
+Plan: 1 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-without-create-[UNIQUE_NAME]/default/files...
+Created jobs.job
+Updated jobs.job.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //api/2.0/permissions/jobs
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID_4]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job
+  delete resources.schemas.schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-without-create-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

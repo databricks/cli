@@ -125,16 +125,6 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 	}, nil
 }
 
-func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
-	_, err := r.DoUpdate(ctx, "", state, nil)
-	if err != nil {
-		// Grants Update is idempotent (additive PATCH), so retrying on transient errors is safe.
-		return "", nil, retrySafe(err)
-	}
-
-	return makeGrantsID(state), nil, nil
-}
-
 // DoUpdateWithID records the new ID when the parent's ID changes (a rename, or a recreate
 // under a new name). Otherwise DoRead keeps listing the grants of the old name and every
 // later plan reports an update.

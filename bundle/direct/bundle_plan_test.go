@@ -543,6 +543,23 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 
 const jobRunKey = "resources.job_runs.my_run"
 
+func TestLookupReferencePreDeployDelaysNewPermissionsID(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	const resourceKey = "resources.jobs.job.permissions"
+	b := &DeploymentBundle{
+		Adapters: adapters,
+		Plan: &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+			resourceKey: {Action: deployplan.Update},
+		}},
+	}
+	b.StateDB.OpenWithData("state.json", dstate.NewDatabase("test", 0))
+
+	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(resourceKey+".id"))
+	assert.Nil(t, value)
+	assert.ErrorIs(t, err, errDelayed)
+}
+
 // The plan skips only a run that reached the required SUCCESS, so a reference
 // served from the remote state cache reads a finished run.
 func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {

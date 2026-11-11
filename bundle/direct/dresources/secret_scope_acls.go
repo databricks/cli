@@ -88,12 +88,8 @@ func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*Secre
 	}, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
-	err := r.setACLs(ctx, state.ScopeName, state.Acls)
-	if err != nil {
-		return "", nil, err
-	}
-	return state.ScopeName, nil, nil
+func (*ResourceSecretScopeAcls) IDFromState(state *SecretScopeAclsState) string {
+	return state.ScopeName
 }
 
 // We implement DoUpdateWithId to ensure that the updated ID gets recorded in state.

@@ -18,7 +18,7 @@
           "label": "${resources.catalogs.grants_catalog.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "full_name": "",

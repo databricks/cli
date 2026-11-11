@@ -22,7 +22,7 @@
           "label": "${resources.sql_warehouses.foo.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

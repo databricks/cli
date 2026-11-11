@@ -21,7 +21,7 @@
           "label": "${resources.clusters.foo.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

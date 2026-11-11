@@ -19,7 +19,7 @@
           "label": "${resources.apps.[FOO_ID].id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",
