@@ -1,0 +1,4 @@
+trace $CLI bundle validate -o json | jq .resources.pipelines.orders.testing
+
+title "Without pipeline testing, the property is an error"
+trace musterr env -u DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING $CLI bundle validate
