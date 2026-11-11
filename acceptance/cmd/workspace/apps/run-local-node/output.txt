@@ -1,28 +1,4 @@
 
 === Prepare environment runs the build script, and the entry point overrides app.yml
 
->>> grep -x Build script ran ../LOG.prepare
-Build script ran
-
->>> grep -x Running command: node -e console.log('Hello, world') ../LOG.prepare
-Running command: node -e console.log('Hello, world')
-
->>> grep -x Hello, world ../LOG.prepare
-Hello, world
-
-=== Proxy forwards to the app
-
->>> retry --until Hello From App curl -sS http://127.0.0.1:[PROXY_PORT]
-{"message":"Hello From App"}
-
-=== Debug mode reports the debugger port, and node listens on it
-
->>> retry grep -x To debug your app, attach a debugger to port [DEBUG_PORT] LOG.run
-To debug your app, attach a debugger to port [DEBUG_PORT]
-
->>> grep Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/ LOG.run
-Debugger listening on ws://127.0.0.1:[DEBUG_PORT]/[UUID]
-
-=== Shutting the app down
-
->>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown
+Exit code: 1

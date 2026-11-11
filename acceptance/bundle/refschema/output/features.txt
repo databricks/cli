@@ -100,6 +100,7 @@ resources.features.*.lineage_context.job_context.job_run_id	int64	ALL
 resources.features.*.lineage_context.notebook_id	int64	ALL
 resources.features.*.modified_status	string	INPUT
 resources.features.*.name	string	ALL
+resources.features.*.output_type_text	string	ALL
 resources.features.*.schema_name	string	ALL
 resources.features.*.source	ml.DataSource	ALL
 resources.features.*.source.delta_table_source	*ml.DeltaTableSource	ALL

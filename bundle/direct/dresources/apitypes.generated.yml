@@ -28,6 +28,8 @@ genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool
 
+internal_immutable_snapshots: compute.ServerlessCompute
+
 job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings

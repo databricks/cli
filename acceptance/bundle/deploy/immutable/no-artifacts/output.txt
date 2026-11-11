@@ -62,7 +62,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     },
     "can_manage": {
       "action": "skip",
-      "reason": "missing_in_remote",
+      "reason": "spec:output_only",
       "old": [
         {
           "service_principal_name": "[USERNAME]"

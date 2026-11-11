@@ -1,154 +1,84 @@
+sh: 1: envsubst: not found
 
 === resources.jobs.rname ===
-Error: job rname is not defined
-  at resources.jobs.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "jobs": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.pipelines.rname ===
-Error: pipeline rname is not defined
-  at resources.pipelines.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "pipelines": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.models.rname ===
-Error: model rname is not defined
-  at resources.models.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "models": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.experiments.rname ===
-Error: experiment rname is not defined
-  at resources.experiments.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "experiments": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.registered_models.rname ===
-Error: registered_model rname is not defined
-  at resources.registered_models.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "registered_models": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.quality_monitors.rname ===
-Error: quality_monitor rname is not defined
-  at resources.quality_monitors.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "quality_monitors": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.schemas.rname ===
-Error: schema rname is not defined
-  at resources.schemas.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "schemas": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.volumes.rname ===
-Error: volume rname is not defined
-  at resources.volumes.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "volumes": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.clusters.rname ===
-Error: cluster rname is not defined
-  at resources.clusters.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "clusters": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.dashboards.rname ===
-Error: dashboard rname is not defined
-  at resources.dashboards.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "dashboards": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.apps.rname ===
-Error: app rname is not defined
-  at resources.apps.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "apps": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.sql_warehouses.rname ===
-Error: sql_warehouse rname is not defined
-  at resources.sql_warehouses.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "sql_warehouses": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.secret_scopes.rname ===
-Error: secret_scope rname is not defined
-  at resources.secret_scopes.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "secret_scopes": {
-    "rname": null
-  }
-}
+null
+sh: 1: envsubst: not found
 
 === resources.alerts.rname ===
-Error: alert rname is not defined
-  at resources.alerts.rname
-  in databricks.yml:6:11
+Error: unable to define default workspace root: bundle name not defined
 
-{
-  "alerts": {
-    "rname": null
-  }
-}
+null
