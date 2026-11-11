@@ -79,18 +79,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 // Create creates the resource and records its state.
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
-	var newID string
-	var remoteState any
-	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
-		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
-		_, ok := errors.AsType[*dresources.RetrySafeError](err)
-		return ok && retry.IsTransient(ctx, err)
-	}, func() (struct{}, error) {
-		var e error
-		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
-		return struct{}{}, e
-	})
-	err = dresources.UnwrapRetrySafe(err)
+	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err

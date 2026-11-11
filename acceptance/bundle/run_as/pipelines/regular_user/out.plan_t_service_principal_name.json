@@ -33,7 +33,7 @@
           "label": "${resources.pipelines.nyc_taxi_pipeline.id}"
         }
       ],
-      "action": "create",
+      "action": "update",
       "new_state": {
         "value": {
           "object_id": "",

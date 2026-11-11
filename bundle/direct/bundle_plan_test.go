@@ -547,11 +547,11 @@ func TestLookupReferencePreDeployDelaysNewPermissionsID(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 	const resourceKey = "resources.jobs.job.permissions"
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[resourceKey] = &deployplan.PlanEntry{Action: deployplan.Update}
 	b := &DeploymentBundle{
 		Adapters: adapters,
-		Plan: &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
-			resourceKey: {Action: deployplan.Update},
-		}},
+		Plan:     plan,
 	}
 	b.StateDB.OpenWithData("state.json", dstate.NewDatabase("test", 0))
 

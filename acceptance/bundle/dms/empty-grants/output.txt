@@ -3,9 +3,9 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-empty-grants-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Created schemas.foo.grants
+Updated schemas.foo.grants
 Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
 {
@@ -35,7 +35,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "resource_key": "schemas.foo"
       },
       {
-        "action_type": "OPERATION_ACTION_TYPE_CREATE",
+        "action_type": "OPERATION_ACTION_TYPE_UPDATE",
         "resource_key": "schemas.foo.grants"
       }
     ],
