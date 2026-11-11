@@ -91,8 +91,8 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
-	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
+	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference for supported GPU types."`
+	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
 	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'."`
 	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id."`
 }

@@ -131,7 +131,7 @@ config.environment.version
 
 >>> [CLI] air run -h config.compute.accelerator_type
 config.compute.accelerator_type
-  Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
+  Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
 
   Supported accelerator types:
     GPU_1xH100 - 1 accelerator per node
@@ -177,7 +177,7 @@ config.code_source.root_path
 
 >>> [CLI] air run -h compute.num_accelerators
 config.compute.num_accelerators
-  Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types.
+  Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference for supported GPU types.
 
   Type:     int
   Required: no
