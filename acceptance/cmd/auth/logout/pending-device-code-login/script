@@ -33,17 +33,17 @@ EOF
 title "Logout and delete dev"
 trace $CLI auth logout --profile dev --auto-approve --delete
 
-title "Token cache keys after logout — the host keys are kept, staging shares them\n"
+title "Token cache keys after logout — the host keys are kept, staging shares them"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout staging"
 trace $CLI auth logout --profile staging --auto-approve
 
-title "Token cache keys after logout — no profile uses the host anymore\n"
+title "Token cache keys after logout — no profile uses the host anymore"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout pat, a profile that auth login did not create"
 trace $CLI auth logout --profile pat --auto-approve
 
-title "Token cache keys after logout — the pending login of pat is removed\n"
+title "Token cache keys after logout — the pending login of pat is removed"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"

@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
@@ -16,6 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update target_qps
+
 >>> update_file.py databricks.yml target_qps: 1 target_qps: 2
 
 >>> [CLI] bundle plan

@@ -15,6 +15,7 @@ Resources:
       Name: table,[UUID]
 
 === A malformed id is rejected
+
 >>> musterr [CLI] bundle deployment bind monitor1 [UUID] --auto-approve
 Error: failed to fetch the resource, err: invalid data quality monitor id "[UUID]" (want <object_type>,<object_id>)
 

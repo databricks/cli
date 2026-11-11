@@ -1,5 +1,6 @@
 
 === Resolved variable values
+
 >>> [CLI] bundle summary -o json --include-locations --var from_cli=cli-value
 {
   "complex_var": {
@@ -19,6 +20,7 @@
 }
 
 === Variable locations as file:line:column
+
 >>> [CLI] bundle summary -o json --include-locations --var from_cli=cli-value
 {
   "variables": [

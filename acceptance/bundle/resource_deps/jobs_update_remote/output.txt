@@ -63,6 +63,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged
+
 >>> envsubst
 
 >>> [CLI] jobs reset --json @job_update.json

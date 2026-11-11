@@ -1,5 +1,6 @@
 
 === Deploy project, branch, role, and database
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
@@ -10,15 +11,18 @@ Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Unbind the database: it now exists on the branch but is no longer tracked by the bundle
+
 >>> [CLI] bundle deployment unbind my_database
 
 === Plan after unbind: the bundle wants to (re-)create the database
+
 >>> [CLI] bundle plan
 create postgres_databases.my_database
 
 Plan: 1 to add, 0 to change, 0 to delete, 3 unchanged
 
 === Re-deploy: replace_existing adopts the already-existing database instead of erroring
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default/files...
 Created postgres_databases.my_database
@@ -26,6 +30,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 3 unchanged
 
 === Confirm the database is under management again
+
 >>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
   "database_id": "my-database",

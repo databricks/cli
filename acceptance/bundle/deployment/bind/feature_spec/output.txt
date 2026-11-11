@@ -7,6 +7,7 @@
 >>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
 
 === Create the feature spec outside the bundle
+
 >>> [CLI] api post /api/2.0/feature-engineering/feature-specs --json {
   "name": "main.fspec_[UNIQUE_NAME].boundspec",
   "features": [{"feature_lookup": {"table": "main.fspec_[UNIQUE_NAME].user_features", "lookup_keys": ["user_id"], "feature_names": ["age"]}}]
@@ -32,6 +33,7 @@ Resources:
       URL:  [DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/boundspec
 
 === The bound feature spec matches the config, so there is nothing to change
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

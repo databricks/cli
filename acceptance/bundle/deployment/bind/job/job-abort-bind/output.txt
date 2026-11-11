@@ -10,6 +10,7 @@ To proceed, use --auto-approve after reviewing the plan above.
 Exit code: 1
 
 === Deploy bundle:
+
 >>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
 Created jobs.foo
@@ -17,6 +18,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check that job is not bound and not updated with config from bundle:
+
 >>> [CLI] jobs get [JOB_ID]
 {
   "job_id": [JOB_ID],
@@ -33,4 +35,5 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Delete the pre-defined job [JOB_ID]:0
+=== Delete the pre-defined job [JOB_ID]:
+0

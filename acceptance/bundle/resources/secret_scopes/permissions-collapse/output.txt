@@ -1,5 +1,6 @@
 
 === create secret scope with duplicate permissions
+
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy
@@ -16,6 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === verify permissions are collapsed correctly
+
 >>> [CLI] secrets list-acls test-scope-collapse-[UNIQUE_NAME]
 {"permission":"MANAGE","principal":"[USERNAME]"}
 {"permission":"WRITE","principal":"deco-test-user@databricks.com"}

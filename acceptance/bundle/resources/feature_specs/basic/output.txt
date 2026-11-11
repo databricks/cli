@@ -7,6 +7,7 @@
 >>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
 
 === Initial summary before deploy
+
 >>> [CLI] bundle summary -o json
 {
   "extra_pip_requirements": {
@@ -91,6 +92,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Summary should show the id and the Catalog Explorer url
+
 >>> [CLI] bundle summary -o json
 {
   "id": "[SPEC1_ID]",
@@ -98,10 +100,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A second plan on an unchanged bundle must report no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Change a field (every field is immutable, so this recreates)
+
 >>> update_file.py databricks.yml [age, country] [age]
 
 >>> [CLI] bundle plan

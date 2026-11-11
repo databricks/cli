@@ -6,6 +6,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Replace authored scripts with a script from an updated policy
+
 >>> [CLI] cluster-policies edit --json {
   "policy_id": "[POLICY_ID]",
   "name": "test-policy-[UNIQUE_NAME]",
@@ -19,6 +20,7 @@ No changes detected.
 >>> diff.py databricks.yml.backup databricks.yml
 
 === Authored scripts are kept without copying the policy script
+
 >>> [CLI] bundle validate -o json
 true
 
