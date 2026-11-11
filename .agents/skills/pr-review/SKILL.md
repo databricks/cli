@@ -28,11 +28,25 @@ git diff "$BASE" "$TARGET"
 ```
 
 If the change has a PR, read its title and description to learn the intent.
-Do not read existing review comments before forming your own view.
+Do not read existing review comments before forming your own view. List the
+hunks the description does not explain: a fix riding along with the main
+change belongs in its own PR (`AGENTS.md`: one change per PR), so ask for
+the split.
+
+Check how far the branch is from main with
+`git rev-list --count "$BASE"..origin/main` and
+`git merge-tree --write-tree "$TARGET" origin/main`. When the base is far
+behind, files the change touches may have moved, split or been deleted on
+main, and conventions it follows (changelog location, test matrix variables)
+may have changed. Those are judged at merge time, not at `TARGET`, so name
+the new location in the review body.
 
 Read every changed non-generated file in full at `TARGET`, not just the hunks
 (`git show "$TARGET":path`). Skim generated files (schemas, codegen output,
-acceptance test output) only to confirm they follow from the source change.
+acceptance test output) only to confirm they follow from the source change;
+when the generator is cheap to run, regenerate into a temporary directory and
+`diff -r` it against the committed tree, since stale generated files outside
+the diff never show up in the hunks.
 Read the repo's agent rules that apply to the changed files, under
 `.agents/rules/` (testing, comments, language style guides).
 
@@ -50,6 +64,19 @@ For every new type, function, flag, env var, config field, or code path:
   change does by hand: reading env vars, parsing booleans, normalizing paths
   or hosts, formatting errors, retrying. In this repo, `libs/env` has `Get`,
   `Lookup` and `GetBool`.
+- When the change edits a constant, regex or literal, also grep a distinctive
+  fragment of the old value: copies of a constant do not share its name.
+  Under a "keep in sync with X" comment, check every copy, not only the ones
+  the comment lists, and check that the parity test has an input that
+  exercises the change.
+- For every new option, flag or branch, find the concrete input that makes
+  it do something (a file, a directory, an API response, a config value) and
+  confirm that input can still be produced at `TARGET`. A mechanism whose
+  trigger no longer exists is a finding.
+- When the change configures a pinned third-party action or tool, read that
+  tool's README or source at the pinned version
+  (`gh api repos/<owner>/<repo>/contents/README.md?ref=<sha>`) and verify
+  each option and default the change relies on.
 
 Note, for yourself, how the new code differs from each existing piece you
 find.
@@ -66,7 +93,11 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    edge cases: nil or empty values, errors that are dropped or wrapped
    inconsistently, loops and early returns, concurrency and shared state,
    resources that aren't closed, off-by-one and ordering assumptions, and
-   behavior that differs between platforms.
+   behavior that differs between platforms. For a new goroutine fan-out,
+   write down what bounds the number live at once and what each allocates;
+   if the change ships a benchmark, run it with `-benchmem`. For bundle
+   config changes, run the edge inputs through `bundle validate` in a
+   scratch directory and quote the real output in the comment.
    Table: `line | input or state | what happens | is that right?`
 2. **One mechanism per job.** Does the change add a second way to do
    something the codebase already does, or copy logic that now has to be kept
@@ -104,6 +135,9 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    Then check how the value is used: a presence-only check on an on/off
    switch means `false` and `0` turn it on. Check that new config fields
    follow how similar existing fields are declared, validated and documented.
+   A field that newly accepts another YAML kind (a sequence where only a
+   string was allowed) is new config API too: check that
+   `bundle/schema/jsonschema.json` was regenerated to match.
    Table: `line | name | user-facing word or internal term? | how the value is
    used | existing precedent`
 7. **Stored values over time.** For every value the change writes to state,
@@ -111,7 +145,9 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    and who reads it later. Ask whether it goes stale after the first write,
    whether comments and output describe that lifecycle correctly, and what
    should happen when the stored value disagrees with the source of truth
-   (often: an error, not a silent fallback).
+   (often: an error, not a silent fallback). A marker or feature flag the
+   code reads to decide whether to act is a stored value too: list who
+   writes it and whether the change's new write path sets it.
    Table: `value (line) | written when | updated when | read by | can it
    disagree with the source of truth, and what happens then?`
 8. **Every new doc comment.** List them:
@@ -157,7 +193,11 @@ on code the change adds or modifies, not on pre-existing issues next to it.
     (`.nextchanges/`), error message, warning and help text. It should be
     short, accurate and written for users, follow `.nextchanges/README.md`
     for changelog entries, and reuse an existing constant instead of
-    repeating the same text in several places.
+    repeating the same text in several places. When the change lifts or
+    alters a restriction, grep for the existing messages that describe the
+    old behavior (the refusal, its hint): no hunk touches them, yet the
+    change makes them wrong. When the change is user-visible and adds no
+    `.nextchanges/` fragment, ask for one.
 
 Skip formatting, naming of internal identifiers, anything a linter catches,
 and questions about defensive checks.
@@ -213,6 +253,11 @@ short list if there are several.
    comment on the first and list the other locations in that comment. The
    review body doesn't repeat inline comments; use it for cross-cutting asks
    (missing tests, a design question that spans files).
+5. If the PR already has review threads, yours or another reviewer's, read
+   them now. Drop a comment that repeats a point already raised there or
+   that the author already answered (verification evidence often lives in a
+   thread, not in the description), and add a short one where an earlier
+   ask was not addressed.
 
 ## 5. Output
 
