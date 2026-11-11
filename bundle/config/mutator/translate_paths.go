@@ -16,7 +16,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -163,10 +162,10 @@ func (t *translateContext) rewritePath(
 	localPath = filepath.ToSlash(localPath)
 	localRelPath = filepath.ToSlash(localRelPath)
 
-	// With pipeline testing enabled, the path after -e can also be a project folder, with optional
-	// extras such as ./project[test]. The result is not cached: the cache key has no flag, so a
-	// later "-r ./project" would get the "-e" result instead of its error.
-	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && flag == "-e" && env.ExperimentalPipelineTesting(ctx) {
+	// The path after -e can also be a project folder, with optional extras such as ./project[test].
+	// The result is not cached: the cache key has no flag, so a later "-r ./project" would get the
+	// "-e" result instead of its error.
+	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && flag == "-e" {
 		if interp, ok := t.translateEditableFolder(localRelPath); ok {
 			return interp, nil
 		}

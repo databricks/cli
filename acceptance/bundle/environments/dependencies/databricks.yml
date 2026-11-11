@@ -24,6 +24,8 @@ resources:
               - -r "${workspace.file_path}/Path With Spaces/requirements.txt"
               - "-r '${workspace.file_path}/Path With Spaces/requirements.txt'"
               - "-e ./file.py"
+              - "-e ./project"
+              - "-e ./project[test]"
               - "-i http://myindexurl.com"
               - "--index-url http://myindexurl.com"
               - "test_package"
@@ -44,6 +46,8 @@ resources:
         dependencies:
           - "-r ./requirements.txt"
           - "-e ./file.py"
+          - "-e ./project"
+          - "-e ./project[test]"
           - "-i http://myindexurl.com"
           - "--index-url http://myindexurl.com"
           - "dist/*.whl"
