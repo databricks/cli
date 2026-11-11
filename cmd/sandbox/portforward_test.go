@@ -46,13 +46,14 @@ func TestParseForwardsRejectsRemotePortsOutsideRange(t *testing.T) {
 	}
 }
 
-func TestHasDotSegment(t *testing.T) {
+func TestIsAmbiguousPath(t *testing.T) {
 	tests := []struct {
 		path string
 		want bool
 	}{
 		{"/", false},
-		{"/hello/a%2Fb", false},
+		{"/hello/a%20b", false},
+		{"/files/%E2%9C%93", false},
 		{"/a.b/.c/d..", false},
 		{"/...", false},
 		{"/../api/2.0/clusters/list", true},
@@ -62,10 +63,20 @@ func TestHasDotSegment(t *testing.T) {
 		{"/%2E/api", true},
 		{"/a/..%5c..%5capi", true},
 		{"/a%2F..%2Fapi", true},
+		{"/hello/a%2Fb", true},
+		{"/a/..;/b", true},
+		{"/a/.;v=1/b", true},
+		{"/a/..%3B/b", true},
+		{"/a;v=1/b", true},
+		{"/a/%252e%252e/b", true},
+		{"/a/%zz/b", true},
+		{"/a/..%00/b", true},
+		{"/a/..%3F/b", true},
+		{"/a/..%23/b", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			assert.Equal(t, tt.want, hasDotSegment(tt.path))
+			assert.Equal(t, tt.want, isAmbiguousPath(tt.path))
 		})
 	}
 }
@@ -121,12 +132,13 @@ func TestPortForwardHandlerRewritesRequest(t *testing.T) {
 	defer upstream.Close()
 	forward := startForward(t, upstream, fakeAuth)
 
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, forward.URL+"/hello/a%2Fb?x=1", strings.NewReader("payload"))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, forward.URL+"/hello/a%20b?x=1", strings.NewReader("payload"))
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer local-secret")
 	req.Header.Set("Cookie", "sid=abc")
 	req.Header.Set("X-Databricks-Org-Id", "999")
 	req.Header.Set("X-Databricks-Workspace-Id", "999")
+	req.Header.Set("S2S-Principal-Context", "local")
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
@@ -139,18 +151,19 @@ func TestPortForwardHandlerRewritesRequest(t *testing.T) {
 
 	require.NotNil(t, got)
 	assert.Equal(t, http.MethodPost, got.Method)
-	assert.Equal(t, "/sandbox-proxy/sandboxes/"+testSandboxID+"/ports/10080/hello/a%2Fb", got.URL.EscapedPath())
+	assert.Equal(t, "/sandbox-proxy/sandboxes/"+testSandboxID+"/ports/10080/hello/a%20b", got.URL.EscapedPath())
 	assert.Equal(t, "x=1", got.URL.RawQuery)
 	assert.Equal(t, strings.TrimPrefix(upstream.URL, "http://"), got.Host)
 	assert.Equal(t, "Bearer cli-token", got.Header.Get("Authorization"))
 	assert.Equal(t, "123", got.Header.Get("X-Databricks-Workspace-Id"))
 	assert.Empty(t, got.Header.Get("X-Databricks-Org-Id"))
+	assert.Empty(t, got.Header.Get("S2S-Principal-Context"))
 	assert.Equal(t, "sid=abc", got.Header.Get("Cookie"))
 	assert.Empty(t, got.Header.Get("X-Forwarded-For"))
 	assert.Equal(t, "payload", gotBody)
 }
 
-func TestPortForwardHandlerRejectsDotSegments(t *testing.T) {
+func TestPortForwardHandlerRejectsAmbiguousPaths(t *testing.T) {
 	var calls atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
@@ -159,7 +172,7 @@ func TestPortForwardHandlerRejectsDotSegments(t *testing.T) {
 	forward := startForward(t, upstream, fakeAuth)
 	addr := strings.TrimPrefix(forward.URL, "http://")
 
-	for _, path := range []string{"/../../api/2.0/clusters/list", "/%2e%2e/api/2.0/clusters/list", "/a/..%5c..%5capi"} {
+	for _, path := range []string{"/../../api/2.0/clusters/list", "/%2e%2e/api/2.0/clusters/list", "/a/..%5c..%5capi", "/..;/..;/api/2.0/clusters/list", "/..%3b/api/2.0/clusters/list"} {
 		t.Run(path, func(t *testing.T) {
 			status, _, _ := rawRequest(t, addr, "GET "+path+" HTTP/1.1\r\nHost: "+addr+"\r\nConnection: close\r\n\r\n")
 			assert.Equal(t, http.StatusBadRequest, status)

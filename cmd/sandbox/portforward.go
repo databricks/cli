@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -48,9 +49,9 @@ const (
 // request headers. Bodies and upgraded connections are not bounded.
 const portForwardReadHeaderTimeout = time.Minute
 
-// databricksHeaderPrefix marks the platform's auth and routing headers. Only
-// the CLI's own values may reach the workspace.
-const databricksHeaderPrefix = "X-Databricks-"
+// platformHeaderPrefixes mark the platform's auth, identity, and routing
+// headers, in lowercase. Only the CLI's own values may reach the workspace.
+var platformHeaderPrefixes = []string{"x-databricks-", "s2s-"}
 
 // portForward is one parsed -L LOCAL:REMOTE spec.
 type portForward struct {
@@ -252,7 +253,7 @@ func newPortForwardHandler(target portForwardTarget, remotePort int, logger *slo
 			pr.Out.Host = ""
 			pr.Out.Header.Del("Authorization")
 			for name := range pr.Out.Header {
-				if strings.HasPrefix(name, databricksHeaderPrefix) {
+				if isPlatformHeader(name) {
 					pr.Out.Header.Del(name)
 				}
 			}
@@ -273,8 +274,8 @@ func newPortForwardHandler(target portForwardTarget, remotePort int, logger *slo
 			http.Error(w, "port forward only accepts requests addressed to localhost", http.StatusForbidden)
 		case isCrossSiteRequest(r):
 			http.Error(w, "port forward does not accept cross-site browser requests", http.StatusForbidden)
-		case hasDotSegment(r.URL.EscapedPath()):
-			http.Error(w, "request path must not contain . or .. segments", http.StatusBadRequest)
+		case isAmbiguousPath(r.URL.EscapedPath()):
+			http.Error(w, "port forward does not accept . or .. path segments, malformed escapes, or segments containing ;, \\, control characters, or an encoded /, \\, %, ?, or #", http.StatusBadRequest)
 		default:
 			proxy.ServeHTTP(w, r)
 		}
@@ -310,25 +311,31 @@ func isCrossSiteRequest(r *http.Request) bool {
 	return r.Header.Get("Sec-Fetch-Site") == "cross-site"
 }
 
-// hasDotSegment reports whether an escaped URL path contains a "." or ".."
-// segment, including percent-encoded and backslash-separated forms. The
-// workspace would resolve such a path out of the port-forward route and onto
-// another API, with the caller's credentials attached.
-func hasDotSegment(escapedPath string) bool {
-	decoded, err := url.PathUnescape(escapedPath)
-	if err != nil {
-		return true
-	}
-	for _, segment := range strings.FieldsFunc(decoded, isPathSeparator) {
-		if segment == "." || segment == ".." {
+// isAmbiguousPath reports whether a proxy on the way to the workspace could
+// resolve a segment of escapedPath as "." or "..", moving the request off the
+// port-forward route with the caller's credentials. Proxies also resolve forms
+// such as a dot segment with path parameters, so only segments that decode
+// once to plain text other than "." and ".." are accepted.
+func isAmbiguousPath(escapedPath string) bool {
+	for segment := range strings.SplitSeq(escapedPath, "/") {
+		decoded, err := url.PathUnescape(segment)
+		if err != nil || decoded == "." || decoded == ".." || strings.ContainsAny(decoded, `;/\%?#`) || strings.ContainsFunc(decoded, unicode.IsControl) {
 			return true
 		}
 	}
 	return false
 }
 
-func isPathSeparator(r rune) bool {
-	return r == '/' || r == '\\'
+// isPlatformHeader reports whether name starts with one of
+// platformHeaderPrefixes, in any case.
+func isPlatformHeader(name string) bool {
+	lower := strings.ToLower(name)
+	for _, prefix := range platformHeaderPrefixes {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // authenticatingTransport adds the CLI's credentials to each outgoing request,
