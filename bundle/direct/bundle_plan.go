@@ -1341,8 +1341,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
-	addGrantsDependencies(p)
-
 	// lifecycle.depends_on only orders resources: a target that is not in the plan
 	// (e.g. skipped as empty) needs no ordering.
 	for _, entry := range p.Plan {
