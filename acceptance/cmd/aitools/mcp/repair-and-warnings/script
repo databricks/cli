@@ -1,0 +1,31 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude home/.codex
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+
+title "Claude Code and Codex get the server"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex
+
+title "Claude Code reads its config from another directory: list says path changed, and remove keeps the entry"
+export CLAUDE_CONFIG_DIR=$PWD/home/moved-claude
+trace $CLI aitools mcp list
+trace $CLI aitools mcp remove --names genie_one_mcp-logfood --agents claude-code
+unset CLAUDE_CONFIG_DIR
+trace jq '.mcpServers | keys' home/.claude.json
+
+title "A Codex config that cannot be parsed is a warning: list exits 0 and shows Claude Code"
+echo "[mcp_servers.broken" > home/.codex/config.toml
+trace $CLI aitools mcp list
+
+title "An entry that runs aitools mcp serve without an install record is unmanaged, and remove does not touch it"
+trace jq '.mcpServers.orphan = {"command": "databricks", "args": ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "claude-code"]}' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
+trace $CLI aitools mcp list
+errcode trace $CLI aitools mcp remove --names orphan
+trace jq '.mcpServers | keys' home/.claude.json
+
+title "A profile or an agent with nothing installed is refused"
+errcode trace $CLI aitools mcp remove --profile typo
+errcode trace $CLI aitools mcp remove --names genie_one_mcp-logfood --agents cursor

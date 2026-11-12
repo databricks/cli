@@ -37,12 +37,14 @@ Profile logfood  ([DATABRICKS_URL])
     {
       "profile": "dogfood",
       "host": "[DATABRICKS_URL]",
+      "config_file": "[TEST_TMP_DIR]/.databrickscfg",
       "status": "ok",
       "servers": [
         {
           "name": "genie_one_mcp-dogfood",
           "service": "system.ai.genie_one_mcp",
           "sign_in_required": false,
+          "status": "ok",
           "agents": [
             {
               "name": "claude-code",
@@ -56,12 +58,14 @@ Profile logfood  ([DATABRICKS_URL])
     {
       "profile": "logfood",
       "host": "[DATABRICKS_URL]",
+      "config_file": "[TEST_TMP_DIR]/.databrickscfg",
       "status": "ok",
       "servers": [
         {
           "name": "genie_one_mcp-logfood",
           "service": "system.ai.genie_one_mcp",
           "sign_in_required": false,
+          "status": "ok",
           "agents": [
             {
               "name": "claude-code",
@@ -74,6 +78,7 @@ Profile logfood  ([DATABRICKS_URL])
           "name": "github-logfood",
           "service": "system.ai.github",
           "sign_in_required": true,
+          "status": "ok",
           "agents": [
             {
               "name": "claude-code",
@@ -85,7 +90,8 @@ Profile logfood  ([DATABRICKS_URL])
       ]
     }
   ],
-  "unmanaged": []
+  "unmanaged": [],
+  "warnings": []
 }
 
 === remove --profile removes that profile only
@@ -139,6 +145,7 @@ Skipped github-logfood: Claude Code has an entry named github-logfood that was c
   "skipped": [
     {
       "name": "github-logfood",
+      "agent": "claude-code",
       "reason": "Claude Code has an entry named github-logfood that was changed outside this CLI; left in place"
     }
   ]
