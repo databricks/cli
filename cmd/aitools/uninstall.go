@@ -71,7 +71,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 
 			// Uninstall is destructive, so confirm interactively before doing
 			// anything. Non-interactive runs (no TTY) proceed unprompted so
-			// automation is unaffected, matching how install only prompts on a TTY.
+			// automation is unaffected.
 			dir := globalDir
 			if scope == installer.ScopeProject {
 				dir = projectDir

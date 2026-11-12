@@ -29,10 +29,11 @@ type commandFunnel struct {
 // startFunnel logs the STARTED event for command and returns the funnel to
 // report later steps and the outcome on.
 // installMode is set for install only, so it is on the STARTED event too.
-func startFunnel(ctx context.Context, command protos.AitoolsCommand, installMode protos.AitoolsInstallMode) *commandFunnel {
+// interactive is whether the command may show prompts.
+func startFunnel(ctx context.Context, command protos.AitoolsCommand, installMode protos.AitoolsInstallMode, interactive bool) *commandFunnel {
 	f := &commandFunnel{
 		command:     command,
-		interactive: cmdio.IsPromptSupported(ctx),
+		interactive: interactive,
 		installMode: installMode,
 	}
 	f.log(ctx, protos.AitoolsCommandEvent{Stage: protos.AitoolsCommandStageStarted})
@@ -119,7 +120,7 @@ func (f *commandFunnel) log(ctx context.Context, e protos.AitoolsCommandEvent) {
 // FINISHED (outcome from the returned error).
 func withCommandFunnel(command protos.AitoolsCommand, runE func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
-		f := startFunnel(cmd.Context(), command, "")
+		f := startFunnel(cmd.Context(), command, "", cmdio.IsPromptSupported(cmd.Context()))
 		defer func() { f.finish(cmd.Context(), err) }()
 		cmd.SetContext(context.WithValue(cmd.Context(), funnelKey{}, f))
 		return runE(cmd, args)
