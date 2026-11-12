@@ -340,30 +340,6 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 	return nil
 }
 
-// entryFile returns the config file that holds the server's entry for agent a, and its entries. That is the file the
-// record names, unless the file does not hold the entry and the agent now reads its config from another file: then that
-// file, which may hold it, since the user may have moved the config with the agent's directory. A recorded file that
-// cannot be read is an error, since it may be the one that holds the entry.
-func entryFile(ctx context.Context, files *agentFiles, e mcp.Entry, a *agents.Agent) (string, agentFile, error) {
-	recorded := e.Agents[a.Name].Path
-	file := files.file(a, recorded)
-	if file.err != nil {
-		return "", agentFile{}, file.err
-	}
-	if _, found := file.entries[e.Name]; found {
-		return recorded, file, nil
-	}
-	current, err := files.currentPath(ctx, a)
-	if err != nil {
-		return "", agentFile{}, err
-	}
-	if mcp.SamePath(current, recorded) {
-		return recorded, file, nil
-	}
-	file = files.file(a, current)
-	return current, file, file.err
-}
-
 // keptReason says why an entry is left in place, and how to clear it.
 func keptReason(e mcp.Entry, a *agents.Agent, path string, entry map[string]any) string {
 	return fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place. To remove it, %s",
@@ -371,25 +347,24 @@ func keptReason(e mcp.Entry, a *agents.Agent, path string, entry map[string]any)
 }
 
 // removeFromAgent removes the server's entry for agent a, but only when the entry there is the one this CLI wrote. The
-// entry is looked for as entryFile finds it. A file that has no entry of the name is pruned: the record goes without an
-// edit.
+// entry is looked for where locateEntry finds it. An agent config that holds no entry is pruned: the record goes without
+// an edit.
 func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *agents.Agent, pin bindingFile) (removeOutcome, string, error) {
-	path, file, err := entryFile(ctx, files, e, a)
+	loc, err := files.locateEntry(ctx, e, a)
 	if err != nil {
 		return 0, "", err
 	}
-	current, found := file.entries[e.Name]
-	if !found {
+	if !loc.found {
 		return removePruned, "", nil
 	}
-	owned, err := pin.owns(ctx, e, current)
+	owned, err := pin.owns(ctx, e, loc.entry)
 	if err != nil {
 		return 0, "", err
 	}
 	if !owned {
-		return removeKept, keptReason(e, a, path, current), nil
+		return removeKept, keptReason(e, a, loc.path, loc.entry), nil
 	}
-	if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
+	if _, err := agentconfig.RemoveAt(a, loc.path, e.Name); err != nil {
 		return 0, "", err
 	}
 	return removeDeleted, "", nil

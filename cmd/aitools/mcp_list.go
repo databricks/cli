@@ -83,6 +83,8 @@ type mcpListAgent struct {
 	Name   string `json:"name"`
 	Path   string `json:"path"`
 	Status string `json:"status"`
+	// fix says how to clear a modified entry, for the text listing.
+	fix string
 }
 
 type mcpListUnmanaged struct {
@@ -176,6 +178,10 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 			out.Warnings = append(out.Warnings, fmt.Sprintf("could not read the %s config: %s is not a known agent", name, name))
 			continue
 		}
+		if !a.SupportsMCP() {
+			// Its records are warned about with their servers, since the agent has no config to read.
+			continue
+		}
 		if cfg := files.current(ctx, a); cfg.err != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("could not read the %s config: %s", agentDisplayName(name), cfg.err))
 		}
@@ -183,6 +189,8 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 
 	checks := mcp.CheckEntries(ctx, &mcp.State{Servers: entries})
 	groups := map[profileKey]*mcpListProfile{}
+	// A config file that cannot be read is warned about once, for every server that reads it.
+	warnedFiles := map[string]bool{}
 	for i, e := range entries {
 		check := checks[i]
 		path := check.Path
@@ -204,7 +212,12 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 		case check.Err != nil:
 			s.Status = statusUnknown
 			p.Status = worseStatus(p.Status, statusUnknown)
-			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", e.Name, check.Err))
+			if check.Path == "" {
+				out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", e.Name, check.Err))
+			} else if !warnedFiles[check.Path] {
+				warnedFiles[check.Path] = true
+				out.Warnings = append(out.Warnings, fmt.Sprintf("%s: %s", filepath.ToSlash(check.Path), check.Err))
+			}
 		case check.Drift != nil:
 			s.Status = string(check.Drift.Kind)
 			s.drift = check.Drift
@@ -215,20 +228,26 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 			}
 		}
 		for _, agentName := range slices.Sorted(maps.Keys(e.Agents)) {
-			// A config that cannot be read is warned about once, for the agent; here its entries are unknown.
-			status := statusUnknown
-			if a := agents.ByName(agentName); a != nil && files.current(ctx, a).err == nil {
+			// An agent whose config cannot be read is warned about once, for the agent; here its entries are unknown.
+			a := agents.ByName(agentName)
+			status, path, fix := statusUnknown, e.Agents[agentName].Path, ""
+			switch {
+			case a == nil:
+			case !a.SupportsMCP():
+				out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s does not take MCP servers; remove drops this record", e.Name, agentDisplayName(agentName)))
+			default:
 				var err error
-				status, err = agentStatus(ctx, files, e, a, checkedBinding(check))
-				// When the entry itself could not be checked, its warning already names the cause.
-				if err != nil && check.Err == nil {
+				status, path, fix, err = agentStatus(ctx, files, e, a, checkedBinding(check))
+				// An error the entry check or the agent's config already reported is not warned about again.
+				if err != nil && !errors.Is(err, check.Err) && !errors.Is(err, files.current(ctx, a).err) {
 					out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: could not check %s: %s", e.Name, agentDisplayName(agentName), err))
 				}
 			}
 			s.Agents = append(s.Agents, mcpListAgent{
 				Name:   agentName,
-				Path:   filepath.ToSlash(e.Agents[agentName].Path),
+				Path:   filepath.ToSlash(path),
 				Status: status,
+				fix:    fix,
 			})
 		}
 		p.Servers = append(p.Servers, s)
@@ -274,29 +293,35 @@ func worseStatus(a, b string) string {
 	return a
 }
 
-// agentStatus compares the server's entry for agent a with the agent's config, which must have been read. An agent
-// whose config moved is path_changed: the entry is in the file the record names, which this command does not read.
-// pin is the server's binding file, which decides ownership. err is set when the entry cannot be checked for ownership.
-func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agents.Agent, pin bindingFile) (string, error) {
-	current, err := files.currentPath(ctx, a)
+// agentStatus compares the server's entry for agent a with the entry that remove acts on (see locateEntry). It returns
+// the status, the path of the file the entry is in, and how to clear a modified entry. A recorded entry is path_changed
+// when the agent now reads another file: the record names the file the entry was written to, which the agent no longer
+// reads. pin decides ownership. err is set when the entry cannot be located or checked.
+func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agents.Agent, pin bindingFile) (status, path, fix string, err error) {
+	loc, err := files.locateEntry(ctx, rec, a)
 	if err != nil {
-		return statusUnknown, err
+		return statusUnknown, rec.Agents[a.Name].Path, "", err
 	}
-	if !mcp.SamePath(rec.Agents[a.Name].Path, current) {
-		return agentStatusPathChanged, nil
+	if !loc.found {
+		return agentStatusMissingOnDisk, loc.path, "", nil
 	}
-	entry, ok := files.file(a, current).entries[rec.Name]
-	if !ok {
-		return agentStatusMissingOnDisk, nil
+	if loc.recorded {
+		current, err := files.currentPath(ctx, a)
+		if err != nil {
+			return statusUnknown, loc.path, "", err
+		}
+		if !mcp.SamePath(loc.path, current) {
+			return agentStatusPathChanged, loc.path, "", nil
+		}
 	}
-	owned, err := pin.owns(ctx, rec, entry)
+	owned, err := pin.owns(ctx, rec, loc.entry)
 	if err != nil {
-		return statusUnknown, err
+		return statusUnknown, loc.path, "", err
 	}
 	if !owned {
-		return agentStatusModified, nil
+		return agentStatusModified, loc.path, changedEntryFix(rec.Name, loc.path, loc.entry), nil
 	}
-	return agentStatusInstalled, nil
+	return agentStatusInstalled, loc.path, "", nil
 }
 
 // unmanagedKind names how an entry reaches managed MCP servers without being recorded for its agent, or returns ""
@@ -352,8 +377,7 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 			}
 			for _, a := range s.Agents {
 				if a.Status == agentStatusModified {
-					cmdio.LogString(ctx, fmt.Sprintf("  changed outside this CLI in %s: delete the entry from %s by hand and run `%s` again, or add the server again with --force",
-						agentDisplayName(a.Name), a.Path, mcp.RemoveNamesCommand(s.Name)))
+					cmdio.LogString(ctx, fmt.Sprintf("  changed outside this CLI in %s: %s", agentDisplayName(a.Name), a.fix))
 				}
 			}
 		}

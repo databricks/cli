@@ -73,6 +73,44 @@ func (f *agentFiles) file(a *agents.Agent, path string) agentFile {
 	return file
 }
 
+// entryLocation is where remove finds a server's entry in one agent config, and what the entry holds.
+type entryLocation struct {
+	// path is the file the entry was found in, or the record's file when no file holds it.
+	path string
+	// entry is the entry, when found is set.
+	entry map[string]any
+	found bool
+	// recorded is set when the entry is in the file the record names.
+	recorded bool
+}
+
+// locateEntry finds the server's entry for agent a as remove does: in the file its record names, when that file holds
+// it. Otherwise it is in the file the agent reads now, since the user may have moved the agent's config directory. A
+// file that cannot be read is an error, since it may be the one that holds the entry.
+func (f *agentFiles) locateEntry(ctx context.Context, e mcp.Entry, a *agents.Agent) (entryLocation, error) {
+	recorded := e.Agents[a.Name].Path
+	file := f.file(a, recorded)
+	if file.err != nil {
+		return entryLocation{}, file.err
+	}
+	if entry, found := file.entries[e.Name]; found {
+		return entryLocation{path: recorded, entry: entry, found: true, recorded: true}, nil
+	}
+	current, err := f.currentPath(ctx, a)
+	if err != nil {
+		return entryLocation{}, err
+	}
+	if mcp.SamePath(current, recorded) {
+		return entryLocation{path: recorded}, nil
+	}
+	file = f.file(a, current)
+	if file.err != nil {
+		return entryLocation{}, file.err
+	}
+	entry, found := file.entries[e.Name]
+	return entryLocation{path: current, entry: entry, found: found}, nil
+}
+
 // bindingFile is the config file that a server is bound to, resolved once for the server. err is set when the file
 // cannot be resolved, and then none of the server's entries can be checked for ownership.
 type bindingFile struct {

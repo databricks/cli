@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -274,7 +275,7 @@ func TestBuildMcpListUnknownServerIsWarnedNotOK(t *testing.T) {
 	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.NotEmpty(t, out.Warnings)
-	assert.Contains(t, out.Warnings[0], "MCP server github-logfood")
+	assert.Contains(t, out.Warnings[0], filepath.ToSlash(broken)+": failed to read Databricks profiles", "the file is warned about once, by name")
 
 	require.Len(t, out.Profiles, 2)
 	logfood := out.Profiles[0]
@@ -490,7 +491,8 @@ func TestRenderMcpListNamesTheFileAndTheRepair(t *testing.T) {
 	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile \"logfood\" now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-query` and add it again")
 	assert.Contains(t, text, "broken: it was set up for https://adb-old.test, but profile \"logfood\" now points at https://adb-1.test; run `databricks aitools mcp remove --names github-moved` and add it again")
 	assert.Contains(t, text, "Profile gone profile  (profile not found in "+shownPath+")")
-	assert.Contains(t, text, "broken: run `databricks aitools mcp remove --names github-gone` or `DATABRICKS_CONFIG_FILE="+shownPath+" databricks auth login --host https://adb-old.test --profile 'gone profile'`")
+	// The config path is quoted when it has characters a shell would read, such as the colon of a Windows drive.
+	assert.Contains(t, text, "broken: run `databricks aitools mcp remove --names github-gone` or `DATABRICKS_CONFIG_FILE="+shellquote.BashArg(shownPath)+" databricks auth login --host https://adb-old.test --profile 'gone profile'`")
 	assert.Contains(t, text, "Profile nohost  (profile has no host in "+shownPath+")")
 	assert.NotContains(t, text, "Warning", "every entry in this test can be checked")
 }
@@ -598,7 +600,7 @@ func TestRenderMcpListLoginHintNamesCheckedFile(t *testing.T) {
 		{
 			name:        "environment names another file",
 			environment: filepath.Join(t.TempDir(), "other.cfg"),
-			login:       "`DATABRICKS_CONFIG_FILE=" + shownChecked + " databricks auth login --host https://adb-1.test --profile logfood`",
+			login:       "`DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(shownChecked) + " databricks auth login --host https://adb-1.test --profile logfood`",
 		},
 		{
 			name:        "environment names no file",
@@ -702,4 +704,163 @@ func TestProfileHeaderNamesPinnedConfigFile(t *testing.T) {
 	assert.Equal(t, "Profile logfood  (https://adb-1.test, config file /cfg/first.cfg)", profileHeader(first))
 	assert.NotEqual(t, profileHeader(first), profileHeader(second))
 	assert.Equal(t, "Profile logfood  (https://adb-1.test)", profileHeader(unpinned))
+}
+
+// TestRenderMcpListHintForDatabricksEntryOmitsForce checks the hint for an entry this CLI wrote that serves another
+// binding now: add refuses it whatever --force says, so the hint says to delete it by hand and does not offer --force.
+func TestRenderMcpListHintForDatabricksEntryOmitsForce(t *testing.T) {
+	home := withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	claudePath := filepath.Join(home, ".claude.json")
+	editEntry(t, claudePath, entry.Name, func(server map[string]any) { setServeFlag(t, server, "--profile", "other") })
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "  changed outside this CLI in Claude Code: delete the entry from "+filepath.ToSlash(claudePath)+
+		" by hand and run `databricks aitools mcp remove --names genie_one_mcp-logfood` again\n")
+	assert.NotContains(t, stderr.String(), "--force")
+}
+
+// TestBuildMcpListWarnsOncePerUnreadableProfileFile checks that a config file which cannot be read is one warning, however
+// many servers read it. Both servers here read the default file.
+func TestBuildMcpListWarnsOncePerUnreadableProfileFile(t *testing.T) {
+	home := withHome(t)
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte("[broken\n"), 0o600))
+	saveState(t,
+		mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand},
+		mcp.Entry{Name: "github-dogfood", Service: "system.ai.github", Profile: "dogfood", Host: "https://adb-2.test", Command: testDatabricksCommand},
+	)
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	var warnings []string
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "failed to read Databricks profiles") {
+			warnings = append(warnings, w)
+		}
+	}
+	require.Len(t, warnings, 1, "one file, one warning: %v", out.Warnings)
+	assert.NotContains(t, warnings[0], "genie", "the warning is for the file, not for a server")
+	for _, p := range out.Profiles {
+		assert.Equal(t, statusUnknown, p.Status, "every profile of the file is unknown")
+	}
+}
+
+// TestBuildMcpListWarnsForOwnershipErrorWithAnotherCause checks that an ownership error is warned about when the entry
+// check failed for another reason. Here the profile file cannot be read, and the agent's entry pins a file whose name
+// cannot be resolved: two causes, so two warnings.
+func TestBuildMcpListWarnsForOwnershipErrorWithAnotherCause(t *testing.T) {
+	home := withHome(t)
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte("[broken\n"), 0o600))
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "github-logfood", "system.ai.github", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	claudePath := filepath.Join(home, ".claude.json")
+	editEntry(t, claudePath, entry.Name, func(server map[string]any) {
+		server["env"] = map[string]any{mcpconfig.ConfigFileEnv: "unresolvable\x00.cfg"}
+	})
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	var ownership []string
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "MCP server github-logfood: could not check Claude Code") {
+			ownership = append(ownership, w)
+		}
+	}
+	require.Len(t, ownership, 1, "the agent's check has its own cause: %v", out.Warnings)
+	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Agents[0].Status)
+}
+
+// TestBuildMcpListRecordForAgentWithoutMCPIsUnknown checks a record for a registry agent that takes no MCP servers. It
+// is not a config that failed to read: the warning says the agent takes no servers, and remove drops the record.
+func TestBuildMcpListRecordForAgentWithoutMCPIsUnknown(t *testing.T) {
+	withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+	pi := agents.ByName("pi")
+	require.NotNil(t, pi)
+	require.False(t, pi.SupportsMCP())
+	saveState(t, mcp.Entry{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
+		Agents: map[string]mcp.AgentRecord{pi.Name: {Path: "/x/pi.json", Scope: "user"}},
+	})
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"MCP server github-logfood: Pi does not take MCP servers; remove drops this record"}, out.Warnings)
+	require.Len(t, out.Profiles, 1)
+	require.Len(t, out.Profiles[0].Servers, 1)
+	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Agents[0].Status)
+}
+
+// TestBuildMcpListAndRemoveAgreeAfterConfigMoved checks that list reports the entry where remove acts on it, when the
+// agent's config directory moved. The entry is either in the file the record names, which the agent no longer reads, or
+// in the file the agent reads now, with the record naming the old file.
+func TestBuildMcpListAndRemoveAgreeAfterConfigMoved(t *testing.T) {
+	cases := []struct {
+		name string
+		// entryIn is the file that holds the entry: "recorded" or "current".
+		entryIn string
+		status  string
+		// holds is the file that keeps the entry after remove: "" when no file keeps it.
+		removedFrom string
+	}{
+		{name: "entry in the recorded file", entryIn: "recorded", status: agentStatusPathChanged, removedFrom: "recorded"},
+		{name: "entry in the file the agent reads now", entryIn: "current", status: agentStatusInstalled, removedFrom: "current"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withHome(t)
+			writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+			claude := agents.ByName("claude-code")
+			oldDir := t.TempDir()
+			t.Setenv("CLAUDE_CONFIG_DIR", oldDir)
+			entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+			oldPath := entry.Agents[claude.Name].Path
+			saveState(t, entry)
+
+			newDir := t.TempDir()
+			newPath := filepath.Join(newDir, ".claude.json")
+			t.Setenv("CLAUDE_CONFIG_DIR", newDir)
+			if tc.entryIn == "current" {
+				// The user moved the config with the directory: the entry is in the new file and the old one is gone.
+				data, err := os.ReadFile(oldPath)
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(newPath, data, 0o600))
+				require.NoError(t, os.Remove(oldPath))
+			} else {
+				require.NoError(t, os.WriteFile(newPath, []byte("{}"), 0o600))
+			}
+
+			out, err := buildMcpList(t.Context(), "")
+			require.NoError(t, err)
+			require.Len(t, out.Profiles, 1)
+			listed := out.Profiles[0].Servers[0].Agents[0]
+			assert.Equal(t, tc.status, listed.Status)
+			wantPath := filepath.ToSlash(oldPath)
+			if tc.removedFrom == "current" {
+				wantPath = filepath.ToSlash(newPath)
+			}
+			assert.Equal(t, wantPath, listed.Path, "list names the file remove acts on")
+
+			stdout, _, err := runMcpCmd(t, "remove", "--names", entry.Name, "--output", "json")
+			require.NoError(t, err)
+			removed := readRemoveOutput(t, stdout.String())
+			require.Len(t, removed.Removed, 1, "remove takes the entry from the file list named")
+			assert.Empty(t, removed.Skipped)
+
+			acted := oldPath
+			if tc.removedFrom == "current" {
+				acted = newPath
+			}
+			if data, err := os.ReadFile(acted); err == nil {
+				assert.NotContains(t, string(data), entry.Name, "the entry is gone from %s", acted)
+			}
+		})
+	}
 }
