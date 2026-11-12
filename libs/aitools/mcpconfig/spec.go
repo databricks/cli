@@ -75,6 +75,7 @@ func Argv(entry map[string]any) ([]string, bool) {
 const (
 	ServiceFlag = "--service"
 	ProfileFlag = "--profile"
+	AgentFlag   = "--agent"
 )
 
 // EnvKeys are the entry keys that hold environment variables: env for most agents, and environment for OpenCode.
