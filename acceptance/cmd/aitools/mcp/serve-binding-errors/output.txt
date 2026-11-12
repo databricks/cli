@@ -31,3 +31,8 @@ Exit code: 1
 Error: --output does not apply to serve: its stdout carries the MCP protocol
 
 Exit code: 1
+
+>>> cat out.stderr.txt
+Error: --log-file stdout is not supported by serve: its stdout carries the MCP protocol
+
+Exit code: 1

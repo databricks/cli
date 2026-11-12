@@ -1,3 +1,3 @@
-Error: --output does not apply to serve: its stdout carries the MCP protocol
+Error: --log-file stdout is not supported by serve: its stdout carries the MCP protocol
 
 Exit code: 1

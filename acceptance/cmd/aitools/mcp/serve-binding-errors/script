@@ -44,3 +44,5 @@ errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_m
 trace cat out.stderr.txt
 errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --output json < requests.ndjson > out.stdout.txt 2> out.stderr.txt
 trace cat out.stderr.txt
+errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --log-file stdout < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt

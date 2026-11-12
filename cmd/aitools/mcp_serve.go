@@ -51,6 +51,9 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if out := cmd.Flag("output"); out != nil && out.Changed {
 		return errors.New("--output does not apply to serve: its stdout carries the MCP protocol")
 	}
+	if logFile := cmd.Flag("log-file"); logFile != nil && logFile.Value.String() == "stdout" {
+		return errors.New("--log-file stdout is not supported by serve: its stdout carries the MCP protocol")
+	}
 	profileName := profileFlag(cmd)
 	if profileName == "" {
 		return errors.New("--profile is required")
