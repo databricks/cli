@@ -196,6 +196,16 @@ func TestBuildListRow(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.False(t, row.IsSweep)
 	require.NotNil(t, row.StartedAt)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"SUCCESS",
+		"started_at":"2023-11-14T22:13:20+00:00","is_sweep":false,
+		"experiment_name":"exp","duration_seconds":12,
+		"accelerator_type":"GPU_8xH100","accelerator_count":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=0"
+	}`, string(body))
 }
 
 func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
@@ -211,7 +221,9 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	assert.Equal(t, listRowStatus(row), row.Status)
 	assert.JSONEq(t, `{
 		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"PENDING",
-		"started_at":null,"is_sweep":false
+		"started_at":null,"is_sweep":false,"experiment_name":"exp","duration_seconds":null,
+		"accelerator_type":"GPU_8xH100","accelerator_count":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=0"
 	}`, string(body))
 }
 
@@ -224,6 +236,14 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.Equal(t, "UNKNOWN", row.Status)
 	assert.Nil(t, row.StartedAt)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"7","run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
+		"experiment_name":null,"duration_seconds":null,"accelerator_type":null,"accelerator_count":null,
+		"dashboard_url":"https://example.test/jobs/runs/7?o=0"
+	}`, string(body))
 }
 
 func TestBuildListRowSweep(t *testing.T) {

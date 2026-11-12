@@ -20,7 +20,10 @@ func TestListCacheRoundTrip(t *testing.T) {
 	_, _, _, ok := cachedRow(ctx, c, "https://host.test", 42)
 	require.False(t, ok, "miss before write")
 
-	row := listRow{RunID: "42", Experiment: "exp", Status: "SUCCESS"}
+	row := listRow{
+		RunID: "42", Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
+		AcceleratorType: new("GPU_1xA10"), AcceleratorCount: new(1), Experiment: "exp",
+	}
 	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
 	tasks := []jobs.RunTask{{RunId: 420, TaskKey: "train"}, {RunId: 421, TaskKey: "train", AttemptNumber: 1}}
 	putRow(ctx, c, "https://host.test", 42, tasks, 1700000000000, row, fields)

@@ -37,16 +37,19 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID         string  `json:"run_id"`
-	RunName       string  `json:"run_name"`
-	User          string  `json:"user"`
-	Status        string  `json:"status"`
-	DisplayStatus string  `json:"-"`
-	StartedAt     *string `json:"started_at"`
-	IsSweep       bool    `json:"is_sweep"`
+	RunID            string  `json:"run_id"`
+	RunName          string  `json:"run_name"`
+	User             string  `json:"user"`
+	Status           string  `json:"status"`
+	DisplayStatus    string  `json:"-"`
+	StartedAt        *string `json:"started_at"`
+	IsSweep          bool    `json:"is_sweep"`
+	ExperimentName   *string `json:"experiment_name"`
+	DurationSeconds  *int64  `json:"duration_seconds"`
+	AcceleratorType  *string `json:"accelerator_type"`
+	AcceleratorCount *int    `json:"accelerator_count"`
 
-	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
-	// columns, omitted from JSON to match `air list --json`.
+	// The fields below are pre-rendered table cells or text-only enrichment.
 	Experiment string `json:"-"`
 	Duration   string `json:"-"`
 	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
@@ -54,7 +57,7 @@ type listRow struct {
 	Progress      string `json:"-"`
 	MLflowURL     string `json:"-"`
 	MLflowLabel   string `json:"-"`
-	RunURL        string `json:"-"`
+	RunURL        string `json:"dashboard_url"`
 	ExperimentURL string `json:"-"`
 	Accelerators  string `json:"-"`
 }
