@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"maps"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -52,6 +55,10 @@ const (
 	// ReasonCLINotOnPath: the agent's CLI binary is not on PATH, or its CLI does
 	// not expose a working `plugin` subcommand.
 	ReasonCLINotOnPath = "cli-not-on-path"
+	// ReasonShimExitedWithError: the agent's Windows .cmd/.bat shim printed its
+	// `plugin --help` but exited with an error. The install stops here rather
+	// than run plugin commands through a shim that may fail part way.
+	ReasonShimExitedWithError = "shim-exited-with-error"
 	// ReasonInstallFailed: the agent's plugin CLI ran but returned an error.
 	ReasonInstallFailed = "install-failed"
 	// ReasonNoPlugin: the agent has no installable plugin. Callers filter these
@@ -308,9 +315,66 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
 	if _, err := runAgentCmd(ctx, pluginProbeTimeout, []string{bin, "plugin", "--help"}); err != nil {
+		if perr, ok := windowsShimPrintedHelp(bin, err); ok {
+			return "", &BlockedError{Agent: agent.Name, Reason: ReasonShimExitedWithError, Detail: shimExitedDetail(bin, perr)}
+		}
 		return "", newBlockedError(agent, ReasonCLINotOnPath, err)
 	}
 	return bin, nil
+}
+
+// shimExitedDetail explains a shim that printed its plugin help but exited with
+// an error. It keeps the shim's stderr, since a re-run may show only the help,
+// and names how to read the exit code, which neither Windows shell prints. The
+// path stays absolute and keeps its backslashes so it can be pasted into
+// Command Prompt or PowerShell as is, and it is quoted because a profile path
+// can contain spaces. PowerShell needs the & call operator before a quoted path.
+// Command Prompt expands %ERRORLEVEL% when it reads a line, so the hint reads it
+// in a separate command after the shim has run.
+func shimExitedDetail(bin string, perr *process.ProcessError) string {
+	detail := fmt.Sprintf("printed its plugin help but exited with an error (%s)", perr.Err)
+	if stderr := strings.TrimSpace(perr.Stderr); stderr != "" {
+		detail += ": " + stderr
+	}
+	return detail + fmt.Sprintf("; to see the error and exit code, run `& \"%[1]s\" plugin --help; $LASTEXITCODE` in PowerShell or `\"%[1]s\" plugin --help` and then `echo %%ERRORLEVEL%%` in Command Prompt, and re-run this command once it exits with 0", bin)
+}
+
+// pluginHelpUsage, pluginHelpInstall and pluginHelpMarket match the help that
+// `<agent> plugin --help` prints: a "Usage: <bin> plugin" line and an indented
+// command list that includes install (add for Codex) and marketplace. An error
+// message that merely mentions those words has neither shape.
+var (
+	pluginHelpUsage   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?im)^usage:[ \t]+\S+[ \t]+plugin\b`) })
+	pluginHelpInstall = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?m)^[ \t]+(install|add)\b`) })
+	pluginHelpMarket  = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?m)^[ \t]+marketplace\b`) })
+)
+
+// windowsShimPrintedHelp reports whether a failed probe is a Windows shim that
+// printed the full `plugin --help` and then exited with an error, and returns
+// the failed process. Such a CLI is present, so reporting it as not on PATH
+// would point the user at the wrong fix. Agent binaries are bare names, so
+// LookPath returns a .cmd or .bat path only on Windows. Only stdout is matched:
+// the agent CLIs print --help to stdout, and help on stderr usually means the
+// CLI rejected its arguments.
+//
+// TestProbeRealCmdShimPrintedHelp runs a real .cmd that prints the help and
+// exits 1, which checks how this path sees a shim's exit code on Windows.
+func windowsShimPrintedHelp(bin string, err error) (*process.ProcessError, bool) {
+	if ext := strings.ToLower(filepath.Ext(bin)); ext != ".cmd" && ext != ".bat" {
+		return nil, false
+	}
+	if _, ok := errors.AsType[*agentCmdTimeoutError](err); ok {
+		return nil, false
+	}
+	perr, ok := errors.AsType[*process.ProcessError](err)
+	if !ok {
+		return nil, false
+	}
+	out := perr.Stdout
+	if !pluginHelpUsage().MatchString(out) || !pluginHelpInstall().MatchString(out) || !pluginHelpMarket().MatchString(out) {
+		return nil, false
+	}
+	return perr, true
 }
 
 // InstallPluginForAgent registers the databricks marketplace and installs the

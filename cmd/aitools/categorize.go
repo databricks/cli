@@ -191,7 +191,9 @@ func blockedErrorCategory(e *installer.BlockedError) protos.AitoolsErrorCategory
 	switch e.Reason {
 	case installer.ReasonCLINotOnPath:
 		return protos.AitoolsErrorCategoryCLINotOnPath
-	case installer.ReasonInstallFailed:
+	// A shim that exited with an error is a present CLI whose plugin command
+	// failed, which is closest to a failed plugin install.
+	case installer.ReasonInstallFailed, installer.ReasonShimExitedWithError:
 		return protos.AitoolsErrorCategoryPluginInstallFailed
 	default:
 		return protos.AitoolsErrorCategoryUncategorized
