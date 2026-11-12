@@ -31,7 +31,7 @@ func TestMcpCommandIsHidden(t *testing.T) {
 	for _, c := range mcp.Commands() {
 		names = append(names, c.Name())
 	}
-	assert.Equal(t, []string{"add", "list", "remove"}, names)
+	assert.Equal(t, []string{"add", "list", "remove", "serve"}, names)
 
 	for _, c := range NewAitoolsCmd().Commands() {
 		if c.Name() == "mcp" {

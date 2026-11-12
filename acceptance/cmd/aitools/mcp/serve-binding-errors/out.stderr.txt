@@ -1,0 +1,3 @@
+Error: --output does not apply to serve: its stdout carries the MCP protocol
+
+Exit code: 1

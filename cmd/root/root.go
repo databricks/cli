@@ -76,7 +76,7 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		warnIfStaleVersion(ctx)
+		warnIfStaleVersion(ctx, cmd)
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
@@ -189,10 +189,7 @@ Stack Trace:
 		}
 	}
 
-	exitCode := 0
-	if err != nil {
-		exitCode = 1
-	}
+	exitCode := ExitStatus(err)
 
 	commandStr := commandString(cmd)
 	ctx = cmd.Context()

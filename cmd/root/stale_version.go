@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/versioncheck"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -39,9 +40,15 @@ func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
 	return dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 }
 
-func warnIfStaleVersion(ctx context.Context) {
+// isMCPServe reports whether cmd is `aitools mcp serve`, whose stdout is the MCP protocol and must
+// carry nothing else. cmd/root cannot import cmd/aitools, so the command is matched by name.
+func isMCPServe(cmd *cobra.Command) bool {
+	return cmd.Name() == "serve" && cmd.Parent() != nil && cmd.Parent().Name() == "mcp"
+}
+
+func warnIfStaleVersion(ctx context.Context, cmd *cobra.Command) {
 	info := build.GetInfo()
-	if skipStaleVersionWarning(ctx, info) {
+	if isMCPServe(cmd) || skipStaleVersionWarning(ctx, info) {
 		return
 	}
 	_, command := versioncheck.DetectInstallMethod(ctx)

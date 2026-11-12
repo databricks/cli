@@ -939,6 +939,10 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
 
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
+	})
+
 	// Feature Engineering features:
 	server.Handle("POST", "/api/2.0/feature-engineering/features", func(req Request) any {
 		return req.Workspace.FeaturesCreate(req)

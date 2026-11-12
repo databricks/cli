@@ -1,0 +1,46 @@
+# Isolate HOME so the state file written below lands in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Binding failures exit 2 with one message on stderr. Nothing reaches stdout, and stdin is not read.
+title "The bound profile is not in the config file"
+errcode $CLI aitools mcp serve --profile gone --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt
+echo "stdout bytes: $(wc -c < out.stdout.txt)"
+
+# A state record for logfood that points at another host: the proxy never follows the profile.
+mkdir -p home/.databricks/aitools/mcp
+cat > home/.databricks/aitools/mcp/state.json <<'JSON'
+{
+  "schema_version": 1,
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "profile": "logfood",
+      "host": "https://other.test",
+      "workspace_id": "",
+      "sign_in_required": false,
+      "command": "",
+      "config_file": "",
+      "agents": {},
+      "installed_at": "2026-01-01T00:00:00Z",
+      "cli_version": "0.0.0"
+    }
+  ]
+}
+JSON
+
+title "The profile now points at another host than the one recorded"
+errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt
+echo "stdout bytes: $(wc -c < out.stdout.txt)"
+
+title "Flags are required and validated before the binding checks"
+errcode $CLI aitools mcp serve --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt
+errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent nope < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt
+errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --output json < requests.ndjson > out.stdout.txt 2> out.stderr.txt
+trace cat out.stderr.txt

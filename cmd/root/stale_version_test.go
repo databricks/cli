@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,4 +65,18 @@ func TestSkipStaleVersionWarning(t *testing.T) {
 			assert.Equal(t, tc.want, skipStaleVersionWarning(ctx, tc.info))
 		})
 	}
+}
+
+func TestIsMCPServe(t *testing.T) {
+	aitools := &cobra.Command{Use: "aitools"}
+	mcp := &cobra.Command{Use: "mcp"}
+	serve := &cobra.Command{Use: "serve"}
+	add := &cobra.Command{Use: "add"}
+	aitools.AddCommand(mcp)
+	mcp.AddCommand(serve, add)
+
+	assert.True(t, isMCPServe(serve))
+	assert.False(t, isMCPServe(add))
+	assert.False(t, isMCPServe(mcp))
+	assert.False(t, isMCPServe(&cobra.Command{Use: "serve"}))
 }

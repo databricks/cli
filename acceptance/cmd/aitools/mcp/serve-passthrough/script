@@ -1,0 +1,14 @@
+# Isolate HOME so the proxy finds no state file and no agent config, as on a fresh machine.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# DATABRICKS_HOST points elsewhere; the proxy must still talk to the profile's host.
+export DATABRICKS_HOST=https://elsewhere.test
+
+# Responses may arrive in any order, so they are sorted by id. jq -s also fails when any stdout line is not JSON.
+title "Stdout holds one JSON-RPC message per line; the notification gets no reply"
+$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> out.stderr.txt | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+
+title "Diagnostics go to stderr only"
+trace cat out.stderr.txt
