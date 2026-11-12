@@ -99,9 +99,17 @@ func (a *Agent) Detected(ctx context.Context) bool {
 	return err == nil && HasDatabricksSkillsIn(skillsDir)
 }
 
-// InstalledForMCP reports whether the agent is installed for MCP servers: Detected or HasBinary, or the MCP
-// config file or, with mcpHomeEnv, its directory exists.
+// InstalledForMCP reports whether the agent is installed for MCP servers. When mcpHomeEnv is set, the directory it names
+// is the only signal: the agent's own directory may exist while the MCP home does not, and writing the MCP config would
+// create that home. Otherwise Detected, HasBinary, or the MCP config file counts.
 func (a *Agent) InstalledForMCP(ctx context.Context) (bool, error) {
+	if a.mcpHomeEnv != "" && env.Get(ctx, a.mcpHomeEnv) != "" {
+		path, err := a.MCP.Path(ctx)
+		if err != nil {
+			return false, err
+		}
+		return linkExists(filepath.Dir(path))
+	}
 	if a.Detected(ctx) || a.HasBinary(ctx) {
 		return true, nil
 	}
@@ -112,13 +120,7 @@ func (a *Agent) InstalledForMCP(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if exists, err := linkExists(path); err != nil || exists {
-		return exists, err
-	}
-	if a.mcpHomeEnv == "" || env.Get(ctx, a.mcpHomeEnv) == "" {
-		return false, nil
-	}
-	return linkExists(filepath.Dir(path))
+	return linkExists(path)
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
