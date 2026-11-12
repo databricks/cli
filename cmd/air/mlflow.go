@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -156,14 +157,22 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
-// "...{last 8 of run id}" when the name is unknown. Mirrors Python's
-// _get_mlflow_run_name (cli_display.py).
-func mlflowRunLabel(name, mlflowRunID string) string {
-	if name != "" {
-		return name
+// its run ID when the name is unknown. A label wider than width keeps its end
+// behind a leading "…", since run names and IDs tend to share a prefix and
+// differ in their tail. A width of 0 or less means no limit.
+func mlflowRunLabel(name, mlflowRunID string, width int) string {
+	label := name
+	if label == "" {
+		label = mlflowRunID
 	}
-	if len(mlflowRunID) > 8 {
-		return "..." + mlflowRunID[len(mlflowRunID)-8:]
+	if width <= 0 || lipgloss.Width(label) <= width {
+		return label
 	}
-	return "..." + mlflowRunID
+	// Drop leading runes until the rest fits beside the "…"; a wide rune takes
+	// two cells, so the cut is by display width, not rune count.
+	runes := []rune(label)
+	for len(runes) > 0 && lipgloss.Width(string(runes)) > width-1 {
+		runes = runes[1:]
+	}
+	return "…" + string(runes)
 }
