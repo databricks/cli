@@ -15,9 +15,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,12 +94,7 @@ func saveState(t *testing.T, entries ...mcp.Entry) {
 // runMcpCmd runs `mcp list` or `mcp remove` with args and returns its stdout and stderr.
 func runMcpCmd(t *testing.T, args ...string) (stdout, stderr *bytes.Buffer, err error) {
 	t.Helper()
-	parent := &cobra.Command{Use: "databricks", SilenceErrors: true, SilenceUsage: true}
-	output := flags.OutputText
-	parent.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
-	parent.PersistentFlags().StringP("profile", "p", "", "profile")
-	parent.AddCommand(NewMcpCmd())
-
+	parent := newMCPTestRoot()
 	ctx, stderrBuf := cmdio.NewTestContextWithStderr(t.Context())
 	var stdoutBuf bytes.Buffer
 	parent.SetOut(&stdoutBuf)

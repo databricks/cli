@@ -46,7 +46,7 @@ func ServerName(fullName, profile string) string {
 	return strings.Join(name, "-")
 }
 
-// leafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
+// LeafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
 func LeafOf(fullName string) string {
 	return fullName[strings.LastIndex(fullName, ".")+1:]
 }

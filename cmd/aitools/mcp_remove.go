@@ -155,12 +155,13 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		return err
 	}
 
-	// Each agent config file is read once, when the first selected server needs it.
-	files := map[recordedFileKey]recordedFile{}
+	// Each agent config file is read once per command, and each server's config file is resolved once.
+	files := newAgentFiles()
 	var drops []recordDrop
 	var agentErrs []error
 	for _, e := range selected {
 		removed := removeRemoved{Name: e.Name, Service: e.Service, Profile: e.Profile, Agents: []string{}}
+		pin := resolveBinding(ctx, e)
 		var errs []error
 		for _, agentName := range slices.Sorted(maps.Keys(e.Agents)) {
 			if targets != nil && !slices.ContainsFunc(targets, func(a *agents.Agent) bool { return a.Name == agentName }) {
@@ -174,13 +175,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 				continue
 			}
-			path, file, err := entryFile(ctx, e, a, e.Agents[agentName].Path, files)
-			if err != nil {
-				errs = append(errs, err)
-				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
-				continue
-			}
-			outcome, reason, err := removeAgentEntry(ctx, e, a, path, file)
+			outcome, reason, err := removeFromAgent(ctx, files, e, a, pin)
 			if err != nil {
 				errs = append(errs, err)
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
@@ -321,62 +316,34 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 			_, ok := e.Agents[a.Name]
 			return ok
 		}) {
-			return failure(categoryServiceNotFound, nil, "no selected MCP server is installed for %s", a.DisplayName)
+			return failure(categoryServiceNotFound, nil, "no selected MCP server is installed for %s", agentDisplayName(a.Name))
 		}
 	}
 	return nil
 }
 
-// recordedFile is an agent config file that a record names, read once for a command. err is set when it cannot be
-// read; a file that does not exist has no entries.
-type recordedFile struct {
-	entries map[string]map[string]any
-	err     error
-}
-
-// recordedFileKey names a recordedFile: the agent and the path its record gives.
-type recordedFileKey struct {
-	agent string
-	path  string
-}
-
-// readRecordedFile reads the agent config file at path, which a record names. A file that does not exist has no entries.
-func readRecordedFile(a *agents.Agent, path string) recordedFile {
-	entries, err := agentconfig.ReadAt(a, path)
-	return recordedFile{entries: entries, err: err}
-}
-
-// cachedRecordedFile returns the agent config file at path from files, reading it on first use.
-func cachedRecordedFile(files map[recordedFileKey]recordedFile, a *agents.Agent, path string) recordedFile {
-	key := recordedFileKey{agent: a.Name, path: path}
-	file, ok := files[key]
-	if !ok {
-		file = readRecordedFile(a, path)
-		files[key] = file
-	}
-	return file
-}
-
-// entryFile returns the config file that holds the server's entry for the agent, and its contents. That is the file the
+// entryFile returns the config file that holds the server's entry for agent a, and its entries. That is the file the
 // record names, unless the file does not hold the entry and the agent now reads its config from another file: then that
 // file, which may hold it, since the user may have moved the config with the agent's directory. A recorded file that
 // cannot be read is an error, since it may be the one that holds the entry.
-func entryFile(ctx context.Context, e mcp.Entry, a *agents.Agent, recorded string, files map[recordedFileKey]recordedFile) (string, recordedFile, error) {
-	file := cachedRecordedFile(files, a, recorded)
+func entryFile(ctx context.Context, files *agentFiles, e mcp.Entry, a *agents.Agent) (string, agentFile, error) {
+	recorded := e.Agents[a.Name].Path
+	file := files.file(a, recorded)
 	if file.err != nil {
-		return "", recordedFile{}, file.err
+		return "", agentFile{}, file.err
 	}
 	if _, found := file.entries[e.Name]; found {
 		return recorded, file, nil
 	}
-	current, err := agentconfig.Path(ctx, a)
+	current, err := files.currentPath(ctx, a)
 	if err != nil {
-		return "", recordedFile{}, err
+		return "", agentFile{}, err
 	}
 	if mcp.SamePath(current, recorded) {
 		return recorded, file, nil
 	}
-	return current, cachedRecordedFile(files, a, current), nil
+	file = files.file(a, current)
+	return current, file, file.err
 }
 
 // keptReason says why an entry is left in place, and how to get it out: by hand, or by adding the server again with --force.
@@ -385,17 +352,19 @@ func keptReason(e mcp.Entry, a *agents.Agent, path string) string {
 		agentDisplayName(a.Name), e.Name, filepath.ToSlash(path))
 }
 
-// removeAgentEntry removes the server from the config file at path, but only when the entry there is the one this CLI
-// wrote. A file that has no entry of the name is pruned: the record goes without an edit.
-func removeAgentEntry(ctx context.Context, e mcp.Entry, a *agents.Agent, path string, file recordedFile) (removeOutcome, string, error) {
-	if file.err != nil {
-		return 0, "", file.err
+// removeFromAgent removes the server's entry for agent a, but only when the entry there is the one this CLI wrote. The
+// entry is looked for as entryFile finds it. A file that has no entry of the name is pruned: the record goes without an
+// edit.
+func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *agents.Agent, pin bindingFile) (removeOutcome, string, error) {
+	path, file, err := entryFile(ctx, files, e, a)
+	if err != nil {
+		return 0, "", err
 	}
 	current, found := file.entries[e.Name]
 	if !found {
 		return removePruned, "", nil
 	}
-	owned, err := ownedBy(ctx, e, current)
+	owned, err := pin.owns(ctx, e, current)
 	if err != nil {
 		return 0, "", err
 	}
