@@ -1,1 +1,1 @@
-* `air cancel JOB_RUN_ID` now rejects run IDs that are not AI Runtime runs instead of cancelling unrelated Jobs runs.
+* `air cancel JOB_RUN_ID` now rejects run IDs that are not AI Runtime runs instead of cancelling unrelated Jobs runs. In `-o json` output, the `failed[].error` text for a run that does not exist or that you cannot view now starts with `failed to get run <id>:` instead of the cancel API error. ([#7569](https://github.com/databricks/cli/pull/7569))
