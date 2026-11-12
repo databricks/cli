@@ -364,10 +364,28 @@ func TestLoadRunConfig_UnknownFieldMessages(t *testing.T) {
 			yaml: minimalConfig + "code_source:\n  root_path: .\n  fancy_new_option: true\n",
 			wantParts: []string{
 				`line 9: unknown field "code_source.fancy_new_option"` + "\n",
-				"may not be supported by this CLI (version " + build.GetInfo().Version + ")",
-				"databricks version --check",
+				"if a field comes from newer documentation, it may need a newer CLI than version " + build.GetInfo().Version + "; run 'databricks version --check'",
 			},
 			denyParts: []string{"did you mean"},
+		},
+		{
+			// priority is intentionally unsupported, so the newer-CLI hint must stay hedged.
+			name: "dropped priority field",
+			yaml: minimalConfig + "priority: 1\n",
+			wantParts: []string{
+				`line 7: unknown field "priority"` + "\n",
+				"if a field comes from newer documentation, it may need a newer CLI",
+			},
+			denyParts: []string{"did you mean", "update the Databricks CLI"},
+		},
+		{
+			name: "hidden parent omits help pointer",
+			yaml: minimalConfig + "code_source:\n  snapshot:\n    rot_path: .\n",
+			wantParts: []string{
+				`line 9: unknown field "code_source.snapshot.rot_path"; did you mean "root_path"?`,
+				`fields under "config.code_source.snapshot" are: `,
+			},
+			denyParts: []string{"databricks air run -h"},
 		},
 		{
 			name: "every unknown field is reported",
@@ -394,6 +412,59 @@ func TestLoadRunConfig_UnknownFieldMessages(t *testing.T) {
 	}
 }
 
+func TestLoadRunConfig_ShapeMismatchLeftToDecoder(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{"list document", "- experiment_name: x\n- bogus: 1\n"},
+		{"list where object expected", "experiment_name: my-run\ncommand: python train.py\ncompute: [{foo: 1}]\n"},
+		{"object where list expected", minimalConfig + "permissions: {levl: CAN_VIEW}\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, tt.yaml))
+			require.ErrorContains(t, err, "cannot unmarshal")
+			assert.NotContains(t, err.Error(), "unknown field")
+			assert.NotContains(t, err.Error(), "newer documentation")
+		})
+	}
+}
+
+func TestLoadRunConfigWithOverrides_UnknownFieldInValue(t *testing.T) {
+	tests := []struct {
+		name      string
+		override  string
+		wantParts []string
+	}{
+		{
+			name:     "object value",
+			override: "compute={foo: 1}",
+			wantParts: []string{
+				`invalid --override "compute": unknown field "compute.foo"` + "\n",
+				`fields under "config.compute" are: `,
+				"newer documentation",
+			},
+		},
+		{
+			name:      "list value",
+			override:  "permissions=[{levl: CAN_VIEW}]",
+			wantParts: []string{`invalid --override "permissions": unknown field "permissions.levl"; did you mean "level"?`},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, minimalConfig), []string{tt.override})
+			require.Error(t, err)
+			for _, part := range tt.wantParts {
+				assert.Contains(t, err.Error(), part)
+			}
+			assert.NotContains(t, err.Error(), "line ")
+			assert.NotContains(t, err.Error(), "invalid config")
+		})
+	}
+}
+
 func TestLoadRunConfig_KnownFieldsAcceptedByUnknownFieldCheck(t *testing.T) {
 	tests := []struct {
 		name string
@@ -402,6 +473,7 @@ func TestLoadRunConfig_KnownFieldsAcceptedByUnknownFieldCheck(t *testing.T) {
 		{"hidden legacy code_source keys", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: src\n"},
 		{"free-form maps", "parameters:\n  lr: {nested: 1}\nenv_variables:\n  ANY_NAME: x\n"},
 		{"merge key", "permissions:\n  - <<: {level: CAN_VIEW}\n    user_name: a@example.test\n"},
+		{"merge key list", "permissions:\n  - <<: [{level: CAN_VIEW}, {user_name: a@example.test}]\n"},
 		{"merge key from alias", "permissions:\n  - &grant {level: CAN_VIEW, user_name: a@example.test}\n  - <<: *grant\n    user_name: b@example.test\n"},
 	}
 	for _, tt := range tests {

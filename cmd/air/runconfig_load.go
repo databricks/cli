@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -141,25 +140,30 @@ type unknownConfigKey struct {
 // schema by its YAML path, so users see the field they wrote rather than the
 // strict decoder's Go type names.
 func checkUnknownConfigFields(path string, document *yaml.Node) error {
-	var unknown []unknownConfigKey
-	collectUnknownConfigKeys(document.Content[0], configSchema(), &unknown)
-	if len(unknown) == 0 {
+	msg := describeUnknownConfigKeys(collectUnknownConfigKeys(document.Content[0], configSchema(), nil), true)
+	if msg == "" {
 		return nil
+	}
+	return fmt.Errorf("invalid config %s: %s", path, msg)
+}
+
+// describeUnknownConfigKeys renders unknown keys for an error message, or ""
+// if there are none. withLines is false for --override values, whose line
+// numbers point into the flag rather than the config file.
+func describeUnknownConfigKeys(unknown []unknownConfigKey, withLines bool) string {
+	if len(unknown) == 0 {
+		return ""
 	}
 
 	blocks := make([]string, 0, len(unknown))
 	suggestUpdate := false
 	for _, u := range unknown {
-		names := make([]string, 0, len(u.parent.children))
-		for _, c := range u.parent.children {
-			if !c.hidden {
-				names = append(names, configLeafName(c.path))
-			}
-		}
-		slices.Sort(names)
-
+		names := visibleConfigChildNames(u.parent)
 		fieldPath := strings.TrimPrefix(u.parent.path+"."+u.key, configHelpRoot+".")
-		block := fmt.Sprintf("line %d: unknown field %q", u.line, fieldPath)
+		block := fmt.Sprintf("unknown field %q", fieldPath)
+		if withLines {
+			block = fmt.Sprintf("line %d: %s", u.line, block)
+		}
 		if suggestion, ok := closestConfigField(u.key, names); ok {
 			block += fmt.Sprintf("; did you mean %q?", suggestion)
 		} else {
@@ -177,44 +181,63 @@ func checkUnknownConfigFields(path string, document *yaml.Node) error {
 	if len(blocks) > 1 {
 		msg = fmt.Sprintf("%d unknown fields\n\n%s", len(blocks), msg)
 	}
+	// Some unknown keys are deliberately unsupported (e.g. priority, _bases_),
+	// so the newer-CLI explanation is only a possibility.
 	if suggestUpdate {
-		msg += fmt.Sprintf("\n\nfields from newer documentation may not be supported by this CLI (version %s); update the Databricks CLI (run 'databricks version --check')", build.GetInfo().Version)
+		msg += fmt.Sprintf("\n\nif a field comes from newer documentation, it may need a newer CLI than version %s; run 'databricks version --check'", build.GetInfo().Version)
 	}
-	return fmt.Errorf("invalid config %s: %s", path, msg)
+	return msg
 }
 
-// collectUnknownConfigKeys walks node against schema, appending unknown keys in
-// document order. Non-object and free-form fields are left to the decoder.
-func collectUnknownConfigKeys(node *yaml.Node, schema configField, unknown *[]unknownConfigKey) {
+// collectUnknownConfigKeys walks node against schema and returns unknown with
+// every unknown key appended. Non-object and free-form fields, and values whose
+// shape doesn't match the schema, are left to the decoder's type errors.
+func collectUnknownConfigKeys(node *yaml.Node, schema configField, unknown []unknownConfigKey) []unknownConfigKey {
 	if node.Kind == yaml.AliasNode {
 		node = node.Alias
 	}
 	if len(schema.children) == 0 || schema.freeForm {
-		return
+		return unknown
 	}
 	switch node.Kind {
 	case yaml.SequenceNode:
-		for _, item := range node.Content {
-			collectUnknownConfigKeys(item, schema, unknown)
+		if !schema.isList {
+			return unknown
+		}
+		item := schema
+		item.isList = false
+		for _, n := range node.Content {
+			unknown = collectUnknownConfigKeys(n, item, unknown)
 		}
 	case yaml.MappingNode:
+		if schema.isList {
+			return unknown
+		}
 		for i := 0; i < len(node.Content); i += 2 {
 			key, value := node.Content[i], node.Content[i+1]
-			// The decoder folds "<<: *anchor" into this mapping, so its keys belong to schema.
+			// The decoder folds "<<: *anchor" (or a list of anchors) into this
+			// mapping, so the merged keys belong to schema.
 			if key.ShortTag() == "!!merge" {
-				collectUnknownConfigKeys(value, schema, unknown)
+				sources := []*yaml.Node{value}
+				if value.Kind == yaml.SequenceNode {
+					sources = value.Content
+				}
+				for _, source := range sources {
+					unknown = collectUnknownConfigKeys(source, schema, unknown)
+				}
 				continue
 			}
 			child, ok := findConfigChild(schema.children, key.Value)
 			if !ok {
-				*unknown = append(*unknown, unknownConfigKey{line: key.Line, key: key.Value, parent: schema})
+				unknown = append(unknown, unknownConfigKey{line: key.Line, key: key.Value, parent: schema})
 				continue
 			}
-			collectUnknownConfigKeys(value, child, unknown)
+			unknown = collectUnknownConfigKeys(value, child, unknown)
 		}
 	default:
 		// A scalar where an object is expected is a type error the decoder reports.
 	}
+	return unknown
 }
 
 func codeSourceFieldPresent(document *yaml.Node, field string) bool {
