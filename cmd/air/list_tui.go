@@ -115,6 +115,7 @@ type listModel struct {
 	cursor int
 	offset int // index of the first visible row
 	height int // terminal height, for windowing
+	width  int // terminal width, for fitting the flexible columns; 0 until known
 
 	mode          int            // modeList or modeDetail
 	viewport      viewport.Model // for detail pane
@@ -188,6 +189,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
+		m.width = msg.Width
+		m.cols = computeListCols(m.rows).fitWidth(m.width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
 		m.viewport.SetContent(m.wrappedDetail())
@@ -201,7 +204,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
-		m.cols = computeListCols(m.rows)
+		m.cols = computeListCols(m.rows).fitWidth(m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
