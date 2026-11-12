@@ -25,7 +25,7 @@ trace $CLI aitools mcp list
 title "remove leaves the modified entry in place and says why"
 trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 trace jq '.mcpServers | keys' home/.claude.json
-trace jq '[.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json
+trace jq '.mcp | [.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json
 
 title "remove --all removes what this CLI wrote and nothing else"
 trace $CLI aitools mcp remove --all --output json
