@@ -3,11 +3,11 @@ package mcp
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
 )
 
@@ -26,25 +26,10 @@ func ResolveConfigFile(ctx context.Context, name string) (string, error) {
 	case err == nil:
 		return filepath.Abs(resolved)
 	case errors.Is(err, fs.ErrNotExist):
-		return AbsoluteAsWritten(path)
+		return mcpconfig.AbsoluteAsWritten(path)
 	default:
 		return "", err
 	}
-}
-
-// AbsoluteAsWritten makes path absolute by joining it to the working directory, without cleaning it, so that a
-// ".." after a symlink still resolves through the link's target. Slashes become the OS separator, as cleaning would
-// make them: "~/.databrickscfg" expands to the home directory joined with "/" on Windows too.
-func AbsoluteAsWritten(path string) (string, error) {
-	path = filepath.FromSlash(path)
-	if filepath.IsAbs(path) {
-		return path, nil
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to determine working directory: %w", err)
-	}
-	return wd + string(filepath.Separator) + path, nil
 }
 
 // SamePath reports whether two resolved config file paths name the same file. Existing files are
