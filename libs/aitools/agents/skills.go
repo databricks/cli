@@ -20,15 +20,34 @@ const (
 	LegacySkillsDir = ".databricks/agent-skills"
 )
 
-// HasDatabricksSkillsInstalled checks if Databricks skills are installed in the canonical location.
-// Returns true if no agents are detected (nothing to recommend) or if skills exist in
-// ~/.databricks/aitools/skills/ or the legacy ~/.databricks/agent-skills/.
-func HasDatabricksSkillsInstalled(ctx context.Context) bool {
+// HasDatabricksToolingInstalled reports whether every detected agent already
+// has Databricks tooling, so `apps init` has nothing to recommend. Skills in
+// the shared canonical (or legacy) dir cover every agent. Otherwise each
+// detected agent needs the databricks plugin in its own plugin manifest,
+// installed for every project or for the working directory (see
+// pluginInstall.appliesTo): a plugin installed for another project does not
+// load for the app being created. It also reports true when no agent is
+// detected.
+func HasDatabricksToolingInstalled(ctx context.Context) bool {
 	installed := DetectInstalled(ctx)
-	if len(installed) == 0 {
+	if len(installed) == 0 || hasSharedSkills(ctx) {
 		return true
 	}
+	cwd := ""
+	if wd, err := os.Getwd(); err == nil {
+		cwd = resolvePath(wd)
+	}
+	for _, a := range installed {
+		if a.pluginInstalls == nil || !a.databricksPluginActiveIn(ctx, cwd) {
+			return false
+		}
+	}
+	return true
+}
 
+// hasSharedSkills reports whether Databricks skills are in the canonical
+// skills dir or the legacy one.
+func hasSharedSkills(ctx context.Context) bool {
 	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return false

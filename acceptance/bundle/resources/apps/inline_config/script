@@ -8,7 +8,9 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 APP_NAME=$($CLI bundle summary -o json | jq -r '.resources.apps.myapp.name')
-$CLI bundle run myapp > /dev/null 2>&1
+# Route the progress output and the dynamic app URL to a log so output.txt stays stable;
+# unlike /dev/null, the harness prints LOG.* files, so a failed run shows its error.
+$CLI bundle run myapp &> LOG.run_app
 
 DEPLOYMENT_ID=$($CLI apps get "$APP_NAME" | jq -r '.active_deployment.deployment_id')
 add_repl "$DEPLOYMENT_ID" DEPLOYMENT_ID

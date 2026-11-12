@@ -53,8 +53,9 @@ const (
 	// The user aborted a prompt (Ctrl-C / Esc).
 	AitoolsErrorCategoryUserAborted AitoolsErrorCategory = "USER_ABORTED"
 
-	// Fetching skills. The typed installer errors (release lookup, skills
-	// fetch) win over the generic network/timeout classification.
+	// Fetching skills. A fetch that fails on the transport (no response, or a
+	// timeout or reset while reading the body) reports NETWORK or TIMEOUT; the
+	// other categories apply once a response arrived.
 	AitoolsErrorCategoryReleaseLookupFailed AitoolsErrorCategory = "RELEASE_LOOKUP_FAILED"
 	AitoolsErrorCategoryRateLimited         AitoolsErrorCategory = "RATE_LIMITED"
 	AitoolsErrorCategorySkillsFetchFailed   AitoolsErrorCategory = "SKILLS_FETCH_FAILED"

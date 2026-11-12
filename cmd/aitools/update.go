@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,7 @@ var updateSkillsFn = func(ctx context.Context, src installer.ManifestSource, ins
 }
 
 var (
+	updateGetSkillsRefFn          = installer.GetSkillsRef
 	updatePluginsFn               = installer.UpdateInstalledPlugins
 	updateInstallPluginForAgentFn = installer.InstallPluginForAgent
 	updateRecordPluginInstallsFn  = installer.RecordPluginInstalls
@@ -65,12 +67,19 @@ preview what would change without downloading.`,
 
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
-				return err
+				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
 			}
+			// Record a scope flag before resolving, so a scope error still reports it.
+			funnel := funnelFrom(ctx)
+			funnel.setScope(explicitScope(projectFlag, globalFlag))
 
 			scopes, err := resolveScopeForUpdate(ctx, projectFlag, globalFlag, globalDir, projectDir)
 			if err != nil {
 				return err
+			}
+			// The scope enum has no "both"; a run over both scopes reports none.
+			if len(scopes) == 1 {
+				funnel.setScope(scopes[0])
 			}
 
 			installed := agents.DetectInstalled(ctx)
@@ -79,7 +88,13 @@ preview what would change without downloading.`,
 
 			// The plugin version recorded on update tracks the skills release.
 			// Tolerate a resolution error (skip plugin updates, still do skills).
-			ref, _, refErr := installer.GetSkillsRef(ctx)
+			ref, _, refErr := updateGetSkillsRefFn(ctx)
+
+			// A failed or skipped plugin update, or a check whose manifest could
+			// not be fetched, is only a warning; telemetry still needs to know when
+			// every attempt failed and nothing else ran.
+			var firstErr error
+			updatedAnything := false
 
 			for _, scope := range scopes {
 				if len(scopes) > 1 {
@@ -94,9 +109,16 @@ preview what would change without downloading.`,
 				if err != nil {
 					return err
 				}
+				// A scope with something installed fetches releases and runs agent
+				// CLIs, so the run waits for the telemetry auth. Without state the
+				// run only reports that nothing (or a legacy install) is there.
+				if state != nil {
+					waitForTelemetryAuth(ctx)
+				}
 
 				if check && refErr == nil && state != nil && len(state.Plugins) > 0 {
 					printPluginCheckResults(ctx, state, installer.DisplaySkillsVersion(ref))
+					updatedAnything = true
 				}
 
 				migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
@@ -107,6 +129,12 @@ preview what would change without downloading.`,
 					printPluginMigrationCheckResults(ctx, migrationCandidates)
 				}
 
+				// Without a ref the recorded plugins are skipped (with --check,
+				// not checked).
+				if refErr != nil && state != nil && len(state.Plugins) > 0 && firstErr == nil {
+					firstErr = refErr
+				}
+
 				// Update plugin agents through their own CLI (check mode skips this).
 				if !check && refErr == nil {
 					pluginUpdates, err := updatePluginsFn(ctx, scope, ref)
@@ -114,6 +142,13 @@ preview what would change without downloading.`,
 						return err
 					}
 					for _, pu := range pluginUpdates {
+						if pu.Err != nil {
+							if firstErr == nil {
+								firstErr = pu.Err
+							}
+							continue
+						}
+						updatedAnything = true
 						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
 					}
 
@@ -122,6 +157,7 @@ preview what would change without downloading.`,
 						return err
 					}
 					if migrated {
+						updatedAnything = true
 						state, err = installer.LoadState(dir)
 						if err != nil {
 							return err
@@ -155,6 +191,13 @@ preview what would change without downloading.`,
 					if err != nil {
 						return err
 					}
+					if result != nil && result.CheckErr != nil {
+						if firstErr == nil {
+							firstErr = result.CheckErr
+						}
+					} else {
+						updatedAnything = true
+					}
 					if result != nil && (check || len(result.Updated) > 0 || len(result.Added) > 0 || len(result.Removed) > 0) {
 						text := installer.FormatUpdateResult(result, check)
 						if text != "No changes." || len(migrationCandidates) == 0 {
@@ -162,6 +205,10 @@ preview what would change without downloading.`,
 						}
 					}
 				}
+			}
+			if firstErr != nil && !updatedAnything {
+				// Every attempt failed or was skipped: FAILURE, though it exits 0.
+				funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(firstErr))
 			}
 			return nil
 		},
@@ -176,7 +223,7 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandUpdate)
 }
 
 func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state *installer.InstallState) ([]pluginMigrationCandidate, error) {
@@ -253,7 +300,7 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 		rec := state.Plugins[name]
 		status := "up to date"
 		if rec.Version == "" {
-			status = "version unknown"
+			status = "update may be available"
 		} else if rec.Version != latest {
 			status = "update available"
 		}

@@ -44,6 +44,7 @@ func resetUpdatePluginSeams(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsNoChanges(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	setupUpdateMock(t)
@@ -58,6 +59,25 @@ func TestUpdateCheckPrintsNoChanges(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsPluginState(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		version string
+		want    string
+	}{
+		{"current", "0.2.6", "Claude Code  databricks plugin v0.2.6 (up to date)"},
+		{"older", "0.2.5", "Claude Code  databricks plugin v0.2.5 (update available)"},
+		// A record without a version (the last install or update could not
+		// refresh the marketplace) may be behind, and `aitools update` would fix it.
+		{"unknown", "", "Claude Code  databricks plugin version unknown (update may be available)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testUpdateCheckPrintsPluginState(t, tc.version, tc.want)
+		})
+	}
+}
+
+func testUpdateCheckPrintsPluginState(t *testing.T, version, want string) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 
@@ -83,7 +103,7 @@ func TestUpdateCheckPrintsPluginState(t *testing.T) {
 		SchemaVersion: 2,
 		Release:       "v0.2.6",
 		Plugins: map[string]installer.PluginRecord{
-			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Version: "0.2.6"},
+			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Version: version},
 		},
 	}))
 
@@ -92,10 +112,11 @@ func TestUpdateCheckPrintsPluginState(t *testing.T) {
 	cmd.SetArgs([]string{"--scope", "global", "--check"})
 
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, stderr.String(), "Claude Code  databricks plugin v0.2.6 (up to date)")
+	assert.Contains(t, stderr.String(), want)
 }
 
 func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -170,6 +191,7 @@ func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 }
 
 func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -234,6 +256,7 @@ func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
 }
 
 func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -280,6 +303,7 @@ func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
 }
 
 func TestUpdateDoesNotMigratePluginAgentWithoutManagedRawSkills(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
@@ -330,6 +354,7 @@ func TestUpdateDoesNotMigratePluginAgentWithoutManagedRawSkills(t *testing.T) {
 }
 
 func TestUpdateNoPruneFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	calls := setupUpdateMock(t)
 
@@ -344,6 +369,7 @@ func TestUpdateNoPruneFlag(t *testing.T) {
 }
 
 func TestUpdateScopeFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	tests := []struct {
 		name       string
 		args       []string
@@ -391,6 +417,7 @@ func TestUpdateScopeFlag(t *testing.T) {
 }
 
 func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	projectRoot := t.TempDir()

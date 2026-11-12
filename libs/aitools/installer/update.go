@@ -39,6 +39,9 @@ type UpdateResult struct {
 	Removed   []SkillUpdate // skills pruned because they vanished from the manifest
 	Unchanged []string      // skills at current version (or kept despite vanishing)
 	Skipped   []string      // skills skipped (experimental, version constraint)
+	// CheckErr is set in check mode when the manifest could not be fetched: the
+	// check is skipped with a warning, so nothing was checked.
+	CheckErr error
 }
 
 // SkillUpdate describes a single skill version change.
@@ -81,9 +84,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
+			return nil, fmt.Errorf("%w; run 'databricks aitools install' to refresh before updating", ErrLegacyInstall)
 		}
-		return nil, errors.New("no skills or plugins installed. Run 'databricks aitools install' to install")
+		return nil, fmt.Errorf("%w. Run 'databricks aitools install' to install", ErrNothingInstalled)
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)
@@ -104,7 +107,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)
-			return &UpdateResult{}, nil
+			return &UpdateResult{CheckErr: err}, nil
 		}
 		return nil, err
 	}
@@ -422,16 +425,21 @@ func dirMatchesRecords(dir, skillName string, state *InstallState) bool {
 	return seen == len(recorded)
 }
 
-// PluginUpdate records that a plugin was updated for an agent.
+// PluginUpdate records a plugin update for an agent. Err is set when the
+// update failed and the plugin was skipped with a warning.
 type PluginUpdate struct {
 	Agent   string
 	Version string
+	Err     error
 }
 
 // UpdateInstalledPlugins runs the plugin update for every plugin recorded in the
-// given scope's state, bumping each record's version to ref. A plugin that can't
+// given scope's state, bumping each record's version to ref, or clearing it
+// (version unknown) when the marketplace refresh failed and the record did not
+// already hold ref. A plugin that can't
 // be updated (CLI missing, etc.) is skipped with a warning, never failed, to
-// keep the non-interactive update prompt-free and exit-0 on partial success.
+// keep the non-interactive update prompt-free and exit-0 on partial success;
+// it is returned after the updated ones with Err set.
 func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpdate, error) {
 	dir, err := skillsDir(ctx, scope)
 	if err != nil {
@@ -446,21 +454,33 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 	}
 
 	version := DisplaySkillsVersion(ref)
-	var updated []PluginUpdate
+	var updated, failed []PluginUpdate
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		agent := agents.ByName(name)
 		if agent == nil {
 			log.Warnf(ctx, "Skipping unknown agent %q in state", name)
+			failed = append(failed, PluginUpdate{Agent: name, Err: unknownAgentInStateError(name)})
 			continue
 		}
 		rec := state.Plugins[name]
-		if err := UpdatePluginForAgent(ctx, agent, rec); err != nil {
+		refreshErr, err := UpdatePluginForAgent(ctx, agent, rec)
+		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+			failed = append(failed, PluginUpdate{Agent: agent.DisplayName, Err: err})
 			continue
 		}
-		rec.Version = version
+		// After a failed refresh the update ran from the local copy, so its
+		// version is unknown, unless the record already holds this release: the
+		// local copy can only have moved forward since the refresh that wrote it.
+		// Warn only when the version is cleared, as install does.
+		if refreshErr == nil || rec.Version == version {
+			rec.Version = version
+		} else {
+			warnLocalMarketplaceCopy(ctx, agent, recordedMarketplace(agent, rec), "rerun `databricks aitools update` later", refreshErr)
+			rec.Version = ""
+		}
 		state.Plugins[name] = rec
-		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})
+		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: rec.Version})
 	}
 
 	if len(updated) > 0 {
@@ -469,7 +489,7 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 			return nil, err
 		}
 	}
-	return updated, nil
+	return append(updated, failed...), nil
 }
 
 // FormatUpdateResult returns a human-readable summary of the update result.

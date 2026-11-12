@@ -2,22 +2,30 @@
 === help
 
 >>> [CLI] air --help
-Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
+Run GPU workloads on Databricks serverless compute.
 
-These commands are under active development.
+Describe a workload in a YAML file and submit it with "databricks air run".
+Follow a run with "databricks air logs" and "databricks air get", or see your
+active runs with "databricks air list".
 
 Usage:
   databricks air [command]
 
-Available Commands:
+Run workloads:
+  run             Submit a workload from a YAML config
+
+Manage runs:
   cancel          Cancel one or more runs
-  convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
-  get             Show status, configuration, and timing details for a specified run
-  images          Manage container images for AI Runtime
-  list            List active runs for the current user
-  logs            Stream or fetch logs for a run
-  pools           View provisioned GPU pools
-  run             Submit a training workload from a YAML config
+  get             Show a run's status, configuration, and timing
+  list            List your active runs
+  logs            Stream or fetch a run's logs
+
+Package and deploy:
+  convert-to-dabs Convert a workload YAML into a Databricks Asset Bundle
+  images          Push container images for custom environments
+
+Provisioned capacity:
+  pools           View GPU pools provisioned for your workspace
 
 Flags:
   -h, --help   help for air
@@ -29,6 +37,12 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 Use "databricks air [command] --help" for more information about a command.
+
+Learn more:
+  YAML fields and example  databricks air run -h config
+  Quickstart (AWS)         https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
+  Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
 
 === list help
 
@@ -70,9 +84,9 @@ Global Flags:
 === get help
 
 >>> [CLI] air get --help
-Show status, configuration, and timing details for a specified run.
+Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run".
 
 Usage:
   databricks air get JOB_RUN_ID [flags]
@@ -89,14 +103,18 @@ Global Flags:
 === pools help
 
 >>> [CLI] air pools --help
-View provisioned GPU pools
+View GPU pools provisioned for your workspace.
+
+A GPU pool is dedicated accelerator capacity that your Databricks account team
+provisions. Pools are optional: a run uses one only when its YAML sets
+compute.pool_id.
 
 Usage:
   databricks air pools [flags]
   databricks air pools [command]
 
 Available Commands:
-  get         Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
+  get         Show a GPU pool and its accelerator usage
   list        List the GPU pools available to the current workspace
 
 Flags:
@@ -113,7 +131,7 @@ Use "databricks air pools [command] --help" for more information about a command
 === images help
 
 >>> [CLI] air images --help
-Manage container images for AI Runtime
+Push container images for custom environments
 
 Usage:
   databricks air images [flags]
@@ -137,7 +155,7 @@ Use "databricks air images [command] --help" for more information about a comman
 
 >>> [CLI] air images push --help
 This CLI command is in Preview. For current feature status and requirements, see:
-  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/docker-images
   Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
@@ -173,7 +191,7 @@ Global Flags:
 Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run".
 
 Usage:
   databricks air logs JOB_RUN_ID [flags]

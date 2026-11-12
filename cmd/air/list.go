@@ -91,7 +91,7 @@ func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List active runs for the current user",
+		Short: "List your active runs",
 		Long: `List active runs for the current user.
 
 Filters:

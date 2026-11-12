@@ -121,11 +121,10 @@ func mlflowIDsFromOutput(output *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
 	return &mlflowIdentifiers{ExperimentID: output.MlflowExperimentId, RunID: output.MlflowRunId}
 }
 
-// mlflowLogsURL is the deep link to a run's node-0 logs. It is the value of the
-// JSON `mlflow_url` field, matching the Python CLI.
+// mlflowLogsURL links to a run's Logs tab. It is also the value of the JSON
+// `mlflow_url` field.
 func mlflowLogsURL(host string, ids *mlflowIdentifiers) string {
-	return fmt.Sprintf("%s/ml/experiments/%s/runs/%s/artifacts/logs/node_0",
-		strings.TrimRight(host, "/"), ids.ExperimentID, ids.RunID)
+	return mlflowRunURL(host, ids) + "/logs"
 }
 
 // mlflowRunURL links to the MLflow run page; it backs the MLflow Run hyperlink

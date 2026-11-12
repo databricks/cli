@@ -360,6 +360,26 @@ func (f *flakyDialer) DialContext(ctx context.Context, urlStr string, requestHea
 	return f.inner.DialContext(ctx, urlStr, requestHeader)
 }
 
+// waitDialer delays returning a dialed connection until wait is closed.
+type waitDialer struct {
+	inner Dialer
+	wait  <-chan struct{}
+}
+
+func (d *waitDialer) DialContext(ctx context.Context, urlStr string, requestHeader http.Header) (*websocket.Conn, *http.Response, error) {
+	conn, resp, err := d.inner.DialContext(ctx, urlStr, requestHeader)
+	if err != nil {
+		return conn, resp, err
+	}
+	select {
+	case <-d.wait:
+		return conn, resp, nil
+	case <-ctx.Done():
+		_ = conn.Close()
+		return nil, resp, ctx.Err()
+	}
+}
+
 func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptest.Server {
 	upgrader := websocket.Upgrader{}
 	var connCount atomic.Int32
@@ -409,39 +429,45 @@ func sendEntry(conn *websocket.Conn, ts float64, message string) error {
 func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 	t.Parallel()
 
+	sent := make(chan struct{})
+
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
 		defer conn.Close()
-		_, _, _ = conn.ReadMessage()
 		for i := 1; i <= 4; i++ {
 			require.NoError(t, sendEntry(conn, float64(i), fmt.Sprintf("line%d", i)))
 		}
-		time.Sleep(250 * time.Millisecond)
+		close(sent)
+		// Keep the socket open until the test is done: the only way for the
+		// streamer to emit the tail is the prefetch timer, not a server close.
+		// t.Context() is canceled before t.Cleanup waits for this handler.
+		<-t.Context().Done()
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 	})
 	defer server.Close()
 
-	writer := newNotifyBuffer()
+	writer := &syncBuffer{}
 	streamer := &logStreamer{
-		dialer:    &websocket.Dialer{},
+		// The prefetch timer starts once the connection is established. Waiting
+		// for the server to finish writing means all entries are already on the
+		// wire when it starts, so a slow server cannot make the timer flush a
+		// partial tail.
+		dialer:    &waitDialer{inner: &websocket.Dialer{}, wait: sent},
 		url:       toWebSocketURL(server.URL),
 		token:     "token",
 		tail:      2,
 		follow:    false,
-		prefetch:  50 * time.Millisecond,
+		prefetch:  200 * time.Millisecond,
 		writer:    writer,
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
-	done := make(chan error, 1)
-	go func() {
-		done <- streamer.Run(ctx)
-	}()
-
-	require.Eventually(t, writer.hasWrite, 150*time.Millisecond, 10*time.Millisecond, "expected tail logs to flush before the server closed the socket")
-	require.NoError(t, <-done)
+	// Without follow, Run returns once the prefetch timer flushes the tail.
+	// The server never closes the socket on its own, so a flush that depends on
+	// the close would hang here until the context deadline.
+	require.NoError(t, streamer.Run(ctx), "expected the prefetch timer to flush the tail while the server keeps the socket open")
 	lines := strings.Split(strings.TrimSpace(writer.String()), "\n")
 	require.Len(t, lines, 2)
 	assert.Contains(t, lines[0], "line3")
@@ -461,7 +487,7 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 	})
 	defer server.Close()
 
-	writer := newNotifyBuffer()
+	writer := &syncBuffer{}
 	streamer := &logStreamer{
 		dialer:    &websocket.Dialer{},
 		url:       toWebSocketURL(server.URL),
@@ -519,7 +545,7 @@ func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 	})
 	defer server.Close()
 
-	writer := newNotifyBuffer()
+	writer := &syncBuffer{}
 	streamer := &logStreamer{
 		dialer:    &websocket.Dialer{},
 		url:       toWebSocketURL(server.URL),
@@ -694,42 +720,22 @@ func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 	}
 }
 
-type notifyBuffer struct {
+// syncBuffer is a bytes.Buffer safe for concurrent writes and reads.
+type syncBuffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer
-	ch  chan struct{}
 }
 
-func newNotifyBuffer() *notifyBuffer {
-	return &notifyBuffer{ch: make(chan struct{}, 1)}
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
 }
 
-func (n *notifyBuffer) Write(p []byte) (int, error) {
-	n.mu.Lock()
-	written, err := n.buf.Write(p)
-	n.mu.Unlock()
-	if err == nil {
-		select {
-		case n.ch <- struct{}{}:
-		default:
-		}
-	}
-	return written, err
-}
-
-func (n *notifyBuffer) String() string {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-	return n.buf.String()
-}
-
-func (n *notifyBuffer) hasWrite() bool {
-	select {
-	case <-n.ch:
-		return true
-	default:
-		return false
-	}
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
 
 func TestAppStatusCheckerStopsFollowing(t *testing.T) {

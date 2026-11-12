@@ -93,6 +93,45 @@ func lookupEnv(testEnv []string, key string) (string, bool) {
 	return "", false
 }
 
+// cloudWorkspaceState caches the cloud workspace client shared by all tests in
+// the process. Resolving auth per test repeats the OIDC endpoint discovery GET
+// for every test. The SDK retries the token exchange, but not a timed-out
+// discovery request. When the workspace is briefly slow, discovery times out,
+// the SDK's default auth chain hides the timeout behind a "cannot configure
+// default credentials" error, and every test starting at that moment fails.
+// A shared client resolves auth once and refreshes its token in the background.
+var cloudWorkspaceState struct {
+	mu          sync.Mutex
+	client      *databricks.WorkspaceClient
+	user        iam.User
+	workspaceID string
+}
+
+// cloudWorkspace returns the shared workspace client, the current user and the
+// workspace id. Only a successful result is cached, so a transient failure
+// fails one test and the next test tries again.
+func cloudWorkspace(t *testing.T) (*databricks.WorkspaceClient, iam.User, string) {
+	s := &cloudWorkspaceState
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.client != nil {
+		return s.client, s.user, s.workspaceID
+	}
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	user, err := iamutil.GetCurrentUser(t.Context(), w)
+	require.NoError(t, err, "Failed to get current user")
+
+	workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
+	require.NoError(t, err, "Failed to get current workspace id")
+
+	s.client, s.user, s.workspaceID = w, *user, workspaceID
+	return w, *user, workspaceID
+}
+
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User, string) {
 	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
@@ -117,15 +156,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient()
-		require.NoError(t, err)
-
-		user, err := iamutil.GetCurrentUser(t.Context(), w)
-		require.NoError(t, err, "Failed to get current user")
-
-		workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
-		require.NoError(t, err, "Failed to get current workspace id")
-
+		w, user, workspaceID := cloudWorkspace(t)
 		cfg := w.Config
 
 		// If we are running in a cloud environment AND we need to intercept requests
@@ -145,7 +176,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			}
 		}
 
-		return cfg, *user, workspaceID
+		return cfg, user, workspaceID
 	}
 
 	// Same topology as cloud, with the testserver as the upstream. Both servers see

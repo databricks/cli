@@ -170,7 +170,7 @@ func TestMLflowIDsForTask(t *testing.T) {
 func TestMLflowURLs(t *testing.T) {
 	ids := &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}
 	// A trailing slash on the host must not produce a double slash in the link.
-	assert.Equal(t, "https://h.test/ml/experiments/E1/runs/R1/artifacts/logs/node_0", mlflowLogsURL("https://h.test/", ids))
+	assert.Equal(t, "https://h.test/ml/experiments/E1/runs/R1/logs", mlflowLogsURL("https://h.test/", ids))
 	assert.Equal(t, "https://h.test/ml/experiments/E1/runs/R1", mlflowRunURL("https://h.test", ids))
 }
 
