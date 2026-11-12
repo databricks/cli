@@ -15,14 +15,45 @@
   "path": "/api/2.0/postgres/[MY_DATABASE_ID]"
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.display_name,spec.history_retention_duration"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Database Update",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "q": {
+    "update_mask": "spec.expiration"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
 }
 {
   "method": "GET",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MY_DATABASE_ID]",
+  "q": {
+    "update_mask": "spec.postgres_database,spec.role"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
 }

@@ -92,9 +92,9 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "custom_template_format": {
-                        "description": "[Beta] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
+                        "description": "[Public Preview] The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CustomTemplateFormat",
-                        "x-databricks-launch-stage": "PUBLIC_BETA"
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                       },
                       "display_name": {
                         "description": "The display name of the alert.",
@@ -15034,7 +15034,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Notifications for the jobs and pipelines that materialize the features in a set, one field per\ntrigger.",
+                  "description": "Notifications for the jobs and pipelines that materialize features, one field per trigger.",
                   "properties": {
                     "on_failure": {
                       "description": "[Private Preview] Who to notify when a run fails, and on which attempts.",
@@ -15124,6 +15124,12 @@
                       "description": "Server-assigned unique identifier for the materialized feature.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "notifications": {
+                      "description": "[Private Preview] Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "offline_store_config": {
                       "description": "Destination for writing feature values to an offline Delta table. The resulting table is\nreturned as `table_name`.",
@@ -21477,8 +21483,8 @@
                     "MARKDOWN"
                   ],
                   "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {

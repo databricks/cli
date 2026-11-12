@@ -5,7 +5,17 @@
       "label": "${resources.postgres_branches.main.id}"
     }
   ],
-  "action": "skip",
+  "action": "update",
+  "new_state": {
+    "value": {
+      "attributes": {
+        "createdb": false
+      },
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+      "postgres_role": "app_role",
+      "role_id": "test-role"
+    }
+  },
   "remote_state": {
     "create_time": "[TIMESTAMP]",
     "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
@@ -26,8 +36,7 @@
   },
   "changes": {
     "attributes": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": {
         "createdb": false
       },

@@ -7,6 +7,34 @@
   "path": "/api/2.0/postgres/[DEV_BRANCH_ID]"
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.default_endpoint_settings,spec.display_name,spec.history_retention_duration"
+  },
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "display_name": "Test Project for Branch Update",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[DEV_BRANCH_ID]",
+  "q": {
+    "update_mask": "spec.expiration"
+  },
+  "body": {
+    "spec": {
+      "is_protected": false,
+      "no_expiry": true
+    }
+  }
 }

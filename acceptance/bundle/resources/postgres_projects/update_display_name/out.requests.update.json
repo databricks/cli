@@ -6,7 +6,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/[MY_PROJECT_ID]",
   "q": {
-    "update_mask": "spec.display_name"
+    "update_mask": "spec.default_endpoint_settings,spec.display_name,spec.history_retention_duration"
   },
   "body": {
     "spec": {

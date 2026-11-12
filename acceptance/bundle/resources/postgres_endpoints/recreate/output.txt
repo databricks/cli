@@ -128,17 +128,52 @@ resources:
       autoscaling_limit_max_cu: 2
 
 >>> [CLI] bundle plan
+update postgres_branches.main
 recreate postgres_endpoints.my_endpoint
+update postgres_projects.my_project
 
-Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
+Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default/files...
 Recreated postgres_endpoints.my_endpoint
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
+Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.default_endpoint_settings,spec.display_name,spec.history_retention_duration"
+  },
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "display_name": "Test Project",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "q": {
+    "update_mask": "spec.expiration"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"

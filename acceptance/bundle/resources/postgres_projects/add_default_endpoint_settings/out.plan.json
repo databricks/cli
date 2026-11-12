@@ -50,14 +50,12 @@
           }
         },
         "display_name": {
-          "action": "skip",
-          "reason": "spec:input_only",
+          "action": "update",
           "old": "Test Project for Adding Default Endpoint Settings",
           "new": "Test Project for Adding Default Endpoint Settings"
         },
         "history_retention_duration": {
-          "action": "skip",
-          "reason": "spec:input_only",
+          "action": "update",
           "old": "604800s",
           "new": "604800s"
         },

@@ -50,14 +50,21 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === Verify no changes
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+update postgres_branches.main
+update postgres_projects.my_project
+update postgres_roles.my_role
+
+Plan: 0 to add, 3 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Updated postgres_branches.main
+Updated postgres_projects.my_project
+Updated postgres_roles.my_role
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
+Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -95,17 +102,21 @@ resources:
         createdb: true
 
 >>> [CLI] bundle plan
+update postgres_branches.main
+update postgres_projects.my_project
 update postgres_roles.my_role
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 3 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Updated postgres_roles.my_role
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -132,17 +143,21 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> update_file.py databricks.yml createdb: true createdb: false
 
 >>> [CLI] bundle plan
+update postgres_branches.main
+update postgres_projects.my_project
 update postgres_roles.my_role
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 3 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Updated postgres_roles.my_role
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 3 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

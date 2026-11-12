@@ -2,13 +2,13 @@
   "action": "update",
   "changes": {
     "display_name": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "Test Project for History Retention Update",
       "new": "Test Project for History Retention Update"
     },
     "history_retention_duration": {
-      "action": "update",
+      "action": "skip",
+      "reason": "remote_already_set",
       "old": "604800s"
     },
     "pg_version": {
