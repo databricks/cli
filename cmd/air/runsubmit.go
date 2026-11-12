@@ -331,7 +331,8 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // submitWorkload runs the submit happy path: validate the config while uploading
 // the launch artifacts, ensure the experiment directory, assemble the Jobs
 // payload, and submit it. It
-// returns the new run_id and its dashboard URL. showProgress enables the stderr
+// returns the new run_id and its dashboard URL, which carries the ?o= workspace
+// hint only when the workspace ID could be resolved. showProgress enables the stderr
 // staging spinner (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, runURL string, err error) {
 	start := time.Now()
@@ -387,6 +388,13 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 			snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
 			return stageErr
 		})
+	})
+	// Resolved here, not after submission: once the run exists nothing may delay
+	// showing its ID.
+	var workspaceID int64
+	group.Go(func() error {
+		workspaceID = workspaceIDForRunLink(stagingCtx, w)
+		return nil
 	})
 	if err := group.Wait(); err != nil {
 		return 0, "", err
@@ -447,14 +455,30 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	// The run already exists, so a failed workspace id lookup must not fail the
-	// submit: fall back to the link without the ?o= workspace hint.
-	workspaceID, err := w.CurrentWorkspaceID(ctx)
-	if err != nil {
-		log.Debugf(ctx, "air run: could not fetch workspace ID for the dashboard link: %v", err)
-		return runID, strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10), nil
-	}
 	return runID, dashboardURL(w.Config.Host, runID, workspaceID), nil
+}
+
+// workspaceIDLookupTimeout bounds the workspace ID lookup for the run link, so
+// an unresponsive lookup cannot hold up submission for the SDK's retry window.
+const workspaceIDLookupTimeout = 10 * time.Second
+
+// workspaceIDForRunLink returns the workspace ID for the run link's ?o= hint,
+// or 0 when it cannot be resolved: the link is a convenience and must never
+// fail or stall a submission.
+func workspaceIDForRunLink(ctx context.Context, w *databricks.WorkspaceClient) int64 {
+	ctx, cancel := context.WithTimeout(ctx, workspaceIDLookupTimeout)
+	defer cancel()
+	id, err := auth.ResolveWorkspaceID(ctx, w)
+	if err != nil {
+		log.Debugf(ctx, "air run: could not resolve workspace ID for the run link: %v", err)
+		return 0
+	}
+	workspaceID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		log.Debugf(ctx, "air run: workspace ID %q for the run link is not numeric", id)
+		return 0
+	}
+	return workspaceID
 }
 
 func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {

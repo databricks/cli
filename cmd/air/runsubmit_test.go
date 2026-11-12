@@ -354,6 +354,8 @@ func TestStageRunArtifactsOverlapsLaunchAndSnapshot(t *testing.T) {
 }
 
 func TestSubmitWorkload(t *testing.T) {
+	// A workspace ID in the developer's environment would replace the test server's in the run link.
+	t.Setenv("DATABRICKS_WORKSPACE_ID", "")
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -715,6 +717,47 @@ containers:
 	}
 }
 
+// The run link's workspace ID is best-effort: when it cannot be resolved the
+// submit still succeeds with a link that omits ?o=. The lookup must also be
+// done before the run is created, so nothing delays showing a new run's ID.
+func TestSubmitWorkloadWithoutWorkspaceID(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	// Register before AddDefaultHandlers: the router is first-wins, so these must claim the routes ahead of the default handlers.
+	var workspaceIDLookups, lookupsBeforeSubmit atomic.Int32
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		// The workspace ID lookup is the /Me call without attributes; answering it
+		// without the X-Databricks-Org-Id header makes the lookup fail.
+		if req.URL.Query().Get("attributes") == "" {
+			workspaceIDLookups.Add(1)
+		}
+		return req.Workspace.MeUser(req.Token)
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		lookupsBeforeSubmit.Store(workspaceIDLookups.Load())
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	// The test server's host metadata supplies a workspace ID; drop it to force the lookup.
+	w.Config.WorkspaceID = ""
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	runID, runURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+	assert.Equal(t, int64(777), runID)
+	assert.Equal(t, server.URL+"/jobs/runs/777", runURL)
+	assert.Equal(t, int32(1), lookupsBeforeSubmit.Load(), "the workspace ID must be resolved before the run is created")
+	assert.Equal(t, int32(1), workspaceIDLookups.Load())
+}
+
 // A working-tree code_source is packaged into a tarball, uploaded via libs/filer,
 // and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
@@ -729,10 +772,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	})
 	var meCalls atomic.Int32
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		// The dashboard link's workspace id lookup also hits /Me, without attributes.
-		if req.URL.Query().Get("attributes") == "userName" {
-			meCalls.Add(1)
-		}
+		meCalls.Add(1)
 		return req.Workspace.MeUser(req.Token)
 	})
 	stubValidateConfig(server)
