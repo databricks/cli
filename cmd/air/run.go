@@ -87,19 +87,23 @@ func newRunCommandWithValidationTimeout(validationTimeout time.Duration) *cobra.
 	cmd := &cobra.Command{
 		Use:   "run",
 		Args:  root.NoArgs,
-		Short: "Submit a training workload from a YAML config",
-		Long: `Submit a training workload to Databricks serverless GPU compute.
+		Short: "Submit a workload from a YAML config",
+		Long: `Submit a workload to Databricks serverless GPU compute.
 
-The workload is described by a YAML config file (see --file).
+The workload is described by a YAML file (see --file). To look up a YAML
+field, pass its path to -h as a separate argument:
 
-To look up a config field, pass its path to -h:
+  databricks air run -h config                            all fields
+  databricks air run -h config.compute                    one section
+  databricks air run -h config.compute.accelerator_type   one field`,
+		Example: `  # Submit and stream logs until the run finishes
+  databricks air run -f workload.yaml --watch
 
-  databricks air run -h config
-  databricks air run -h config.compute
-  databricks air run -h config.compute.accelerator_type
+  # Validate the config against the workspace without submitting
+  databricks air run -f workload.yaml --dry-run
 
-The path must be a separate argument: cobra reserves -h as a boolean, so
--h=config.compute and -hconfig.compute are not accepted.`,
+  # Try a different GPU without editing the file
+  databricks air run -f workload.yaml --override compute.accelerator_type=GPU_1xH100`,
 	}
 
 	// cobra passes -h's positional args to the help func before Args/required-flag
@@ -128,6 +132,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		renderConfigField(c.OutOrStdout(), field, computeOptions)
 	})
 
+	// List flags in declaration order (most used first) rather than alphabetically.
+	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
