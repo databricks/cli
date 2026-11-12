@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/tailscale/hujson"
@@ -29,7 +31,7 @@ type jsonDoc struct {
 }
 
 func parseJSON(data []byte) (document, error) {
-	data, bom := stripBOM(data)
+	data, bom := bytes.CutPrefix(data, utf8BOM)
 	if len(bytes.TrimSpace(data)) == 0 {
 		// A missing or blank file is an empty object, written with a trailing newline.
 		data = []byte("{}\n")
@@ -208,75 +210,96 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 	return nil
 }
 
-// update changes the launch keys of the server name under root to those of
-// entry. A launch key that entry lacks is removed, and one that is missing from
-// the file is added. A launch key whose value is unchanged is not touched, and
-// the other keys of the server keep their bytes. name must exist.
-func (d *jsonDoc) update(root []string, name string, entry map[string]any) error {
+// put writes entry as server name under root. A nil entry removes it. With keys,
+// an existing server changes only those keys, and its other keys keep their bytes.
+func (d *jsonDoc) put(root []string, name string, entry map[string]any, keys []string) error {
+	switch {
+	case entry == nil:
+		return d.remove(root, name)
+	case keys == nil:
+		return d.set(root, name, entry)
+	default:
+		return d.update(root, name, entry, keys)
+	}
+}
+
+// update changes the keys of the server name under root that are listed in keys.
+// A key that entry lacks is removed, and one that is missing from the file is
+// added. Members that match keep their bytes, and so do the other keys of the
+// server. name must exist.
+func (d *jsonDoc) update(root []string, name string, entry map[string]any, keys []string) error {
 	current, _, err := d.entry(root, name)
 	if err != nil {
 		return err
 	}
-	depth := len(root) + 2
-	var ops []patch
-	var added, removed []string
-	for _, key := range launchKeys {
-		want, inEntry := entry[key]
+	server := slices.Concat(root, []string{name})
+	for _, key := range keys {
 		have, inFile := current[key]
-		switch {
-		case inEntry && !inFile:
-			value, err := d.encodeValue(want, depth)
-			if err != nil {
-				return err
-			}
-			ops = append(ops, patch{op: opAdd, path: jsonPointer(append(root, name, key)...), value: value})
-			added = append(added, key)
-		case inFile && !inEntry:
-			removed = append(removed, key)
-		case inEntry:
-			same, err := sameEntry(map[string]any{key: have}, map[string]any{key: want})
-			if err != nil {
-				return err
-			}
-			if same {
-				continue
-			}
-			value, err := d.encodeValue(want, depth)
-			if err != nil {
-				return err
-			}
-			ops = append(ops, patch{op: opReplace, path: jsonPointer(append(root, name, key)...), value: value})
-		}
-	}
-	if len(ops) > 0 {
-		if err := d.apply(ops); err != nil {
+		want, inEntry := entry[key]
+		if err := d.sync(slices.Concat(server, []string{key}), have, inFile, want, inEntry, len(root)+2); err != nil {
 			return err
 		}
-	}
-	for _, key := range removed {
-		if err := d.remove(append(root, name), key); err != nil {
-			return err
-		}
-	}
-	server, err := d.server(root, name)
-	if err != nil {
-		return err
-	}
-	for _, key := range added {
-		place(server, key, depth, true, d.nl)
 	}
 	return nil
 }
 
-// server returns the object of the server name under root. The entry must exist
-// and be an object.
-func (d *jsonDoc) server(root []string, name string) (*hujson.Object, error) {
-	table, err := d.object(root)
-	if err != nil {
-		return nil, err
+// sync makes the member at path match the entry. It is removed when the entry
+// lacks it, added when the file lacks it, and replaced when the values differ.
+// Two objects are synced member by member, so the members that match keep their
+// bytes. depth is the indentation depth of the member.
+func (d *jsonDoc) sync(path []string, have any, inFile bool, want any, inWant bool, depth int) error {
+	parent, key := path[:len(path)-1], path[len(path)-1]
+	if !inWant {
+		return d.remove(parent, key)
 	}
-	// entry decoded the member as an object, so its value is an object.
-	return findMember(table, name).Value.Value.(*hujson.Object), nil
+	haveObj, haveIsObj := have.(map[string]any)
+	wantObj, wantIsObj := want.(map[string]any)
+	if inFile && haveIsObj && wantIsObj {
+		for _, name := range unionKeys(haveObj, wantObj) {
+			hv, hin := haveObj[name]
+			wv, win := wantObj[name]
+			if err := d.sync(slices.Concat(path, []string{name}), hv, hin, wv, win, depth+1); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if inFile {
+		same, err := sameEntry(map[string]any{key: have}, map[string]any{key: want})
+		if err != nil || same {
+			return err
+		}
+		value, err := d.encodeValue(want, depth)
+		if err != nil {
+			return err
+		}
+		return d.apply([]patch{{op: opReplace, path: jsonPointer(path...), value: value}})
+	}
+	value, err := d.encodeValue(want, depth)
+	if err != nil {
+		return err
+	}
+	if err := d.apply([]patch{{op: opAdd, path: jsonPointer(path...), value: value}}); err != nil {
+		return err
+	}
+	obj, err := d.object(parent)
+	if err != nil {
+		return err
+	}
+	place(obj, key, depth, true, d.nl)
+	return nil
+}
+
+// unionKeys returns the keys of a and b, sorted and each once.
+func unionKeys(a, b map[string]any) []string {
+	seen := map[string]bool{}
+	for k := range a {
+		seen[k] = true
+	}
+	for k := range b {
+		seen[k] = true
+	}
+	return slices.Sorted(maps.Keys(seen))
 }
 
 // encodeValue encodes v for a member at depth, with the file's line endings.
@@ -292,6 +315,7 @@ func (d *jsonDoc) encodeValue(v any, depth int) ([]byte, error) {
 // space, and a new member starts its own line at depth. Comments before the
 // member stay where they are.
 func place(obj *hujson.Object, name string, depth int, newMember bool, nl string) {
+	useLineEnding(obj, nl)
 	m := findMember(obj, name)
 	if m.Value.BeforeExtra == nil {
 		m.Value.BeforeExtra = hujson.Extra(" ")
@@ -299,6 +323,32 @@ func place(obj *hujson.Object, name string, depth int, newMember bool, nl string
 	if newMember {
 		m.Name.BeforeExtra = relayout(m.Name.BeforeExtra, nl+indent(depth))
 	}
+}
+
+// useLineEnding makes the newlines in the layout of obj CRLF in a CRLF file. hujson
+// writes its own newlines when it adds a member, which would otherwise stay LF.
+func useLineEnding(obj *hujson.Object, nl string) {
+	if nl != "\r\n" {
+		return
+	}
+	obj.AfterExtra = setNewlines(obj.AfterExtra, nl)
+	for i := range obj.Members {
+		m := &obj.Members[i]
+		m.Name.BeforeExtra = setNewlines(m.Name.BeforeExtra, nl)
+		m.Name.AfterExtra = setNewlines(m.Name.AfterExtra, nl)
+		m.Value.BeforeExtra = setNewlines(m.Value.BeforeExtra, nl)
+		m.Value.AfterExtra = setNewlines(m.Value.AfterExtra, nl)
+	}
+}
+
+// setNewlines replaces each newline in extra with nl. An extra without a newline
+// is returned as it is, since a nil and an empty extra mean different things.
+func setNewlines(extra hujson.Extra, nl string) hujson.Extra {
+	if !bytes.Contains(extra, []byte("\n")) {
+		return extra
+	}
+	lf := bytes.ReplaceAll(extra, []byte("\r\n"), []byte("\n"))
+	return hujson.Extra(bytes.ReplaceAll(lf, []byte("\n"), []byte(nl)))
 }
 
 // relayout keeps the comments in extra and replaces the whitespace after the

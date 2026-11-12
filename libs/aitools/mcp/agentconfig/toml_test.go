@@ -58,8 +58,8 @@ func TestTOMLRemoveDeletesOnlyOwnedTables(t *testing.T) {
 	assert.Equal(t, "# keep\nmodel = \"x\"\n\n[mcp_servers.other]\ncommand = \"npx\"\n", string(readFile(t, path)))
 }
 
-// A server defined inline or with dotted keys is not rewritten. The error names
-// the file and the server.
+// TestTOMLRefusesServerWithoutOwnTables checks that a server defined inline or
+// with dotted keys is not rewritten. The error names the file and the server.
 func TestTOMLRefusesServerWithoutOwnTables(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -86,8 +86,9 @@ func TestTOMLRefusesServerWithoutOwnTables(t *testing.T) {
 	}
 }
 
-// A root table written inline cannot take a [mcp_servers.<name>] table. The
-// decoder would accept it, so the edit is refused before anything is written.
+// TestTOMLRefusesInlineRootTable checks that a root table written inline cannot
+// take a [mcp_servers.<name>] table. The decoder would accept it, so the edit is
+// refused before anything is written.
 func TestTOMLRefusesInlineRootTable(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
 	data := "mcp_servers = {}\n"
@@ -99,8 +100,9 @@ func TestTOMLRefusesInlineRootTable(t *testing.T) {
 	assert.Equal(t, data, string(readFile(t, path)))
 }
 
-// The check after an edit compares everything but the server, so a change to
-// other settings is refused even when the server itself is right.
+// TestCheckEditRejectsOtherChanges checks that the check after an edit compares
+// everything but the server, so a change to other settings is refused even when
+// the server itself is right.
 func TestCheckEditRejectsOtherChanges(t *testing.T) {
 	before := map[string]any{"model": "a", "mcp_servers": map[string]any{}}
 	after := map[string]any{"model": "b", "mcp_servers": map[string]any{testName: testEntry(testCmd, testArgs("test"), nil)}}
@@ -141,32 +143,33 @@ func blockFor(agent string) string {
 		`command = "` + testCmd + `"` + "\n"
 }
 
-// requireTidyTOML fails when the layout has a double blank line, a blank first
-// line, or a blank last line that the file did not have.
+// requireTidyTOML fails when the layout has a double blank line or a blank first
+// line.
 func requireTidyTOML(t *testing.T, got string) {
 	t.Helper()
-	assert.NotContains(t, got, "\n\n\n", "no double blank line")
-	assert.False(t, strings.HasPrefix(got, "\n"), "no blank first line")
+	require.NotContains(t, got, "\n\n\n", "no double blank line")
+	require.False(t, strings.HasPrefix(got, "\n"), "no blank first line")
 }
 
-// Env sub-tables are written, changed, dropped and removed with the server.
+// TestTOMLEnvTablesLayout checks that env sub-tables are written, changed, dropped
+// and removed with the server.
 func TestTOMLEnvTablesLayout(t *testing.T) {
 	other := "[mcp_servers.other]\ncommand = \"npx\"\n"
-	envTable := "[mcp_servers." + testName + ".env]\nTOKEN = \"one\"\n"
+	envTable := "[mcp_servers." + testName + ".env]\nDATABRICKS_CONFIG_FILE = \"one\"\n"
 
 	t.Run("add with env", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "config.toml")
 		writeFile(t, path, []byte(other), 0o600)
 		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"TOKEN": "one"}, false)
+		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"DATABRICKS_CONFIG_FILE": "one"}, false)
 		require.NoError(t, err)
 		assert.Equal(t, StatusAdded, status)
 		got := string(readFile(t, path))
 		requireTidyTOML(t, got)
 		entries, err := Read(t.Context(), a)
 		require.NoError(t, err)
-		assert.Equal(t, map[string]any{"TOKEN": "one"}, entries[testName]["env"])
+		assert.Equal(t, map[string]any{"DATABRICKS_CONFIG_FILE": "one"}, entries[testName]["env"])
 		assert.Contains(t, entries, "other")
 	})
 
@@ -175,12 +178,12 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 		writeFile(t, path, []byte(blockFor("test")+"\n"+envTable+"\n"+other), 0o600)
 		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"TOKEN": "two"}, false)
+		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"DATABRICKS_CONFIG_FILE": "two"}, false)
 		require.NoError(t, err)
 		assert.Equal(t, StatusUpdated, status)
 		got := string(readFile(t, path))
 		requireTidyTOML(t, got)
-		assert.Contains(t, got, `TOKEN = "two"`)
+		assert.Contains(t, got, `DATABRICKS_CONFIG_FILE = "two"`)
 		assert.NotContains(t, got, `"one"`)
 		assert.True(t, strings.HasSuffix(got, "\n"+other), got)
 	})
@@ -195,7 +198,7 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 		assert.Equal(t, StatusUpdated, status)
 		got := string(readFile(t, path))
 		requireTidyTOML(t, got)
-		assert.NotContains(t, got, "TOKEN")
+		assert.NotContains(t, got, "DATABRICKS_CONFIG_FILE")
 		assert.Equal(t, blockFor("other")+"\n"+other, got)
 	})
 
@@ -222,8 +225,9 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 	})
 }
 
-// A table name in quotes can contain dots, and a server named like its prefix
-// is a different server. Neither is edited when the other one is.
+// TestTOMLQuotedDottedNameIsAnotherServer checks that a table name in quotes can
+// contain dots, and a server named like its prefix is a different server. Neither
+// is edited when the other one is.
 func TestTOMLQuotedDottedNameIsAnotherServer(t *testing.T) {
 	before := "[mcp_servers.\"genie.x\"]\ncommand = \"npx\"\n"
 	path := filepath.Join(t.TempDir(), "config.toml")
@@ -241,8 +245,9 @@ func TestTOMLQuotedDottedNameIsAnotherServer(t *testing.T) {
 	assert.Equal(t, before+"\n"+strings.Replace(testBlock, testName, "genie", 1), string(readFile(t, path)))
 }
 
-// A line that looks like a table header inside a multi-line string is text, not
-// a table, so it is not edited.
+// TestTOMLHeaderLikeLineInMultilineString checks that a line that looks like a
+// table header inside a multi-line string is text, not a table, so it is not
+// edited.
 func TestTOMLHeaderLikeLineInMultilineString(t *testing.T) {
 	notes := "[mcp_servers.notes]\ntext = \"\"\"\n[mcp_servers.genie]\ncommand = \"not a header\"\n\"\"\"\n"
 	path := filepath.Join(t.TempDir(), "config.toml")
@@ -261,8 +266,9 @@ func TestTOMLHeaderLikeLineInMultilineString(t *testing.T) {
 	assert.Equal(t, notes, string(readFile(t, path)))
 }
 
-// Removing a table between two others keeps one blank line between them when
-// the table had a blank line on either side of it.
+// TestTOMLRemoveKeepsOneSeparator checks that removing a table between two others
+// keeps one blank line between them when the table had a blank line on either side
+// of it.
 func TestTOMLRemoveKeepsOneSeparator(t *testing.T) {
 	other := "[mcp_servers.other]\ncommand = \"npx\"\n"
 	for _, tc := range []struct {
@@ -284,6 +290,65 @@ func TestTOMLRemoveKeepsOneSeparator(t *testing.T) {
 			got := string(readFile(t, path))
 			requireTidyTOML(t, got)
 			assert.Equal(t, "[mcp_servers.first]\ncommand = \"a\"\n\n"+other, got)
+		})
+	}
+}
+
+// TestTOMLEditWithNonFiniteFloatElsewhere checks that inf and nan in a table the
+// edit does not touch do not stop the edit, and that the file comes back as it was.
+func TestTOMLEditWithNonFiniteFloatElsewhere(t *testing.T) {
+	before := "[limits]\nmax = inf\nmin = -inf\nratio = nan\n\n[mcp_servers.other]\ncommand = \"npx\"\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeFile(t, path, []byte(before), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	removed, err := Remove(t.Context(), a, testName)
+	require.NoError(t, err)
+	assert.True(t, removed)
+	assert.Equal(t, before, string(readFile(t, path)))
+}
+
+// TestTOMLAddKeepsTrailingBlankLineOnce checks that a file ending in a blank line
+// gets one blank line before the new server, and keeps its blank line at the end.
+func TestTOMLAddKeepsTrailingBlankLineOnce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeFile(t, path, []byte("model = \"x\"\n\n"), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, "model = \"x\"\n\n"+testBlock+"\n", string(readFile(t, path)))
+}
+
+// TestTOMLAddThenRemoveRestoresBytes checks that adding a server and removing it
+// again gives back the file's own bytes, whatever blank lines the file ends with.
+func TestTOMLAddThenRemoveRestoresBytes(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		before string
+	}{
+		{"empty", ""},
+		{"no trailing blank", "model = \"x\"\n"},
+		{"one trailing blank", "model = \"x\"\n\n"},
+		{"two trailing blanks", "model = \"x\"\n\n\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.toml")
+			writeFile(t, path, []byte(tc.before), 0o600)
+			a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+			require.NoError(t, err)
+			removed, err := Remove(t.Context(), a, testName)
+			require.NoError(t, err)
+			assert.True(t, removed)
+			assert.Equal(t, tc.before, string(readFile(t, path)))
 		})
 	}
 }

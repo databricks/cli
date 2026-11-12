@@ -24,7 +24,7 @@ type tomlDoc struct {
 }
 
 func parseTOML(data []byte) (document, error) {
-	data, bom := stripBOM(data)
+	data, bom := bytes.CutPrefix(data, utf8BOM)
 	root := map[string]any{}
 	if _, err := toml.Decode(string(data), &root); err != nil {
 		return nil, err
@@ -32,19 +32,33 @@ func parseTOML(data []byte) (document, error) {
 	return &tomlDoc{bom: bom, text: data, root: root}, nil
 }
 
-// table returns the table at root. A missing table reads as empty.
-func (d *tomlDoc) table(root []string) (map[string]any, error) {
-	t := d.root
+// node returns the value at the key path root, and whether the path exists. A
+// value that is not a table ends the walk, and is returned as it is.
+func (d *tomlDoc) node(root []string) (any, bool) {
+	var v any = d.root
 	for _, key := range root {
+		t, ok := v.(map[string]any)
+		if !ok {
+			return v, true
+		}
 		next, ok := t[key]
 		if !ok {
-			return map[string]any{}, nil
+			return nil, false
 		}
-		m, ok := next.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("%q is not a TOML table: %w", key, ErrConfigInvalid)
-		}
-		t = m
+		v = next
+	}
+	return v, true
+}
+
+// table returns the table at root. A missing table reads as empty.
+func (d *tomlDoc) table(root []string) (map[string]any, error) {
+	v, found := d.node(root)
+	if !found {
+		return map[string]any{}, nil
+	}
+	t, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("%q is not a TOML table: %w", strings.Join(root, "."), ErrConfigInvalid)
 	}
 	return t, nil
 }
@@ -79,27 +93,15 @@ func (d *tomlDoc) entries(root []string) (map[string]map[string]any, error) {
 	return out, nil
 }
 
-// set and update rewrite the tables of the server from entry. The user's keys
-// keep their values, but the text of those tables is rendered again, so their
-// comments and layout inside the server's tables are not kept.
-func (d *tomlDoc) set(root []string, name string, entry map[string]any) error {
-	return d.edit(root, name, entry)
-}
-
-func (d *tomlDoc) update(root []string, name string, entry map[string]any) error {
-	return d.edit(root, name, entry)
-}
-
-func (d *tomlDoc) remove(root []string, name string) error {
-	return d.edit(root, name, nil)
-}
-
-// edit replaces the tables of server name under root with the rendering of
-// entry, or deletes them when entry is nil. A server that exists without tables
-// of its own (an inline table or dotted keys) is an error, not rewritten.
-// Headers are found in the text with multi-line strings protected, so a line
-// inside such a string is never taken for a table.
-func (d *tomlDoc) edit(root []string, name string, entry map[string]any) error {
+// put replaces the tables of server name under root with the rendering of
+// entry, or deletes them when entry is nil. The user's keys keep their values,
+// but the text of the server's tables is rendered again, so comments and layout
+// inside those tables are not kept. keys is not used, since the tables are always
+// rendered from entry. A server that exists without tables of its own (an inline
+// table or dotted keys) is an error, not rewritten. Headers are found in the text
+// with multi-line strings protected, so a line inside such a string is never
+// taken for a table.
+func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []string) error {
 	protected, restore, err := localenv.ProtectMultilineStrings(string(d.text))
 	if err != nil {
 		return err
@@ -168,11 +170,11 @@ func spliceBlock(lines [][]byte, ranges []lineRange, block [][]byte, nl string) 
 	return out
 }
 
-// dropTable is called after a table is dropped, with the lines emitted so far
-// and the index of the first line after the table. When nothing is emitted yet,
-// the blank lines after the table go, so the file does not start with a blank
-// line. Otherwise the blank lines around the table become one blank line, when
-// there was one on either side of it and something follows.
+// dropTable is called after a table is dropped, with the lines emitted so far and
+// the index of the first line after the table. Before any content, the blank lines
+// after the table go, so the file does not start with a blank line. At the end of
+// the file, the blank lines after the table stay, and those before it go. Between
+// content, the blank lines around the table become one blank line.
 func dropTable(out, lines [][]byte, pos int, nl string) ([][]byte, int) {
 	if !hasContent(out) {
 		for pos < len(lines) && isBlankLine(lines[pos]) {
@@ -185,14 +187,17 @@ func dropTable(out, lines [][]byte, pos int, nl string) ([][]byte, int) {
 		out = out[:len(out)-1]
 		blank = true
 	}
-	for pos < len(lines) && isBlankLine(lines[pos]) {
-		pos++
-		blank = true
+	end := pos
+	for end < len(lines) && isBlankLine(lines[end]) {
+		end++
 	}
-	if blank && pos < len(lines) {
+	if end == len(lines) {
+		return out, pos
+	}
+	if blank || end > pos {
 		out = append(out, []byte(nl))
 	}
-	return out, pos
+	return out, end
 }
 
 func hasContent(lines [][]byte) bool {
@@ -206,7 +211,7 @@ func isBlankLine(line []byte) bool {
 // checkEdit verifies an edit: the server is entry (or gone when entry is nil),
 // and nothing else in the document changed.
 func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any) error {
-	same, err := sameEntry(withoutServer(before, root, name), withoutServer(after, root, name))
+	same, err := sameTOML(withoutServer(before, root, name), withoutServer(after, root, name))
 	if err != nil {
 		return err
 	}
@@ -226,7 +231,7 @@ func checkEdit(before, after map[string]any, root []string, name string, entry m
 	if !found {
 		return errors.New("the edit did not add the server")
 	}
-	same, err = sameEntry(got, entry)
+	same, err = sameTOML(got, entry)
 	if err != nil {
 		return err
 	}
@@ -234,6 +239,28 @@ func checkEdit(before, after map[string]any, root []string, name string, entry m
 		return errors.New("the edit wrote a different server")
 	}
 	return nil
+}
+
+// sameTOML compares two tables by their TOML text. JSON has no inf or nan, which
+// TOML allows in any table, so the comparison is made in TOML.
+func sameTOML(a, b map[string]any) (bool, error) {
+	ta, err := tomlText(a)
+	if err != nil {
+		return false, err
+	}
+	tb, err := tomlText(b)
+	if err != nil {
+		return false, err
+	}
+	return ta == tb, nil
+}
+
+func tomlText(table map[string]any) (string, error) {
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(table); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // withoutServer returns doc without the server name under root. The tables on
@@ -258,21 +285,11 @@ func withoutServer(doc map[string]any, root []string, name string) map[string]an
 	return out
 }
 
-// defined reports whether the key path root exists in the document.
+// defined reports whether the key path root exists in the document. A table on the
+// way that is not a table is taken as defined, since it blocks the path.
 func (d *tomlDoc) defined(root []string) bool {
-	t := d.root
-	for _, key := range root {
-		next, ok := t[key]
-		if !ok {
-			return false
-		}
-		m, ok := next.(map[string]any)
-		if !ok {
-			return true
-		}
-		t = m
-	}
-	return true
+	_, found := d.node(root)
+	return found
 }
 
 // hasHeaderUnder reports whether a table header in lines is root or below it.
@@ -314,15 +331,24 @@ func renderBlock(root []string, name string, entry map[string]any, nl string) ([
 	return []byte(out.String()), nil
 }
 
-// appendBlock appends block after out, separated by one blank line.
+// appendBlock adds block after the content of out, with one blank line between.
+// Blank lines at the end of the file stay last, so removing the block again gives
+// back the file's own ending.
 func appendBlock(out, block [][]byte, nl string) [][]byte {
-	if len(out) > 0 {
-		if last := out[len(out)-1]; !bytes.HasSuffix(last, []byte("\n")) {
-			out[len(out)-1] = append(slices.Clip(last), nl...)
-		}
-		out = append(out, []byte(nl))
+	end := len(out)
+	for end > 0 && isBlankLine(out[end-1]) {
+		end--
 	}
-	return append(out, block...)
+	var res [][]byte
+	res = append(res, out[:end]...)
+	if end > 0 {
+		if last := res[len(res)-1]; !bytes.HasSuffix(last, []byte("\n")) {
+			res[len(res)-1] = append(slices.Clip(last), nl...)
+		}
+		res = append(res, []byte(nl))
+	}
+	res = append(res, block...)
+	return append(res, out[end:]...)
 }
 
 // lineRange is the half-open range of lines [start, end).

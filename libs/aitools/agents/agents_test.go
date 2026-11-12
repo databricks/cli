@@ -105,8 +105,9 @@ func TestMCPPaths(t *testing.T) {
 	}
 }
 
-// OpenCode reads opencode.json or opencode.jsonc. An existing .jsonc is the
-// file to edit, so a second file is not created beside it.
+// TestOpenCodeMCPPathPrefersJSONC checks that OpenCode reads opencode.json or
+// opencode.jsonc, and that an existing .jsonc is the file to edit, so a second
+// file is not created beside it.
 func TestOpenCodeMCPPathPrefersJSONC(t *testing.T) {
 	ctx, home := clearMCPOverrides(t)
 	dir := filepath.Join(home, ".config", "opencode")
@@ -165,9 +166,41 @@ func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 	}
 }
 
-// A config file that cannot be inspected is an error, not a missing file. Creating
-// opencode.json beside it would leave the user's file unread.
+// TestOpenCodeMCPPathReturnsStatError checks that a config path that cannot be
+// inspected is an error, not a missing file. Creating opencode.json beside it
+// would leave the user's file unread.
 func TestOpenCodeMCPPathReturnsStatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the blocking file has a different error on Windows")
+	}
+	ctx, home := clearMCPOverrides(t)
+	// A regular file where the OpenCode directory should be makes the lookup fail with ENOTDIR.
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".config", "opencode"), []byte("x"), 0o600))
+
+	_, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.Error(t, err)
+}
+
+// TestOpenCodeMCPPathRefusesBothFiles checks that the CLI does not pick between
+// opencode.json and opencode.jsonc when both exist, and names both files.
+func TestOpenCodeMCPPathRefusesBothFiles(t *testing.T) {
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	jsonPath := filepath.ToSlash(filepath.Join(dir, "opencode.json"))
+	jsoncPath := filepath.ToSlash(filepath.Join(dir, "opencode.jsonc"))
+	require.NoError(t, os.WriteFile(jsonPath, []byte("{}"), 0o600))
+	require.NoError(t, os.WriteFile(jsoncPath, []byte("{}"), 0o600))
+
+	_, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, jsonPath+" and "+jsoncPath)
+}
+
+// TestOpenCodeMCPPathDanglingJSONCLink checks that a dangling opencode.jsonc link
+// counts as the file, so the write refuses it instead of creating opencode.json.
+func TestOpenCodeMCPPathDanglingJSONCLink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("creating symlinks needs privileges on Windows")
 	}
@@ -175,10 +208,9 @@ func TestOpenCodeMCPPathReturnsStatError(t *testing.T) {
 	dir := filepath.Join(home, ".config", "opencode")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	jsonc := filepath.Join(dir, "opencode.jsonc")
-	require.NoError(t, os.Symlink(jsonc, jsonc))
+	require.NoError(t, os.Symlink(filepath.Join(dir, "missing.jsonc"), jsonc))
 
-	_, err := ByName(NameOpenCode).MCP.Path(ctx)
-	require.Error(t, err)
-	_, err = os.Stat(filepath.Join(dir, "opencode.json"))
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	path, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, jsonc, path)
 }

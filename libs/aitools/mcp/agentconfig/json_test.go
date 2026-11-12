@@ -42,7 +42,7 @@ func TestJSONKeepsCommentsTrailingCommasAndValues(t *testing.T) {
 `
 	entry := testEntry(testCmd, testArgs("test"), nil)
 	got := jsonEdit(t, data, func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, testName, entry))
+		require.NoError(t, d.put([]string{"mcpServers"}, testName, entry, nil))
 	})
 	assert.Contains(t, got, "// Agent settings\n")
 	assert.Contains(t, got, `"theme": "dark", /* keep */`)
@@ -52,7 +52,7 @@ func TestJSONKeepsCommentsTrailingCommasAndValues(t *testing.T) {
 
 	// Removing the entry leaves the other members and the comments in place.
 	back := jsonEdit(t, got, func(d document) {
-		require.NoError(t, d.remove([]string{"mcpServers"}, testName))
+		require.NoError(t, d.put([]string{"mcpServers"}, testName, nil, nil))
 	})
 	assert.Contains(t, back, "// Agent settings\n")
 	assert.Equal(t, semanticJSONC(t, data), semanticJSONC(t, back))
@@ -60,7 +60,7 @@ func TestJSONKeepsCommentsTrailingCommasAndValues(t *testing.T) {
 
 func TestJSONCreatesMissingLevels(t *testing.T) {
 	got := jsonEdit(t, `{"theme": "dark"}`, func(d document) {
-		require.NoError(t, d.set([]string{"mcp", "servers"}, "x", map[string]any{"type": "local"}))
+		require.NoError(t, d.put([]string{"mcp", "servers"}, "x", map[string]any{"type": "local"}, nil))
 	})
 	assert.Equal(t, map[string]any{
 		"theme": "dark",
@@ -70,19 +70,19 @@ func TestJSONCreatesMissingLevels(t *testing.T) {
 
 func TestJSONBOMIsKept(t *testing.T) {
 	got := jsonEdit(t, "\xEF\xBB\xBF{\"a\": 1}\n", func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, testName, testEntry(testCmd, nil, nil)))
+		require.NoError(t, d.put([]string{"mcpServers"}, testName, testEntry(testCmd, nil, nil), nil))
 	})
 	assert.Equal(t, "\xEF\xBB\xBF", got[:3])
 	assert.Contains(t, got, `"a": 1`)
 	assert.Contains(t, got, testName)
 }
 
-// A new file gets two-space indentation and a trailing newline, and <, > and &
-// are written as they are.
+// TestJSONNewFileLayout checks that a new file gets two-space indentation and a
+// trailing newline, and <, > and & are written as they are.
 func TestJSONNewFileLayout(t *testing.T) {
 	entry := map[string]any{"command": "/a<b>&c", "args": []string{"x"}}
 	got := jsonEdit(t, "", func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, "x", entry))
+		require.NoError(t, d.put([]string{"mcpServers"}, "x", entry, nil))
 	})
 	assert.Equal(t, `{
   "mcpServers": {
@@ -118,27 +118,31 @@ func requireStrictJSON(t *testing.T, data string) {
 	require.NoError(t, json.Unmarshal([]byte(data), &v), data)
 }
 
-// A comment after the last member is on that member's line. Adding a member
-// after it keeps the comment there.
+// TestJSONAddKeepsCommentOnPreviousMember checks that a comment after the last
+// member stays on that member's line when a member is added after it, in LF and
+// CRLF files.
 func TestJSONAddKeepsCommentOnPreviousMember(t *testing.T) {
-	data := "{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"} // other server\n  }\n}\n"
-	got := jsonEdit(t, data, func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
-	})
-	assert.Equal(t, "{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"}, // other server\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n", got)
+	for _, nl := range []string{"\n", "\r\n"} {
+		data := strings.ReplaceAll("{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"} // other server\n  }\n}\n", "\n", nl)
+		got := jsonEdit(t, data, func(d document) {
+			require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "x"}, nil))
+		})
+		want := strings.ReplaceAll("{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"}, // other server\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n", "\n", nl)
+		assert.Equal(t, want, got, "line ending %q", nl)
+	}
 }
 
-// An empty table gets its member on its own line, and its closing brace on a
-// line of its own.
+// TestJSONAddToEmptyTable checks that an empty table gets its member on its own
+// line, and its closing brace on a line of its own.
 func TestJSONAddToEmptyTable(t *testing.T) {
 	got := jsonEdit(t, "{\n  \"mcpServers\": {}\n}\n", func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+		require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "x"}, nil))
 	})
 	assert.Equal(t, "{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n", got)
 }
 
-// A file with only comments and an empty object keeps its comments. Only the
-// layout of the object changes.
+// TestJSONAddKeepsCommentsOfEmptyObject checks that a file with only comments and
+// an empty object keeps its comments. Only the layout of the object changes.
 func TestJSONAddKeepsCommentsOfEmptyObject(t *testing.T) {
 	for _, tc := range []struct {
 		data string
@@ -149,26 +153,28 @@ func TestJSONAddKeepsCommentsOfEmptyObject(t *testing.T) {
 	} {
 		t.Run(tc.data, func(t *testing.T) {
 			got := jsonEdit(t, tc.data, func(d document) {
-				require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+				require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "x"}, nil))
 			})
 			assert.Equal(t, tc.want, got)
 		})
 	}
 }
 
-// An empty object file gets one trailing newline, as the file had.
+// TestJSONAddToEmptyObjectFile checks that an empty object file gets one trailing
+// newline, as the file had.
 func TestJSONAddToEmptyObjectFile(t *testing.T) {
 	want := "{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n"
 	for _, data := range []string{"{}\n", "", " \n"} {
 		got := jsonEdit(t, data, func(d document) {
-			require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+			require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "x"}, nil))
 		})
 		assert.Equal(t, want, got, "input %q", data)
 	}
 }
 
-// Removing the last member keeps a strict file strict. The comma that stood
-// after the previous member's space is not left behind.
+// TestJSONRemoveLastKeepsStrictJSON checks that removing the last member keeps a
+// strict file strict. The comma that stood after the previous member's space is
+// not left behind.
 func TestJSONRemoveLastKeepsStrictJSON(t *testing.T) {
 	for _, data := range []string{
 		"{\n  \"mcpServers\": {\n    \"a\": {} ,\n    \"b\": {\"command\": \"x\"}\n  }\n}\n",
@@ -176,37 +182,40 @@ func TestJSONRemoveLastKeepsStrictJSON(t *testing.T) {
 		"{\"mcpServers\": {\"a\": {}  , \"b\": {\"command\": \"x\"}}}",
 	} {
 		got := jsonEdit(t, data, func(d document) {
-			require.NoError(t, d.remove([]string{"mcpServers"}, "b"))
+			require.NoError(t, d.put([]string{"mcpServers"}, "b", nil, nil))
 		})
 		requireStrictJSON(t, got)
 		assert.Equal(t, map[string]any{"mcpServers": map[string]any{"a": map[string]any{}}}, semantic(t, mcpconfig.FormatJSON, []byte(got)))
 	}
 }
 
-// A file with a trailing comma keeps the trailing comma when its last member is removed.
+// TestJSONRemoveLastKeepsTrailingComma checks that a file with a trailing comma
+// keeps the trailing comma when its last member is removed.
 func TestJSONRemoveLastKeepsTrailingComma(t *testing.T) {
 	got := jsonEdit(t, "{\"mcpServers\": {\"a\": {}, \"b\": {},}}", func(d document) {
-		require.NoError(t, d.remove([]string{"mcpServers"}, "b"))
+		require.NoError(t, d.put([]string{"mcpServers"}, "b", nil, nil))
 	})
 	assert.Equal(t, "{\"mcpServers\": {\"a\": {},}}", got)
 }
 
-// A CRLF file gets CRLF in inserted text, so the file has one line ending.
+// TestJSONKeepsCRLF checks that a CRLF file gets CRLF in inserted text, so the
+// file has one line ending.
 func TestJSONKeepsCRLF(t *testing.T) {
 	data := "{\r\n  \"mcpServers\": {\r\n    \"other\": {\"command\": \"npx\"}\r\n  }\r\n}\r\n"
 	got := jsonEdit(t, data, func(d document) {
-		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x", "args": []string{"a"}}))
+		require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "x", "args": []string{"a"}}, nil))
 	})
 	assert.Equal(t, strings.Count(got, "\n"), strings.Count(got, "\r\n"), got)
 	assert.Contains(t, got, "\"other\": {\"command\": \"npx\"},\r\n    \"x\": {\r\n")
 
 	got = jsonEdit(t, got, func(d document) {
-		require.NoError(t, d.remove([]string{"mcpServers"}, "x"))
+		require.NoError(t, d.put([]string{"mcpServers"}, "x", nil, nil))
 	})
 	assert.Equal(t, data, got)
 }
 
-// Adding a member to a strict file keeps it strict, whatever its layout.
+// TestJSONAddKeepsStrictJSON checks that adding a member to a strict file keeps it
+// strict, whatever its layout.
 func TestJSONAddKeepsStrictJSON(t *testing.T) {
 	for _, data := range []string{
 		"{}",
@@ -216,7 +225,7 @@ func TestJSONAddKeepsStrictJSON(t *testing.T) {
 		"{\"theme\": \"dark\", \"mcpServers\": {\"a\": {\"command\": \"x\"}}}",
 	} {
 		got := jsonEdit(t, data, func(d document) {
-			require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "y"}))
+			require.NoError(t, d.put([]string{"mcpServers"}, "x", map[string]any{"command": "y"}, nil))
 		})
 		requireStrictJSON(t, got)
 		assert.Equal(t, "y", semantic(t, mcpconfig.FormatJSON, []byte(got))["mcpServers"].(map[string]any)["x"].(map[string]any)["command"], data)
