@@ -27,14 +27,14 @@ type listFilters struct {
 	User string
 	// Experiment is a case-insensitive glob
 	Experiment string
-	// AcceleratorType is the user-provided family, display name, or full type.
+	// AcceleratorType is the user-provided family or full type.
 	AcceleratorType string
-	// AcceleratorTypes are the workspace accelerator types resolved from
-	// AcceleratorType. A run matches when its type is in this list.
-	AcceleratorTypes []string
-	// AcceleratorCount is set when AcceleratorType uses the list table's display
-	// format (for example, "8x H100"). It is the run's total accelerator count.
-	AcceleratorCount *int
+	// ResolvedAcceleratorType is the canonical-looking user input used for an
+	// exact full-type match against runs.
+	ResolvedAcceleratorType string
+	// AcceleratorFamilyMatch preserves the legacy case-insensitive substring
+	// match against the display GPU family.
+	AcceleratorFamilyMatch bool
 	// NumAccelerators is an exact match against the GPU count.
 	NumAccelerators *int
 }
@@ -46,8 +46,12 @@ func parseListFilters(raw []string) (listFilters, error) {
 		if !ok || key == "" {
 			return listFilters{}, fmt.Errorf("invalid --filter %q: expected KEY=VALUE", item)
 		}
-		if strings.TrimSpace(value) == "" {
-			return listFilters{}, fmt.Errorf("invalid --filter %s: value cannot be empty", key)
+		if !slices.Contains(supportedFilterKeys, key) {
+			return listFilters{}, fmt.Errorf("unsupported --filter key %q: supported keys are %s", key, strings.Join(supportedFilterKeys, ", "))
+		}
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return listFilters{}, fmt.Errorf("invalid --filter %s=%q: value cannot be empty", key, value)
 		}
 		switch key {
 		case "user":
@@ -65,49 +69,48 @@ func parseListFilters(raw []string) (listFilters, error) {
 				return listFilters{}, fmt.Errorf("invalid --filter num_accelerators=%q: must be a positive integer", value)
 			}
 			f.NumAccelerators = &n
-		default:
-			return listFilters{}, fmt.Errorf("unsupported --filter key %q: supported keys are %s", key, strings.Join(supportedFilterKeys, ", "))
 		}
 	}
 	return f, nil
 }
 
-// resolveAcceleratorFilter resolves a family, display name, or full type to the
-// canonical accelerator types currently available in the workspace.
-func resolveAcceleratorFilter(f *listFilters, options []computeOption) error {
-	if f.AcceleratorType == "" {
-		return nil
+// configureAcceleratorFilter selects exact full-type matching for YAML-style
+// values and preserves legacy family substring matching for everything else.
+func configureAcceleratorFilter(f *listFilters) {
+	if strings.HasPrefix(strings.ToUpper(f.AcceleratorType), "GPU_") {
+		f.ResolvedAcceleratorType = f.AcceleratorType
+		return
 	}
+	f.AcceleratorFamilyMatch = true
+}
 
-	// A full type selects one topology exactly.
+// validateAcceleratorFilter checks a filter that produced no runs against the
+// accelerator types currently available in the workspace.
+func validateAcceleratorFilter(value string, options []computeOption) error {
 	for _, option := range options {
-		if strings.EqualFold(f.AcceleratorType, option.HardwareAccelerator) {
-			f.AcceleratorTypes = append(f.AcceleratorTypes, option.HardwareAccelerator)
+		if strings.EqualFold(value, option.HardwareAccelerator) {
 			return nil
 		}
 	}
 
-	// A copied table value selects a family plus the displayed total count.
-	family := f.AcceleratorType
-	if count, displayFamily, ok := parseAcceleratorDisplay(f.AcceleratorType); ok {
-		f.AcceleratorCount = &count
-		family = displayFamily
-	}
-	for _, option := range options {
-		if strings.EqualFold(family, acceleratorFamily(option.HardwareAccelerator)) {
-			f.AcceleratorTypes = append(f.AcceleratorTypes, option.HardwareAccelerator)
+	if !strings.HasPrefix(strings.ToUpper(value), "GPU_") {
+		for _, option := range options {
+			family := acceleratorFamily(option.HardwareAccelerator)
+			if strings.Contains(strings.ToLower(family), strings.ToLower(value)) {
+				return nil
+			}
 		}
 	}
-	if len(f.AcceleratorTypes) == 0 {
-		return fmt.Errorf("invalid --filter accelerator_type=%q: %s", f.AcceleratorType, validAcceleratorFilterHint(options))
+	if fullType := suggestedAcceleratorType(value, options); fullType != "" {
+		return fmt.Errorf("invalid --filter accelerator_type=%q: use %q", value, fullType)
 	}
-	return nil
+	return fmt.Errorf("invalid --filter accelerator_type=%q: %s", value, validAcceleratorFilterHint(options))
 }
 
-// acceleratorFamily extracts the hardware family from a canonical type, so a
-// future type such as GPU_4xA100 works without a client-side type list.
+// acceleratorFamily extracts the hardware family from a canonical type without
+// a client-side type list.
 func acceleratorFamily(acceleratorType string) string {
-	prefix, family, ok := strings.Cut(strings.TrimPrefix(acceleratorType, "GPU_"), "x")
+	prefix, family, ok := strings.Cut(acceleratorShorthand(acceleratorType), "x")
 	if ok {
 		if _, err := strconv.Atoi(prefix); err == nil && family != "" {
 			return family
@@ -116,28 +119,34 @@ func acceleratorFamily(acceleratorType string) string {
 	return acceleratorType
 }
 
-func parseAcceleratorDisplay(value string) (int, string, bool) {
-	compact := strings.ReplaceAll(strings.TrimSpace(value), " ", "")
-	countText, family, ok := strings.Cut(compact, "x")
-	if !ok || family == "" {
-		return 0, "", false
+func acceleratorShorthand(acceleratorType string) string {
+	return strings.TrimPrefix(acceleratorType, "GPU_")
+}
+
+func acceleratorRunFamily(acceleratorType string) string {
+	family := acceleratorFamily(acceleratorType)
+	if family != acceleratorType {
+		return family
 	}
-	count, err := strconv.Atoi(countText)
-	if err != nil || count <= 0 {
-		return 0, "", false
+	return gpuDisplayName(acceleratorType)
+}
+
+func suggestedAcceleratorType(value string, options []computeOption) string {
+	compact := strings.Join(strings.Fields(value), "")
+	for _, option := range options {
+		if strings.EqualFold(compact, acceleratorShorthand(option.HardwareAccelerator)) {
+			return option.HardwareAccelerator
+		}
 	}
-	return count, family, true
+	return ""
 }
 
 func validAcceleratorFilterHint(options []computeOption) string {
-	var families, displays, fullTypes []string
+	var families, fullTypes []string
 	for _, option := range options {
 		family := acceleratorFamily(option.HardwareAccelerator)
 		if !slices.ContainsFunc(families, func(v string) bool { return strings.EqualFold(v, family) }) {
 			families = append(families, family)
-		}
-		if option.DisplayName != "" && !slices.ContainsFunc(displays, func(v string) bool { return strings.EqualFold(v, option.DisplayName) }) {
-			displays = append(displays, option.DisplayName)
 		}
 		fullTypes = append(fullTypes, option.HardwareAccelerator)
 	}
@@ -145,9 +154,6 @@ func validAcceleratorFilterHint(options []computeOption) string {
 		return "no accelerator types are available in this workspace"
 	}
 	parts := []string{"families (" + strings.Join(families, ", ") + ")"}
-	if len(displays) > 0 {
-		parts = append(parts, "display names ("+strings.Join(displays, ", ")+")")
-	}
 	parts = append(parts, "full types ("+strings.Join(fullTypes, ", ")+")")
 	return "valid values for this workspace include " + strings.Join(parts, ", ")
 }
@@ -187,10 +193,12 @@ func (f listFilters) matchesFields(fields filterFields) bool {
 	}
 
 	if f.AcceleratorType != "" {
-		if !slices.ContainsFunc(f.AcceleratorTypes, func(v string) bool { return strings.EqualFold(v, fields.GPUType) }) {
-			return false
-		}
-		if f.AcceleratorCount != nil && fields.GPUCount != *f.AcceleratorCount {
+		if f.AcceleratorFamilyMatch {
+			family := strings.ToLower(acceleratorRunFamily(fields.GPUType))
+			if !strings.Contains(family, strings.ToLower(f.AcceleratorType)) {
+				return false
+			}
+		} else if !strings.EqualFold(f.ResolvedAcceleratorType, fields.GPUType) {
 			return false
 		}
 	}
