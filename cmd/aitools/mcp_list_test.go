@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,6 +29,18 @@ func seedInstall(t *testing.T, a *agents.Agent, name, service, profileName, host
 		Command: testDatabricksCommand,
 		Agents:  map[string]mcp.AgentRecord{a.Name: {Path: path, Scope: "user"}},
 	}
+}
+
+// repointEntry sets the command of a Claude Code server in its config file, as a user editing the file
+// by hand would. Upsert refuses a command that is not the databricks binary, so it cannot write this.
+func repointEntry(t *testing.T, path, name, command string) {
+	t.Helper()
+	doc := readJSONFile(t, path)
+	server := doc["mcpServers"].(map[string]any)[name].(map[string]any)
+	server["command"] = command
+	data, err := json.MarshalIndent(doc, "", "  ")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, data, 0o600))
 }
 
 func saveState(t *testing.T, entries ...mcp.Entry) {
@@ -86,8 +99,7 @@ token = t
 	}
 	// Written for a profile that is then removed from the config file, and changed by hand afterwards.
 	gone := seedInstall(t, claude, "dbsql-old", "system.ai.dbsql", "old", "https://adb-3.test")
-	_, _, err := agentconfig.Upsert(t.Context(), claude, "dbsql-old", "/usr/bin/other", []string{"aitools", "mcp", "serve"}, nil, true)
-	require.NoError(t, err)
+	repointEntry(t, claudePath, "dbsql-old", "/usr/bin/other")
 
 	saveState(t, genie, github, dogfood, absent, gone)
 

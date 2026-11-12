@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
-	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -137,8 +136,7 @@ func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
 	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 	saveState(t, entry)
 	// Someone points the same name at another command. It is no longer ours.
-	_, _, err := agentconfig.Upsert(t.Context(), claude, "genie_one_mcp-logfood", "/usr/bin/other", []string{"serve"}, nil, true)
-	require.NoError(t, err)
+	repointEntry(t, claudePath, "genie_one_mcp-logfood", "/usr/bin/other")
 	before, err := os.ReadFile(claudePath)
 	require.NoError(t, err)
 
