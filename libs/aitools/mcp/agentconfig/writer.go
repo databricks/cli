@@ -156,11 +156,20 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err
 	}
-	spec, err := specOf(a)
+	path, err := Path(ctx, a)
 	if err != nil {
 		return false, err
 	}
-	path, err := spec.Path(ctx)
+	return RemoveAt(a, path, name)
+}
+
+// RemoveAt is Remove for the config file at path. The file need not be the one the spec names now: a record names
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry.
+func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
+	if err := checkName(name); err != nil {
+		return false, err
+	}
+	spec, err := specOf(a)
 	if err != nil {
 		return false, err
 	}
@@ -191,11 +200,16 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 // Read returns every server entry in agent a's config, keyed by name. A missing
 // file has no entries.
 func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
-	spec, err := specOf(a)
+	path, err := Path(ctx, a)
 	if err != nil {
 		return nil, err
 	}
-	path, err := spec.Path(ctx)
+	return ReadAt(a, path)
+}
+
+// ReadAt is Read for the config file at path, which need not be the one the spec names now. See RemoveAt.
+func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
+	spec, err := specOf(a)
 	if err != nil {
 		return nil, err
 	}

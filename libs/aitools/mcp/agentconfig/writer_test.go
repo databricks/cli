@@ -784,3 +784,55 @@ func TestUpsertRefusesEnvThatIsNotATable(t *testing.T) {
 	require.ErrorIs(t, err, ErrConfigInvalid)
 	assert.Equal(t, data, string(readFile(t, path)))
 }
+
+// TestPathIsTheFileTheSpecNames checks that Path returns the file the spec names, without creating or reading it.
+func TestPathIsTheFileTheSpecNames(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	got, err := Path(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, path, got)
+	_, err = os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestPathFailsForAgentWithoutMCP(t *testing.T) {
+	_, err := Path(t.Context(), &agents.Agent{Name: "pi", DisplayName: "Pi"})
+	require.Error(t, err)
+}
+
+// TestReadAtAndRemoveAtUseTheGivenFile checks that ReadAt and RemoveAt work on the file they are given, not on the
+// file the agent's spec names now. The entry is written to one file, and the spec names another.
+func TestReadAtAndRemoveAtUseTheGivenFile(t *testing.T) {
+	recorded := filepath.Join(t.TempDir(), "recorded.json")
+	current := filepath.Join(t.TempDir(), "current.json")
+	_, _, err := Upsert(t.Context(), testAgent(recorded, mcpconfig.FormatJSON, "mcpServers"), testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	a := testAgent(current, mcpconfig.FormatJSON, "mcpServers")
+
+	entries, err := ReadAt(a, recorded)
+	require.NoError(t, err)
+	assert.Contains(t, entries, testName)
+
+	entries, err = Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "the spec's file does not have the entry")
+
+	removed, err := RemoveAt(a, recorded, testName)
+	require.NoError(t, err)
+	assert.True(t, removed)
+	entries, err = ReadAt(a, recorded)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+	_, err = os.Stat(current)
+	assert.ErrorIs(t, err, os.ErrNotExist, "RemoveAt does not write the spec's file")
+}
+
+// TestReadAtMissingFileHasNoEntries checks that a file that no longer exists reads as having no entries.
+func TestReadAtMissingFileHasNoEntries(t *testing.T) {
+	a := testAgent(filepath.Join(t.TempDir(), "current.json"), mcpconfig.FormatJSON, "mcpServers")
+	entries, err := ReadAt(a, filepath.Join(t.TempDir(), "gone.json"))
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}

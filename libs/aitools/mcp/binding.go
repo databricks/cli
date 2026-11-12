@@ -182,11 +182,6 @@ func uncategorizedError(err error) error {
 	return &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
 }
 
-// removeCommand returns the command that removes the server bound to profileName.
-func removeCommand(profileName string) string {
-	return mcpRemoveCommand + " --profile " + shellquote.BashArg(profileName)
-}
-
 // RemoveNamesCommand returns the command that removes the server named name. Server names are unique in the state.
 func RemoveNamesCommand(name string) string {
 	return mcpRemoveCommand + " --names " + shellquote.BashArg(name)
@@ -219,22 +214,25 @@ func profileGoneError(name, profileName, path string, entry *Entry, problem stri
 	}
 	recreate := RecreateCommand(entry.Host, profileName, pinnedPath)
 	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s",
-		name, profileName, problem, path, recreate, removeCommand(profileName))
+		name, profileName, problem, path, recreate, RemoveNamesCommand(name))
 	return &BindError{Category: BindProfileNotFound, message: message}
+}
+
+// DriftMessage tells how the profile of entry, which is named profileName, now differs from what the entry recorded: its
+// host, or its workspace when the host is the same. subject starts the sentence, for example "MCP server github-logfood"
+// or "it". The serve errors and `mcp list` both word a drift with it.
+func DriftMessage(subject string, entry Entry, profileName string, drift Drift) string {
+	recordedHost, recordedWorkspaceID := recordedTarget(entry)
+	if NormalizeHost(recordedHost) != NormalizeHost(drift.CurrentHost) {
+		return fmt.Sprintf("%s was set up for %s, but profile \"%s\" now points at %s", subject, recordedHost, profileName, drift.CurrentHost)
+	}
+	return fmt.Sprintf("%s was set up for workspace %s, but profile \"%s\" now points at workspace %s", subject, recordedWorkspaceID, profileName, drift.CurrentWorkspaceID)
 }
 
 // driftError is the PROFILE_HOST_CHANGED error for an entry whose profile now names another host,
 // or another workspace on the same host.
 func driftError(name, profileName string, entry Entry, drift Drift) error {
-	recordedHost, recordedWorkspaceID := recordedTarget(entry)
-	var message string
-	if NormalizeHost(recordedHost) != NormalizeHost(drift.CurrentHost) {
-		message = fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s and add it again",
-			name, recordedHost, profileName, drift.CurrentHost, removeCommand(profileName))
-	} else {
-		message = fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s and add it again",
-			name, recordedWorkspaceID, profileName, drift.CurrentWorkspaceID, removeCommand(profileName))
-	}
+	message := fmt.Sprintf("%s. Run: %s and add it again", DriftMessage("MCP server "+name, entry, profileName, drift), RemoveNamesCommand(name))
 	return &BindError{Category: BindProfileHostChanged, message: message}
 }
 
@@ -242,7 +240,7 @@ func driftError(name, profileName string, entry Entry, drift Drift) error {
 // use. The profile may name the same host there, but the server was set up against the recorded file.
 func configFileError(name, profileName, recordedPath, currentPath string) error {
 	message := fmt.Sprintf("MCP server %s was set up with config file %s, but profile \"%s\" is read from %s now. Run: %s and add it again, or set DATABRICKS_CONFIG_FILE to %s",
-		name, recordedPath, profileName, currentPath, removeCommand(profileName), shellquote.BashArg(recordedPath))
+		name, recordedPath, profileName, currentPath, RemoveNamesCommand(name), shellquote.BashArg(recordedPath))
 	return &BindError{Category: BindProfileHostChanged, message: message}
 }
 

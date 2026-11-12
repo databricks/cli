@@ -309,20 +309,35 @@ func TestNormalizeHostIgnoresSchemeCaseAndTrailingSlash(t *testing.T) {
 func TestReconcileProfileWithEmptyHostIsMissing(t *testing.T) {
 	ctx, _ := stateTestCtx(t)
 	path := bindingTestWriteConfig(t, "[logfood]\nhost =\nauth_type = pat\ntoken = dapi-profile-token\n")
-	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", path)
+	// The entry is pinned to the file that has the section, so the check reads that file.
 	entry := stateTestEntry()
+	entry.ConfigFile = path
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
 	drifts, err := mcp.Reconcile(ctx, state)
 	require.NoError(t, err)
-	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry}}, drifts)
+	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry, NoHost: true}}, drifts)
 }
 
 func TestReconcileProfileWithoutHostIsMissing(t *testing.T) {
 	ctx, _ := stateTestCtx(t)
 	path := bindingTestWriteConfig(t, "[logfood]\nauth_type = pat\ntoken = dapi-profile-token\n")
-	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", path)
 	entry := stateTestEntry()
+	entry.ConfigFile = path
+	state := &mcp.State{Servers: []mcp.Entry{entry}}
+
+	drifts, err := mcp.Reconcile(ctx, state)
+	require.NoError(t, err)
+	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry, NoHost: true}}, drifts)
+}
+
+// TestReconcileAbsentSectionIsMissingWithoutNoHost checks that a file with no section of the profile's name is
+// reported as missing, not as a section with no host.
+func TestReconcileAbsentSectionIsMissingWithoutNoHost(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
+	path := bindingTestWriteConfig(t, "[other]\nhost = https://adb-456.test\ntoken = dapi-profile-token\n")
+	entry := stateTestEntry()
+	entry.ConfigFile = path
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
 	drifts, err := mcp.Reconcile(ctx, state)
@@ -351,4 +366,29 @@ func TestReconcileReportsEntryErrorAndKeepsOthers(t *testing.T) {
 		CurrentHost:        bindingTestHost,
 		CurrentWorkspaceID: stateTestWorkspaceID,
 	}}, drifts)
+}
+
+// TestCheckEntriesKeepsEachResultOnItsEntry checks that CheckEntries returns one result per entry, in state order,
+// and that an entry that cannot be checked does not take the result of another entry with it.
+func TestCheckEntriesKeepsEachResultOnItsEntry(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
+	ctx = env.WithUserHomeDir(ctx, "")
+	unresolvable := stateTestEntry()
+	unresolvable.Name = "github-home"
+	unresolvable.ConfigFile = "~/.databrickscfg"
+	healthy := stateTestEntry()
+	healthy.ConfigFile = bindingTestWriteConfig(t, fmt.Sprintf("[%s]\nhost = %s\nworkspace_id = %s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, stateTestWorkspaceID, bindingTestToken))
+	changed := stateTestEntryWith(bindingTestProfile, "https://adb-999.test", stateTestWorkspaceID)
+	changed.ConfigFile = healthy.ConfigFile
+	state := &mcp.State{Servers: []mcp.Entry{unresolvable, healthy, changed}}
+
+	checks := mcp.CheckEntries(ctx, state)
+	require.Len(t, checks, 3)
+	require.ErrorIs(t, checks[0].Err, env.ErrNoHomeEnv)
+	assert.Nil(t, checks[0].Drift)
+	assert.NoError(t, checks[1].Err)
+	assert.Nil(t, checks[1].Drift)
+	assert.NoError(t, checks[2].Err)
+	require.NotNil(t, checks[2].Drift)
+	assert.Equal(t, mcp.DriftHostChanged, checks[2].Drift.Kind)
 }

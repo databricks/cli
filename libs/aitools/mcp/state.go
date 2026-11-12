@@ -80,27 +80,42 @@ func SaveState(ctx context.Context, state *State) error {
 	return installer.SaveMCPState(dir, state)
 }
 
-// Reconcile reports entries whose profile is gone or has no host, and entries whose profile now
-// names another host, or another workspace when both the entry and the profile name one. Each
-// entry is checked against the config file it is pinned to; an entry with no pinned file is checked
-// against the default file, ~/.databrickscfg, whatever the environment names. Each config file is
-// read once.
-//
-// An entry that cannot be checked, such as one whose "~" path has no home directory to resolve, does
-// not stop the others. Its error is joined into the returned error, and the drifts of the other
-// entries are still returned.
-func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
+// EntryCheck is the result of checking one state entry. Drift is nil when the entry's profile still names the recorded
+// host and workspace. Err is set when the entry cannot be checked.
+type EntryCheck struct {
+	Drift *Drift
+	Err   error
+}
+
+// CheckEntries checks each entry of state against its profile and returns one result per entry, in state order. Each
+// entry is checked against the config file it is pinned to; an entry with no pinned file is checked against the default
+// file, ~/.databrickscfg, whatever the environment names. Each config file is read once for all the entries. An entry
+// that cannot be checked, such as one whose "~" path has no home directory to resolve, does not stop the others.
+func CheckEntries(ctx context.Context, state *State) []EntryCheck {
 	files := configFiles{}
+	checks := make([]EntryCheck, len(state.Servers))
+	for i, entry := range state.Servers {
+		drift, err := checkEntry(ctx, files, entry)
+		checks[i] = EntryCheck{Drift: drift, Err: err}
+	}
+	return checks
+}
+
+// Reconcile reports entries whose profile is gone or has no host, and entries whose profile now
+// names another host, or another workspace when both the entry and the profile name one. See
+// CheckEntries for how each entry is checked.
+//
+// An entry that cannot be checked does not stop the others. Its error is joined into the returned
+// error, and the drifts of the other entries are still returned.
+func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
 	var drifts []Drift
 	var errs []error
-	for _, entry := range state.Servers {
-		drift, err := checkEntry(ctx, files, entry)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("MCP server %s: %w", entry.Name, err))
-			continue
-		}
-		if drift != nil {
-			drifts = append(drifts, *drift)
+	for i, check := range CheckEntries(ctx, state) {
+		switch {
+		case check.Err != nil:
+			errs = append(errs, fmt.Errorf("MCP server %s: %w", state.Servers[i].Name, check.Err))
+		case check.Drift != nil:
+			drifts = append(drifts, *check.Drift)
 		}
 	}
 	return drifts, errors.Join(errs...)
