@@ -51,7 +51,7 @@ func TestRemoveLegacyRawSkills(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "delta", "extra.md"), []byte("mine"), 0o644))
 
 	require.NoError(t, SaveState(baseDir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Files: map[string]FileRecord{
 			"alpha/SKILL.md": {SHA256: sha("alpha")},
 			"beta/SKILL.md":  {SHA256: sha("beta-content")},
@@ -93,7 +93,7 @@ func TestHasManagedRawSkillsForAgent(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(agentDir, "thirdparty", "SKILL.md"), []byte("mine"), 0o644))
 
 	require.NoError(t, SaveState(baseDir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Files: map[string]FileRecord{
 			"alpha/SKILL.md": {SHA256: sha("alpha")},
 		},

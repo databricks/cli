@@ -6,19 +6,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"slices"
 
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// bindExitCode is the exit status for binding failures. Agents and `list --check`
-// use it to tell binding failures apart from transport errors (SPEC 11.2).
+// bindExitCode is the exit status for binding failures, so callers can tell them apart
+// from other errors.
 const bindExitCode = 2
 
-// BindCategory is the error category for a binding failure. Values match the
-// AitoolsErrorCategory names so telemetry can map them directly.
+// BindCategory names the kind of a binding failure. The values are stable identifiers
+// for the failure, not telemetry values.
 type BindCategory string
 
 const (
@@ -37,7 +39,7 @@ type BindOptions struct {
 	Stderr io.Writer
 }
 
-// BindError is a failed binding check. Its message is the stderr text, byte-exact with SPEC 11.2.
+// BindError is a failed binding check. Its message is the text printed to stderr.
 type BindError struct {
 	Category BindCategory
 	message  string
@@ -57,11 +59,16 @@ func (e *BindError) ExitCode() int {
 	return bindExitCode
 }
 
-// Bind runs the binding checks of SPEC 11.2 for one profile and service. It never reads
-// stdin, prompts, or loads a bundle. It returns the resolved config and the matching state
-// entry, which is nil when none exists.
+// Bind checks that the profile still names the host and workspace recorded for the service,
+// then authenticates with the profile's own credentials. It never reads stdin, prompts, or
+// loads a bundle. It returns the resolved config and the matching state entry, which is nil
+// when none exists.
+//
+// The profile is checked before any credential is resolved, so a re-pointed host is never
+// contacted. The config file is the one in the context, the same file the profile lookup reads.
 func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
-	entry := findEntry(opts.State, opts.Service, opts.Profile)
+	configFile := env.Get(ctx, configFileEnv)
+	entry := findEntry(opts.State, opts.Service, opts.Profile, configFile)
 	name := opts.Service
 	if entry != nil {
 		name = entry.Name
@@ -77,32 +84,51 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
 	}
 	if len(profiles) == 0 {
-		return nil, nil, profileGoneError(name, opts.Profile, path, entry)
+		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(path), entry)
+	}
+	p := profiles[0]
+
+	if entry != nil && hostChanged(*entry, p) {
+		message := fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: databricks aitools mcp remove --profile %s and add it again",
+			name, entry.Host, opts.Profile, p.Host, opts.Profile)
+		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
+	}
+	if entry != nil && workspaceChanged(*entry, p) {
+		message := fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: databricks aitools mcp remove --profile %s and add it again",
+			name, entry.WorkspaceID, opts.Profile, p.WorkspaceID, opts.Profile)
+		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
 	}
 
-	cfg := &config.Config{Profile: opts.Profile, Loaders: databrickscfg.ProfileAuthLoaders}
+	// The loaders take the profile's own settings and non-auth environment only. The
+	// profile loader chain in databrickscfg also fills missing credentials from the
+	// environment, but the proxy must not send a token meant for another workspace.
+	cfg := &config.Config{
+		Profile:    opts.Profile,
+		ConfigFile: configFile,
+		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+	}
 	if err := cfg.EnsureResolved(); err != nil {
 		return nil, nil, authError(opts.Profile, err)
 	}
 
-	if entry != nil && NormalizeHost(entry.Host) != NormalizeHost(cfg.Host) {
-		message := fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: databricks aitools mcp remove --profile %s and add it again.",
-			name, entry.Host, opts.Profile, cfg.Host, opts.Profile)
-		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
-	}
-
 	if entry == nil {
-		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s.\n", opts.Service, opts.Profile, cfg.Host)
+		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
 
-	if err := cfg.Authenticate(&http.Request{Header: make(http.Header)}); err != nil {
+	// Authenticate only writes headers onto req, which is never sent. The request takes
+	// the command's context, as in cmd/root/auth.go.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+	if err != nil {
+		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+	}
+	if err := cfg.Authenticate(req); err != nil {
 		return nil, nil, authError(opts.Profile, err)
 	}
 	return cfg, entry, nil
 }
 
-// profileGoneError builds the SPEC 11.2 step 2 error. Without a state entry the
-// recorded host is unknown, so the recreate hint omits --host.
+// profileGoneError builds the error for a profile that is missing from the config file.
+// Without a state entry the recorded host is unknown, so the recreate hint omits --host.
 func profileGoneError(name, profileName, path string, entry *Entry) error {
 	recreate := "databricks auth login --profile " + profileName
 	if entry != nil {
@@ -118,9 +144,10 @@ func authError(profileName string, cause error) error {
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
 
-func findEntry(state *State, service, profileName string) *Entry {
+// findEntry returns the entry for the service and profile that is pinned to configFile, or nil.
+func findEntry(state *State, service, profileName, configFile string) *Entry {
 	i := slices.IndexFunc(state.Servers, func(e Entry) bool {
-		return e.Service == service && e.Profile == profileName
+		return e.Service == service && e.Profile == profileName && e.ConfigFile == configFile
 	})
 	if i < 0 {
 		return nil

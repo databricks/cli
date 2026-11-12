@@ -602,7 +602,7 @@ func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
 
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, SaveState(globalDir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Skills:        map[string]string{"databricks-jobs": "0.1.0"},
 	}))
 
@@ -611,4 +611,25 @@ func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
 	assert.Contains(t, err.Error(), "not tracked in Databricks aitools state")
 	assert.Contains(t, err.Error(), "Cursor")
 	assert.Contains(t, err.Error(), "install --skills-only --agents cursor")
+}
+
+func TestUninstallKeepsStateFileWithMCPRecords(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	state.MCP = &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}
+	require.NoError(t, SaveState(globalDir, state))
+
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, UninstallSkills(ctx))
+
+	// The skills are gone, but the MCP records stay in the file.
+	loaded, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, loaded)
+	assert.Empty(t, loaded.Skills)
+	require.NotNil(t, loaded.MCP)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
 }

@@ -28,9 +28,10 @@ func clearFileRecords(files map[string]FileRecord, skillName string) {
 
 const stateFileName = ".state.json"
 
-// schemaVersionV2 is the current on-disk state schema version. v2 adds the
-// additive Plugins and Files maps; v1 state loads forward without data changes.
-const schemaVersionV2 = 2
+// CurrentSchemaVersion is the on-disk state schema version this CLI writes. v2
+// added the Plugins and Files maps; v3 adds the optional MCP section. Older state
+// loads forward without data changes.
+const CurrentSchemaVersion = 3
 
 // Scope constants for skill installation.
 const (
@@ -57,6 +58,37 @@ type InstallState struct {
 	// e.g. "databricks/SKILL.md"). Added in schema v2; used to prune only the
 	// skills we wrote that the user hasn't modified.
 	Files map[string]FileRecord `json:"files,omitempty"`
+	// MCP records the Databricks MCP servers the `aitools mcp` commands wrote.
+	// Added in schema v3; omitted when none are recorded. Other writers keep it
+	// by loading the file first, since they save the whole struct.
+	MCP *MCPState `json:"mcp,omitempty"`
+}
+
+// MCPState is the MCP section of the install state: the servers this CLI added
+// to agent configs, and how each one is bound to a Databricks profile.
+type MCPState struct {
+	Servers []MCPEntry `json:"servers"`
+}
+
+// MCPEntry is one installed MCP server: a service bound to one profile for one set of agents.
+type MCPEntry struct {
+	Name           string                    `json:"name"`
+	Service        string                    `json:"service"`
+	Profile        string                    `json:"profile"`
+	Host           string                    `json:"host"`
+	WorkspaceID    string                    `json:"workspace_id"`
+	SignInRequired bool                      `json:"sign_in_required"`
+	Command        string                    `json:"command"`
+	ConfigFile     string                    `json:"config_file"`
+	Agents         map[string]MCPAgentRecord `json:"agents"`
+	InstalledAt    time.Time                 `json:"installed_at"`
+	CLIVersion     string                    `json:"cli_version"`
+}
+
+// MCPAgentRecord is where an MCP entry was written for one agent.
+type MCPAgentRecord struct {
+	Path  string `json:"path"`
+	Scope string `json:"scope"`
 }
 
 // PluginRecord records a databricks plugin installed for an agent through the
@@ -108,12 +140,13 @@ func LoadState(dir string) (*InstallState, error) {
 }
 
 // migrateState brings a loaded state forward to the current schema version. It
-// is forward-only and idempotent. v1 -> v2 needs no data transformation (the
-// Plugins/Files maps are additive and optional), so it only stamps the version;
-// writers lazily initialize the maps, matching how RepoDirs is handled.
+// is forward-only and idempotent. The v1 -> v2 and v2 -> v3 steps need no data
+// transformation (the Plugins, Files and MCP fields are additive and optional),
+// so migration only stamps the version; writers lazily initialize the maps,
+// matching how RepoDirs is handled.
 func migrateState(state *InstallState) {
-	if state.SchemaVersion < schemaVersionV2 {
-		state.SchemaVersion = schemaVersionV2
+	if state.SchemaVersion < CurrentSchemaVersion {
+		state.SchemaVersion = CurrentSchemaVersion
 	}
 }
 

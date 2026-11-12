@@ -23,7 +23,7 @@ func TestLoadStateNonexistentFile(t *testing.T) {
 func TestSaveAndLoadStateRoundtrip(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.0",
 		LastUpdated:   time.Date(2026, 3, 22, 10, 0, 0, 0, time.UTC),
 		Skills: map[string]string{
@@ -136,7 +136,7 @@ func TestLoadStateMigratesV1ToV2(t *testing.T) {
 
 	loaded, err := LoadState(dir)
 	require.NoError(t, err)
-	assert.Equal(t, schemaVersionV2, loaded.SchemaVersion)
+	assert.Equal(t, CurrentSchemaVersion, loaded.SchemaVersion)
 	// Migration is additive: existing data is untouched and the new maps stay nil.
 	assert.Equal(t, map[string]string{"databricks": "1.0.0"}, loaded.Skills)
 	assert.Nil(t, loaded.Plugins)
@@ -148,7 +148,7 @@ func TestMigrateStateIsIdempotent(t *testing.T) {
 	// second migrateState is a no-op.
 	state := &InstallState{SchemaVersion: 1, Skills: map[string]string{"databricks": "1.0.0"}}
 	migrateState(state)
-	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
+	assert.Equal(t, CurrentSchemaVersion, state.SchemaVersion)
 
 	migrated := *state
 	migrateState(state)
@@ -158,7 +158,7 @@ func TestMigrateStateIsIdempotent(t *testing.T) {
 func TestSaveAndLoadStateWithPluginAndFileRecords(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		LastUpdated:   time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC),
 		Skills:        map[string]string{"databricks": "1.0.0"},
@@ -187,7 +187,7 @@ func TestSaveAndLoadStateWithPluginAndFileRecords(t *testing.T) {
 func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
-		SchemaVersion:       schemaVersionV2,
+		SchemaVersion:       CurrentSchemaVersion,
 		IncludeExperimental: true,
 		Release:             "v0.3.0",
 		LastUpdated:         time.Date(2026, 3, 22, 12, 30, 0, 0, time.UTC),
@@ -208,4 +208,69 @@ func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 	loaded, err := LoadState(dir)
 	require.NoError(t, err)
 	assert.Equal(t, original, loaded)
+}
+
+func TestSaveAndLoadStateKeepsMCPSection(t *testing.T) {
+	dir := t.TempDir()
+	original := &InstallState{
+		SchemaVersion: CurrentSchemaVersion,
+		Skills:        map[string]string{},
+		MCP: &MCPState{Servers: []MCPEntry{{
+			Name:           "github-logfood",
+			Service:        "system.ai.github",
+			Profile:        "logfood",
+			Host:           "https://adb-123.test",
+			WorkspaceID:    "123",
+			SignInRequired: true,
+			Command:        "/usr/local/bin/databricks",
+			Agents: map[string]MCPAgentRecord{
+				"claude-code": {Path: "/home/me/.claude.json", Scope: "user"},
+			},
+			InstalledAt: time.Date(2026, 11, 12, 10, 12, 0, 0, time.UTC),
+			CLIVersion:  "0.300.0",
+		}}},
+	}
+	require.NoError(t, SaveState(dir, original))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, original, loaded)
+}
+
+// TestSaveStateKeepsMCPSectionWhenInstallerSaves checks that a skills write, which loads the
+// file before saving it, leaves the MCP section in place.
+func TestSaveStateKeepsMCPSectionWhenInstallerSaves(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: CurrentSchemaVersion,
+		MCP:           &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}},
+	}))
+
+	state, err := LoadState(dir)
+	require.NoError(t, err)
+	state.Skills = map[string]string{"databricks": "1.0.0"}
+	require.NoError(t, SaveState(dir, state))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"databricks": "1.0.0"}, loaded.Skills)
+	require.NotNil(t, loaded.MCP)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+}
+
+func TestLoadStateMigratesV2ToV3AndSavesV3(t *testing.T) {
+	dir := t.TempDir()
+	v2 := `{"schema_version":2,"release":"v0.2.0","last_updated":"2026-03-22T10:00:00Z","skills":{"databricks":"1.0.0"}}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, stateFileName), []byte(v2), 0o644))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, 3, loaded.SchemaVersion)
+	assert.Nil(t, loaded.MCP)
+
+	require.NoError(t, SaveState(dir, loaded))
+	data, err := os.ReadFile(filepath.Join(dir, stateFileName))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"schema_version": 3`)
+	assert.NotContains(t, string(data), `"mcp"`)
 }

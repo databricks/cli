@@ -444,7 +444,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// previous installs (e.g., experimental skills from a prior run) are preserved.
 	if state == nil {
 		state = &InstallState{
-			SchemaVersion: schemaVersionV2,
+			SchemaVersion: CurrentSchemaVersion,
 			Skills:        make(map[string]string, len(targetSkills)),
 			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}

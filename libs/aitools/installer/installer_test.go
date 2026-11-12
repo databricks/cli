@@ -442,7 +442,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	require.NotNil(t, state)
-	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
+	assert.Equal(t, CurrentSchemaVersion, state.SchemaVersion)
 	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
