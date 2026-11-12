@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync/atomic"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/stretchr/testify/assert"
@@ -464,4 +466,44 @@ func TestWithinReturnsPanicAsError(t *testing.T) {
 	_, err := within(t.Context(), &running, func() (int, error) { panic("boom") })
 	assert.EqualError(t, err, "panic: boom")
 	assert.Eventually(t, func() bool { return running.Load() == 0 }, time.Second, time.Millisecond)
+}
+
+func TestSend(t *testing.T) {
+	tests := []struct {
+		name            string
+		numProtoSuccess int64
+		wantErr         string
+	}{
+		{name: "all accepted", numProtoSuccess: 1},
+		{name: "none accepted", numProtoSuccess: 0, wantErr: "only 0 of 1 logs were accepted"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			t.Cleanup(server.Close)
+
+			var body RequestBody
+			server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+				require.NoError(t, json.Unmarshal(req.Body, &body))
+				return ResponseBody{NumProtoSuccess: tt.numProtoSuccess}
+			})
+
+			apiClient, err := client.New(&config.Config{Host: server.URL, Token: "token"})
+			require.NoError(t, err)
+
+			err = Send(t.Context(), apiClient, []protos.FrontendLog{{
+				FrontendLogEventID: "id",
+				Entry: protos.FrontendLogEntry{
+					FastFeedbackLog: &protos.FastFeedbackLog{Text: "hello"},
+				},
+			}})
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, []string{`{"frontend_log_event_id":"id","entry":{"fast_feedback_log":{"can_be_contacted":false,"text":"hello"}}}`}, body.ProtoLogs)
+		})
+	}
 }

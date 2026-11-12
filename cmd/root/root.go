@@ -194,7 +194,7 @@ Stack Trace:
 		exitCode = 1
 	}
 
-	commandStr := commandString(cmd)
+	commandStr := CommandString(cmd)
 	ctx = cmd.Context()
 
 	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{

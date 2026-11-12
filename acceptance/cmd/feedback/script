@@ -1,0 +1,36 @@
+# Print the feedback event, keeping only the user agent entries that carry
+# feedback context; the rest depend on the runner.
+print_feedback() {
+  jq 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson
+      | .entry.fast_feedback_log.user_agent |= (split(" ") | map(select(test("^(cli|cmd|run-id|agent)/"))) | join(" "))' < "$OUT_REQUESTS"
+  rm "$OUT_REQUESTS"
+}
+
+title "Feedback about a product command is routed to its team"
+trace $CLI feedback --command "air run" --run-id 123 --can-be-contacted "  logs omitted the failure reason  "
+print_feedback
+
+title "A command group, with a JSON receipt"
+trace $CLI feedback --command bundle "deploy should print which resources changed" -o json
+print_feedback
+
+title "Top-level feedback can name any command"
+trace $CLI feedback --command "bundle  deploy" "deploy is slow"
+print_feedback
+
+title "General CLI feedback"
+trace $CLI feedback "the CLI should support ..."
+print_feedback
+
+title "An AI agent needs the user's confirmation"
+errcode trace env AGENT=test-agent $CLI feedback "hello"
+
+title "An AI agent with --yes"
+trace env AGENT=test-agent $CLI feedback --yes "hello"
+print_feedback
+
+title "Validation errors"
+errcode trace $CLI feedback "   "
+errcode trace $CLI feedback --command "no-such-command" "hello"
+errcode trace $CLI feedback --command "bundle no-such-command" "hello"
+errcode trace $CLI feedback --run-id abc "hello"

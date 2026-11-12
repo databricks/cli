@@ -14,9 +14,9 @@ import (
 // See unit test [main.TestCommandsDontUseUnderscoreInName].
 const commandSeparator = "_"
 
-// commandString walks up the command hierarchy of the specified
+// CommandString walks up the command hierarchy of the specified
 // command to build a string representing this hierarchy.
-func commandString(cmd *cobra.Command) string {
+func CommandString(cmd *cobra.Command) string {
 	reversed := []string{cmd.Name()}
 	cmd.VisitParents(func(p *cobra.Command) {
 		if !p.HasParent() {
@@ -30,5 +30,5 @@ func commandString(cmd *cobra.Command) string {
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
-	return useragent.InContext(ctx, "cmd", commandString(cmd))
+	return useragent.InContext(ctx, "cmd", CommandString(cmd))
 }
