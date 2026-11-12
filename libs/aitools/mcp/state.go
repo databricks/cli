@@ -122,30 +122,33 @@ func checkEntry(ctx context.Context, files configFiles, entry Entry) EntryCheck 
 	return check
 }
 
-// configFiles holds the config files that one lookup has read, by resolved path, so that each file is
-// parsed once. A nil file is one that does not exist.
-type configFiles map[string]*config.File
+// configFiles holds the config files that one lookup has read, by resolved path, so that each file is parsed once. A
+// file that cannot be read keeps its error, which every profile of that file then reports.
+type configFiles map[string]configFile
+
+// configFile is one config file as a lookup read it: the parsed file, which is nil when the file does not exist, or the
+// error that reading it gave.
+type configFile struct {
+	file *config.File
+	err  error
+}
 
 // profile returns the profile named name from the config file at path. It returns errProfileMissing
 // when the file does not exist or has no section of that name, and errProfileNoHost when the section
 // has no host or an empty one.
 func (c configFiles) profile(path, name string) (profile.Profile, error) {
-	file, ok := c[path]
+	f, ok := c[path]
 	if !ok {
-		loaded, err := config.LoadFile(path)
-		switch {
-		case errors.Is(err, fs.ErrNotExist):
-			loaded = nil
-		case err != nil:
-			return profile.Profile{}, fmt.Errorf("failed to read Databricks profiles: %w", err)
-		}
-		file = loaded
-		c[path] = file
+		f = readConfigFile(path)
+		c[path] = f
 	}
-	if file == nil {
+	if f.err != nil {
+		return profile.Profile{}, f.err
+	}
+	if f.file == nil {
 		return profile.Profile{}, errProfileMissing
 	}
-	section, err := file.GetSection(name)
+	section, err := f.file.GetSection(name)
 	if err != nil {
 		return profile.Profile{}, errProfileMissing
 	}
@@ -158,6 +161,18 @@ func (c configFiles) profile(path, name string) (profile.Profile, error) {
 		return profile.Profile{}, errProfileNoHost
 	}
 	return profile.Profile{Name: name, Host: keys["host"], WorkspaceID: keys["workspace_id"]}, nil
+}
+
+// readConfigFile reads the config file at path. A file that does not exist is read as nil, with no error.
+func readConfigFile(path string) configFile {
+	file, err := config.LoadFile(path)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return configFile{}
+	case err != nil:
+		return configFile{err: fmt.Errorf("failed to read Databricks profiles: %w", err)}
+	}
+	return configFile{file: file}
 }
 
 // driftOf returns the drift of an entry against the profile it names, or nil when the profile still
