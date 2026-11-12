@@ -8,8 +8,10 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --get //postgres
-      2 POST /api/2.0/postgres/projects
-      2 GET /api/2.0/postgres/projects/test-pg-proj/operations/[UUID]
+POST /api/2.0/postgres/projects
+POST /api/2.0/postgres/projects
+GET /api/2.0/postgres/projects/test-pg-proj/operations/[UUID]
+GET /api/2.0/postgres/projects/test-pg-proj/operations/[UUID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
