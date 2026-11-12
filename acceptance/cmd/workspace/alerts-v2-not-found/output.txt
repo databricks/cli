@@ -4,7 +4,9 @@
 >>> [CLI] alerts-v2 trash-alert [ALERT_ID]
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
-DELETED
+{
+  "lifecycle_state": "DELETED"
+}
 
 >>> [CLI] alerts-v2 trash-alert [ALERT_ID]
 Error: Alert [ALERT_ID] is already trashed
