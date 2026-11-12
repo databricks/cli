@@ -1,0 +1,13 @@
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Update fails: the error explains how to recover"
+trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
+
+title "Start fails: the error explains how to recover"
+trace update_file.py databricks.yml MY_APP_DESCRIPTION my_app_description
+trace update_file.py databricks.yml "started: false" "started: true"
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
