@@ -1405,7 +1405,10 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
 	// ${resources.X.name} resolve during an in-place update instead of delaying,
 	// which would otherwise recreate dependents that reference it as their parent.
+	// A state-only update changes nothing remotely either (unlike a state-only
+	// update_id, whose remote state predates its parent's rename).
 	canReadRemoteCache := targetAction == deployplan.Skip ||
+		(targetAction == deployplan.Update && targetEntry.StateOnly) ||
 		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
