@@ -54,7 +54,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 	// Writes are not retried: a write without overwrite may fail on the file its own earlier
 	// attempt created, and an overwrite would need to buffer the streamed source to replay it.
-	return retry.ReadFiler(f), path, nil
+	return retry.FilerExceptWrites(f), path, nil
 }
 
 const dbfsPrefix string = "dbfs:"

@@ -15,8 +15,8 @@ import (
 type retryingFiler struct {
 	filer.Filer
 
-	// readsOnly passes Write and Delete through unchanged.
-	readsOnly bool
+	// skipWrites passes Write through unchanged.
+	skipWrites bool
 }
 
 // Filer wraps f so that Write, Read, ReadDir, Stat and Delete retry on transient errors.
@@ -28,11 +28,11 @@ func Filer(f filer.Filer) filer.Filer {
 	return &retryingFiler{Filer: f}
 }
 
-// ReadFiler wraps f so that only Read, ReadDir and Stat retry on transient errors.
+// FilerExceptWrites is like [Filer] but passes Write through without retrying.
 // It suits callers that stream arbitrarily large bodies to Write: retrying those would mean
 // buffering each non-seekable body in memory to replay it.
-func ReadFiler(f filer.Filer) filer.Filer {
-	return &retryingFiler{Filer: f, readsOnly: true}
+func FilerExceptWrites(f filer.Filer) filer.Filer {
+	return &retryingFiler{Filer: f, skipWrites: true}
 }
 
 // Unwrap returns the wrapped filer.
@@ -41,7 +41,7 @@ func (r *retryingFiler) Unwrap() filer.Filer {
 }
 
 func (r *retryingFiler) Write(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) error {
-	if r.readsOnly || !slices.Contains(mode, filer.OverwriteIfExists) {
+	if r.skipWrites || !slices.Contains(mode, filer.OverwriteIfExists) {
 		return r.Filer.Write(ctx, path, reader, mode...)
 	}
 
@@ -93,9 +93,6 @@ func (r *retryingFiler) Stat(ctx context.Context, path string) (fs.FileInfo, err
 }
 
 func (r *retryingFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
-	if r.readsOnly {
-		return r.Filer.Delete(ctx, path, mode...)
-	}
 	retried := false
 	_, err := With(ctx, IsTransient, func() (struct{}, error) {
 		err := r.Filer.Delete(ctx, path, mode...)
