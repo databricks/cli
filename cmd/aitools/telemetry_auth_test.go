@@ -2,13 +2,18 @@ package aitools
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
@@ -49,7 +54,9 @@ func authTestCmdLogging(t *testing.T, logEvent bool) (*cobra.Command, *bool) {
 		},
 	}
 	cmd.Flags().String("profile", "", "")
-	withTelemetryAuth(cmd)
+	// These tests exercise the wait, so the command asks for it, as install
+	// does once the plan is confirmed.
+	withTelemetryAuth(cmd).waitAtExit = true
 	ctx := telemetry.WithNewLogger(t.Context())
 	cmd.SetContext(env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", ""))
 	return cmd, &ran
@@ -137,7 +144,7 @@ func TestTelemetryAuthFinishedResolutionSurvivesAnExpiredBudget(t *testing.T) {
 		p := startTelemetryAuth(cmd, nil)
 		<-p.done
 		telemetry.Log(cmd.Context(), protos.DatabricksCliLog{AitoolsInstallEvent: &protos.AitoolsInstallEvent{}})
-		p.apply(cmd)
+		p.apply(cmd, true)
 		require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
 	}
 }
@@ -218,4 +225,75 @@ func TestTelemetryAuthRunEWithoutPreRun(t *testing.T) {
 	cmd, ran := authTestCmd(t)
 	require.NoError(t, cmd.RunE(cmd, nil))
 	assert.True(t, *ran)
+}
+
+// Without the wait, a resolution that has already finished still counts. The
+// repeats make a race between "done" and "not done" fail reliably.
+func TestTelemetryAuthNoWaitUsesFinishedResolution(t *testing.T) {
+	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Host: "https://ws.test"}))
+		return nil
+	})
+	for range 50 {
+		cmd, _ := authTestCmd(t)
+		p := startTelemetryAuth(cmd, nil)
+		<-p.done
+		telemetry.Log(cmd.Context(), protos.DatabricksCliLog{AitoolsInstallEvent: &protos.AitoolsInstallEvent{}})
+		p.apply(cmd, false)
+		require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
+	}
+}
+
+// blockTelemetryAuth makes the resolution finish only once the returned func
+// is called (or the test ends), with a budget long enough that a run that
+// waits for it is easy to tell apart from one that does not.
+func blockTelemetryAuth(t *testing.T) (release func()) {
+	ch := make(chan struct{})
+	release = sync.OnceFunc(func() { close(ch) })
+	t.Cleanup(release)
+	setTelemetryAuth(t, 10*time.Second, func(cmd *cobra.Command, args []string) error {
+		<-ch
+		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Host: "https://ws.test"}))
+		return nil
+	})
+	return release
+}
+
+// An install run that ends before the plan is confirmed does not wait for an
+// unfinished resolution, so its events are dropped instead of delaying exit.
+func TestInstallEarlyExitDoesNotWaitForTelemetryAuth(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t)
+	blockTelemetryAuth(t)
+
+	cmd := newTestInstallCmd()
+	cmd.SetContext(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())))
+	cmd.SetArgs([]string{"--skills-only", "--path", "out"})
+
+	start := time.Now()
+	require.ErrorContains(t, cmd.Execute(), "cannot use --skills-only with --path")
+	assert.Less(t, time.Since(start), 5*time.Second)
+}
+
+// An install run past the plan confirmation keeps waiting for the resolution
+// within the budget. The resolution can finish only after the install step,
+// so the config reaches the context only if the end of the run waits.
+func TestInstallPastPlanConfirmedWaitsForTelemetryAuth(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t)
+	release := blockTelemetryAuth(t)
+	orig := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = orig })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		release()
+		return nil
+	}
+
+	cmd := newTestInstallCmd()
+	cmd.SetContext(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())))
+	cmd.SetArgs([]string{"--skills-only", "--agents", "cursor", "--scope", "global"})
+
+	require.NoError(t, cmd.Execute())
+	require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
+	assert.Equal(t, "https://ws.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 }

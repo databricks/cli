@@ -27,4 +27,5 @@ type DatabricksCliLog struct {
 	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
 	AirRunEvent                 *AirRunEvent                 `json:"air_run_event,omitempty"`
 	AitoolsHintEvent            *AitoolsHintEvent            `json:"aitools_hint_event,omitempty"`
+	AitoolsCommandEvent         *AitoolsCommandEvent         `json:"aitools_command_event,omitempty"`
 }

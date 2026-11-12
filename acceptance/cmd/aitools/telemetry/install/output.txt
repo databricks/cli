@@ -8,7 +8,14 @@ Fetching skills manifest...
 Installed 1 skill.
 
 >>> print_telemetry
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SKILLS_INSTALLED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
 {"command":"aitools_install","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CLAUDE_CODE"],"scope":"GLOBAL"}}
 
 === databricks-cli auth with a valid cached token: the event is uploaded
 
@@ -19,7 +26,14 @@ Fetching skills manifest...
 Installed 1 skill.
 
 >>> print_telemetry
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SKILLS_INSTALLED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
 {"command":"aitools_install","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CLAUDE_CODE"],"scope":"GLOBAL"}}
 
 === databricks-cli auth with an expired cached token: no refresh, nothing is uploaded
 

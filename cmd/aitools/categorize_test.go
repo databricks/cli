@@ -114,6 +114,10 @@ func TestClassifyInstallErrorGenericCauses(t *testing.T) {
 		{"filesystem on rename", fmt.Errorf("replace skill: %w", &os.LinkError{Op: "rename", Old: "/a", New: "/b", Err: syscall.EBUSY}), protos.AitoolsErrorCategoryFilesystem},
 		{"filesystem syscall", fmt.Errorf("resolve cwd: %w", os.NewSyscallError("getwd", syscall.ENOENT)), protos.AitoolsErrorCategoryFilesystem},
 		{"user abort", huh.ErrUserAborted, protos.AitoolsErrorCategoryUserAborted},
+		{"tagged", withCategory(errors.New("bad flags"), protos.AitoolsErrorCategoryInvalidFlags), protos.AitoolsErrorCategoryInvalidFlags},
+		{"prompt failure", promptError(errors.New("no tty")), protos.AitoolsErrorCategoryPromptFailed},
+		{"prompt abort keeps abort", promptError(huh.ErrUserAborted), protos.AitoolsErrorCategoryUserAborted},
+		{"typed error beats tag", withCategory(&installer.BlockedError{Reason: installer.ReasonCLINotOnPath}, protos.AitoolsErrorCategoryInvalidFlags), protos.AitoolsErrorCategoryCLINotOnPath},
 		{"plain text stays uncategorized", errors.New("something"), protos.AitoolsErrorCategoryUncategorized},
 	}
 	for _, tc := range cases {
@@ -121,6 +125,13 @@ func TestClassifyInstallErrorGenericCauses(t *testing.T) {
 			assert.Equal(t, tc.want, classifyInstallError(tc.err))
 		})
 	}
+}
+
+func TestWithCategoryKeepsMessage(t *testing.T) {
+	cause := errors.New("cannot use --skills-only with --path")
+	err := withCategory(cause, protos.AitoolsErrorCategoryInvalidFlags)
+	assert.Equal(t, cause.Error(), err.Error())
+	assert.ErrorIs(t, err, cause)
 }
 
 // A corrupt install state must not be blamed on the remote manifest. It stays

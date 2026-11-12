@@ -21,7 +21,8 @@ import (
 // telemetryAuthBudget bounds how long after its start a command waits for the
 // background auth resolution its telemetry upload needs. A resolution still
 // unfinished when the run ends and the budget has passed drops the events.
-// Matches the upload's own default timeout.
+// Matches the upload's own default timeout. A run waits only once its command
+// asks for it (telemetryAuth.waitAtExit).
 var telemetryAuthBudget = 3 * time.Second
 
 // resolveTelemetryAuthFn resolves auth onto cmd's context. A seam for tests.
@@ -30,22 +31,37 @@ var resolveTelemetryAuthFn = func(cmd *cobra.Command, args []string) error {
 	return err
 }
 
+// telemetryAuth is the best-effort auth resolution of one command run.
+type telemetryAuth struct {
+	pending *pendingAuth
+
+	// waitAtExit is whether the end of the run waits for an unfinished
+	// resolution (within telemetryAuthBudget). False by default: the
+	// telemetry uploads only if the resolution has already finished, so a run
+	// that ends early stays instant. RunE sets it once the run has gone far
+	// enough to be worth the wait.
+	waitAtExit bool
+}
+
 // withTelemetryAuth makes cmd resolve auth best-effort so its telemetry can
-// upload at exit: PreRunE starts the resolution in the background and RunE's
-// wrapper waits for it within telemetryAuthBudget. Nothing is resolved when
-// telemetry is disabled. The command never fails or prompts because of it.
-func withTelemetryAuth(cmd *cobra.Command) {
-	var pending *pendingAuth
+// upload at exit: PreRunE starts the resolution in the background, and RunE's
+// wrapper uses it if it has finished, or waits for it within
+// telemetryAuthBudget once RunE sets waitAtExit on the returned value. Nothing
+// is resolved when telemetry is disabled. The command never fails or prompts
+// because of it.
+func withTelemetryAuth(cmd *cobra.Command) *telemetryAuth {
+	auth := &telemetryAuth{}
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		pending = startTelemetryAuth(cmd, args)
+		auth.pending = startTelemetryAuth(cmd, args)
 		return nil
 	}
 	runE := cmd.RunE
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		err := runE(cmd, args)
-		pending.apply(cmd)
+		auth.pending.apply(cmd, auth.waitAtExit)
 		return err
 	}
+	return auth
 }
 
 // pendingAuth is a background auth resolution started by startTelemetryAuth.
@@ -92,19 +108,23 @@ func startTelemetryAuth(cmd *cobra.Command, args []string) *pendingAuth {
 	return p
 }
 
-// apply waits for the resolution until the deadline and, if it finished, puts
-// the resolved config on cmd's context for the upload. A run that logged no
-// event has nothing to upload, so it does not wait. Only the config is
-// copied: the upload needs nothing else, and a workspace client on the context
-// would change how root decorates the command's own errors.
-func (p *pendingAuth) apply(cmd *cobra.Command) {
+// apply puts the resolved config on cmd's context for the upload if the
+// resolution has finished, waiting for it until the deadline when wait is set.
+// A run that logged no event has nothing to upload, so it does not wait. Only
+// the config is copied: the upload needs nothing else, and a workspace client
+// on the context would change how root decorates the command's own errors.
+func (p *pendingAuth) apply(cmd *cobra.Command, wait bool) {
 	if p == nil {
 		return
 	}
 	if len(telemetry.BufferedEvents(cmd.Context())) == 0 {
 		return
 	}
-	if !p.wait() {
+	if !wait && !p.finished() {
+		log.Debugf(cmd.Context(), "auth for telemetry not resolved yet; not uploading telemetry")
+		return
+	}
+	if wait && !p.wait() {
 		log.Debugf(cmd.Context(), "auth for telemetry not resolved within %s; not uploading telemetry", telemetryAuthBudget)
 		return
 	}
@@ -117,10 +137,8 @@ func (p *pendingAuth) apply(cmd *cobra.Command) {
 // that finished before the wait starts always counts: once a command outlasts
 // the budget, a select on both channels would pick between them at random.
 func (p *pendingAuth) wait() bool {
-	select {
-	case <-p.done:
+	if p.finished() {
 		return true
-	default:
 	}
 	timer := time.NewTimer(time.Until(p.deadline))
 	defer timer.Stop()
@@ -128,6 +146,16 @@ func (p *pendingAuth) wait() bool {
 	case <-p.done:
 		return true
 	case <-timer.C:
+		return false
+	}
+}
+
+// finished reports whether the resolution has finished, without waiting.
+func (p *pendingAuth) finished() bool {
+	select {
+	case <-p.done:
+		return true
+	default:
 		return false
 	}
 }
@@ -207,16 +235,25 @@ func agentResultsField(outcomes []agentOutcome) []protos.AitoolsAgentResult {
 // agentsField returns the deduped agent enums from the plan, sorted so the
 // same set of agents always produces the same array on the analytics side.
 func agentsField(plan []agentPlanItem) []protos.AitoolsAgentType {
-	if len(plan) == 0 {
+	targets := make([]*agents.Agent, 0, len(plan))
+	for _, it := range plan {
+		targets = append(targets, it.agent)
+	}
+	return agentTypes(targets)
+}
+
+// agentTypes returns the deduped, sorted agent enums of targets.
+func agentTypes(targets []*agents.Agent) []protos.AitoolsAgentType {
+	if len(targets) == 0 {
 		return nil
 	}
-	out := make([]protos.AitoolsAgentType, 0, len(plan))
-	seen := make(map[protos.AitoolsAgentType]struct{}, len(plan))
-	for _, it := range plan {
-		if it.agent == nil {
+	out := make([]protos.AitoolsAgentType, 0, len(targets))
+	seen := make(map[protos.AitoolsAgentType]struct{}, len(targets))
+	for _, a := range targets {
+		if a == nil {
 			continue
 		}
-		t := agentType(it.agent.Name)
+		t := agentType(a.Name)
 		if _, ok := seen[t]; ok {
 			continue
 		}

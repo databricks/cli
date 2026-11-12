@@ -1,6 +1,36 @@
-# Telemetry payloads of the install hint.
+# Telemetry payloads of the aitools commands and of the install hint.
+# The mock server replaces raw.githubusercontent.com (skills manifest and files).
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_CLI_GITHUB_API_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
 RecordRequests = true
 
 Ignore = [
     "home",
 ]
+
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "databricks-test": {
+      "version": "1.0.0",
+      "description": "Test skill",
+      "files": ["SKILL.md"],
+      "repo_dir": "skills"
+    }
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/databricks-test/SKILL.md"
+Response.Body = '''---
+name: databricks-test
+---
+
+# Test skill
+'''
