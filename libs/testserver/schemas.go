@@ -135,7 +135,7 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 		delete(s.Volumes, key)
 		volume.SchemaName = newSchemaName
 		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
-		s.Volumes[volume.FullName] = volume
+		s.Volumes[volumeKey(volume.FullName)] = volume
 	}
 	for key, model := range s.RegisteredModels {
 		if model.CatalogName != catalogName || model.SchemaName != oldSchemaName {
