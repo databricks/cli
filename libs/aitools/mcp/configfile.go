@@ -26,14 +26,15 @@ func ResolveConfigFile(ctx context.Context, name string) (string, error) {
 	case err == nil:
 		return filepath.Abs(resolved)
 	case errors.Is(err, fs.ErrNotExist):
-		return absoluteAsWritten(path)
+		return AbsoluteAsWritten(path)
 	default:
 		return "", err
 	}
 }
 
-// absoluteAsWritten makes path absolute by joining it to the working directory, without cleaning it.
-func absoluteAsWritten(path string) (string, error) {
+// AbsoluteAsWritten makes path absolute by joining it to the working directory, without cleaning it, so that a
+// ".." after a symlink still resolves through the link's target.
+func AbsoluteAsWritten(path string) (string, error) {
 	if filepath.IsAbs(path) {
 		return path, nil
 	}

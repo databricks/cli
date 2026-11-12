@@ -83,76 +83,79 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 		return nil, nil, uncategorizedError(err)
 	}
 	ctx = env.Set(ctx, mcpconfig.ConfigFileEnv, configFile)
-	entry, err := findEntry(ctx, opts.State, opts.Service, opts.Profile, configFile)
+	entry, err := CheckBinding(ctx, opts.State, opts.Service, opts.Profile, configFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	name := opts.Service
-	if entry != nil {
-		name = entry.Name
-	}
-
-	p, err := profileFor(name, opts.Profile, configFile, entry)
-	if err != nil {
-		return nil, nil, err
-	}
-	if entry != nil {
-		if drift := driftOf(*entry, p); drift != nil {
-			return nil, nil, driftError(name, opts.Profile, *entry, *drift)
+	if entry == nil {
+		// Without an entry the profile is still needed, under the service's name.
+		if _, err := profileFor(opts.Service, opts.Profile, configFile, nil); err != nil {
+			return nil, nil, err
 		}
 	}
 
-	// The loaders take the profile's own settings and non-auth environment only. The
-	// profile loader chain in databrickscfg also fills missing credentials from the
-	// environment, but the proxy must not send a token meant for another workspace.
+	cfg, err := BoundConfig(opts.Profile, configFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	if entry == nil {
+		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
+	}
+	if err := AuthenticateBound(ctx, cfg, opts.Profile); err != nil {
+		return nil, nil, err
+	}
+	return cfg, entry, nil
+}
+
+// BoundConfig returns the config of profileName in configFile, which is resolved, with the loaders that Bind uses: the
+// profile's own settings and the non-auth environment. The profile's loader chain would also fill missing credentials
+// from the environment, and a token meant for another workspace must not reach this one. It does not authenticate; see
+// AuthenticateBound.
+func BoundConfig(profileName, configFile string) (*config.Config, error) {
 	cfg := &config.Config{
-		Profile:    opts.Profile,
+		Profile:    profileName,
 		ConfigFile: configFile,
 		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
 	}
 	if err := cfg.EnsureResolved(); err != nil {
 		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
-		return nil, nil, uncategorizedError(err)
+		return nil, uncategorizedError(err)
 	}
+	return cfg, nil
+}
 
-	if entry == nil {
-		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
-	}
-
+// AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
+// provide is AUTH_FAILED, with the login command for the profile.
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName string) error {
 	// Authenticate only writes headers onto req, which is never sent. The request takes
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
 	if err != nil {
-		return nil, nil, uncategorizedError(err)
-	}
-	if err := cfg.Authenticate(req); err != nil {
-		return nil, nil, AuthError(opts.Profile, err)
-	}
-	return cfg, entry, nil
-}
-
-// CheckBinding returns the error that Bind returns for the state entry of service and profileName
-// when the profile no longer matches it: the entry is pinned to another config file, the profile is
-// gone or has no host, or its host or workspace changed. It returns nil when there is no entry or the
-// entry still matches. It reads the config files only and makes no request, so a caller can refuse
-// before it sends a token to the profile's host.
-func CheckBinding(ctx context.Context, state *State, service, profileName string) error {
-	configFile, err := ResolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
-	if err != nil {
 		return uncategorizedError(err)
 	}
-	entry, err := findEntry(ctx, state, service, profileName, configFile)
+	if err := cfg.Authenticate(req); err != nil {
+		return AuthError(profileName, err)
+	}
+	return nil
+}
+
+// CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
+// resolved with ResolveConfigFile, or nil when there is none. With an entry, it returns the error Bind returns when the
+// profile no longer matches the entry: the profile is gone or has no host, or its host or workspace changed. It reads the
+// config files only and makes no request, so a caller can refuse before it sends a token to the profile's host.
+func CheckBinding(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+	entry, err := FindEntry(ctx, state, service, profileName, configFile)
 	if err != nil || entry == nil {
-		return err
+		return nil, err
 	}
 	p, err := profileFor(entry.Name, profileName, configFile, entry)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if drift := driftOf(*entry, p); drift != nil {
-		return driftError(entry.Name, profileName, *entry, *drift)
+		return nil, driftError(entry.Name, profileName, *entry, *drift)
 	}
-	return nil
+	return entry, nil
 }
 
 // profileFor returns the profile profileName in configFile, or the PROFILE_NOT_FOUND error that says it
@@ -227,7 +230,7 @@ func AuthError(profileName string, cause error) error {
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
 
-// findEntry returns the entry for the service and profile whose config file is configFile, or nil when
+// FindEntry returns the entry for the service and profile whose config file is configFile, or nil when
 // the service and profile have no entry at all. Service names are compared without case, as Unity Catalog
 // names are. Both sides are compared as resolved paths, so an entry with no pinned file matches the default file.
 //
@@ -235,7 +238,7 @@ func AuthError(profileName string, cause error) error {
 // set up against that file, and binding through this one would switch it without a record. An entry
 // whose file cannot be resolved, such as a "~" path with no home directory, cannot be compared. The
 // bind fails on it, since it might be the match.
-func findEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+func FindEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
 	var unresolved error
 	var other *Entry
 	var otherPath string

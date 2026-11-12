@@ -71,6 +71,23 @@ func Argv(entry map[string]any) ([]string, bool) {
 	}
 }
 
+// The flags that `aitools mcp serve` takes, which an entry carries to name its binding.
+const (
+	ServiceFlag = "--service"
+	ProfileFlag = "--profile"
+)
+
+// EntryEnv returns the environment variables of an entry: env for most agents, and environment for OpenCode. It returns
+// nil when the entry has none.
+func EntryEnv(entry map[string]any) map[string]any {
+	for _, key := range []string{"env", "environment"} {
+		if vars, ok := entry[key].(map[string]any); ok {
+			return vars
+		}
+	}
+	return nil
+}
+
 // IsDatabricksEntry reports whether entry runs `databricks aitools mcp serve`,
 // which is how we recognize entries we wrote.
 func IsDatabricksEntry(entry map[string]any) bool {

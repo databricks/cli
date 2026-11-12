@@ -53,7 +53,7 @@ func leafOf(fullName string) string {
 
 // inSystemAI reports whether a service full name is in system.ai, in any casing.
 func inSystemAI(fullName string) bool {
-	return strings.HasPrefix(strings.ToLower(fullName), systemAILocation+".")
+	return strings.HasPrefix(strings.ToLower(fullName), SystemAILocation+".")
 }
 
 // UniqueName returns base, or base-2, base-3, ... for the first candidate for which taken
