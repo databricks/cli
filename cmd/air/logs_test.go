@@ -286,7 +286,7 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 
 	err := cmd.RunE(cmd, []string{"5"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	assert.Contains(t, buf.String(), "Streaming logs interrupted.")
+	assert.Contains(t, buf.String(), "View job run at: "+srv.URL+"/jobs/runs/5\n\nStreaming logs interrupted.")
 	assert.Contains(t, buf.String(), "To check status:\ndatabricks air get 5 -p 'team profile'")
 	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks air logs 5 -p 'team profile'")
 }
@@ -339,4 +339,33 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	// Exactly one runs/get: the initial status resolve in runLogs. The static
 	// streamer must not re-poll (that is the loop this test guards against).
 	assert.Equal(t, 1, getRunHits)
+}
+
+func TestLogsCommandRepeatsRunLinkAfterStreaming(t *testing.T) {
+	for _, result := range []string{"SUCCESS", "FAILED"} {
+		for _, output := range []flags.Output{flags.OutputText, flags.OutputJSON} {
+			t.Run(result+"/"+string(output), func(t *testing.T) {
+				srv := watchServer(t, result)
+				var buf bytes.Buffer
+				ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &buf, &buf, "", ""))
+				ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+				cmd := withOutput(newLogsCommand(), output)
+				cmd.SetContext(ctx)
+				cmd.SetOut(&buf)
+
+				err := cmd.RunE(cmd, []string{"777"})
+				if result == "FAILED" {
+					require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+				} else {
+					require.NoError(t, err)
+				}
+				if output == flags.OutputJSON {
+					assert.Contains(t, buf.String(), `"line":"step 2"`)
+					assert.NotContains(t, buf.String(), "View job run at:")
+				} else {
+					assert.Equal(t, "step 1\nstep 2\n\nView job run at: "+srv.URL+"/jobs/runs/777\n", buf.String())
+				}
+			})
+		}
+	}
 }
