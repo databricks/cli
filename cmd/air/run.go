@@ -189,12 +189,13 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, existing, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
+		submitCtx, existing := withExistingRunReport(ctx)
+		runID, dashboardURL, err := submitWorkload(submitCtx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
 		}
 		existingKey := ""
-		if existing {
+		if *existing {
 			existingKey = userIdempotencyToken(idempotencyKey, cfg)
 		}
 
@@ -210,7 +211,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
 			// SUBMITTED event type below.
-			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: &existing}); err != nil {
+			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: existing}); err != nil {
 				return err
 			}
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
@@ -257,7 +258,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// STATUS events on each lifecycle transition, and a closing terminal-status
 		// envelope after streaming.
 		out := cmd.OutOrStdout()
-		printSubmittedEvent(out, runIDStr, dashboardURL, existing)
+		printSubmittedEvent(out, runIDStr, dashboardURL)
 		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
@@ -268,7 +269,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// the Bricklens path, so the terminal status must come from the run's
 		// actual state — correct whether Bricklens or the MLflow fallback served
 		// the logs.
-		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL, existing)
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
 		return err
 	}
 

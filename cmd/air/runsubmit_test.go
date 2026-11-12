@@ -379,7 +379,7 @@ func TestSubmitWorkload(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, dashboardURL, _, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
@@ -448,7 +448,7 @@ func TestSubmitWorkloadValidationOutcome(t *testing.T) {
 			require.NoError(t, err)
 
 			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-			_, _, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
+			_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
 			if tt.wantError != "" {
 				require.ErrorContains(t, err, tt.wantError)
 			} else {
@@ -499,7 +499,7 @@ func TestSubmitWorkloadValidatesWhileStaging(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, _, _, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	runID, _, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 }
@@ -535,7 +535,7 @@ func TestSubmitWorkloadValidationFailureCancelsStaging(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
-	_, _, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(ctx, w, cfg, cfgPath, "idem-key", false)
 	require.ErrorContains(t, err, "task.experiment: is invalid")
 	require.NoError(t, ctx.Err(), "staging was not cancelled by the validation failure")
 	assert.Zero(t, submissions.Load())
@@ -562,7 +562,7 @@ func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to create launch directory")
 	assert.Zero(t, submitCalls.Load())
@@ -592,7 +592,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
 	require.NoError(t, err)
 
-	_, _, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 
 	require.Len(t, got.Tasks, 1)
@@ -623,7 +623,7 @@ environment:
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 
 	tasks, ok := got["tasks"].([]any)
@@ -696,7 +696,7 @@ containers:
 `)
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
-	_, _, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 
 	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(got)
@@ -752,7 +752,7 @@ code_source:
 
 	// The upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -797,7 +797,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -1040,7 +1040,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -1072,7 +1072,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
 		assert.Zero(t, submissions.Load())
 	})
@@ -1094,7 +1094,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, "task.experiment: is invalid")
 		assert.Zero(t, policyLookups.Load())
 	})
@@ -1129,7 +1129,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
@@ -1140,7 +1140,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})

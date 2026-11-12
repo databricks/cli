@@ -287,6 +287,16 @@ func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
 	return token
 }
 
+type existingRunKey struct{}
+
+// withExistingRunReport returns a context in which submitWorkload sets the
+// returned bool when a caller-supplied idempotency token returned an existing
+// run. Only the run command opts in, as the check costs an extra runs/get.
+func withExistingRunReport(ctx context.Context) (context.Context, *bool) {
+	existing := new(bool)
+	return context.WithValue(ctx, existingRunKey{}, existing), existing
+}
+
 // isExistingRun reports whether runID was started by an earlier submit that
 // used the same idempotency token. runs/submit returns only a run id, so the
 // run's command path is the signal: every submit uploads to a fresh launch
@@ -355,10 +365,9 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // submitWorkload runs the submit happy path: validate the config while uploading
 // the launch artifacts, ensure the experiment directory, assemble the Jobs
 // payload, and submit it. It
-// returns the run_id and its dashboard URL, and whether a caller-supplied
-// idempotency token returned an existing run instead of starting a new one.
-// showProgress enables the stderr staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, existing bool, err error) {
+// returns the new run_id and its dashboard URL. showProgress enables the stderr
+// staging spinner (text mode only).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
 	start := time.Now()
 	var snap snapshotResult
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
@@ -366,7 +375,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Compute and validate the actual submission path before creating artifacts.
 	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
 	if err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 	containers := submittedContainers(cfg, funcDir)
 	token := effectiveIdempotencyToken(idempotencyKey, cfg)
@@ -375,11 +384,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 	items, err := buildArtifacts(cfg)
 	if err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 
 	// Package and upload the code snapshot, if any; the remote code_source_path
@@ -414,7 +423,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		})
 	})
 	if err := group.Wait(); err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 	// Warn only after staging so the warning doesn't interleave with the spinner.
 	if validationUnavailable && cmdio.HasIO(ctx) {
@@ -424,7 +433,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Retain the local guard after backend validation so an unavailable endpoint
 	// cannot let a bad key reach submission.
 	if err := validateIdempotencyToken(token); err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 
 	// Resolve the usage policy to its id next, so a bad name fails with a clear
@@ -438,7 +447,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if cfg.UsagePolicyName != nil {
 		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
 		if err != nil {
-			return 0, "", false, err
+			return 0, "", err
 		}
 	}
 
@@ -447,7 +456,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		experimentDir = *cfg.MLflowExperimentDirectory
 	}
 	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 
 	runtimeVersion, _ := cfg.runtimeVersion()
@@ -469,17 +478,17 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// the best-effort grant never delays the success line.
 	runID, err = submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath(), containers)
 	if err != nil {
-		return 0, "", false, err
+		return 0, "", err
 	}
 
 	// A generated token is never a repeat. Container runs carry their command
 	// paths on containers, which the SDK's DeploymentSpec does not model.
-	if userIdempotencyToken(idempotencyKey, cfg) != "" && len(containers) == 0 {
-		existing = isExistingRun(ctx, w, runID, commandPath)
+	if existing, ok := ctx.Value(existingRunKey{}).(*bool); ok && userIdempotencyToken(idempotencyKey, cfg) != "" && len(containers) == 0 {
+		*existing = isExistingRun(ctx, w, runID, commandPath)
 	}
 
 	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
-	return runID, dashboardURL, existing, nil
+	return runID, dashboardURL, nil
 }
 
 func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
