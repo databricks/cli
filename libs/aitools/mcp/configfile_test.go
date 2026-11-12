@@ -59,6 +59,17 @@ func TestResolveConfigFileKeepsPathThroughMissingDir(t *testing.T) {
 	assert.Equal(t, name, got)
 }
 
+// TestResolveConfigFileMissingFileUsesOSSeparators checks that a "~" name of a file that does not exist resolves with
+// the OS separator throughout, as the name of an existing file does.
+func TestResolveConfigFileMissingFileUsesOSSeparators(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	got, err := ResolveConfigFile(ctx, "~/missing/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(home, "missing", ".databrickscfg"), got)
+}
+
 // TestSamePathComparesExistingFilesByIdentity checks that two names of one existing file compare equal,
 // as a hard link does, while names of files that do not exist are compared as text.
 func TestSamePathComparesExistingFilesByIdentity(t *testing.T) {
