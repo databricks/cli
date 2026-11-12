@@ -377,7 +377,7 @@ func TestLoadRunConfig_Errors(t *testing.T) {
 		{
 			"bad gpu type",
 			"experiment_name: r\ncommand: x\ncompute:\n  accelerator_type: a100\n  num_accelerators: 1\n",
-			"invalid GPU type",
+			`compute.accelerator_type: "a100" is not a recognized accelerator type. Run 'databricks air run -h config.compute'`,
 		},
 		{
 			"num_accelerators not a multiple",
@@ -835,10 +835,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 }
 
 func TestRunCommandHelpComputeOptions(t *testing.T) {
-	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
-    GPU_1xH100 - 1 accelerator per node
-    GPU_8xH100 - 8 accelerators per node
-    GPU_8xB300 - 8 accelerators per node`
+	// An empty wantOptions means the help must omit the list entirely.
 	tests := []struct {
 		name        string
 		statusCode  int
@@ -862,16 +859,15 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
 		},
 		{
-			name:        "endpoint unavailable falls back",
+			name:        "endpoint unavailable warns and omits the list",
 			statusCode:  http.StatusNotFound,
 			response:    `{"error_code":"NOT_FOUND","message":"ListComputeOptions is not yet enabled."}`,
-			wantOptions: builtInOptions,
+			wantWarning: true,
 		},
 		{
-			name:        "unexpected API error warns and falls back",
+			name:        "unexpected API error warns and omits the list",
 			statusCode:  http.StatusInternalServerError,
 			response:    `{"error_code":"INTERNAL_ERROR","message":"Internal error."}`,
-			wantOptions: builtInOptions,
 			wantWarning: true,
 		},
 	}
@@ -894,13 +890,17 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			cmd.SetArgs([]string{"-h", "config.compute"})
 			require.NoError(t, cmd.Execute())
 
-			options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
-			require.True(t, found)
-			options, _, found = strings.Cut(options, "\n\n  Fields:")
-			require.True(t, found)
-			assert.Equal(t, tt.wantOptions, options)
+			if tt.wantOptions == "" {
+				assert.NotContains(t, out.String(), "Supported accelerator types")
+			} else {
+				options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
+				require.True(t, found)
+				options, _, found = strings.Cut(options, "\n\n  Fields:")
+				require.True(t, found)
+				assert.Equal(t, tt.wantOptions, options)
+			}
 			if tt.wantWarning {
-				assert.Contains(t, errOut.String(), "showing the built-in list")
+				assert.Equal(t, "Warning: couldn't fetch the accelerator types available in this workspace.\n", errOut.String())
 			} else {
 				assert.Empty(t, errOut.String())
 			}
