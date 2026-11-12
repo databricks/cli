@@ -1112,3 +1112,26 @@ func TestGroupFieldsRequiredFirst(t *testing.T) {
 	}
 	assert.Equal(t, []string{"b", "d", "a", "f"}, got)
 }
+
+func TestConfigFieldHelpListsDocsForEveryCloud(t *testing.T) {
+	var out strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&out, "config.environment.version"))
+	help := out.String()
+	assert.Contains(t, help, "  Docs:\n"+
+		"    AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment\n"+
+		"    Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/develop-workloads/environment\n")
+	assert.Less(t, strings.Index(help, "  Docs:"), strings.Index(help, "  Type:"))
+
+	// Inline links would only cover one cloud, so docs links live in the Docs section.
+	for _, f := range configSchema().children {
+		assertNoInlineDocsLinks(t, f)
+	}
+}
+
+func assertNoInlineDocsLinks(t *testing.T, f configField) {
+	t.Helper()
+	assert.NotContains(t, f.help, "docs.databricks.com", "%s: use the docs tag instead of an inline link", f.path)
+	for _, c := range f.children {
+		assertNoInlineDocsLinks(t, c)
+	}
+}

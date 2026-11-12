@@ -353,7 +353,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Managed environment to start from, e.g. 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6). Standard includes CUDA but, from version 5, not PyTorch; add it with dependencies. The Databricks AI environment adds PyTorch, Transformers, and other ML libraries. Supported versions and package lists: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment"`
+	Version           stringOrInt  `yaml:"version" help:"Managed environment to start from, e.g. 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6). Standard includes CUDA but, from version 5, not PyTorch; add it with dependencies. The Databricks AI environment adds PyTorch, Transformers, and other ML libraries. See Docs below for supported versions and package lists." docs:"/machine-learning/ai-runtime/develop-workloads/environment"`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
@@ -641,7 +641,9 @@ type configField struct {
 	required string
 	help     string
 	// group is the help heading the field is listed under; empty means "Fields".
-	group  string
+	group string
+	// docs is a docs page path shared by every cloud; see configDocsBases.
+	docs   string
 	hidden bool
 	// freeForm marks a user-keyed map (parameters/secrets/env_variables): no
 	// children, yet any sub-path into it is valid.
@@ -807,6 +809,7 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			required: f.Tag.Get("required"),
 			help:     f.Tag.Get("help"),
 			group:    f.Tag.Get("group"),
+			docs:     f.Tag.Get("docs"),
 			hidden:   f.Tag.Get("hidden") == "yes",
 			freeForm: freeFormConfigFields[name],
 		}
@@ -879,6 +882,13 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 		}
 	}
 
+	if f.docs != "" {
+		fmt.Fprintln(w, "\n  Docs:")
+		for _, d := range configDocsBases {
+			fmt.Fprintf(w, "    %-6s %s%s\n", d.cloud+":", d.base, f.docs)
+		}
+	}
+
 	if len(f.children) == 0 {
 		fmt.Fprintf(w, "\n  Type:     %s\n", f.typeName)
 		required := f.required
@@ -920,6 +930,13 @@ Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
   (add --scope project to install into the current project)
   https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
 `
+
+// configDocsBases are the per-cloud docs roots; AI Runtime pages share their
+// path below these. GCP has no separate AI Runtime docs, so AWS covers it.
+var configDocsBases = []struct{ cloud, base string }{
+	{"AWS", "https://docs.databricks.com/aws/en"},
+	{"Azure", "https://learn.microsoft.com/azure/databricks"},
+}
 
 // configFieldGroupOrder lists help headings from most to least commonly needed.
 // Ungrouped fields come first; unlisted groups follow in declaration order.
