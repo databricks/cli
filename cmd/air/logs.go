@@ -163,13 +163,10 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	status := projectRunStatus(run)
 
 	if req.nodeSet {
-		numNodes, err := resolveNodeCount(run)
-		if err != nil {
-			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
-				fmt.Errorf("failed to resolve node count for run %d: %w", req.runID, err))
-		}
-		if err := validateNodeIndex(req.node, numNodes); err != nil {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		if numNodes, err := resolveNodeCount(run); err == nil {
+			if err := validateNodeIndex(req.node, numNodes); err != nil {
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+			}
 		}
 	}
 
@@ -181,10 +178,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	// --download-to writes each node's logs to disk instead of streaming.
 	if req.downloadTo != "" {
-		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status)
-		if errors.Is(err, errNodeOutOfRange) {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
-		}
+		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status, run)
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to download logs for run %d: %w", req.runID, err))

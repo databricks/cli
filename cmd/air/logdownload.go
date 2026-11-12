@@ -22,18 +22,11 @@ import (
 // the artifact store on a wide run.
 const downloadConcurrency = 8
 
-// errNodeOutOfRange marks --node naming a node the run doesn't have. It is user
-// input, so the caller reports it as an invalid argument rather than a failure.
-var errNodeOutOfRange = errors.New("invalid --node")
-
 func validateNodeIndex(node, numNodes int) error {
 	if node < numNodes {
 		return nil
 	}
-	if numNodes == 1 {
-		return fmt.Errorf("%w %d: this run has 1 node (valid node index: 0)", errNodeOutOfRange, node)
-	}
-	return fmt.Errorf("%w %d: this run has %d nodes (valid node indices: 0 through %d)", errNodeOutOfRange, node, numNodes, numNodes-1)
+	return fmt.Errorf("invalid --node %d: run has %d node(s), indexed 0 to %d", node, numNodes, numNodes-1)
 }
 
 // resolveNodeCount returns how many nodes a run used.
@@ -65,12 +58,7 @@ func resolveNodeCount(run *jobs.Run) (int, error) {
 // prints a summary. An explicit --node downloads only that node; otherwise all of
 // them. Logs come from MLflow artifacts, since Bricklens only streams. The
 // returned bool is the run's outcome, so the exit code matches the streaming path.
-func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
-	if err != nil {
-		return false, err
-	}
-
+func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus, run *jobs.Run) (bool, error) {
 	numNodes, err := resolveNodeCount(run)
 	if err != nil {
 		return false, err
@@ -78,9 +66,6 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	nodes := make([]int, 0, numNodes)
 	if req.nodeSet {
-		if err := validateNodeIndex(req.node, numNodes); err != nil {
-			return false, err
-		}
 		nodes = append(nodes, req.node)
 	} else {
 		for n := range numNodes {
