@@ -36,7 +36,7 @@ func TestRunLogsSnapshotFailedRetryWithoutLogs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "No logs available for run 123. Run terminated in state FAILED: Out of capacity. "+
 		"Earlier retries may have logs; pass --retry N (0 through 1) to see them\n"+
-		"\nMLflow URL (retry 0): "+srv.URL+"/ml/experiments/E1/runs/R1/artifacts/logs/node_0\n", got)
+		"\nMLflow URL (retry 0): "+srv.URL+"/ml/experiments/E1/runs/R1/logs\n", got)
 }
 
 func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
@@ -75,7 +75,7 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 	t.Cleanup(srv.Close)
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, srv.URL)
-	wantURL := srv.URL + "/ml/experiments/E1/runs/R1/artifacts/logs/node_0"
+	wantURL := srv.URL + "/ml/experiments/E1/runs/R1/logs"
 
 	// When the list, the info pane and the logs pane render the run.
 	rows, err := newRunFetcher(ctx, w, listQuery{
