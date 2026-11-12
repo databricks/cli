@@ -151,6 +151,7 @@ func TestAppRunWaitsForComputeToSettle(t *testing.T) {
 		name      string
 		states    []apps.ComputeState
 		wantStart bool
+		wantErr   string
 	}{
 		{
 			name:   "updating then active",
@@ -170,6 +171,11 @@ func TestAppRunWaitsForComputeToSettle(t *testing.T) {
 			states:    []apps.ComputeState{apps.ComputeStateStarting, apps.ComputeStateStopped},
 			wantStart: true,
 		},
+		{
+			name:    "deleting",
+			states:  []apps.ComputeState{apps.ComputeStateDeleting},
+			wantErr: "app my_app is being deleted, redeploy the bundle to recreate it",
+		},
 	}
 
 	for _, tc := range tests {
@@ -186,6 +192,17 @@ func TestAppRunWaitsForComputeToSettle(t *testing.T) {
 						State: state,
 					},
 				}, nil).Once()
+			}
+
+			if tc.wantErr != "" {
+				r := appRunner{
+					key:    "my_app",
+					bundle: b,
+					app:    b.Config.Resources.Apps["my_app"],
+				}
+				_, err := r.Run(ctx, &Options{})
+				require.EqualError(t, err, tc.wantErr)
+				return
 			}
 
 			if tc.wantStart {

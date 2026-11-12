@@ -91,7 +91,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 }
 
 // waitForComputeToSettle polls the app until its compute is ACTIVE, STOPPED or ERROR, or the app has no
-// compute status. Transient states such as STARTING, UPDATING and STOPPING are polled through.
+// compute status. DELETING fails immediately; every other state is polled through.
 func waitForComputeToSettle(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
 	return retries.Poll(ctx, 20*time.Minute, func() (*apps.App, *retries.Err) {
 		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
@@ -106,6 +106,10 @@ func waitForComputeToSettle(ctx context.Context, w *databricks.WorkspaceClient, 
 		switch app.ComputeStatus.State {
 		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
 			return app, nil
+		case apps.ComputeStateDeleting:
+			// GET keeps returning the app (not 404) for up to ~20 minutes after DELETE, so polling
+			// through would only burn the timeout. Same treatment as IsGone in bundle/direct/dresources/app.go.
+			return nil, retries.Halt(fmt.Errorf("app %s is being deleted, redeploy the bundle to recreate it", name))
 		default:
 			return nil, retries.Continues("app compute is " + string(app.ComputeStatus.State))
 		}
