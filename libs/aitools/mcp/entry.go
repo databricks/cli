@@ -27,7 +27,7 @@ func EntryServes(ctx context.Context, entry map[string]any, service, profileName
 	if err != nil {
 		return false, fmt.Errorf("MCP server entry for %s on profile %s: %w", service, profileName, err)
 	}
-	return samePath(path, configFile), nil
+	return SamePath(path, configFile), nil
 }
 
 // flagValue returns the value that follows flag in argv, or "" when flag is absent.

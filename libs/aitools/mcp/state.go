@@ -48,6 +48,9 @@ type Drift struct {
 	// CurrentWorkspaceID is the workspace the profile names when Kind is DriftHostChanged: its
 	// workspace_id, else the workspace in its host query. It is "" when the profile names none.
 	CurrentWorkspaceID string
+	// NoHost is set when Kind is DriftProfileMissing because the profile's section has no host, not
+	// because the section is absent.
+	NoHost bool
 }
 
 // LoadState reads the MCP section of the aitools state file. A missing file or section
@@ -112,7 +115,7 @@ func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, er
 	}
 	p, err := files.profile(path, entry.Profile)
 	if errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost) {
-		return &Drift{Kind: DriftProfileMissing, Entry: entry}, nil
+		return &Drift{Kind: DriftProfileMissing, Entry: entry, NoHost: errors.Is(err, errProfileNoHost)}, nil
 	}
 	if err != nil {
 		return nil, err

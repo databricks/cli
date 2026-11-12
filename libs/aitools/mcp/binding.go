@@ -187,6 +187,21 @@ func removeCommand(profileName string) string {
 	return mcpRemoveCommand + " --profile " + shellquote.BashArg(profileName)
 }
 
+// RemoveNamesCommand returns the command that removes the server named name. Server names are unique in the state.
+func RemoveNamesCommand(name string) string {
+	return mcpRemoveCommand + " --names " + shellquote.BashArg(name)
+}
+
+// RecreateCommand returns the command that logs in to host for profileName again. A server pinned to a config file
+// passes that file as pinnedPath, so the login writes to the file the server reads; pass "" for an unpinned server.
+func RecreateCommand(host, profileName, pinnedPath string) string {
+	command := authLoginCommand + " --host " + shellquote.BashArg(host) + " --profile " + shellquote.BashArg(profileName)
+	if pinnedPath != "" {
+		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(pinnedPath) + " " + command
+	}
+	return command
+}
+
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
 // name with a host, either because it is absent or because its section has no host. problem completes
 // the sentence "which ... in <path>". Without a state entry nothing was set up for the profile, so the
@@ -198,10 +213,11 @@ func profileGoneError(name, profileName, path string, entry *Entry, problem stri
 		message := fmt.Sprintf("MCP server %s needs Databricks profile \"%s\", which %s in %s. Set it up with: %s", name, profileName, problem, path, login)
 		return &BindError{Category: BindProfileNotFound, message: message}
 	}
-	recreate := authLoginCommand + " --host " + shellquote.BashArg(entry.Host) + " --profile " + shellquote.BashArg(profileName)
+	pinnedPath := ""
 	if entry.ConfigFile != "" {
-		recreate = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(path) + " " + recreate
+		pinnedPath = path
 	}
+	recreate := RecreateCommand(entry.Host, profileName, pinnedPath)
 	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s",
 		name, profileName, problem, path, recreate, removeCommand(profileName))
 	return &BindError{Category: BindProfileNotFound, message: message}
@@ -259,7 +275,7 @@ func FindEntry(ctx context.Context, state *State, service, profileName, configFi
 			unresolved = errors.Join(unresolved, fmt.Errorf("MCP server %s: %w", entry.Name, err))
 			continue
 		}
-		if samePath(path, configFile) {
+		if SamePath(path, configFile) {
 			return entry, nil
 		}
 		if other == nil {

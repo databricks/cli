@@ -210,6 +210,15 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	return entries, nil
 }
 
+// Path returns the absolute path of agent a's MCP config file, as Read and Remove use it. It does not read the file.
+func Path(ctx context.Context, a *agents.Agent) (string, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return "", err
+	}
+	return spec.Path(ctx)
+}
+
 // checkName refuses a name that no agent would accept. Upsert and Remove both
 // check it, so a name that cannot be written is never looked up either.
 func checkName(name string) error {

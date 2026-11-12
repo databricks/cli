@@ -47,10 +47,10 @@ func AbsoluteAsWritten(path string) (string, error) {
 	return wd + string(filepath.Separator) + path, nil
 }
 
-// samePath reports whether two resolved config file paths name the same file. Existing files are
+// SamePath reports whether two resolved config file paths name the same file. Existing files are
 // compared by identity, which also matches hard links and case variants on case-insensitive file
 // systems. Paths that do not exist are compared as text.
-func samePath(a, b string) bool {
+func SamePath(a, b string) bool {
 	fa, errA := os.Stat(a)
 	fb, errB := os.Stat(b)
 	if errA == nil && errB == nil {
