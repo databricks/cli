@@ -197,27 +197,15 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 		}
 	}
 
-	// If nothing remains in this scope, clean up orphaned symlinks. Delete the
-	// state file unless it still holds MCP records, which uninstall does not own;
-	// otherwise persist the trimmed state. The MCP records are read from disk now,
-	// since an MCP save may have happened after state was loaded above.
+	// If nothing remains in this scope, clean up orphaned symlinks. SaveState then
+	// removes the state file, unless it still holds MCP records, which uninstall does
+	// not own; otherwise it persists the trimmed state.
 	noSkillsOrPlugins := len(state.Skills) == 0 && len(state.Plugins) == 0
 	if noSkillsOrPlugins {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 	}
-	mcpRecorded, err := mcpRecordedOnDisk(baseDir)
-	if err != nil {
+	if err := SaveState(baseDir, state); err != nil {
 		return err
-	}
-	if noSkillsOrPlugins && !mcpRecorded {
-		stateFile := filepath.Join(baseDir, stateFileName)
-		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("failed to remove state file: %w", err)
-		}
-	} else {
-		if err := SaveState(baseDir, state); err != nil {
-			return nil, err
-		}
 	}
 
 	if pluginCount > 0 {

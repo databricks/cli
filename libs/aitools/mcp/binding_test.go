@@ -101,8 +101,17 @@ func TestBindPrintsNoticeWithoutStateEntry(t *testing.T) {
 	assert.Equal(t, "No install record for system.ai.github on profile \"logfood\"; using its current host https://adb-123.test\n", stderr.String())
 }
 
+// bindingTestResolved returns path with its symlinks resolved, which is how Bind names an existing
+// config file. Temp directories are symlinks on some systems, for example macOS.
+func bindingTestResolved(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+	return resolved
+}
+
 func TestBindProfileAbsent(t *testing.T) {
-	path := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	path := bindingTestResolved(t, bindingTestConfig(t, bindingTestProfileContents(bindingTestToken)))
 
 	tests := []struct {
 		name  string
@@ -118,12 +127,12 @@ func TestBindProfileAbsent(t *testing.T) {
 				Host:       bindingTestHost,
 				ConfigFile: path,
 			}}},
-			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
+			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
 		},
 		{
 			name:  "without state entry",
 			state: &mcp.State{},
-			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
+			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
 		},
 	}
 	for _, tt := range tests {
@@ -456,4 +465,193 @@ func TestBindWithoutHomeAndAbsoluteConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, entry)
 	assert.Equal(t, bindingTestToken, cfg.Token)
+}
+
+// TestBindWorkspaceFollowsSDKResolution checks that the workspace a profile names is the one the SDK
+// resolves: workspace_id first, then the ?w= query, then a numeric ?o= or ?workspace_id=. A workspace
+// named "none" is not compared.
+func TestBindWorkspaceFollowsSDKResolution(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string // the profile's workspace_id, "" when it has none
+		query       string // the host query, with its leading "?"
+		recorded    string
+		// wantWorkspace is the workspace the drift names. It is "" when no drift is expected.
+		wantWorkspace string
+	}{
+		{name: "w wins over o", query: "?o=111&w=222", recorded: "111", wantWorkspace: "222"},
+		{name: "w wins over o when recorded", query: "?o=111&w=222", recorded: "222"},
+		{name: "non-numeric o is ignored when w names", query: "?o=abc&w=222", recorded: "222"},
+		{name: "non-numeric o names none", query: "?o=abc", recorded: "111"},
+		{name: "workspace_id wins over the query", workspaceID: "333", query: "?o=222", recorded: "222", wantWorkspace: "333"},
+		{name: "workspace_id wins when recorded", workspaceID: "333", query: "?o=222", recorded: "333"},
+		{name: "none in workspace_id names none", workspaceID: "none", query: "?o=222", recorded: "111"},
+		{name: "none in o names none", query: "?o=none", recorded: "111"},
+		{name: "none in w names none", query: "?w=none", recorded: "111"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contents := fmt.Sprintf("[%s]\nhost = %s/%s\n", bindingTestProfile, bindingTestHost, tt.query)
+			if tt.workspaceID != "" {
+				contents += "workspace_id = " + tt.workspaceID + "\n"
+			}
+			contents += "auth_type = pat\ntoken = " + bindingTestToken + "\n"
+			cfgPath := bindingTestConfig(t, contents)
+			state := bindingTestState(cfgPath, bindingTestHost)
+			state.Servers[0].WorkspaceID = tt.recorded
+
+			_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   state,
+				Stderr:  &bytes.Buffer{},
+			})
+			if tt.wantWorkspace == "" {
+				require.NoError(t, err)
+				assert.NotNil(t, entry)
+				return
+			}
+			requireBindError(t, err, mcp.BindProfileHostChanged)
+			assert.Contains(t, err.Error(), "now points at workspace "+tt.wantWorkspace+".")
+		})
+	}
+}
+
+// TestBindMatchesEntryWhenHomeIsSymlink checks that an entry pinned as "~/..." matches the config file
+// named by its real path when HOME is a symlink to the directory that holds the file.
+func TestBindMatchesEntryWhenHomeIsSymlink(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	link := filepath.Join(t.TempDir(), "home")
+	if err := os.Symlink(filepath.Dir(cfgPath), link); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+	t.Setenv(env.HomeEnvVar(), link)
+
+	_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState("~/.databrickscfg", bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, entry)
+}
+
+// TestBindMatchesEntryWhenDotDotFollowsSymlink checks that a config path with ".." after a symlink names
+// the file the OS reads through the link's target, which is also the entry's resolved path.
+func TestBindMatchesEntryWhenDotDotFollowsSymlink(t *testing.T) {
+	bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	base := t.TempDir()
+	cfgPath := filepath.Join(base, "a", ".databrickscfg")
+	require.NoError(t, os.MkdirAll(filepath.Join(base, "a", "b"), 0o755))
+	require.NoError(t, os.WriteFile(cfgPath, []byte(bindingTestProfileContents(bindingTestToken)), 0o600))
+	link := filepath.Join(base, "link")
+	if err := os.Symlink(filepath.Join(base, "a", "b"), link); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+	// filepath.Join would clean the ".." away, so the path is joined by hand.
+	sep := string(filepath.Separator)
+	t.Setenv("DATABRICKS_CONFIG_FILE", link+sep+".."+sep+".databrickscfg")
+
+	_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(bindingTestResolved(t, cfgPath), bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, entry)
+}
+
+// TestBindSkipsEntryWithoutHomeWhenAbsoluteEntryMatches checks that an entry whose "~" path cannot be
+// resolved, because HOME is unset, does not stop the match against an entry with an absolute path.
+func TestBindSkipsEntryWithoutHomeWhenAbsoluteEntryMatches(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	t.Setenv(env.HomeEnvVar(), "")
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Name: "github-home", Service: bindingTestService, Profile: bindingTestProfile, Host: "https://adb-999.test", ConfigFile: "~/.databrickscfg"},
+		{Name: "github-absolute", Service: bindingTestService, Profile: bindingTestProfile, Host: bindingTestHost, ConfigFile: cfgPath},
+	}}
+
+	_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   state,
+		Stderr:  &bytes.Buffer{},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, entry)
+	assert.Equal(t, "github-absolute", entry.Name)
+}
+
+// TestBindFailsWhenUnresolvableEntryMightMatch checks that an entry whose "~" path cannot be resolved
+// fails the bind when no other entry matches, since the bind cannot rule that entry out.
+func TestBindFailsWhenUnresolvableEntryMightMatch(t *testing.T) {
+	bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	t.Setenv(env.HomeEnvVar(), "")
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Name: "github-home", Service: bindingTestService, Profile: bindingTestProfile, Host: bindingTestHost, ConfigFile: "~/.databrickscfg"},
+	}}
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   state,
+		Stderr:  &bytes.Buffer{},
+	})
+	requireBindError(t, err, mcp.BindUncategorized)
+	assert.Contains(t, err.Error(), "MCP server github-home: cannot find homedir: $HOME is not set")
+}
+
+// TestBindProfileWithoutHost checks that a profile section with no host is reported as having no host,
+// not as missing from the file.
+func TestBindProfileWithoutHost(t *testing.T) {
+	path := bindingTestConfig(t, fmt.Sprintf("[%s]\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestToken))
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(path, bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	requireBindError(t, err, mcp.BindProfileNotFound)
+	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --profile logfood`, filepath.ToSlash(bindingTestResolved(t, path))), err.Error())
+}
+
+// TestBindHostMetadataFailureIsNotAuthFailure checks that a host whose metadata cannot be fetched does
+// not fail the bind. The SDK logs that failure and goes on, and a profile with a token still binds.
+func TestBindHostMetadataFailureIsNotAuthFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(server.Close)
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, server.URL, bindingTestToken))
+
+	cfg, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(cfgPath, server.URL),
+		Stderr:  &bytes.Buffer{},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, entry)
+	assert.Equal(t, bindingTestToken, cfg.Token)
+}
+
+// TestBindConfigErrorIsUncategorized checks that a configuration error from the SDK, here an
+// environment value that does not parse, is reported as uncategorized, not as an authentication
+// failure, so the message does not suggest logging in.
+func TestBindConfigErrorIsUncategorized(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	t.Setenv("DATABRICKS_RATE_LIMIT", "soon")
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(cfgPath, bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	requireBindError(t, err, mcp.BindUncategorized)
+	assert.NotContains(t, err.Error(), "Run:")
+	assert.NotContains(t, err.Error(), "auth login")
 }

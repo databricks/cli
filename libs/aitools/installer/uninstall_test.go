@@ -641,7 +641,9 @@ func TestUninstallMCPOnlyStateReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no skills or plugins installed")
 
-	recorded, err := mcpRecordedOnDisk(globalDir)
+	loaded, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.True(t, recorded)
+	require.NotNil(t, loaded)
+	require.NotNil(t, loaded.MCP)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
 }

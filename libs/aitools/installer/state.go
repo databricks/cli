@@ -160,7 +160,7 @@ func migrateState(state *InstallState) {
 // SaveState writes the skills and plugins records of state to the given directory atomically,
 // creating the directory if it does not exist. The MCP section is written by SaveMCPState, so
 // SaveState keeps the one on disk, not the one in state. This keeps MCP records saved after state
-// was loaded.
+// was loaded. The file is removed when no skills, plugins or MCP servers remain.
 func SaveState(dir string, state *InstallState) error {
 	onDisk, err := LoadState(dir)
 	if err != nil {
@@ -171,7 +171,7 @@ func SaveState(dir string, state *InstallState) error {
 	if onDisk != nil {
 		out.MCP = onDisk.MCP
 	}
-	return writeState(dir, &out)
+	return saveOrRemove(dir, &out)
 }
 
 // SaveMCPState replaces the MCP section of the state file in the given directory. The file is read
@@ -197,7 +197,14 @@ func SaveMCPState(dir string, mcp *MCPState) error {
 	if mcp != nil && len(mcp.Servers) > 0 {
 		st.MCP = mcp
 	}
-	if !st.HasSkillsOrPlugins() && st.MCP == nil {
+	return saveOrRemove(dir, st)
+}
+
+// saveOrRemove writes st to the state file in dir, or removes the file when st records nothing: no
+// skills, plugins, files or repo directories, and no MCP servers. Files and repo directories count
+// even without a skill record, because the legacy raw-skill cleanup reads them on its own.
+func saveOrRemove(dir string, st *InstallState) error {
+	if len(st.Skills) == 0 && len(st.Plugins) == 0 && len(st.Files) == 0 && len(st.RepoDirs) == 0 && st.MCP == nil {
 		err := os.Remove(filepath.Join(dir, stateFileName))
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to remove state file: %w", err)
@@ -207,15 +214,8 @@ func SaveMCPState(dir string, mcp *MCPState) error {
 	return writeState(dir, st)
 }
 
-// mcpRecordedOnDisk reports whether the state file in the given directory holds MCP servers.
-func mcpRecordedOnDisk(dir string) (bool, error) {
-	st, err := LoadState(dir)
-	if err != nil {
-		return false, err
-	}
-	return st != nil && st.MCP != nil && len(st.MCP.Servers) > 0, nil
-}
-
+// writeState replaces the state file in dir with state, atomically. It writes whatever it is given;
+// saveOrRemove decides when there is nothing to keep.
 func writeState(dir string, state *InstallState) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {

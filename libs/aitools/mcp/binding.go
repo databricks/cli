@@ -70,45 +70,37 @@ func (e *BindError) ExitCode() int {
 // loads a bundle. It returns the resolved config and the matching state entry, which is nil
 // when none exists.
 //
-// The profile is checked before any credential is resolved, so a re-pointed host is never
-// contacted. The config file is the one in the context, the same file the profile lookup reads.
+// The profile is checked before the SDK resolves the config, so a re-pointed host is never
+// contacted. The config file is the one in the context, resolved once: the profile lookup,
+// the entry match and the SDK all read that path.
 func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
 	configFile, err := resolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
 	if err != nil {
-		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+		return nil, nil, uncategorizedError(err)
 	}
+	ctx = env.Set(ctx, mcpconfig.ConfigFileEnv, configFile)
 	entry, err := findEntry(ctx, opts.State, opts.Service, opts.Profile, configFile)
 	if err != nil {
-		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+		return nil, nil, uncategorizedError(err)
 	}
 	name := opts.Service
 	if entry != nil {
 		name = entry.Name
 	}
 
-	profiler := profile.GetProfiler(ctx)
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(opts.Profile))
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+	p, err := loadProfile(ctx, profile.GetProfiler(ctx), opts.Profile)
+	switch {
+	case errors.Is(err, errProfileMissing):
+		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(configFile), entry, "no longer exists")
+	case errors.Is(err, errProfileNoHost):
+		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(configFile), entry, "has no host")
+	case err != nil:
+		return nil, nil, uncategorizedError(err)
 	}
-	if len(profiles) == 0 {
-		path, err := profiler.GetPath(ctx)
-		if err != nil {
-			return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+	if entry != nil {
+		if drift := driftOf(*entry, p); drift != nil {
+			return nil, nil, driftError(name, opts.Profile, *entry, *drift)
 		}
-		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(path), entry)
-	}
-	p := profiles[0]
-
-	if entry != nil && hostChanged(*entry, p) {
-		message := fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s --profile %s and add it again",
-			name, entry.Host, opts.Profile, p.Host, mcpRemoveCommand, opts.Profile)
-		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
-	}
-	if entry != nil && workspaceChanged(*entry, p) {
-		message := fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s --profile %s and add it again",
-			name, entry.WorkspaceID, opts.Profile, profileWorkspaceID(p), mcpRemoveCommand, opts.Profile)
-		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
 	}
 
 	// The loaders take the profile's own settings and non-auth environment only. The
@@ -120,7 +112,8 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
 	}
 	if err := cfg.EnsureResolved(); err != nil {
-		return nil, nil, authError(opts.Profile, err)
+		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
+		return nil, nil, uncategorizedError(err)
 	}
 
 	if entry == nil {
@@ -131,7 +124,7 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
 	if err != nil {
-		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+		return nil, nil, uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
 		return nil, nil, authError(opts.Profile, err)
@@ -139,18 +132,41 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	return cfg, entry, nil
 }
 
-// profileGoneError builds the error for a profile that is missing from the config file.
-// Without a state entry the recorded host is unknown, so the recreate hint omits --host.
-func profileGoneError(name, profileName, path string, entry *Entry) error {
+// uncategorizedError wraps a failure that has no category of its own. Its message is the cause's.
+func uncategorizedError(err error) error {
+	return &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+}
+
+// profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
+// name with a host, either because it is absent or because its section has no host. problem completes
+// the sentence "which ... in <path>". Without a state entry the recorded host is unknown, so the
+// recreate hint omits --host.
+func profileGoneError(name, profileName, path string, entry *Entry, problem string) error {
 	recreate := authLoginCommand + " --profile " + profileName
 	if entry != nil {
 		recreate = authLoginCommand + " --host " + entry.Host + " --profile " + profileName
 	}
-	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which no longer exists in %s. Recreate it with: %s   or remove the server with: %s --profile %s",
-		name, profileName, path, recreate, mcpRemoveCommand, profileName)
+	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s --profile %s",
+		name, profileName, problem, path, recreate, mcpRemoveCommand, profileName)
 	return &BindError{Category: BindProfileNotFound, message: message}
 }
 
+// driftError is the PROFILE_HOST_CHANGED error for an entry whose profile now names another host,
+// or another workspace on the same host.
+func driftError(name, profileName string, entry Entry, drift Drift) error {
+	var message string
+	if NormalizeHost(entry.Host) != NormalizeHost(drift.CurrentHost) {
+		message = fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s --profile %s and add it again",
+			name, entry.Host, profileName, drift.CurrentHost, mcpRemoveCommand, profileName)
+	} else {
+		message = fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s --profile %s and add it again",
+			name, entry.WorkspaceID, profileName, drift.CurrentWorkspaceID, mcpRemoveCommand, profileName)
+	}
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
+// authError is the AUTH_FAILED error for a credential that the profile's own settings could not
+// provide. The message points at the login command for the profile.
 func authError(profileName string, cause error) error {
 	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, profileName)
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
@@ -158,7 +174,10 @@ func authError(profileName string, cause error) error {
 
 // findEntry returns the entry for the service and profile whose config file is configFile, or nil.
 // Both are compared as resolved paths, so an entry with no pinned file matches the default file.
+// An entry whose file cannot be resolved, such as a "~" path with no home directory, cannot be
+// compared. It is skipped, and its error is returned only when no other entry matches.
 func findEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+	var unresolved error
 	for i := range state.Servers {
 		entry := &state.Servers[i]
 		if entry.Service != service || entry.Profile != profileName {
@@ -166,11 +185,12 @@ func findEntry(ctx context.Context, state *State, service, profileName, configFi
 		}
 		path, err := resolveConfigFile(ctx, entry.ConfigFile)
 		if err != nil {
-			return nil, err
+			unresolved = errors.Join(unresolved, fmt.Errorf("MCP server %s: %w", entry.Name, err))
+			continue
 		}
-		if path == configFile {
+		if samePath(path, configFile) {
 			return entry, nil
 		}
 	}
-	return nil, nil
+	return nil, unresolved
 }
