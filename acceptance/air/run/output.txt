@@ -49,10 +49,21 @@ Exit code: 1
 >>> [CLI] air run -f valid.yaml --dry-run --watch
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
-=== code_source config passes validation
+=== code_source config passes validation and reports the selected files
 
 >>> [CLI] air run -f with-code-source.yaml --dry-run
+Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== git-ignored root_path is rejected instead of selecting no files
+
+>>> [CLI] air run -f ignored-root.yaml --dry-run
+Error: code_source snapshot of [TEST_TMP_DIR]/.scratch/proj contains no files; refusing to upload an empty snapshot: root_path is ignored by git (.gitignore:1:.scratch/), and the snapshot only includes files git does not ignore. Move the project out of the ignored directory, un-ignore it, or change code_source.root_path. Inspect the rule with `git -C [TEST_TMP_DIR]/.scratch/proj check-ignore -v .`
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+Exit code: 1
 
 === git.remote is rejected
 

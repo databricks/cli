@@ -234,6 +234,21 @@ func (g gitRepo) validateIncludePathsExist(ctx context.Context, commitSHA string
 	return nil
 }
 
+// countFilesAtCommit returns how many files `git archive` would package from
+// commitSHA, limited to subtreePrefix and includePaths when set.
+func (g gitRepo) countFilesAtCommit(ctx context.Context, commitSHA, subtreePrefix string, includePaths []string) (int, error) {
+	treeish := commitSHA
+	if subtreePrefix != "" {
+		treeish = commitSHA + ":" + subtreePrefix
+	}
+	args := append([]string{"ls-tree", "-r", "-z", "--name-only", treeish, "--"}, includePaths...)
+	out, err := g.runBytes(ctx, args...)
+	if err != nil {
+		return 0, err
+	}
+	return bytes.Count(out, []byte{0}), nil
+}
+
 // shortSHA abbreviates a commit SHA to 8 chars for log/error messages, tolerating
 // user-supplied abbreviations shorter than that.
 func shortSHA(sha string) string {

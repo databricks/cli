@@ -29,10 +29,12 @@ const computeOptionsHelpTimeout = 3 * time.Second
 
 // runResult is the JSON payload for `air run`.
 type runResult struct {
-	Status       string `json:"status"`
-	DryRun       bool   `json:"dry_run,omitempty"`
-	RunID        string `json:"run_id,omitempty"`
-	DashboardURL string `json:"dashboard_url,omitempty"`
+	Status string `json:"status"`
+	DryRun bool   `json:"dry_run,omitempty"`
+	// SnapshotFileCount is set on a dry run whose config has a code_source snapshot.
+	SnapshotFileCount *int   `json:"snapshot_file_count,omitempty"`
+	RunID             string `json:"run_id,omitempty"`
+	DashboardURL      string `json:"dashboard_url,omitempty"`
 }
 
 const experimentalContainersWarning = `+--------------------------------------------------------------------+
@@ -159,6 +161,15 @@ field, pass its path to -h as a separate argument:
 		}
 
 		if dryRun {
+			// Local and credential-free, so it runs before workspace validation.
+			var snapshotFileCount *int
+			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
+				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
+				if err != nil {
+					return err
+				}
+				snapshotFileCount = &count
+			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
@@ -176,10 +187,13 @@ field, pass its path to -h as a separate argument:
 				return renderError(ctx, cmd, "VALIDATION_UNAVAILABLE", kind, unavailable.retryable, validationErr)
 			}
 			if root.OutputType(cmd) == flags.OutputText {
+				if snapshotFileCount != nil {
+					cmdio.LogString(ctx, fmt.Sprintf("Dry run: code_source snapshot would include %d file(s).", *snapshotFileCount))
+				}
 				cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for %q is valid; not submitting.", cfg.ExperimentName))
 				return nil
 			}
-			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
+			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true, SnapshotFileCount: snapshotFileCount})
 		}
 
 		warnExperimentalContainers(ctx, cfg)
