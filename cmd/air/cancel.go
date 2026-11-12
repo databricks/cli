@@ -136,7 +136,8 @@ all active runs submitted by the current user.
 		}
 
 		for _, rid := range runIDs {
-			err := cancelRun(ctx, w, rid)
+			// --all only lists AIR runs, so they don't need re-checking.
+			err := cancelRun(ctx, w, rid, all)
 			if err != nil {
 				data.Failed = append(data.Failed, cancelFailure{RunID: rid, Error: err.Error()})
 				if !jsonOut {
@@ -192,12 +193,23 @@ func runNotFound(err error) bool {
 	return false
 }
 
-// cancelRun requests cancellation of a single job run. The cancel is async, so
-// the returned waiter is ignored.
-func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string) error {
+// cancelRun requests cancellation of a single job run. Unless skipAirCheck is
+// set, it first verifies the run is an AI Runtime run, so a mistyped but valid
+// ID can't cancel an unrelated Jobs run. The cancel is async, so the returned
+// waiter is ignored.
+func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string, skipAirCheck bool) error {
 	runID, err := strconv.ParseInt(rid, 10, 64)
 	if err != nil || runID <= 0 {
 		return fmt.Errorf("invalid run ID %q: must be a positive integer", rid)
+	}
+	if !skipAirCheck {
+		run, err := fetchJobRun(ctx, w, runID)
+		if err != nil {
+			return err
+		}
+		if !isAirRun(run) {
+			return fmt.Errorf("run %d is not an AI Runtime run; use \"databricks jobs cancel-run %d\" to cancel other Jobs runs", runID, runID)
+		}
 	}
 	_, err = w.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
 	return err

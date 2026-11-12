@@ -7,11 +7,16 @@ import (
 	"fmt"
 	"io/fs"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -41,6 +46,66 @@ func TestClassifyInstallError(t *testing.T) {
 			name: "blocked install failed",
 			err:  &installer.BlockedError{Agent: "codex", Reason: installer.ReasonInstallFailed},
 			want: protos.AitoolsErrorCategoryPluginInstallFailed,
+		},
+		{
+			name: "blocked timeout wins over its reason",
+			err:  &installer.BlockedError{Agent: "claude-code", Reason: installer.ReasonCLINotOnPath, TimedOut: true},
+			want: protos.AitoolsErrorCategoryPluginCLITimeout,
+		},
+		{
+			name: "release lookup failed",
+			err:  fmt.Errorf("resolve latest skills release: %w", &installer.FetchError{Stage: installer.FetchStageRelease, StatusCode: 500, Err: errors.New("HTTP 500 fetching latest skills release")}),
+			want: protos.AitoolsErrorCategoryReleaseLookupFailed,
+		},
+		{
+			name: "release lookup with no response is NETWORK",
+			err:  fmt.Errorf("resolve latest skills release: %w", &installer.FetchError{Stage: installer.FetchStageRelease, Err: &url.Error{Op: "Get", URL: "https://example.test", Err: &net.DNSError{Err: "no such host"}}}),
+			want: protos.AitoolsErrorCategoryNetwork,
+		},
+		{
+			name: "release payload that does not decode is not an invalid manifest",
+			err:  &installer.FetchError{Stage: installer.FetchStageRelease, StatusCode: 200, Err: fmt.Errorf("parse latest skills release: %w", &json.SyntaxError{})},
+			want: protos.AitoolsErrorCategoryReleaseLookupFailed,
+		},
+		{
+			name: "release lookup rate limited",
+			err:  &installer.FetchError{Stage: installer.FetchStageRelease, StatusCode: 403, RateLimited: true, Err: errors.New("HTTP 403")},
+			want: protos.AitoolsErrorCategoryRateLimited,
+		},
+		{
+			name: "release lookup denied without rate-limit evidence",
+			err:  &installer.FetchError{Stage: installer.FetchStageRelease, StatusCode: 403, Err: errors.New("HTTP 403")},
+			want: protos.AitoolsErrorCategoryReleaseLookupFailed,
+		},
+		{
+			name: "manifest fetch rate limited",
+			err:  &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: 429, RateLimited: true, Err: errors.New("HTTP 429")},
+			want: protos.AitoolsErrorCategoryRateLimited,
+		},
+		{
+			name: "manifest fetch with no response is NETWORK",
+			err:  &installer.FetchError{Stage: installer.FetchStageManifest, Err: fmt.Errorf("failed to fetch manifest: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: &net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.ECONNREFUSED)}})},
+			want: protos.AitoolsErrorCategoryNetwork,
+		},
+		{
+			name: "skill file fetch that timed out is TIMEOUT",
+			err:  &installer.FetchError{Stage: installer.FetchStageFile, Err: &url.Error{Op: "Get", URL: "https://example.test", Err: os.ErrDeadlineExceeded}},
+			want: protos.AitoolsErrorCategoryTimeout,
+		},
+		{
+			name: "skill file fetch failed",
+			err:  fmt.Errorf("failed to fetch skills/x/SKILL.md: %w", &installer.FetchError{Stage: installer.FetchStageFile, StatusCode: 500, Err: errors.New("HTTP 500")}),
+			want: protos.AitoolsErrorCategorySkillsFetchFailed,
+		},
+		{
+			name: "manifest missing at the pinned ref",
+			err:  &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: 404, Err: fmt.Errorf("skills manifest at x@v9: %w", clicompat.ErrNotFound)},
+			want: protos.AitoolsErrorCategoryManifestNotFound,
+		},
+		{
+			name: "state file invalid",
+			err:  fmt.Errorf("failed to load install state: %w", &installer.StateError{Path: "/s/.state.json", Err: errors.New("failed to parse state file")}),
+			want: protos.AitoolsErrorCategoryStateInvalid,
 		},
 		{
 			name: "blocked error with unknown reason is uncategorized",
@@ -102,12 +167,12 @@ func TestClassifyInstallErrorGenericCauses(t *testing.T) {
 		err  error
 		want protos.AitoolsErrorCategory
 	}{
-		{"network", fmt.Errorf("failed to fetch manifest: %w", urlErr), protos.AitoolsErrorCategoryNetwork},
+		{"network", fmt.Errorf("fetch: %w", urlErr), protos.AitoolsErrorCategoryNetwork},
 		// The shape net/http returns for a refused connection: the Errno sits under the network types.
-		{"network errno", fmt.Errorf("failed to fetch manifest: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: &net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.ECONNREFUSED)}}), protos.AitoolsErrorCategoryNetwork},
+		{"network errno", fmt.Errorf("fetch: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: &net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.ECONNREFUSED)}}), protos.AitoolsErrorCategoryNetwork},
 		// A sandbox that blocks outbound sockets: a network failure, even though the Errno is EACCES.
-		{"network permission denied", fmt.Errorf("failed to fetch manifest: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: &net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.EACCES)}}), protos.AitoolsErrorCategoryNetwork},
-		{"network timeout", fmt.Errorf("failed to fetch manifest: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: os.ErrDeadlineExceeded}), protos.AitoolsErrorCategoryTimeout},
+		{"network permission denied", fmt.Errorf("fetch: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: &net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.EACCES)}}), protos.AitoolsErrorCategoryNetwork},
+		{"network timeout", fmt.Errorf("fetch: %w", &url.Error{Op: "Get", URL: "https://example.test", Err: os.ErrDeadlineExceeded}), protos.AitoolsErrorCategoryTimeout},
 		{"deadline", fmt.Errorf("fetch: %w", context.DeadlineExceeded), protos.AitoolsErrorCategoryTimeout},
 		{"cancelled", fmt.Errorf("fetch: %w", context.Canceled), protos.AitoolsErrorCategoryCommandInterrupted},
 		{"cancelled request", &url.Error{Op: "Get", URL: "https://example.test", Err: context.Canceled}, protos.AitoolsErrorCategoryCommandInterrupted},
@@ -144,15 +209,14 @@ func TestWithCategoryKeepsMessage(t *testing.T) {
 	assert.ErrorIs(t, err, cause)
 }
 
-// A corrupt install state must not be blamed on the remote manifest. It stays
-// UNCATEGORIZED until the installer returns a typed state error, which should
-// change this to STATE_INVALID.
-func TestClassifyInstallErrorCorruptStateIsUncategorized(t *testing.T) {
+// A corrupt install state must not be blamed on the remote manifest: the
+// installer's typed StateError makes it STATE_INVALID.
+func TestClassifyInstallErrorCorruptStateIsStateInvalid(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".state.json"), []byte("{not json"), 0o600))
 	_, err := installer.LoadState(dir)
 	require.Error(t, err)
-	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, classifyInstallError(fmt.Errorf("failed to load install state: %w", err)))
+	assert.Equal(t, protos.AitoolsErrorCategoryStateInvalid, classifyInstallError(fmt.Errorf("failed to load install state: %w", err)))
 }
 
 // readMissingFile returns the error the OS gives for a missing file, so the
@@ -162,4 +226,97 @@ func readMissingFile(t *testing.T) error {
 	_, err := os.ReadFile(filepath.Join(t.TempDir(), "missing"))
 	require.Error(t, err)
 	return err
+}
+
+func TestClassifyCancelledManifestFetchIsCommandInterrupted(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		// Cancel while the request is in flight, then wait for the client to give up.
+		cancel()
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+	_, err := (&installer.GitHubManifestSource{}).FetchManifest(ctx, "v1")
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, protos.AitoolsErrorCategoryCommandInterrupted, classifyInstallError(err))
+}
+
+// A response whose body stalls or is cut off by a reset is a transport
+// failure, not a failed fetch: it keeps TIMEOUT or NETWORK.
+func TestClassifyManifestBodyTransportFailure(t *testing.T) {
+	t.Run("stalled body", func(t *testing.T) {
+		release := make(chan struct{})
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "100")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"skills":`))
+			w.(http.Flusher).Flush()
+			select {
+			case <-release:
+			case <-r.Context().Done():
+			}
+		}))
+		t.Cleanup(server.Close)
+		t.Cleanup(func() { close(release) })
+		t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+		defer cancel()
+		_, err := (&installer.GitHubManifestSource{}).FetchManifest(ctx, "v1")
+		require.Error(t, err)
+		assert.Equal(t, protos.AitoolsErrorCategoryTimeout, classifyInstallError(err))
+	})
+
+	t.Run("reset mid-body", func(t *testing.T) {
+		err := &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: http.StatusOK, Err: fmt.Errorf("failed to read manifest: %w", &net.OpError{Op: "read", Net: "tcp", Err: os.NewSyscallError("read", syscall.ECONNRESET)})}
+		assert.Equal(t, protos.AitoolsErrorCategoryNetwork, classifyInstallError(err))
+	})
+
+	t.Run("release body timeout", func(t *testing.T) {
+		err := &installer.FetchError{Stage: installer.FetchStageRelease, StatusCode: http.StatusOK, Err: fmt.Errorf("parse latest skills release: %w", os.ErrDeadlineExceeded)}
+		assert.Equal(t, protos.AitoolsErrorCategoryTimeout, classifyInstallError(err))
+	})
+}
+
+func TestClassifyRealManifestFetchErrors(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		body   string
+		// cutOff announces a longer body than is sent, so the connection
+		// closes mid-body.
+		cutOff bool
+		want   protos.AitoolsErrorCategory
+	}{
+		// A captive portal or broken mirror answers 200 with something else.
+		{name: "200 with HTML", status: http.StatusOK, body: "<html>login</html>", want: protos.AitoolsErrorCategoryManifestInvalid},
+		{name: "200 with the wrong JSON shape", status: http.StatusOK, body: `{"skills": []}`, want: protos.AitoolsErrorCategoryManifestInvalid},
+		{name: "200 with an empty body", status: http.StatusOK, body: "", want: protos.AitoolsErrorCategoryManifestInvalid},
+		{name: "200 with incomplete JSON", status: http.StatusOK, body: `{"skills":`, want: protos.AitoolsErrorCategoryManifestInvalid},
+		// A body over 1 MiB is not parsed: it is reported as too large, in the
+		// same category as a manifest that does not parse.
+		{name: "200 with a body over the size cap", status: http.StatusOK, body: strings.Repeat(" ", 1<<20) + "{}", want: protos.AitoolsErrorCategoryManifestInvalid},
+		{name: "connection closed mid-body", status: http.StatusOK, body: `{"skills":`, cutOff: true, want: protos.AitoolsErrorCategorySkillsFetchFailed},
+		{name: "404", status: http.StatusNotFound, want: protos.AitoolsErrorCategoryManifestNotFound},
+		{name: "503", status: http.StatusServiceUnavailable, want: protos.AitoolsErrorCategorySkillsFetchFailed},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tc.cutOff {
+					w.Header().Set("Content-Length", strconv.Itoa(len(tc.body)+100))
+				}
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+			_, err := (&installer.GitHubManifestSource{}).FetchManifest(t.Context(), "v1")
+			require.Error(t, err)
+			assert.Equal(t, tc.want, classifyInstallError(err))
+		})
+	}
 }

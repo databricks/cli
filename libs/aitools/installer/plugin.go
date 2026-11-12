@@ -20,7 +20,13 @@ var lookPath = exec.LookPath
 
 const (
 	// pluginProbeTimeout bounds the `<agent> plugin --help` capability check.
-	pluginProbeTimeout = 5 * time.Second
+	// Agent CLIs are large Node/Rust binaries whose cold start (first run,
+	// antivirus scan, slow container disk) can take several seconds, and a probe
+	// that times out reports the agent as unavailable, so leave headroom.
+	// It also bounds `<agent> plugin marketplace list` in marketplaceRegistered,
+	// where a timeout means the marketplace is assumed already registered, so
+	// install does not record it and uninstall leaves it registered.
+	pluginProbeTimeout = 20 * time.Second
 	// pluginCmdTimeout bounds an install/update/uninstall command, which may
 	// clone the marketplace repo, so it gets more headroom than the probe.
 	pluginCmdTimeout = 60 * time.Second
@@ -34,6 +40,11 @@ type BlockedError struct {
 	Agent  string
 	Reason string
 	Detail string
+	// TimedOut is set when the agent CLI was killed for exceeding its timeout,
+	// so the failure can be told apart from a missing or broken CLI. It takes
+	// precedence over Reason: Reason still names the step that timed out, so
+	// check TimedOut before switching on Reason.
+	TimedOut bool
 }
 
 // Reasons a plugin operation can be blocked.
@@ -56,20 +67,54 @@ func (e *BlockedError) Error() string {
 }
 
 // runAgentCmd runs an agent CLI command with a timeout, returning stdout and any
-// error. Errors are *process.ProcessError, which carries the captured stderr.
+// error. Errors wrap a *process.ProcessError, which carries the captured stderr;
+// on timeout the error is an *agentCmdTimeoutError that wraps it, so callers
+// must use errors.AsType rather than a type assertion.
 func runAgentCmd(ctx context.Context, timeout time.Duration, argv []string) (string, error) {
 	cctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return process.Background(cctx, argv)
+	out, err := process.Background(cctx, argv)
+	if err != nil && errors.Is(cctx.Err(), context.DeadlineExceeded) {
+		return out, &agentCmdTimeoutError{timeout: timeout, err: err}
+	}
+	return out, err
+}
+
+// agentCmdTimeoutError reports an agent CLI command killed by its timeout.
+type agentCmdTimeoutError struct {
+	timeout time.Duration
+	err     error
+}
+
+func (e *agentCmdTimeoutError) Error() string {
+	return fmt.Sprintf("timed out after %s", e.timeout)
+}
+
+func (e *agentCmdTimeoutError) Unwrap() error { return e.err }
+
+// newBlockedError builds the BlockedError for a failed agent CLI command.
+func newBlockedError(agent *agents.Agent, reason string, err error) *BlockedError {
+	_, timedOut := errors.AsType[*agentCmdTimeoutError](err)
+	return &BlockedError{Agent: agent.Name, Reason: reason, Detail: stderrOf(err), TimedOut: timedOut}
 }
 
 // stderrOf returns the captured stderr of a failed agent command, falling back
 // to the error's own message. Callers must not branch on this string.
 func stderrOf(err error) string {
+	var stderr string
 	if perr, ok := errors.AsType[*process.ProcessError](err); ok {
-		if s := strings.TrimSpace(perr.Stderr); s != "" {
-			return s
+		stderr = strings.TrimSpace(perr.Stderr)
+	}
+	// The timeout is the real cause of a killed process. Whatever it wrote to
+	// stderr before the kill (a prompt waiting for input, say) follows it.
+	if terr, ok := errors.AsType[*agentCmdTimeoutError](err); ok {
+		if stderr != "" {
+			return terr.Error() + ": " + stderr
 		}
+		return terr.Error()
+	}
+	if stderr != "" {
+		return stderr
 	}
 	return err.Error()
 }
@@ -99,11 +144,7 @@ func recordedInstallTarget(agent *agents.Agent, rec PluginRecord) string {
 	if plugin == "" {
 		plugin = agent.Plugin.ID
 	}
-	marketplace := rec.Marketplace
-	if marketplace == "" {
-		marketplace = agent.Plugin.Marketplace
-	}
-	return plugin + "@" + marketplace
+	return plugin + "@" + recordedMarketplace(agent, rec)
 }
 
 // marketplaceAddArgs builds the `plugin marketplace add <source>` argv (sans binary).
@@ -131,19 +172,27 @@ func marketplaceRemoveArgs(spec *agents.PluginSpec) []string {
 }
 
 func marketplaceRemoveArgsForRecord(agent *agents.Agent, rec PluginRecord) []string {
-	marketplace := rec.Marketplace
-	if marketplace == "" {
-		marketplace = agent.Plugin.Marketplace
+	return []string{"plugin", "marketplace", "remove", recordedMarketplace(agent, rec)}
+}
+
+// recordedMarketplace is the marketplace a recorded install came from, or the
+// agent's current one for records written before it was stored.
+func recordedMarketplace(agent *agents.Agent, rec PluginRecord) string {
+	if rec.Marketplace != "" {
+		return rec.Marketplace
 	}
-	return []string{"plugin", "marketplace", "remove", marketplace}
+	return agent.Plugin.Marketplace
 }
 
 // marketplaceUpdateArgs builds the marketplace refresh command for agents whose
 // plugin CLI supports it. Claude's official marketplace can be stale locally,
 // causing install/update to report that a published plugin does not exist.
-func marketplaceUpdateArgs(agent *agents.Agent) []string {
+// The refresh names the marketplace: without a name Claude refreshes every
+// marketplace the user has added, and one unreachable third-party marketplace
+// then fails the databricks install.
+func marketplaceUpdateArgs(agent *agents.Agent, marketplace string) []string {
 	if agent.Name == agents.NameClaudeCode {
-		return []string{"plugin", "marketplace", "update"}
+		return []string{"plugin", "marketplace", "update", marketplace}
 	}
 	return nil
 }
@@ -166,24 +215,60 @@ func pluginInstallArgs(agent *agents.Agent, scope string) []string {
 	}
 }
 
-// pluginUpdateSteps builds the ordered per-agent update argv sets (sans binary).
-// Codex updates in two steps: refresh the marketplace, then re-add.
-func pluginUpdateSteps(agent *agents.Agent, rec PluginRecord) [][]string {
+// pluginRefreshArgs builds the marketplace refresh that runs before an update
+// (sans binary), or nil for agents without one. Both agents name the
+// marketplace, so an unreachable marketplace the user added for another plugin
+// does not fail the update.
+func pluginRefreshArgs(agent *agents.Agent, rec PluginRecord) []string {
+	if agent.Name == agents.NameCodex {
+		return []string{"plugin", "marketplace", "upgrade", recordedMarketplace(agent, rec)}
+	}
+	return marketplaceUpdateArgs(agent, recordedMarketplace(agent, rec))
+}
+
+// pluginUpdateArgs builds the per-agent update argv (sans binary). Codex
+// updates by re-adding the plugin.
+func pluginUpdateArgs(agent *agents.Agent, rec PluginRecord) []string {
 	target := recordedInstallTarget(agent, rec)
 	switch agent.Name {
 	case agents.NameCodex:
-		return [][]string{
-			{"plugin", "marketplace", "upgrade"},
-			{"plugin", "add", target},
-		}
+		return []string{"plugin", "add", target}
 	case agents.NameClaudeCode:
-		return [][]string{
-			marketplaceUpdateArgs(agent),
-			appendScopeArg([]string{"plugin", "update", target}, rec.Scope),
-		}
+		return appendScopeArg([]string{"plugin", "update", target}, rec.Scope)
 	default:
-		return [][]string{{"plugin", "update", target}}
+		return []string{"plugin", "update", target}
 	}
+}
+
+// refreshMarketplace runs the marketplace refresh (args may be nil for agents
+// without one). A failed refresh is not fatal: the local copy of the marketplace
+// usually still lists the plugin, so the caller goes on with it, and either
+// warns with warnLocalMarketplaceCopy when that succeeds and the recorded
+// version is cleared, or adds the refresh error to its own error with
+// withRefreshError.
+func refreshMarketplace(ctx context.Context, bin string, args []string) error {
+	if args == nil {
+		return nil
+	}
+	_, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, args))
+	return err
+}
+
+// warnLocalMarketplaceCopy tells the user that a successful install or update
+// used a local marketplace copy that could not be refreshed, so the plugin may
+// be out of date. retry names what to run later; it differs between install
+// and update so an update is not told to run the command that just ran.
+func warnLocalMarketplaceCopy(ctx context.Context, agent *agents.Agent, marketplace, retry string, refreshErr error) {
+	log.Warnf(ctx, "Could not refresh the %s marketplace, so the %s plugin came from its local copy and may be out of date; %s: %s", marketplace, agent.DisplayName, retry, stderrOf(refreshErr))
+}
+
+// withRefreshError appends a failed refresh to the detail of a failed install
+// or update, since a stale local marketplace copy may be the cause.
+func withRefreshError(blocked *BlockedError, refreshErr error) *BlockedError {
+	if refreshErr != nil {
+		blocked.Detail += " (refreshing the marketplace also failed: " + stderrOf(refreshErr) + ")"
+	}
+	return blocked
 }
 
 // pluginUninstallArgs builds the per-agent uninstall argv (sans binary).
@@ -223,7 +308,7 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
 	if _, err := runAgentCmd(ctx, pluginProbeTimeout, []string{bin, "plugin", "--help"}); err != nil {
-		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: stderrOf(err)}
+		return "", newBlockedError(agent, ReasonCLINotOnPath, err)
 	}
 	return bin, nil
 }
@@ -252,16 +337,7 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 		_, addErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceAddArgs(agent.Plugin)))
 		installedMarketplace = addErr == nil && !alreadyPresent
 	}
-	if args := marketplaceUpdateArgs(agent); args != nil {
-		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, args)); err != nil {
-			if installedMarketplace {
-				if _, rmErr := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceRemoveArgs(agent.Plugin))); rmErr != nil {
-					log.Warnf(ctx, "%s plugin marketplace refresh failed and the marketplace could not be de-registered: %v", agent.DisplayName, rmErr)
-				}
-			}
-			return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
-		}
-	}
+	refreshErr := refreshMarketplace(ctx, bin, marketplaceUpdateArgs(agent, agent.Plugin.Marketplace))
 
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginInstallArgs(agent, nativeScope))); err != nil {
 		// Roll back a marketplace we just added so a failed install doesn't
@@ -271,35 +347,46 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 				log.Warnf(ctx, "%s plugin install failed and the marketplace could not be de-registered: %v", agent.DisplayName, rmErr)
 			}
 		}
-		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
+		return PluginRecord{}, withRefreshError(newBlockedError(agent, ReasonInstallFailed, err), refreshErr)
 	}
 
+	// A marketplace we just added is a fresh copy, so a failed refresh right
+	// after it changes nothing. Otherwise we can't tell which version the local
+	// copy held, so the record says "version unknown" until the next successful
+	// update.
+	version := DisplaySkillsVersion(ref)
+	if refreshErr != nil && !installedMarketplace {
+		warnLocalMarketplaceCopy(ctx, agent, agent.Plugin.Marketplace, "run `databricks aitools update` later", refreshErr)
+		version = ""
+	}
 	return PluginRecord{
 		Marketplace:          agent.Plugin.Marketplace,
 		Plugin:               agent.Plugin.ID,
 		Scope:                nativeScope,
-		Version:              DisplaySkillsVersion(ref),
+		Version:              version,
 		InstalledMarketplace: installedMarketplace,
 	}, nil
 }
 
 // UpdatePluginForAgent updates the plugin through the agent's own CLI. The
 // plugin's own update handles content the release dropped, so there is no
-// per-skill prune for plugin agents.
-func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRecord) error {
+// per-skill prune for plugin agents. When the update succeeded after a failed
+// marketplace refresh, it returns that refresh error: the update ran from the
+// local copy, and the caller decides whether the recorded version still holds
+// and whether to warn.
+func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRecord) (refreshErr, err error) {
 	if agent.Plugin == nil {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
+		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
 	bin, err := resolveAgentBinary(agent)
 	if err != nil {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
+		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
-	for _, args := range pluginUpdateSteps(agent, rec) {
-		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, args)); err != nil {
-			return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
-		}
+	refreshErr = refreshMarketplace(ctx, bin, pluginRefreshArgs(agent, rec))
+	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUpdateArgs(agent, rec))); err != nil {
+		return nil, withRefreshError(newBlockedError(agent, ReasonInstallFailed, err), refreshErr)
 	}
-	return nil
+	return refreshErr, nil
 }
 
 // UninstallPluginForAgent removes the plugin through the agent's own CLI, and
@@ -321,11 +408,11 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	}
 	if args := pluginDisableArgs(agent, rec); args != nil {
 		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, args)); err != nil && !claudeAlreadyDisabled(err) {
-			return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
+			return newBlockedError(agent, ReasonInstallFailed, err)
 		}
 	}
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUninstallArgs(agent, rec))); err != nil {
-		return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
+		return newBlockedError(agent, ReasonInstallFailed, err)
 	}
 	// Never de-register a Shared marketplace, it is shared infrastructure we don't own
 	if rec.InstalledMarketplace && !keepMarketplace && !agent.Plugin.Shared {
@@ -342,7 +429,8 @@ func claudeAlreadyDisabled(err error) bool {
 
 // RecordPluginInstalls persists plugin install records into the state file for
 // the given CLI scope (global or project), creating state if none exists. ref
-// is the resolved skills release the install corresponds to.
+// is the resolved skills release the install corresponds to. An empty ref
+// (release unresolved) keeps the existing state.Release.
 func RecordPluginInstalls(ctx context.Context, cliScope string, records map[string]PluginRecord, ref string) error {
 	dir, err := skillsDir(ctx, cliScope)
 	if err != nil {
@@ -366,7 +454,10 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
-	state.Release = ref
+	// An unresolved release keeps the one recorded by earlier installs.
+	if ref != "" {
+		state.Release = ref
+	}
 	state.LastUpdated = time.Now()
 	state.Scope = cliScope
 	return SaveState(dir, state)
