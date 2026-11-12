@@ -284,7 +284,7 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 	// On failure the help omits the list: the CLI has no workspace-accurate one to show.
 	options, err := listWorkspaceComputeOptions(cmd.Context(), cmdctx.WorkspaceClient(cmd.Context()))
 	if err != nil {
-		cmd.PrintErrf("Warning: couldn't fetch the accelerator types available in this workspace: %v\n", err)
+		cmd.PrintErrln("Warning: couldn't fetch the accelerator types available in this workspace.")
 		return nil
 	}
 	if options == nil {

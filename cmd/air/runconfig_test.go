@@ -870,7 +870,7 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 				assert.Equal(t, tt.wantOptions, options)
 			}
 			if tt.wantWarning {
-				assert.Contains(t, errOut.String(), "couldn't fetch the accelerator types available in this workspace")
+				assert.Equal(t, "Warning: couldn't fetch the accelerator types available in this workspace.\n", errOut.String())
 			} else {
 				assert.Empty(t, errOut.String())
 			}
