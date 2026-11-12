@@ -52,7 +52,7 @@ func TestTOMLRemoveDeletesOnlyOwnedTables(t *testing.T) {
 	writeFile(t, path, []byte(before), 0o600)
 	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-	removed, err := Remove(t.Context(), a, testName)
+	removed, err := removeAgent(t.Context(), a, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Equal(t, "# keep\nmodel = \"x\"\n\n[mcp_servers.other]\ncommand = \"npx\"\n", string(readFile(t, path)))
@@ -79,7 +79,7 @@ func TestTOMLRefusesServerWithoutOwnTables(t *testing.T) {
 			assert.ErrorContains(t, err, testName)
 			assert.Equal(t, tc.data, string(readFile(t, path)))
 
-			_, err = Remove(t.Context(), a, testName)
+			_, err = removeAgent(t.Context(), a, testName)
 			require.Error(t, err)
 			assert.Equal(t, tc.data, string(readFile(t, path)))
 		})
@@ -167,7 +167,7 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 		assert.Equal(t, StatusAdded, status)
 		got := string(readFile(t, path))
 		requireTidyTOML(t, got)
-		entries, err := Read(t.Context(), a)
+		entries, err := readAgent(t.Context(), a)
 		require.NoError(t, err)
 		assert.Equal(t, map[string]any{"DATABRICKS_CONFIG_FILE": "one"}, entries[testName]["env"])
 		assert.Contains(t, entries, "other")
@@ -207,7 +207,7 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 		writeFile(t, path, []byte(blockFor("test")+"\n"+envTable+"\n"+other), 0o600)
 		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-		removed, err := Remove(t.Context(), a, testName)
+		removed, err := removeAgent(t.Context(), a, testName)
 		require.NoError(t, err)
 		assert.True(t, removed)
 		assert.Equal(t, other, string(readFile(t, path)))
@@ -218,7 +218,7 @@ func TestTOMLEnvTablesLayout(t *testing.T) {
 		writeFile(t, path, []byte(blockFor("test")+"\n"+other), 0o600)
 		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-		removed, err := Remove(t.Context(), a, testName)
+		removed, err := removeAgent(t.Context(), a, testName)
 		require.NoError(t, err)
 		assert.True(t, removed)
 		assert.Equal(t, other, string(readFile(t, path)))
@@ -234,7 +234,7 @@ func TestTOMLQuotedDottedNameIsAnotherServer(t *testing.T) {
 	writeFile(t, path, []byte(before), 0o600)
 	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-	removed, err := Remove(t.Context(), a, testName)
+	removed, err := removeAgent(t.Context(), a, testName)
 	require.NoError(t, err)
 	assert.False(t, removed)
 	assert.Equal(t, before, string(readFile(t, path)))
@@ -260,7 +260,7 @@ func TestTOMLHeaderLikeLineInMultilineString(t *testing.T) {
 	assert.Equal(t, notes+"\n"+strings.Replace(testBlock, testName, "genie", 1), string(readFile(t, path)))
 
 	// Removing our server leaves the string as it was.
-	removed, err := Remove(t.Context(), a, "genie")
+	removed, err := removeAgent(t.Context(), a, "genie")
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Equal(t, notes, string(readFile(t, path)))
@@ -284,7 +284,7 @@ func TestTOMLRemoveKeepsOneSeparator(t *testing.T) {
 			writeFile(t, path, []byte(tc.before), 0o600)
 			a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-			removed, err := Remove(t.Context(), a, testName)
+			removed, err := removeAgent(t.Context(), a, testName)
 			require.NoError(t, err)
 			assert.True(t, removed)
 			got := string(readFile(t, path))
@@ -308,7 +308,7 @@ func TestTOMLEditWithNonFiniteFloatElsewhere(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	removed, err := Remove(t.Context(), a, testName)
+	removed, err := removeAgent(t.Context(), a, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Equal(t, before, string(readFile(t, path)))
@@ -345,7 +345,7 @@ func TestTOMLAddThenRemoveRestoresBytes(t *testing.T) {
 
 			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 			require.NoError(t, err)
-			removed, err := Remove(t.Context(), a, testName)
+			removed, err := removeAgent(t.Context(), a, testName)
 			require.NoError(t, err)
 			assert.True(t, removed)
 			assert.Equal(t, tc.before, string(readFile(t, path)))

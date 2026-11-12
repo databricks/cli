@@ -149,18 +149,8 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	return path, status, nil
 }
 
-// Remove deletes server name from agent a's config. It reports false, without
-// writing, when there is no such entry, and refuses an entry this CLI did not
-// write.
-func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
-	path, err := Path(ctx, a)
-	if err != nil {
-		return false, err
-	}
-	return RemoveAt(a, path, name)
-}
-
-// RemoveAt is Remove for the config file at path. The file need not be the one the spec names now: a record names
+// RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
+// false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
 // the file an entry was written to, and the agent's config may have moved since. A missing file has no entry.
 func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
@@ -194,17 +184,9 @@ func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	return true, nil
 }
 
-// Read returns every server entry in agent a's config, keyed by name. A missing
-// file has no entries.
-func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
-	path, err := Path(ctx, a)
-	if err != nil {
-		return nil, err
-	}
-	return ReadAt(a, path)
-}
-
-// ReadAt is Read for the config file at path, which need not be the one the spec names now. See RemoveAt.
+// ReadAt returns every server entry in the config file at path, keyed by name. A missing file has no entries. The file
+// need not be the one the spec names now: a record names the file an entry was written to, and the agent's config may
+// have moved since.
 func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
 	spec, err := specOf(a)
 	if err != nil {
@@ -221,7 +203,7 @@ func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
 	return entries, nil
 }
 
-// Path returns the absolute path of agent a's MCP config file, as Read and Remove use it. It does not read the file.
+// Path returns the absolute path of agent a's MCP config file, where Upsert writes. It does not read the file.
 func Path(ctx context.Context, a *agents.Agent) (string, error) {
 	spec, err := specOf(a)
 	if err != nil {
