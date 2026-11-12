@@ -199,6 +199,55 @@ func getRunServer(t *testing.T, meCalls *atomic.Int32) *httptest.Server {
 	return srv
 }
 
+// retryGetServer serves two runs for the full `air get` JSON flow: run 123, a
+// failed two-attempt run whose last retry (458) never reached MLflow while
+// attempt 0 (456) did, and run 124, a control whose only attempt (457) logged
+// to MLflow. get-output is query-aware, so each retry's output is served
+// separately. The Me endpoint also carries the workspace-ID header
+// CurrentWorkspaceID reads.
+func retryGetServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.0/preview/scim/v2/Me":
+			w.Header().Set("X-Databricks-Org-Id", "9999")
+			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get" && r.URL.Query().Get("run_id") == "123":
+			_, _ = w.Write([]byte(`{
+				"run_id": 123,
+				"start_time": 1700000000000,
+				"end_time": 1700000012000,
+				"state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+				"tasks": [
+					{"task_key": "train", "run_id": 456, "attempt_number": 0},
+					{"task_key": "train", "run_id": 458, "attempt_number": 2}
+				]
+			}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get" && r.URL.Query().Get("run_id") == "124":
+			_, _ = w.Write([]byte(`{
+				"run_id": 124,
+				"start_time": 1700000000000,
+				"end_time": 1700000012000,
+				"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+				"tasks": [{"task_key": "train", "run_id": 457, "attempt_number": 0}]
+			}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			switch r.URL.Query().Get("run_id") {
+			case "456":
+				_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R0"}}`))
+			case "457":
+				_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R1"}}`))
+			default:
+				_, _ = w.Write([]byte(`{}`))
+			}
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 func runGetJSON(t *testing.T, w *databricks.WorkspaceClient) (string, error) {
 	t.Helper()
 	var buf bytes.Buffer
@@ -245,6 +294,63 @@ func TestGetRunRejectsNonNumericWorkspaceID(t *testing.T) {
 	var got errorEnvelope
 	require.NoError(t, json.Unmarshal([]byte(out), &got))
 	assert.Equal(t, jsonError{Code: "INVALID_ARGS", Kind: "PERMANENT", Message: `configured workspace_id "not-a-number" is not a numeric workspace ID`}, got.Error)
+}
+
+// getRunJSON runs `air get RUN_ID -o json` against srv and returns the decoded
+// data payload.
+func getRunJSON(t *testing.T, srv *httptest.Server, runID string) map[string]any {
+	t.Helper()
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL))
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newGetCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.RunE(cmd, []string{runID}))
+
+	var got envelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	data, ok := got.Data.(map[string]any)
+	require.True(t, ok, "data payload should be an object")
+	return data
+}
+
+// TestGetRunMLflowRetryJSON locks the JSON shape of the MLflow fields. A run
+// whose last retry never reached MLflow links to an earlier retry's MLflow run
+// and names that retry in mlflow_retry; a run whose latest attempt logged to
+// MLflow links to it without the key.
+func TestGetRunMLflowRetryJSON(t *testing.T) {
+	srv := retryGetServer(t)
+	host := srv.URL
+
+	t.Run("an older retry's mlflow run names the retry", func(t *testing.T) {
+		data := getRunJSON(t, srv, "123")
+		assert.JSONEq(t, `{
+			"run_id":"123","status":"FAILED","started_at":"2023-11-14T22:13:20+00:00",
+			"duration_seconds":12,"attempt_number":2,"experiment_name":null,
+			"dashboard_url":"`+host+`/jobs/runs/123?o=9999",
+			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R0/logs",
+			"mlflow_retry":0,
+			"est_remaining_seconds":null,"est_percent_complete":null
+		}`, mustJSON(t, data))
+	})
+
+	t.Run("the latest attempt's mlflow run has no mlflow_retry key", func(t *testing.T) {
+		data := getRunJSON(t, srv, "124")
+		assert.JSONEq(t, `{
+			"run_id":"124","status":"SUCCESS","started_at":"2023-11-14T22:13:20+00:00",
+			"duration_seconds":12,"attempt_number":0,"experiment_name":null,
+			"dashboard_url":"`+host+`/jobs/runs/124?o=9999",
+			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R1/logs",
+			"est_remaining_seconds":null,"est_percent_complete":null
+		}`, mustJSON(t, data))
+	})
+}
+
+func mustJSON(t *testing.T, v any) string {
+	t.Helper()
+	body, err := json.Marshal(v)
+	require.NoError(t, err)
+	return string(body)
 }
 
 func TestGetTemplateSweep(t *testing.T) {
