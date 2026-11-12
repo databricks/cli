@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -382,7 +383,7 @@ func TestSubmitWorkload(t *testing.T) {
 	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
-	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, server.URL+"/jobs/runs/777?o="+strconv.Itoa(testserver.TestWorkspaceID), dashboardURL)
 	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
@@ -728,7 +729,10 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	})
 	var meCalls atomic.Int32
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		meCalls.Add(1)
+		// The dashboard link's workspace id lookup also hits /Me, without attributes.
+		if req.URL.Query().Get("attributes") == "userName" {
+			meCalls.Add(1)
+		}
 		return req.Workspace.MeUser(req.Token)
 	})
 	stubValidateConfig(server)

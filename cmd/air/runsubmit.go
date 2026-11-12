@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -332,7 +333,7 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, runURL string, err error) {
 	start := time.Now()
 	var snap snapshotResult
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
@@ -446,8 +447,14 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
-	return runID, dashboardURL, nil
+	// The run already exists, so a failed workspace id lookup must not fail the
+	// submit: fall back to the link without the ?o= workspace hint.
+	workspaceID, err := w.CurrentWorkspaceID(ctx)
+	if err != nil {
+		log.Debugf(ctx, "air run: could not fetch workspace ID for the dashboard link: %v", err)
+		return runID, strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10), nil
+	}
+	return runID, dashboardURL(w.Config.Host, runID, workspaceID), nil
 }
 
 func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
