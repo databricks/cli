@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/filer/completer"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/spf13/cobra"
 )
 
@@ -39,14 +40,21 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	w := cmdctx.WorkspaceClient(ctx)
 
 	// If the specified path has the "Volumes" or "Skills" prefix, use the Files API.
+	// Otherwise the file is a dbfs file, and uses the DBFS APIs.
+	var f filer.Filer
+	var err error
 	if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
-		f, err := filer.NewFilesClient(ctx, w, "/")
-		return f, path, err
+		f, err = filer.NewFilesClient(ctx, w, "/")
+	} else {
+		f, err = filer.NewDbfsClient(w, "/")
+	}
+	if err != nil {
+		return nil, "", err
 	}
 
-	// The file is a dbfs file, and uses the DBFS APIs
-	f, err := filer.NewDbfsClient(w, "/")
-	return f, path, err
+	// Writes are not retried: a write without overwrite may fail on the file its own earlier
+	// attempt created, and an overwrite would need to buffer the streamed source to replay it.
+	return retry.ReadFiler(f), path, nil
 }
 
 const dbfsPrefix string = "dbfs:"

@@ -62,7 +62,9 @@ func TestFilerForPathForDbfsScheme(t *testing.T) {
 			f, path, err := filerForPath(ctx, tc.fullPath)
 			require.NoError(t, err)
 			assert.Equal(t, tc.path, path)
-			assert.IsType(t, tc.filer, f)
+			unwrapper, ok := f.(interface{ Unwrap() filer.Filer })
+			require.True(t, ok, "remote filers retry reads")
+			assert.IsType(t, tc.filer, unwrapper.Unwrap())
 		})
 	}
 }
