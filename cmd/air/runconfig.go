@@ -400,7 +400,7 @@ type dependencies struct {
 
 func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.SequenceNode {
-		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported")
+		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference). A direct file reference is not supported")
 	}
 	d.set = true
 	return node.Decode(&d.list)
