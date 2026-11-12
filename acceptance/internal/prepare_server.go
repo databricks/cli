@@ -94,11 +94,11 @@ func lookupEnv(testEnv []string, key string) (string, bool) {
 }
 
 // cloudWorkspaceState caches the cloud workspace client shared by all tests in
-// the process. Resolving auth per test repeats OIDC discovery and the token
-// exchange for every test. When the workspace is briefly slow, those requests
-// time out, and the SDK's default auth chain hides the timeout behind a
-// "cannot configure default credentials" error. Auth resolution is not retried
-// the way regular API calls are, so every test running at that moment fails.
+// the process. Resolving auth per test repeats the OIDC endpoint discovery GET
+// for every test. The SDK retries the token exchange, but not a timed-out
+// discovery request. When the workspace is briefly slow, discovery times out,
+// the SDK's default auth chain hides the timeout behind a "cannot configure
+// default credentials" error, and every test starting at that moment fails.
 // A shared client resolves auth once and refreshes its token in the background.
 var cloudWorkspaceState struct {
 	mu          sync.Mutex
