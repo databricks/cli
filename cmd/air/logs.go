@@ -7,6 +7,7 @@ import (
 	"io"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -254,7 +255,7 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 func printLogLinks(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
-	runURL := dashboardURL(w.Config.Host, req.runID, 0)
+	runURL := fmt.Sprintf("%s/jobs/runs/%d", strings.TrimRight(w.Config.Host, "/"), req.runID)
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
 
