@@ -27,7 +27,7 @@ func TestNewHelpMetadata(t *testing.T) {
 	cmd := New()
 
 	assert.Equal(t, "development", cmd.GroupID)
-	assert.Contains(t, cmd.Short, "*Public Preview*")
+	assert.Equal(t, "Run and manage AI Runtime training workloads", cmd.Short)
 }
 
 func TestRunErrorIncludesDebugTip(t *testing.T) {

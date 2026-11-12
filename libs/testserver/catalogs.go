@@ -68,6 +68,8 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,
 		CatalogType:  catalog.CatalogTypeManagedCatalog,
+		// UC defaults a new catalog to OPEN; isolation_mode is only settable on update.
+		IsolationMode: catalog.CatalogIsolationModeOpen,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {

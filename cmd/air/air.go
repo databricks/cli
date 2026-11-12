@@ -11,7 +11,7 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "air",
-		Short:   "*Public Preview* Run and manage AI Runtime training workloads",
+		Short:   "Run and manage AI Runtime training workloads",
 		GroupID: "development",
 		Long: `Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
 
