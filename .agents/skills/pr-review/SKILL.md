@@ -37,13 +37,16 @@ hunks the description does not explain: a fix riding along with the main
 change belongs in its own PR (`AGENTS.md`: one change per PR), so ask for
 the split.
 
-Judge the code at `TARGET`. Separately, check what a merge would hit:
-`git rev-list --count "$BASE"..origin/main` and
-`git merge-tree --write-tree "$TARGET" origin/main`. If files the change
-touches were moved, split or deleted on main, or a convention it follows
-changed there (changelog location, test matrix variables), say so in the
-review body with the new location, so the author rebases before the next
-round. That is the only use of this check; do not re-review against main.
+Judge the code at `TARGET`. Separately, check what a merge into the PR's
+base branch would hit: `git rev-list --count "$BASE"..origin/main` and
+`git merge-tree --write-tree "$TARGET" origin/main`, with
+`origin/<baseRefName>` in place of `origin/main` for a stacked PR, so a
+conflict the parent PR has with main is reported once, on the parent. GitHub
+flags the conflict too, but not where things went: if files the change
+touches were moved, split or deleted there, or a convention it follows
+changed (changelog location, test matrix variables), say so in the review
+body with the new location, so the author rebases before the next round.
+That is the only use of this check; do not re-review against main.
 
 Read every changed non-generated file in full at `TARGET`, not just the hunks
 (`git show "$TARGET":path`). Skim generated files (schemas, codegen output,
