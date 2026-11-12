@@ -61,6 +61,9 @@ func IsTransient(ctx context.Context, err error) bool {
 // for HTTPTimeout ("request timed out after 1m30s of inactivity"). The SDK does not retry it. The
 // workspace files API stalls like this for a few minutes at a time; the server may or may not have
 // applied the request, which is the same uncertainty as a 504.
+//
+// We match the message because the SDK builds it with fmt.Errorf in httpclient/api_client.go
+// and exports no sentinel error or type for it.
 func isInactivityTimeout(err error) bool {
 	urlErr, ok := errors.AsType[*url.Error](err)
 	if !ok {
