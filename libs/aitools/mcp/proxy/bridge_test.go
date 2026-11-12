@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,6 +22,9 @@ import (
 )
 
 const testToken = "Bearer test-token"
+
+// progressEvent is a server-to-client notification, which is not an answer to any request.
+const progressEvent = `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progress":1}}`
 
 // recorded is one upstream request as the fake endpoint received it.
 type recorded struct {
@@ -75,6 +80,22 @@ func bridgeFor(url string) *Bridge {
 	}
 }
 
+// setIdleTimeout shortens the idle watchdog for one test.
+func setIdleTimeout(t *testing.T, d time.Duration) {
+	t.Helper()
+	old := idleTimeout
+	idleTimeout = d
+	t.Cleanup(func() { idleTimeout = old })
+}
+
+// setShutdownGrace sets the shutdown grace period for one test.
+func setShutdownGrace(t *testing.T, d time.Duration) {
+	t.Helper()
+	old := shutdownGrace
+	shutdownGrace = d
+	t.Cleanup(func() { shutdownGrace = old })
+}
+
 // syncBuffer is a bytes.Buffer that is safe to read while a bridge writes to it.
 type syncBuffer struct {
 	mu  sync.Mutex
@@ -101,9 +122,11 @@ func outLines(s string) []string {
 	return strings.Split(strings.TrimSuffix(s, "\n"), "\n")
 }
 
-// runAll runs b to completion with input as stdin and returns the stdout lines and stderr.
+// runAll runs b to completion with input as stdin and returns the stdout lines and stderr. The grace period
+// is long so that a slow upstream round trip still completes before shutdown cancels it.
 func runAll(t *testing.T, b *Bridge, input string) ([]string, string) {
 	t.Helper()
+	setShutdownGrace(t, 30*time.Second)
 	var out, errOut syncBuffer
 	b.In, b.Out, b.Err = strings.NewReader(input), &out, &errOut
 	require.NoError(t, b.Run(t.Context()))
@@ -205,6 +228,19 @@ func TestRunWritesEachSSEEventAsOneLine(t *testing.T) {
 	}, out)
 }
 
+// TestRunSkipsSSEPrimingEvent covers the event with an id and empty data that a server sends first, so a
+// client can resume (MCP spec 2025-11-25, Streamable HTTP, "Sending Messages to the Server").
+func TestRunSkipsSSEPrimingEvent(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "id: 0\ndata:\n\nid: 1\ndata: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{}}\n\n")
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL), `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	assert.Equal(t, []string{`{"jsonrpc":"2.0","id":2,"result":{}}`}, out)
+}
+
 func TestRunSendsNothingForAcceptedNotification(t *testing.T) {
 	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
@@ -216,6 +252,34 @@ func TestRunSendsNothingForAcceptedNotification(t *testing.T) {
 	assert.Empty(t, errOut)
 }
 
+// TestRunPostsNotificationBeforeNextMessage: the server rejects tools/list until notifications/initialized
+// has been fully handled, as servers that enforce the lifecycle do.
+func TestRunPostsNotificationBeforeNextMessage(t *testing.T) {
+	var ready atomic.Bool
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case m.Method == "notifications/initialized":
+			time.Sleep(100 * time.Millisecond)
+			ready.Store(true)
+			w.WriteHeader(http.StatusAccepted)
+		case !ready.Load():
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32600,"message":"not initialized"}}`, m.ID)
+		default:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[]}}`, m.ID)
+		}
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL),
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}`+"\n"+
+			`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	require.Len(t, out, 1)
+	assert.Nil(t, parseReply(t, out[0]).Error)
+}
+
 func TestRunForwardsSessionAndProtocolHeaders(t *testing.T) {
 	srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
@@ -223,14 +287,18 @@ func TestRunForwardsSessionAndProtocolHeaders(t *testing.T) {
 		}
 		body, _ := io.ReadAll(r.Body)
 		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
 		if m.Method == "initialize" {
 			w.Header().Set("Mcp-Session-Id", "s1")
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18"}}`, m.ID)
+			return
 		}
-		answer(w, r)
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
 	})
 	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
 
-	p.send(t, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}`)
+	// The client asks for a newer version than the server picks; later requests carry the server's choice.
+	p.send(t, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}`)
 	p.waitLines(t, 1)
 	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
 	p.waitLines(t, 2)
@@ -290,9 +358,27 @@ func TestRunAnswersFailedRequestsWithJSONRPCError(t *testing.T) {
 		wantError   string
 		wantPassing string
 	}{
-		{name: "HTTP 500", status: http.StatusInternalServerError, body: "boom", wantError: "HTTP 500"},
-		{name: "HTTP 401 without JSON", status: http.StatusUnauthorized, body: "unauthorized", wantError: "HTTP 401"},
+		{name: "HTTP 500", status: http.StatusInternalServerError, body: "boom", wantError: "HTTP 500: boom"},
+		{name: "HTTP 401 without JSON", status: http.StatusUnauthorized, body: "unauthorized", wantError: "HTTP 401: unauthorized"},
 		{name: "HTTP 401 with JSON-RPC body", status: http.StatusUnauthorized, body: passthrough, wantPassing: passthrough},
+		{
+			name:      "HTTP 500 with JSON-RPC error without id",
+			status:    http.StatusInternalServerError,
+			body:      `{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"bad request"}}`,
+			wantError: "HTTP 500: bad request",
+		},
+		{
+			name:      "Databricks error body",
+			status:    http.StatusForbidden,
+			body:      `{"error_code":"PERMISSION_DENIED","message":"User lacks access"}`,
+			wantError: "HTTP 403: User lacks access",
+		},
+		{
+			name:      "HTML body is excerpted on one line",
+			status:    http.StatusForbidden,
+			body:      "<html>\n<h1>Forbidden</h1>\n</html>",
+			wantError: "HTTP 403: <html> <h1>Forbidden</h1> </html>",
+		},
 		{name: "no response", status: http.StatusAccepted, wantError: "no response"},
 		{name: "invalid JSON", status: http.StatusOK, body: "<html>", wantError: "invalid JSON"},
 	}
@@ -316,24 +402,202 @@ func TestRunAnswersFailedRequestsWithJSONRPCError(t *testing.T) {
 			require.NotNil(t, reply.Error)
 			assert.Equal(t, codeUpstream, reply.Error.Code)
 			assert.Contains(t, reply.Error.Message, tc.wantError)
-			assert.Contains(t, errOut, "upstream")
+			assert.Contains(t, errOut, tc.wantError)
 		})
 	}
 }
 
-func TestRunAnswersNetworkFailureWithJSONRPCError(t *testing.T) {
-	srv := httptest.NewServer(http.NotFoundHandler())
-	url := srv.URL
-	srv.Close()
+// TestRunWritesNothingForFailedNotification: a failed notification has no request to answer, and a JSON body
+// on it is not forwarded as if it were a response.
+func TestRunWritesNothingForFailedNotification(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = io.WriteString(w, `{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"bad"}}`)
+	})
 
-	out, _ := runAll(t, bridgeFor(url), `{"jsonrpc":"2.0","id":7,"method":"tools/list"}`+"\n")
+	out, errOut := runAll(t, bridgeFor(srv.URL), `{"jsonrpc":"2.0","method":"notifications/initialized"}`+"\n")
 
-	require.Len(t, out, 1)
-	reply := parseReply(t, out[0])
-	assert.JSONEq(t, `7`, string(reply.ID))
+	assert.Empty(t, out)
+	assert.Contains(t, errOut, "HTTP 500")
+}
+
+// TestRunAnswersStreamEndingAfterNotification: a progress notification is not an answer, so the request
+// still gets an error when the stream ends.
+func TestRunAnswersStreamEndingAfterNotification(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\n")
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL), `{"jsonrpc":"2.0","id":4,"method":"tools/call"}`+"\n")
+
+	require.Len(t, out, 2)
+	assert.Equal(t, progressEvent, out[0])
+	reply := parseReply(t, out[1])
+	assert.JSONEq(t, `4`, string(reply.ID))
 	require.NotNil(t, reply.Error)
 	assert.Equal(t, codeUpstream, reply.Error.Code)
-	assert.Contains(t, reply.Error.Message, "request 7")
+	assert.Contains(t, reply.Error.Message, "no response")
+}
+
+// TestRunAnswersStreamIdleAfterNotification: the idle watchdog ends a stream that stops after a notification.
+func TestRunAnswersStreamIdleAfterNotification(t *testing.T) {
+	setIdleTimeout(t, 100*time.Millisecond)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\n")
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL), `{"jsonrpc":"2.0","id":4,"method":"tools/call"}`+"\n")
+
+	require.Len(t, out, 2)
+	assert.Equal(t, progressEvent, out[0])
+	reply := parseReply(t, out[1])
+	assert.JSONEq(t, `4`, string(reply.ID))
+	require.NotNil(t, reply.Error)
+	assert.Contains(t, reply.Error.Message, "no data from upstream")
+}
+
+// TestRunAnswersBrokenStreamAfterNotification: a connection cut mid-stream after a notification is answered.
+func TestRunAnswersBrokenStreamAfterNotification(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\n")
+		w.(http.Flusher).Flush()
+		panic(http.ErrAbortHandler)
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL), `{"jsonrpc":"2.0","id":4,"method":"tools/call"}`+"\n")
+
+	require.Len(t, out, 2)
+	reply := parseReply(t, out[1])
+	assert.JSONEq(t, `4`, string(reply.ID))
+	require.NotNil(t, reply.Error)
+	assert.Equal(t, codeUpstream, reply.Error.Code)
+}
+
+// TestRunDeliversIdleErrorWithLiveContext: hooks see the synthesized error with a context the idle timeout
+// did not cancel.
+func TestRunDeliversIdleErrorWithLiveContext(t *testing.T) {
+	setIdleTimeout(t, 100*time.Millisecond)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\n")
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	})
+	var mu sync.Mutex
+	var ctxErrs []error
+	b := bridgeFor(srv.URL)
+	b.Hooks = hookFunc(func(ctx context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		ctxErrs = append(ctxErrs, ctx.Err())
+		return [][]byte{msg}, nil
+	})
+
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":5,"method":"tools/call"}`+"\n")
+
+	require.Len(t, out, 2)
+	reply := parseReply(t, out[1])
+	require.NotNil(t, reply.Error)
+	assert.Contains(t, reply.Error.Message, "no data from upstream")
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []error{nil, nil}, ctxErrs)
+}
+
+// expiringSession answers like a server whose first session has expired: tools/list gets 404 for session s1
+// (for every session when always is set), and each initialize starts the next session.
+func expiringSession(t *testing.T, always bool) (*httptest.Server, *fakeEndpoint) {
+	t.Helper()
+	var mu sync.Mutex
+	starts := 0
+	return newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case m.Method == "initialize":
+			mu.Lock()
+			starts++
+			sid := fmt.Sprintf("s%d", starts)
+			mu.Unlock()
+			w.Header().Set("Mcp-Session-Id", sid)
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18"}}`, m.ID)
+		case !m.isRequest():
+			w.WriteHeader(http.StatusAccepted)
+		case m.Method == "tools/list" && (always || r.Header.Get(sessionHeader) == "s1"):
+			http.Error(w, "session not found", http.StatusNotFound)
+		default:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[]}}`, m.ID)
+		}
+	})
+}
+
+// TestRunStartsNewSessionAfterSessionExpires: a 404 for a session the bridge had replays the client's
+// initialize and notifications/initialized silently, then posts the request once more.
+func TestRunStartsNewSessionAfterSessionExpires(t *testing.T) {
+	const initLine = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}`
+	srv, fake := expiringSession(t, false)
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, initLine)
+	p.waitLines(t, 1)
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/initialized"}`)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	out := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
+
+	require.Len(t, out, 2, "the replayed handshake writes nothing to stdout")
+	reply := parseReply(t, out[1])
+	assert.JSONEq(t, `2`, string(reply.ID))
+	assert.Nil(t, reply.Error)
+
+	reqs := fake.requests()
+	require.Len(t, reqs, 7)
+	assert.Equal(t, "s1", reqs[2].Header.Get(sessionHeader), "the expired session was used first")
+	assert.Equal(t, initLine, string(reqs[3].Body), "the client's initialize is replayed as sent")
+	assert.Empty(t, reqs[3].Header.Get(sessionHeader))
+	assert.Equal(t, "2025-06-18", reqs[4].Header.Get(protocolHeader), "the replayed handshake negotiates again")
+	assert.Equal(t, "s2", reqs[4].Header.Get(sessionHeader))
+	assert.Equal(t, "s2", reqs[5].Header.Get(sessionHeader))
+	assert.Equal(t, http.MethodDelete, reqs[6].Method)
+}
+
+// TestRunAnswersRequestWhenNewSessionAlsoFails: the request is retried once, and an error that persists is
+// answered with -32000.
+func TestRunAnswersRequestWhenNewSessionAlsoFails(t *testing.T) {
+	srv, fake := expiringSession(t, true)
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}`)
+	p.waitLines(t, 1)
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/initialized"}`)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	out := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
+
+	require.Len(t, out, 2)
+	reply := parseReply(t, out[1])
+	assert.JSONEq(t, `2`, string(reply.ID))
+	require.NotNil(t, reply.Error)
+	assert.Equal(t, codeUpstream, reply.Error.Code)
+	assert.Contains(t, reply.Error.Message, "HTTP 404")
+
+	initializes := 0
+	for _, r := range fake.requests() {
+		if strings.Contains(string(r.Body), `"method":"initialize"`) {
+			initializes++
+		}
+	}
+	assert.Equal(t, 2, initializes, "the handshake is replayed once, not in a loop")
 }
 
 func TestRunKeepsRunningAfterMalformedLine(t *testing.T) {
@@ -351,17 +615,51 @@ func TestRunKeepsRunningAfterMalformedLine(t *testing.T) {
 	assert.Contains(t, errOut, "invalid JSON on stdin")
 }
 
+// TestRunRejectsValidJSONThatIsNotAnObject: valid JSON that is not a message object is an invalid request,
+// not a parse error.
+func TestRunRejectsValidJSONThatIsNotAnObject(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answer)
+
+	out, errOut := runAll(t, bridgeFor(srv.URL), "[1,2]\n5\nnull\n")
+
+	require.Len(t, out, 3)
+	for _, line := range out {
+		reply := parseReply(t, line)
+		assert.JSONEq(t, `null`, string(reply.ID))
+		require.NotNil(t, reply.Error)
+		assert.Equal(t, codeInvalidRequest, reply.Error.Code)
+	}
+	assert.Contains(t, errOut, "invalid JSON-RPC message on stdin")
+}
+
+// TestRunReportsOversizedStdinMessage: a line over the limit ends the run with the limit named.
+func TestRunReportsOversizedStdinMessage(t *testing.T) {
+	var out, errOut syncBuffer
+	b := bridgeFor("http://mcp.test/mcp")
+	b.In = strings.NewReader(strings.Repeat("a", maxLineBytes+1))
+	b.Out, b.Err = &out, &errOut
+
+	err := b.Run(t.Context())
+
+	require.ErrorIs(t, err, bufio.ErrTooLong)
+	assert.Contains(t, err.Error(), "64 MiB")
+}
+
 func TestRunForwardsLargeMessages(t *testing.T) {
 	const size = 8 << 20
-	line := `{"jsonrpc":"2.0","id":1,"method":"echo","params":{"text":"` + strings.Repeat("a", size) + `"}}`
-	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+	request := `{"jsonrpc":"2.0","id":1,"method":"echo","params":{"text":"` + strings.Repeat("a", size) + `"}}`
+	response := `{"jsonrpc":"2.0","id":1,"result":{"text":"` + strings.Repeat("b", size) + `"}}`
+	srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.Copy(w, r.Body)
+		_, _ = io.WriteString(w, response)
 	})
 
-	out, _ := runAll(t, bridgeFor(srv.URL), line+"\n")
+	out, _ := runAll(t, bridgeFor(srv.URL), request+"\n")
 
-	assert.Equal(t, []string{line}, out)
+	reqs := fake.requests()
+	require.Len(t, reqs, 1)
+	assert.Equal(t, request, string(reqs[0].Body), "the request reaches the endpoint byte for byte")
+	assert.Equal(t, []string{response}, out, "the response reaches stdout byte for byte")
 }
 
 func TestRunHandlesRequestsConcurrently(t *testing.T) {
@@ -428,6 +726,7 @@ func TestRunCancelsUpstreamRequestOnNotification(t *testing.T) {
 	}
 	require.NoError(t, p.finish(t))
 	assert.Empty(t, outLines(p.out.String()), "a cancelled request gets no response")
+	assert.NotContains(t, p.err.String(), "upstream", "a cancellation the client asked for is not an error")
 }
 
 func TestRunShutsDownOnEOFAndDeletesSession(t *testing.T) {
@@ -476,6 +775,7 @@ func TestRunShutsDownOnContextCancelAndDeletesSession(t *testing.T) {
 }
 
 func TestRunCancelsInFlightRequestsAfterShutdownGrace(t *testing.T) {
+	setShutdownGrace(t, 100*time.Millisecond)
 	cancelled := make(chan struct{})
 	started := make(chan struct{})
 	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
@@ -524,6 +824,19 @@ func TestRunHooksReplaceAndInjectMessages(t *testing.T) {
 	assert.Equal(t, request, string(gotRequest))
 	assert.Equal(t, http.StatusUnauthorized, gotStatus)
 	assert.Equal(t, []string{synthetic, notification}, out)
+}
+
+// TestRunCompactsHookMessagesWithLineBreaks: a hook message with line breaks is still one stdout line.
+func TestRunCompactsHookMessagesWithLineBreaks(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answer)
+	b := bridgeFor(srv.URL)
+	b.Hooks = hookFunc(func(context.Context, []byte, int, []byte) ([][]byte, error) {
+		return [][]byte{[]byte("{\n\"jsonrpc\": \"2.0\",\n\"id\": 3,\n\"result\": {}}")}, nil
+	})
+
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":3,"method":"tools/list"}`+"\n")
+
+	assert.Equal(t, []string{`{"jsonrpc":"2.0","id":3,"result":{}}`}, out)
 }
 
 func TestRunWritesHookErrorAsJSONRPCError(t *testing.T) {

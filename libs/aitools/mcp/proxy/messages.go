@@ -1,16 +1,35 @@
 package proxy
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
-// message is the part of a client JSON-RPC message the bridge reads. Params stay raw and are only
-// decoded for the methods that need a field from them.
+// Method names and member names the bridge reads or edits.
+const (
+	methodInitialize  = "initialize"
+	methodInitialized = "notifications/initialized"
+	methodCancelled   = "notifications/cancelled"
+
+	keyResult       = "result"
+	keyInstructions = "instructions"
+	keyCapabilities = "capabilities"
+	keyTools        = "tools"
+	keyListChanged  = "listChanged"
+)
+
+// errNotObject is returned for valid JSON whose top-level value is not an object.
+var errNotObject = errors.New("message is not a JSON object")
+
+// message is the part of a JSON-RPC message the bridge reads, from either side. Params and Result stay raw
+// and are only decoded for the methods that need a field from them.
 type message struct {
 	ID     json.RawMessage `json:"id"`
 	Method string          `json:"method"`
 	Params json.RawMessage `json:"params"`
+	Result json.RawMessage `json:"result"`
 }
 
 // rpcError is the error object of a JSON-RPC error response.
@@ -26,16 +45,27 @@ type rpcErrorResponse struct {
 	Error   rpcError        `json:"error"`
 }
 
-// parseMessage decodes the envelope of one JSON-RPC message.
+// parseMessage decodes the envelope of one JSON-RPC message. It fails for input that is not a JSON object.
 func parseMessage(line []byte) (message, error) {
 	var m message
-	err := json.Unmarshal(line, &m)
-	return m, err
+	if err := json.Unmarshal(line, &m); err != nil {
+		return m, err
+	}
+	// json.Unmarshal accepts null and leaves m empty, so check the first byte.
+	if !bytes.HasPrefix(bytes.TrimSpace(line), []byte{'{'}) {
+		return m, errNotObject
+	}
+	return m, nil
 }
 
 // isRequest reports whether m is a request, which expects a response, rather than a notification.
 func (m message) isRequest() bool {
 	return m.Method != "" && len(m.ID) > 0 && string(m.ID) != "null"
+}
+
+// isResponseTo reports whether m is a JSON-RPC response to request. Only a request can have one.
+func (m message) isResponseTo(request message) bool {
+	return request.isRequest() && m.Method == "" && bytes.Equal(m.ID, request.ID)
 }
 
 // errorResponse builds a JSON-RPC error response. A nil id is sent as null.
@@ -55,44 +85,44 @@ func editInitialize(msg []byte, instructions string, listChanged bool) ([]byte, 
 	if err := json.Unmarshal(msg, &env); err != nil {
 		return nil, err
 	}
-	if _, ok := env["result"]; !ok {
+	if _, ok := env[keyResult]; !ok {
 		return msg, nil
 	}
-	result, err := decodeObject(env["result"])
+	result, err := decodeObject(env[keyResult])
 	if err != nil {
 		return nil, fmt.Errorf("initialize result: %w", err)
 	}
 	if instructions != "" {
 		var prev string
-		if err := json.Unmarshal(member(result, "instructions"), &prev); err != nil {
+		if err := json.Unmarshal(member(result, keyInstructions), &prev); err != nil {
 			return nil, fmt.Errorf("initialize instructions: %w", err)
 		}
 		text := instructions
 		if prev != "" {
 			text = prev + "\n\n" + instructions
 		}
-		if result["instructions"], err = json.Marshal(text); err != nil {
+		if result[keyInstructions], err = json.Marshal(text); err != nil {
 			return nil, err
 		}
 	}
 	if listChanged {
-		caps, err := decodeObject(member(result, "capabilities"))
+		caps, err := decodeObject(member(result, keyCapabilities))
 		if err != nil {
 			return nil, fmt.Errorf("initialize capabilities: %w", err)
 		}
-		tools, err := decodeObject(member(caps, "tools"))
+		tools, err := decodeObject(member(caps, keyTools))
 		if err != nil {
 			return nil, fmt.Errorf("initialize capabilities.tools: %w", err)
 		}
-		tools["listChanged"] = json.RawMessage("true")
-		if caps["tools"], err = json.Marshal(tools); err != nil {
+		tools[keyListChanged] = json.RawMessage("true")
+		if caps[keyTools], err = json.Marshal(tools); err != nil {
 			return nil, err
 		}
-		if result["capabilities"], err = json.Marshal(caps); err != nil {
+		if result[keyCapabilities], err = json.Marshal(caps); err != nil {
 			return nil, err
 		}
 	}
-	if env["result"], err = json.Marshal(result); err != nil {
+	if env[keyResult], err = json.Marshal(result); err != nil {
 		return nil, err
 	}
 	return json.Marshal(env)

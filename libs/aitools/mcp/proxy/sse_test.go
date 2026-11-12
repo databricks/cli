@@ -20,6 +20,8 @@ func TestReadEvents(t *testing.T) {
 		{name: "CRLF line endings", stream: "data: 1\r\n\r\ndata: 2\r\n\r\n", want: []string{"1", "2"}},
 		{name: "event open at end of stream", stream: "data: 1\n\ndata: 2", want: []string{"1", "2"}},
 		{name: "no data", stream: "event: x\n\n"},
+		{name: "event with empty data is skipped", stream: "id: 1\ndata:\n\nid: 2\ndata: 2\n\n", want: []string{"2"}},
+		{name: "empty data at end of stream is skipped", stream: "data: 1\n\nid: 2\ndata:", want: []string{"1"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

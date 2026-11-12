@@ -4,6 +4,7 @@ package proxy
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,25 +18,29 @@ import (
 )
 
 const (
-	logPrefix       = "databricks aitools mcp serve: "
-	sessionHeader   = "Mcp-Session-Id"
-	protocolHeader  = "MCP-Protocol-Version"
-	acceptHeader    = "application/json, text/event-stream"
-	eventStreamMIME = "text/event-stream"
+	logPrefix         = "databricks aitools mcp serve: "
+	sessionHeader     = "Mcp-Session-Id"
+	protocolHeader    = "MCP-Protocol-Version"
+	contentTypeHeader = "Content-Type"
+	acceptHeader      = "application/json, text/event-stream"
+	jsonMIME          = "application/json"
+	eventStreamMIME   = "text/event-stream"
 
 	maxLineBytes   = 64 << 20
 	connectTimeout = 10 * time.Second
-	idleTimeout    = 10 * time.Minute
-	shutdownGrace  = 2 * time.Second
 	deleteTimeout  = 5 * time.Second
+	excerptRunes   = 200
 
-	codeParseError    = -32700
-	codeInvalidParams = -32602
-	codeUpstream      = -32000
+	codeParseError     = -32700
+	codeInvalidRequest = -32600
+	codeUpstream       = -32000
 )
 
 var (
-	newline        = []byte{'\n'}
+	newline = []byte{'\n'}
+	// idleTimeout and shutdownGrace are variables so tests can shorten them.
+	idleTimeout    = 10 * time.Minute
+	shutdownGrace  = 2 * time.Second
 	errIdleTimeout = errors.New("no data from upstream for 10 minutes")
 	errNoResponse  = errors.New("upstream sent no response")
 )
@@ -74,7 +79,6 @@ func (b *Bridge) Run(ctx context.Context) error {
 	c := &conn{
 		b:          b,
 		client:     newClient(),
-		base:       base,
 		cancelBase: cancelBase,
 		inflight:   map[string]context.CancelFunc{},
 	}
@@ -101,7 +105,13 @@ func (b *Bridge) Run(ctx context.Context) error {
 				}
 				return nil
 			}
-			c.handle(line)
+			if posted := c.handle(base, line); posted != nil {
+				// Wait for the notification to be posted, but do not hold up shutdown.
+				select {
+				case <-posted:
+				case <-ctx.Done():
+				}
+			}
 		}
 	}
 }
@@ -121,7 +131,11 @@ func scanLines(in io.Reader, lines chan<- []byte, stop <-chan struct{}) error {
 			return nil
 		}
 	}
-	return sc.Err()
+	err := sc.Err()
+	if errors.Is(err, bufio.ErrTooLong) {
+		return fmt.Errorf("a stdin message exceeds the 64 MiB limit: %w", err)
+	}
+	return err
 }
 
 // splitLines is bufio.ScanLines without dropping a trailing carriage return.
@@ -135,20 +149,28 @@ func splitLines(data []byte, atEOF bool) (int, []byte, error) {
 	return 0, nil, nil
 }
 
+// clientMsg is a client message kept so it can be replayed.
+type clientMsg struct {
+	line []byte
+	m    message
+}
+
 // conn is the state of one Run.
 type conn struct {
 	b          *Bridge
 	client     *http.Client
-	base       context.Context
 	cancelBase context.CancelFunc
 	wg         sync.WaitGroup
 
-	ioMu sync.Mutex // serializes writes to Out and Err
+	ioMu     sync.Mutex // serializes writes to Out and Err
+	rejoinMu sync.Mutex // allows one session restart at a time
 
 	mu              sync.Mutex // guards the fields below
 	sessionID       string
 	protocolVersion string
 	inflight        map[string]context.CancelFunc
+	initialize      clientMsg // the client's initialize, for replay
+	initialized     clientMsg // the client's notifications/initialized, for replay
 }
 
 // newClient returns the upstream HTTP client: a 10 s connect timeout and the environment's proxy settings.
@@ -158,72 +180,60 @@ func newClient() *http.Client {
 	return &http.Client{Transport: t}
 }
 
-// handle processes one stdin line. Upstream work runs in its own goroutine.
-func (c *conn) handle(line []byte) {
+// handle starts one stdin message. A request runs in its own goroutine, and handle returns nil. A
+// notification or client response is posted before the next stdin line is read, so the server sees the
+// client's messages in order (the lifecycle needs notifications/initialized before the first request).
+// handle then returns a channel that closes when that exchange has finished.
+func (c *conn) handle(base context.Context, line []byte) <-chan struct{} {
 	m, err := parseMessage(line)
 	if err != nil {
-		c.logf("invalid JSON on stdin: %v", err)
-		c.reply(errorResponse(nil, codeParseError, "Parse error"))
-		return
+		if json.Valid(line) {
+			c.logf("invalid JSON-RPC message on stdin: %v", err)
+			c.reply(errorResponse(m.ID, codeInvalidRequest, "Invalid Request"))
+		} else {
+			c.logf("invalid JSON on stdin: %v", err)
+			c.reply(errorResponse(nil, codeParseError, "Parse error"))
+		}
+		return nil
 	}
 	switch m.Method {
-	case "initialize":
-		var p struct {
-			ProtocolVersion string `json:"protocolVersion"`
-		}
-		if err := json.Unmarshal(m.Params, &p); err != nil {
-			c.reply(errorResponse(m.ID, codeInvalidParams, "Invalid params"))
-			return
-		}
-		c.setProtocol(p.ProtocolVersion)
-	case "notifications/cancelled":
+	case methodCancelled:
 		c.cancelRequest(m.Params)
+	case methodInitialize, methodInitialized:
+		c.remember(m, line)
 	}
 
-	ctx, cancel := context.WithCancel(c.base)
-	isRequest := m.isRequest()
-	key := string(m.ID)
-	if isRequest {
-		c.track(key, cancel)
+	ctx, cancel := context.WithCancel(base)
+	if !m.isRequest() {
+		done := make(chan struct{})
+		c.wg.Go(func() {
+			defer close(done)
+			defer cancel()
+			c.forward(ctx, line, m)
+		})
+		return done
 	}
+	key := string(m.ID)
+	c.track(key, cancel)
 	c.wg.Go(func() {
 		defer cancel()
-		if isRequest {
-			defer c.untrack(key)
-		}
+		defer c.untrack(key)
 		c.forward(ctx, line, m)
 	})
+	return nil
 }
 
-// forward POSTs one client message exactly as received and writes what the upstream answers.
+// forward POSTs one client message exactly as received and writes what the upstream answers. The idle
+// watchdog covers every response, plain JSON included (SPEC 11.3).
 func (c *conn) forward(ctx context.Context, line []byte, m message) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 	idle := time.AfterFunc(idleTimeout, func() { cancel(errIdleTimeout) })
 	defer idle.Stop()
 
-	x := &exchange{c: c, ctx: ctx, line: line, m: m}
-	protocol := ""
-	if m.Method != "initialize" {
-		protocol = c.protocol()
-	}
-	resp, err := c.post(ctx, line, protocol)
-	if err != nil {
-		x.fail(err)
-		return
-	}
-	defer resp.Body.Close()
-	x.status = resp.StatusCode
-	if sid := resp.Header.Get(sessionHeader); sid != "" {
-		c.setSession(sid)
-	}
-	resp.Body = idleBody{ReadCloser: resp.Body, idle: idle}
-	if err := x.read(resp); err != nil {
-		x.fail(err)
-		return
-	}
-	if x.sent == 0 && m.isRequest() {
-		x.fail(errNoResponse)
+	x := &exchange{c: c, line: line, m: m, idle: idle}
+	if err := x.send(ctx, true); err != nil {
+		x.fail(ctx, err)
 	}
 }
 
@@ -264,6 +274,7 @@ func (c *conn) deleteSession(ctx context.Context) {
 	resp.Body.Close()
 }
 
+// post sends one JSON-RPC message to the endpoint.
 func (c *conn) post(ctx context.Context, body []byte, protocol string) (*http.Response, error) {
 	req, err := c.newRequest(ctx, http.MethodPost, body, protocol)
 	if err != nil {
@@ -288,7 +299,7 @@ func (c *conn) newRequest(ctx context.Context, method string, body []byte, proto
 	}
 	req.Header.Set("Accept", acceptHeader)
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(contentTypeHeader, jsonMIME)
 	}
 	if protocol != "" {
 		req.Header.Set(protocolHeader, protocol)
@@ -302,8 +313,16 @@ func (c *conn) newRequest(ctx context.Context, method string, body []byte, proto
 	return req, nil
 }
 
-// write sends one message to stdout as a single line.
+// write sends one message to stdout as a single line. Upstream bodies and hook output may be
+// pretty-printed, so a message with line breaks is compacted first.
 func (c *conn) write(msg []byte) error {
+	if bytes.ContainsAny(msg, "\r\n") {
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, msg); err != nil {
+			return err
+		}
+		msg = compact.Bytes()
+	}
 	c.ioMu.Lock()
 	defer c.ioMu.Unlock()
 	if _, err := c.b.Out.Write(msg); err != nil {
@@ -320,43 +339,62 @@ func (c *conn) reply(msg []byte) {
 	}
 }
 
-// logf writes a diagnostic to stderr.
+// logf writes a diagnostic to stderr. It does not use libs/log: stderr is the agent's server log, which
+// users see, and it has no levels to filter by.
 func (c *conn) logf(format string, args ...any) {
 	c.ioMu.Lock()
 	defer c.ioMu.Unlock()
 	fmt.Fprintf(c.b.Err, logPrefix+format+"\n", args...)
 }
 
+// session returns the Mcp-Session-Id the server assigned, or "" when there is none.
 func (c *conn) session() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.sessionID
 }
 
+// setSession records the Mcp-Session-Id to send on later requests.
 func (c *conn) setSession(id string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.sessionID = id
 }
 
+// protocol returns the MCP protocol version the server negotiated, or "" before initialize completes.
 func (c *conn) protocol() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.protocolVersion
 }
 
+// setProtocol records the protocol version from the initialize result, to send on later requests.
 func (c *conn) setProtocol(version string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.protocolVersion = version
 }
 
+// remember keeps the client's initialize or notifications/initialized so it can be replayed if the server
+// ends the session.
+func (c *conn) remember(m message, line []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if m.Method == methodInitialize {
+		c.initialize = clientMsg{line: line, m: m}
+	} else {
+		c.initialized = clientMsg{line: line, m: m}
+	}
+}
+
+// track records the cancel function of an in-flight request, keyed by its id.
 func (c *conn) track(key string, cancel context.CancelFunc) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.inflight[key] = cancel
 }
 
+// untrack removes a request that has finished.
 func (c *conn) untrack(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -386,36 +424,111 @@ type idleBody struct {
 	idle *time.Timer
 }
 
+// Read reads from the response body and resets the idle timer.
 func (b idleBody) Read(p []byte) (int, error) {
 	n, err := b.ReadCloser.Read(p)
 	b.idle.Reset(idleTimeout)
 	return n, err
 }
 
-// exchange is one client request and the upstream messages answering it.
+// exchange is one client message and the upstream messages answering it.
 type exchange struct {
-	c      *conn
-	ctx    context.Context
-	line   []byte
-	m      message
-	status int
-	sent   int
+	c        *conn
+	line     []byte
+	m        message
+	idle     *time.Timer
+	silent   bool // a replayed handshake: its answers stay inside the bridge
+	status   int
+	answered bool // the upstream sent the response to m
+}
+
+// protocol returns the MCP-Protocol-Version to send with this message. The initialize request carries none.
+func (x *exchange) protocol() string {
+	if x.m.Method == methodInitialize {
+		return ""
+	}
+	return x.c.protocol()
+}
+
+// send posts the message and writes its answer. A 404 for a request that carried a session id means the
+// server ended the session. The client then starts a new one and posts the request once more (MCP spec
+// 2025-11-25, Session Management).
+func (x *exchange) send(ctx context.Context, retry bool) error {
+	stale := x.c.session()
+	resp, err := x.c.post(ctx, x.line, x.protocol())
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound && stale != "" && retry {
+		resp.Body.Close()
+		if err := x.rejoin(ctx, stale); err != nil {
+			return err
+		}
+		return x.send(ctx, false)
+	}
+	x.status = resp.StatusCode
+	if sid := resp.Header.Get(sessionHeader); sid != "" {
+		x.c.setSession(sid)
+	}
+	resp.Body = idleBody{ReadCloser: resp.Body, idle: x.idle}
+	if err := x.read(ctx, resp); err != nil {
+		return err
+	}
+	if x.m.isRequest() && !x.answered {
+		return errNoResponse
+	}
+	return nil
+}
+
+// rejoin starts a new session after the server ended stale. The client's initialize and
+// notifications/initialized are replayed silently, since the client already has their answers. The new
+// session id and negotiated protocol version are what the replay leaves behind. One rejoin runs at a
+// time, and a request that finds the session already replaced just retries.
+func (x *exchange) rejoin(ctx context.Context, stale string) error {
+	c := x.c
+	c.rejoinMu.Lock()
+	defer c.rejoinMu.Unlock()
+	if c.session() != stale {
+		return nil
+	}
+	c.logf("the server ended the session; starting a new one")
+	c.setSession("")
+	c.mu.Lock()
+	init, initialized := c.initialize, c.initialized
+	c.mu.Unlock()
+	if init.line == nil {
+		return errors.New("the server ended the session, and no initialize request was sent to replay")
+	}
+	replay := []clientMsg{init}
+	if initialized.line != nil {
+		replay = append(replay, initialized)
+	}
+	for _, msg := range replay {
+		s := &exchange{c: c, line: msg.line, m: msg.m, idle: x.idle, silent: true}
+		if err := s.send(ctx, false); err != nil {
+			return fmt.Errorf("start a new session: %w", err)
+		}
+	}
+	return nil
 }
 
 // read delivers every message in an upstream response.
-func (x *exchange) read(resp *http.Response) error {
+func (x *exchange) read(ctx context.Context, resp *http.Response) error {
 	switch {
 	case resp.StatusCode/100 != 2:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
-		if json.Valid(body) {
-			return x.deliverJSON(body)
+		// Only the server's own answer to this request passes through, such as a -32006 under HTTP 401.
+		// Any other body is an HTTP failure, and its content reaches the client only in the error message.
+		if msg, err := parseMessage(body); err == nil && msg.isResponseTo(x.m) {
+			return x.deliverJSON(ctx, body)
 		}
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	case strings.HasPrefix(resp.Header.Get("Content-Type"), eventStreamMIME):
-		return readEvents(resp.Body, x.deliverJSON)
+		return httpError(resp.StatusCode, body)
+	case strings.HasPrefix(resp.Header.Get(contentTypeHeader), eventStreamMIME):
+		return readEvents(resp.Body, func(data []byte) error { return x.deliverJSON(ctx, data) })
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -424,36 +537,55 @@ func (x *exchange) read(resp *http.Response) error {
 		if len(bytes.TrimSpace(body)) == 0 {
 			return nil
 		}
-		return x.deliverJSON(body)
+		return x.deliverJSON(ctx, body)
 	}
 }
 
-// deliverJSON writes one upstream JSON message as a single stdout line.
-func (x *exchange) deliverJSON(data []byte) error {
+// deliverJSON writes one upstream JSON message. A response to the request marks it answered once the
+// message has been written.
+func (x *exchange) deliverJSON(ctx context.Context, data []byte) error {
 	if !json.Valid(data) {
 		return errors.New("upstream sent invalid JSON")
 	}
-	if bytes.ContainsAny(data, "\r\n") {
-		var compact bytes.Buffer
-		if err := json.Compact(&compact, data); err != nil {
-			return err
-		}
-		data = compact.Bytes()
+	msg, err := parseMessage(data)
+	if err != nil {
+		return fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
 	}
-	return x.deliver(data)
+	answer := msg.isResponseTo(x.m)
+	if answer && x.m.Method == methodInitialize && msg.Result != nil {
+		// The version the server chose governs the requests that follow, so record it before the answer is written.
+		var r struct {
+			ProtocolVersion string `json:"protocolVersion"`
+		}
+		if err := json.Unmarshal(msg.Result, &r); err != nil {
+			return fmt.Errorf("initialize result: %w", err)
+		}
+		x.c.setProtocol(r.ProtocolVersion)
+	}
+	if err := x.deliver(ctx, data); err != nil {
+		return err
+	}
+	if answer {
+		x.answered = true
+	}
+	return nil
 }
 
-// deliver applies the initialize edit and the hooks, then writes the resulting messages.
-func (x *exchange) deliver(msg []byte) error {
+// deliver applies the initialize edit and the hooks, then writes the resulting messages. A silent exchange
+// writes nothing.
+func (x *exchange) deliver(ctx context.Context, msg []byte) error {
+	if x.silent {
+		return nil
+	}
 	var err error
-	if x.m.Method == "initialize" && (x.c.b.Instructions != "" || x.c.b.ForceListChanged) {
+	if x.m.Method == methodInitialize && (x.c.b.Instructions != "" || x.c.b.ForceListChanged) {
 		if msg, err = editInitialize(msg, x.c.b.Instructions, x.c.b.ForceListChanged); err != nil {
 			return err
 		}
 	}
 	msgs := [][]byte{msg}
 	if x.c.b.Hooks != nil {
-		if msgs, err = x.c.b.Hooks.Result(x.ctx, x.line, x.status, msg); err != nil {
+		if msgs, err = x.c.b.Hooks.Result(ctx, x.line, x.status, msg); err != nil {
 			return err
 		}
 	}
@@ -462,25 +594,63 @@ func (x *exchange) deliver(msg []byte) error {
 			return err
 		}
 	}
-	x.sent++
 	return nil
 }
 
-// fail logs err and, for a request the client still waits on, answers it with a JSON-RPC error.
-func (x *exchange) fail(err error) {
-	cause := context.Cause(x.ctx)
-	if errors.Is(cause, errIdleTimeout) {
+// fail logs err and, for a request the client still waits on, answers it with a JSON-RPC error. A request
+// that the client or shutdown cancelled is neither logged nor answered.
+func (x *exchange) fail(ctx context.Context, err error) {
+	cause := context.Cause(ctx)
+	switch {
+	case errors.Is(cause, errIdleTimeout):
 		err = cause
+	case cause != nil:
+		return
 	}
 	x.c.logf("upstream: %v", err)
-	cancelled := cause != nil && !errors.Is(cause, errIdleTimeout)
-	if cancelled || !x.m.isRequest() || x.sent > 0 {
+	if !x.m.isRequest() || x.answered {
 		return
 	}
 	msg := errorResponse(x.m.ID, codeUpstream, fmt.Sprintf("MCP upstream error for request %s: %v", x.m.ID, err))
-	if derr := x.deliver(msg); derr != nil {
+	// The hooks see the error with a context that the idle timeout has not cancelled.
+	if derr := x.deliver(context.WithoutCancel(ctx), msg); derr != nil {
 		// The hook failed too; the client still needs an answer, so write the error unhooked.
 		x.c.logf("upstream: %v", derr)
 		x.c.reply(msg)
 	}
+}
+
+// httpError describes a non-2xx response: its status, then the message of a JSON error body or an
+// excerpt of any other body.
+func httpError(status int, body []byte) error {
+	if s := bodySummary(body); s != "" {
+		return fmt.Errorf("HTTP %d: %s", status, s)
+	}
+	return fmt.Errorf("HTTP %d", status)
+}
+
+// bodySummary returns the message of a JSON error body, either a JSON-RPC error or a Databricks error_code
+// body. Any other body gives a single-line excerpt.
+func bodySummary(body []byte) string {
+	var e struct {
+		Message string `json:"message"`
+		Error   struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(body, &e) == nil {
+		if msg := cmp.Or(e.Message, e.Error.Message); msg != "" {
+			return msg
+		}
+	}
+	return excerpt(body)
+}
+
+// excerpt returns body as a single line, cut to excerptRunes characters.
+func excerpt(body []byte) string {
+	r := []rune(strings.Join(strings.Fields(string(body)), " "))
+	if len(r) > excerptRunes {
+		return string(r[:excerptRunes]) + "..."
+	}
+	return string(r)
 }
