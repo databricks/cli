@@ -1,0 +1,6 @@
+experiment_name: idempotency-smoke
+command: python train.py
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+idempotency_token: yaml-key

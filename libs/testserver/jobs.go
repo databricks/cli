@@ -647,6 +647,14 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	// A resent request with the same non-empty token returns the run that token started.
+	// JobRunIdempotency is shared by runs/run-now and runs/submit.
+	if request.IdempotencyToken != "" {
+		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
+			return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+		}
+	}
+
 	runId := nextID()
 
 	// The default run name for one-time runs is "Untitled" (Jobs API behavior).
@@ -659,8 +667,9 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	var tasks []jobs.RunTask
 	for _, t := range request.Tasks {
 		tasks = append(tasks, jobs.RunTask{
-			RunId:   nextID(),
-			TaskKey: t.TaskKey,
+			RunId:         nextID(),
+			TaskKey:       t.TaskKey,
+			AiRuntimeTask: t.AiRuntimeTask,
 			State: &jobs.RunState{
 				LifeCycleState: jobs.RunLifeCycleStateRunning,
 			},
@@ -677,6 +686,10 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 		RunType:    jobs.RunTypeSubmitRun,
 		RunName:    runName,
 		Tasks:      tasks,
+	}
+
+	if request.IdempotencyToken != "" {
+		s.JobRunIdempotency[request.IdempotencyToken] = runId
 	}
 
 	// No tunnel server runs locally, so synthesize the metadata.json it would

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -267,17 +268,70 @@ func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
 	return aiRuntimeTask, nil
 }
 
-// effectiveIdempotencyToken resolves the token sent to validation and submit:
-// the --idempotency-key flag wins, then the config's token, else a generated one.
-func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
-	token := flag
-	if token == "" && cfg.IdempotencyToken != nil {
-		token = *cfg.IdempotencyToken
+// userIdempotencyToken returns the caller-supplied token: the --idempotency-key
+// flag wins over the config's token. It is empty when neither is set.
+func userIdempotencyToken(flag string, cfg *runConfig) string {
+	if flag == "" && cfg.IdempotencyToken != nil {
+		return *cfg.IdempotencyToken
 	}
+	return flag
+}
+
+// effectiveIdempotencyToken resolves the token sent to validation and submit:
+// the caller-supplied token, else a generated one.
+func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
+	token := userIdempotencyToken(flag, cfg)
 	if token == "" {
 		token = uuid.New().String()
 	}
 	return token
+}
+
+type existingRunKey struct{}
+
+// existingRunReport records whether a submit returned an existing run.
+// Existing is nil when the CLI could not tell.
+type existingRunReport struct {
+	Existing *bool
+}
+
+// withExistingRunReport returns a context in which submitWorkload fills the
+// returned report. A context value avoids changing submitWorkload's signature
+// for its many test callers, and lets callers opt in to the extra runs/get only
+// where the result is shown.
+func withExistingRunReport(ctx context.Context) (context.Context, *existingRunReport) {
+	report := &existingRunReport{}
+	return context.WithValue(ctx, existingRunKey{}, report), report
+}
+
+// existingRunLookupTimeout bounds the runs/get behind the existing-run report:
+// the report only refines the success line, so a slow backend must not hold
+// it up. A var so tests can shorten it.
+var existingRunLookupTimeout = 5 * time.Second
+
+// isExistingRun reports whether runID was started by an earlier submit that
+// used the same idempotency token, or nil when that can't be determined.
+// runs/submit returns only a run id, so the run's command path is the signal:
+// every submit uploads to a fresh launch directory, and a fresh run references
+// this submit's commandPath while an existing run references an earlier one's.
+func isExistingRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64, commandPath string) *bool {
+	ctx, cancel := context.WithTimeout(ctx, existingRunLookupTimeout)
+	defer cancel()
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	if err != nil {
+		log.Warnf(ctx, "could not check whether run %d already existed: %v", runID, err)
+		return nil
+	}
+	task := aiRuntimeTaskOf(run)
+	if task == nil || len(task.Deployments) == 0 {
+		return nil
+	}
+	got, gotOK := launchDirName(task.Deployments[0].CommandPath)
+	want, wantOK := launchDirName(commandPath)
+	if !gotOK || !wantOK {
+		return nil
+	}
+	return new(got != want)
 }
 
 // validateIdempotencyToken keeps the CLI's submission guard as a fallback when
@@ -444,6 +498,18 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	runID, err = submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath(), containers)
 	if err != nil {
 		return 0, "", err
+	}
+
+	// A generated token is never a repeat, so that run is definitely new.
+	// Container runs stay unknown: they carry their command paths on containers,
+	// which the SDK's DeploymentSpec does not model.
+	if report, ok := ctx.Value(existingRunKey{}).(*existingRunReport); ok {
+		switch {
+		case userIdempotencyToken(idempotencyKey, cfg) == "":
+			report.Existing = new(false)
+		case len(containers) == 0:
+			report.Existing = isExistingRun(ctx, w, runID, commandPath)
+		}
 	}
 
 	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)

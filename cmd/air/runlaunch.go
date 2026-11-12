@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"regexp"
 	"strings"
 	"uuid"
 
@@ -56,6 +57,22 @@ func cliLaunchDir(base, experiment, run string) string {
 	}
 	unique := strings.ReplaceAll(uuid.New().String(), "-", "")[:16]
 	return path.Join(base, ".air", "cli_launch", experiment, run+"_"+unique)
+}
+
+// launchDirPattern matches the <run>_<unique> directory name cliLaunchDir creates.
+var launchDirPattern = regexp.MustCompile(`_[0-9a-f]{16}$`)
+
+// launchDirName returns the unique launch directory that holds commandPath's
+// command script. Only this segment identifies a launch: the prefix can differ
+// in form (/Users/... vs /Workspace/Users/...) between the submitted path and
+// the one runs/get echoes.
+func launchDirName(commandPath string) (string, bool) {
+	dir, file := path.Split(commandPath)
+	name := path.Base(dir)
+	if file != commandScriptName || !launchDirPattern.MatchString(name) {
+		return "", false
+	}
+	return name, true
 }
 
 // prospectiveLaunchPaths returns the workspace paths a submission would use

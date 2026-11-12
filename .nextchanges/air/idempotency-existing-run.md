@@ -1,0 +1,1 @@
+* `air run` now says when `--idempotency-key` or `idempotency_token` returned an existing run, and its `-o json` result reports this as `existing` (the `--watch` JSONL events do not). ([#7529](https://github.com/databricks/cli/pull/7529))
