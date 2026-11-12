@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -40,6 +41,8 @@ type mcpAddFlags struct {
 	agents   string
 	name     string
 	force    bool
+	login    bool
+	noLogin  bool
 }
 
 // addOutput is the `mcp add --output json` document.
@@ -98,6 +101,8 @@ type addRequest struct {
 	// refused holds the agents named with --agents that are not installed, with the reason. Their
 	// config is not written.
 	refused map[*agents.Agent]error
+	// login signs in to the sign-in-required servers after they are installed.
+	login bool
 }
 
 // slashPaths rewrites the agent config paths of the document to forward slashes, as the text output
@@ -164,6 +169,8 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: every detected MCP-capable agent)")
 	cmd.Flags().StringVar(&f.name, "name", "", "Server name to use instead of the generated one; only with exactly one service")
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
+	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server right after it is installed")
+	cmd.Flags().BoolVar(&f.noLogin, "no-login", false, "Do not sign in; print the login commands for sign-in-required servers (default)")
 	return cmd
 }
 
@@ -278,6 +285,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		configFile:  configFile,
 		pinned:      pinned,
 		refused:     refused,
+		login:       f.login,
 	}
 	if pinned != "" {
 		req.env = map[string]string{mcpconfig.ConfigFileEnv: pinned}
@@ -299,11 +307,19 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if recordErr != nil {
 		return recordErr
 	}
+	if req.login {
+		if err := signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers); err != nil {
+			return err
+		}
+	}
 	return agentFailureError(req, servers)
 }
 
 // validateMCPAddFlags rejects flag combinations that cannot run, before anything is read or written.
 func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames []string, jsonMode bool) error {
+	if f.login && f.noLogin {
+		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--login and --no-login cannot be used together")
+	}
 	if f.name != "" {
 		// A name must come out of mcp.Sanitize unchanged, so that mcp__<name>__<tool> splits the same way as
 		// a generated name.
@@ -835,6 +851,30 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
 }
 
+// signInInstalled signs in to each sign-in-required server that reached an agent, in order. It stops
+// at the first failure; the servers are installed either way.
+func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
+	for i, server := range servers {
+		if !server.SignInRequired || !installedAnywhere(server) {
+			continue
+		}
+		if _, err := signIn(ctx, errOut, w, req.profile, req.workspaceID, plans[i].service); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// installedAnywhere reports whether the server reached at least one agent.
+func installedAnywhere(server addServerOutput) bool {
+	for _, a := range server.Agents {
+		if a.Status != statusFailed {
+			return true
+		}
+	}
+	return false
+}
+
 // recordInstalls adds each server that reached at least one agent to the state file. The file is
 // re-read first, so entries written since planning are kept. Each server is recorded on its own, so that one
 // failure does not keep the others from being saved: their agent files are already written.
@@ -962,7 +1002,7 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 				cursor = true
 			}
 		}
-		if server.SignInRequired && succeeded {
+		if server.SignInRequired && succeeded && !req.login {
 			cmdio.LogString(ctx, fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, shellquote.BashArg(server.Service), shellquote.BashArg(req.profile)))
 		}
 		if cursor {

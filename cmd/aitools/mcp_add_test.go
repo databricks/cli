@@ -69,6 +69,11 @@ func TestValidateMCPAddFlags(t *testing.T) {
 		},
 		{name: "valid name", flags: mcpAddFlags{name: "my_github-1"}, names: []string{"github"}},
 		{
+			name: "login and no-login conflict", flags: mcpAddFlags{login: true, noLogin: true}, names: []string{"github"},
+			want: "--login and --no-login cannot be used together",
+		},
+		{name: "login alone", flags: mcpAddFlags{login: true}, names: []string{"github"}},
+		{
 			name: "name must be lowercase", flags: mcpAddFlags{name: "GitHub"}, names: []string{"github"},
 			want: `--name "GitHub" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
 		},

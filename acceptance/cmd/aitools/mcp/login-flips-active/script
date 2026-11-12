@@ -1,0 +1,34 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+# No browser: the CLI prints the sign-in URL and polls.
+export BROWSER=none
+
+title "A service that needs no sign-in exits 0 and says so"
+trace $CLI aitools mcp login system.ai.genie_one_mcp --profile logfood
+
+title "login prints the sign-in URL and waits; the sign-in completes in the browser"
+$CLI aitools mcp login system.ai.github --profile logfood > login.txt 2>&1 &
+PID=$!
+trace retry --until "Waiting for sign-in" cat login.txt
+trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+wait $PID
+trace cat login.txt
+
+title "login again when already signed in returns at once"
+trace $CLI aitools mcp login system.ai.github --profile logfood --output json
+
+title "logout removes the sign-in; a second logout finds nothing and still exits 0"
+trace $CLI aitools mcp logout system.ai.github --profile logfood
+trace $CLI aitools mcp logout system.ai.github --profile logfood --output json
+
+title "add --login installs the server and signs in during the same run"
+$CLI aitools mcp add --profile logfood --names system.ai.github --agents claude-code --login > add.txt 2>&1 &
+PID=$!
+trace retry --until "Waiting for sign-in" cat add.txt
+trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+wait $PID
+trace cat add.txt
+trace jq '[.servers[] | {name, service, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json
+rm login.txt add.txt

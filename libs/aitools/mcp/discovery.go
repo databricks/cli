@@ -55,6 +55,16 @@ func Discover(ctx context.Context, w *databricks.WorkspaceClient, location strin
 	return services, nil
 }
 
+// GetService returns one MCP service by full name, with its sign-in requirement. The API
+// answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see.
+func GetService(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (Service, error) {
+	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServicePrefix + fullName})
+	if err != nil {
+		return Service{}, err
+	}
+	return newService(svc), nil
+}
+
 // ListErrorKind names a listing failure.
 type ListErrorKind string
 

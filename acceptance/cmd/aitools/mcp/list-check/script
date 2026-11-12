@@ -1,0 +1,22 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "Install a service that needs no sign-in and one that does"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code
+
+title "list --check: the token mints, and GitHub needs sign-in"
+trace $CLI aitools mcp list --check
+
+title "Once the sign-in completes, GitHub is signed in"
+trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+trace $CLI aitools mcp list --check
+
+title "A recorded binary that is gone is reported as missing"
+jq '(.servers[] | select(.service == "system.ai.genie_one_mcp") | .command) = "/nonexistent/databricks"' home/.databricks/aitools/mcp/state.json > state.tmp && mv state.tmp home/.databricks/aitools/mcp/state.json
+trace $CLI aitools mcp list --check --output json
+
+title "logout ends the sign-in; list --check shows it needed again"
+trace $CLI aitools mcp logout system.ai.github --profile logfood
+trace $CLI aitools mcp list --check

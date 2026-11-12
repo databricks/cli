@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -18,7 +20,16 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+)
+
+// Results of the `mcp list --check` checks that are not server statuses. They are the JSON values of SPEC 4.6;
+// statusOK and statusUnknown carry the other two.
+const (
+	checkFailed = "failed"
+	checkNeeded = "needed"
 )
 
 // Agent entry statuses of `mcp list`. Server statuses are the drift kinds of mcp.CheckEntries, plus statusOK and
@@ -63,6 +74,9 @@ type mcpListProfile struct {
 	configPath string
 	// noHost is set when Status is profile_missing because the profile's section has no host.
 	noHost bool
+	// Token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
+	// so it is text only.
+	Token string `json:"-"`
 }
 
 type mcpListServer struct {
@@ -73,10 +87,19 @@ type mcpListServer struct {
 	SignInRequired bool           `json:"sign_in_required"`
 	Status         string         `json:"status"`
 	Agents         []mcpListAgent `json:"agents"`
+	// Check is the --check result of the server. It is nil without --check, and for a profile that drifted.
+	Check *mcpListCheck `json:"check,omitempty"`
 
 	// entry is the state record, and drift the drift of the server from its profile, when it has one.
 	entry mcp.Entry
 	drift *mcp.Drift
+}
+
+// mcpListCheck is the --check result of one server. SignIn is set only for sign-in-required servers.
+type mcpListCheck struct {
+	Token  string `json:"token"`
+	SignIn string `json:"sign_in,omitempty"`
+	Binary string `json:"binary"`
 }
 
 type mcpListAgent struct {
@@ -102,7 +125,8 @@ type profileKey struct {
 // NewMcpListCmd returns `aitools mcp list`. It reads the state file and the agent configs only, so it
 // needs no network. Drift and unreadable entries are reported, not failed: the command exits 0.
 func NewMcpListCmd() *cobra.Command {
-	return &cobra.Command{
+	var check bool
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List Databricks managed MCP servers installed by this CLI",
 		Long: `List Databricks managed MCP servers installed by this CLI, grouped by profile, with the
@@ -113,13 +137,17 @@ Entries that run 'aitools mcp serve' but have no install record are listed as un
 --profile lists the servers of that profile only. Unmanaged entries have no profile, so they are not
 listed then.
 
-This command makes no network calls. It always exits 0 when entries have drifted or cannot be checked;
-an entry or agent config that cannot be checked is a warning.`,
+Without --check this command makes no network calls. With --check, each profile's token is minted, the
+sign-in state of each sign-in-required server is read, and the recorded binary is checked. It always exits 0
+when entries have drifted or cannot be checked; an entry or agent config that cannot be checked is a warning.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			profileName := profileFlag(cmd)
 			out, err := buildMcpList(ctx, profileName)
+			if check {
+				addChecks(ctx, &out)
+			}
 			if !installOutputIsJSON(cmd) {
 				if err != nil {
 					return err
@@ -141,6 +169,8 @@ an entry or agent config that cannot be checked is a warning.`,
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&check, "check", false, "Also check tokens, sign-in state and the recorded binary (uses the network)")
+	return cmd
 }
 
 // buildMcpList reads the state and the agent configs and returns the listing. profileName, when set, lists the
@@ -324,6 +354,59 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 	return agentStatusInstalled, loc.path, "", nil
 }
 
+// addChecks runs the --check tests of SPEC 4.2 for each profile that did not drift: a token mint, the
+// sign-in state of each sign-in-required server, and whether the recorded binary exists.
+func addChecks(ctx context.Context, out *mcpListOutput) {
+	for i := range out.Profiles {
+		p := &out.Profiles[i]
+		if p.Status != statusOK {
+			continue
+		}
+		w, err := profileClient(ctx, p.Profile, p.configPath)
+		p.Token = statusOK
+		if err != nil {
+			p.Token = checkFailed
+		}
+		for j := range p.Servers {
+			s := &p.Servers[j]
+			s.Check = &mcpListCheck{Token: p.Token, Binary: binaryStatus(s.entry.Command)}
+			if s.SignInRequired {
+				s.Check.SignIn = statusUnknown
+				if err == nil {
+					s.Check.SignIn = signInStatus(ctx, w, s.Service)
+				}
+			}
+		}
+	}
+}
+
+// signInStatus reads the caller's sign-in to a service. Only an ACTIVE credential counts as signed in.
+func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, service string) string {
+	state, err := mcp.CredentialState(ctx, w, service)
+	switch {
+	case err != nil:
+		return statusUnknown
+	case state == catalog.ProvisioningInfoStateActive:
+		return statusOK
+	}
+	return checkNeeded
+}
+
+// binaryStatus reports whether the recorded command exists: an absolute path on disk, or a bare name
+// on PATH.
+func binaryStatus(command string) string {
+	var err error
+	if filepath.IsAbs(command) {
+		_, err = os.Stat(command)
+	} else {
+		_, err = exec.LookPath(command)
+	}
+	if err != nil {
+		return checkFailed
+	}
+	return statusOK
+}
+
 // unmanagedKind names how an entry reaches managed MCP servers without being recorded for its agent, or returns ""
 // for any other entry. An entry that runs `aitools mcp serve` and is not recorded has no install record.
 func unmanagedKind(entry map[string]any) string {
@@ -369,9 +452,17 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 		if i > 0 {
 			cmdio.LogString(ctx, "")
 		}
-		cmdio.LogString(ctx, profileHeader(p))
+		header := profileHeader(p)
+		if p.Token != "" {
+			header += "  token " + p.Token
+		}
+		cmdio.LogString(ctx, header)
 		for _, s := range p.Servers {
-			cmdio.LogString(ctx, fmt.Sprintf("  %-24s %-30s %s", s.Name, s.Service, listAgentsText(s.Agents)))
+			line := fmt.Sprintf("  %-24s %-30s %s", s.Name, s.Service, listAgentsText(s.Agents))
+			if text := checkText(s.Check); text != "" {
+				line += "  " + text
+			}
+			cmdio.LogString(ctx, line)
 			if hint := serverHint(ctx, p, s); hint != "" {
 				cmdio.LogString(ctx, "  "+hint)
 			}
@@ -410,6 +501,27 @@ func profileHeader(p mcpListProfile) string {
 		return fmt.Sprintf("Profile %s  (%s, config file %s)", p.Profile, p.Host, p.ConfigFile)
 	}
 	return fmt.Sprintf("Profile %s  (%s)", p.Profile, p.Host)
+}
+
+// checkText is the trailing text of a server line for the --check results that need attention or
+// say something about the server.
+func checkText(c *mcpListCheck) string {
+	if c == nil {
+		return ""
+	}
+	var parts []string
+	switch c.SignIn {
+	case statusOK:
+		parts = append(parts, "signed in")
+	case checkNeeded:
+		parts = append(parts, "sign-in needed")
+	case statusUnknown:
+		parts = append(parts, "sign-in unknown")
+	}
+	if c.Binary == checkFailed {
+		parts = append(parts, "binary missing")
+	}
+	return strings.Join(parts, ", ")
 }
 
 // serverHint tells the user how to repair a server whose profile no longer serves it. The remove command names the

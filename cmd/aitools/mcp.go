@@ -39,6 +39,8 @@ func NewMcpCmd() *cobra.Command {
 	cmd.AddCommand(NewMcpAddCmd())
 	cmd.AddCommand(NewMcpListCmd())
 	cmd.AddCommand(NewMcpRemoveCmd())
+	cmd.AddCommand(NewMcpLoginCmd())
+	cmd.AddCommand(NewMcpLogoutCmd())
 	cmd.AddCommand(NewMcpServeCmd())
 	return cmd
 }

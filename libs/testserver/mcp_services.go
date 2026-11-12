@@ -106,3 +106,18 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 		Body: catalog.ListMcpServicesResponse{McpServices: services},
 	}
 }
+
+// McpUserCredentialCreate fakes POST .../mcp-services/{name}/user-credentials, which completes a
+// caller's provider sign-in. Tests use it to flip a credential from absent to ACTIVE while the CLI
+// polls. The login body is not checked.
+func (s *FakeWorkspace) McpUserCredentialCreate(service string) Response {
+	defer s.LockUnlock()()
+
+	cred := catalog.McpServiceUserMappedCredential{
+		ProvisioningInfo: &catalog.ProvisioningInfo{State: catalog.ProvisioningInfoStateActive},
+	}
+	s.McpUserCredentials[service] = cred
+	return Response{
+		Body: cred,
+	}
+}
