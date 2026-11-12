@@ -521,8 +521,14 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 		Agents:         make([]addAgentOutput, 0, len(req.agents)),
 	}
 	for _, a := range req.agents {
-		args := []string{"aitools", "mcp", "serve", "--profile", req.profile, "--service", plan.service.FullName, "--agent", a.Name}
-		path, _, err := agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
+		var path string
+		var err error
+		if req.explicit && !a.Detected(ctx) {
+			err = notInstalledError(ctx, a)
+		} else {
+			args := []string{"aitools", "mcp", "serve", "--profile", req.profile, "--service", plan.service.FullName, "--agent", a.Name}
+			path, _, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
+		}
 
 		result := addAgentOutput{Name: a.Name}
 		switch {
@@ -541,6 +547,16 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 		out.Agents = append(out.Agents, result)
 	}
 	return out
+}
+
+// notInstalledError is the failure of an agent named with --agents that is not installed. Writing its
+// config would create its config directory, so the agent is refused instead.
+func notInstalledError(ctx context.Context, a *agents.Agent) error {
+	dir, err := a.ConfigDir(ctx)
+	if err != nil {
+		return err
+	}
+	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed (no %s); install it first or leave it out of --agents", a.DisplayName, dir)
 }
 
 // installedFor reports whether state already records the server for the agent.

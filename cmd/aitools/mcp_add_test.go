@@ -153,6 +153,33 @@ func withHome(t *testing.T) string {
 	return home
 }
 
+// An agent named with --agents that is not installed is refused: its config is not written and its
+// directory is not created. The agent that is installed still gets the server.
+func TestInstallServerRefusesUndetectedExplicitAgent(t *testing.T) {
+	ctx := t.Context()
+	home := withHome(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o700))
+	req := addRequest{
+		profile:  "logfood",
+		explicit: true,
+		agents:   []*agents.Agent{agents.ByName("codex"), agents.ByName("claude-code")},
+		binary:   "databricks",
+	}
+	plan := addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"}
+
+	out := installServer(ctx, req, plan)
+	require.Len(t, out.Agents, 2)
+
+	codex := out.Agents[0]
+	assert.Equal(t, statusFailed, codex.Status)
+	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, codex.ErrorCategory)
+	assert.Equal(t, "Codex CLI is not installed (no "+filepath.Join(home, ".codex")+"); install it first or leave it out of --agents", codex.Message)
+	assert.NoDirExists(t, filepath.Join(home, ".codex"))
+
+	assert.Equal(t, statusInstalled, out.Agents[1].Status)
+	assert.NoError(t, out.Agents[1].err)
+}
+
 func TestPlanAddsNaming(t *testing.T) {
 	ctx := t.Context()
 	claude := agents.ByName("claude-code")

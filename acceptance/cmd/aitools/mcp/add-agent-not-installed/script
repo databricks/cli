@@ -1,0 +1,14 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "An agent named with --agents that is not installed is refused; the installed agent still gets the server, and the command exits 1"
+errcode trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex --output json
+
+title "Nothing was created for Codex"
+trace ls -A home
+
+title "With no installed agent named, the text output says what to do, and the command exits 1"
+errcode trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex

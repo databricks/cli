@@ -1,5 +1,6 @@
 # Isolate HOME so the agent config files and the state file land in this test directory.
 sethome home
+mkdir -p home/.claude home/.cursor
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
