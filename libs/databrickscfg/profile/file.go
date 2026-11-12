@@ -91,6 +91,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			Resources:            all["resources"],
 			AuthType:             all["auth_type"],
 		}
+		profile.DockerCredentialHelper = all[DockerCredentialHelperKey] == DockerCredentialHelperValue
 		if fn(profile) {
 			profiles = append(profiles, profile)
 		}

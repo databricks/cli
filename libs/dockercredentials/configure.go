@@ -6,7 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 )
 
 // Configuration describes the installed helper and the Docker configuration it updated.
@@ -37,8 +39,9 @@ func Configure(ctx context.Context, executable, registryHost string) (Configurat
 	return Configuration{ConfigPath: configPath, Shim: shim}, nil
 }
 
-// Inspect checks the helper selection and executable availability without modifying Docker's configuration.
-func Inspect(ctx context.Context, registryHost string) (Status, error) {
+// Inspect reports whether Docker uses the credential helper with profileName for registry, without modifying any configuration.
+func Inspect(ctx context.Context, profiler profile.Profiler, registry Registry, profileName string) (Status, error) {
+	registryHost := registry.Host
 	configPath, err := ConfigPath(ctx)
 	if err != nil {
 		return Status{}, err
@@ -50,6 +53,14 @@ func Inspect(ctx context.Context, registryHost string) (Status, error) {
 	if configured {
 		_, err := exec.LookPath("docker-credential-" + HelperName)
 		configured = err == nil
+	}
+	if configured {
+		// The helper cannot authenticate as profileName if it resolves the registry to another profile or to none.
+		selected, err := ProfileForRegistry(ctx, profiler, registry)
+		if err != nil {
+			log.Debugf(ctx, "Docker credential helper cannot resolve %s to a profile: %v", registryHost, err)
+		}
+		configured = err == nil && selected.Name == profileName
 	}
 	return Status{Host: registryHost, Configured: configured}, nil
 }

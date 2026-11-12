@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -249,6 +250,149 @@ func TestSaveResourcesToProfile_MissingProfile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	err := SaveResourcesToProfile(ctx, "does-not-exist", path, []string{"https://foo/ai-gateway/mcp/system.ai.github"})
 	assert.ErrorContains(t, err, `profile "does-not-exist" not found`)
+}
+
+func TestSetDockerCredentialHelperProfile(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		selected string
+		previous []string
+		want     []string
+		wantErr  string
+	}{
+		{
+			name:     "marks selected profile",
+			content:  "[prod]\nhost = https://prod.test\n",
+			selected: "prod",
+			want:     []string{"prod"},
+		},
+		{
+			name:     "unmarks previous profiles",
+			content:  "[dev]\nhost = https://ws.test\ndocker_credential_helper = true\n\n[prod]\nhost = https://ws.test\n\n[stage]\nhost = https://ws.test\ndocker_credential_helper = true\n",
+			selected: "prod",
+			previous: []string{"dev", "stage"},
+			want:     []string{"prod"},
+		},
+		{
+			name:     "dotted profile name does not change parent section",
+			content:  "[team]\nhost = https://team.test\ndocker_credential_helper = true\n\n[team.prod]\nhost = https://prod.test\n",
+			selected: "team.prod",
+			want:     []string{"team", "team.prod"},
+		},
+		{
+			name:     "missing profile",
+			content:  "[prod]\nhost = https://prod.test\n",
+			selected: "does-not-exist",
+			wantErr:  `profile "does-not-exist" not found`,
+		},
+		{
+			name:     "missing previous profile",
+			content:  "[prod]\nhost = https://prod.test\n",
+			selected: "prod",
+			previous: []string{"does-not-exist"},
+			wantErr:  `profile "does-not-exist" not found`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0o600))
+			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+
+			err := SetDockerCredentialHelperProfile(ctx, tt.selected, path, tt.previous)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+				return p.DockerCredentialHelper
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, profiles.Names())
+		})
+	}
+}
+
+func TestSaveToProfileDockerCredentialHelperMark(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		host        string
+		workspaceID string
+		clearKeys   []string
+		want        bool
+	}{
+		{
+			name:        "workspace changes",
+			content:     "[prod]\nhost = https://prod.test\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:        "https://dev.test",
+			workspaceID: "2222",
+		},
+		{
+			name:      "workspace cleared",
+			content:   "[prod]\nhost = https://prod.test\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:      "https://prod.test",
+			clearKeys: []string{"workspace_id"},
+		},
+		{
+			name:        "workspace cleared and saved again",
+			content:     "[prod]\nhost = https://prod.test\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:        "https://prod.test",
+			workspaceID: "1111",
+			clearKeys:   []string{"workspace_id"},
+			want:        true,
+		},
+		{
+			name:        "same workspace",
+			content:     "[prod]\nhost = https://prod.test\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:        "https://prod.test",
+			workspaceID: "1111",
+			want:        true,
+		},
+		{
+			name:        "host changes and workspace ID is kept",
+			content:     "[prod]\nhost = https://prod.test\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:        "https://dev.test",
+			workspaceID: "1111",
+		},
+		{
+			name:    "host written in another form",
+			content: "[prod]\nhost = https://prod.test/\nworkspace_id = 1111\ndocker_credential_helper = true\n",
+			host:    "https://prod.test",
+			want:    true,
+		},
+		{
+			name:        "workspace filled in",
+			content:     "[prod]\nhost = https://prod.test\ndocker_credential_helper = true\n",
+			host:        "https://prod.test",
+			workspaceID: "1111",
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0o600))
+			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+
+			require.NoError(t, SaveToProfile(ctx, &config.Config{
+				ConfigFile:  path,
+				Profile:     "prod",
+				Host:        tt.host,
+				WorkspaceID: tt.workspaceID,
+			}, tt.clearKeys...))
+
+			profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("prod"))
+			require.NoError(t, err)
+			require.Len(t, profiles, 1)
+			assert.Equal(t, tt.want, profiles[0].DockerCredentialHelper)
+		})
+	}
 }
 
 func TestGetDefaultProfile(t *testing.T) {

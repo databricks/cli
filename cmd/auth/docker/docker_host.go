@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,9 @@ func newDockerHostCommand() *cobra.Command {
 		Short: "(Experimental) Show the registry host and credential helper status for a profile",
 		Long: `(Experimental) Show the Databricks Artifact Registry host and Docker credential helper status for a profile.
 
-The --profile flag is required.`,
+The credential helper counts as configured only if Docker's config.json selects
+it for the registry and the helper uses this profile. The --profile flag is
+required.`,
 		Example: "  databricks auth docker host --profile DEFAULT",
 		Args:    cobra.NoArgs,
 		Annotations: map[string]string{
@@ -30,7 +33,7 @@ The --profile flag is required.`,
 		if err != nil {
 			return err
 		}
-		status, err := dockercredentials.Inspect(cmd.Context(), target.registryHost)
+		status, err := dockercredentials.Inspect(cmd.Context(), profile.DefaultProfiler, target.registry(), target.profile.Name)
 		if err != nil {
 			return err
 		}

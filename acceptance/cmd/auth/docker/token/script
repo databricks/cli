@@ -46,3 +46,19 @@ auth_type = databricks-cli
 workspace_id = 900800700600
 ENDCFG
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token
+
+title "Recorded profile for the workspace"
+cp token-cache.json "$HOME/.databricks/token-cache.json"
+update_file.py "$HOME/.databrickscfg" "[duplicate]" $'[duplicate]\ndocker_credential_helper = true'
+printf '%s\n' "$registry_host" | trace $CLI auth docker token --no-force-refresh | jq -S .
+
+title "Several recorded profiles for the workspace"
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+
+[also-recorded]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 900800700600
+docker_credential_helper = true
+ENDCFG
+printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token

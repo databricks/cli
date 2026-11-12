@@ -107,3 +107,7 @@ func (w *dockerWorkspace) target(ctx context.Context, explicitRegion *string) (*
 		executable:   w.executable,
 	}, nil
 }
+
+func (t *dockerTarget) registry() dockercredentials.Registry {
+	return dockercredentials.Registry{WorkspaceID: t.workspaceID, Host: t.registryHost}
+}

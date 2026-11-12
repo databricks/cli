@@ -98,6 +98,30 @@ resources = https://workspace.test/ai-gateway/mcp/system.ai.github,https://works
 	assert.Equal(t, "https://workspace.test/ai-gateway/mcp/system.ai.github,https://workspace.test/ai-gateway/mcp/system.ai.slack", profiles[0].Resources)
 }
 
+func TestLoadProfilesDockerCredentialHelper(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(`[selected]
+host = https://workspace.test
+docker_credential_helper = true
+
+[unselected]
+host = https://workspace.test
+
+[invalid]
+host = https://workspace.test
+docker_credential_helper = yes
+`), 0o600)
+	require.NoError(t, err)
+
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", configPath)
+	profiles, err := (FileProfilerImpl{}).LoadProfiles(ctx, MatchAllProfiles)
+	require.NoError(t, err)
+	require.Equal(t, []string{"selected", "unselected", "invalid"}, profiles.Names())
+	assert.True(t, profiles[0].DockerCredentialHelper)
+	assert.False(t, profiles[1].DockerCredentialHelper)
+	assert.False(t, profiles[2].DockerCredentialHelper)
+}
+
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
