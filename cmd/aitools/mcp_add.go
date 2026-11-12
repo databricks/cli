@@ -772,7 +772,7 @@ func appendDistinct(errs []error, err error) []error {
 }
 
 // installServer writes one server into every target agent. Each agent's result is reported; one
-// agent's failure does not stop the others. An agent in req.refused is not written.
+// agent's failure does not stop the others. An agent in req.refused, or that failed planning for the server, is not written.
 func installServer(ctx context.Context, req addRequest, plan addPlan) addServerOutput {
 	out := addServerOutput{
 		Name:           plan.name,

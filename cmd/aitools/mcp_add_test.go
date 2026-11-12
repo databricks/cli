@@ -1185,7 +1185,7 @@ func TestRecordInstallsSavesServersThatCanBeSaved(t *testing.T) {
 
 	state, loadErr := mcp.LoadState(ctx)
 	require.NoError(t, loadErr)
-	names := []string{}
+	var names []string
 	for _, entry := range state.Servers {
 		names = append(names, entry.Name)
 	}
