@@ -65,3 +65,88 @@ func TestHasChange(t *testing.T) {
 		})
 	}
 }
+
+func TestCountActionsRecreateWithoutDelete(t *testing.T) {
+	entry := &deployplan.PlanEntry{Action: deployplan.Recreate, StateOnly: true}
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.job_runs.a": entry}}
+	assert.Equal(t, deployplan.ActionCounts{Create: 1}, plan.CountActions())
+	// A recreate still creates a resource, so it must remain visible in plan output
+	// and approval prompts even though its delete step only cleans up state.
+	assert.False(t, entry.IsStateOnlyDelete())
+	assert.False(t, plan.GetActions()[0].IsStateOnlyDelete())
+}
+
+func TestCountApplied(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry deployplan.PlanEntry
+		want  deployplan.AppliedCounts
+	}{
+		{
+			name:  "create applied",
+			entry: deployplan.PlanEntry{Action: deployplan.Create, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Create: 1}},
+		},
+		{
+			name:  "create attempted but failed",
+			entry: deployplan.PlanEntry{Action: deployplan.Create, Attempted: true},
+			want:  deployplan.AppliedCounts{Failed: 1},
+		},
+		{
+			name:  "create never reached is neither applied nor failed",
+			entry: deployplan.PlanEntry{Action: deployplan.Create},
+			want:  deployplan.AppliedCounts{},
+		},
+		{
+			name:  "update applied counts as changed",
+			entry: deployplan.PlanEntry{Action: deployplan.Update, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Change: 1}},
+		},
+		{
+			name:  "delete applied",
+			entry: deployplan.PlanEntry{Action: deployplan.Delete, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Delete: 1}},
+		},
+		{
+			name:  "delete attempted but failed",
+			entry: deployplan.PlanEntry{Action: deployplan.Delete, Attempted: true},
+			want:  deployplan.AppliedCounts{Failed: 1},
+		},
+		{
+			name:  "state-only delete is excluded",
+			entry: deployplan.PlanEntry{Action: deployplan.Delete, StateOnly: true, Attempted: true},
+			want:  deployplan.AppliedCounts{},
+		},
+		{
+			name:  "recreate applied counts as both create and delete",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, Applied: true, RecreateDeleted: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Create: 1, Delete: 1}},
+		},
+		{
+			name:  "recreate parent-managed resource without deleting it",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Create: 1}},
+		},
+		{
+			name:  "recreate delete failed",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true},
+			want:  deployplan.AppliedCounts{Failed: 1},
+		},
+		{
+			name:  "recreate create failed after deleting old resource",
+			entry: deployplan.PlanEntry{Action: deployplan.Recreate, Attempted: true, RecreateDeleted: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Delete: 1}, Failed: 1},
+		},
+		{
+			name:  "skip is unchanged regardless of attempt",
+			entry: deployplan.PlanEntry{Action: deployplan.Skip},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Unchanged: 1}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.jobs.a": &tt.entry}}
+			assert.Equal(t, tt.want, p.CountApplied())
+		})
+	}
+}

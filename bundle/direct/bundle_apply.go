@@ -66,6 +66,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		defer plan.WriteUnlockEntry(resourceKey)
 
+		// Mark the entry attempted: the graph ran and reached this node. Together with
+		// Applied (set on success below) this lets the summary distinguish a resource that
+		// was attempted and failed from one Apply never reached.
+		entry.Attempted = true
+
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
 
@@ -128,11 +133,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 			// A state-only delete performs no backend operation, so don't report it,
-			// consistent with the summary (CountActions excludes it) and the terraform
-			// path in logDeploySummary.
+			// consistent with the plan and apply summaries.
 			if reportApplied && !entry.IsStateOnlyDelete() {
 				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
 			}
+			entry.Applied = true
 			return true
 		}
 
@@ -171,8 +176,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 			b.DeployDurations.Store(resourceKey, time.Since(start))
 
-			// Reported before the remote-state refresh below: the resource is already
-			// deployed at this point, so the line is accurate even if the refresh fails.
+			// Marked (and reported) before the remote-state refresh below: the resource is
+			// already deployed at this point, so the summary count and the line are accurate
+			// even if the refresh fails.
+			entry.Applied = true
 			if reportApplied {
 				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
 			}

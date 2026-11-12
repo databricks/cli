@@ -43,7 +43,7 @@ type Plan struct {
 }
 
 // ActionCounts summarizes a plan's actions by category. A recreate counts as
-// both a create and a delete, matching how plan and deploy report changes.
+// a create and, if the resource has a backend delete operation, a delete.
 type ActionCounts struct {
 	Create    int
 	Change    int
@@ -71,9 +71,65 @@ func (p *Plan) CountActions() ActionCounts {
 			}
 			c.Delete++
 		case Recreate:
-			// A recreate counts as both a delete and a create.
-			c.Delete++
+			if !entry.StateOnly {
+				c.Delete++
+			}
 			c.Create++
+		case Skip, Undefined:
+			c.Unchanged++
+		}
+	}
+	return c
+}
+
+// AppliedCounts reports completed operations and failed attempts.
+type AppliedCounts struct {
+	ActionCounts
+	Failed int
+}
+
+// CountApplied tallies the plan by outcome rather than by plan: a create/change/delete
+// is counted in its category only if its entry was applied successfully, an eligible
+// operation that was attempted but not applied (it errored, or a failed dependency
+// skipped it) is counted as Failed, and one Apply never reached is counted as neither.
+// Skips are unchanged regardless, since they run no backend operation; state-only deletes
+// are excluded entirely, matching CountActions. A failed recreate can still count a
+// completed deletion.
+func (p *Plan) CountApplied() AppliedCounts {
+	var c AppliedCounts
+	for _, entry := range p.Plan {
+		switch entry.Action {
+		case Create:
+			if entry.Applied {
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Update, UpdateWithID, Resize:
+			if entry.Applied {
+				c.Change++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Delete:
+			if entry.IsStateOnlyDelete() {
+				continue
+			}
+			if entry.Applied {
+				c.Delete++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Recreate:
+			// The old resource can be gone even if creating its replacement failed.
+			if entry.RecreateDeleted {
+				c.Delete++
+			}
+			if entry.Applied {
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
 		case Skip, Undefined:
 			c.Unchanged++
 		}
@@ -126,16 +182,28 @@ type PlanEntry struct {
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
 	Gone bool `json:"gone,omitempty"`
-	// StateOnly is set on Delete entries for resources that implement no DoDelete:
-	// deleting them has no backend effect. Like Gone, applying such an entry only
-	// removes it from the state and it is excluded from destructive-action prompts,
-	// textual plan output and the deleted count — but unlike Gone it is a property of
-	// the resource type, not of the current remote state, so planning skips the
-	// remote read that Gone detection needs.
+	// StateOnly is set on Delete and Recreate entries for resources with no DoDelete:
+	// their delete step has no backend effect. A Delete only removes state and is
+	// excluded from destructive-action prompts, textual plan output and counts.
+	// A Recreate still creates a resource and remains visible, but counts no deletion.
+	// Unlike Gone, this is a property of the resource type, not remote state, so
+	// planning a Delete skips the remote read that Gone detection needs.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
+
+	// Attempted is set when Apply starts processing this entry (the apply graph ran and
+	// reached this node); Applied is set when its operation completes. Both
+	// are runtime-only (never serialized). Together they let the deploy/destroy summaries
+	// report what actually happened - applied, or attempted-but-failed - rather than the
+	// planned count. An entry Apply never reached (e.g. a config error bailed out before
+	// the graph ran) has neither set and is reported as neither applied nor failed.
+	Attempted bool `json:"-"`
+	Applied   bool `json:"-"`
+	// RecreateDeleted records completion of a recreate's backend delete step, even if
+	// creating the replacement subsequently fails.
+	RecreateDeleted bool `json:"-"`
 }
 
 // IsStateOnlyDelete reports whether applying this delete only drops the state entry
@@ -143,7 +211,7 @@ type PlanEntry struct {
 // delete operation (StateOnly). Such deletes are omitted from human output, excluded
 // from the resource counts, and need no destructive-action approval.
 func (e *PlanEntry) IsStateOnlyDelete() bool {
-	return e.Gone || e.StateOnly
+	return e.Action == Delete && (e.Gone || e.StateOnly)
 }
 
 type DependsOnEntry struct {
@@ -239,6 +307,8 @@ func (p *Plan) GetActions() []Action {
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
 			StateOnly:   entry.StateOnly,
+			Attempted:   entry.Attempted,
+			Applied:     entry.Applied,
 		})
 	}
 

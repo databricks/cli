@@ -47,7 +47,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 	switch actionType {
 	case deployplan.Recreate:
-		return d.Recreate(ctx, db, oldID, newState)
+		return d.Recreate(ctx, db, oldID, newState, planEntry)
 	case deployplan.Update:
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
@@ -111,7 +111,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, entry *deployplan.PlanEntry) error {
 	oldState, err := d.loadPersistedState(db)
 	if err != nil {
 		return err
@@ -124,7 +124,8 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
 	})
-	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
+	managedByParent := isManagedByParent(err)
+	if err != nil && !apierr.IsMissing(err) && !managedByParent {
 		if !d.deleteConfirmedGone(ctx, oldID) {
 			return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 		}
@@ -152,6 +153,9 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
+	// Older saved plans omit StateOnly on recreates, so use the adapter's capability
+	// when recording the actual outcome.
+	entry.RecreateDeleted = d.Adapter.HasDoDelete() && !managedByParent
 
 	return d.Create(ctx, db, newState)
 }
