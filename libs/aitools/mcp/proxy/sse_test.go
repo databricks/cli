@@ -22,6 +22,7 @@ func TestReadEvents(t *testing.T) {
 		{name: "no data", stream: "event: x\n\n"},
 		{name: "event with empty data is skipped", stream: "id: 1\ndata:\n\nid: 2\ndata: 2\n\n", want: []string{"2"}},
 		{name: "empty data at end of stream is skipped", stream: "data: 1\n\nid: 2\ndata:", want: []string{"1"}},
+		{name: "events of other types are skipped", stream: "event: ping\ndata: ping\n\nevent: message\ndata: 1\n\n", want: []string{"1"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

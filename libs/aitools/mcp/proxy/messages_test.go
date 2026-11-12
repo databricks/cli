@@ -116,6 +116,8 @@ func TestIsResponseToComparesIDsByValue(t *testing.T) {
 		{name: "number with fraction", request: `7`, response: `7.0`, want: true},
 		{name: "string is not a number", request: `"7"`, response: `7`},
 		{name: "different id", request: `1`, response: `2`},
+		{name: "large integers that differ", request: `9007199254740993`, response: `9007199254740992`},
+		{name: "large integers that are equal", request: `9007199254740993`, response: `9007199254740993.0`, want: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

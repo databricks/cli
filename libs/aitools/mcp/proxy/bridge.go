@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"strings"
@@ -28,9 +29,11 @@ const (
 	eventStreamMIME   = "text/event-stream"
 
 	maxLineBytes   = 64 << 20
+	maxErrorBytes  = 1 << 20 // a non-2xx body is read up to this many bytes; its error message is an excerpt
 	connectTimeout = 10 * time.Second
 	deleteTimeout  = 5 * time.Second
 	excerptRunes   = 200
+	excerptBytes   = 4 * excerptRunes // a character takes at most four bytes
 
 	codeParseError     = -32700
 	codeInvalidRequest = -32600
@@ -75,6 +78,8 @@ type Bridge struct {
 	ForceListChanged bool
 	// Hooks, when set, sees every upstream message before it is written.
 	Hooks Hooks
+	// Transport performs the upstream requests. Nil uses the default transport with a 10 s connect timeout.
+	Transport http.RoundTripper
 }
 
 // Run forwards stdin to the endpoint until stdin closes or ctx is done. Shutdown waits up to 2 s for
@@ -84,9 +89,10 @@ func (b *Bridge) Run(ctx context.Context) error {
 	base, cancelBase := context.WithCancel(context.WithoutCancel(ctx))
 	c := &conn{
 		b:          b,
-		client:     newClient(),
+		client:     newClient(b.Transport),
 		cancelBase: cancelBase,
 		inflight:   map[string]context.CancelFunc{},
+		rejoinSlot: make(chan struct{}, 1),
 	}
 
 	lines := make(chan []byte)
@@ -176,8 +182,8 @@ type conn struct {
 	cancelBase context.CancelFunc
 	wg         sync.WaitGroup
 
-	ioMu     sync.Mutex // serializes writes to Out and Err
-	rejoinMu sync.Mutex // allows one session restart at a time
+	ioMu       sync.Mutex    // serializes writes to Out and Err
+	rejoinSlot chan struct{} // holds the slot of the one rejoin that runs at a time
 
 	mu          sync.Mutex // guards the fields below
 	state       upstreamState
@@ -186,11 +192,18 @@ type conn struct {
 	initialized clientMsg // the client's notifications/initialized, for replay
 }
 
-// newClient returns the upstream HTTP client: a 10 s connect timeout and the environment's proxy settings.
-func newClient() *http.Client {
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.DialContext = (&net.Dialer{Timeout: connectTimeout}).DialContext
-	return &http.Client{Transport: t}
+// newClient returns the upstream HTTP client over rt, or over the default transport when rt is nil. A redirect is
+// not followed: a 3xx response is a failed response with its status.
+func newClient(rt http.RoundTripper) *http.Client {
+	if rt == nil {
+		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.DialContext = (&net.Dialer{Timeout: connectTimeout}).DialContext
+		rt = t
+	}
+	return &http.Client{
+		Transport:     rt,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 }
 
 // handle starts one stdin message and returns the gate for the next one. A request or notification runs in
@@ -227,25 +240,27 @@ func (c *conn) handle(base context.Context, gate <-chan struct{}, line []byte) <
 		})
 		return gate
 	}
+	// The gate closes when the POST finishes or after notificationWait, whichever is first, so a stalled notification
+	// holds later messages for at most that long.
 	done := make(chan struct{})
+	release := sync.OnceFunc(func() { close(done) })
 	c.wg.Go(func() {
-		defer close(done)
+		timer := time.AfterFunc(notificationWait, release)
+		defer timer.Stop()
+		defer release()
 		defer cancel()
 		c.forward(ctx, gate, line, m)
 	})
 	return done
 }
 
-// await waits for gate to close, but for at most notificationWait. A nil gate has nothing to wait for.
+// await waits for gate to close or ctx to be done. A nil gate has nothing to wait for.
 func await(ctx context.Context, gate <-chan struct{}) {
 	if gate == nil {
 		return
 	}
-	t := time.NewTimer(notificationWait)
-	defer t.Stop()
 	select {
 	case <-gate:
-	case <-t.C:
 	case <-ctx.Done():
 	}
 }
@@ -260,7 +275,7 @@ func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m
 	defer idle.Stop()
 
 	x := &exchange{c: c, line: line, m: m, idle: idle}
-	if err := x.send(idleCtx, ctx, true); err != nil {
+	if err := x.send(idleCtx, ctx, m.isRequest()); err != nil {
 		x.fail(idleCtx, ctx, err)
 	}
 }
@@ -278,12 +293,11 @@ func (c *conn) shutdown(ctx context.Context) {
 	}
 	c.cancelBase()
 	<-done
-	c.deleteSession(ctx)
+	c.deleteSession(ctx, c.current())
 }
 
-// deleteSession ends the server-side session, best effort.
-func (c *conn) deleteSession(ctx context.Context) {
-	sent := c.current()
+// deleteSession ends the server-side session that sent names, best effort.
+func (c *conn) deleteSession(ctx context.Context, sent upstreamState) {
 	if sent.id == "" {
 		return
 	}
@@ -448,6 +462,40 @@ func (c *conn) cancelRequest(line []byte) {
 	}
 }
 
+// lockRejoin takes the slot for a rejoin. A request queued behind a rejoin that is still running returns when its
+// context is done.
+func (c *conn) lockRejoin(ctx context.Context) error {
+	select {
+	case c.rejoinSlot <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// unlockRejoin releases the slot taken by lockRejoin.
+func (c *conn) unlockRejoin() {
+	<-c.rejoinSlot
+}
+
+// isEventStream reports whether a Content-Type is text/event-stream. The media type is case-insensitive.
+func isEventStream(contentType string) bool {
+	mt, _, err := mime.ParseMediaType(contentType)
+	return err == nil && mt == eventStreamMIME
+}
+
+// readBody reads a 2xx body of at most limit bytes. A longer body is an error, as an oversized stdin message is.
+func readBody(r io.Reader, limit int) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r, int64(limit)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > limit {
+		return nil, fmt.Errorf("an upstream message exceeds the %d MiB limit", limit>>20)
+	}
+	return body, nil
+}
+
 // idleBody resets the idle timer on every read, so a response is cut only after idleTimeout without data.
 type idleBody struct {
 	io.ReadCloser
@@ -495,6 +543,7 @@ func (x *exchange) recordProtocol(data []byte) error {
 // send posts the message and writes its answer. ctx is cancelled by the idle timeout; reqCtx is the request's
 // context, which hooks receive.
 func (x *exchange) send(ctx, reqCtx context.Context, retry bool) error {
+	x.status = 0 // an attempt that fails before a response has no status of its own
 	sent := x.sending()
 	resp, err := x.c.post(ctx, x.line, sent)
 	if err != nil {
@@ -506,7 +555,7 @@ func (x *exchange) send(ctx, reqCtx context.Context, retry bool) error {
 	if resp.StatusCode/100 != 2 {
 		return x.httpFailure(ctx, reqCtx, resp, sent.id, retry)
 	}
-	if id := resp.Header.Get(sessionHeader); id != "" {
+	if id := resp.Header.Get(sessionHeader); id != "" && x.m.Method == methodInitialize {
 		x.c.setSession(id)
 	}
 	if err := x.read(reqCtx, resp); err != nil {
@@ -522,12 +571,14 @@ func (x *exchange) send(ctx, reqCtx context.Context, retry bool) error {
 // a 404 for a request that carried a session id means the server ended the session, so the client starts a new
 // one and posts the request once more.
 func (x *exchange) httpFailure(ctx, reqCtx context.Context, resp *http.Response, sent string, retry bool) error {
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBytes))
 	if err != nil {
 		return err
 	}
 	e := decodeErrorBody(body)
-	if e != nil && e.isResponseTo(x.m) {
+	// A 404 ends the session, unless its body is the result for the request. An error under 404 is the server's
+	// session-not-found answer, even when it carries the request's id.
+	if e != nil && e.isResponseTo(x.m) && (resp.StatusCode != http.StatusNotFound || e.Result != nil) {
 		return x.deliverMessage(reqCtx, body, e.message)
 	}
 	if resp.StatusCode == http.StatusNotFound && sent != "" && retry {
@@ -543,8 +594,10 @@ func (x *exchange) httpFailure(ctx, reqCtx context.Context, resp *http.Response,
 // replay succeeds. One rejoin runs at a time, and a request that finds the session already replaced just retries.
 func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	c := x.c
-	c.rejoinMu.Lock()
-	defer c.rejoinMu.Unlock()
+	if err := c.lockRejoin(ctx); err != nil {
+		return err
+	}
+	defer c.unlockRejoin()
 	if c.current().id != stale {
 		return nil
 	}
@@ -561,6 +614,10 @@ func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	}
 	next, err := c.replay(ctx, x.idle, msgs)
 	if err != nil {
+		if next.id != "" {
+			// The replay created a session that is not used.
+			c.deleteSession(ctx, next)
+		}
 		return fmt.Errorf("start a new session: %w", err)
 	}
 	c.publish(next)
@@ -568,12 +625,13 @@ func (x *exchange) rejoin(ctx context.Context, stale string) error {
 }
 
 // replay posts the client's handshake messages, in order, to a new session. Their answers are read here and not
-// written to stdout. It returns the session and protocol version they establish.
+// written to stdout. It returns the session and protocol version they establish, and on failure the session
+// created so far.
 func (c *conn) replay(ctx context.Context, idle *time.Timer, msgs []clientMsg) (upstreamState, error) {
 	var next upstreamState
 	for _, msg := range msgs {
 		if err := c.replayOne(ctx, idle, msg, &next); err != nil {
-			return upstreamState{}, err
+			return next, err
 		}
 	}
 	return next, nil
@@ -589,22 +647,18 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 	defer resp.Body.Close()
 	resp.Body = idleBody{ReadCloser: resp.Body, idle: idle}
 	if resp.StatusCode/100 != 2 {
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBytes))
 		if err != nil {
 			return err
 		}
-		e := decodeErrorBody(body)
-		if e == nil || !e.isResponseTo(msg.m) {
-			return httpError(resp.StatusCode, body, e)
-		}
-		return recordProtocol(msg.m, body, next)
+		return httpError(resp.StatusCode, body, decodeErrorBody(body))
 	}
-	if id := resp.Header.Get(sessionHeader); id != "" {
+	if id := resp.Header.Get(sessionHeader); id != "" && msg.m.Method == methodInitialize {
 		next.id = id
 	}
 
 	var answer []byte
-	if strings.HasPrefix(resp.Header.Get(contentTypeHeader), eventStreamMIME) {
+	if isEventStream(resp.Header.Get(contentTypeHeader)) {
 		err = readEvents(resp.Body, func(data []byte) (bool, error) {
 			m, err := parseMessage(data)
 			if err != nil {
@@ -618,7 +672,7 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 		})
 	} else {
 		var body []byte
-		body, err = io.ReadAll(resp.Body)
+		body, err = readBody(resp.Body, maxLineBytes)
 		if err == nil && len(bytes.TrimSpace(body)) > 0 && msg.m.isRequest() {
 			m, perr := parseMessage(body)
 			if perr != nil {
@@ -639,30 +693,45 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 	if answer == nil {
 		return errNoResponse
 	}
-	return recordProtocol(msg.m, answer, next)
+	if msg.m.Method == methodInitialize {
+		return recordInitialize(answer, next)
+	}
+	return nil
 }
 
-// recordProtocol sets next's protocol version from the result of an initialize response.
-func recordProtocol(m message, data []byte, next *upstreamState) error {
-	if m.Method != methodInitialize {
-		return nil
-	}
-	v, ok, err := initializeProtocol(data)
-	if err != nil || !ok {
+// recordInitialize sets next's protocol version from the result of an initialize answer. Without a result the
+// session is not usable, so the replay fails.
+func recordInitialize(answer []byte, next *upstreamState) error {
+	v, ok, err := initializeProtocol(answer)
+	if err != nil {
 		return err
+	}
+	if !ok {
+		return rejectedInitialize(answer)
 	}
 	next.protocol = v
 	return nil
 }
 
+// rejectedInitialize is the error for an initialize answer without a result: the server's message when it has one.
+func rejectedInitialize(answer []byte) error {
+	var r struct {
+		Error *rpcError `json:"error"`
+	}
+	if err := json.Unmarshal(answer, &r); err == nil && r.Error != nil {
+		return fmt.Errorf("the server rejected initialize: %s", r.Error.Message)
+	}
+	return fmt.Errorf("initialize has no result: %s", excerpt(answer))
+}
+
 // read delivers the messages in a 2xx response: an event stream, or one JSON body.
 func (x *exchange) read(reqCtx context.Context, resp *http.Response) error {
-	if strings.HasPrefix(resp.Header.Get(contentTypeHeader), eventStreamMIME) {
+	if isEventStream(resp.Header.Get(contentTypeHeader)) {
 		return readEvents(resp.Body, func(data []byte) (bool, error) {
 			return x.deliverEvent(reqCtx, data)
 		})
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := readBody(resp.Body, maxLineBytes)
 	if err != nil {
 		return err
 	}
@@ -773,11 +842,20 @@ func httpError(status int, body []byte, e *errorBody) error {
 	return fmt.Errorf("HTTP %d: %s", status, text)
 }
 
-// excerpt returns body as a single line, cut to excerptRunes characters.
+// excerpt returns the start of body as a single line of at most excerptRunes characters. Only the first excerptBytes
+// bytes are converted.
 func excerpt(body []byte) string {
+	cut := len(body) > excerptBytes
+	if cut {
+		body = body[:excerptBytes]
+	}
 	r := []rune(strings.Join(strings.Fields(string(body)), " "))
 	if len(r) > excerptRunes {
-		return string(r[:excerptRunes]) + "..."
+		r = r[:excerptRunes]
+		cut = true
+	}
+	if cut {
+		return string(r) + "..."
 	}
 	return string(r)
 }

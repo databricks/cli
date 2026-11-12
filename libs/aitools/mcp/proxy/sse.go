@@ -6,11 +6,13 @@ import (
 	"io"
 )
 
+// messageEvent is the event type of a JSON-RPC message. An event with no type is a message too.
+const messageEvent = "message"
+
 // readEvents calls fn with the data of each event in a text/event-stream body, in order, until fn returns
-// false. Multi-line data is joined with newlines. An event left open at the end of the stream is still
-// delivered. An event whose data is empty is skipped: a server sends one with an id and no data first, to
-// prime a client to resume (https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#sending-messages-to-the-server). id,
-// event and comment lines are ignored.
+// false. Multi-line data is joined with newlines, and an event left open at the end is still delivered. Only
+// events of type message, or with no type, are delivered. An event with empty data is skipped, such as the
+// priming event a server sends before a resumable stream.
 func readEvents(r io.Reader, fn func([]byte) (bool, error)) error {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, maxLineBytes)
@@ -23,11 +25,17 @@ func readEvents(r io.Reader, fn func([]byte) (bool, error)) error {
 			}
 			continue
 		}
-		field, value, _ := bytes.Cut(line, []byte{':'})
-		if line[0] == ':' || string(field) != "data" {
+		if line[0] == ':' {
 			continue
 		}
-		ev.add(bytes.TrimPrefix(value, []byte{' '}))
+		field, value, _ := bytes.Cut(line, []byte{':'})
+		value = bytes.TrimPrefix(value, []byte{' '})
+		switch string(field) {
+		case "data":
+			ev.add(value)
+		case "event":
+			ev.typ = string(value)
+		}
 	}
 	if err := sc.Err(); err != nil {
 		return err
@@ -36,8 +44,9 @@ func readEvents(r io.Reader, fn func([]byte) (bool, error)) error {
 	return err
 }
 
-// event collects the data lines of one text/event-stream event.
+// event collects the data lines and the type of one text/event-stream event.
 type event struct {
+	typ     string
 	data    []byte
 	hasData bool
 }
@@ -53,9 +62,9 @@ func (e *event) add(line []byte) {
 
 // dispatch passes the event's data to fn and clears the event. It reports whether fn wants more events.
 func (e *event) dispatch(fn func([]byte) (bool, error)) (bool, error) {
-	data := e.data
+	data, typ := e.data, e.typ
 	*e = event{}
-	if len(bytes.TrimSpace(data)) == 0 {
+	if (typ != "" && typ != messageEvent) || len(bytes.TrimSpace(data)) == 0 {
 		return true, nil
 	}
 	return fn(data)

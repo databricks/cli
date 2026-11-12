@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	"math/big"
 )
 
 // Method names and member names the bridge reads or edits.
@@ -35,13 +35,14 @@ type message struct {
 }
 
 // errorBody is a non-2xx response body: the envelope of a JSON-RPC response, and the message of either a
-// JSON-RPC error or a Databricks error body.
+// JSON-RPC error or a Databricks error body. Result is set when the body is a JSON-RPC result.
 type errorBody struct {
 	message
 	Message string `json:"message"`
 	Error   struct {
 		Message string `json:"message"`
 	} `json:"error"`
+	Result json.RawMessage `json:"result"`
 }
 
 // rpcError is the error object of a JSON-RPC error response.
@@ -91,16 +92,20 @@ func (m message) isResponseTo(request message) bool {
 	return m.Method == "" && request.isRequest() && idKey(m.ID) == idKey(request.ID)
 }
 
-// idKey returns the key that identifies a JSON-RPC id by its decoded value: a string by its text, and a
-// number by its value, so 7 and 7.0 match. An id that is not a string or number is keyed by its bytes.
+// idKey returns the key that identifies a JSON-RPC id by its value: a string by its text, and a number by its exact
+// value, so 7 and 7.0 match while integers above 2^53 stay distinct. Any other id is keyed by its bytes.
 func idKey(raw json.RawMessage) string {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
 	var v any
-	_ = json.Unmarshal(raw, &v) // an empty or invalid id has no value and keeps its bytes as the key
+	_ = dec.Decode(&v) // an empty or invalid id has no value and keeps its bytes as the key
 	switch v := v.(type) {
 	case string:
 		return "s" + v
-	case float64:
-		return "n" + strconv.FormatFloat(v, 'g', -1, 64)
+	case json.Number:
+		if r, ok := new(big.Rat).SetString(v.String()); ok {
+			return "n" + r.RatString()
+		}
 	}
 	return string(raw)
 }
