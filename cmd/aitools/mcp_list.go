@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -65,8 +66,10 @@ type mcpListProfile struct {
 }
 
 type mcpListServer struct {
-	Name           string         `json:"name"`
-	Service        string         `json:"service"`
+	Name    string `json:"name"`
+	Service string `json:"service"`
+	// Host is the host the server was set up for. The profile's host can differ after a change.
+	Host           string         `json:"host"`
 	SignInRequired bool           `json:"sign_in_required"`
 	Status         string         `json:"status"`
 	Agents         []mcpListAgent `json:"agents"`
@@ -147,11 +150,20 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 	if err != nil {
 		return out, err
 	}
-	// The configs of the agents named in the state are read too, so that a record for an agent outside the
-	// registry is reported as unknown, not as a moved config.
-	names := mcpAgentNames()
+	var entries []mcp.Entry
 	for _, e := range state.Servers {
-		for name := range e.Agents {
+		if profileName == "" || e.Profile == profileName {
+			entries = append(entries, e)
+		}
+	}
+	// Without --profile, the configs of every registry agent are read. The agents that the listed servers are recorded
+	// for are read too, so that a record for an agent outside the registry is reported as unknown, not as a moved config.
+	var names []string
+	if profileName == "" {
+		names = mcpAgentNames()
+	}
+	for _, e := range entries {
+		for _, name := range slices.Sorted(maps.Keys(e.Agents)) {
 			if !slices.Contains(names, name) {
 				names = append(names, name)
 			}
@@ -164,12 +176,6 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 		}
 	}
 
-	var entries []mcp.Entry
-	for _, e := range state.Servers {
-		if profileName == "" || e.Profile == profileName {
-			entries = append(entries, e)
-		}
-	}
 	checks := mcp.CheckEntries(ctx, &mcp.State{Servers: entries})
 	groups := map[profileKey]*mcpListProfile{}
 	for i, e := range entries {
@@ -188,7 +194,7 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 		if e.ConfigFile != "" {
 			p.ConfigFile = filepath.ToSlash(path)
 		}
-		s := mcpListServer{Name: e.Name, Service: e.Service, SignInRequired: e.SignInRequired, Status: statusOK, Agents: []mcpListAgent{}, entry: e}
+		s := mcpListServer{Name: e.Name, Service: e.Service, Host: e.Host, SignInRequired: e.SignInRequired, Status: statusOK, Agents: []mcpListAgent{}, entry: e}
 		switch {
 		case check.Err != nil:
 			s.Status = statusUnknown
@@ -367,9 +373,9 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 	if len(out.Profiles) == 0 && len(out.Unmanaged) == 0 {
 		if profileName != "" {
 			cmdio.LogString(ctx, fmt.Sprintf("No Databricks MCP servers installed by this CLI on profile %s.", profileName))
-			return
+		} else {
+			cmdio.LogString(ctx, "No Databricks MCP servers installed by this CLI.")
 		}
-		cmdio.LogString(ctx, "No Databricks MCP servers installed by this CLI.")
 	}
 	for i, p := range out.Profiles {
 		if i > 0 {
@@ -378,8 +384,14 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 		cmdio.LogString(ctx, profileHeader(p))
 		for _, s := range p.Servers {
 			cmdio.LogString(ctx, fmt.Sprintf("  %-24s %-30s %s", s.Name, s.Service, listAgentsText(s.Agents)))
-			if hint := serverHint(p, s); hint != "" {
+			if hint := serverHint(ctx, p, s); hint != "" {
 				cmdio.LogString(ctx, "  "+hint)
+			}
+			for _, a := range s.Agents {
+				if a.Status == agentStatusModified {
+					cmdio.LogString(ctx, fmt.Sprintf("  changed outside this CLI in %s: delete the entry from %s by hand and run `%s` again, or add the server again with --force",
+						agentDisplayName(a.Name), a.Path, mcp.RemoveNamesCommand(s.Name)))
+				}
 			}
 		}
 	}
@@ -405,12 +417,15 @@ func profileHeader(p mcpListProfile) string {
 		}
 		return fmt.Sprintf("Profile %s  (%s %s)", p.Profile, problem, filepath.ToSlash(p.configPath))
 	}
+	if p.ConfigFile != "" {
+		return fmt.Sprintf("Profile %s  (%s, config file %s)", p.Profile, p.Host, p.ConfigFile)
+	}
 	return fmt.Sprintf("Profile %s  (%s)", p.Profile, p.Host)
 }
 
 // serverHint tells the user how to repair a server whose profile no longer serves it. The remove command names the
 // server, so that the other servers of the profile are kept.
-func serverHint(p mcpListProfile, s mcpListServer) string {
+func serverHint(ctx context.Context, p mcpListProfile, s mcpListServer) string {
 	if s.Status == statusUnknown {
 		return "unchecked: see the warning below"
 	}
@@ -419,13 +434,28 @@ func serverHint(p mcpListProfile, s mcpListServer) string {
 	}
 	remove := mcp.RemoveNamesCommand(s.Name)
 	if s.drift.Kind == mcp.DriftProfileMissing {
-		pinned := ""
-		if s.entry.ConfigFile != "" {
-			pinned = filepath.ToSlash(p.configPath)
-		}
-		return fmt.Sprintf("broken: run `%s` or `%s`", remove, mcp.RecreateCommand(s.entry.Host, p.Profile, pinned))
+		return fmt.Sprintf("broken: run `%s` or `%s`", remove, mcp.RecreateCommand(s.entry.Host, p.Profile, loginFile(ctx, p, s.entry)))
 	}
 	return fmt.Sprintf("broken: %s; run `%s` and add it again", mcp.DriftMessage("it", s.entry, p.Profile, *s.drift), remove)
+}
+
+// loginFile returns the config file that a login hint for a server with a missing profile must name, or "" when the
+// login's default file is that file. A pinned server logs in to the file it is pinned to. An unpinned server is checked
+// against ~/.databrickscfg, and login writes to the file DATABRICKS_CONFIG_FILE names, so the hint names the checked
+// file when the environment names another one, or one that cannot be resolved.
+func loginFile(ctx context.Context, p mcpListProfile, entry mcp.Entry) string {
+	if entry.ConfigFile != "" {
+		return filepath.ToSlash(p.configPath)
+	}
+	environment := env.Get(ctx, mcpconfig.ConfigFileEnv)
+	if environment == "" {
+		return ""
+	}
+	path, err := mcp.ResolveConfigFile(ctx, environment)
+	if err == nil && mcp.SamePath(path, p.configPath) {
+		return ""
+	}
+	return filepath.ToSlash(p.configPath)
 }
 
 func listAgentsText(agentList []mcpListAgent) string {

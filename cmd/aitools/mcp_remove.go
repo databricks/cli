@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -375,6 +376,12 @@ func entryFile(ctx context.Context, e mcp.Entry, a *agents.Agent, recorded strin
 	return current, cachedRecordedFile(files, a, current), nil
 }
 
+// keptReason says why an entry is left in place, and how to get it out: by hand, or by adding the server again with --force.
+func keptReason(e mcp.Entry, a *agents.Agent, path string) string {
+	return fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place. To remove it, delete the entry from %s by hand and run remove again, or add the server again with --force",
+		agentDisplayName(a.Name), e.Name, filepath.ToSlash(path))
+}
+
 // removeAgentEntry removes the server from the config file at path, but only when the entry there is the one this CLI
 // wrote. A file that has no entry of the name is pruned: the record goes without an edit.
 func removeAgentEntry(ctx context.Context, e mcp.Entry, a *agents.Agent, path string, file recordedFile) (removeOutcome, string, error) {
@@ -390,7 +397,7 @@ func removeAgentEntry(ctx context.Context, e mcp.Entry, a *agents.Agent, path st
 		return 0, "", err
 	}
 	if !owned {
-		return removeKept, fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place", agentDisplayName(a.Name), e.Name), nil
+		return removeKept, keptReason(e, a, path), nil
 	}
 	if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
 		return 0, "", err

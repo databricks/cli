@@ -410,7 +410,9 @@ token = t
 	assert.Equal(t, "ok", logfood.Servers[0].Status)
 	require.Len(t, logfood.Servers[0].Agents, 1)
 	assert.Equal(t, agentStatusInstalled, logfood.Servers[0].Agents[0].Status)
+	assert.Equal(t, "https://adb-1.test", logfood.Servers[0].Host, "a server shows the host it was set up for")
 	assert.Equal(t, "host_changed", logfood.Servers[1].Status, "github-logfood was recorded against the old host")
+	assert.Equal(t, "https://adb-old.test", logfood.Servers[1].Host, "the recorded host, not the profile's new one")
 	require.Len(t, logfood.Servers[1].Agents, 1)
 	assert.Equal(t, agentStatusInstalled, logfood.Servers[1].Agents[0].Status)
 
@@ -490,7 +492,7 @@ func TestRenderMcpListNamesTheFileAndTheRepair(t *testing.T) {
 	text := stderr.String()
 
 	shownPath := filepath.ToSlash(pinnedPath)
-	assert.Contains(t, text, "Profile logfood  (https://adb-1.test)")
+	assert.Contains(t, text, "Profile logfood  (https://adb-1.test, config file "+shownPath+")")
 	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile \"logfood\" now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-logfood` and add it again")
 	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile \"logfood\" now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-query` and add it again")
 	assert.Contains(t, text, "broken: it was set up for https://adb-old.test, but profile \"logfood\" now points at https://adb-1.test; run `databricks aitools mcp remove --names github-moved` and add it again")
@@ -583,4 +585,128 @@ func TestBuildMcpListWarnsOnceForUnresolvableConfigFile(t *testing.T) {
 	require.Len(t, out.Profiles, 1)
 	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Status)
 	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Agents[0].Status)
+}
+
+// TestRenderMcpListLoginHintNamesCheckedFile checks the login hint of an unpinned server whose profile is missing from
+// ~/.databrickscfg. The entry is checked against that file, so the hint names it when DATABRICKS_CONFIG_FILE names
+// another file: login would otherwise write the profile to the environment's file.
+func TestRenderMcpListLoginHintNamesCheckedFile(t *testing.T) {
+	withHome(t)
+	writeDatabricksCfg(t, "")
+	claude := agents.ByName("claude-code")
+	checked, err := mcp.ResolveConfigFile(t.Context(), "")
+	require.NoError(t, err)
+	shownChecked := filepath.ToSlash(checked)
+	saveState(t, seedInstallEntry(t, claude, seed{"github-logfood", "system.ai.github", "logfood", "https://adb-1.test", testDatabricksCommand, ""}))
+
+	cases := []struct {
+		name, environment, login string
+	}{
+		{
+			name:        "environment names another file",
+			environment: filepath.Join(t.TempDir(), "other.cfg"),
+			login:       "`DATABRICKS_CONFIG_FILE=" + shownChecked + " databricks auth login --host https://adb-1.test --profile logfood`",
+		},
+		{
+			name:        "environment names no file",
+			environment: "",
+			login:       "`databricks auth login --host https://adb-1.test --profile logfood`",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DATABRICKS_CONFIG_FILE", tc.environment)
+			out, err := buildMcpList(t.Context(), "")
+			require.NoError(t, err)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			renderMcpList(ctx, out, "")
+			assert.Contains(t, stderr.String(), "or "+tc.login)
+		})
+	}
+}
+
+// TestRenderMcpListPrintsWarningsWhenEmpty checks that a listing with no server and no unmanaged entry still prints its
+// warnings in text, as JSON does, for a profile with no server and for no profile.
+func TestRenderMcpListPrintsWarningsWhenEmpty(t *testing.T) {
+	warning := "could not read the Codex CLI config: broken"
+	for _, profileName := range []string{"typo", ""} {
+		out := mcpListOutput{Profiles: []mcpListProfile{}, Unmanaged: []mcpListUnmanaged{}, Warnings: []string{warning}}
+		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+		renderMcpList(ctx, out, profileName)
+		assert.Contains(t, stderr.String(), "Warning: "+warning, "profile %q", profileName)
+	}
+}
+
+// TestBuildMcpListWithProfileReadsOnlyItsAgents checks that --profile reads the configs of the agents the profile's
+// servers are recorded for, so a broken config of an agent that the profile does not use is not warned about.
+func TestBuildMcpListWithProfileReadsOnlyItsAgents(t *testing.T) {
+	home := withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".codex", "config.toml"), []byte("[mcp_servers.broken\n"), 0o600))
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+
+	out, err := buildMcpList(t.Context(), "logfood")
+	require.NoError(t, err)
+	assert.Empty(t, out.Warnings, "codex is not used by logfood, so its config is not read")
+	require.Len(t, out.Profiles, 1)
+
+	all, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	require.Len(t, all.Warnings, 1)
+	assert.Contains(t, all.Warnings[0], "Codex CLI")
+}
+
+// TestBuildMcpListWarnsInStableOrderForUnknownAgents checks that the warnings for two records of agents outside the
+// registry come in name order, not in the order a map yields them. The map is iterated many times, so an unstable
+// order would show.
+func TestBuildMcpListWarnsInStableOrderForUnknownAgents(t *testing.T) {
+	withHome(t)
+	writeDatabricksCfg(t, "")
+	for range 20 {
+		saveState(t, mcp.Entry{
+			Name: "genie_one_mcp-logfood", Service: "system.ai.genie_one_mcp", Profile: "logfood", Host: "https://adb-1.test",
+			Command: testDatabricksCommand, Agents: map[string]mcp.AgentRecord{
+				"zeta-agent":  {Path: "/x/zeta.json", Scope: "user"},
+				"alpha-agent": {Path: "/x/alpha.json", Scope: "user"},
+			},
+		})
+		out, err := buildMcpList(t.Context(), "")
+		require.NoError(t, err)
+		require.Len(t, out.Warnings, 2)
+		assert.Equal(t, "could not read the alpha-agent config: alpha-agent is not a known agent", out.Warnings[0])
+		assert.Equal(t, "could not read the zeta-agent config: zeta-agent is not a known agent", out.Warnings[1])
+	}
+}
+
+// TestRenderMcpListSaysHowToClearChangedEntry checks that a server with an entry changed outside this CLI says in list how
+// to get it out, the same way remove says it.
+func TestRenderMcpListSaysHowToClearChangedEntry(t *testing.T) {
+	home := withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	claudePath := filepath.Join(home, ".claude.json")
+	repointEntry(t, claudePath, entry.Name, "/usr/bin/other")
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "  changed outside this CLI in Claude Code: delete the entry from "+filepath.ToSlash(claudePath)+
+		" by hand and run `databricks aitools mcp remove --names genie_one_mcp-logfood` again, or add the server again with --force\n")
+}
+
+// TestProfileHeaderNamesPinnedConfigFile checks that two groups of one profile and host, in different config files, have
+// different headers: a pinned group names its file.
+func TestProfileHeaderNamesPinnedConfigFile(t *testing.T) {
+	first := mcpListProfile{Profile: "logfood", Host: "https://adb-1.test", ConfigFile: "/cfg/first.cfg", Status: statusOK}
+	second := mcpListProfile{Profile: "logfood", Host: "https://adb-1.test", ConfigFile: "/cfg/second.cfg", Status: statusOK}
+	unpinned := mcpListProfile{Profile: "logfood", Host: "https://adb-1.test", Status: statusOK}
+
+	assert.Equal(t, "Profile logfood  (https://adb-1.test, config file /cfg/first.cfg)", profileHeader(first))
+	assert.NotEqual(t, profileHeader(first), profileHeader(second))
+	assert.Equal(t, "Profile logfood  (https://adb-1.test)", profileHeader(unpinned))
 }

@@ -196,6 +196,9 @@ func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
 	require.Len(t, out.Skipped, 1)
 	assert.Equal(t, "genie_one_mcp-logfood", out.Skipped[0].Name)
 	assert.Equal(t, "claude-code", out.Skipped[0].Agent)
+	assert.Equal(t, "Claude Code has an entry named genie_one_mcp-logfood that was changed outside this CLI; left in place. "+
+		"To remove it, delete the entry from "+filepath.ToSlash(claudePath)+" by hand and run remove again, "+
+		"or add the server again with --force", out.Skipped[0].Reason)
 
 	after, err := os.ReadFile(claudePath)
 	require.NoError(t, err)

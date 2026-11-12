@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
+	"gopkg.in/ini.v1"
 )
 
 // Drift kinds reported by CheckEntries.
@@ -149,6 +150,10 @@ func (c configFiles) profile(path, name string) (profile.Profile, error) {
 		return profile.Profile{}, errProfileMissing
 	}
 	keys := section.KeysHash()
+	if len(keys) == 0 && name == ini.DefaultSection {
+		// The INI parser always has a DEFAULT section, so an empty one means the file has no such profile.
+		return profile.Profile{}, errProfileMissing
+	}
 	if keys["host"] == "" {
 		return profile.Profile{}, errProfileNoHost
 	}

@@ -187,12 +187,12 @@ func RemoveNamesCommand(name string) string {
 	return mcpRemoveCommand + " --names " + shellquote.BashArg(name)
 }
 
-// RecreateCommand returns the command that logs in to host for profileName again. A server pinned to a config file
-// passes that file as pinnedPath, so the login writes to the file the server reads; pass "" for an unpinned server.
-func RecreateCommand(host, profileName, pinnedPath string) string {
+// RecreateCommand returns the command that logs in to host for profileName again. configFile is the file the login must
+// write, passed as DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
+func RecreateCommand(host, profileName, configFile string) string {
 	command := authLoginCommand + " --host " + shellquote.BashArg(host) + " --profile " + shellquote.BashArg(profileName)
-	if pinnedPath != "" {
-		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(pinnedPath) + " " + command
+	if configFile != "" {
+		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
 	}
 	return command
 }

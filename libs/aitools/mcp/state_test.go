@@ -385,3 +385,17 @@ func TestCheckEntriesKeepsEachResultOnItsEntry(t *testing.T) {
 	require.NotNil(t, checks[2].Drift)
 	assert.Equal(t, mcp.DriftHostChanged, checks[2].Drift.Kind)
 }
+
+// TestCheckEntriesDefaultSectionWithoutKeysIsMissing checks that a profile named DEFAULT is missing when the file has no
+// [DEFAULT] keys. The INI parser always has a DEFAULT section, so an empty one is not a section with no host.
+func TestCheckEntriesDefaultSectionWithoutKeysIsMissing(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
+	path := bindingTestWriteConfig(t, "[logfood]\nhost = https://adb-1.test\n")
+	entry := stateTestEntry()
+	entry.Profile = "DEFAULT"
+	entry.ConfigFile = path
+
+	drifts, err := driftsOf(mcp.CheckEntries(ctx, &mcp.State{Servers: []mcp.Entry{entry}}))
+	require.NoError(t, err)
+	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry}}, drifts)
+}
