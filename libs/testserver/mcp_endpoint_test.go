@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,4 +94,46 @@ func TestMcpEndpointNoBodyForNotificationsAndResponses(t *testing.T) {
 			assert.Nil(t, response.Body)
 		})
 	}
+}
+
+func TestMcpEndpointPassesThroughOnceCredentialExists(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	const name = "system.ai.github"
+	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
+	const list = `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`
+
+	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
+
+	workspace.McpUserCredentialCreate(name)
+
+	reply := mcpEndpointTestCall(t, workspace, name, list)
+	assert.Nil(t, reply["error"])
+	assert.NotNil(t, reply["result"])
+
+	workspace.McpUserCredentials = map[string]catalog.McpServiceUserMappedCredential{}
+	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
+}
+
+func TestMcpEndpointURLElicitationChallenge(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	const name = "system.ai.github"
+	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
+	workspace.McpSignInChallenge = map[string]McpSignInChallenge{name: McpChallengeURL}
+
+	reply := mcpEndpointTestCall(t, workspace, name, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo"}}`)
+	errBody := reply["error"].(map[string]any)
+	assert.EqualValues(t, -32042, errBody["code"])
+	elicitation := errBody["data"].(map[string]any)["elicitations"].([]any)[0].(map[string]any)
+	assert.Equal(t, "url", elicitation["mode"])
+	assert.Equal(t, "http://test/mcp-service-login?name=system.ai.github", elicitation["url"])
+}
+
+func TestMcpEndpointHTTPUnauthorizedChallenge(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	const name = "system.ai.github"
+	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
+	workspace.McpSignInChallenge = map[string]McpSignInChallenge{name: McpChallengeHTTP}
+
+	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)}, name)
+	assert.Equal(t, 401, response.StatusCode)
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/stretchr/testify/assert"
@@ -754,4 +755,41 @@ func waitForChildLine(t *testing.T, lines <-chan string, want string) {
 			t.Fatalf("timed out waiting for %q", want)
 		}
 	}
+}
+
+func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
+	const githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github"
+	const githubJSON = `{"name":"mcp-services/system.ai.github","config":{"source_connection":{"name":"connections/github",` +
+		`"options":{"oauth_provider":"github"}}}}`
+	var lookups atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != githubPath {
+			http.NotFound(w, r)
+			return
+		}
+		lookups.Add(1)
+		_, _ = io.WriteString(w, githubJSON)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", io.Discard)
+	require.NoError(t, err)
+	require.NotNil(t, challenge)
+	assert.Equal(t, "system.ai.github", challenge.Service)
+	assert.Equal(t, "logfood", challenge.Profile)
+	assert.Equal(t, server.URL, challenge.Host)
+	assert.Equal(t, "GitHub", challenge.Label)
+	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
+
+	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", io.Discard)
+	require.NoError(t, err)
+	assert.Nil(t, challenge)
+	assert.Equal(t, int32(0), lookups.Load())
+
+	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", io.Discard)
+	require.NoError(t, err)
+	assert.NotNil(t, challenge)
+	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
 }

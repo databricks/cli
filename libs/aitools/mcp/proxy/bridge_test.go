@@ -827,6 +827,10 @@ func (f hookFunc) Result(ctx context.Context, request []byte, status int, msg []
 	return f(ctx, request, status, msg)
 }
 
+func (hookFunc) Local(context.Context, []byte) ([][]byte, bool) {
+	return nil, false
+}
+
 func TestRunHooksReplaceAndInjectMessages(t *testing.T) {
 	const request = `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`
 	const synthetic = `{"jsonrpc":"2.0","id":2,"result":{"tools":[]}}`

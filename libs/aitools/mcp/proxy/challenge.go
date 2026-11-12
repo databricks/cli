@@ -1,0 +1,254 @@
+package proxy
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+)
+
+const (
+	authenticateTool = "authenticate"
+	signInPath       = "/mcp-service-login"
+
+	codeSignInRequired = -32006
+	codeURLElicitation = -32042
+)
+
+var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
+
+// SignInTimeout means the sign-in page was opened and the credential did not become ACTIVE in time.
+// URL is the page the user can finish at.
+type SignInTimeout struct {
+	URL string
+}
+
+func (e *SignInTimeout) Error() string {
+	return "sign-in did not complete before the timeout"
+}
+
+// SignInFunc runs the sign-in for the authenticate tool and waits for it. open is false when the
+// sign-in page must not be opened again in this session. It reports alreadySignedIn when the caller
+// needed no sign-in, and returns a *SignInTimeout when the wait ended first.
+type SignInFunc func(ctx context.Context, open bool) (alreadySignedIn bool, err error)
+
+// Challenge turns on sign-in handling for a service that needs a provider sign-in.
+type Challenge struct {
+	// Service is the full name of the MCP service, for example system.ai.github.
+	Service string
+	// Profile is the bound profile's name.
+	Profile string
+	// Host is the bound profile's workspace URL. Sign-in URLs must be on this host.
+	Host string
+	// Label names the provider in messages.
+	Label string
+	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself.
+	SignIn SignInFunc
+}
+
+// signInHooks applies the sign-in rules to the bridge. Services without a challenge get no hooks.
+type signInHooks struct {
+	c *Challenge
+
+	// mu serializes authenticate calls and guards the two fields below.
+	mu       sync.Mutex
+	opened   bool // the sign-in page was opened in this session
+	timedOut bool // the last attempt timed out, so the page may open again
+}
+
+// Local answers the authenticate tool call. Other requests, and messages that do not decode, are forwarded.
+func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool) {
+	var req struct {
+		message
+		Params struct {
+			Name string `json:"name"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(request, &req) != nil || !req.isRequest() || req.Method != "tools/call" || req.Params.Name != authenticateTool {
+		return nil, false
+	}
+	return h.authenticate(ctx, req.ID), true
+}
+
+// Result replaces a challenged tools/list answer with the authenticate tool. A challenged tools/call
+// answer becomes a sign-in message, followed by tools/list_changed so an agent that cached its list re-lists.
+func (h *signInHooks) Result(_ context.Context, request []byte, status int, message []byte) ([][]byte, error) {
+	req, err := parseMessage(request)
+	if err != nil {
+		return nil, err
+	}
+	switch req.Method {
+	case "tools/list":
+		if h.challenged(status, message) {
+			return [][]byte{h.authenticateList(req.ID)}, nil
+		}
+	case "tools/call":
+		if h.challenged(status, message) {
+			return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
+		}
+	}
+	return [][]byte{message}, nil
+}
+
+// upstreamReply is the part of an upstream message that challenge detection reads.
+type upstreamReply struct {
+	Error *struct {
+		Code int             `json:"code"`
+		Data json.RawMessage `json:"data"`
+	} `json:"error"`
+	Result *struct {
+		IsError bool          `json:"isError"`
+		Content []textContent `json:"content"`
+	} `json:"result"`
+}
+
+type textContent struct {
+	Text string `json:"text"`
+}
+
+// challenged reports whether an upstream answer says the caller must sign in: HTTP 401, JSON-RPC
+// -32006, a -32042 whose elicitations are all sign-in URLs, or an isError result whose text has one.
+func (h *signInHooks) challenged(status int, message []byte) bool {
+	if status == http.StatusUnauthorized {
+		return true
+	}
+	var reply upstreamReply
+	if err := json.Unmarshal(message, &reply); err != nil {
+		return false
+	}
+	if reply.Error != nil {
+		switch reply.Error.Code {
+		case codeSignInRequired:
+			return true
+		case codeURLElicitation:
+			return h.urlElicitation(reply.Error.Data)
+		}
+		return false
+	}
+	return reply.Result != nil && reply.Result.IsError && h.textHasSignInURL(reply.Result.Content)
+}
+
+// urlElicitation reports whether data lists one or more URL elicitations, all of them sign-in URLs.
+// A mixed challenge, such as an approval request, is not a sign-in.
+func (h *signInHooks) urlElicitation(data json.RawMessage) bool {
+	var d struct {
+		Elicitations []struct {
+			Mode string `json:"mode"`
+			URL  string `json:"url"`
+		} `json:"elicitations"`
+	}
+	if json.Unmarshal(data, &d) != nil || len(d.Elicitations) == 0 {
+		return false
+	}
+	for _, e := range d.Elicitations {
+		if e.Mode != "url" || !h.isSignInURL(e.URL) {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *signInHooks) textHasSignInURL(content []textContent) bool {
+	for _, c := range content {
+		for word := range strings.FieldsSeq(c.Text) {
+			if h.isSignInURL(strings.TrimRight(word, ".,;:)\"'")) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isSignInURL reports whether raw is this service's sign-in page on the profile's host.
+func (h *signInHooks) isSignInURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	base, err := url.Parse(h.c.Host)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == base.Scheme && strings.EqualFold(u.Host, base.Host) &&
+		u.Path == signInPath && u.Query().Get("name") == h.c.Service
+}
+
+// authenticateList is the one-tool list a challenged service answers with.
+func (h *signInHooks) authenticateList(id json.RawMessage) []byte {
+	tool := map[string]any{
+		"name": authenticateTool,
+		"description": fmt.Sprintf("Sign-in is required before this Databricks MCP service (%s, workspace %s, CLI profile %s) can list or run its tools. "+
+			"Call this tool when the user asks for this service. It opens a browser for the user to sign in to %s with the same account as the Databricks profile "+
+			"and waits until the sign-in completes. After it succeeds, retry the user's original request in the same turn.",
+			h.c.Service, h.c.Host, h.c.Profile, h.c.Label),
+		"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}, "additionalProperties": false},
+	}
+	return resultResponse(id, map[string]any{"tools": []any{tool}})
+}
+
+// signInRequired answers a challenged tool call without opening a browser.
+func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
+	text := fmt.Sprintf("%s on profile %s needs a one-time sign-in to %s. Call the authenticate tool, or run: "+
+		"databricks aitools mcp login %s --profile %s. If the consent screen says your organization requires approval, "+
+		"share the app name shown there with your Databricks admin.",
+		h.c.Service, h.c.Profile, h.c.Label, h.c.Service, h.c.Profile)
+	return toolResult(id, text, true)
+}
+
+// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call
+// waits for the first. The page opens once per session, and again only after an attempt timed out.
+func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]byte {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	open := !h.opened || h.timedOut
+	if open {
+		h.opened = true
+		// The telemetry change logs SIGN_IN_PROMPTED here, when the sign-in page opens.
+	}
+	alreadySignedIn, err := h.c.SignIn(ctx, open)
+	timeout, timedOut := errors.AsType[*SignInTimeout](err)
+	h.timedOut = timedOut
+
+	switch {
+	case err == nil && alreadySignedIn:
+		return [][]byte{
+			toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
+			listChangedNotification,
+		}
+	case err == nil:
+		return [][]byte{
+			toolResult(id, fmt.Sprintf("Signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
+			listChangedNotification,
+		}
+	case timedOut:
+		return [][]byte{toolResult(id, fmt.Sprintf(
+			"Sign-in to %s did not complete in 5 minutes. Finish at %s then retry, or run: databricks aitools mcp login %s --profile %s",
+			h.c.Service, timeout.URL, h.c.Service, h.c.Profile), true)}
+	default:
+		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
+	}
+}
+
+// resultResponse builds a JSON-RPC success response.
+func resultResponse(id json.RawMessage, result any) []byte {
+	// Cannot fail: the id came from a parsed request and result holds only plain values.
+	b, _ := json.Marshal(struct {
+		JSONRPC string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Result  any             `json:"result"`
+	}{JSONRPC: "2.0", ID: id, Result: result})
+	return b
+}
+
+// toolResult builds a tool call result with one text content item.
+func toolResult(id json.RawMessage, text string, isError bool) []byte {
+	return resultResponse(id, map[string]any{
+		"content": []any{map[string]any{"type": "text", "text": text}},
+		"isError": isError,
+	})
+}

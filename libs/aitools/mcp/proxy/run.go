@@ -38,6 +38,8 @@ type Options struct {
 	Agent string
 	// Transport performs the upstream requests. Nil means http.DefaultTransport, as in Bridge.
 	Transport http.RoundTripper
+	// Challenge enables sign-in handling for a sign-in-required service. Nil passes everything through.
+	Challenge *Challenge
 }
 
 // Run bridges opts.In to the service endpoint until In closes or ctx is done. It returns an error
@@ -63,6 +65,11 @@ func Run(ctx context.Context, opts Options) error {
 		Headers:      headers,
 		Transport:    opts.Transport,
 		Instructions: fmt.Sprintf("This server is bound to Databricks workspace %s (CLI profile \"%s\"). Its tools act on that workspace only.", opts.Config.Host, opts.Profile),
+	}
+	if opts.Challenge != nil {
+		// The initialize result must advertise tools/list_changed so an agent re-lists after sign-in.
+		b.ForceListChanged = true
+		b.Hooks = &signInHooks{c: opts.Challenge}
 	}
 	return b.Run(ctx)
 }

@@ -58,3 +58,12 @@ var knownSystemAI = map[string]KnownService{
 		Note: "Scopes ending in .All usually need tenant admin consent.",
 	},
 }
+
+// ProviderLabel names the provider of a service in messages: the known label for a system.ai
+// service, else the full name.
+func ProviderLabel(fullName string) string {
+	if known, ok := knownSystemAI[LeafOf(fullName)]; ok && inSystemAI(fullName) {
+		return known.Label
+	}
+	return fullName
+}

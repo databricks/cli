@@ -1,0 +1,42 @@
+
+>>> [CLI] api post /api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github --profile logfood --json {"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}
+
+=== Before sign-in, tools/list answers with one tool, authenticate; it opened no sign-in
+
+>>> jq -c select(.id==2) | [.result.tools[].name] serve.stdout.txt
+["authenticate"]
+
+>>> cat stderr-before-authenticate.txt
+No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL].
+
+=== authenticate waits for the sign-in, then answers and asks the agent to re-list
+
+>>> jq -c select(.id==3) | .result | {isError, text: .content[0].text} serve.stdout.txt
+{"isError":false,"text":"Signed in to system.ai.github on profile logfood. Tools are available now; retry the user's request in this turn."}
+
+>>> jq -c select(.method=="notifications/tools/list_changed") serve.stdout.txt
+{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}
+
+>>> cat serve.stderr.txt
+No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL].
+Open this URL to sign in to system.ai.github:
+[DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
+Waiting for sign-in...
+
+=== After the sign-in, tools/list passes through and tools/call reaches the service
+
+>>> jq -c select(.id==4) | [.result.tools[].name] serve.stdout.txt
+["echo"]
+
+>>> jq -c select(.id==5) | .result.content[0].text serve.stdout.txt
+"hello"
+
+=== Stdout holds only JSON-RPC lines
+
+>>> jq -c .jsonrpc serve.stdout.txt
+"2.0"
+"2.0"
+"2.0"
+"2.0"
+"2.0"
+"2.0"

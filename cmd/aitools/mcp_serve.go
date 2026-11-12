@@ -21,9 +21,13 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/browser"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -110,6 +114,15 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
 
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err != nil {
+		return serveFailure(cmd, err, 1)
+	}
+	challenge, err := serveChallenge(cmd.Context(), w, entry, profileName, f.service, cmd.ErrOrStderr())
+	if err != nil {
+		return serveFailure(cmd, err, 1)
+	}
+
 	return serveProxy(cmd, proxy.Options{
 		In:           cmd.InOrStdin(),
 		Out:          cmd.OutOrStdout(),
@@ -120,7 +133,65 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Profile:      profileName,
 		Agent:        serveAgent(f.agent, cmd.ErrOrStderr()),
 		Transport:    serveTransport(cfg),
+		Challenge:    challenge,
 	}, mcp.PinnedFile(entry, cfg.ConfigFile))
+}
+
+// serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
+// a pure passthrough. The state entry decides when there is one; otherwise the service is read once.
+func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *mcp.Entry, profileName, service string, errOut io.Writer) (*proxy.Challenge, error) {
+	signInRequired := entry != nil && entry.SignInRequired
+	if entry == nil {
+		svc, err := mcp.GetService(ctx, w, service)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read MCP service %s: %w", service, err)
+		}
+		signInRequired = svc.SignInRequired
+	}
+	if !signInRequired {
+		return nil, nil
+	}
+	return &proxy.Challenge{
+		Service: service,
+		Profile: profileName,
+		Host:    w.Config.Host,
+		Label:   mcp.ProviderLabel(service),
+		SignIn:  serveSignIn(w, profileName, service, errOut),
+	}, nil
+}
+
+// serveSignIn is the authenticate tool's sign-in. Progress goes to errOut, which is stderr because stdout carries the
+// protocol. The page opens only when open is set, so the proxy decides how often the browser opens.
+func serveSignIn(w *databricks.WorkspaceClient, profileName, service string, errOut io.Writer) proxy.SignInFunc {
+	return func(ctx context.Context, open bool) (bool, error) {
+		state, err := mcp.CredentialState(ctx, w, service)
+		if err != nil {
+			return false, err
+		}
+		if state == catalog.ProvisioningInfoStateActive {
+			return true, nil
+		}
+		workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
+		if err != nil {
+			return false, err
+		}
+		url := mcp.SignInURL(w.Config.Host, service, workspaceID)
+		// SignIn always calls Open, so a call that must not open the page passes one that does nothing.
+		openPage := func(context.Context, string) error { return nil }
+		if open {
+			openPage = browser.OpenOutputToStderr
+		}
+		alreadySignedIn, _, err := mcp.SignIn(ctx, w, url, service, errOut, mcp.SignInOptions{
+			Profile: profileName,
+			Poll:    mcp.SignInPollInterval,
+			Timeout: mcp.SignInWaitTimeout,
+			Open:    openPage,
+		})
+		if _, timedOut := errors.AsType[*mcp.SignInTimeoutError](err); timedOut {
+			return false, &proxy.SignInTimeout{URL: url}
+		}
+		return alreadySignedIn, err
+	}
 }
 
 // serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
