@@ -7,7 +7,7 @@
 ["authenticate"]
 
 >>> cat stderr-before-authenticate.txt
-No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL].
+No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL]
 
 === authenticate waits for the sign-in, then answers and asks the agent to re-list
 
@@ -18,7 +18,7 @@ No install record for system.ai.github on profile "logfood"; using its current h
 {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}
 
 >>> cat serve.stderr.txt
-No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL].
+No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL]
 Open this URL to sign in to system.ai.github:
 [DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
 Waiting for sign-in...
