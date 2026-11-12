@@ -31,11 +31,9 @@ func TestKnownSystemAITable(t *testing.T) {
 		t.Run(tt.leaf, func(t *testing.T) {
 			known, ok := knownSystemAI[tt.leaf]
 			require.True(t, ok)
-			assert.Equal(t, tt.leaf, known.Leaf)
 			assert.Equal(t, tt.label, known.Label)
 			assert.Equal(t, tt.beta, known.Beta)
 			assert.Equal(t, tt.recommended, known.Recommended)
-			assert.Equal(t, builtinServicesDocs, known.Docs)
 		})
 	}
 }

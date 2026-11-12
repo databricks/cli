@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mcpServicesTestGitHubProvider is the oauth_provider the API reports for GitHub.
+const mcpServicesTestGitHubProvider = "OAUTH_PROVIDER_GITHUB_MCP"
+
 // mcpServicesTestList calls the list handler with the given query string.
 func mcpServicesTestList(t *testing.T, workspace *FakeWorkspace, rawQuery string) []catalog.McpService {
 	t.Helper()
@@ -26,8 +29,8 @@ func mcpServicesTestWorkspace(t *testing.T) *FakeWorkspace {
 	t.Helper()
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	workspace.SeedMcpService("system.ai.genie_one_mcp", "Genie", "")
-	workspace.SeedMcpService("system.ai.github", "GitHub", "OAUTH_PROVIDER_GITHUB_MCP")
-	workspace.SeedMcpService("main.tools.crm", "CRM", "OAUTH_PROVIDER_GITHUB_MCP")
+	workspace.SeedMcpService("system.ai.github", "GitHub", mcpServicesTestGitHubProvider)
+	workspace.SeedMcpService("main.tools.crm", "CRM", mcpServicesTestGitHubProvider)
 	return workspace
 }
 
@@ -48,7 +51,7 @@ func TestMcpServicesListViewFullKeepsSourceConnection(t *testing.T) {
 	assert.Nil(t, services[0].Config)
 	require.NotNil(t, services[1].Config)
 	require.NotNil(t, services[1].Config.SourceConnection)
-	assert.Equal(t, "OAUTH_PROVIDER_GITHUB_MCP", services[1].Config.SourceConnection.Options["oauth_provider"])
+	assert.Equal(t, mcpServicesTestGitHubProvider, services[1].Config.SourceConnection.Options["oauth_provider"])
 }
 
 func TestMcpServicesListViewBasicOmitsSourceConnection(t *testing.T) {

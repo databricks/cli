@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -19,9 +18,6 @@ const mcpServicePrefix = "mcp-services/"
 
 // oauthProviderOption is the source connection option that marks a service as needing sign-in.
 const oauthProviderOption = "oauth_provider"
-
-// listPageSize is the largest page the API allows for view=FULL.
-const listPageSize = 200
 
 // Service is an MCP service in a schema, as the API reports it.
 type Service struct {
@@ -52,13 +48,12 @@ func Discover(ctx context.Context, w *databricks.WorkspaceClient, location strin
 		if isDeletedSource(&list[i]) {
 			continue
 		}
-		services = append(services, newService(location, &list[i]))
+		services = append(services, newService(&list[i]))
 	}
 	return services, nil
 }
 
-// ListErrorKind names a listing failure. Each value is the telemetry category name, so a
-// caller can map it to telemetry without another table.
+// ListErrorKind names a listing failure.
 type ListErrorKind string
 
 const (
@@ -75,15 +70,20 @@ type ListError struct {
 	Err      error
 }
 
+// Error names the likely cause and keeps the server's message, because the SDK maps
+// different failures to the same sentinel (any 404, or a private link 403).
 func (e *ListError) Error() string {
 	switch e.Kind {
 	case ListErrLocationNotFound:
-		return e.Location + " is not a schema visible to this profile"
+		return fmt.Sprintf("%s is not a schema visible to this profile: %v", e.Location, e.Err)
 	case ListErrPermissionDenied:
-		return fmt.Sprintf("cannot list MCP services in %s; needs USE on the schema and EXECUTE on the MCP service", e.Location)
-	default:
-		return "MCP service listing was rate limited; retry in a minute"
+		// Listing needs these two grants; services the caller cannot use are left out
+		// of the result instead of failing it.
+		return fmt.Sprintf("cannot list MCP services in %s (listing needs USE_CATALOG on the catalog and USE_SCHEMA on the schema): %v", e.Location, e.Err)
+	case ListErrRateLimited:
+		return fmt.Sprintf("MCP service listing in %s was rate limited; retry in a minute: %v", e.Location, e.Err)
 	}
+	return fmt.Sprintf("cannot list MCP services in %s: %v", e.Location, e.Err)
 }
 
 func (e *ListError) Unwrap() error {
@@ -91,11 +91,10 @@ func (e *ListError) Unwrap() error {
 }
 
 func listServices(ctx context.Context, w *databricks.WorkspaceClient, location string) ([]catalog.McpService, error) {
-	return listing.ToSlice(ctx, w.AiGateway.ListMcpServices(ctx, catalog.ListMcpServicesRequest{
-		Parent:   "schemas/" + location,
-		View:     catalog.ListMcpServicesRequestViewFull,
-		PageSize: listPageSize,
-	}))
+	return w.AiGateway.ListMcpServicesAll(ctx, catalog.ListMcpServicesRequest{
+		Parent: "schemas/" + location,
+		View:   catalog.ListMcpServicesRequestViewFull,
+	})
 }
 
 // mapListError classifies a listing failure. Other errors are returned with context only.
@@ -127,9 +126,12 @@ func oauthProvider(svc *catalog.McpService) string {
 	return svc.Config.SourceConnection.Options[oauthProviderOption]
 }
 
-func newService(location string, svc *catalog.McpService) Service {
+func newService(svc *catalog.McpService) Service {
 	fullName := strings.TrimPrefix(svc.Name, mcpServicePrefix)
-	leaf := strings.TrimPrefix(fullName, location+".")
+	// The API returns lowercase names whatever casing the caller used for the location, so
+	// the schema and leaf come from the returned name. Unity Catalog names cannot contain ".".
+	dot := strings.LastIndex(fullName, ".")
+	namespace, leaf := fullName[:max(dot, 0)], fullName[dot+1:]
 	provider := oauthProvider(svc)
 
 	s := Service{
@@ -139,7 +141,7 @@ func newService(location string, svc *catalog.McpService) Service {
 		SignInRequired: provider != "",
 		OAuthProvider:  provider,
 	}
-	if known, ok := knownSystemAI[leaf]; ok && location == systemAILocation {
+	if known, ok := knownSystemAI[leaf]; ok && namespace == systemAILocation {
 		s.Known = &known
 	}
 	return s

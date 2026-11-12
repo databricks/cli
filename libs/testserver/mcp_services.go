@@ -11,6 +11,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+// Resource-name prefixes of MCP services and their parent schemas.
+const (
+	mcpServicesNamePrefix   = "mcp-services/"
+	mcpServicesParentPrefix = "schemas/"
+)
+
 // mcpServicesViewFull is the list view that includes source connections. Any other view,
 // including unset, omits them, as the API does.
 const mcpServicesViewFull = "FULL"
@@ -30,10 +36,10 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 		}
 	}
 
-	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
+	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), mcpServicesParentPrefix)
 	key := schema + "." + req.URL.Query().Get("mcp_service_id")
 
-	ms.Name = "mcp-services/" + key
+	ms.Name = mcpServicesNamePrefix + key
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
@@ -81,7 +87,7 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 	defer s.LockUnlock()()
 
 	query := req.URL.Query()
-	prefix := strings.TrimPrefix(query.Get("parent"), "schemas/") + "."
+	prefix := strings.TrimPrefix(query.Get("parent"), mcpServicesParentPrefix) + "."
 	full := query.Get("view") == mcpServicesViewFull
 
 	var services []catalog.McpService
@@ -111,7 +117,7 @@ func (s *FakeWorkspace) SeedMcpService(fullName, comment, oauthProvider string) 
 	defer s.LockUnlock()()
 
 	ms := catalog.McpService{
-		Name:    "mcp-services/" + fullName,
+		Name:    mcpServicesNamePrefix + fullName,
 		Comment: comment,
 	}
 	if oauthProvider != "" {

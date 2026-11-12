@@ -173,6 +173,23 @@ func TestDiscoverAttachesKnownOnlyInSystemAI(t *testing.T) {
 	assert.Nil(t, services[0].Known)
 }
 
+func TestDiscoverTakesLeafFromReturnedNameForMixedCaseLocation(t *testing.T) {
+	w, _ := discoveryTestServe(t, "System.AI", discoveryTestPage(t, "", discoveryTestExternal("system.ai.github", map[string]string{"oauth_provider": discoveryTestGitHubProvider})))
+	services, err := Discover(t.Context(), w, "System.AI")
+	require.NoError(t, err)
+	require.Len(t, services, 1)
+	assert.Equal(t, "github", services[0].Leaf)
+	require.NotNil(t, services[0].Known)
+	assert.Equal(t, "GitHub", services[0].Known.Label)
+
+	w, _ = discoveryTestServe(t, "Main.Tools", discoveryTestPage(t, "", discoveryTestInternal("main.tools.crm")))
+	services, err = Discover(t.Context(), w, "Main.Tools")
+	require.NoError(t, err)
+	require.Len(t, services, 1)
+	assert.Equal(t, "crm", services[0].Leaf)
+	assert.Nil(t, services[0].Known)
+}
+
 func TestDiscoverMapsListingErrors(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -180,6 +197,7 @@ func TestDiscoverMapsListingErrors(t *testing.T) {
 		body     string
 		wantKind ListErrorKind
 		wantSDK  error
+		wantMsg  string
 	}{
 		{
 			name:     "missing schema is location not found",
@@ -187,6 +205,7 @@ func TestDiscoverMapsListingErrors(t *testing.T) {
 			body:     `{"error_code":"NOT_FOUND","message":"Schema 'main.tools' does not exist"}`,
 			wantKind: ListErrLocationNotFound,
 			wantSDK:  apierr.ErrNotFound,
+			wantMsg:  "main.tools is not a schema visible to this profile: Schema 'main.tools' does not exist",
 		},
 		{
 			name:     "forbidden is permission denied",
@@ -194,6 +213,7 @@ func TestDiscoverMapsListingErrors(t *testing.T) {
 			body:     `{"error_code":"PERMISSION_DENIED","message":"User does not have USE SCHEMA"}`,
 			wantKind: ListErrPermissionDenied,
 			wantSDK:  apierr.ErrPermissionDenied,
+			wantMsg:  "cannot list MCP services in main.tools (listing needs USE_CATALOG on the catalog and USE_SCHEMA on the schema): User does not have USE SCHEMA",
 		},
 	}
 	for _, tt := range tests {
@@ -213,6 +233,7 @@ func TestDiscoverMapsListingErrors(t *testing.T) {
 			assert.Equal(t, tt.wantKind, listErr.Kind)
 			assert.Equal(t, "main.tools", listErr.Location)
 			assert.ErrorIs(t, err, tt.wantSDK)
+			assert.EqualError(t, err, tt.wantMsg)
 		})
 	}
 }
@@ -232,6 +253,23 @@ func TestMapListError(t *testing.T) {
 			var listErr *ListError
 			require.ErrorAs(t, mapListError("system.ai", tt.err), &listErr)
 			assert.Equal(t, tt.wantKind, listErr.Kind)
+		})
+	}
+}
+
+func TestListErrorMessages(t *testing.T) {
+	cause := errors.New("server said no")
+	tests := []struct {
+		kind ListErrorKind
+		want string
+	}{
+		{kind: ListErrRateLimited, want: "MCP service listing in system.ai was rate limited; retry in a minute: server said no"},
+		{kind: "", want: "cannot list MCP services in system.ai: server said no"},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.kind), func(t *testing.T) {
+			err := &ListError{Kind: tt.kind, Location: "system.ai", Err: cause}
+			assert.EqualError(t, err, tt.want)
 		})
 	}
 }
