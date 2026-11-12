@@ -1,14 +1,15 @@
 # The fake workspace serves the services that each script creates through the POST handler, so the
 # listing is the one the API would return for the parent schema. Agent home overrides are cleared so
 # a developer's own settings never reach the agent config files that the tests write.
-Ignore = [
-    "home",
-]
+Ignore = ["home"]
+Env.CLAUDE_CONFIG_DIR = ""
+Env.CODEX_HOME = ""
+Env.COPILOT_HOME = ""
+Env.GEMINI_CLI_HOME = ""
+Env.XDG_CONFIG_HOME = ""
+Env.APPDATA = ""
 
-[Env]
-CLAUDE_CONFIG_DIR = ""
-CODEX_HOME = ""
-COPILOT_HOME = ""
-GEMINI_CLI_HOME = ""
-XDG_CONFIG_HOME = ""
-APPDATA = ""
+# Paths in the agent config files and the state file are JSON-escaped on Windows, with backslashes.
+[[Repls]]
+Old = '\\\\'
+New = '/'

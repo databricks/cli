@@ -19,12 +19,16 @@ import (
 // defaultMCPLocation is the schema that ships the Databricks managed MCP services.
 const defaultMCPLocation = "system.ai"
 
-// Error categories that the telemetry enum does not define yet. The JSON output reports them by name.
-// The binding categories come from mcp.BindCategory, which has the same names.
+// Error categories that the telemetry enum does not define yet. The JSON output reports them by name, as
+// SPEC section 13 names them. The binding categories come from mcp.BindCategory, which has the same names.
 const (
 	categoryAgentConfigInvalid protos.AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
 	categoryNameConflict       protos.AitoolsErrorCategory = "MCP_NAME_CONFLICT"
 	categoryServiceNotFound    protos.AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
+	categoryNoProfile          protos.AitoolsErrorCategory = "NO_PROFILE"
+	categoryProfileRequired    protos.AitoolsErrorCategory = "PROFILE_REQUIRED"
+	categoryPermissionDenied   protos.AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
+	categoryLocationNotFound   protos.AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
 )
 
 // NewMcpCmd returns the `aitools mcp` group. It stays hidden until the whole MCP
@@ -99,11 +103,11 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", filepath.ToSlash(path))
+		return "", failure(categoryNoProfile, nil, "no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", filepath.ToSlash(path))
 	case 1:
 		return profiles[0].Name, nil
 	}
-	return "", fmt.Errorf("several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
+	return "", failure(categoryProfileRequired, nil, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
 }
 
 // profileFlag returns the root --profile value, or "" when it is not set.

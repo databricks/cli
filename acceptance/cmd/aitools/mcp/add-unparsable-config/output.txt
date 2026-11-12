@@ -1,5 +1,5 @@
 
-=== An unparsable config fails only its agent; the other agent still installs, and the command exits 1
+=== An unparsable config fails only its agent; the other agent still installs, and the command exits non-zero
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex,claude-code --output json
 {
@@ -16,7 +16,7 @@
           "name": "codex",
           "status": "failed",
           "error_category": "AGENT_CONFIG_INVALID",
-          "message": "[TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 2: expected '.' or ']' to end table name, but got '\\n' instead"
+          "message": "[TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1: expected '.' or ']' to end table name, but got 'x' instead"
         },
         {
           "name": "claude-code",
@@ -29,12 +29,10 @@
   "error_category": "TYPE_UNSPECIFIED"
 }
 
-Exit code: 1
-
 === The broken file is left as it was
 
 >>> cat home/.codex/config.toml
-[mcp_servers.other
+[mcp_servers.other x]
 command = "broken"
 
 === State records only the agent that succeeded

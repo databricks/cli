@@ -10,8 +10,8 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 
 === Claude Code config has no pinned variables for the server
 
->>> jq .mcpServers["genie_one_mcp-logfood"].env home/.claude.json
-{}
+>>> gron.py home/.claude.json
+json.mcpServers.genie_one_mcp-logfood.env = {};
 
 === State holds the binding with no config file
 

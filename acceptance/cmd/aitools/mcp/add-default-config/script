@@ -11,7 +11,7 @@ title "Without DATABRICKS_CONFIG_FILE the server is added for the default config
 trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
 
 title "Claude Code config has no pinned variables for the server"
-trace jq '.mcpServers["genie_one_mcp-logfood"].env' home/.claude.json
+trace gron.py home/.claude.json | grep -F 'mcpServers.genie_one_mcp-logfood.env'
 
 title "State holds the binding with no config file"
 trace jq '.mcp.servers[] | {name, profile, config_file}' home/.databricks/aitools/skills/.state.json

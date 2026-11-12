@@ -1,7 +1,7 @@
 
-=== An agent named with --agents that is not installed is refused; the installed agent still gets the server, and the command exits 1
+=== An agent named with --agents that is not installed is refused; the installed agent still gets the server, and the command exits non-zero
 
->>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex --output json
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,antigravity --output json
 {
   "profile": "logfood",
   "host": "[DATABRICKS_URL]",
@@ -18,10 +18,10 @@
           "path": "[TEST_TMP_DIR]/home/.claude.json"
         },
         {
-          "name": "codex",
+          "name": "antigravity",
           "status": "failed",
           "error_category": "UNKNOWN_AGENT",
-          "message": "Codex CLI is not installed (no [TEST_TMP_DIR]/home/.codex); install it first or leave it out of --agents"
+          "message": "Antigravity is not installed; install it first or leave it out of --agents"
         }
       ]
     }
@@ -29,23 +29,14 @@
   "error_category": "TYPE_UNSPECIFIED"
 }
 
-Exit code: 1
-
-=== Nothing was created for Codex
+=== Nothing was created for Antigravity
 
 >>> ls -A home
 .claude
 .claude.json
 .databricks
 
-=== With no installed agent named, the text output says what to do, and the command exits 1
+=== With no installed agent named, the command is refused before any request, and the text output says what to do
 
->>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex
-Profile logfood ([DATABRICKS_URL])
-Agents (named with --agents): codex
-
-genie_one_mcp-logfood  system.ai.genie_one_mcp
-  codex        failed: Codex CLI is not installed (no [TEST_TMP_DIR]/home/.codex); install it first or leave it out of --agents
-Error: Codex CLI is not installed (no [TEST_TMP_DIR]/home/.codex); install it first or leave it out of --agents
-
-Exit code: 1
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents antigravity
+Error: Antigravity is not installed; install it first or leave it out of --agents

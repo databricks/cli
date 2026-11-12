@@ -64,6 +64,14 @@ func TestBinaryPathFor(t *testing.T) {
 			wantPath:   "databricks",
 		},
 		{
+			// Only a databricks argv[0] may fall back to the bare name; another name is kept, so the caller refuses it.
+			name:       "other bare name not on PATH is kept",
+			arg0:       "dbx",
+			lookPath:   notFound,
+			wantLookup: "dbx",
+			wantPath:   "dbx",
+		},
+		{
 			name:       "relative PATH entry falls back to the bare name",
 			arg0:       "databricks",
 			lookPath:   relative,

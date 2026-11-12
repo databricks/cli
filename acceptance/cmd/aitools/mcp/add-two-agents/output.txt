@@ -50,6 +50,11 @@
 >>> cat home/.claude.json
 {
   "mcpServers": {
+    "my-server": {
+      "type": "stdio",
+      "command": "my-server",
+      "args": []
+    },
     "genie_one_mcp-logfood": {
       "args": [
         "aitools",

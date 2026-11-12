@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -227,8 +228,8 @@ func AuthError(profileName string, cause error) error {
 }
 
 // findEntry returns the entry for the service and profile whose config file is configFile, or nil when
-// the service and profile have no entry at all. Both sides are compared as resolved paths, so an entry
-// with no pinned file matches the default file.
+// the service and profile have no entry at all. Service names are compared without case, as Unity Catalog
+// names are. Both sides are compared as resolved paths, so an entry with no pinned file matches the default file.
 //
 // An entry for the service and profile in another file is an error, not a missing entry: the server was
 // set up against that file, and binding through this one would switch it without a record. An entry
@@ -240,7 +241,7 @@ func findEntry(ctx context.Context, state *State, service, profileName, configFi
 	var otherPath string
 	for i := range state.Servers {
 		entry := &state.Servers[i]
-		if entry.Service != service || entry.Profile != profileName {
+		if !strings.EqualFold(entry.Service, service) || entry.Profile != profileName {
 			continue
 		}
 		path, err := ResolveConfigFile(ctx, entry.ConfigFile)

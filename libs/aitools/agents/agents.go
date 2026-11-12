@@ -63,6 +63,9 @@ type Agent struct {
 	// MCP describes where the agent keeps user-scope MCP server entries, or nil
 	// when this CLI does not write them (Pi, Goose, Kiro).
 	MCP *mcpconfig.Spec
+	// mcpHomeEnv names the variable that moves the MCP config file out of ConfigDir, such as CODEX_HOME.
+	// Empty when the file lives in ConfigDir, or when ConfigDir itself follows the variable.
+	mcpHomeEnv string
 	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
@@ -92,6 +95,29 @@ func (a *Agent) Detected(ctx context.Context) bool {
 	}
 	skillsDir, err := a.SkillsDir(ctx)
 	return err == nil && HasDatabricksSkillsIn(skillsDir)
+}
+
+// InstalledForMCP reports whether the agent is installed for MCP servers. It is installed when Detected
+// reports it, when its CLI binary is on PATH, when its MCP config file exists, or when mcpHomeEnv names a
+// directory that holds the MCP config file and that directory exists.
+func (a *Agent) InstalledForMCP(ctx context.Context) (bool, error) {
+	if a.Detected(ctx) || a.HasBinary(ctx) {
+		return true, nil
+	}
+	if a.MCP == nil {
+		return false, nil
+	}
+	path, err := a.MCP.Path(ctx)
+	if err != nil {
+		return false, err
+	}
+	if exists, err := linkExists(path); err != nil || exists {
+		return exists, err
+	}
+	if a.mcpHomeEnv == "" || env.Get(ctx, a.mcpHomeEnv) == "" {
+		return false, nil
+	}
+	return linkExists(filepath.Dir(path))
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
@@ -235,6 +261,7 @@ var Registry = []*Agent{
 			Root:   "mcp_servers",
 			Entry:  stdioEntry,
 		},
+		mcpHomeEnv: "CODEX_HOME",
 	},
 	{
 		Name:        NameOpenCode,
@@ -263,6 +290,7 @@ var Registry = []*Agent{
 			Root:   mcpServersKey,
 			Entry:  copilotMCPEntry,
 		},
+		mcpHomeEnv: "COPILOT_HOME",
 	},
 	{
 		Name:         NameAntigravity,
