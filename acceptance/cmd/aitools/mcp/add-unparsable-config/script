@@ -1,0 +1,13 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "An unparsable config fails only its agent; the other agent still installs, and the command exits 1"
+errcode trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex,claude-code --output json
+
+title "The broken file is left as it was"
+trace cat home/.codex/config.toml
+
+title "State records only the agent that succeeded"
+trace jq '[.servers[] | {name, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json

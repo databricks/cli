@@ -1,0 +1,13 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "Text output: Cursor approval hint, and the sign-in step for github"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+
+title "Running it again re-asserts the entries, and nothing is written twice"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+
+title "Cursor config"
+trace cat home/.cursor/mcp.json

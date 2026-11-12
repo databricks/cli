@@ -1,0 +1,16 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "Two services for two agents, as JSON"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json
+
+title "Claude Code config keeps the entries it already had and gets ours"
+trace cat home/.claude.json
+
+title "Codex config"
+trace cat home/.codex/config.toml
+
+title "State records the binding, without the time and CLI version"
+trace jq 'del(.servers[].installed_at, .servers[].cli_version)' home/.databricks/aitools/mcp/state.json

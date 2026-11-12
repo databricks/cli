@@ -1,0 +1,14 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "The same service for a second profile adds an entry and renames nothing"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code --output json | jq '{profile, servers: [.servers[] | {name, agents: [.agents[] | {name, status}]}]}'
+
+title "Both entries are in the Claude Code config"
+trace jq '.mcpServers | keys' home/.claude.json
+
+title "State holds one entry per profile"
+trace jq '[.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json

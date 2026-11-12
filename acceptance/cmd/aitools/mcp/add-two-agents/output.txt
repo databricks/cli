@@ -1,0 +1,154 @@
+
+=== Two services for two agents, as JSON
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json
+{
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "scope": "global",
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "sign_in_required": false,
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        },
+        {
+          "name": "codex",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml"
+        }
+      ]
+    },
+    {
+      "name": "github-logfood",
+      "service": "system.ai.github",
+      "sign_in_required": true,
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        },
+        {
+          "name": "codex",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml"
+        }
+      ]
+    }
+  ],
+  "error_category": "TYPE_UNSPECIFIED"
+}
+
+=== Claude Code config keeps the entries it already had and gets ours
+
+>>> cat home/.claude.json
+{
+  "mcpServers": {
+    "genie_one_mcp-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "claude-code"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "type": "stdio"
+    },
+    "github-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.github",
+        "--agent",
+        "claude-code"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "type": "stdio"
+    }
+  }
+}
+
+=== Codex config
+
+>>> cat home/.codex/config.toml
+[mcp_servers]
+  [mcp_servers.genie_one_mcp-logfood]
+    args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "codex"]
+    command = "[CLI]"
+    [mcp_servers.genie_one_mcp-logfood.env]
+      DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+  [mcp_servers.github-logfood]
+    args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.github", "--agent", "codex"]
+    command = "[CLI]"
+    [mcp_servers.github-logfood.env]
+      DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+
+=== State records the binding, without the time and CLI version
+
+>>> jq del(.servers[].installed_at, .servers[].cli_version) home/.databricks/aitools/mcp/state.json
+{
+  "schema_version": 1,
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "profile": "logfood",
+      "host": "[DATABRICKS_URL]",
+      "workspace_id": "[WORKSPACE_ID]",
+      "sign_in_required": false,
+      "command": "[CLI]",
+      "config_file": "[TEST_TMP_DIR]/.databrickscfg",
+      "agents": {
+        "claude-code": {
+          "path": "[TEST_TMP_DIR]/home/.claude.json",
+          "scope": "user"
+        },
+        "codex": {
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml",
+          "scope": "user"
+        }
+      }
+    },
+    {
+      "name": "github-logfood",
+      "service": "system.ai.github",
+      "profile": "logfood",
+      "host": "[DATABRICKS_URL]",
+      "workspace_id": "[WORKSPACE_ID]",
+      "sign_in_required": true,
+      "command": "[CLI]",
+      "config_file": "[TEST_TMP_DIR]/.databrickscfg",
+      "agents": {
+        "claude-code": {
+          "path": "[TEST_TMP_DIR]/home/.claude.json",
+          "scope": "user"
+        },
+        "codex": {
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml",
+          "scope": "user"
+        }
+      }
+    }
+  ]
+}

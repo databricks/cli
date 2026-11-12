@@ -1,0 +1,37 @@
+
+=== The mcp group is hidden from aitools help
+
+>>> [CLI] aitools --help
+0
+
+=== The hidden group still answers help for its subcommands
+
+>>> [CLI] aitools mcp add --help
+Install Databricks managed MCP servers into coding agents, bound to a Databricks profile.
+Each server runs through 'databricks aitools mcp serve' with that profile's credentials.
+
+Servers come from --names: full names such as system.ai.github, or leaf names resolved in
+--location (default system.ai). Agents come from --agents. Without it, every detected
+MCP-capable agent is used.
+
+Interactive selection is not available yet: in a terminal, pass both --names and --agents.
+With --output json, both are required.
+
+Supported agents: claude-code, cursor, codex, opencode, copilot, antigravity, gemini
+
+Usage:
+  databricks aitools mcp add [flags]
+
+Flags:
+      --agents string     Agents to install for, comma-separated (default: every detected MCP-capable agent)
+      --force             Overwrite an existing server with the same name that this CLI did not write
+  -h, --help              help for add
+      --location string   Schema to resolve leaf names in, as <catalog>.<schema> (default system.ai)
+      --name string       Server name to use instead of the generated one; only with exactly one service
+      --names string      Services to install: full names (system.ai.github) or leaf names (github), comma-separated
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

@@ -25,6 +25,7 @@ https://github.com/databricks/databricks-agent-skills`,
 	cmd.AddCommand(NewUninstallCmd())
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewVersionCmd())
+	cmd.AddCommand(NewMcpCmd())
 
 	return cmd
 }

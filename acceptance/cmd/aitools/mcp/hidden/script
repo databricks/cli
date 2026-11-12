@@ -1,0 +1,5 @@
+title "The mcp group is hidden from aitools help"
+trace $CLI aitools --help | grep -c ' mcp ' || true
+
+title "The hidden group still answers help for its subcommands"
+trace $CLI aitools mcp add --help

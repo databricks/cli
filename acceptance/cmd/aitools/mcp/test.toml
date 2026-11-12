@@ -1,0 +1,31 @@
+# The fake workspace lists two system.ai services: genie_one_mcp needs no sign-in and github
+# is backed by an OAuth connection, so it needs sign-in. The list is the same for every
+# query, which is enough for one schema.
+Ignore = [
+    "home",
+]
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/mcp-services"
+Response.Body = '''
+{
+  "mcp_services": [
+    {
+      "name": "mcp-services/system.ai.genie_one_mcp",
+      "comment": "Ask questions about your data"
+    },
+    {
+      "name": "mcp-services/system.ai.github",
+      "comment": "Repositories, issues, pull requests",
+      "config": {
+        "source_connection": {
+          "name": "connections/github",
+          "options": {
+            "oauth_provider": "github"
+          }
+        }
+      }
+    }
+  ]
+}
+'''
