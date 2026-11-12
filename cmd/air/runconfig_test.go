@@ -137,8 +137,8 @@ func TestLoadRunConfig_CodeSourceErrors(t *testing.T) {
 		{"flattened error path", "code_source:\n  root_path: \"\"\n", "code_source.root_path cannot be empty"},
 		{"nested error path", "code_source:\n  snapshot:\n    root_path: \"\"\n", "code_source.snapshot.root_path cannot be empty"},
 		{"null snapshot", "code_source:\n  snapshot: null\n", "code_source.snapshot.root_path cannot be empty"},
-		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", "field bogus not found"},
-		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", "field bogus not found"},
+		{"unknown flattened field", "code_source:\n  root_path: src\n  bogus: true\n", `unknown field "code_source.bogus"`},
+		{"unknown nested field", "code_source:\n  snapshot:\n    root_path: src\n    bogus: true\n", `unknown field "code_source.snapshot.bogus"`},
 	}
 
 	for _, tt := range tests {
@@ -339,12 +339,60 @@ unknown_field: true
 
 	t.Run("without overrides", func(t *testing.T) {
 		_, err := loadRunConfig(path)
-		require.ErrorContains(t, err, "line 8: field unknown_field")
+		require.ErrorContains(t, err, `line 8: unknown field "unknown_field"`)
 	})
 
 	t.Run("with overrides", func(t *testing.T) {
 		_, err := loadRunConfigWithOverrides(t.Context(), path, []string{"compute.num_accelerators=2"})
-		require.ErrorContains(t, err, "line 8: field unknown_field")
+		require.ErrorContains(t, err, `line 8: unknown field "unknown_field"`)
+	})
+}
+
+func TestLoadRunConfig_UnknownFieldErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want string
+	}{
+		{
+			"top-level typo suggests the field",
+			minimalConfig + "environmnt:\n  dependencies: [numpy]\n",
+			`line 7: unknown field "environmnt"; did you mean "environment"? Run "databricks air run -h config" for the list of fields`,
+		},
+		{
+			"nested typo names the path and its parent's help",
+			"experiment_name: r\ncommand: x\ncompute:\n  acclerator_type: GPU_1xH100\n  num_accelerators: 1\n",
+			`line 4: unknown field "compute.acclerator_type"; did you mean "accelerator_type"? Run "databricks air run -h config.compute" for the list of fields`,
+		},
+		{
+			"no close match omits the suggestion",
+			minimalConfig + "zzz: true\n",
+			`line 7: unknown field "zzz"; run "databricks air run -h config" for the list of fields`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := writeConfig(t, tt.yaml)
+			_, err := loadRunConfig(path)
+			require.EqualError(t, err, "invalid config "+path+": "+tt.want)
+		})
+	}
+
+	t.Run("several unknown fields are all reported", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"environmnt: {}\nzzz: true\n"))
+		require.ErrorContains(t, err, `line 7: unknown field "environmnt"`)
+		require.ErrorContains(t, err, `line 8: unknown field "zzz"`)
+		assert.NotContains(t, err.Error(), "aircmd")
+	})
+
+	t.Run("list elements and hidden parents resolve", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"code_source:\n  snapshot:\n    root_path: src\n    remote_volum: /Volumes/a/b/c\n"))
+		require.ErrorContains(t, err, `unknown field "code_source.snapshot.remote_volum"; did you mean "remote_volume"? Run "databricks air run -h config.code_source" for the list of fields`)
+	})
+
+	t.Run("free-form maps accept any key", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"parameters:\n  environmnt: 1\n  nested:\n    zzz: 2\n"))
+		require.NoError(t, err)
 	})
 }
 

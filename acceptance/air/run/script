@@ -25,6 +25,9 @@ errcode trace $CLI air run -f git-remote.yaml --dry-run
 title "invalid config is rejected"
 errcode trace $CLI air run -f invalid.yaml --dry-run
 
+title "unknown field suggests the near match"
+errcode trace $CLI air run -f unknown-field.yaml --dry-run
+
 title "missing --file"
 errcode trace $CLI air run --dry-run
 

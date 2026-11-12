@@ -730,6 +730,18 @@ func cutLast(s, sep string) (before, after string, found bool) {
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
 // siblings and, when one is close enough, a suggestion.
 func unknownConfigFieldError(parent configField, part string, matched []string) error {
+	names := visibleConfigChildNames(parent)
+
+	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
+	if suggestion, ok := closestConfigField(part, names); ok {
+		msg += fmt.Sprintf("; did you mean %q?", suggestion)
+	}
+	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
+}
+
+// visibleConfigChildNames returns the sorted YAML names of a field's documented
+// children.
+func visibleConfigChildNames(parent configField) []string {
 	names := make([]string, 0, len(parent.children))
 	for _, c := range parent.children {
 		if c.hidden {
@@ -738,12 +750,7 @@ func unknownConfigFieldError(parent configField, part string, matched []string) 
 		names = append(names, configLeafName(c.path))
 	}
 	slices.Sort(names)
-
-	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
-	if suggestion, ok := closestConfigField(part, names); ok {
-		msg += fmt.Sprintf("; did you mean %q?", suggestion)
-	}
-	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
+	return names
 }
 
 // closestConfigField returns the nearest candidate by edit distance, if one is

@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,6 +99,9 @@ func readRunConfigDocument(path string) (*yaml.Node, []byte, error) {
 }
 
 func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte) (*runConfig, error) {
+	if err := checkUnknownConfigFields(path, document.Content[0]); err != nil {
+		return nil, err
+	}
 	// Validate before stripping comments so YAML errors retain source line numbers.
 	cfg, err := decodeRunConfigReader(bytes.NewReader(validationYAML), path)
 	if err != nil {
@@ -123,6 +127,71 @@ func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte
 	}
 	cfg.artifactYAML = artifactYAML
 	return cfg, nil
+}
+
+// checkUnknownConfigFields rejects keys absent from the run config schema. The
+// strict decode that follows rejects them too, but its error names the Go struct
+// rather than the field's path and offers no suggestion.
+func checkUnknownConfigFields(path string, root *yaml.Node) error {
+	schema := configSchema()
+	unknown := unknownConfigFields(root, schema, schema.path, nil)
+	switch len(unknown) {
+	case 0:
+		return nil
+	case 1:
+		return fmt.Errorf("invalid config %s: %s", path, unknown[0])
+	default:
+		return fmt.Errorf("invalid config %s:\n  %s", path, strings.Join(unknown, "\n  "))
+	}
+}
+
+// unknownConfigFields describes each key under node that field's schema does not
+// define. helpPath is the nearest documented ancestor, since hidden fields have
+// no `-h config.<field>` page. Sequences add no path segment, matching how the
+// schema addresses list elements.
+func unknownConfigFields(node *yaml.Node, field configField, helpPath string, keys []string) []string {
+	if node.Kind == yaml.AliasNode {
+		node = node.Alias
+	}
+	var unknown []string
+	switch node.Kind {
+	case yaml.SequenceNode:
+		for _, element := range node.Content {
+			unknown = append(unknown, unknownConfigFields(element, field, helpPath, keys)...)
+		}
+	case yaml.MappingNode:
+		// Only objects have schema-defined keys; free-form maps and leaves do not.
+		if len(field.children) == 0 {
+			return nil
+		}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key, value := node.Content[i], node.Content[i+1]
+			// A merge key pulls in another mapping's keys; the strict decode checks those.
+			if key.Tag == "!!merge" {
+				continue
+			}
+			keyPath := append(slices.Clone(keys), key.Value)
+			child, ok := findConfigChild(field.children, key.Value)
+			if !ok {
+				msg := fmt.Sprintf("line %d: unknown field %q", key.Line, strings.Join(keyPath, "."))
+				if suggestion, ok := closestConfigField(key.Value, visibleConfigChildNames(field)); ok {
+					msg += fmt.Sprintf("; did you mean %q? Run", suggestion)
+				} else {
+					msg += "; run"
+				}
+				unknown = append(unknown, fmt.Sprintf("%s \"databricks air run -h %s\" for the list of fields", msg, helpPath))
+				continue
+			}
+			childHelpPath := helpPath
+			if !child.hidden {
+				childHelpPath = child.path
+			}
+			unknown = append(unknown, unknownConfigFields(value, child, childHelpPath, keyPath)...)
+		}
+	default:
+		// Scalars hold no keys.
+	}
+	return unknown
 }
 
 func codeSourceFieldPresent(document *yaml.Node, field string) bool {

@@ -74,6 +74,16 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
+=== unknown field suggests the near match
+
+>>> [CLI] air run -f unknown-field.yaml --dry-run
+Error: invalid config unknown-field.yaml: line 6: unknown field "enviroment"; did you mean "environment"? Run "databricks air run -h config" for the list of fields
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+Exit code: 1
+
 === missing --file
 
 >>> [CLI] air run --dry-run
