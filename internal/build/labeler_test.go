@@ -15,32 +15,9 @@ import (
 // under a directory that .github/labeler-test-only.yml treats as test-only, since
 // a PR changing that directory would then be labeled test-only-fix.
 func TestLabelerTestOnlyDirsNotInBinary(t *testing.T) {
-	raw, err := os.ReadFile("../../.github/labeler-test-only.yml")
-	require.NoError(t, err)
+	dirs := labelerTestOnlyDirs(t)
 
-	var config struct {
-		TestOnlyFix []struct {
-			ChangedFiles []struct {
-				AnyGlobToAllFiles []string `yaml:"any-glob-to-all-files"`
-			} `yaml:"changed-files"`
-		} `yaml:"test-only-fix"`
-	}
-	require.NoError(t, yaml.Unmarshal(raw, &config))
-	glob := config.TestOnlyFix[0].ChangedFiles[0].AnyGlobToAllFiles[0]
-
-	// Directory entries look like "libs/testserver/**". Entries such as
-	// "**/*_test.go" match by file name and are skipped.
-	var dirs []string
-	for alt := range strings.SplitSeq(strings.Trim(glob, "{}"), ",") {
-		dir, ok := strings.CutSuffix(alt, "/**")
-		if ok && !strings.Contains(dir, "*") {
-			dirs = append(dirs, dir)
-		}
-	}
-	require.NotEmpty(t, dirs)
-
-	// Release targets from .goreleaser.yaml; some files build only on some of them.
-	for _, target := range []string{"linux/amd64", "linux/arm64", "darwin/amd64", "darwin/arm64", "windows/amd64", "windows/arm64"} {
+	for _, target := range releaseTargets(t) {
 		t.Run(target, func(t *testing.T) {
 			t.Parallel()
 			goos, goarch, _ := strings.Cut(target, "/")
@@ -64,4 +41,65 @@ func TestLabelerTestOnlyDirsNotInBinary(t *testing.T) {
 			}
 		})
 	}
+}
+
+// labelerTestOnlyDirs returns the directory entries of the test-only-fix glob.
+func labelerTestOnlyDirs(t *testing.T) []string {
+	raw, err := os.ReadFile("../../.github/labeler-test-only.yml")
+	require.NoError(t, err)
+
+	var config struct {
+		TestOnlyFix []struct {
+			ChangedFiles []map[string][]string `yaml:"changed-files"`
+		} `yaml:"test-only-fix"`
+	}
+	require.NoError(t, yaml.Unmarshal(raw, &config))
+
+	// The labeler ORs extra rules and globs into the label, and this test reads only
+	// one glob, so a config that grows another one must fail here until it is covered.
+	require.Len(t, config.TestOnlyFix, 1)
+	require.Len(t, config.TestOnlyFix[0].ChangedFiles, 1)
+	match := config.TestOnlyFix[0].ChangedFiles[0]
+	require.Len(t, match, 1)
+	globs := match["any-glob-to-all-files"]
+	require.Len(t, globs, 1)
+
+	// Directory entries look like "libs/testserver/**". Entries such as
+	// "**/*_test.go" match by file name and are skipped.
+	var dirs []string
+	for alt := range strings.SplitSeq(strings.Trim(globs[0], "{}"), ",") {
+		dir, ok := strings.CutSuffix(alt, "/**")
+		if ok && !strings.Contains(dir, "*") {
+			dirs = append(dirs, dir)
+		}
+	}
+	require.NotEmpty(t, dirs)
+	return dirs
+}
+
+// releaseTargets returns the goos/goarch pairs the release build in .goreleaser.yaml
+// produces. Some files build only on some of them.
+func releaseTargets(t *testing.T) []string {
+	raw, err := os.ReadFile("../../.goreleaser.yaml")
+	require.NoError(t, err)
+
+	var config struct {
+		Builds []struct {
+			Goos   []string `yaml:"goos"`
+			Goarch []string `yaml:"goarch"`
+		} `yaml:"builds"`
+	}
+	require.NoError(t, yaml.Unmarshal(raw, &config))
+	require.Len(t, config.Builds, 1)
+	build := config.Builds[0]
+	require.NotEmpty(t, build.Goos)
+	require.NotEmpty(t, build.Goarch)
+
+	var targets []string
+	for _, goos := range build.Goos {
+		for _, goarch := range build.Goarch {
+			targets = append(targets, goos+"/"+goarch)
+		}
+	}
+	return targets
 }
