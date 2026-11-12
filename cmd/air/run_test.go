@@ -210,6 +210,133 @@ func TestRunSubmitJSONReportsExistingRun(t *testing.T) {
 	assert.Equal(t, "PENDING", second.Status)
 }
 
+// earlierLaunchRunGet is a terminated run whose command path is from an earlier
+// submit's launch directory, so a submit with a user key sees it as existing.
+const earlierLaunchRunGet = `{
+	"run_id": 777,
+	"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+	"tasks": [{
+		"run_id": 778,
+		"attempt_number": 0,
+		"ai_runtime_task": {"deployments": [{"command_path": "/Users/u@example.com/.air/cli_launch/my-run/my-run_0123456789abcdef/command.sh"}]}
+	}]
+}`
+
+// existingRunServer serves `air run` with or without --watch. runs/get replies
+// with runGetStatus and runGetBody; the returned counter tracks its calls.
+func existingRunServer(t *testing.T, runGetStatus int, runGetBody string) (string, *atomic.Int32) {
+	t.Helper()
+	var runGets atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
+			_, _ = w.Write([]byte(`{"run_id": 777}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets.Add(1)
+			w.WriteHeader(runGetStatus)
+			_, _ = w.Write([]byte(runGetBody))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			_, _ = w.Write([]byte(`{"log_records": [
+				{"time_unix_nano": 1700000002000000000, "body": "step 2", "node_index": 0},
+				{"time_unix_nano": 1700000001000000000, "body": "step 1", "node_index": 0}
+			]}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL, &runGets
+}
+
+func TestRunWatchExistingRunPrintsBeforeLogs(t *testing.T) {
+	srvURL, _ := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+
+	out := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--watch", "--idempotency-key", "watch-key")
+	existingLine := `Returned existing workload with Job Run ID: 777 (idempotency key "watch-key" was already used)`
+	require.Contains(t, out, existingLine)
+	require.Contains(t, out, "step 1\nstep 2")
+	assert.Less(t, strings.Index(out, existingLine), strings.Index(out, "step 1"))
+	assert.NotContains(t, out, "Submitted workload")
+}
+
+func TestRunExistingRunLookupByOutputMode(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		out  flags.Output
+		args []string
+		// wantLookups is the runs/get calls a user key adds over a generated token.
+		wantLookups int32
+	}{
+		{name: "text", out: flags.OutputText, wantLookups: 1},
+		{name: "json", out: flags.OutputJSON, wantLookups: 1},
+		{name: "watch text", out: flags.OutputText, args: []string{"--watch"}, wantLookups: 1},
+		// The --watch JSON events don't report existing, so there is no lookup.
+		{name: "watch json", out: flags.OutputJSON, args: []string{"--watch"}, wantLookups: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			generatedURL, generatedRunGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+			runIdempotentSubmit(t, generatedURL, tc.out, minimalConfig, tc.args...)
+
+			userKeyURL, userKeyRunGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+			runIdempotentSubmit(t, userKeyURL, tc.out, minimalConfig, append(tc.args, "--idempotency-key", "mode-key")...)
+
+			assert.Equal(t, tc.wantLookups, userKeyRunGets.Load()-generatedRunGets.Load())
+		})
+	}
+}
+
+func TestRunSubmitExistingRunLookupTreatsUnknownAsNew(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		runGetStatus int
+		runGetBody   string
+	}{
+		{
+			name:         "runs/get fails",
+			runGetStatus: http.StatusNotFound,
+			runGetBody:   `{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "run not found"}`,
+		},
+		{
+			name:         "no deployment",
+			runGetStatus: http.StatusOK,
+			runGetBody:   `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {}}]}`,
+		},
+		{
+			name:         "empty command path",
+			runGetStatus: http.StatusOK,
+			runGetBody:   `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {"deployments": [{}]}}]}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srvURL, runGets := existingRunServer(t, tc.runGetStatus, tc.runGetBody)
+
+			out := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "unknown-key")
+			assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
+			assert.NotContains(t, out, "Returned existing workload")
+			assert.Equal(t, int32(1), runGets.Load())
+		})
+	}
+}
+
+func TestRunSubmitContainersSkipsExistingRunLookup(t *testing.T) {
+	srvURL, runGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+	config := `
+experiment_name: my-run
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+containers:
+  - name: inference
+    command: python infer.py
+    ranks: [0]
+    unity_catalog_image: main.ml.inference:v1
+`
+
+	out := runIdempotentSubmit(t, srvURL, flags.OutputText, config, "--idempotency-key", "container-key")
+	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
+	assert.Zero(t, runGets.Load())
+}
+
 type dryRunRequest struct {
 	method string
 	path   string

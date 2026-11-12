@@ -189,7 +189,11 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		submitCtx, existing := withExistingRunReport(ctx)
+		// The --watch JSON events don't report existing, so skip its runs/get there.
+		submitCtx, existing := ctx, new(bool)
+		if !watch || !jsonOut {
+			submitCtx, existing = withExistingRunReport(ctx)
+		}
 		runID, dashboardURL, err := submitWorkload(submitCtx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
