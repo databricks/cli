@@ -252,3 +252,25 @@ func TestListInvalidFilter(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported --filter key")
 }
+
+func TestListInvalidAcceleratorFilter(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		assert.Equal(t, computeOptionsPath, r.URL.Path)
+		_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100"}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := newListCommand()
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=GPU_1xV100"))
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "valid values for this workspace")
+	assert.Contains(t, err.Error(), "GPU_8xH100")
+}

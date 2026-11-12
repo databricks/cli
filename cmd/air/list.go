@@ -96,8 +96,8 @@ func newListCommand() *cobra.Command {
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator family or exact full type. Examples: A10, H100,
-                    GPU_1xA10, GPU_8xH100.
+  accelerator_type  Accelerator family, display name, or full type. Examples:
+                    A10, H100, 1xA10, 8xH100, GPU_1xA10, GPU_8xH100.
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
@@ -129,6 +129,15 @@ Filters:
 		f, err := parseListFilters(filters)
 		if err != nil {
 			return err
+		}
+		if f.AcceleratorType != "" {
+			options, err := listWorkspaceComputeOptions(ctx, w)
+			if err != nil {
+				return fmt.Errorf("failed to validate --filter accelerator_type=%q: %w", f.AcceleratorType, err)
+			}
+			if err := resolveAcceleratorFilter(&f, options); err != nil {
+				return err
+			}
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
