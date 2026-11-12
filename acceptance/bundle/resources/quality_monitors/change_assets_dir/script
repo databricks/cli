@@ -27,8 +27,7 @@ trace errcode $CLI bundle plan &> out.plan.txt
 # Untraced: with &> the trace header lands in the file, leaving it unfilterable. Capture the raw
 # plan aside and stamp it out into the golden instead.
 errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
-# status is PENDING until the backend finishes provisioning, and dashboard_id appears only after that.
-jq 'del(.plan[].remote_state.status, .plan[].remote_state.dashboard_id)' .databricks/tmp.plan.json | nostamp > out.plan.json
+plan_monitor_fields < .databricks/tmp.plan.json | nostamp > out.plan.json
 
 rm "$OUT_REQUESTS"
 trace errcode $CLI bundle deploy &> out.deploy.txt

@@ -26,5 +26,4 @@ trace print_requests.py '^//api/2.0/bundle' '^//import-file/' '^//workspace/' '^
 # store state to ensure we have table_name there
 print_state.py | grep name > out.state.txt
 
-# status is PENDING until the backend finishes provisioning, and dashboard_id appears only after that.
-trace $CLI bundle plan -o json | jq 'del(.plan[].remote_state.status, .plan[].remote_state.dashboard_id)' | nostamp > out.plan_noop.json
+trace $CLI bundle plan -o json | plan_monitor_fields | nostamp > out.plan_noop.json
