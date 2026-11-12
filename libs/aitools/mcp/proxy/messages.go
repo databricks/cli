@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Method names and member names the bridge reads or edits.
@@ -21,15 +22,26 @@ const (
 )
 
 // errNotObject is returned for valid JSON whose top-level value is not an object.
-var errNotObject = errors.New("message is not a JSON object")
+var (
+	errNotObject = errors.New("message is not a JSON object")
+	jsonNull     = json.RawMessage("null")
+)
 
-// message is the part of a JSON-RPC message the bridge reads, from either side. Params and Result stay raw
-// and are only decoded for the methods that need a field from them.
+// message is the part of a JSON-RPC message the bridge reads, from either side. The rest of the message
+// is forwarded as received.
 type message struct {
 	ID     json.RawMessage `json:"id"`
 	Method string          `json:"method"`
-	Params json.RawMessage `json:"params"`
-	Result json.RawMessage `json:"result"`
+}
+
+// errorBody is a non-2xx response body: the envelope of a JSON-RPC response, and the message of either a
+// JSON-RPC error or a Databricks error body.
+type errorBody struct {
+	message
+	Message string `json:"message"`
+	Error   struct {
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 // rpcError is the error object of a JSON-RPC error response.
@@ -45,7 +57,8 @@ type rpcErrorResponse struct {
 	Error   rpcError        `json:"error"`
 }
 
-// parseMessage decodes the envelope of one JSON-RPC message. It fails for input that is not a JSON object.
+// parseMessage decodes the envelope of one JSON-RPC message. A syntax error is reported as a
+// *json.SyntaxError; valid JSON that is not an object is errNotObject.
 func parseMessage(line []byte) (message, error) {
 	var m message
 	if err := json.Unmarshal(line, &m); err != nil {
@@ -58,20 +71,44 @@ func parseMessage(line []byte) (message, error) {
 	return m, nil
 }
 
+// decodeErrorBody decodes a non-2xx body. It returns nil when the body is not a JSON object.
+func decodeErrorBody(body []byte) *errorBody {
+	var e errorBody
+	if json.Unmarshal(body, &e) != nil {
+		return nil
+	}
+	return &e
+}
+
 // isRequest reports whether m is a request, which expects a response, rather than a notification.
 func (m message) isRequest() bool {
 	return m.Method != "" && len(m.ID) > 0 && string(m.ID) != "null"
 }
 
-// isResponseTo reports whether m is a JSON-RPC response to request. Only a request can have one.
+// isResponseTo reports whether m is a JSON-RPC response to request. Only a request can have one. The ids
+// are compared by value (see idKey), since a server may re-encode them.
 func (m message) isResponseTo(request message) bool {
-	return request.isRequest() && m.Method == "" && bytes.Equal(m.ID, request.ID)
+	return m.Method == "" && request.isRequest() && idKey(m.ID) == idKey(request.ID)
+}
+
+// idKey returns the key that identifies a JSON-RPC id by its decoded value: a string by its text, and a
+// number by its value, so 7 and 7.0 match. An id that is not a string or number is keyed by its bytes.
+func idKey(raw json.RawMessage) string {
+	var v any
+	_ = json.Unmarshal(raw, &v) // an empty or invalid id has no value and keeps its bytes as the key
+	switch v := v.(type) {
+	case string:
+		return "s" + v
+	case float64:
+		return "n" + strconv.FormatFloat(v, 'g', -1, 64)
+	}
+	return string(raw)
 }
 
 // errorResponse builds a JSON-RPC error response. A nil id is sent as null.
 func errorResponse(id json.RawMessage, code int, text string) []byte {
 	if len(id) == 0 {
-		id = json.RawMessage("null")
+		id = jsonNull
 	}
 	// Cannot fail: the id came from a parsed message and the other fields are plain values.
 	b, _ := json.Marshal(rpcErrorResponse{JSONRPC: "2.0", ID: id, Error: rpcError{Code: code, Message: text}})
@@ -145,5 +182,5 @@ func member(obj map[string]json.RawMessage, key string) json.RawMessage {
 	if raw, ok := obj[key]; ok {
 		return raw
 	}
-	return json.RawMessage("null")
+	return jsonNull
 }

@@ -87,3 +87,33 @@ func TestMessageIsRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestIsResponseToComparesIDsByValue(t *testing.T) {
+	request := func(id string) message {
+		m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"method":"tools/call"}`))
+		require.NoError(t, err)
+		return m
+	}
+	response := func(id string) message {
+		m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"result":{}}`))
+		require.NoError(t, err)
+		return m
+	}
+	cases := []struct {
+		name     string
+		request  string
+		response string
+		want     bool
+	}{
+		{name: "same string", request: `"a<b"`, response: `"a<b"`, want: true},
+		{name: "string re-encoded", request: `"a<b"`, response: `"a\u003cb"`, want: true},
+		{name: "number with fraction", request: `7`, response: `7.0`, want: true},
+		{name: "string is not a number", request: `"7"`, response: `7`},
+		{name: "different id", request: `1`, response: `2`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, response(tc.response).isResponseTo(request(tc.request)))
+		})
+	}
+}

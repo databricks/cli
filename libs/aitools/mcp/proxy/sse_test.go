@@ -26,12 +26,23 @@ func TestReadEvents(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var got []string
-			err := readEvents(strings.NewReader(tc.stream), func(data []byte) error {
+			err := readEvents(strings.NewReader(tc.stream), func(data []byte) (bool, error) {
 				got = append(got, string(data))
-				return nil
+				return true, nil
 			})
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestReadEventsStopsWhenFnReturnsFalse: an event after the one that ends reading is not read.
+func TestReadEventsStopsWhenFnReturnsFalse(t *testing.T) {
+	var got []string
+	err := readEvents(strings.NewReader("data: 1\n\ndata: 2\n\n"), func(data []byte) (bool, error) {
+		got = append(got, string(data))
+		return false, nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"1"}, got)
 }
