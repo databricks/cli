@@ -16,18 +16,20 @@ import (
 const testDatabricksCommand = "/opt/databricks/bin/databricks"
 
 // seedInstall writes the server for an agent with Upsert, as `add` does, and returns the state record.
+// Like `add`, the record is pinned to DATABRICKS_CONFIG_FILE when that is set.
 func seedInstall(t *testing.T, a *agents.Agent, name, service, profileName, host string) mcp.Entry {
 	t.Helper()
 	args := []string{"aitools", "mcp", "serve", "--profile", profileName, "--service", service, "--agent", a.Name}
 	path, _, err := agentconfig.Upsert(t.Context(), a, name, testDatabricksCommand, args, nil, false)
 	require.NoError(t, err)
 	return mcp.Entry{
-		Name:    name,
-		Service: service,
-		Profile: profileName,
-		Host:    host,
-		Command: testDatabricksCommand,
-		Agents:  map[string]mcp.AgentRecord{a.Name: {Path: path, Scope: "user"}},
+		Name:       name,
+		Service:    service,
+		Profile:    profileName,
+		Host:       host,
+		Command:    testDatabricksCommand,
+		ConfigFile: os.Getenv("DATABRICKS_CONFIG_FILE"),
+		Agents:     map[string]mcp.AgentRecord{a.Name: {Path: path, Scope: "user"}},
 	}
 }
 
@@ -95,7 +97,8 @@ token = t
 	// Recorded for claude-code but never written to its config file.
 	absent := mcp.Entry{
 		Name: "dbsql-dogfood", Service: "system.ai.dbsql", Profile: "dogfood", Host: "https://adb-2.test", Command: testDatabricksCommand,
-		Agents: map[string]mcp.AgentRecord{"claude-code": {Path: claudePath, Scope: "user"}},
+		ConfigFile: os.Getenv("DATABRICKS_CONFIG_FILE"),
+		Agents:     map[string]mcp.AgentRecord{"claude-code": {Path: claudePath, Scope: "user"}},
 	}
 	// Written for a profile that is then removed from the config file, and changed by hand afterwards.
 	gone := seedInstall(t, claude, "dbsql-old", "system.ai.dbsql", "old", "https://adb-3.test")
@@ -131,6 +134,34 @@ token = t
 
 	assert.Equal(t, []mcpListUnmanaged{{Agent: "claude-code", Name: "web_search", Kind: unmanagedKindUGProxy}}, out.Unmanaged)
 	assert.Equal(t, os.Getenv("DATABRICKS_CONFIG_FILE"), out.configPath)
+}
+
+// TestBuildMcpListReportsDriftWithCheckError checks that an entry whose config file cannot be read does
+// not hide the drift of the other entries, and that the error is kept for the command to return.
+func TestBuildMcpListReportsDriftWithCheckError(t *testing.T) {
+	withHome(t)
+	writeDatabricksCfg(t, "")
+	broken := filepath.Join(t.TempDir(), "broken.cfg")
+	require.NoError(t, os.WriteFile(broken, []byte("[logfood\n"), 0o600))
+
+	claude := agents.ByName("claude-code")
+	gone := seedInstall(t, claude, "dbsql-old", "system.ai.dbsql", "old", "https://adb-3.test")
+	unreadable := mcp.Entry{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-1.test",
+		Command: testDatabricksCommand, ConfigFile: broken,
+	}
+	saveState(t, gone, unreadable)
+
+	out, err := buildMcpList(t.Context())
+	require.NoError(t, err)
+	require.Error(t, out.checkErr)
+	assert.ErrorContains(t, out.checkErr, "MCP server github-logfood")
+
+	require.Len(t, out.Profiles, 2)
+	assert.Equal(t, "logfood", out.Profiles[0].Profile)
+	assert.Equal(t, profileStatusOK, out.Profiles[0].Status)
+	assert.Equal(t, "old", out.Profiles[1].Profile)
+	assert.Equal(t, "profile_missing", out.Profiles[1].Status)
 }
 
 func TestBuildMcpListEmpty(t *testing.T) {

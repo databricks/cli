@@ -37,6 +37,10 @@ type mcpListOutput struct {
 
 	// configPath is the Databricks config file, named in the text of a missing profile.
 	configPath string
+
+	// checkErr is the error of mcp.Reconcile for entries it could not check. The drifts of the other
+	// entries are still listed; the command returns checkErr after rendering.
+	checkErr error
 }
 
 type mcpListProfile struct {
@@ -84,10 +88,13 @@ This command makes no network calls and always exits 0 when entries have drifted
 				return err
 			}
 			if installOutputIsJSON(cmd) {
-				return renderJSON(cmd.OutOrStdout(), out)
+				if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
+					return err
+				}
+				return out.checkErr
 			}
 			renderMcpList(ctx, out)
-			return nil
+			return out.checkErr
 		},
 	}
 }
@@ -99,12 +106,9 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 	if err != nil {
 		return out, err
 	}
-	profiler := profile.GetProfiler(ctx)
-	drifts, err := mcp.Reconcile(ctx, profiler, state)
-	if err != nil {
-		return out, err
-	}
-	out.configPath, err = profiler.GetPath(ctx)
+	drifts, checkErr := mcp.Reconcile(ctx, state)
+	out.checkErr = checkErr
+	out.configPath, err = profile.GetProfiler(ctx).GetPath(ctx)
 	if err != nil {
 		return out, err
 	}
