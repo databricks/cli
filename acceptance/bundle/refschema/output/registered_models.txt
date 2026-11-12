@@ -14,6 +14,8 @@ resources.registered_models.*.created_by	string	ALL
 resources.registered_models.*.full_name	string	ALL
 resources.registered_models.*.id	string	INPUT
 resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
+resources.registered_models.*.lifecycle.bind	*resources.Bind	INPUT
+resources.registered_models.*.lifecycle.bind.id	string	INPUT
 resources.registered_models.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.registered_models.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.registered_models.*.lifecycle.depends_on[*].resource	string	INPUT

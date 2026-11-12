@@ -1,0 +1,45 @@
+
+=== Save a plan that preserves the resource
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan | with_entries(.value |= {action, prevent_id_change}) tmp.plan.json
+{
+  "resources.pipelines.existing": {
+    "action": "update",
+    "prevent_id_change": true
+  }
+}
+
+=== Deploy binds, then rejects a newly required recreation
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-saved-recreate-[UNIQUE_NAME]/default/files...
+Bound pipelines.existing
+Error: cannot deploy resources.pipelines.existing: lifecycle.bind prevents recreating the bound resource
+
+Fields requiring resource recreation:
+  - storage (immutable)
+
+Match these fields to the existing resource to preserve its ID; remove lifecycle.bind to allow the ID to change
+
+Files: 4 uploaded, 0 deleted
+
+>>> print_state.py
+json.state.resources.pipelines.existing.__id__ = "[PIPELINE_ID]";
+
+>>> print_requests.py //api/2.0/pipelines
+
+=== The committed binding survives pulling state again
+>>> [CLI] bundle summary -o json
+json.resources.pipelines.existing.id = "[PIPELINE_ID]";
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.existing
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.existing
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-saved-recreate-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

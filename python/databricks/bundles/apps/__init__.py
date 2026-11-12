@@ -70,6 +70,9 @@ __all__ = [
     "AppResourceUcSecurableUcSecurablePermissionParam",
     "AppResourceUcSecurableUcSecurableType",
     "AppResourceUcSecurableUcSecurableTypeParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "ComputeSize",
     "ComputeSizeParam",
     "DependsOn",
@@ -212,6 +215,7 @@ from databricks.bundles.apps._models.app_resource_uc_securable_uc_securable_type
     AppResourceUcSecurableUcSecurableType,
     AppResourceUcSecurableUcSecurableTypeParam,
 )
+from databricks.bundles.apps._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.apps._models.compute_size import ComputeSize, ComputeSizeParam
 from databricks.bundles.apps._models.depends_on import (
     DependsOn,

@@ -1,0 +1,14 @@
+bundle:
+  name: test-bind-recreate-UNIQUE_NAME
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline
+      storage: /new/storage/path
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_PIPELINE_ID"

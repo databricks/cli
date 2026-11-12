@@ -1,0 +1,31 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
+# Create a job in the workspace and bind it; deployment then updates fields such
+# as deployment and edit_mode that the bundle sets on every job.
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+trace $CLI bundle deploy --auto-approve
+
+title "Unbind the job. The bind block is still in config, so the next deploy re-binds it"
+trace $CLI bundle deployment unbind foo
+
+title "Imperative bind warns that the declarative bind block is redundant"
+trace $CLI bundle deployment bind foo "$NEW_JOB_ID" --auto-approve
+trace $CLI bundle deployment unbind foo
+
+title "The job now matches the config, so this is a pure bind"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | gron.py | grep -E 'jobs\.foo\.(action|id)'
+
+trace print_requests.py --get --oneline //jobs/get
+trace $CLI bundle deploy --auto-approve
+
+title "Binding and deployment both verify that the job exists"
+trace print_requests.py --get --oneline //jobs/get
+trace print_state.py | gron.py | grep __id__
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt

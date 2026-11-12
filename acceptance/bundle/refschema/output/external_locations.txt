@@ -60,6 +60,8 @@ resources.external_locations.*.file_event_queue.provided_sqs.queue_url	string	AL
 resources.external_locations.*.id	string	INPUT
 resources.external_locations.*.isolation_mode	catalog.IsolationMode	REMOTE
 resources.external_locations.*.lifecycle	resources.Lifecycle	INPUT
+resources.external_locations.*.lifecycle.bind	*resources.Bind	INPUT
+resources.external_locations.*.lifecycle.bind.id	string	INPUT
 resources.external_locations.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.external_locations.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.external_locations.*.lifecycle.depends_on[*].resource	string	INPUT

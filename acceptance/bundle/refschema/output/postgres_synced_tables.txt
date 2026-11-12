@@ -11,6 +11,8 @@ resources.postgres_synced_tables.*.extra_columns[*].compute	string	ALL
 resources.postgres_synced_tables.*.extra_columns[*].maintenance	postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance	ALL
 resources.postgres_synced_tables.*.id	string	INPUT
 resources.postgres_synced_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_synced_tables.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_synced_tables.*.lifecycle.bind.id	string	INPUT
 resources.postgres_synced_tables.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_synced_tables.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_synced_tables.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -23,6 +23,8 @@ resources.cluster_policies.*.libraries[*].pypi.repo	string	ALL
 resources.cluster_policies.*.libraries[*].requirements	string	ALL
 resources.cluster_policies.*.libraries[*].whl	string	ALL
 resources.cluster_policies.*.lifecycle	resources.Lifecycle	INPUT
+resources.cluster_policies.*.lifecycle.bind	*resources.Bind	INPUT
+resources.cluster_policies.*.lifecycle.bind.id	string	INPUT
 resources.cluster_policies.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.cluster_policies.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.cluster_policies.*.lifecycle.depends_on[*].resource	string	INPUT

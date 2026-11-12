@@ -119,6 +119,8 @@ resources.model_provider_services.*.config.targets[*].native_api_types	[]string	
 resources.model_provider_services.*.config.targets[*].native_api_types[*]	string	ALL
 resources.model_provider_services.*.id	string	INPUT
 resources.model_provider_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_provider_services.*.lifecycle.bind	*resources.Bind	INPUT
+resources.model_provider_services.*.lifecycle.bind.id	string	INPUT
 resources.model_provider_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.model_provider_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.model_provider_services.*.lifecycle.depends_on[*].resource	string	INPUT

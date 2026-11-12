@@ -52,6 +52,8 @@ resources.model_services.*.config.routing.fallback.destinations[*].provisioned_t
 resources.model_services.*.config.routing.fallback.destinations[*].traffic_percentage	int	ALL
 resources.model_services.*.id	string	INPUT
 resources.model_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_services.*.lifecycle.bind	*resources.Bind	INPUT
+resources.model_services.*.lifecycle.bind.id	string	INPUT
 resources.model_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.model_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.model_services.*.lifecycle.depends_on[*].resource	string	INPUT

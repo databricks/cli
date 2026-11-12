@@ -1,0 +1,5 @@
+Cloud = false
+RecordRequests = true
+Ignore = ["databricks.yml", "tmp.*.json"]
+EnvMatrix.DMS = ["true"]
+EnvMatrix.MODE = ["shadow", "authoritative"]

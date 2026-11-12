@@ -1,0 +1,20 @@
+bundle:
+  name: test-bind-resize
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+sync:
+  exclude:
+    - LOG.*
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: test-cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
+      num_workers: 3
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_CLUSTER_ID"

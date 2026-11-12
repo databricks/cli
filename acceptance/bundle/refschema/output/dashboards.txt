@@ -8,6 +8,8 @@ resources.dashboards.*.etag	string	ALL
 resources.dashboards.*.file_path	string	INPUT
 resources.dashboards.*.id	string	INPUT
 resources.dashboards.*.lifecycle	resources.Lifecycle	INPUT
+resources.dashboards.*.lifecycle.bind	*resources.Bind	INPUT
+resources.dashboards.*.lifecycle.bind.id	string	INPUT
 resources.dashboards.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.dashboards.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.dashboards.*.lifecycle.depends_on[*].resource	string	INPUT

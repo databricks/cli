@@ -21,6 +21,8 @@ resources.models.*.latest_versions[*].tags[*].value	string	REMOTE
 resources.models.*.latest_versions[*].user_id	string	REMOTE
 resources.models.*.latest_versions[*].version	string	REMOTE
 resources.models.*.lifecycle	resources.Lifecycle	INPUT
+resources.models.*.lifecycle.bind	*resources.Bind	INPUT
+resources.models.*.lifecycle.bind.id	string	INPUT
 resources.models.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.models.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.models.*.lifecycle.depends_on[*].resource	string	INPUT

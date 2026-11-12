@@ -1,0 +1,22 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+update_file.py databricks_unbound.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
+# Create a pipeline whose storage matches the config and bind it
+NEW_PIPELINE_ID=$($CLI pipelines create --json '{"name": "test-pipeline", "storage": "/old/storage/path", "allow_duplicate_names": true, "libraries": [{"notebook": {"path": "/Workspace/test"}}]}' | jq -r .pipeline_id)
+add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
+update_file.py databricks.yml 'PLACEHOLDER_PIPELINE_ID' "$NEW_PIPELINE_ID"
+
+trace $CLI bundle deploy --auto-approve
+
+title "Removing only the bind block is a no-op"
+cp databricks_unbound.yml databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_state.py | gron.py | grep __id__ | contains.py "$NEW_PIPELINE_ID"
+
+title "Without the bind block, a storage change plans a recreate"
+update_file.py databricks.yml "storage: /old/storage/path" "storage: /new/storage/path"
+trace $CLI bundle plan
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve

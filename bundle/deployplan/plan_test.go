@@ -1,6 +1,9 @@
 package deployplan_test
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -8,6 +11,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSavedPlanPreservesBindPhase(t *testing.T) {
+	plan := deployplan.NewPlanDirect()
+	plan.Bind = map[string]*deployplan.BindEntry{
+		"resources.jobs.job":               {ID: "123", State: json.RawMessage(`{"name":"existing"}`)},
+		"resources.experiments.experiment": {ID: "456", State: json.RawMessage(`{"name":"unchanged"}`)},
+	}
+	plan.Plan = map[string]*deployplan.PlanEntry{
+		"resources.jobs.job":               {ID: "123", Action: deployplan.Update, PreventIDChange: true},
+		"resources.experiments.experiment": {ID: "456", Action: deployplan.Skip, PreventIDChange: true},
+	}
+	encoded, err := json.Marshal(plan)
+	require.NoError(t, err)
+	path := filepath.Join(t.TempDir(), "plan.json")
+	require.NoError(t, os.WriteFile(path, encoded, 0o600))
+	loaded, err := deployplan.LoadPlanFromFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, plan.Bind, loaded.Bind)
+	assert.Equal(t, plan.Plan, loaded.Plan)
+	assert.Equal(t, deployplan.ActionCounts{Bind: 2, Change: 1, Unchanged: 1}, loaded.CountActions())
+	require.NoError(t, loaded.FilterToSelected(t.Context(), []string{"jobs.job"}))
+	assert.Len(t, loaded.Bind, 1)
+	assert.Contains(t, loaded.Bind, "resources.jobs.job")
+	assert.Equal(t, deployplan.ActionCounts{Bind: 1, Change: 1}, loaded.CountActions())
+}
 
 func TestHasChange(t *testing.T) {
 	tests := []struct {

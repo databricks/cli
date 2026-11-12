@@ -2,6 +2,8 @@ resources.postgres_databases.*.create_time	*time.Time	REMOTE
 resources.postgres_databases.*.database_id	string	ALL
 resources.postgres_databases.*.id	string	INPUT
 resources.postgres_databases.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_databases.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_databases.*.lifecycle.bind.id	string	INPUT
 resources.postgres_databases.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_databases.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_databases.*.lifecycle.depends_on[*].resource	string	INPUT

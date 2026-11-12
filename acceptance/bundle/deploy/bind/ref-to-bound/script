@@ -1,0 +1,18 @@
+update_file.py databricks.yml 'UNIQUE_NAME' "$UNIQUE_NAME"
+
+# Create a job in the workspace; bar refers to it through ${resources.jobs.foo.id}
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+trace $CLI bundle plan
+
+title "The bound ID is known at plan time, so the reference is already resolved in the plan"
+trace $CLI bundle plan -o json | gron.py | grep run_job_task
+
+trace $CLI bundle deploy --auto-approve
+BAR_ID=$(read_id.py bar)
+trace $CLI jobs get $BAR_ID | jq '.settings.tasks[0].run_job_task.job_id'
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve

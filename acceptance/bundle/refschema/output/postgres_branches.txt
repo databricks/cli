@@ -4,6 +4,8 @@ resources.postgres_branches.*.expire_time	*time.Time	ALL
 resources.postgres_branches.*.id	string	INPUT
 resources.postgres_branches.*.is_protected	bool	ALL
 resources.postgres_branches.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_branches.*.lifecycle.bind	*resources.Bind	INPUT
+resources.postgres_branches.*.lifecycle.bind.id	string	INPUT
 resources.postgres_branches.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.postgres_branches.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.postgres_branches.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -16,6 +16,8 @@ resources.mcp_services.*.config.source_connection.options	map[string]string	ALL
 resources.mcp_services.*.config.source_connection.options.*	string	ALL
 resources.mcp_services.*.id	string	INPUT
 resources.mcp_services.*.lifecycle	resources.Lifecycle	INPUT
+resources.mcp_services.*.lifecycle.bind	*resources.Bind	INPUT
+resources.mcp_services.*.lifecycle.bind.id	string	INPUT
 resources.mcp_services.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.mcp_services.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.mcp_services.*.lifecycle.depends_on[*].resource	string	INPUT

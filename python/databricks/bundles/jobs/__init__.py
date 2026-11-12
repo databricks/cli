@@ -52,6 +52,9 @@ __all__ = [
     "AzureAttributesParam",
     "AzureAvailability",
     "AzureAvailabilityParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "CleanRoomsNotebookTask",
     "CleanRoomsNotebookTaskDict",
     "CleanRoomsNotebookTaskParam",
@@ -494,6 +497,7 @@ from databricks.bundles.jobs._models.azure_availability import (
     AzureAvailability,
     AzureAvailabilityParam,
 )
+from databricks.bundles.jobs._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
     CleanRoomsNotebookTaskDict,

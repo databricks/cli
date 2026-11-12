@@ -140,6 +140,8 @@ resources.clusters.*.libraries[*].whl	string	ALL
 resources.clusters.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.clusters.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
+resources.clusters.*.lifecycle.bind	*resources.Bind	INPUT
+resources.clusters.*.lifecycle.bind.id	string	INPUT
 resources.clusters.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.clusters.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.clusters.*.lifecycle.depends_on[*].resource	string	INPUT

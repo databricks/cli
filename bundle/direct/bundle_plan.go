@@ -161,7 +161,7 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, selected ...string) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -173,6 +173,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
+	if len(selected) > 0 {
+		if err := plan.FilterToSelected(ctx, selected); err != nil {
+			return nil, err
+		}
+	}
 
 	// The plan records the state it was built against so deploy --plan can reject a plan built for a
 	// target of a different shape or a state that has moved on since.
@@ -180,6 +185,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
+
+	bindIDByKey := lifecycleBindIDs(configRoot)
+	if len(bindIDByKey) > 0 && !b.validateBindConfig(ctx, configRoot, bindIDByKey) {
+		return nil, errors.New("bind validation failed")
+	}
 
 	g, err := makeGraph(plan)
 	if err != nil {
@@ -208,6 +218,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		defer plan.WriteUnlockEntry(resourceKey)
+		_, entry.PreventIDChange = bindIDByKey[resourceKey]
+		if entry.PreventIDChange {
+			entry.ID = bindIDByKey[resourceKey]
+		}
 
 		if failedDependency != nil {
 			// TODO: this should be a warning
@@ -275,6 +289,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
 		if !hasEntry || dbentry.ID == "" {
+			if entry.PreventIDChange {
+				logdiag.LogError(ctx, fmt.Errorf("%s: resource must be bound before deployment planning", errorPrefix))
+				return false
+			}
 			entry.Action = deployplan.Create
 			return true
 		}
@@ -371,6 +389,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if remoteState == nil {
+			// A bind block pins the resource to one ID. Creating a replacement would
+			// re-point the state at a new ID behind the user's back and leave the
+			// block mismatched on every later plan, so report the deletion instead.
+			if entry.PreventIDChange {
+				logdiag.LogError(ctx, fmt.Errorf("%s: bound resource with ID %q no longer exists in the workspace; remove lifecycle.bind to create a new resource", errorPrefix, dbentry.ID))
+				return false
+			}
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
@@ -381,6 +406,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
 		b.RemoteStateCache.Store(resourceKey, remoteState)
+
+		if entry.PreventIDChange && (action == deployplan.Recreate || action == deployplan.UpdateWithID) {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, buildBindConflictError(action, entry.Changes)))
+			return false
+		}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
@@ -397,7 +427,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	for _, entry := range plan.Plan {
-		if entry.Action == deployplan.Skip {
+		if entry.Action == deployplan.Skip && !entry.PreventIDChange {
 			entry.NewState = nil
 		}
 	}
@@ -1036,13 +1066,15 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	}
 
 	// A field is safe to read from the remote cache when the target either has no
-	// changes (Skip) or keeps its ID and the field cannot have changed: an
+	// changes (Skip) or retains its remote identity
+	// and the field cannot have changed: an
 	// immutable field (FieldTriggersRecreate) or a backend-assigned stable output
 	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
 	// ${resources.X.name} resolve during an in-place update instead of delaying,
 	// which would otherwise recreate dependents that reference it as their parent.
 	canReadRemoteCache := targetAction == deployplan.Skip ||
-		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
+		(targetAction.KeepsID() &&
+			(adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.

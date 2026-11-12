@@ -1,0 +1,31 @@
+update_file.py databricks.yml UNIQUE_NAME "$UNIQUE_NAME"
+JOB_ID=$($CLI jobs create --json '{"name":"original-job"}' | jq -r .job_id)
+EXPERIMENT_ID=$(MSYS_NO_PATHCONV=1 $CLI experiments create-experiment "/Shared/test-bind-saved-plan-$UNIQUE_NAME" | jq -r .experiment_id)
+add_repl "$JOB_ID" JOB_ID
+add_repl "$EXPERIMENT_ID" EXPERIMENT_ID
+export BUNDLE_VAR_job_id=$JOB_ID BUNDLE_VAR_experiment_id=$EXPERIMENT_ID
+
+title "The saved plan contains bindings and ordinary deployment actions"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace jq '{plan_version, bind: (.bind | with_entries(.value |= {id})), plan: (.plan | with_entries(.value |= {action, prevent_id_change}))}' tmp.plan.json
+trace find.py 'resources\.json$' --expect 0
+trace print_requests.py //api/2.0/workspace/import
+
+title "Deploy uses the saved IDs and configuration"
+update_file.py databricks.yml saved-plan-job ignored-local-name
+export BUNDLE_VAR_job_id=not-the-planned-id
+trace $CLI bundle deploy --plan tmp.plan.json --auto-approve
+trace $CLI jobs get "$JOB_ID" | jq -r .settings.name
+trace print_state.py | gron.py | grep __id__
+
+title "Reusing a plan after state has changed is rejected"
+trace musterr $CLI bundle deploy --plan tmp.plan.json --auto-approve
+
+title "A subsequent plan has no bind phase"
+update_file.py databricks.yml ignored-local-name saved-plan-job
+export BUNDLE_VAR_job_id=$JOB_ID
+trace $CLI bundle plan -o json > tmp.next.json
+trace jq '{has_bind: has("bind"), actions: [.plan[].action]}' tmp.next.json
+trace $CLI bundle deploy --plan tmp.next.json --auto-approve
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

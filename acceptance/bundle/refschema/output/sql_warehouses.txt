@@ -23,6 +23,8 @@ resources.sql_warehouses.*.jdbc_url	string	REMOTE
 resources.sql_warehouses.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
+resources.sql_warehouses.*.lifecycle.bind	*resources.Bind	INPUT
+resources.sql_warehouses.*.lifecycle.bind.id	string	INPUT
 resources.sql_warehouses.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.sql_warehouses.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.sql_warehouses.*.lifecycle.depends_on[*].resource	string	INPUT

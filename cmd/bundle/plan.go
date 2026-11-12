@@ -3,6 +3,8 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -82,8 +84,20 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			// Print summary line and actions to stdout
-			totalChanges := counts.Create + counts.Change + counts.Delete
+			totalChanges := counts.Create + counts.Change + counts.Delete + counts.Bind
 			if totalChanges > 0 && bundle.QuietLevel(quiet) < bundle.QuietSummary {
+				indent := ""
+				if len(plan.Bind) > 0 {
+					indent = "  "
+					fmt.Fprintln(out, "Bind:")
+					for _, key := range slices.Sorted(maps.Keys(plan.Bind)) {
+						fmt.Fprintf(out, "  %s (id: %s)\n", strings.TrimPrefix(key, "resources."), plan.Bind[key].ID)
+					}
+					fmt.Fprintln(out, "\nDeploy:")
+					if counts.Create+counts.Change+counts.Delete == 0 {
+						fmt.Fprintln(out, "  No changes")
+					}
+				}
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					if action.ActionType == deployplan.Skip {
@@ -95,7 +109,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
-					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+					fmt.Fprintf(out, "%s%s %s\n", indent, action.ActionType.StringShort(), key)
 				}
 				fmt.Fprintln(out)
 			}
@@ -104,6 +118,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+			if counts.Bind > 0 {
+				fmt.Fprintf(out, ", %d to bind", counts.Bind)
+			}
 			if len(selectResources) > 0 {
 				fmt.Fprintf(out, ", %d not selected", plan.NotSelected)
 			}

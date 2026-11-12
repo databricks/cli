@@ -13,6 +13,8 @@ resources.schemas.*.enable_predictive_optimization	catalog.EnablePredictiveOptim
 resources.schemas.*.full_name	string	REMOTE
 resources.schemas.*.id	string	INPUT
 resources.schemas.*.lifecycle	resources.Lifecycle	INPUT
+resources.schemas.*.lifecycle.bind	*resources.Bind	INPUT
+resources.schemas.*.lifecycle.bind.id	string	INPUT
 resources.schemas.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.schemas.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.schemas.*.lifecycle.depends_on[*].resource	string	INPUT

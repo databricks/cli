@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -133,6 +134,9 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 
 	counts := plan.CountActions()
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	if counts.Bind > 0 {
+		summary += fmt.Sprintf(", %d bound", counts.Bind)
+	}
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and
 	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
@@ -169,7 +173,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// lock is acquired here
 	//
-	// The version is created only after approval; CompleteVersion is deferred before
+	// The apply version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
 		if b.DeploymentBundle.StateDB.RecordsHistory() {
@@ -251,10 +255,36 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	planFromFile := plan != nil
+	var bindings map[string]*deployplan.BindEntry
+	if planFromFile {
+		bindings = plan.Bind
+		if len(bindings) > 0 {
+			if err := b.DeploymentBundle.CheckBindings(ctx, b.WorkspaceClient(ctx), bindings); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
+	} else {
+		var err error
+		bindings, err = b.DeploymentBundle.PrepareBindings(ctx, b.WorkspaceClient(ctx), &b.Config, b.Select)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+	if len(bindings) > 0 {
+		dmsDeployment = applyBindPhase(ctx, b, bindings, dmsDeployment)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
 
 	if plan == nil {
 		// State is already open for read by process.go (or by Migrate)
 		plan = RunPlan(ctx, b)
+		if plan != nil {
+			plan.Bind = bindings
+		}
 	}
 
 	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
@@ -266,9 +296,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if !haveApproval {
-		// No version was created, so the deferred CompleteVersion is a no-op and the version
-		// number is left for the next deploy. Both the user declining and a console that
-		// cannot prompt land here.
+		// No apply version was created, so the deferred CompleteVersion is a no-op and the
+		// version number is left for the next deploy. Any bind version has already completed.
+		// Both the user declining and a console that cannot prompt land here.
 		//
 		// A prepared terraform→direct migration lives only in memory (Migrate wrote nothing
 		// durable and CommitMigration below never ran), so a declined deploy just drops it and
@@ -356,17 +386,30 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+	bindings, err := b.DeploymentBundle.PrepareBindings(ctx, b.WorkspaceClient(ctx), &b.Config, b.Select)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
-	if len(b.Select) > 0 {
-		if err := plan.FilterToSelected(ctx, b.Select); err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
+	deployment := &b.DeploymentBundle
+	if len(bindings) > 0 {
+		if deployment.StateDB.RecordsHistory() {
+			bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion(deployment.StateDB.GetSerial()+2))
+			if logdiag.HasError(ctx) {
+				return nil
+			}
 		}
+		preview := &direct.DeploymentBundle{Adapters: deployment.Adapters}
+		preview.StateDB.OpenWithData(deployment.StateDB.Path, deployment.StateDB.WithBindings(bindings))
+		preview.StateDB.VersionID = deployment.StateDB.VersionID
+		deployment = preview
 	}
+	plan, err := deployment.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, b.Select...)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	plan.Bind = bindings
 	return plan
 }
 

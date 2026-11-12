@@ -1,0 +1,77 @@
+
+=== The saved plan contains bindings and ordinary deployment actions
+>>> [CLI] bundle plan -o json
+
+>>> jq {plan_version, bind: (.bind | with_entries(.value |= {id})), plan: (.plan | with_entries(.value |= {action, prevent_id_change}))} tmp.plan.json
+{
+  "plan_version": [PLAN_VERSION],
+  "bind": {
+    "resources.experiments.unchanged": {
+      "id": "[EXPERIMENT_ID]"
+    },
+    "resources.jobs.updated": {
+      "id": "[JOB_ID]"
+    }
+  },
+  "plan": {
+    "resources.experiments.unchanged": {
+      "action": "skip",
+      "prevent_id_change": true
+    },
+    "resources.jobs.updated": {
+      "action": "update",
+      "prevent_id_change": true
+    }
+  }
+}
+
+>>> find.py resources\.json$ --expect 0
+
+>>> print_requests.py //api/2.0/workspace/import
+
+=== Deploy uses the saved IDs and configuration
+>>> [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-saved-plan-[UNIQUE_NAME]/default/files...
+Bound experiments.unchanged
+Bound jobs.updated
+Updated jobs.updated
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged, 2 bound
+
+>>> [CLI] jobs get [JOB_ID]
+saved-plan-job
+
+>>> print_state.py
+json.state.resources.experiments.unchanged.__id__ = "[EXPERIMENT_ID]";
+json.state.resources.jobs.updated.__id__ = "[JOB_ID]";
+
+=== Reusing a plan after state has changed is rejected
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Error: plan lineage "" does not match state lineage "[UUID]"; the state may have been modified by another process
+
+
+=== A subsequent plan has no bind phase
+>>> [CLI] bundle plan -o json
+
+>>> jq {has_bind: has("bind"), actions: [.plan[].action]} tmp.next.json
+{
+  "has_bind": false,
+  "actions": [
+    "skip",
+    "skip"
+  ]
+}
+
+>>> [CLI] bundle deploy --plan tmp.next.json --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-saved-plan-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.experiments.unchanged
+  delete resources.jobs.updated
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-saved-plan-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

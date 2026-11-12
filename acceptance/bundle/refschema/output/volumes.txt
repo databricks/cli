@@ -11,6 +11,8 @@ resources.volumes.*.encryption_details.sse_encryption_details.aws_kms_key_arn	st
 resources.volumes.*.full_name	string	REMOTE
 resources.volumes.*.id	string	INPUT
 resources.volumes.*.lifecycle	resources.Lifecycle	INPUT
+resources.volumes.*.lifecycle.bind	*resources.Bind	INPUT
+resources.volumes.*.lifecycle.bind.id	string	INPUT
 resources.volumes.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.volumes.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.volumes.*.lifecycle.depends_on[*].resource	string	INPUT

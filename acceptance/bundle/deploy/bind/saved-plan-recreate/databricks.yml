@@ -1,0 +1,18 @@
+bundle:
+  name: test-bind-saved-recreate-UNIQUE_NAME
+
+variables:
+  pipeline_id:
+    description: Existing pipeline
+
+resources:
+  pipelines:
+    existing:
+      name: existing-pipeline
+      storage: /old/storage
+      libraries:
+        - notebook:
+            path: /Workspace/test
+      lifecycle:
+        bind:
+          id: ${var.pipeline_id}

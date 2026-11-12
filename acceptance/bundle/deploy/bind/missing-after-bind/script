@@ -1,0 +1,27 @@
+update_file.py databricks.yml UNIQUE_NAME "$UNIQUE_NAME"
+EXPERIMENT_ID=$(MSYS_NO_PATHCONV=1 $CLI experiments create-experiment "/Shared/test-missing-after-bind-$UNIQUE_NAME" | jq -r .experiment_id)
+add_repl "$EXPERIMENT_ID" EXPERIMENT_ID
+export BUNDLE_VAR_experiment_id=$EXPERIMENT_ID
+print_requests.py //api/2.0/mlflow/experiments/create > LOG.setup
+
+title "Missing after binding: fresh deployment"
+fault.py 'GET /api/2.0/mlflow/experiments/get' 404 2 1 RESOURCE_DOES_NOT_EXIST
+trace musterr $CLI bundle deploy --auto-approve
+trace print_state.py | gron.py | grep __id__
+
+title "The failed deployment has already uploaded its binding"
+rm .databricks/bundle/default/resources.json
+trace $CLI bundle summary -o json | gron.py | grep 'experiments.existing.id'
+trace $CLI bundle deployment unbind existing
+
+title "Missing after binding: saved deployment plan with a skip action"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan | with_entries(.value |= {action, prevent_id_change})' tmp.plan.json
+fault.py 'GET /api/2.0/mlflow/experiments/get' 404 1 1 RESOURCE_DOES_NOT_EXIST
+trace musterr $CLI bundle deploy --plan tmp.plan.json --auto-approve
+trace print_state.py | gron.py | grep __id__
+
+title "Neither failed deploy creates or deletes an experiment"
+trace print_requests.py //api/2.0/mlflow/experiments/create //api/2.0/mlflow/experiments/delete | contains.py '!POST'
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

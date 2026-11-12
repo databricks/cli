@@ -3,6 +3,8 @@ resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
 resources.database_catalogs.*.id	string	INPUT
 resources.database_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_catalogs.*.lifecycle.bind	*resources.Bind	INPUT
+resources.database_catalogs.*.lifecycle.bind.id	string	INPUT
 resources.database_catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.database_catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.database_catalogs.*.lifecycle.depends_on[*].resource	string	INPUT

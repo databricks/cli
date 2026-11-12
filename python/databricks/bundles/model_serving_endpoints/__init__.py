@@ -48,6 +48,9 @@ __all__ = [
     "BearerTokenAuth",
     "BearerTokenAuthDict",
     "BearerTokenAuthParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "CohereConfig",
     "CohereConfigDict",
     "CohereConfigParam",
@@ -214,6 +217,11 @@ from databricks.bundles.model_serving_endpoints._models.bearer_token_auth import
     BearerTokenAuth,
     BearerTokenAuthDict,
     BearerTokenAuthParam,
+)
+from databricks.bundles.model_serving_endpoints._models.bind import (
+    Bind,
+    BindDict,
+    BindParam,
 )
 from databricks.bundles.model_serving_endpoints._models.cohere_config import (
     CohereConfig,

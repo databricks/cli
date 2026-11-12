@@ -136,12 +136,21 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// We don't keep NewState around for 'skip' nodes
-
-		if action != deployplan.Skip {
+		// Guarded skips retain NewState so saved plans can recheck the bound resource.
+		if action != deployplan.Skip || entry.PreventIDChange {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
+		}
+		if entry.PreventIDChange {
+			if err := b.checkBoundResource(ctx, resourceKey, entry, adapter); err != nil {
+				b.StateDB.RecordFailure(resourceKey, entry.ID, err)
+				logdiag.LogError(ctx, err)
+				return false
+			}
+		}
+
+		if action != deployplan.Skip {
 
 			// Get the cached StructVar to check for unresolved refs and get value
 			sv, ok := b.StateCache.Load(resourceKey)

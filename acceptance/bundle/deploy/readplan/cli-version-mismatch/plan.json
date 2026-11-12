@@ -1,5 +1,5 @@
 {
-  "plan_version": 2,
+  "plan_version": 3,
   "cli_version": "0.0.0-test",
   "plan": {
     "resources.jobs.job": {

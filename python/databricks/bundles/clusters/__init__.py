@@ -17,6 +17,9 @@ __all__ = [
     "AzureAttributesParam",
     "AzureAvailability",
     "AzureAvailabilityParam",
+    "Bind",
+    "BindDict",
+    "BindParam",
     "ClientsTypes",
     "ClientsTypesDict",
     "ClientsTypesParam",
@@ -133,6 +136,7 @@ from databricks.bundles.clusters._models.azure_availability import (
     AzureAvailability,
     AzureAvailabilityParam,
 )
+from databricks.bundles.clusters._models.bind import Bind, BindDict, BindParam
 from databricks.bundles.clusters._models.clients_types import (
     ClientsTypes,
     ClientsTypesDict,

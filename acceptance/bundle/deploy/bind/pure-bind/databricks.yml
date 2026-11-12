@@ -1,0 +1,22 @@
+bundle:
+  name: test-bind-pure-UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: test-bind-job
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+      tasks:
+        - task_key: my_task
+          environment_key: default
+          spark_python_task:
+            python_file: /Workspace/test.py
+      permissions:
+        - group_name: users
+          level: CAN_VIEW
+      lifecycle:
+        bind:
+          id: "PLACEHOLDER_JOB_ID"

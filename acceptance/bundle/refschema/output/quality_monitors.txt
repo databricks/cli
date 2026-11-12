@@ -24,6 +24,8 @@ resources.quality_monitors.*.inference_log.problem_type	catalog.MonitorInference
 resources.quality_monitors.*.inference_log.timestamp_col	string	ALL
 resources.quality_monitors.*.latest_monitor_failure_msg	string	ALL
 resources.quality_monitors.*.lifecycle	resources.Lifecycle	INPUT
+resources.quality_monitors.*.lifecycle.bind	*resources.Bind	INPUT
+resources.quality_monitors.*.lifecycle.bind.id	string	INPUT
 resources.quality_monitors.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.quality_monitors.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.quality_monitors.*.lifecycle.depends_on[*].resource	string	INPUT

@@ -23,7 +23,7 @@ Env.PYTHONUTF8 = "1"
 # applied in parallel, so the order of these lines is not deterministic. Sort each run of
 # them before comparing, so tests pin which resources were applied, not the order.
 # A test that needs the raw order sets SortLinesOn.deploy_actions = false.
-SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
+SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized|Bound|Bound and updated) \S+$'
 
 # Retries are timing dependent, so their warnings would make output flaky. They go to the
 # test log instead. A test that injects errors deterministically and asserts the warning
@@ -77,11 +77,11 @@ New = "[METASTORE_NAME]"
 
 # Normalize plan_version so bumping it doesn't churn every recorded plan.
 [[Repls]]
-Old = '"plan_version": 2,'
+Old = '"plan_version": 3,'
 New = '"plan_version": [PLAN_VERSION],'
 
 [[Repls]]
-Old = 'json\.plan_version = 2;'
+Old = 'json\.plan_version = 3;'
 New = 'json.plan_version = [PLAN_VERSION];'
 
 # The lineage hash (libs/shortid) is not masked: fixture lineages hash to stable values, and
