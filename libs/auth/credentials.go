@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
@@ -49,6 +50,33 @@ func init() {
 	}
 }
 
+// CredentialsWithoutRefresh returns the CLI credentials chain with a
+// databricks-cli strategy that uses the cached OAuth token only while it is
+// valid and never refreshes it (see [u2m.WithoutRefresh]). For best-effort
+// auth that the command may abandon at exit, such as telemetry's.
+//
+// With auth_type set to databricks-cli, an expired token fails auth. Without
+// an auth_type, the chain skips a strategy whose dry run fails, so an expired
+// token moves on to the strategies after databricks-cli (metadata service,
+// OIDC, Azure, Google), and the first one that succeeds is used; e.g. `az`
+// logged in on an Azure host. The default chain would have refreshed the
+// token and stopped at databricks-cli.
+func CredentialsWithoutRefresh() config.CredentialsStrategy {
+	return &defaultCredentials{chain: config.NewCredentialsChain(credentialChainWithoutRefresh()...)}
+}
+
+// credentialChainWithoutRefresh is credentialChain with its databricks-cli
+// strategy set to never refresh.
+func credentialChainWithoutRefresh() []config.CredentialsStrategy {
+	chain := slices.Clone(credentialChain)
+	for i, s := range chain {
+		if _, ok := s.(CLICredentials); ok {
+			chain[i] = CLICredentials{noRefresh: true}
+		}
+	}
+	return chain
+}
+
 // defaultCredentials wraps the CLI credential chain and provides "default"
 // as the fallback name, matching the SDK's DefaultCredentials behavior.
 type defaultCredentials struct {
@@ -73,6 +101,10 @@ type CLICredentials struct {
 	// persistentAuth is a function to override the default implementation
 	// of the persistent auth client. It exists for testing purposes only.
 	persistentAuthFn func(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error)
+
+	// noRefresh uses the cached token only while it is valid; see
+	// [CredentialsWithoutRefresh].
+	noRefresh bool
 }
 
 // Name implements [config.CredentialsStrategy].
@@ -111,6 +143,9 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	}
 	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
 		opts = append(opts, u2m.WithClientID(cfg.ClientID))
+	}
+	if c.noRefresh {
+		opts = append(opts, u2m.WithoutRefresh())
 	}
 	ts, err := c.persistentAuth(ctx, opts...)
 	if err != nil {

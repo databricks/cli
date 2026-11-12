@@ -55,7 +55,11 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 				delegateArgs = append(delegateArgs, "--experimental")
 			}
 			installCmd.SetArgs(delegateArgs)
-			return installCmd.Execute()
+			err := installCmd.Execute()
+			// Root uploads telemetry from this command's context, so carry over
+			// the auth config the install resolved on its own context.
+			cmd.SetContext(installCmd.Context())
+			return err
 		},
 	}
 
