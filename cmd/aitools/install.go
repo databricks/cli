@@ -96,7 +96,6 @@ Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin; not with --path).
   --skills name1,name2   Install only the named skills (with --skills-only/--path).
   --path <dir>           Write resolved skill files to a directory (no agents, no state).
-                         Use instead of --skills-only when choosing an output directory.
 
 Agent selection:
   --agents <name>[,...]  Act only on the named agents (works for undetected ones).
@@ -109,10 +108,10 @@ Output:
 
 Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Example: `  # Install a selected skill for coding agents.
-  databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+  databricks aitools install --skills-only --skills databricks-ai-runtime
 
   # Write a selected skill to a custom directory (omit --skills-only).
-  databricks aitools install --skills databricks-ai-runtime --experimental --path ./skills`,
+  databricks aitools install --skills databricks-ai-runtime --path ./skills`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			ctx := cmd.Context()
