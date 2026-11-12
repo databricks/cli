@@ -20,14 +20,14 @@ Open this URL to sign in to system.ai.github:
 [DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
 Waiting for sign-in...
 Signed in to system.ai.github on profile logfood.
-Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 
 === login again when already signed in returns at once
 
 >>> [CLI] aitools mcp login system.ai.github --profile logfood --output json
 Sign in with the same account you use for Databricks profile logfood.
 Signed in to system.ai.github on profile logfood.
-Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 {
   "service": "system.ai.github",
   "profile": "logfood",
@@ -76,7 +76,7 @@ Open this URL to sign in to system.ai.github:
 [DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
 Waiting for sign-in...
 Signed in to system.ai.github on profile logfood.
-Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 
 >>> jq [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp/state.json
 [
