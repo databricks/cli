@@ -13,7 +13,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot update resources.apps.mykey: updating id=myappname: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
 
-The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
+The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again, using the same profile and target as for this deploy. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/apps/myappname/update
 HTTP Status: 400 Bad Request
@@ -58,7 +58,7 @@ Exit code: 1
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot update resources.apps.mykey: updating id=myappname: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
 
-The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
+The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again, using the same profile and target as for this deploy. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/apps/myappname/start
 HTTP Status: 400 Bad Request
