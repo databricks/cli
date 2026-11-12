@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -332,7 +331,7 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, runURL string, err error) {
 	start := time.Now()
 	var snap snapshotResult
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
@@ -446,8 +445,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
-	return runID, dashboardURL, nil
+	return runID, dashboardURL(w.Config.Host, runID, 0), nil
 }
 
 func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {

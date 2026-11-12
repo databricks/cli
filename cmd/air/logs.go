@@ -7,7 +7,6 @@ import (
 	"io"
 	"slices"
 	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -192,7 +191,12 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	out := cmd.OutOrStdout()
 	if !req.jsonOutput && !req.staticView && !status.terminal() {
-		defer printJobRunLink(ctx, out, w.Config.Host, req.runID)
+		runURL := req.runURL
+		if runURL == "" {
+			workspaceID, _ := strconv.ParseInt(w.Config.WorkspaceID, 10, 64)
+			runURL = dashboardURL(w.Config.Host, req.runID, workspaceID)
+		}
+		defer printJobRunLink(ctx, out, runURL)
 	}
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
@@ -249,10 +253,9 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 }
 
 // printJobRunLink leaves the run link below the streamed output, including on failure.
-func printJobRunLink(ctx context.Context, out io.Writer, host string, runID int64) {
+func printJobRunLink(ctx context.Context, out io.Writer, runURL string) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
-	runURL := fmt.Sprintf("%s/jobs/runs/%d", strings.TrimRight(host, "/"), runID)
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
 }

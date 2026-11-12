@@ -223,6 +223,7 @@ field, pass its path to -h as a separate argument:
 		maxRetries := cfg.maxRetries()
 		req := logRequest{
 			runID:        runID,
+			runURL:       dashboardURL,
 			attempt:      -1,
 			tailLines:    -1,
 			jsonOutput:   jsonOut,

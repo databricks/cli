@@ -278,6 +278,7 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 	var buf bytes.Buffer
 	client := newTestWorkspaceClient(t, srv.URL)
 	client.Config.Profile = "team profile"
+	client.Config.WorkspaceID = "42"
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", ""))
 	ctx = cmdctx.SetWorkspaceClient(ctx, client)
 	cmd := withOutput(newLogsCommand(), flags.OutputText)
@@ -286,7 +287,7 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 
 	err := cmd.RunE(cmd, []string{"5"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	assert.Contains(t, buf.String(), "View job run at: "+srv.URL+"/jobs/runs/5\n\nStreaming logs interrupted.")
+	assert.Contains(t, buf.String(), "View job run at: "+srv.URL+"/jobs/runs/5?o=42\n\nStreaming logs interrupted.")
 	assert.Contains(t, buf.String(), "To check status:\ndatabricks air get 5 -p 'team profile'")
 	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks air logs 5 -p 'team profile'")
 }
@@ -368,4 +369,18 @@ func TestLogsCommandRepeatsRunLinkAfterStreaming(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
+	srv := watchServer(t, "SUCCESS")
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	runURL := srv.URL + "/jobs/runs/777?o=42"
+
+	err := runLogs(ctx, cmd, logRequest{runID: 777, runURL: runURL, attempt: -1, tailLines: -1})
+	require.NoError(t, err)
+	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
 }

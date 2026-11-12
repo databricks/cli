@@ -254,9 +254,13 @@ func roundMillisToSeconds(ms int64) int64 {
 
 // dashboardURL builds {host}/jobs/runs/{id}?o={workspace_id}, matching Python
 // (cli_entrypoint.py:1911). The ?o= workspace id deep-links to the right
-// workspace on multi-workspace accounts.
+// workspace on multi-workspace accounts. An unknown (zero) workspace ID omits it.
 func dashboardURL(host string, runID, workspaceID int64) string {
-	return fmt.Sprintf("%s/jobs/runs/%d?o=%d", strings.TrimRight(host, "/"), runID, workspaceID)
+	url := fmt.Sprintf("%s/jobs/runs/%d", strings.TrimRight(host, "/"), runID)
+	if workspaceID == 0 {
+		return url
+	}
+	return fmt.Sprintf("%s?o=%d", url, workspaceID)
 }
 
 // formatDuration turns a number of seconds into a compact human string such as
