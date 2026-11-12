@@ -430,7 +430,6 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 	t.Parallel()
 
 	sent := make(chan struct{})
-	release := make(chan struct{})
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
 		defer conn.Close()
@@ -440,12 +439,11 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 		close(sent)
 		// Keep the socket open until the test is done: the only way for the
 		// streamer to emit the tail is the prefetch timer, not a server close.
-		<-release
+		// t.Context() is canceled before t.Cleanup waits for this handler.
+		<-t.Context().Done()
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 	})
 	defer server.Close()
-	// Deferred calls run before t.Cleanup, which waits for the handler to return.
-	defer close(release)
 
 	writer := &syncBuffer{}
 	streamer := &logStreamer{
