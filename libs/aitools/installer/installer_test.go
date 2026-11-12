@@ -1674,3 +1674,20 @@ func TestLegacyTargetedInstallBlockedWithMCPOnlyState(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "legacy install detected")
 }
+
+// TestInstallSpecificSkillWithEmptyStateFile checks that an empty state file, as an update that pruned
+// every skill leaves, does not count as a legacy install, so a targeted install still runs.
+func TestInstallSpecificSkillWithEmptyStateFile(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-old"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(globalDir, ".state.json"), []byte(`{"schema_version": 2, "skills": {}}`+"\n"), 0o600))
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{testAgent(tmp)}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.NoError(t, err)
+}

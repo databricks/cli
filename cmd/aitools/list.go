@@ -288,8 +288,7 @@ func agentHasSkillsInScope(ctx context.Context, a *agents.Agent, scope string) b
 // loadStateForScope returns the install state for the named scope when the
 // scope filter allows it. excludeScope is the scope value that means "skip
 // loading this one" (so passing ScopeProject to the global loader skips
-// global when --scope=project). A state file that holds only MCP records has no
-// skills or plugins, so it is not an install and yields nil.
+// global when --scope=project).
 func loadStateForScope(ctx context.Context, scopeFilter, excludeScope string, dirFn func(context.Context) (string, error), label string) *installer.InstallState {
 	if scopeFilter == excludeScope {
 		return nil
@@ -301,9 +300,6 @@ func loadStateForScope(ctx context.Context, scopeFilter, excludeScope string, di
 	state, err := installer.LoadState(dir)
 	if err != nil {
 		log.Debugf(ctx, "Could not load %s install state: %v", label, err)
-		return nil
-	}
-	if !state.HasSkillsOrPlugins() {
 		return nil
 	}
 	return state

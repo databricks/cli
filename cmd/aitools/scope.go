@@ -150,8 +150,7 @@ func parseScopeFlag(scopeFlag string, projectFlag, globalFlag, allowBoth bool) (
 	}
 }
 
-// detectInstalledScopes checks which scopes have skills or plugins recorded in their state file.
-// MCP records in the file do not count.
+// detectInstalledScopes checks which scopes have a .state.json file present.
 func detectInstalledScopes(globalDir, projectDir string) (global, project bool, err error) {
 	globalState, err := installer.LoadState(globalDir)
 	if err != nil {
@@ -163,7 +162,7 @@ func detectInstalledScopes(globalDir, projectDir string) (global, project bool, 
 		return false, false, err
 	}
 
-	return globalState.HasSkillsOrPlugins(), projectState.HasSkillsOrPlugins(), nil
+	return globalState != nil, projectState != nil, nil
 }
 
 // explicitScope returns the single scope the flags parsed by parseScopeFlag
@@ -294,7 +293,7 @@ func withExplicitScopeCheck(dir, scope, verb, projectDir string, hasGlobal, hasP
 	if err != nil {
 		return nil, err
 	}
-	if !state.HasSkillsOrPlugins() {
+	if state == nil {
 		return nil, scopeNotInstalledError(scope, verb, projectDir, hasGlobal, hasProject)
 	}
 

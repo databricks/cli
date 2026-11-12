@@ -3,6 +3,7 @@ package mcp_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,19 +132,37 @@ func TestSaveStateUpgradesV2FileToV3(t *testing.T) {
 // stateTestProfiles is the profiles file used by the drift tests. The profiles named
 // spog-query, spog-none, spog-both and spog-abc name their workspace in the host query instead of
 // workspace_id.
-func stateTestProfiles() profile.InMemoryProfiler {
-	return profile.InMemoryProfiler{Profiles: profile.Profiles{
-		{Name: bindingTestProfile, Host: bindingTestHost, WorkspaceID: stateTestWorkspaceID},
-		{Name: stateTestOtherProfile, Host: stateTestOtherHost, WorkspaceID: "456"},
-		{Name: "spog-query", Host: "https://spog.test/?o=222"},
-		{Name: "spog-none", Host: "https://spog.test/?w=none"},
-		{Name: "spog-both", Host: "https://spog.test/?o=111&w=222"},
-		{Name: "spog-abc", Host: "https://spog.test/?o=abc&w=222"},
-	}}
+// stateTestWriteProfiles writes the profiles that the Reconcile tests check to the default config file
+// of the test home directory.
+func stateTestWriteProfiles(t *testing.T, ctx context.Context) {
+	t.Helper()
+	home, err := env.UserHomeDir(ctx)
+	require.NoError(t, err)
+	writeStateFile(t, filepath.Join(home, ".databrickscfg"), fmt.Sprintf(`[%s]
+host = %s
+workspace_id = %s
+
+[%s]
+host = %s
+workspace_id = 456
+
+[spog-query]
+host = https://spog.test/?o=222
+
+[spog-none]
+host = https://spog.test/?w=none
+
+[spog-both]
+host = https://spog.test/?o=111&w=222
+
+[spog-abc]
+host = https://spog.test/?o=abc&w=222
+`, bindingTestProfile, bindingTestHost, stateTestWorkspaceID, stateTestOtherProfile, stateTestOtherHost))
 }
 
 func TestReconcile(t *testing.T) {
 	ctx, _ := stateTestCtx(t)
+	stateTestWriteProfiles(t, ctx)
 	tests := []struct {
 		name            string
 		entry           mcp.Entry
@@ -218,7 +236,7 @@ func TestReconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			state := &mcp.State{Servers: []mcp.Entry{tt.entry}}
 
-			drifts, err := mcp.Reconcile(ctx, stateTestProfiles(), state)
+			drifts, err := mcp.Reconcile(ctx, state)
 			require.NoError(t, err)
 			if tt.wantKind == "" {
 				assert.Empty(t, drifts)
@@ -240,7 +258,7 @@ func TestReconcileWithoutConfigFileReportsEveryProfileMissing(t *testing.T) {
 	entry := stateTestEntry()
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
-	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
+	drifts, err := mcp.Reconcile(ctx, state)
 	require.NoError(t, err)
 	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry}}, drifts)
 }
@@ -254,7 +272,7 @@ func TestReconcileChecksEntryAgainstPinnedConfigFile(t *testing.T) {
 	entry.ConfigFile = pinned
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
-	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
+	drifts, err := mcp.Reconcile(ctx, state)
 	require.NoError(t, err)
 	assert.Empty(t, drifts)
 }
@@ -270,7 +288,7 @@ func TestReconcileUnpinnedEntryChecksDefaultConfigFile(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", ambient)
 	state := &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}
 
-	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
+	drifts, err := mcp.Reconcile(ctx, state)
 	require.NoError(t, err)
 	assert.Equal(t, []mcp.Drift{{
 		Kind:               mcp.DriftHostChanged,
@@ -288,6 +306,18 @@ func TestNormalizeHostIgnoresSchemeCaseAndTrailingSlash(t *testing.T) {
 // TestReconcileProfileWithoutHostIsMissing checks that a profile section with no host is reported as
 // missing, since it names no host to compare. It reads a real file, because the in-memory profiler
 // does not model sections without a host.
+func TestReconcileProfileWithEmptyHostIsMissing(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
+	path := bindingTestWriteConfig(t, "[logfood]\nhost =\nauth_type = pat\ntoken = dapi-profile-token\n")
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", path)
+	entry := stateTestEntry()
+	state := &mcp.State{Servers: []mcp.Entry{entry}}
+
+	drifts, err := mcp.Reconcile(ctx, state)
+	require.NoError(t, err)
+	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry}}, drifts)
+}
+
 func TestReconcileProfileWithoutHostIsMissing(t *testing.T) {
 	ctx, _ := stateTestCtx(t)
 	path := bindingTestWriteConfig(t, "[logfood]\nauth_type = pat\ntoken = dapi-profile-token\n")
@@ -295,7 +325,7 @@ func TestReconcileProfileWithoutHostIsMissing(t *testing.T) {
 	entry := stateTestEntry()
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
-	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
+	drifts, err := mcp.Reconcile(ctx, state)
 	require.NoError(t, err)
 	assert.Equal(t, []mcp.Drift{{Kind: mcp.DriftProfileMissing, Entry: entry}}, drifts)
 }
@@ -309,12 +339,12 @@ func TestReconcileReportsEntryErrorAndKeepsOthers(t *testing.T) {
 	unresolvable.Name = "github-home"
 	unresolvable.ConfigFile = "~/.databrickscfg"
 	changed := stateTestEntryWith(bindingTestProfile, "https://adb-999.test", stateTestWorkspaceID)
-	changed.ConfigFile = filepath.Join(t.TempDir(), ".databrickscfg")
+	changed.ConfigFile = bindingTestWriteConfig(t, fmt.Sprintf("[%s]\nhost = %s\nworkspace_id = %s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, stateTestWorkspaceID, bindingTestToken))
 	state := &mcp.State{Servers: []mcp.Entry{unresolvable, changed}}
 
-	drifts, err := mcp.Reconcile(ctx, stateTestProfiles(), state)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "MCP server github-home: cannot find homedir: $HOME is not set")
+	drifts, err := mcp.Reconcile(ctx, state)
+	require.ErrorIs(t, err, env.ErrNoHomeEnv)
+	assert.Contains(t, err.Error(), "MCP server github-home: ")
 	assert.Equal(t, []mcp.Drift{{
 		Kind:               mcp.DriftHostChanged,
 		Entry:              changed,

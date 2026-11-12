@@ -127,7 +127,7 @@ func TestBindProfileAbsent(t *testing.T) {
 				Host:       bindingTestHost,
 				ConfigFile: path,
 			}}},
-			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
+			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path), filepath.ToSlash(path)),
 		},
 		{
 			name:  "without state entry",
@@ -149,15 +149,17 @@ func TestBindProfileAbsent(t *testing.T) {
 	}
 }
 
+// TestBindConfigFileAbsent checks that an entry pinned to a config file that no longer exists reports
+// the profile as gone from that file.
 func TestBindConfigFileAbsent(t *testing.T) {
-	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
 	path := filepath.Join(t.TempDir(), "absent")
 	t.Setenv("DATABRICKS_CONFIG_FILE", path)
 
 	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
 		Profile: bindingTestProfile,
 		Service: bindingTestService,
-		State:   bindingTestState(cfgPath, bindingTestHost),
+		State:   bindingTestState(path, bindingTestHost),
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
@@ -165,16 +167,36 @@ func TestBindConfigFileAbsent(t *testing.T) {
 }
 
 func TestBindHostChanged(t *testing.T) {
-	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	tests := []struct {
+		name  string
+		entry string
+		want  string
+	}{
+		{
+			name:  "host",
+			entry: "https://adb-999.test",
+			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --profile logfood and add it again",
+		},
+		{
+			name:  "host with a query naming another workspace on the same host",
+			entry: "https://adb-999.test/?o=111",
+			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --profile logfood and add it again",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
 
-	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
-		Profile: bindingTestProfile,
-		Service: bindingTestService,
-		State:   bindingTestState(cfgPath, "https://adb-999.test"),
-		Stderr:  &bytes.Buffer{},
-	})
-	requireBindError(t, err, mcp.BindProfileHostChanged)
-	assert.Equal(t, "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+			_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   bindingTestState(cfgPath, tt.entry),
+				Stderr:  &bytes.Buffer{},
+			})
+			requireBindError(t, err, mcp.BindProfileHostChanged)
+			assert.Equal(t, tt.want, err.Error())
+		})
+	}
 }
 
 // TestBindHostChangedDoesNotContactNewHost checks that a re-pointed profile is rejected before
@@ -197,18 +219,41 @@ func TestBindHostChangedDoesNotContactNewHost(t *testing.T) {
 }
 
 func TestBindWorkspaceChanged(t *testing.T) {
-	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nworkspace_id = 222\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, bindingTestToken))
-	state := bindingTestState(cfgPath, bindingTestHost)
-	state.Servers[0].WorkspaceID = "111"
+	const want = "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --profile logfood and add it again"
+	tests := []struct {
+		name        string
+		entryHost   string
+		entryWS     string
+		profileLine string
+	}{
+		{
+			name:        "workspace_id in the profile",
+			entryHost:   bindingTestHost,
+			entryWS:     "111",
+			profileLine: "workspace_id = 222\n",
+		},
+		{
+			name:        "workspace in the recorded host query",
+			entryHost:   bindingTestHost + "/?o=111",
+			profileLine: "workspace_id = 222\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\n%sauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, tt.profileLine, bindingTestToken))
+			state := bindingTestState(cfgPath, tt.entryHost)
+			state.Servers[0].WorkspaceID = tt.entryWS
 
-	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
-		Profile: bindingTestProfile,
-		Service: bindingTestService,
-		State:   state,
-		Stderr:  &bytes.Buffer{},
-	})
-	requireBindError(t, err, mcp.BindProfileHostChanged)
-	assert.Equal(t, "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+			_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   state,
+				Stderr:  &bytes.Buffer{},
+			})
+			requireBindError(t, err, mcp.BindProfileHostChanged)
+			assert.Equal(t, want, err.Error())
+		})
+	}
 }
 
 func TestBindWorkspaceNotComparedWhenProfileNamesNone(t *testing.T) {
@@ -432,22 +477,24 @@ func TestBindUnpinnedEntryMatchesDefaultConfigFile(t *testing.T) {
 
 // TestBindUnpinnedEntryDoesNotMatchOtherConfigFile checks that an entry with no pinned config file
 // does not bind a profile of the same name in another config file.
-func TestBindUnpinnedEntryDoesNotMatchOtherConfigFile(t *testing.T) {
-	bindingTestDefaultConfig(t, bindingTestProfileContents(bindingTestToken))
+// TestBindUnpinnedEntryFailsForOtherConfigFile checks that an unpinned entry, which names the default
+// file, stops a bind through another file. The profile there points at another host, and the bind must
+// not switch the server to it silently.
+func TestBindUnpinnedEntryFailsForOtherConfigFile(t *testing.T) {
+	defaultPath := bindingTestDefaultConfig(t, bindingTestProfileContents(bindingTestToken))
 	other := bindingTestWriteConfig(t, "[logfood]\nhost = https://adb-456.test\nauth_type = pat\ntoken = dapi-other\n")
 	t.Setenv("DATABRICKS_CONFIG_FILE", other)
 	stderr := &bytes.Buffer{}
 
-	cfg, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
 		Profile: bindingTestProfile,
 		Service: bindingTestService,
 		State:   bindingTestState("", bindingTestHost),
 		Stderr:  stderr,
 	})
-	require.NoError(t, err)
-	assert.Nil(t, entry)
-	assert.Equal(t, "https://adb-456.test", cfg.Host)
-	assert.Contains(t, stderr.String(), "No install record for system.ai.github on profile \"logfood\"")
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+	assert.Contains(t, err.Error(), "was set up with config file "+bindingTestResolved(t, defaultPath))
+	assert.Empty(t, stderr.String())
 }
 
 // TestBindWithoutHomeAndAbsoluteConfigFile checks that a bind needs no home directory when the
@@ -615,7 +662,8 @@ func TestBindProfileWithoutHost(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
-	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --profile logfood`, filepath.ToSlash(bindingTestResolved(t, path))), err.Error())
+	resolved := filepath.ToSlash(bindingTestResolved(t, path))
+	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --profile logfood`, resolved, resolved), err.Error())
 }
 
 // TestBindHostMetadataFailureIsNotAuthFailure checks that a host whose metadata cannot be fetched does
@@ -654,4 +702,81 @@ func TestBindConfigErrorIsUncategorized(t *testing.T) {
 	requireBindError(t, err, mcp.BindUncategorized)
 	assert.NotContains(t, err.Error(), "Run:")
 	assert.NotContains(t, err.Error(), "auth login")
+}
+
+// TestBindEntryInOtherConfigFileFailsClosed checks that an entry for the service and profile, pinned to
+// another config file, stops the bind when the file in use names no entry. Binding there would be a new
+// host with no record of the switch.
+func TestBindEntryInOtherConfigFileFailsClosed(t *testing.T) {
+	recordedPath := bindingTestWriteConfig(t, bindingTestProfileContents(bindingTestToken))
+	bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	stderr := &bytes.Buffer{}
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(recordedPath, bindingTestHost),
+		Stderr:  stderr,
+	})
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+	assert.Contains(t, err.Error(), "was set up with config file "+bindingTestResolved(t, recordedPath))
+	assert.Empty(t, stderr.String())
+}
+
+// TestBindEntryForOtherProfileKeepsNotice checks that an entry for a different profile does not stop
+// a bind to a profile that has no entry, which still gets the notice.
+func TestBindEntryForOtherProfileKeepsNotice(t *testing.T) {
+	bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	state := bindingTestState(bindingTestWriteConfig(t, ""), bindingTestHost)
+	state.Servers[0].Profile = "other"
+	stderr := &bytes.Buffer{}
+
+	_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   state,
+		Stderr:  stderr,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, entry)
+	assert.Contains(t, stderr.String(), "No install record for system.ai.github")
+}
+
+// TestBindProfileWithEmptyHost checks that a profile whose host is set to nothing is reported as having
+// no host, not as a profile whose host changed to "".
+func TestBindProfileWithEmptyHost(t *testing.T) {
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost =\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestToken))
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(cfgPath, bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	requireBindError(t, err, mcp.BindProfileNotFound)
+	assert.Contains(t, err.Error(), "which has no host in")
+}
+
+// TestBindRecreateHintQuotesValues checks that the recreate hint quotes a profile name that needs it,
+// and names the pinned config file it was set up with.
+func TestBindRecreateHintQuotesValues(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	state := &mcp.State{Servers: []mcp.Entry{{
+		Name:       "github-logfood",
+		Service:    bindingTestService,
+		Profile:    "my profile",
+		Host:       bindingTestHost,
+		ConfigFile: cfgPath,
+	}}}
+
+	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: "my profile",
+		Service: bindingTestService,
+		State:   state,
+		Stderr:  &bytes.Buffer{},
+	})
+	requireBindError(t, err, mcp.BindProfileNotFound)
+	want := fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "my profile", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile 'my profile' or remove the server with: databricks aitools mcp remove --profile 'my profile'`,
+		filepath.ToSlash(bindingTestResolved(t, cfgPath)), filepath.ToSlash(bindingTestResolved(t, cfgPath)))
+	assert.Equal(t, want, err.Error())
 }

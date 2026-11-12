@@ -10,8 +10,8 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -41,7 +41,7 @@ type BindOptions struct {
 	Profile string
 	Service string
 	State   *State
-	// Stderr receives the notice printed when no install record exists.
+	// Stderr receives the notice printed when no install record exists. It must not be nil.
 	Stderr io.Writer
 }
 
@@ -70,9 +70,11 @@ func (e *BindError) ExitCode() int {
 // loads a bundle. It returns the resolved config and the matching state entry, which is nil
 // when none exists.
 //
-// The profile is checked before the SDK resolves the config, so a re-pointed host is never
-// contacted. The config file is the one in the context, resolved once: the profile lookup,
-// the entry match and the SDK all read that path.
+// The config file is the one that DATABRICKS_CONFIG_FILE names in the context, resolved once:
+// the profile lookup, the entry match and cfg.ConfigFile all use that path. The profile is
+// checked before the SDK resolves the config, so a re-pointed host is never contacted. The CLI's
+// token store reads DATABRICKS_CONFIG_FILE from the process environment instead, so a caller
+// that sets the variable in the context must also set it in the process environment.
 func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
 	configFile, err := resolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
 	if err != nil {
@@ -81,14 +83,14 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	ctx = env.Set(ctx, mcpconfig.ConfigFileEnv, configFile)
 	entry, err := findEntry(ctx, opts.State, opts.Service, opts.Profile, configFile)
 	if err != nil {
-		return nil, nil, uncategorizedError(err)
+		return nil, nil, err
 	}
 	name := opts.Service
 	if entry != nil {
 		name = entry.Name
 	}
 
-	p, err := loadProfile(ctx, profile.GetProfiler(ctx), opts.Profile)
+	p, err := configFiles{}.profile(configFile, opts.Profile)
 	switch {
 	case errors.Is(err, errProfileMissing):
 		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(configFile), entry, "no longer exists")
@@ -137,47 +139,70 @@ func uncategorizedError(err error) error {
 	return &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
 }
 
+// removeCommand returns the command that removes the server bound to profileName.
+func removeCommand(profileName string) string {
+	return mcpRemoveCommand + " --profile " + shellquote.BashArg(profileName)
+}
+
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
 // name with a host, either because it is absent or because its section has no host. problem completes
 // the sentence "which ... in <path>". Without a state entry the recorded host is unknown, so the
-// recreate hint omits --host.
+// recreate hint omits --host. An entry pinned to a config file puts that file in the recreate hint.
 func profileGoneError(name, profileName, path string, entry *Entry, problem string) error {
-	recreate := authLoginCommand + " --profile " + profileName
+	recreate := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
 	if entry != nil {
-		recreate = authLoginCommand + " --host " + entry.Host + " --profile " + profileName
+		recreate = authLoginCommand + " --host " + shellquote.BashArg(entry.Host) + " --profile " + shellquote.BashArg(profileName)
+		if entry.ConfigFile != "" {
+			recreate = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(path) + " " + recreate
+		}
 	}
-	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s --profile %s",
-		name, profileName, problem, path, recreate, mcpRemoveCommand, profileName)
+	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s",
+		name, profileName, problem, path, recreate, removeCommand(profileName))
 	return &BindError{Category: BindProfileNotFound, message: message}
 }
 
 // driftError is the PROFILE_HOST_CHANGED error for an entry whose profile now names another host,
 // or another workspace on the same host.
 func driftError(name, profileName string, entry Entry, drift Drift) error {
+	recordedHost, recordedWorkspaceID := recordedTarget(entry)
 	var message string
-	if NormalizeHost(entry.Host) != NormalizeHost(drift.CurrentHost) {
-		message = fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s --profile %s and add it again",
-			name, entry.Host, profileName, drift.CurrentHost, mcpRemoveCommand, profileName)
+	if NormalizeHost(recordedHost) != NormalizeHost(drift.CurrentHost) {
+		message = fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s and add it again",
+			name, recordedHost, profileName, drift.CurrentHost, removeCommand(profileName))
 	} else {
-		message = fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s --profile %s and add it again",
-			name, entry.WorkspaceID, profileName, drift.CurrentWorkspaceID, mcpRemoveCommand, profileName)
+		message = fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s and add it again",
+			name, recordedWorkspaceID, profileName, drift.CurrentWorkspaceID, removeCommand(profileName))
 	}
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
+// configFileError is the PROFILE_HOST_CHANGED error for an entry whose config file is not the one in
+// use. The profile may name the same host there, but the server was set up against the recorded file.
+func configFileError(name, profileName, recordedPath, currentPath string) error {
+	message := fmt.Sprintf("MCP server %s was set up with config file %s, but profile \"%s\" is read from %s now. Run: %s and add it again, or set DATABRICKS_CONFIG_FILE to %s",
+		name, recordedPath, profileName, currentPath, removeCommand(profileName), shellquote.BashArg(recordedPath))
 	return &BindError{Category: BindProfileHostChanged, message: message}
 }
 
 // authError is the AUTH_FAILED error for a credential that the profile's own settings could not
 // provide. The message points at the login command for the profile.
 func authError(profileName string, cause error) error {
-	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, profileName)
+	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, shellquote.BashArg(profileName))
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
 
-// findEntry returns the entry for the service and profile whose config file is configFile, or nil.
-// Both are compared as resolved paths, so an entry with no pinned file matches the default file.
-// An entry whose file cannot be resolved, such as a "~" path with no home directory, cannot be
-// compared. It is skipped, and its error is returned only when no other entry matches.
+// findEntry returns the entry for the service and profile whose config file is configFile, or nil when
+// the service and profile have no entry at all. Both sides are compared as resolved paths, so an entry
+// with no pinned file matches the default file.
+//
+// An entry for the service and profile in another file is an error, not a missing entry: the server was
+// set up against that file, and binding through this one would switch it without a record. An entry
+// whose file cannot be resolved, such as a "~" path with no home directory, cannot be compared. The
+// bind fails on it, since it might be the match.
 func findEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
 	var unresolved error
+	var other *Entry
+	var otherPath string
 	for i := range state.Servers {
 		entry := &state.Servers[i]
 		if entry.Service != service || entry.Profile != profileName {
@@ -191,6 +216,15 @@ func findEntry(ctx context.Context, state *State, service, profileName, configFi
 		if samePath(path, configFile) {
 			return entry, nil
 		}
+		if other == nil {
+			other, otherPath = entry, path
+		}
 	}
-	return nil, unresolved
+	if unresolved != nil {
+		return nil, uncategorizedError(unresolved)
+	}
+	if other != nil {
+		return nil, configFileError(other.Name, profileName, filepath.ToSlash(otherPath), filepath.ToSlash(configFile))
+	}
+	return nil, nil
 }

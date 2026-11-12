@@ -624,10 +624,10 @@ func TestUninstallKeepsStateFileWithMCPRecords(t *testing.T) {
 	// The skills are gone, but the MCP records stay in the file.
 	loaded, err := LoadState(globalDir)
 	require.NoError(t, err)
-	require.NotNil(t, loaded)
-	assert.Empty(t, loaded.Skills)
-	require.NotNil(t, loaded.MCP)
-	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+	assert.Nil(t, loaded)
+	mcp, err := LoadMCPState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, mcp.Servers)
 }
 
 // TestUninstallMCPOnlyStateReturnsError checks that a state file holding only MCP records counts
@@ -641,9 +641,25 @@ func TestUninstallMCPOnlyStateReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no skills or plugins installed")
 
-	loaded, err := LoadState(globalDir)
+	mcp, err := LoadMCPState(globalDir)
 	require.NoError(t, err)
-	require.NotNil(t, loaded)
-	require.NotNil(t, loaded.MCP)
-	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, mcp.Servers)
+}
+
+// TestUninstallRemovesLeftoverFilesWithoutSkills checks that a state file with file and repo-dir
+// records but no skills or plugins is still uninstalled, and the file is removed, as on main.
+func TestUninstallRemovesLeftoverFilesWithoutSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveState(globalDir, &InstallState{
+		SchemaVersion: CurrentSchemaVersion,
+		Skills:        map[string]string{},
+		RepoDirs:      map[string]string{"databricks-sql": "repo"},
+		Files:         map[string]FileRecord{"databricks-sql/SKILL.md": {SHA256: "abc"}},
+	}))
+
+	require.NoError(t, UninstallSkills(cmdio.MockDiscard(t.Context())))
+
+	_, err := os.Stat(filepath.Join(globalDir, ".state.json"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

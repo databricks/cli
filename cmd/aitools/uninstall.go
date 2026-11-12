@@ -158,7 +158,7 @@ func confirmUninstall(ctx context.Context, state *installer.InstallState, opts i
 // uninstallConfirmMessage builds the human summary of what an uninstall will
 // remove. ask is false when there is nothing recorded to confirm.
 func uninstallConfirmMessage(state *installer.InstallState, opts installer.UninstallOptions) (msg string, ask bool) {
-	if !state.HasSkillsOrPlugins() {
+	if state == nil {
 		return "", false
 	}
 	target := "all agents"

@@ -82,7 +82,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, fmt.Errorf("failed to load install state: %w", err)
 	}
 
-	if !state.HasSkillsOrPlugins() {
+	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return nil, fmt.Errorf("%w; run 'databricks aitools install' to refresh before updating", ErrLegacyInstall)
 		}

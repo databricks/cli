@@ -10,51 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// setFoldCase sets the case-folding seam for the test and restores it afterwards. The seam lets both
-// comparisons run on any OS, where the platform default would pick only one.
-func setFoldCase(t *testing.T, fold bool) {
-	t.Helper()
-	prev := foldCase
-	t.Cleanup(func() { foldCase = prev })
-	foldCase = fold
-}
-
-// TestSamePathFollowsFoldCase checks that paths compare case-insensitively only when the seam says so.
-func TestSamePathFollowsFoldCase(t *testing.T) {
-	const lower = "/home/u/.databrickscfg"
-	const upper = "/HOME/U/.DATABRICKSCFG"
-
-	setFoldCase(t, true)
-	assert.True(t, samePath(lower, upper))
-	assert.True(t, samePath(lower, lower))
-
-	setFoldCase(t, false)
-	assert.False(t, samePath(lower, upper))
-	assert.True(t, samePath(lower, lower))
-}
-
-// TestFindEntryMatchesCaseFoldedPath checks that an entry whose file name differs only in case matches
-// the config file when paths fold case, as they do on Windows and macOS.
-func TestFindEntryMatchesCaseFoldedPath(t *testing.T) {
-	setFoldCase(t, true)
-	// Resolve the directory first, so the file the entry names and the file in the context match on
-	// systems where the temp directory is a symlink.
-	dir, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
-	configFile := filepath.Join(dir, ".databrickscfg")
-	state := &State{Servers: []Entry{{
-		Name:       "github-logfood",
-		Service:    "system.ai.github",
-		Profile:    "logfood",
-		ConfigFile: filepath.Join(dir, ".DATABRICKSCFG"),
-	}}}
-
-	entry, err := findEntry(t.Context(), state, "system.ai.github", "logfood", configFile)
-	require.NoError(t, err)
-	require.NotNil(t, entry)
-	assert.Equal(t, "github-logfood", entry.Name)
-}
-
 // TestResolveConfigFileResolvesSymlinkBeforeDotDot checks that ".." after a symlink is taken from the
 // link's target, as the OS reads the path, not from the link's own directory.
 func TestResolveConfigFileResolvesSymlinkBeforeDotDot(t *testing.T) {
@@ -88,4 +43,33 @@ func TestResolveConfigFileWithoutHomeAndAbsoluteName(t *testing.T) {
 
 	_, err = resolveConfigFile(ctx, "~/.databrickscfg")
 	require.ErrorIs(t, err, env.ErrNoHomeEnv)
+}
+
+// TestResolveConfigFileKeepsPathThroughMissingDir checks that a path through a missing directory is kept
+// as written. Cleaning "missing/.." would name the parent's file, which the OS never opens through a
+// missing directory.
+func TestResolveConfigFileKeepsPathThroughMissingDir(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cfg"), []byte("[logfood]\n"), 0o600))
+	sep := string(filepath.Separator)
+	name := dir + sep + "missing" + sep + ".." + sep + "cfg"
+
+	got, err := resolveConfigFile(t.Context(), name)
+	require.NoError(t, err)
+	assert.Equal(t, name, got)
+}
+
+// TestSamePathComparesExistingFilesByIdentity checks that two names of one existing file compare equal,
+// as a hard link does, while names of files that do not exist are compared as text.
+func TestSamePathComparesExistingFilesByIdentity(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a")
+	b := filepath.Join(dir, "b")
+	require.NoError(t, os.WriteFile(a, []byte("[logfood]\n"), 0o600))
+	if err := os.Link(a, b); err != nil {
+		t.Skipf("cannot create hard link: %v", err)
+	}
+
+	assert.True(t, samePath(a, b))
+	assert.False(t, samePath(filepath.Join(dir, "x"), filepath.Join(dir, "X")))
 }

@@ -135,9 +135,12 @@ func TestUninstallConfirmMessage(t *testing.T) {
 }
 
 // TestUninstallConfirmMessageMCPOnlyState checks that an explicit skill list does not prompt when
-// the state holds only MCP records.
+// the state file holds only MCP records, as loaded for uninstall.
 func TestUninstallConfirmMessageMCPOnlyState(t *testing.T) {
-	st := &installer.InstallState{MCP: &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}}
+	dir := t.TempDir()
+	require.NoError(t, installer.SaveMCPState(dir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+	st, err := installer.LoadState(dir)
+	require.NoError(t, err)
 
 	_, ask := uninstallConfirmMessage(st, installer.UninstallOptions{Scope: installer.ScopeGlobal})
 	assert.False(t, ask)

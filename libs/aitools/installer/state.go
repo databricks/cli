@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,8 +60,8 @@ type InstallState struct {
 	// skills we wrote that the user hasn't modified.
 	Files map[string]FileRecord `json:"files,omitempty"`
 	// MCP records the Databricks MCP servers the `aitools mcp` commands wrote.
-	// Added in schema v3; omitted when none are recorded. Other writers keep it
-	// by loading the file first, since they save the whole struct.
+	// Added in schema v3; omitted when none are recorded. SaveState ignores this
+	// field and keeps the section on disk; SaveMCPState is the only writer of it.
 	MCP *MCPState `json:"mcp,omitempty"`
 }
 
@@ -119,18 +120,45 @@ type FileRecord struct {
 	Origin string `json:"origin,omitempty"`
 }
 
-// HasSkillsOrPlugins reports whether the state records an installed skill or plugin. MCP records
-// share the file but are not installs, so a state holding only MCP records reports false, and so
-// does a nil state.
-func (s *InstallState) HasSkillsOrPlugins() bool {
-	return s != nil && (len(s.Skills) > 0 || len(s.Plugins) > 0)
+// hasInstallerRecords reports whether the state holds anything the installer writes: a release,
+// skills, plugins, files or repo dirs.
+func hasInstallerRecords(s *InstallState) bool {
+	return s.Release != "" || len(s.Skills) > 0 || len(s.Plugins) > 0 || len(s.Files) > 0 || len(s.RepoDirs) > 0
+}
+
+// isMCPOnly reports whether the state holds MCP records and nothing the installer wrote. The installer
+// records a release in every state it saves, so such a file was written by the MCP commands alone. A file
+// without an MCP section is never MCP-only, so a state the installer left behind, even an empty one, keeps
+// the behavior it always had.
+func (s *InstallState) isMCPOnly() bool {
+	return s != nil && s.MCP != nil && !hasInstallerRecords(s)
 }
 
 // LoadState reads install state from the given directory.
-// Returns (nil, nil) when the state file does not exist.
+// Returns (nil, nil) when the state file does not exist or holds only MCP records, since those are not
+// an install of skills or plugins. LoadMCPState reads the MCP records.
 func LoadState(dir string) (*InstallState, error) {
-	path := filepath.Join(dir, stateFileName)
-	data, err := os.ReadFile(path)
+	state, err := readState(dir)
+	if err != nil || state.isMCPOnly() {
+		return nil, err
+	}
+	return state, nil
+}
+
+// LoadMCPState reads the MCP section of the state file in the given directory. It returns nil when the
+// file does not exist or has no MCP section.
+func LoadMCPState(dir string) (*MCPState, error) {
+	state, err := readState(dir)
+	if err != nil || state == nil {
+		return nil, err
+	}
+	return state.MCP, nil
+}
+
+// readState reads the state file in the given directory, whatever it holds. It returns (nil, nil) when
+// the file does not exist.
+func readState(dir string) (*InstallState, error) {
+	data, err := os.ReadFile(filepath.Join(dir, stateFileName))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
@@ -157,12 +185,11 @@ func migrateState(state *InstallState) {
 	}
 }
 
-// SaveState writes the skills and plugins records of state to the given directory atomically,
-// creating the directory if it does not exist. The MCP section is written by SaveMCPState, so
-// SaveState keeps the one on disk, not the one in state. This keeps MCP records saved after state
-// was loaded. The file is removed when no skills, plugins or MCP servers remain.
+// SaveState writes state to the given directory atomically, creating the directory if it does not
+// exist. The MCP section is the one on disk: SaveState does not write the MCP field of state, so
+// MCP records saved after state was loaded are kept.
 func SaveState(dir string, state *InstallState) error {
-	onDisk, err := LoadState(dir)
+	onDisk, err := readState(dir)
 	if err != nil {
 		return err
 	}
@@ -171,14 +198,14 @@ func SaveState(dir string, state *InstallState) error {
 	if onDisk != nil {
 		out.MCP = onDisk.MCP
 	}
-	return saveOrRemove(dir, &out)
+	return writeState(dir, &out)
 }
 
-// SaveMCPState replaces the MCP section of the state file in the given directory. The file is read
-// again first, so the skills and plugins records are kept. A nil or empty state removes the MCP
-// section, and the file is removed once no skills, plugins or MCP servers remain.
+// SaveMCPState replaces the MCP section of the state file in the given directory with mcp. The skills
+// and plugins records are kept as they are on disk. A nil or empty mcp removes the section, and the file
+// is removed once it holds nothing else.
 func SaveMCPState(dir string, mcp *MCPState) error {
-	st, err := LoadState(dir)
+	st, err := readState(dir)
 	if err != nil {
 		return err
 	}
@@ -197,25 +224,35 @@ func SaveMCPState(dir string, mcp *MCPState) error {
 	if mcp != nil && len(mcp.Servers) > 0 {
 		st.MCP = mcp
 	}
-	return saveOrRemove(dir, st)
-}
-
-// saveOrRemove writes st to the state file in dir, or removes the file when st records nothing: no
-// skills, plugins, files or repo directories, and no MCP servers. Files and repo directories count
-// even without a skill record, because the legacy raw-skill cleanup reads them on its own.
-func saveOrRemove(dir string, st *InstallState) error {
-	if len(st.Skills) == 0 && len(st.Plugins) == 0 && len(st.Files) == 0 && len(st.RepoDirs) == 0 && st.MCP == nil {
-		err := os.Remove(filepath.Join(dir, stateFileName))
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to remove state file: %w", err)
-		}
-		return nil
+	if st.MCP == nil && !hasInstallerRecords(st) {
+		return removeStateFile(dir)
 	}
 	return writeState(dir, st)
 }
 
-// writeState replaces the state file in dir with state, atomically. It writes whatever it is given;
-// saveOrRemove decides when there is nothing to keep.
+// removeState deletes the state file once uninstall has removed every skill and plugin. Uninstall does
+// not own MCP records, so when servers remain the file is rewritten to hold only them.
+func removeState(dir string) error {
+	st, err := readState(dir)
+	if err != nil {
+		return err
+	}
+	if st != nil && st.MCP != nil && len(st.MCP.Servers) > 0 {
+		return writeState(dir, &InstallState{SchemaVersion: CurrentSchemaVersion, MCP: st.MCP})
+	}
+	return removeStateFile(dir)
+}
+
+// removeStateFile deletes the state file in the given directory. A missing file is not an error.
+func removeStateFile(dir string) error {
+	err := os.Remove(filepath.Join(dir, stateFileName))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove state file: %w", err)
+	}
+	return nil
+}
+
+// writeState writes state to the state file in the given directory atomically, as written.
 func writeState(dir string, state *InstallState) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {

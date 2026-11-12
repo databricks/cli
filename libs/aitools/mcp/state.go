@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/installer"
-	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -21,10 +20,9 @@ const (
 
 // Profile lookups that do not yield a usable profile.
 var (
-	// errProfileMissing means the config file has no profile of the name.
+	// errProfileMissing means the config file has no profile of the name, or does not exist.
 	errProfileMissing = errors.New("profile missing")
-	// errProfileNoHost means the config file has a section of the name without a host.
-	// LoadProfiles skips such sections, so the lookup reports them separately.
+	// errProfileNoHost means the config file has a section of the name whose host is missing or empty.
 	errProfileNoHost = errors.New("profile has no host")
 )
 
@@ -59,14 +57,14 @@ func LoadState(ctx context.Context) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	st, err := installer.LoadState(dir)
+	mcp, err := installer.LoadMCPState(dir)
 	if err != nil {
 		return nil, err
 	}
-	if st == nil || st.MCP == nil {
+	if mcp == nil {
 		return &State{}, nil
 	}
-	return st.MCP, nil
+	return mcp, nil
 }
 
 // SaveState replaces the MCP section of the aitools state file. The skills and plugins records
@@ -82,16 +80,18 @@ func SaveState(ctx context.Context, state *State) error {
 // Reconcile reports entries whose profile is gone or has no host, and entries whose profile now
 // names another host, or another workspace when both the entry and the profile name one. Each
 // entry is checked against the config file it is pinned to; an entry with no pinned file is checked
-// against the default file, ~/.databrickscfg, whatever the environment names.
+// against the default file, ~/.databrickscfg, whatever the environment names. Each config file is
+// read once.
 //
 // An entry that cannot be checked, such as one whose "~" path has no home directory to resolve, does
 // not stop the others. Its error is joined into the returned error, and the drifts of the other
 // entries are still returned.
-func Reconcile(ctx context.Context, profiler profile.Profiler, state *State) ([]Drift, error) {
+func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
+	files := configFiles{}
 	var drifts []Drift
 	var errs []error
 	for _, entry := range state.Servers {
-		drift, err := checkEntry(ctx, profiler, entry)
+		drift, err := checkEntry(ctx, files, entry)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("MCP server %s: %w", entry.Name, err))
 			continue
@@ -105,12 +105,12 @@ func Reconcile(ctx context.Context, profiler profile.Profiler, state *State) ([]
 
 // checkEntry returns the drift of one entry, or nil when its profile still names the recorded host
 // and workspace. The entry's profile is read from the config file the entry is pinned to.
-func checkEntry(ctx context.Context, profiler profile.Profiler, entry Entry) (*Drift, error) {
+func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, error) {
 	path, err := resolveConfigFile(ctx, entry.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
-	p, err := loadProfile(env.Set(ctx, mcpconfig.ConfigFileEnv, path), profiler, entry.Profile)
+	p, err := files.profile(path, entry.Profile)
 	if errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost) {
 		return &Drift{Kind: DriftProfileMissing, Entry: entry}, nil
 	}
@@ -120,38 +120,55 @@ func checkEntry(ctx context.Context, profiler profile.Profiler, entry Entry) (*D
 	return driftOf(entry, p), nil
 }
 
-// loadProfile returns the profile named name from the config file in ctx. It returns errProfileMissing
-// when the file has no such profile, and errProfileNoHost when it has a section of that name without a
-// host.
-func loadProfile(ctx context.Context, profiler profile.Profiler, name string) (profile.Profile, error) {
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(name))
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return profile.Profile{}, fmt.Errorf("failed to read Databricks profiles: %w", err)
+// configFiles holds the config files that one lookup has read, by resolved path, so that each file is
+// parsed once. A nil file is one that does not exist.
+type configFiles map[string]*config.File
+
+// profile returns the profile named name from the config file at path. It returns errProfileMissing
+// when the file does not exist or has no section of that name, and errProfileNoHost when the section
+// has no host or an empty one.
+func (c configFiles) profile(path, name string) (profile.Profile, error) {
+	file, ok := c[path]
+	if !ok {
+		loaded, err := config.LoadFile(path)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			loaded = nil
+		case err != nil:
+			return profile.Profile{}, fmt.Errorf("failed to read Databricks profiles: %w", err)
+		}
+		file = loaded
+		c[path] = file
 	}
-	if len(profiles) > 0 {
-		return profiles[0], nil
-	}
-	file, err := profile.FileProfilerImpl{}.Get(ctx)
-	if errors.Is(err, profile.ErrNoConfiguration) {
+	if file == nil {
 		return profile.Profile{}, errProfileMissing
 	}
+	section, err := file.GetSection(name)
 	if err != nil {
-		return profile.Profile{}, fmt.Errorf("failed to read Databricks profiles: %w", err)
+		return profile.Profile{}, errProfileMissing
 	}
-	if file.HasSection(name) {
+	keys := section.KeysHash()
+	if keys["host"] == "" {
 		return profile.Profile{}, errProfileNoHost
 	}
-	return profile.Profile{}, errProfileMissing
+	return profile.Profile{Name: name, Host: keys["host"], WorkspaceID: keys["workspace_id"]}, nil
 }
 
 // driftOf returns the drift of an entry against the profile it names, or nil when the profile still
 // names the recorded host and workspace.
 func driftOf(entry Entry, p profile.Profile) *Drift {
+	recordedHost, recordedWorkspaceID := recordedTarget(entry)
 	host, workspaceID := profileTarget(p)
-	if NormalizeHost(entry.Host) == NormalizeHost(host) && !workspaceChanged(entry.WorkspaceID, workspaceID) {
+	if NormalizeHost(recordedHost) == NormalizeHost(host) && !workspaceChanged(recordedWorkspaceID, workspaceID) {
 		return nil
 	}
 	return &Drift{Kind: DriftHostChanged, Entry: entry, CurrentHost: p.Host, CurrentWorkspaceID: workspaceID}
+}
+
+// recordedTarget returns the host and workspace ID that an entry recorded, resolved as the SDK resolves
+// a profile's, so that a workspace named in the recorded host's query is compared too.
+func recordedTarget(entry Entry) (host, workspaceID string) {
+	return profileTarget(profile.Profile{Host: entry.Host, WorkspaceID: entry.WorkspaceID})
 }
 
 // profileTarget returns the host and workspace ID that the SDK resolves for a profile. It runs the

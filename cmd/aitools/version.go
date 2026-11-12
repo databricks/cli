@@ -42,7 +42,7 @@ func NewVersionCmd() *cobra.Command {
 				}
 			}
 
-			if !globalState.HasSkillsOrPlugins() && !projectState.HasSkillsOrPlugins() {
+			if globalState == nil && projectState == nil {
 				cmdio.LogString(ctx, "No Databricks skills or plugins installed.")
 				cmdio.LogString(ctx, "")
 				cmdio.LogString(ctx, "Run 'databricks aitools install' to get started.")
@@ -57,14 +57,14 @@ func NewVersionCmd() *cobra.Command {
 
 			// Always label the scope (global / project) for both skills and
 			// plugins so it is unambiguous where each thing is installed.
-			if globalState.HasSkillsOrPlugins() {
+			if globalState != nil {
 				if len(globalState.Skills) > 0 {
 					printVersionLine(ctx, "Skills (global)", globalState, latestRef)
 				}
 				printPluginLines(ctx, globalState, "global")
 			}
 
-			if projectState.HasSkillsOrPlugins() {
+			if projectState != nil {
 				if len(projectState.Skills) > 0 {
 					printVersionLine(ctx, "Skills (project)", projectState, latestRef)
 				}
