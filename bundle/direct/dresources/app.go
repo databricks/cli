@@ -202,12 +202,12 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
-			return nil, err
+			return nil, withMissingServicePrincipalHint(err, id)
 		}
 
 		response, err := updateWaiter.Get()
 		if err != nil {
-			return nil, err
+			return nil, withMissingServicePrincipalHint(err, id)
 		}
 
 		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
@@ -215,7 +215,20 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
-	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+	return nil, withMissingServicePrincipalHint(r.manageLifecycle(ctx, id, config, remoteIsStarted(entry)), id)
+}
+
+// missingServicePrincipalMessage is part of the backend error for an app whose service
+// principal is gone. Such an app cannot be updated or started again, only recreated.
+const missingServicePrincipalMessage = "service principal does not exist or is deleted"
+
+func withMissingServicePrincipalHint(err error, name string) error {
+	if err == nil || !strings.Contains(err.Error(), missingServicePrincipalMessage) {
+		return err
+	}
+	return fmt.Errorf("%w\n\nThe app cannot be updated or started without its service principal. "+
+		"To recreate the app, delete it with \"databricks apps delete %s\", wait for the deletion to finish, "+
+		"and run \"databricks bundle deploy\" again. Deleting the app also deletes its deployment history", err, name)
 }
 
 func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *AppState, alreadyStarted bool) error {
@@ -345,11 +358,11 @@ func (*ResourceApp) IsGone(remote *AppRemote) bool {
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
 	remote, err := r.waitForApp(ctx, r.client, config.Name)
 	if err != nil {
-		return nil, err
+		return nil, withMissingServicePrincipalHint(err, config.Name)
 	}
 	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
 	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
-		return nil, err
+		return nil, withMissingServicePrincipalHint(err, config.Name)
 	}
 	return remote, nil
 }
