@@ -40,7 +40,7 @@ active runs with "databricks air list".`,
 		&cobra.Group{ID: runGroupID, Title: "Run workloads:"},
 		&cobra.Group{ID: manageGroupID, Title: "Manage runs:"},
 		&cobra.Group{ID: packageGroupID, Title: "Package and deploy:"},
-		&cobra.Group{ID: capacityGroupID, Title: "Provisioned capacity (optional):"},
+		&cobra.Group{ID: capacityGroupID, Title: "Provisioned capacity:"},
 	)
 
 	runCommand := newRunCommand()

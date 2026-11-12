@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -53,26 +54,26 @@ var secretTemplateRe = sync.OnceValue(func() *regexp.Regexp { return regexp.Must
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
 type runConfig struct {
-	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes" group:"Required"`
-	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes" group:"Required"`
+	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes" group:"Workload"`
+	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes" group:"Workload"`
 	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, runtime version, or a Unity Catalog image for a single-command run." group:"Workload"`
-	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source." required:"unless containers is set" group:"Required"`
-	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command." group:"Advanced"`
+	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source." required:"unless containers is set" group:"Workload"`
+	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command." group:"Workload"`
 	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets." group:"Workload"`
 	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key." group:"Workload"`
 	CodeSource     *codeSourceConfig  `yaml:"code_source" help:"Local code to upload and make available to the run." group:"Workload"`
 	// MaxRetries defaults to 3 when unset; default-filling is a normalization
 	// concern handled at launch, so a nil pointer is left as-is here.
-	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset." group:"Run behavior"`
-	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1." group:"Run behavior"`
-	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters." group:"Advanced"`
-	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed." group:"Run behavior"`
-	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only." group:"MLflow"`
-	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace." group:"MLflow"`
-	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ." group:"MLflow"`
-	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants." group:"Advanced"`
-	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id." group:"Advanced"`
-	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name." group:"Advanced"`
+	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset." group:"Execution"`
+	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1." group:"Execution"`
+	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters." group:"Execution"`
+	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed." group:"Workload"`
+	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only." group:"MLflow tracking"`
+	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace." group:"MLflow tracking"`
+	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ." group:"MLflow tracking"`
+	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants." group:"Access and cost attribution"`
+	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to attribute the run's usage to, by name. Max 127 characters. Mutually exclusive with usage_policy_id." group:"Access and cost attribution"`
+	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to attribute the run's usage to, by id. Mutually exclusive with usage_policy_name." group:"Access and cost attribution"`
 
 	// artifactYAML is the source-derived config serialized for upload after overrides.
 	artifactYAML []byte
@@ -901,10 +902,7 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 			title = group
 		}
 		fmt.Fprintf(w, "\n  %s:\n", title)
-		for _, c := range f.children {
-			if c.hidden || c.group != group {
-				continue
-			}
+		for _, c := range groupFieldsRequiredFirst(f.children, group) {
 			fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 		}
 	}
@@ -925,7 +923,43 @@ Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
 
 // configFieldGroupOrder lists help headings from most to least commonly needed.
 // Ungrouped fields come first; unlisted groups follow in declaration order.
-var configFieldGroupOrder = []string{"", "Required", "Workload", "Run behavior", "MLflow", "Advanced", "Provisioned capacity (optional)"}
+var configFieldGroupOrder = []string{"", "Workload", "Execution", "MLflow tracking", "Access and cost attribution", "Provisioned capacity (optional)"}
+
+// groupFieldsRequiredFirst returns the visible fields under one heading, with
+// required fields first so a reader sees what every config must set.
+// Otherwise declaration order is kept.
+func groupFieldsRequiredFirst(fields []configField, group string) []configField {
+	var out []configField
+	for _, c := range fields {
+		if !c.hidden && c.group == group {
+			out = append(out, c)
+		}
+	}
+	slices.SortStableFunc(out, func(a, b configField) int {
+		return cmp.Compare(requiredRank(a), requiredRank(b))
+	})
+	return out
+}
+
+func requiredRank(f configField) int {
+	if requiredMarker(f) != "" {
+		return 0
+	}
+	return 1
+}
+
+// requiredMarker labels a field that must be set, either always or under a
+// stated condition ("when ..."/"unless ..."). Other required tags describe a
+// choice between sibling fields and are explained in the field's own help.
+func requiredMarker(f configField) string {
+	switch {
+	case f.required == "yes":
+		return "(required)"
+	case strings.HasPrefix(f.required, "when "), strings.HasPrefix(f.required, "unless "):
+		return "(required " + f.required + ")"
+	}
+	return ""
+}
 
 // configFieldGroups returns the headings used by the visible fields, in display order.
 func configFieldGroups(fields []configField) []string {
@@ -1004,12 +1038,8 @@ func launchStageBadge(stage string) string {
 // first sentence of the help text, annotated when the field is required.
 func configFieldSummary(f configField) string {
 	summary := firstSentence(f.help)
-	// Under the "Required" heading only a conditional requirement needs a marker.
-	switch {
-	case f.required == "yes" && f.group != "Required":
-		summary = "(required) " + summary
-	case f.required != "" && f.required != "yes" && f.group == "Required":
-		summary = "(" + f.required + ") " + summary
+	if marker := requiredMarker(f); marker != "" {
+		summary = marker + " " + summary
 	}
 	return summary
 }

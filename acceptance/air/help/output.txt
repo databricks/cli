@@ -24,7 +24,7 @@ Package and deploy:
   convert-to-dabs Convert a workload YAML into a Databricks Asset Bundle
   images          Push container images for custom environments
 
-Provisioned capacity (optional):
+Provisioned capacity:
   pools           View GPU pools provisioned for your workspace
 
 Flags:

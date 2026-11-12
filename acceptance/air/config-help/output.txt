@@ -55,33 +55,31 @@ config
       root_path: .
     command: python "$CODE_SOURCE_PATH/train.py"
 
-  Required:
-    experiment_name              Name of the experiment.
-    compute                      Which accelerators to run on and how many.
-    command                      (unless containers is set) Shell command that starts the workload.
-
   Workload:
+    experiment_name              (required) Name of the experiment.
+    compute                      (required) Which accelerators to run on and how many.
+    command                      (required unless containers is set) Shell command that starts the workload.
     environment                  Python dependencies, runtime version, or a Unity Catalog image for a single-command run.
+    containers                   Rank-partitioned containers for heterogeneous workloads.
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
-
-  Run behavior:
-    max_retries                  How many times to retry a failed run.
-    timeout_minutes              Wall-clock limit for the run in minutes.
     parameters                   Free-form values passed through to the workload.
 
-  MLflow:
+  Execution:
+    max_retries                  How many times to retry a failed run.
+    timeout_minutes              Wall-clock limit for the run in minutes.
+    idempotency_token            Reuse token: a repeat submission with the same token returns the existing run instead of starting another.
+
+  MLflow tracking:
     mlflow_run_name              Name for the MLflow run.
     mlflow_experiment_directory  Workspace directory holding the MLflow experiment.
     mlflow_artifact_location     DBFS location where MLflow artifacts are written.
 
-  Advanced:
-    containers                   Rank-partitioned containers for heterogeneous workloads.
-    idempotency_token            Reuse token: a repeat submission with the same token returns the existing run instead of starting another.
+  Access and cost attribution:
     permissions                  Who may view or manage the run, as a list of principal plus level grants.
-    usage_policy_name            Usage policy to bill the run to, by name.
-    usage_policy_id              Usage policy to bill the run to, by id.
+    usage_policy_name            Usage policy to attribute the run's usage to, by name.
+    usage_policy_id              Usage policy to attribute the run's usage to, by id.
 
 For details on a field, run "databricks air run -h config.<field>".
 
@@ -169,7 +167,7 @@ config.code_source
   Local code to upload and make available to the run.
 
   Fields:
-    root_path      Root of the code source to archive.
+    root_path      (required when code_source is set) Root of the code source to archive.
     remote_volume  Volume to upload the archive to.
     git            Pin the snapshot to a specific git revision.
     include_paths  Restrict the archive to these paths, relative to root_path and without "..".

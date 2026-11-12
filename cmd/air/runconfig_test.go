@@ -805,9 +805,9 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	var root strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&root, "config"))
 	rootHelp := root.String()
-	assert.Contains(t, rootHelp, "  Required:\n    experiment_name              Name of the experiment.\n    compute                      Which accelerators to run on and how many.\n    command                      (unless containers is set) Shell command that starts the workload.\n")
-	assert.NotContains(t, rootHelp, "(required)", "the Required heading already marks required fields")
-	headings := []string{"  Required:", "  Workload:", "  Run behavior:", "  MLflow:", "  Advanced:"}
+	// Required fields lead their group even when declared later in the struct.
+	assert.Contains(t, rootHelp, "  Workload:\n    experiment_name              (required) Name of the experiment.\n    compute                      (required) Which accelerators to run on and how many.\n    command                      (required unless containers is set) Shell command that starts the workload.\n    environment  ")
+	headings := []string{"  Workload:", "  Execution:", "  MLflow tracking:", "  Access and cost attribution:"}
 	last := -1
 	for _, h := range headings {
 		i := strings.Index(rootHelp, h)
@@ -1078,4 +1078,37 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}))
 	_, err := resolveConfigField("compute.bogus")
 	require.Error(t, err)
+}
+
+func TestRequiredMarker(t *testing.T) {
+	tests := []struct {
+		required string
+		want     string
+	}{
+		{"yes", "(required)"},
+		{"when code_source is set", "(required when code_source is set)"},
+		{"unless containers is set", "(required unless containers is set)"},
+		// A choice between siblings is explained in the field's own help.
+		{"one of branch or commit", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, requiredMarker(configField{required: tt.required}), tt.required)
+	}
+}
+
+func TestGroupFieldsRequiredFirst(t *testing.T) {
+	fields := []configField{
+		{path: "config.a", group: "G"},
+		{path: "config.b", group: "G", required: "yes"},
+		{path: "config.c", group: "Other", required: "yes"},
+		{path: "config.d", group: "G", required: "unless a is set"},
+		{path: "config.e", group: "G", hidden: true, required: "yes"},
+		{path: "config.f", group: "G"},
+	}
+	var got []string
+	for _, f := range groupFieldsRequiredFirst(fields, "G") {
+		got = append(got, configLeafName(f.path))
+	}
+	assert.Equal(t, []string{"b", "d", "a", "f"}, got)
 }
