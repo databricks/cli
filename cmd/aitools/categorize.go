@@ -14,9 +14,38 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
+// categorizedError tags an error with a telemetry category at the site that
+// knows what failed (flag validation, agent lookup, a prompt). The tag wins
+// over the standard library types. Error() and Unwrap() pass through, so the
+// user-visible message is unchanged.
+type categorizedError struct {
+	err      error
+	category protos.AitoolsErrorCategory
+}
+
+func (e *categorizedError) Error() string { return e.err.Error() }
+func (e *categorizedError) Unwrap() error { return e.err }
+
+// withCategory tags a non-nil err with category.
+func withCategory(err error, category protos.AitoolsErrorCategory) error {
+	return &categorizedError{err: err, category: category}
+}
+
+// promptError tags a non-nil prompt failure. A user abort (Ctrl-C) keeps its own
+// classification so the funnel reports it as CANCELLED, not as a failure.
+// Any other error of a prompt step is PROMPT_FAILED, even one with an OS
+// error type: the prompt library wraps a failure to open the terminal as an
+// *fs.PathError, and FILESYSTEM would point at the skill files instead.
+func promptError(err error) error {
+	if errors.Is(err, huh.ErrUserAborted) {
+		return err
+	}
+	return withCategory(err, protos.AitoolsErrorCategoryPromptFailed)
+}
+
 // classifyInstallError maps an aitools error to its telemetry category without
-// reading any error text. Typed installer errors win, then standard library
-// error types.
+// reading any error text. Typed installer errors win, then categories tagged at
+// the failure site, then standard library error types.
 func classifyInstallError(err error) protos.AitoolsErrorCategory {
 	if err == nil {
 		return protos.AitoolsErrorCategoryUnspecified
@@ -27,6 +56,16 @@ func classifyInstallError(err error) protos.AitoolsErrorCategory {
 	}
 	if skill, ok := errors.AsType[*installer.SkillError](err); ok {
 		return skillErrorCategory(skill)
+	}
+	if tagged, ok := errors.AsType[*categorizedError](err); ok {
+		return tagged.category
+	}
+	if errors.Is(err, installer.ErrUnknownAgent) {
+		return protos.AitoolsErrorCategoryUnknownAgent
+	}
+	// Skills on disk without the install state that update and uninstall need.
+	if errors.Is(err, installer.ErrLegacyInstall) {
+		return protos.AitoolsErrorCategoryStateInvalid
 	}
 	return stdlibErrorCategory(err)
 }

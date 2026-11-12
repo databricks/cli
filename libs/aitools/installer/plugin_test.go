@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"context"
 	"errors"
 	"os/exec"
 	"path/filepath"
@@ -240,7 +241,7 @@ func TestUninstallPluginKeepsSharedMarketplace(t *testing.T) {
 	}
 }
 
-func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
+func TestUninstallSkillsWithResultTearsDownPlugin(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
@@ -257,7 +258,8 @@ func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
 		},
 	}))
 
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+	require.NoError(t, err)
 
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "copilot plugin uninstall databricks@databricks-agent-skills")
@@ -270,7 +272,7 @@ func TestUninstallSkillsOptsTearsDownPlugin(t *testing.T) {
 	assert.Nil(t, state)
 }
 
-func TestUninstallSkillsOptsTargetsPluginAgents(t *testing.T) {
+func TestUninstallSkillsWithResultTargetsPluginAgents(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
@@ -288,7 +290,8 @@ func TestUninstallSkillsOptsTargetsPluginAgents(t *testing.T) {
 		},
 	}))
 
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal, Agents: []string{agents.NameClaudeCode}}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal, Agents: []string{agents.NameClaudeCode}})
+	require.NoError(t, err)
 
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "claude plugin uninstall databricks@claude-plugins-official --scope user")
@@ -321,7 +324,8 @@ func TestUninstallNeverDeregistersSharedMarketplace(t *testing.T) {
 		},
 	}))
 
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+	require.NoError(t, err)
 
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "claude plugin uninstall databricks@claude-plugins-official")
@@ -349,7 +353,8 @@ func TestUninstallKeepMarketplace(t *testing.T) {
 		},
 	}))
 
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal, KeepMarketplace: true}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal, KeepMarketplace: true})
+	require.NoError(t, err)
 
 	for _, c := range stub.Commands() {
 		assert.NotContains(t, c, "marketplace remove")
@@ -371,7 +376,8 @@ func TestUninstallKeepsUnknownAgentRecord(t *testing.T) {
 
 	// An unknown agent can't be torn down; its record (and the state file) must be
 	// kept rather than silently dropped while the plugin may still exist.
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+	require.NoError(t, err)
 
 	st, err := LoadState(dir)
 	require.NoError(t, err)
@@ -397,7 +403,8 @@ func TestUninstallClearsRecordWhenMarketplaceRemoveFails(t *testing.T) {
 		},
 	}))
 
-	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+	require.NoError(t, err)
 
 	// The plugin is gone, so the record is cleared even though the marketplace
 	// de-register failed (otherwise a retry would be stuck).
@@ -463,7 +470,111 @@ func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
 	}
 }
 
-func TestUninstallSkillsOptsUsesRecordedClaudeScope(t *testing.T) {
+// A plugin whose CLI is missing is skipped with a warning (no error), and
+// reported so telemetry can tell a run that did nothing from a success.
+func TestPluginOperationsReportFailures(t *testing.T) {
+	t.Run("update", func(t *testing.T) {
+		ctx, dir := saveCopilotPlugin(t)
+		results, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		blocked, ok := errors.AsType[*BlockedError](results[0].Err)
+		require.True(t, ok, "got %v", results[0].Err)
+		assert.Equal(t, ReasonCLINotOnPath, blocked.Reason)
+
+		state, err := LoadState(dir)
+		require.NoError(t, err)
+		assert.Equal(t, "0.2.6", state.Plugins[agents.NameCopilot].Version)
+	})
+
+	t.Run("uninstall", func(t *testing.T) {
+		ctx, dir := saveCopilotPlugin(t)
+		result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+		require.NoError(t, err)
+		assert.Equal(t, 0, result.PluginsRemoved)
+		assert.Equal(t, 0, result.SkillsRemoved)
+		require.Len(t, result.PluginFailures, 1)
+		blocked, ok := errors.AsType[*BlockedError](result.PluginFailures[0])
+		require.True(t, ok, "got %v", result.PluginFailures[0])
+		assert.Equal(t, ReasonCLINotOnPath, blocked.Reason)
+
+		state, err := LoadState(dir)
+		require.NoError(t, err)
+		assert.Contains(t, state.Plugins, agents.NameCopilot)
+	})
+}
+
+// A plugin record for an agent this CLI does not know (e.g. written by a newer
+// CLI) is kept and reported as a failure, so a run that acts on nothing else
+// is not a success.
+func TestPluginOperationsReportUnknownAgent(t *testing.T) {
+	t.Run("update", func(t *testing.T) {
+		ctx, dir := saveUnknownAgentPlugin(t)
+		results, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		assert.Equal(t, "future-agent", results[0].Agent)
+		assert.EqualError(t, results[0].Err, `unknown agent "future-agent" in state`)
+		assert.ErrorIs(t, results[0].Err, ErrUnknownAgent)
+
+		state, err := LoadState(dir)
+		require.NoError(t, err)
+		assert.Equal(t, "0.2.6", state.Plugins["future-agent"].Version)
+	})
+
+	t.Run("uninstall", func(t *testing.T) {
+		ctx, dir := saveUnknownAgentPlugin(t)
+		result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+		require.NoError(t, err)
+		assert.Equal(t, 0, result.PluginsRemoved)
+		require.Len(t, result.PluginFailures, 1)
+		assert.EqualError(t, result.PluginFailures[0], `unknown agent "future-agent" in state`)
+		assert.ErrorIs(t, result.PluginFailures[0], ErrUnknownAgent)
+
+		state, err := LoadState(dir)
+		require.NoError(t, err)
+		assert.Contains(t, state.Plugins, "future-agent")
+	})
+}
+
+// saveUnknownAgentPlugin records a plugin for an agent this CLI does not know
+// in the global state, and returns the context and the state dir.
+func saveUnknownAgentPlugin(t *testing.T) (context.Context, string) {
+	t.Helper()
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			"future-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
+		},
+	}))
+	return ctx, dir
+}
+
+// saveCopilotPlugin records a Copilot plugin in the global state while the
+// Copilot CLI is not on PATH, and returns the context and the state dir.
+func saveCopilotPlugin(t *testing.T) (context.Context, string) {
+	t.Helper()
+	setupTestHome(t)
+	stubAgentLookPath(t, false)
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion: schemaVersionV2,
+		Release:       "v0.2.6",
+		Plugins: map[string]PluginRecord{
+			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
+		},
+	}))
+	return ctx, dir
+}
+
+func TestUninstallSkillsWithResultUsesRecordedClaudeScope(t *testing.T) {
 	for _, scope := range []string{"project", "user", "local"} {
 		t.Run(scope, func(t *testing.T) {
 			setupTestHome(t)
@@ -481,7 +592,8 @@ func TestUninstallSkillsOptsUsesRecordedClaudeScope(t *testing.T) {
 				},
 			}))
 
-			require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{Scope: ScopeGlobal}))
+			_, err = UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
+			require.NoError(t, err)
 
 			cmds := stub.Commands()
 			assert.Contains(t, cmds, "claude plugin disable databricks@claude-plugins-official --scope "+scope)

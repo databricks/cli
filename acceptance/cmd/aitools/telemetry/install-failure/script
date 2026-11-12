@@ -1,0 +1,24 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+mkdir -p "${USERPROFILE:-$HOME}/.cursor"
+
+# Only runs past the plan confirmation are here: a run that ends earlier (a
+# flag error, an unknown agent, a --path dump) uploads only if auth has already
+# resolved, so whether its events show up depends on timing. The funnel unit
+# tests in cmd/aitools cover those runs.
+
+title "a skill missing from the manifest fails after the plan is confirmed"
+musterr trace $CLI aitools install --skills-only --scope=global --agents=cursor --skills=nonexistent
+trace print_telemetry
+
+title "a manifest the server does not have is MANIFEST_NOT_FOUND"
+musterr trace DATABRICKS_SKILLS_REF=missing-ref $CLI aitools install --skills-only --scope=global --agents=cursor
+trace print_telemetry
+
+title "any other HTTP error status from the manifest fetch is not classified yet (the error is untyped)"
+musterr trace DATABRICKS_SKILLS_REF=broken-ref $CLI aitools install --skills-only --scope=global --agents=cursor
+trace print_telemetry
+
+title "a named agent skipped for the scope takes its category from the agent's outcome"
+musterr trace $CLI aitools install --skills-only --scope=project --agents=cursor
+trace print_telemetry

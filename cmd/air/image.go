@@ -106,7 +106,7 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "Manage container images for AI Runtime",
+		Short: "Push container images for custom environments",
 		RunE:  root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newImagePushCommand())

@@ -97,6 +97,15 @@ func setupTestHome(t *testing.T) string {
 	return tmp
 }
 
+// clearAgentDirOverrides unsets the env vars agents read their config dir
+// from, so agent dirs derive from the temp HOME of setupTestHome rather than
+// from the host's overrides.
+func clearAgentDirOverrides(t *testing.T) {
+	for _, v := range []string{"CLAUDE_CONFIG_DIR", "PI_CODING_AGENT_DIR", "GEMINI_CLI_HOME", "GOOSE_PATH_ROOT", "APPDATA", "XDG_CONFIG_HOME"} {
+		t.Setenv(v, "")
+	}
+}
+
 func setBuildVersion(t *testing.T, version string) {
 	t.Helper()
 	orig := build.GetInfo().Version

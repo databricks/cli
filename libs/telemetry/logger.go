@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
 	"uuid"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 const (
@@ -27,6 +30,12 @@ const (
 	// Timeout in seconds for uploading telemetry logs.
 	timeoutEnvVar = "DATABRICKS_CLI_TELEMETRY_TIMEOUT"
 )
+
+// Disabled reports whether the user opted out of telemetry, in which case
+// Upload sends nothing.
+func Disabled(ctx context.Context) bool {
+	return env.Get(ctx, disableEnvVar) != ""
+}
 
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	// A missing logger means telemetry was never initialized on this context
@@ -44,6 +53,10 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 type logger struct {
 	logs             []protos.FrontendLog
 	stateLineageHash string
+
+	// running counts the goroutines that Upload started and stopped waiting
+	// for, which may still be using the config (see within).
+	running atomic.Int32
 }
 
 // SetStateLineageHash records the hashed lineage of the bundle state the command read, so that
@@ -73,7 +86,14 @@ func (l *logger) log(event protos.DatabricksCliLog) {
 
 const (
 	defaultUploadTimeout = 3 * time.Second
-	waitBetweenRetries   = 200 * time.Millisecond
+
+	// hintOnlyUploadTimeout bounds an upload whose events are all install
+	// hint events. Most commands that show a hint log nothing else, so
+	// without the hint they would not upload at all; they wait less for it at
+	// exit.
+	hintOnlyUploadTimeout = 1 * time.Second
+
+	waitBetweenRetries = 200 * time.Millisecond
 )
 
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
@@ -84,7 +104,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	// Telemetry is disabled. We don't upload logs.
-	if env.Get(ctx, disableEnvVar) != "" {
+	if Disabled(ctx) {
 		log.Debugf(ctx, "telemetry upload is disabled. Not uploading any logs.")
 		return nil
 	}
@@ -108,28 +128,32 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		return nil
 	}
 
-	apiClient, err := client.New(cmdctx.ConfigUsed(ctx))
+	// The ssh agent shim uploads before it execs. If the exec fails, cmd/root
+	// uploads again at exit, while a goroutine of the timed-out first upload
+	// may still be resolving or authenticating the same config.
+	if l.running.Load() > 0 {
+		return errors.New("a previous telemetry upload is still running")
+	}
+
+	timeout, err := uploadTimeout(ctx, l.logs)
 	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
+		return err
 	}
 
-	uploadTimeout := defaultUploadTimeout
-	if v := env.Get(ctx, timeoutEnvVar); v != "" {
-		timeout, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return fmt.Errorf("failed to parse timeout: %w", err)
-		}
-
-		uploadTimeout = time.Duration(timeout * float64(time.Second))
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, uploadTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	deadline, ok := ctx.Deadline()
 	if !ok {
 		log.Infof(ctx, "context has no deadline. This is unexpected. Not uploading telemetry logs")
 		return nil
+	}
+
+	apiClient, err := within(ctx, &l.running, func() (*client.DatabricksClient, error) {
+		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
 	// Only try uploading logs for a maximum of 3 times.
@@ -197,6 +221,100 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	return errors.New("failed to upload telemetry logs after three attempts")
 }
 
+// uploadTimeout returns how long Upload may take: DATABRICKS_CLI_TELEMETRY_TIMEOUT
+// (in seconds) when set, else hintOnlyUploadTimeout when every log is an
+// install hint event, else defaultUploadTimeout.
+func uploadTimeout(ctx context.Context, logs []protos.FrontendLog) (time.Duration, error) {
+	if v := env.Get(ctx, timeoutEnvVar); v != "" {
+		timeout, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse timeout: %w", err)
+		}
+		return time.Duration(timeout * float64(time.Second)), nil
+	}
+	if onlyHintEvents(logs) {
+		return hintOnlyUploadTimeout, nil
+	}
+	return defaultUploadTimeout, nil
+}
+
+// onlyHintEvents reports whether every log is an install hint event.
+func onlyHintEvents(logs []protos.FrontendLog) bool {
+	for _, l := range logs {
+		if l.Entry.DatabricksCliLog.AitoolsHintEvent == nil {
+			return false
+		}
+	}
+	return true
+}
+
+// within runs f on its own goroutine and returns its result, or ctx's error
+// once ctx is done. Upload uses it for the SDK calls that ignore ctx: the SDK
+// resolves the config (including host metadata discovery) and fetches auth
+// tokens with context.Background(). The requests themselves honor ctx and run
+// on the caller's goroutine. A panic in f is returned as an error, so it is
+// logged like any other upload failure instead of crashing the process.
+//
+// After a timeout the goroutine keeps running until f returns or the process
+// ends, and running counts it until then. It may still be writing to the
+// config while resolving it, or refreshing an OAuth token that is lost if the
+// process exits first. cmd/root runs Upload as the last step before the
+// process exits; the ssh agent shim runs it just before exec, and Upload skips
+// a second upload while running is non-zero.
+func within[T any](ctx context.Context, running *atomic.Int32, f func() (T, error)) (T, error) {
+	type result struct {
+		v   T
+		err error
+	}
+	resc := make(chan result, 1)
+	running.Add(1)
+	go func() {
+		defer running.Add(-1)
+		defer func() {
+			if r := recover(); r != nil {
+				resc <- result{err: fmt.Errorf("panic: %v", r)}
+			}
+		}()
+		v, err := f()
+		resc <- result{v, err}
+	}()
+	select {
+	case res := <-resc:
+		return res.v, res.err
+	case <-ctx.Done():
+		var zero T
+		return zero, ctx.Err()
+	}
+}
+
+// newAPIClient is client.New with authenticate as the auth visitor. The SDK
+// runs the auth visitor on every request, including its own retries.
+func newAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	clientCfg.AuthVisitor = func(r *http.Request) error {
+		return authenticate(r, cfg, running)
+	}
+	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
+}
+
+// authenticate sets the auth headers on r, giving up when r's context, which
+// carries the upload deadline, is done. It authenticates a clone so that an
+// abandoned goroutine never writes to r.
+func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) error {
+	authReq := r.Clone(r.Context())
+	_, err := within(r.Context(), running, func() (struct{}, error) {
+		return struct{}{}, cfg.Authenticate(authReq)
+	})
+	if err != nil {
+		return fmt.Errorf("authenticating telemetry upload: %w", err)
+	}
+	r.Header = authReq.Header
+	return nil
+}
+
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
 	// Without the workspace routing header, telemetry on unified hosts is
 	// recorded in a central shard instead of the user's workspace.
@@ -218,4 +336,20 @@ func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs 
 	}
 
 	return resp, nil
+}
+
+// BufferedEvents returns the events logged on ctx, or nil when ctx has no
+// logger. Upload does not clear them. Tests in other packages use it to assert
+// what a command logs without uploading; cmd/aitools uses it to skip waiting
+// for telemetry auth when there is nothing to upload.
+func BufferedEvents(ctx context.Context) []protos.DatabricksCliLog {
+	l, ok := loggerFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	out := make([]protos.DatabricksCliLog, len(l.logs))
+	for i, fl := range l.logs {
+		out[i] = fl.Entry.DatabricksCliLog
+	}
+	return out
 }
