@@ -1,9 +1,11 @@
 // Package agentconfig reads and writes the user-scope MCP server entries of
-// coding agents. Each write reads the whole file, changes one entry and writes
-// the file back atomically; everything else in the file is kept.
+// coding agents. A write changes only the bytes of the one entry it is asked to
+// change, writes the file back atomically, and keeps comments and layout
+// elsewhere in the file.
 package agentconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -37,13 +39,15 @@ var (
 	ErrConfigInvalid = errors.New("agent config file cannot be parsed")
 )
 
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
 // document is an agent config file in memory.
 type document interface {
 	// entry returns the server entry name under root, and whether it exists.
 	entry(root []string, name string) (map[string]any, bool, error)
 	// entries returns the object-valued members under root, keyed by name.
 	entries(root []string) (map[string]map[string]any, error)
-	// set stores entry as name under root, creating missing tables.
+	// set stores entry as name under root, creating missing levels.
 	set(root []string, name string, entry map[string]any) error
 	// remove deletes name under root. It is a no-op when name is absent.
 	remove(root []string, name string) error
@@ -53,12 +57,21 @@ type document interface {
 
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
 // env. It replaces an entry this CLI wrote, or any entry when force is set, and
-// leaves the file alone when the entry already matches. It returns the config
-// file path.
+// leaves the file alone when the entry already matches. cmd must be the
+// databricks binary, or the entry could never be recognized as ours. It returns
+// the config file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
 	spec, err := specOf(a)
 	if err != nil {
 		return "", "", err
+	}
+	want := spec.Entry(cmd, args, env)
+	ours, err := normalize(want)
+	if err != nil {
+		return "", "", err
+	}
+	if !mcpconfig.IsDatabricksEntry(ours) {
+		return "", "", fmt.Errorf("server %q: command %q is not the databricks binary, which must be named databricks or databricks.exe", name, cmd)
 	}
 	path, err := spec.Path(ctx)
 	if err != nil {
@@ -69,13 +82,12 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		return path, "", err
 	}
 	root := rootPath(spec)
-	want := spec.Entry(cmd, args, env)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", path, err)
 	}
 	if found {
-		if !spec.IsOurs(current) && !force {
+		if !mcpconfig.IsDatabricksEntry(current) && !force {
 			return path, "", fmt.Errorf("%s: server %q: %w", path, name, ErrNotOwned)
 		}
 		same, err := sameEntry(current, want)
@@ -122,7 +134,7 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if !found {
 		return false, nil
 	}
-	if !spec.IsOurs(current) {
+	if !mcpconfig.IsDatabricksEntry(current) {
 		return false, fmt.Errorf("%s: server %q: %w", path, name, ErrNotOwned)
 	}
 	if err := doc.remove(root, name); err != nil {
@@ -200,15 +212,40 @@ func save(path string, doc document) error {
 		perm = info.Mode().Perm()
 	}
 	// Rename would replace a symlink (dotfile managers link configs) with a
-	// regular file, so write to the link's target.
+	// regular file, so write to the link's target. A link whose target does not
+	// exist is refused: there is no target to write.
 	target := path
-	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+	resolved, err := filepath.EvalSymlinks(path)
+	switch {
+	case err == nil:
 		target = resolved
+	case errors.Is(err, fs.ErrNotExist):
+		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("%s is a symlink to a file that does not exist", path)
+		}
+	default:
+		return fmt.Errorf("resolve %s: %w", path, err)
 	}
 	if err := atomicfile.Write(target, data, perm, atomicfile.MkDir(0o755)); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil
+}
+
+// stripBOM removes a leading UTF-8 byte order mark, reporting whether there was one.
+func stripBOM(data []byte) ([]byte, bool) {
+	if bytes.HasPrefix(data, utf8BOM) {
+		return data[len(utf8BOM):], true
+	}
+	return data, false
+}
+
+// withBOM puts the byte order mark back in front of data when the file had one.
+func withBOM(data []byte, bom bool) []byte {
+	if !bom {
+		return data
+	}
+	return append(append([]byte{}, utf8BOM...), data...)
 }
 
 // sameEntry compares two entries as JSON values, so the in-memory Go types of a

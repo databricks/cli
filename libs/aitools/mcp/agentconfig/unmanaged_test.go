@@ -33,6 +33,16 @@ func TestIsUnmanaged(t *testing.T) {
 			want:  true,
 		},
 		{
+			name:  "gemini httpUrl",
+			entry: map[string]any{"httpUrl": "https://example.test/ai-gateway/mcp-services/system.ai.dbsql"},
+			want:  true,
+		},
+		{
+			name:  "antigravity serverUrl",
+			entry: map[string]any{"serverUrl": "https://example.test/ai-gateway/mcp-services/system.ai.dbsql"},
+			want:  true,
+		},
+		{
 			name:  "unrelated url",
 			entry: map[string]any{"type": "http", "url": "https://example.test/mcp"},
 			want:  false,

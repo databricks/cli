@@ -2,10 +2,7 @@
   "mcpServers": {
     "other": {
       "command": "npx",
-      "args": [
-        "-y",
-        "other-mcp"
-      ],
+      "args": ["-y", "other-mcp"],
       "disabled": false
     },
     "genie_one_mcp-dogfood": {

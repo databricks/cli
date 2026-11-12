@@ -5,11 +5,7 @@
     "servers": {
       "other": {
         "type": "local",
-        "command": [
-          "npx",
-          "-y",
-          "other-mcp"
-        ]
+        "command": ["npx", "-y", "other-mcp"]
       },
       "genie_one_mcp-dogfood": {
         "command": [
