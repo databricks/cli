@@ -79,10 +79,8 @@ func NewInstallCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
-		Use: "install",
-		// Resolve auth best-effort so telemetry can upload; see tryConfigureAuth.
-		PreRunE: tryConfigureAuth,
-		Short:   "Install Databricks skills and plugins for coding agents",
+		Use:   "install",
+		Short: "Install Databricks skills and plugins for coding agents",
 		Long: `Install Databricks skills and plugins for detected coding agents.
 
 By default this installs the databricks plugin through each agent's own CLI
@@ -252,6 +250,8 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	markScopeBoolsDeprecated(cmd)
+	// Resolve auth best-effort and time-bounded so telemetry can upload.
+	withTelemetryAuth(cmd)
 	return cmd
 }
 
