@@ -22,10 +22,10 @@ genie_one_mcp-dogfood  system.ai.genie_one_mcp
 === list groups the servers by profile
 
 >>> [CLI] aitools mcp list
-Profile dogfood  ([DATABRICKS_URL])
+Profile dogfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
 
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code
 
@@ -43,6 +43,7 @@ Profile logfood  ([DATABRICKS_URL])
         {
           "name": "genie_one_mcp-dogfood",
           "service": "system.ai.genie_one_mcp",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": false,
           "status": "ok",
           "agents": [
@@ -64,6 +65,7 @@ Profile logfood  ([DATABRICKS_URL])
         {
           "name": "genie_one_mcp-logfood",
           "service": "system.ai.genie_one_mcp",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": false,
           "status": "ok",
           "agents": [
@@ -77,6 +79,7 @@ Profile logfood  ([DATABRICKS_URL])
         {
           "name": "github-logfood",
           "service": "system.ai.github",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": true,
           "status": "ok",
           "agents": [
@@ -100,16 +103,17 @@ Profile logfood  ([DATABRICKS_URL])
 Removed genie_one_mcp-dogfood  system.ai.genie_one_mcp  profile dogfood  (Claude Code)
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code
 
 === A hand-edited entry is listed as modified; an unmanaged ug entry is listed and never changed
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code (modified)
+  changed outside this CLI in Claude Code: delete the entry from [TEST_TMP_DIR]/home/.claude.json by hand and run `databricks aitools mcp remove --names github-logfood` again, or add the server again with --force
 
 Unmanaged Databricks MCP entries (not changed by this command):
   Claude Code    web_search           ug mcp-proxy
@@ -117,15 +121,16 @@ Unmanaged Databricks MCP entries (not changed by this command):
 === --profile lists that profile only, without the unmanaged entries
 
 >>> [CLI] aitools mcp list --profile logfood
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code (modified)
+  changed outside this CLI in Claude Code: delete the entry from [TEST_TMP_DIR]/home/.claude.json by hand and run `databricks aitools mcp remove --names github-logfood` again, or add the server again with --force
 
 === remove leaves the modified entry in place and says why
 
 >>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code)
-Skipped github-logfood: Claude Code has an entry named github-logfood that was changed outside this CLI; left in place
+Skipped github-logfood: Claude Code has an entry named github-logfood that was changed outside this CLI; left in place. To remove it, delete the entry from [TEST_TMP_DIR]/home/.claude.json by hand and run remove again, or add the server again with --force
 
 >>> jq .mcpServers | keys home/.claude.json
 [
@@ -153,7 +158,7 @@ Skipped github-logfood: Claude Code has an entry named github-logfood that was c
     {
       "name": "github-logfood",
       "agent": "claude-code",
-      "reason": "Claude Code has an entry named github-logfood that was changed outside this CLI; left in place"
+      "reason": "Claude Code has an entry named github-logfood that was changed outside this CLI; left in place. To remove it, delete the entry from [TEST_TMP_DIR]/home/.claude.json by hand and run remove again, or add the server again with --force"
     }
   ]
 }
@@ -165,8 +170,9 @@ Skipped github-logfood: Claude Code has an entry named github-logfood that was c
 ]
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   github-logfood           system.ai.github               Claude Code (modified)
+  changed outside this CLI in Claude Code: delete the entry from [TEST_TMP_DIR]/home/.claude.json by hand and run `databricks aitools mcp remove --names github-logfood` again, or add the server again with --force
 
 Unmanaged Databricks MCP entries (not changed by this command):
   Claude Code    web_search           ug mcp-proxy

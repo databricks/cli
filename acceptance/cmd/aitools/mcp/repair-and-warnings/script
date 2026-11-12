@@ -16,7 +16,7 @@ trace $CLI aitools mcp remove --names genie_one_mcp-logfood --agents claude-code
 unset CLAUDE_CONFIG_DIR
 trace jq '.mcpServers | keys' home/.claude.json
 
-title "A Codex config that cannot be parsed is a warning: list exits 0 and shows Claude Code"
+title "A Codex config that cannot be parsed is a warning: list exits 0 and shows Codex CLI as unknown"
 cp broken-codex-config.toml home/.codex/config.toml
 trace $CLI aitools mcp list
 

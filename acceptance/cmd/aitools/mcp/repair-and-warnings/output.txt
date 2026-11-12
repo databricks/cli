@@ -12,7 +12,7 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 === Claude Code reads its config from another directory: list says path changed, and remove takes the entry out of the file it was written to
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code (path changed), Codex CLI
 
 >>> [CLI] aitools mcp remove --names genie_one_mcp-logfood --agents claude-code
@@ -21,10 +21,10 @@ Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude
 >>> jq .mcpServers | keys home/.claude.json
 []
 
-=== A Codex config that cannot be parsed is a warning: list exits 0 and shows Claude Code
+=== A Codex config that cannot be parsed is a warning: list exits 0 and shows Codex CLI as unknown
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Codex CLI (unknown)
 Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 2: expected '.' or ']' to end table name, but got '\n' instead
 
@@ -33,7 +33,7 @@ Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.
 >>> jq .mcpServers.orphan = {"command": "databricks", "args": ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "claude-code"]} home/.claude.json
 
 >>> [CLI] aitools mcp list
-Profile logfood  ([DATABRICKS_URL])
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Codex CLI (unknown)
 
 Unmanaged Databricks MCP entries (not changed by this command):

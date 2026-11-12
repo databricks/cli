@@ -434,6 +434,7 @@ func dropRecords(ctx context.Context, drops []recordDrop, selected []mcp.Entry) 
 	return saveMCPState(ctx, state)
 }
 
+// printRemoveResults writes the text result: each removed server, then each skipped entry with its reason.
 func printRemoveResults(ctx context.Context, out *removeOutput) {
 	if len(out.Removed) == 0 && len(out.Skipped) == 0 {
 		cmdio.LogString(ctx, "No Databricks MCP servers to remove.")

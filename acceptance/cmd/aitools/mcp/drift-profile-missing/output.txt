@@ -18,7 +18,7 @@ genie_one_mcp-dogfood  system.ai.genie_one_mcp
 === logfood is deleted from the Databricks config file: list reports it and exits 0
 
 >>> [CLI] aitools mcp list
-Profile dogfood  ([DATABRICKS_URL])
+Profile dogfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
 
 Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
@@ -39,6 +39,7 @@ Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
         {
           "name": "genie_one_mcp-dogfood",
           "service": "system.ai.genie_one_mcp",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": false,
           "status": "host_changed",
           "agents": [
@@ -60,6 +61,7 @@ Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
         {
           "name": "genie_one_mcp-logfood",
           "service": "system.ai.genie_one_mcp",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": false,
           "status": "profile_missing",
           "agents": [
@@ -80,7 +82,7 @@ Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
 === The same change in text
 
 >>> [CLI] aitools mcp list
-Profile dogfood  (https://adb-2.test)
+Profile dogfood  (https://adb-2.test, config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
   broken: it was set up for [DATABRICKS_URL], but profile "dogfood" now points at https://adb-2.test; run `databricks aitools mcp remove --names genie_one_mcp-dogfood` and add it again
 

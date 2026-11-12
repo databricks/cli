@@ -285,6 +285,8 @@ func readAgentConfigs(ctx context.Context, names []string) map[string]agentConfi
 	return configs
 }
 
+// readAgentConfig reads the MCP config of the agent named name. A failure is kept in the result, not returned, so that
+// the caller can report it for that agent and go on with the others.
 func readAgentConfig(ctx context.Context, name string) agentConfig {
 	a := agents.ByName(name)
 	if a == nil {
@@ -369,6 +371,8 @@ func mcpAgentList(names []string) string {
 	return strings.Join(display, ", ")
 }
 
+// renderMcpList writes the text listing: the profiles, the unmanaged entries, then the warnings. profileName is the
+// --profile value, which only changes the message for an empty listing.
 func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 	if len(out.Profiles) == 0 && len(out.Unmanaged) == 0 {
 		if profileName != "" {
@@ -409,6 +413,8 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 	}
 }
 
+// profileHeader names a profile group: its host, or the config file it was not found in when the profile is missing.
+// A pinned group also names its config file, so that groups of one profile and host are told apart.
 func profileHeader(p mcpListProfile) string {
 	if p.Status == string(mcp.DriftProfileMissing) {
 		problem := "profile not found in"
@@ -458,6 +464,7 @@ func loginFile(ctx context.Context, p mcpListProfile, entry mcp.Entry) string {
 	return filepath.ToSlash(p.configPath)
 }
 
+// listAgentsText lists the agents of a server, with the status of each entry that needs a word.
 func listAgentsText(agentList []mcpListAgent) string {
 	parts := make([]string, 0, len(agentList))
 	for _, a := range agentList {
@@ -477,6 +484,7 @@ func listAgentsText(agentList []mcpListAgent) string {
 	return strings.Join(parts, ", ")
 }
 
+// unmanagedKindText describes an unmanaged entry kind for the text listing.
 func unmanagedKindText(kind string) string {
 	switch kind {
 	case unmanagedKindUGProxy:
