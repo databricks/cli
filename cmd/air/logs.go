@@ -192,7 +192,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	}
 
 	out := cmd.OutOrStdout()
-	if !req.jsonOutput {
+	if !req.jsonOutput && !req.staticView && !status.terminal() {
 		defer printLogLinks(ctx, w, out, req)
 	}
 	success, err := fetchLogs(ctx, w, out, req, status)
