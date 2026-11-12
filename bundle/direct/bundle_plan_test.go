@@ -889,6 +889,7 @@ func TestAddParentMoves(t *testing.T) {
 	tests := []struct {
 		name          string
 		schemaRenamed bool
+		volumeName    string
 		volumeChanges deployplan.Changes
 		wantID        string
 		wantDependsOn []deployplan.DependsOnEntry
@@ -908,6 +909,18 @@ func TestAddParentMoves(t *testing.T) {
 				"volume_type": {Action: deployplan.Recreate, Old: "MANAGED", New: "EXTERNAL"},
 			},
 			wantID:        "main.s1-renamed.vol",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			// The volume's own name has the schema's old value too; only schema_name followed the schema.
+			name:          "volume named like the renamed schema",
+			schemaRenamed: true,
+			volumeName:    "s1",
+			volumeChanges: deployplan.Changes{
+				"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"},
+				"name":        {Action: deployplan.UpdateWithID, Old: "s1", New: "vol2"},
+			},
+			wantID:        "main.s1-renamed.s1",
 			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
 		},
 		{
@@ -938,11 +951,16 @@ func TestAddParentMoves(t *testing.T) {
 				Changes:   tt.volumeChanges,
 			}
 
+			volumeName := tt.volumeName
+			if volumeName == "" {
+				volumeName = "vol"
+			}
 			b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+			b.refTypes.Store(volumeKey, map[string]string{"schema_name": "schemas"})
 			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
 				volumeKey: {
-					ID:        "main.s1.vol",
-					State:     []byte(`{"catalog_name": "main", "schema_name": "s1", "name": "vol", "volume_type": "MANAGED"}`),
+					ID:        "main.s1." + volumeName,
+					State:     []byte(`{"catalog_name": "main", "schema_name": "s1", "name": "` + volumeName + `", "volume_type": "MANAGED"}`),
 					DependsOn: []deployplan.DependsOnEntry{schema1Dep},
 				},
 			}})

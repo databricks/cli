@@ -275,6 +275,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
+		if adapter.HasIDFromState() {
+			if err := b.recordRefTypes(resourceKey); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+		}
+
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
 		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
@@ -798,6 +805,7 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
 		}
 
+		refTypes, _ := b.refTypes.Load(resourceKey)
 		var parents []deployplan.DependsOnEntry
 		for _, dep := range dbentry.DependsOn {
 			rename, err := b.dependencyRename(dep.Label)
@@ -807,7 +815,13 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 			if rename == nil {
 				continue
 			}
+			parentType := config.GetResourceTypeFromKey(dep.Node)
 			for pathString, ch := range entry.Changes {
+				// Only a field referencing a resource of the parent's type followed it (schema_name for a
+				// schema); another one that merely had the same value, like the resource's own name, did not.
+				if types, ok := refTypes.(map[string]string); !ok || types[pathString] != parentType {
+					continue
+				}
 				if !structdiff.IsEqual(ch.Old, rename.Old) {
 					continue
 				}
@@ -839,6 +853,30 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 			}
 		}
 	}
+	return nil
+}
+
+// recordRefTypes records, for each pure-reference field of resourceKey, the type of the resource it
+// references, before resolveReferences drops the references (see addParentMoves).
+func (b *DeploymentBundle) recordRefTypes(resourceKey string) error {
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		return fmt.Errorf("internal error: no state cache entry found for %q", resourceKey)
+	}
+	types := make(map[string]string, len(sv.Refs))
+	for fieldPath, refString := range sv.Refs {
+		ref, ok := dynvar.NewRef(dyn.V(refString))
+		if !ok || !ref.IsPure() {
+			continue
+		}
+		targetPath, err := structpath.ParsePath(ref.References()[0])
+		if err != nil {
+			return fmt.Errorf("cannot parse reference %q: %w", refString, err)
+		}
+		targetKey, _ := splitResourcePath(targetPath)
+		types[fieldPath] = config.GetResourceTypeFromKey(targetKey)
+	}
+	b.refTypes.Store(resourceKey, types)
 	return nil
 }
 
