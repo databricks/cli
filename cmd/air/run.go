@@ -33,7 +33,8 @@ type runResult struct {
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
-	// Existing is nil for a dry run, which submits nothing.
+	// Existing is nil when unknown: a dry run submits nothing, and the
+	// existing-run lookup can fail or not apply (e.g. container runs).
 	Existing *bool `json:"existing,omitempty"`
 }
 
@@ -190,16 +191,16 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 
 		w := cmdctx.WorkspaceClient(ctx)
 		// The --watch JSON events don't report existing, so skip its runs/get there.
-		submitCtx, existing := ctx, new(bool)
+		submitCtx, report := ctx, &existingRunReport{}
 		if !watch || !jsonOut {
-			submitCtx, existing = withExistingRunReport(ctx)
+			submitCtx, report = withExistingRunReport(ctx)
 		}
 		runID, dashboardURL, err := submitWorkload(submitCtx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
 		}
 		existingKey := ""
-		if *existing {
+		if report.Existing != nil && *report.Existing {
 			existingKey = userIdempotencyToken(idempotencyKey, cfg)
 		}
 
@@ -215,7 +216,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
 			// SUBMITTED event type below.
-			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: existing}); err != nil {
+			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: report.Existing}); err != nil {
 				return err
 			}
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)

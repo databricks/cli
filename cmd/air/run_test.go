@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -192,19 +194,13 @@ func TestRunSubmitYAMLIdempotencyTokenReturnsExistingRun(t *testing.T) {
 
 func TestRunSubmitJSONReportsExistingRun(t *testing.T) {
 	srvURL := idempotentSubmitServer(t)
-	decode := func(out string) runResult {
-		var envelope struct {
-			Data runResult `json:"data"`
-		}
-		require.NoError(t, json.Unmarshal([]byte(out), &envelope), out)
-		require.NotNil(t, envelope.Data.Existing)
-		return envelope.Data
-	}
 
-	first := decode(runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	first := decodeRunResult(t, runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	require.NotNil(t, first.Existing)
 	assert.False(t, *first.Existing)
 
-	second := decode(runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	second := decodeRunResult(t, runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "json-key"))
+	require.NotNil(t, second.Existing)
 	assert.True(t, *second.Existing)
 	assert.Equal(t, first.RunID, second.RunID)
 	assert.Equal(t, "PENDING", second.Status)
@@ -222,19 +218,35 @@ const earlierLaunchRunGet = `{
 	}]
 }`
 
+// runGetReply answers runs/get; submittedCommandPath is the command path the
+// preceding runs/submit sent.
+type runGetReply func(w http.ResponseWriter, r *http.Request, submittedCommandPath string)
+
+func staticRunGet(status int, body string) runGetReply {
+	return func(w http.ResponseWriter, _ *http.Request, _ string) {
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}
+}
+
 // existingRunServer serves `air run` with or without --watch. runs/get replies
-// with runGetStatus and runGetBody; the returned counter tracks its calls.
-func existingRunServer(t *testing.T, runGetStatus int, runGetBody string) (string, *atomic.Int32) {
+// via runGet; the returned counter tracks its calls.
+func existingRunServer(t *testing.T, runGet runGetReply) (string, *atomic.Int32) {
 	t.Helper()
 	var runGets atomic.Int32
+	var submittedCommandPath atomic.Value
+	submittedCommandPath.Store("")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
+			var req jobs.SubmitRun
+			if json.NewDecoder(r.Body).Decode(&req) == nil && len(req.Tasks) > 0 && req.Tasks[0].AiRuntimeTask != nil && len(req.Tasks[0].AiRuntimeTask.Deployments) > 0 {
+				submittedCommandPath.Store(req.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
+			}
 			_, _ = w.Write([]byte(`{"run_id": 777}`))
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
 			runGets.Add(1)
-			w.WriteHeader(runGetStatus)
-			_, _ = w.Write([]byte(runGetBody))
+			runGet(w, r, submittedCommandPath.Load().(string))
 		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
 			_, _ = w.Write([]byte(`{"log_records": [
 				{"time_unix_nano": 1700000002000000000, "body": "step 2", "node_index": 0},
@@ -248,8 +260,18 @@ func existingRunServer(t *testing.T, runGetStatus int, runGetBody string) (strin
 	return srv.URL, &runGets
 }
 
+// decodeRunResult returns the data of a non-watch `air run -o json` envelope.
+func decodeRunResult(t *testing.T, out string) runResult {
+	t.Helper()
+	var envelope struct {
+		Data runResult `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(out), &envelope), out)
+	return envelope.Data
+}
+
 func TestRunWatchExistingRunPrintsBeforeLogs(t *testing.T) {
-	srvURL, _ := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+	srvURL, _ := existingRunServer(t, staticRunGet(http.StatusOK, earlierLaunchRunGet))
 
 	out := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--watch", "--idempotency-key", "watch-key")
 	existingLine := `Returned existing workload with Job Run ID: 777 (idempotency key "watch-key" was already used)`
@@ -274,10 +296,10 @@ func TestRunExistingRunLookupByOutputMode(t *testing.T) {
 		{name: "watch json", out: flags.OutputJSON, args: []string{"--watch"}, wantLookups: 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			generatedURL, generatedRunGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+			generatedURL, generatedRunGets := existingRunServer(t, staticRunGet(http.StatusOK, earlierLaunchRunGet))
 			runIdempotentSubmit(t, generatedURL, tc.out, minimalConfig, tc.args...)
 
-			userKeyURL, userKeyRunGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+			userKeyURL, userKeyRunGets := existingRunServer(t, staticRunGet(http.StatusOK, earlierLaunchRunGet))
 			runIdempotentSubmit(t, userKeyURL, tc.out, minimalConfig, append(tc.args, "--idempotency-key", "mode-key")...)
 
 			assert.Equal(t, tc.wantLookups, userKeyRunGets.Load()-generatedRunGets.Load())
@@ -285,41 +307,70 @@ func TestRunExistingRunLookupByOutputMode(t *testing.T) {
 	}
 }
 
-func TestRunSubmitExistingRunLookupTreatsUnknownAsNew(t *testing.T) {
+func TestRunSubmitExistingRunMatchesLaunchDirAcrossPathPrefixes(t *testing.T) {
+	// The backend echoes this submit's own command path in another prefix form.
+	srvURL, _ := existingRunServer(t, func(w http.ResponseWriter, _ *http.Request, submitted string) {
+		echoed := strings.TrimPrefix(submitted, "/Workspace")
+		require.NotEqual(t, submitted, echoed)
+		_, _ = fmt.Fprintf(w, `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {"deployments": [{"command_path": %q}]}}]}`, echoed)
+	})
+
+	out := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "prefix-key")
+	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
+
+	result := decodeRunResult(t, runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "prefix-key"))
+	require.NotNil(t, result.Existing)
+	assert.False(t, *result.Existing)
+}
+
+func TestRunSubmitExistingRunLookupReportsUnknown(t *testing.T) {
 	for _, tc := range []struct {
-		name         string
-		runGetStatus int
-		runGetBody   string
+		name   string
+		runGet runGetReply
 	}{
 		{
-			name:         "runs/get fails",
-			runGetStatus: http.StatusNotFound,
-			runGetBody:   `{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "run not found"}`,
+			name:   "runs/get fails",
+			runGet: staticRunGet(http.StatusNotFound, `{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "run not found"}`),
 		},
 		{
-			name:         "no deployment",
-			runGetStatus: http.StatusOK,
-			runGetBody:   `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {}}]}`,
+			name: "runs/get times out",
+			runGet: func(_ http.ResponseWriter, r *http.Request, _ string) {
+				<-r.Context().Done()
+			},
 		},
 		{
-			name:         "empty command path",
-			runGetStatus: http.StatusOK,
-			runGetBody:   `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {"deployments": [{}]}}]}`,
+			name:   "no deployment",
+			runGet: staticRunGet(http.StatusOK, `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {}}]}`),
+		},
+		{
+			name:   "empty command path",
+			runGet: staticRunGet(http.StatusOK, `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {"deployments": [{}]}}]}`),
+		},
+		{
+			name:   "unrecognized command path",
+			runGet: staticRunGet(http.StatusOK, `{"run_id": 777, "tasks": [{"run_id": 778, "ai_runtime_task": {"deployments": [{"command_path": "/Users/u@example.com/train.sh"}]}}]}`),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			srvURL, runGets := existingRunServer(t, tc.runGetStatus, tc.runGetBody)
+			defaultTimeout := existingRunLookupTimeout
+			existingRunLookupTimeout = 50 * time.Millisecond
+			t.Cleanup(func() { existingRunLookupTimeout = defaultTimeout })
+			srvURL, runGets := existingRunServer(t, tc.runGet)
 
 			out := runIdempotentSubmit(t, srvURL, flags.OutputText, minimalConfig, "--idempotency-key", "unknown-key")
 			assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
 			assert.NotContains(t, out, "Returned existing workload")
-			assert.Equal(t, int32(1), runGets.Load())
+
+			jsonOut := runIdempotentSubmit(t, srvURL, flags.OutputJSON, minimalConfig, "--idempotency-key", "unknown-key")
+			assert.Nil(t, decodeRunResult(t, jsonOut).Existing)
+			assert.NotContains(t, jsonOut, `"existing"`)
+			assert.Equal(t, int32(2), runGets.Load())
 		})
 	}
 }
 
 func TestRunSubmitContainersSkipsExistingRunLookup(t *testing.T) {
-	srvURL, runGets := existingRunServer(t, http.StatusOK, earlierLaunchRunGet)
+	srvURL, runGets := existingRunServer(t, staticRunGet(http.StatusOK, earlierLaunchRunGet))
 	config := `
 experiment_name: my-run
 compute:
@@ -334,6 +385,9 @@ containers:
 
 	out := runIdempotentSubmit(t, srvURL, flags.OutputText, config, "--idempotency-key", "container-key")
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
+
+	jsonOut := runIdempotentSubmit(t, srvURL, flags.OutputJSON, config, "--idempotency-key", "container-key")
+	assert.NotContains(t, jsonOut, `"existing"`)
 	assert.Zero(t, runGets.Load())
 }
 

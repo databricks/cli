@@ -648,6 +648,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	defer s.LockUnlock()()
 
 	// A resent request with the same non-empty token returns the run that token started.
+	// JobRunIdempotency is shared by runs/run-now and runs/submit.
 	if request.IdempotencyToken != "" {
 		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
 			return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
