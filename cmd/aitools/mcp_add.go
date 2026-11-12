@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,17 +18,20 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
-// Per-agent results of `mcp add`.
+// Per-agent results of `mcp add`. installed means the agent's entry was added or changed; reasserted
+// means the file already held the same entry.
 const (
 	statusInstalled  = "installed"
 	statusReasserted = "reasserted"
@@ -93,7 +97,8 @@ type addRequest struct {
 	explicit    bool
 	force       bool
 	binary      string
-	configFile  string
+	// configFile is the config file pinned into the entries, "" when DATABRICKS_CONFIG_FILE is unset.
+	configFile string
 	// env is the entry env: DATABRICKS_CONFIG_FILE when it was set.
 	env map[string]string
 }
@@ -140,7 +145,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 				out.ErrorCategory = errorCategory(top)
 			}
 			if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
-				return err
+				return errors.Join(runErr, err)
 			}
 			if runErr != nil {
 				return root.ErrAlreadyPrinted
@@ -157,8 +162,10 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	return cmd
 }
 
-// runMcpAdd installs the requested servers and fills out. A failure of an agent named with
-// --agents is returned as an agentErrors; detected agents only report theirs.
+// runMcpAdd installs the requested servers and fills out. Every refusal that does not need the
+// workspace comes before the first request: the flags, the agents, the binary name, and the binding of
+// each service that a recorded entry already holds. A failure of an agent named with --agents is
+// returned as an agentErrors; detected agents only report theirs.
 func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode bool, out *addOutput) error {
 	names := splitAndTrim(f.names)
 	agentNames := splitAndTrim(f.agents)
@@ -172,6 +179,18 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := validateLocation(location); err != nil {
 		return err
 	}
+	fullNames, err := serviceNames(location, names)
+	if err != nil {
+		return err
+	}
+	targets, explicit, err := targetAgents(ctx, agentNames)
+	if err != nil {
+		return err
+	}
+	binary, absolute := mcpBinaryPath()
+	if !mcpconfig.IsDatabricksBinary(binary) {
+		return failure(protos.AitoolsErrorCategoryUncategorized, nil, "%s is not the databricks binary; coding agents start MCP servers with databricks or databricks.exe", binary)
+	}
 
 	profileName, err := resolveProfile(ctx, profileFlag(cmd))
 	if err != nil {
@@ -181,44 +200,44 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := requireProfile(ctx, profileName); err != nil {
 		return err
 	}
-	w, err := profileClient(profileName)
+
+	state, err := mcp.LoadState(ctx)
+	if err != nil {
+		return err
+	}
+	for _, name := range fullNames {
+		if err := mcp.CheckBinding(ctx, state, name, profileName); err != nil {
+			return err
+		}
+	}
+
+	configFile, pinned, err := addConfigFile(ctx)
+	if err != nil {
+		return err
+	}
+	w, err := profileClient(ctx, profileName, configFile)
 	if err != nil {
 		return err
 	}
 	out.Host = w.Config.Host
-	workspaceID, err := workspaceIDOf(ctx, w)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return err
-	}
-
-	targets, explicit, err := targetAgents(ctx, agentNames)
-	if err != nil {
-		return err
+		return fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err)
 	}
 
 	services, err := mcp.Discover(ctx, w, location)
 	if err != nil {
 		return describeListError(profileName, err)
 	}
-	picked, err := pickServices(location, names, services)
+	picked, err := pickServices(location, fullNames, services)
+	if err != nil {
+		return err
+	}
+	plans, err := planAdds(ctx, f.name, profileName, state, picked, targets)
 	if err != nil {
 		return err
 	}
 
-	state, err := mcp.LoadState(ctx)
-	if err != nil {
-		return err
-	}
-	plans, err := planAdds(ctx, f.name, location, profileName, w.Config.Host, state, picked, targets)
-	if err != nil {
-		return err
-	}
-
-	configFile, err := pinnedConfigFile(ctx)
-	if err != nil {
-		return err
-	}
-	binary, absolute := mcpBinaryPath()
 	req := addRequest{
 		jsonMode:    jsonMode,
 		profile:     profileName,
@@ -229,10 +248,10 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		explicit:    explicit,
 		force:       f.force,
 		binary:      binary,
-		configFile:  configFile,
+		configFile:  pinned,
 	}
-	if configFile != "" {
-		req.env = map[string]string{"DATABRICKS_CONFIG_FILE": configFile}
+	if pinned != "" {
+		req.env = map[string]string{mcpconfig.ConfigFileEnv: pinned}
 	}
 	if !absolute && !jsonMode {
 		cmdio.LogString(ctx, "Note: databricks is not an absolute path; coding agents must find it on PATH to start the MCP servers.")
@@ -245,10 +264,12 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	out.Servers = servers
 
-	if err := recordInstalls(ctx, req, plans, servers); err != nil {
-		return err
-	}
+	// The results are printed even when the state cannot be saved: the agent files were written.
+	recordErr := recordInstalls(ctx, req, plans, servers)
 	printAddResults(ctx, req, servers)
+	if recordErr != nil {
+		return recordErr
+	}
 	return agentFailureError(req, servers)
 }
 
@@ -258,8 +279,10 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 		if len(names) != 1 {
 			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name needs exactly one service in --names")
 		}
-		if !mcpconfig.ValidServerName(f.name) {
-			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %q may only contain letters, digits, '_' and '-'", f.name)
+		// A name must come out of mcp.Sanitize unchanged apart from case, so that mcp__<name>__<tool>
+		// splits the same way as a generated name.
+		if mcp.Sanitize(f.name) != strings.ToLower(f.name) {
+			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %q is not a valid server name: use letters, digits, '-' and '_', with no \"__\" and no leading or trailing '-' or '_'", f.name)
 		}
 	}
 
@@ -310,34 +333,43 @@ func requireProfile(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	return failure(categoryProfileNotFound, nil, "Profile %s not found in %s", name, path)
+	return failure(protos.AitoolsErrorCategory(mcp.BindProfileNotFound), nil, "profile %s not found in %s", name, filepath.ToSlash(path))
 }
 
-// profileClient returns a workspace client bound to exactly the named profile. It never prompts
-// and never falls back to another profile or to environment credentials.
-func profileClient(name string) (*databricks.WorkspaceClient, error) {
-	cfg := &config.Config{Profile: name, Loaders: databrickscfg.ProfileAuthLoaders}
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err == nil {
-		err = w.Config.Authenticate(&http.Request{Header: make(http.Header)})
+// addConfigFile returns the config file that the server binds to, resolved as Bind resolves it, and the
+// file to pin into the agent entries: the same file when DATABRICKS_CONFIG_FILE is set, "" otherwise.
+func addConfigFile(ctx context.Context) (path, pinned string, err error) {
+	value := env.Get(ctx, mcpconfig.ConfigFileEnv)
+	path, err = mcp.ResolveConfigFile(ctx, value)
+	if err != nil || value == "" {
+		return path, "", err
 	}
+	return path, path, nil
+}
+
+// profileClient returns a workspace client bound to exactly the named profile in configFile. Its loaders
+// are the ones Bind uses: the profile and the non-auth environment. The environment's credentials are
+// never sent to the profile's host.
+func profileClient(ctx context.Context, name, configFile string) (*databricks.WorkspaceClient, error) {
+	cfg := &config.Config{
+		Profile:    name,
+		ConfigFile: configFile,
+		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+	}
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
-		return nil, failure(categoryAuthFailed, err, "%s\nRun: databricks auth login --profile %s", err, name)
+		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
+		return nil, err
+	}
+	// Authenticate only writes headers onto req, which is never sent.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := w.Config.Authenticate(req); err != nil {
+		return nil, mcp.AuthError(name, err)
 	}
 	return w, nil
-}
-
-// workspaceIDOf returns the workspace ID recorded for the profile: its workspace_id when set,
-// otherwise the ID that the host reports.
-func workspaceIDOf(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	if id := w.Config.WorkspaceID; id != "" && id != profile.WorkspaceIDNone {
-		return id, nil
-	}
-	id, err := w.CurrentWorkspaceID(ctx)
-	if err != nil {
-		return "", fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err)
-	}
-	return strconv.FormatInt(id, 10), nil
 }
 
 // describeListError names the profile that made a failed listing call. The
@@ -364,7 +396,9 @@ func targetAgents(ctx context.Context, names []string) ([]*agents.Agent, bool, e
 	}
 	var detected []*agents.Agent
 	for _, a := range agents.MCPAgents() {
-		if a.Detected(ctx) {
+		installed, err := mcpInstalled(ctx, a)
+		// An error is kept, so the agent reports it when its config is written.
+		if installed || err != nil {
 			detected = append(detected, a)
 		}
 	}
@@ -401,22 +435,39 @@ func mcpAgentNames() []string {
 	return names
 }
 
-// pickServices maps --names to the discovered services of location. A full name must be inside
-// location; a leaf name is looked up in it.
+// serviceNames returns the full name of each service in --names. A leaf name is resolved in location. A
+// full name must be in location, so its catalog and schema must match it. Any other dotted name is refused,
+// since it cannot be either.
+func serviceNames(location string, names []string) ([]string, error) {
+	full := make([]string, 0, len(names))
+	for _, name := range names {
+		switch parts := strings.Split(name, "."); len(parts) {
+		case 1:
+			full = append(full, location+"."+name)
+		case 3:
+			if !strings.EqualFold(parts[0]+"."+parts[1], location) {
+				return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is not in %s; pass --location to match its schema", name, location)
+			}
+			full = append(full, name)
+		default:
+			return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is not a service name: use a leaf such as github or a full name such as system.ai.github", name)
+		}
+	}
+	return full, nil
+}
+
+// pickServices maps the full names of --names to the discovered services of location. Unity Catalog names
+// are case-insensitive, so the comparison is too.
 func pickServices(location string, names []string, services []mcp.Service) ([]mcp.Service, error) {
 	var picked []mcp.Service
 	for _, name := range names {
-		leaf, inLocation := leafName(name, location)
-		if !inLocation {
-			return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is not in %s; pass --location to match its schema", name, location)
-		}
-		i := slices.IndexFunc(services, func(s mcp.Service) bool { return strings.EqualFold(s.Leaf, leaf) })
+		i := slices.IndexFunc(services, func(s mcp.Service) bool { return strings.EqualFold(s.FullName, name) })
 		if i < 0 {
 			available := make([]string, 0, len(services))
 			for _, s := range services {
 				available = append(available, s.FullName)
 			}
-			return nil, failure(categoryServiceNotFound, nil, "%s.%s is not an MCP service in %s. Available: %s", location, leaf, location, strings.Join(available, ", "))
+			return nil, failure(categoryServiceNotFound, nil, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
 		}
 		if !slices.ContainsFunc(picked, func(s mcp.Service) bool { return s.FullName == services[i].FullName }) {
 			picked = append(picked, services[i])
@@ -425,20 +476,11 @@ func pickServices(location string, names []string, services []mcp.Service) ([]mc
 	return picked, nil
 }
 
-// leafName returns the leaf of a name given as a leaf or as a full name, and whether a full
-// name is inside location. Unity Catalog names are case-insensitive, so the comparison is too.
-func leafName(name, location string) (string, bool) {
-	parts := strings.Split(name, ".")
-	if len(parts) != 3 {
-		return name, true
-	}
-	return parts[2], strings.EqualFold(parts[0]+"."+parts[1], location)
-}
-
 // planAdds chooses the server name of each picked service before anything is written. A service
 // already installed for this profile keeps its name. A new name avoids names of other state
-// entries and of unmanaged entries in the target agents.
-func planAdds(ctx context.Context, nameFlag, location, profileName, host string, state *mcp.State, picked []mcp.Service, targets []*agents.Agent) ([]addPlan, error) {
+// entries and of unmanaged entries in the target agents. The entries have been checked against the
+// profile by mcp.CheckBinding.
+func planAdds(ctx context.Context, nameFlag, profileName string, state *mcp.State, picked []mcp.Service, targets []*agents.Agent) ([]addPlan, error) {
 	taken := map[string]bool{}
 	for i := range state.Servers {
 		taken[state.Servers[i].Name] = true
@@ -452,10 +494,6 @@ func planAdds(ctx context.Context, nameFlag, location, profileName, host string,
 	plans := make([]addPlan, 0, len(picked))
 	for _, svc := range picked {
 		entry := stateEntry(state, svc.FullName, profileName)
-		if entry != nil && mcp.NormalizeHost(entry.Host) != mcp.NormalizeHost(host) {
-			return nil, failure(categoryProfileHostChanged, nil, "MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: databricks aitools mcp remove --profile %s and add it again.", entry.Name, entry.Host, profileName, host, profileName)
-		}
-
 		var name string
 		switch {
 		case entry != nil && nameFlag != "" && nameFlag != entry.Name:
@@ -502,15 +540,6 @@ func stateEntry(state *mcp.State, service, profileName string) *mcp.Entry {
 	return &state.Servers[i]
 }
 
-// pinnedConfigFile returns the absolute DATABRICKS_CONFIG_FILE, or "" when it is unset.
-func pinnedConfigFile(ctx context.Context) (string, error) {
-	value := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	if value == "" {
-		return "", nil
-	}
-	return filepath.Abs(value)
-}
-
 // installServer writes one server into every target agent. Each agent's result is reported; one
 // agent's failure does not stop the others.
 func installServer(ctx context.Context, req addRequest, plan addPlan) addServerOutput {
@@ -522,12 +551,14 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 	}
 	for _, a := range req.agents {
 		var path string
+		var status agentconfig.Status
 		var err error
-		if req.explicit && !a.Detected(ctx) {
-			err = notInstalledError(ctx, a)
-		} else {
+		if req.explicit {
+			err = requireInstalled(ctx, a)
+		}
+		if err == nil {
 			args := []string{"aitools", "mcp", "serve", "--profile", req.profile, "--service", plan.service.FullName, "--agent", a.Name}
-			path, _, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
+			path, status, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
 		}
 
 		result := addAgentOutput{Name: a.Name}
@@ -537,35 +568,80 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 			result.ErrorCategory = errorCategory(err)
 			result.Message = err.Error()
 			result.err = err
-		case plan.installedFor(a.Name):
+		case status == agentconfig.StatusUnchanged:
 			result.Status = statusReasserted
-			result.Path = path
+			result.Path = filepath.ToSlash(path)
 		default:
 			result.Status = statusInstalled
-			result.Path = path
+			result.Path = filepath.ToSlash(path)
 		}
 		out.Agents = append(out.Agents, result)
 	}
 	return out
 }
 
-// notInstalledError is the failure of an agent named with --agents that is not installed. Writing its
-// config would create its config directory, so the agent is refused instead.
-func notInstalledError(ctx context.Context, a *agents.Agent) error {
-	dir, err := a.ConfigDir(ctx)
+// requireInstalled fails when an agent named with --agents has neither its MCP config file nor the
+// directory that holds it. Writing the config would create that directory, so the agent is refused.
+func requireInstalled(ctx context.Context, a *agents.Agent) error {
+	installed, err := mcpInstalled(ctx, a)
 	if err != nil {
 		return err
 	}
-	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed (no %s); install it first or leave it out of --agents", a.DisplayName, dir)
+	if installed {
+		return nil
+	}
+	dir, err := mcpDir(ctx, a)
+	if err != nil {
+		return err
+	}
+	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed (no %s); install it first or leave it out of --agents", a.DisplayName, filepath.ToSlash(dir))
 }
 
-// installedFor reports whether state already records the server for the agent.
-func (p addPlan) installedFor(agent string) bool {
-	if p.entry == nil {
-		return false
+// mcpInstalled reports whether the agent's MCP config file or the directory that holds it exists.
+func mcpInstalled(ctx context.Context, a *agents.Agent) (bool, error) {
+	path, err := a.MCP.Path(ctx)
+	if err != nil {
+		return false, err
 	}
-	_, ok := p.entry.Agents[agent]
-	return ok
+	exists, err := pathExists(path)
+	if err != nil || exists {
+		return exists, err
+	}
+	dir, err := mcpDir(ctx, a)
+	if err != nil {
+		return false, err
+	}
+	return pathExists(dir)
+}
+
+// mcpDir returns the directory that holds the agent's MCP config file. Claude Code keeps that file in the
+// home directory, which always exists, so its config directory stands for it instead.
+func mcpDir(ctx context.Context, a *agents.Agent) (string, error) {
+	path, err := a.MCP.Path(ctx)
+	if err != nil {
+		return "", err
+	}
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Dir(path)
+	if filepath.Clean(dir) == filepath.Clean(home) {
+		return a.ConfigDir(ctx)
+	}
+	return dir, nil
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, fs.ErrNotExist):
+		return false, nil
+	default:
+		return false, err
+	}
 }
 
 // recordInstalls adds each server that reached at least one agent to the state file. The file is
@@ -623,21 +699,22 @@ func recordServer(state *mcp.State, req addRequest, plan addPlan, paths map[stri
 	}
 }
 
-// agentFailureError returns the failures of agents named with --agents. Agents picked by detection
-// only warn, and the results already show them.
+// agentFailureError returns the agents' failures as an agentErrors. They fail the command when an agent was
+// named with --agents, or when no agent was installed at all. Otherwise detected agents only warn, as in
+// install, and the results already show them.
 func agentFailureError(req addRequest, servers []addServerOutput) error {
-	if !req.explicit {
-		return nil
-	}
 	var errs []error
+	installed := false
 	for _, server := range servers {
 		for _, a := range server.Agents {
 			if a.err != nil {
 				errs = append(errs, a.err)
+			} else {
+				installed = true
 			}
 		}
 	}
-	if len(errs) == 0 {
+	if len(errs) == 0 || (!req.explicit && installed) {
 		return nil
 	}
 	return &agentErrors{err: errors.Join(errs...)}
@@ -674,12 +751,12 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 			if a.Status != statusFailed {
 				succeeded = true
 			}
-			if a.Name == cursorAgent && a.Status != statusFailed {
+			if a.Name == cursorAgent && a.Status == statusInstalled {
 				cursor = true
 			}
 		}
 		if server.SignInRequired && succeeded {
-			cmdio.LogString(ctx, fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, server.Service, req.profile))
+			cmdio.LogString(ctx, fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, shellquote.BashArg(server.Service), shellquote.BashArg(req.profile)))
 		}
 		if cursor {
 			cmdio.LogString(ctx, cursorApprovalHint(server.Name))

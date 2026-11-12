@@ -112,8 +112,8 @@ func TestErrorCategoryUsesTypedErrorsOnly(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, errorCategory(typed))
 	assert.Equal(t, "unknown agent \"pi\"", typed.Error())
 
-	wrapped := failure(categoryAuthFailed, errors.New("boom"), "%s", "boom")
-	assert.Equal(t, categoryAuthFailed, errorCategory(wrapped))
+	wrapped := failure(categoryServiceNotFound, errors.New("boom"), "%s", "boom")
+	assert.Equal(t, categoryServiceNotFound, errorCategory(wrapped))
 
 	configInvalid := &os.PathError{Op: "parse", Path: "x", Err: agentconfig.ErrConfigInvalid}
 	assert.Equal(t, categoryAgentConfigInvalid, errorCategory(configInvalid))

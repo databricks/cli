@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -17,13 +19,11 @@ import (
 // defaultMCPLocation is the schema that ships the Databricks managed MCP services.
 const defaultMCPLocation = "system.ai"
 
-// Error categories that the telemetry enum does not define yet.
-// The JSON output reports them by name.
+// Error categories that the telemetry enum does not define yet. The JSON output reports them by name.
+// The binding categories come from mcp.BindCategory, which has the same names.
 const (
 	categoryAgentConfigInvalid protos.AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
-	categoryAuthFailed         protos.AitoolsErrorCategory = "AUTH_FAILED"
-	categoryProfileNotFound    protos.AitoolsErrorCategory = "PROFILE_NOT_FOUND"
-	categoryProfileHostChanged protos.AitoolsErrorCategory = "PROFILE_HOST_CHANGED"
+	categoryNameConflict       protos.AitoolsErrorCategory = "MCP_NAME_CONFLICT"
 	categoryServiceNotFound    protos.AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
 )
 
@@ -56,16 +56,22 @@ func failure(category protos.AitoolsErrorCategory, cause error, format string, a
 	return &cliError{category: category, message: fmt.Sprintf(format, args...), cause: cause}
 }
 
-// errorCategory classifies an error by its typed errors only, never by its text.
-// Errors without a typed category are UNCATEGORIZED.
+// errorCategory classifies an error by its typed errors only, never by its text. Failures without a
+// category of their own fall through to the install classification, as in the other aitools commands.
 func errorCategory(err error) protos.AitoolsErrorCategory {
 	if ce, ok := errors.AsType[*cliError](err); ok {
 		return ce.category
 	}
-	if errors.Is(err, agentconfig.ErrConfigInvalid) {
-		return categoryAgentConfigInvalid
+	if be, ok := errors.AsType[*mcp.BindError](err); ok {
+		return protos.AitoolsErrorCategory(be.Category)
 	}
-	return protos.AitoolsErrorCategoryUncategorized
+	switch {
+	case errors.Is(err, agentconfig.ErrConfigInvalid):
+		return categoryAgentConfigInvalid
+	case errors.Is(err, agentconfig.ErrNotOwned):
+		return categoryNameConflict
+	}
+	return classifyInstallError(err)
 }
 
 // resolveProfile picks the profile a non-interactive command binds to: the
@@ -93,7 +99,7 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", path)
+		return "", fmt.Errorf("no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", filepath.ToSlash(path))
 	case 1:
 		return profiles[0].Name, nil
 	}
@@ -102,8 +108,5 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 
 // profileFlag returns the root --profile value, or "" when it is not set.
 func profileFlag(cmd *cobra.Command) string {
-	if f := cmd.Flag("profile"); f != nil {
-		return f.Value.String()
-	}
-	return ""
+	return cmd.Flag("profile").Value.String()
 }
