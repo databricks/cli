@@ -10,25 +10,27 @@ trace cat out.stderr.txt
 echo "stdout bytes: $(wc -c < out.stdout.txt | tr -d ' ')"
 
 # A state record for logfood that points at another host: the proxy never follows the profile.
-mkdir -p home/.databricks/aitools/mcp
-cat > home/.databricks/aitools/mcp/state.json <<'JSON'
+mkdir -p home/.databricks/aitools/skills
+cat > home/.databricks/aitools/skills/.state.json <<JSON
 {
-  "schema_version": 1,
-  "servers": [
-    {
-      "name": "genie_one_mcp-logfood",
-      "service": "system.ai.genie_one_mcp",
-      "profile": "logfood",
-      "host": "https://other.test",
-      "workspace_id": "",
-      "sign_in_required": false,
-      "command": "",
-      "config_file": "",
-      "agents": {},
-      "installed_at": "2026-01-01T00:00:00Z",
-      "cli_version": "0.0.0"
-    }
-  ]
+  "schema_version": 3,
+  "mcp": {
+    "servers": [
+      {
+        "name": "genie_one_mcp-logfood",
+        "service": "system.ai.genie_one_mcp",
+        "profile": "logfood",
+        "host": "https://other.test",
+        "workspace_id": "",
+        "sign_in_required": false,
+        "command": "",
+        "config_file": "$PWD/.databrickscfg",
+        "agents": {},
+        "installed_at": "2026-01-01T00:00:00Z",
+        "cli_version": "0.0.0"
+      }
+    ]
+  }
 }
 JSON
 

@@ -1,1 +1,1 @@
-No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL].
+No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
