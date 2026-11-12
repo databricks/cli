@@ -1,1 +1,0 @@
-* `databricks air run --help` now links the workload YAML reference and the `databricks-ai-runtime` agent skill, and `databricks air --help` notes that GPU pools are not required. ([#7581](https://github.com/databricks/cli/pull/7581))

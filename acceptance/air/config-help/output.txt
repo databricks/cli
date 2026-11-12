@@ -11,10 +11,6 @@ field, pass its path to -h as a separate argument:
   databricks air run -h config.compute                    one section
   databricks air run -h config.compute.accelerator_type   one field
 
-YAML reference:
-  AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config
-  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config
-
 Usage:
   databricks air run [flags]
 
@@ -41,9 +37,6 @@ Global Flags:
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
-
-Learn more:
-  Coding agent skill  databricks aitools install --skills-only --skills databricks-ai-runtime
 
 === schema overview
 
