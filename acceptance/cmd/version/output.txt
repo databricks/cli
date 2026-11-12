@@ -18,3 +18,26 @@ This is a development build; skipping the update check.
   "update_available": false,
   "development_build": true
 }
+
+=== version --check with a coding agent and no Databricks tooling
+
+>>> [CLI] version --check
+Databricks CLI v[CLI_VERSION]
+This is a development build; skipping the update check.
+Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.
+
+=== version --check --output json with a coding agent prints no tip
+
+>>> [CLI] version --check --output json
+{
+  "current_version": "[CLI_VERSION]",
+  "update_available": false,
+  "development_build": true
+}
+
+=== version --check from Claude Code prints only the root hint
+
+>>> [CLI] version --check
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
+This is a development build; skipping the update check.
