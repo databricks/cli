@@ -73,6 +73,11 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
 }
 
+const runHelpFooter = `
+Learn more:
+  Coding agent skill  databricks aitools install --skills-only --skills databricks-ai-runtime
+`
+
 func newRunCommand() *cobra.Command {
 	return newRunCommandWithValidationTimeout(dryRunValidationTimeout)
 }
@@ -97,7 +102,11 @@ field, pass its path to -h as a separate argument:
 
   databricks air run -h config                            all fields
   databricks air run -h config.compute                    one section
-  databricks air run -h config.compute.accelerator_type   one field`,
+  databricks air run -h config.compute.accelerator_type   one field
+
+YAML reference:
+  AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config`,
 		Example: `  # Submit and stream logs until the run finishes
   databricks air run -f workload.yaml --watch
 
@@ -116,6 +125,7 @@ field, pass its path to -h as a separate argument:
 			// Parent() is nil for a detached command (unit tests).
 			if parent := c.Parent(); parent != nil {
 				parent.HelpFunc()(c, args)
+				fmt.Fprint(c.OutOrStdout(), runHelpFooter)
 				return
 			}
 			_ = c.Usage()

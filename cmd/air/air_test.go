@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestNewRegistersAllSubcommands asserts the `air` command wires up every
@@ -116,4 +117,21 @@ func TestRunErrorOmitsDebugTipWhenDebugEnabled(t *testing.T) {
 
 	assert.Same(t, originalErr, err)
 	assert.NotContains(t, err.Error(), "use the --debug flag")
+}
+
+func TestRunHelpLinksYAMLReferenceAndSkill(t *testing.T) {
+	run := findSubcommand(t, New(), "run")
+	var out bytes.Buffer
+	run.SetOut(&out)
+	run.HelpFunc()(run, nil)
+	help := out.String()
+
+	reference := strings.Index(help, "YAML reference:\n"+
+		"  AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config\n"+
+		"  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config\n")
+	require.NotEqual(t, -1, reference)
+	assert.Less(t, reference, strings.Index(help, "Usage:"), "the YAML reference belongs with the description")
+
+	assert.True(t, strings.HasSuffix(help, "Learn more:\n  Coding agent skill  databricks aitools install --skills-only --skills databricks-ai-runtime\n"))
+	assert.Equal(t, 1, strings.Count(help, "Learn more:"), "the air footer must not also print")
 }
