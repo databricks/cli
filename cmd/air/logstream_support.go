@@ -238,7 +238,7 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 	if req.attempt < 0 && status.terminal() && status.latestAttempt > 0 {
 		retry := "0"
 		if status.latestAttempt > 1 {
-			retry = fmt.Sprintf("N, from 0 to %d,", status.latestAttempt-1)
+			retry = fmt.Sprintf("N (0 through %d)", status.latestAttempt-1)
 		}
 		msg = fmt.Sprintf("%s. Earlier retries may have logs; pass --retry %s to see them", strings.TrimRight(msg, "."), retry)
 	}

@@ -35,7 +35,7 @@ func TestRunLogsSnapshotFailedRetryWithoutLogs(t *testing.T) {
 	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123)
 	require.NoError(t, err)
 	assert.Equal(t, "No logs available for run 123. Run terminated in state FAILED: Out of capacity. "+
-		"Earlier retries may have logs; pass --retry N, from 0 to 1, to see them\n"+
+		"Earlier retries may have logs; pass --retry N (0 through 1) to see them\n"+
 		"\nMLflow URL (retry 0): "+srv.URL+"/ml/experiments/E1/runs/R1/artifacts/logs/node_0\n", got)
 }
 
