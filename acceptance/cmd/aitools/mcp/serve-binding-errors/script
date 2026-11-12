@@ -7,7 +7,7 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 title "The bound profile is not in the config file"
 errcode $CLI aitools mcp serve --profile gone --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
 trace cat out.stderr.txt
-echo "stdout bytes: $(wc -c < out.stdout.txt)"
+echo "stdout bytes: $(wc -c < out.stdout.txt | tr -d ' ')"
 
 # A state record for logfood that points at another host: the proxy never follows the profile.
 mkdir -p home/.databricks/aitools/mcp
@@ -35,7 +35,7 @@ JSON
 title "The profile now points at another host than the one recorded"
 errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
 trace cat out.stderr.txt
-echo "stdout bytes: $(wc -c < out.stdout.txt)"
+echo "stdout bytes: $(wc -c < out.stdout.txt | tr -d ' ')"
 
 title "Flags are required and validated before the binding checks"
 errcode $CLI aitools mcp serve --service system.ai.genie_one_mcp < requests.ndjson > out.stdout.txt 2> out.stderr.txt
