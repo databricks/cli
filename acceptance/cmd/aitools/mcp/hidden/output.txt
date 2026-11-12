@@ -1,8 +1,6 @@
 
 === The mcp group is hidden from aitools help
-
->>> [CLI] aitools --help
-0
+aitools help does not list mcp
 
 === The hidden group still answers help for its subcommands
 

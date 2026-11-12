@@ -4,6 +4,9 @@ mkdir -p home/.claude
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
+# The services of system.ai, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' > /dev/null
+
 title "An unparsable config fails only its agent; the other agent still installs, and the command exits 1"
 errcode trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex,claude-code --output json
 
