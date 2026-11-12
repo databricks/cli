@@ -14,4 +14,4 @@ title "Codex config"
 trace cat home/.codex/config.toml
 
 title "State records the binding, without the time and CLI version"
-trace jq 'del(.servers[].installed_at, .servers[].cli_version)' home/.databricks/aitools/mcp/state.json
+trace jq '.mcp | del(.servers[].installed_at, .servers[].cli_version)' home/.databricks/aitools/skills/.state.json

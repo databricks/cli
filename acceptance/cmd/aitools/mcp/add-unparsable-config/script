@@ -11,4 +11,4 @@ title "The broken file is left as it was"
 trace cat home/.codex/config.toml
 
 title "State records only the agent that succeeded"
-trace jq '[.servers[] | {name, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json
+trace jq '.mcp | [.servers[] | {name, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json

@@ -34,7 +34,7 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 
 === State holds one entry per profile
 
->>> jq [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp/state.json
+>>> jq .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
 [
   {
     "name": "genie_one_mcp-logfood",
