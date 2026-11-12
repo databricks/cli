@@ -591,9 +591,12 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 
 	pluginCount := 0
 	if len(pluginItems) > 0 {
+		// Plugins install from the agent's marketplace, so the skills ref only
+		// labels the recorded version. Record it as unknown when unresolved.
 		ref, _, err := installer.GetSkillsRef(ctx)
 		if err != nil {
-			return outcomes, err
+			log.Debugf(ctx, "Recording plugin version as unknown: %v", err)
+			ref = ""
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {
@@ -703,9 +706,9 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 		}
 		out.Agents = append(out.Agents, entry)
 	}
-	// A top-level failure (skills-group install, ref lookup, plugin recording)
-	// has no per-agent entry, so surface it here too; otherwise the consumer sees
-	// a non-zero exit with an empty agents array and no reason. Per-agent failures
+	// A top-level failure (skills-group install, plugin recording) has no
+	// per-agent entry, so surface it here too; otherwise the consumer sees a
+	// non-zero exit with an empty agents array and no reason. Per-agent failures
 	// stay in the agents entries above and are not repeated here.
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()
