@@ -31,5 +31,5 @@ trace retry --until "Waiting for sign-in" cat add.txt
 trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 wait $PID
 trace cat add.txt
-trace jq '[.servers[] | {name, service, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json
+trace jq '.mcp | [.servers[] | {name, service, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json
 rm login.txt add.txt

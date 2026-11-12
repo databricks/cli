@@ -78,7 +78,7 @@ Waiting for sign-in...
 Signed in to system.ai.github on profile logfood.
 Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 
->>> jq [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp/state.json
+>>> jq .mcp | [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
 [
   {
     "name": "github-logfood",

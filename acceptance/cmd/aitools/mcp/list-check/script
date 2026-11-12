@@ -15,7 +15,7 @@ trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-cr
 trace $CLI aitools mcp list --check
 
 title "A recorded binary that is gone is reported as missing"
-jq '(.servers[] | select(.service == "system.ai.genie_one_mcp") | .command) = "/nonexistent/databricks"' home/.databricks/aitools/mcp/state.json > state.tmp && mv state.tmp home/.databricks/aitools/mcp/state.json
+jq '(.mcp.servers[] | select(.service == "system.ai.genie_one_mcp") | .command) = "/nonexistent/databricks"' home/.databricks/aitools/skills/.state.json > state.tmp && mv state.tmp home/.databricks/aitools/skills/.state.json
 trace $CLI aitools mcp list --check --output json
 
 title "logout ends the sign-in; list --check shows it needed again"
