@@ -436,7 +436,7 @@ func gooseConfigDir(ctx context.Context) (string, error) {
 // claudeMCPPath returns Claude Code's global config file, which holds user-scope
 // mcpServers next to auth state. It sits in the home directory, not in ~/.claude;
 // CLAUDE_CONFIG_DIR moves it to <dir>/.claude.json.
-// https://code.claude.com/docs/en/env-vars
+// See https://code.claude.com/docs/en/env-vars.
 func claudeMCPPath(ctx context.Context) (string, error) {
 	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
 		return filepath.Join(dir, ".claude.json"), nil
@@ -445,6 +445,7 @@ func claudeMCPPath(ctx context.Context) (string, error) {
 }
 
 // claudeMCPEntry matches `claude mcp add`, which always writes an env map, even an empty one.
+// See https://code.claude.com/docs/en/mcp.
 func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
 	if len(vars) == 0 {
 		vars = map[string]string{}
@@ -453,7 +454,7 @@ func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[strin
 }
 
 // codexMCPPath returns Codex's config.toml, which honors CODEX_HOME.
-// https://learn.chatgpt.com/docs/config-file/config-advanced
+// See https://learn.chatgpt.com/docs/config-file/config-advanced.
 func codexMCPPath(ctx context.Context) (string, error) {
 	if home := env.Get(ctx, "CODEX_HOME"); home != "" {
 		return filepath.Join(home, "config.toml"), nil
@@ -461,32 +462,56 @@ func codexMCPPath(ctx context.Context) (string, error) {
 	return homeSubdir(".codex", "config.toml")(ctx)
 }
 
-// openCodeMCPPath returns OpenCode's config file. OpenCode reads opencode.json or
-// opencode.jsonc, and the docs do not say which wins when both exist, so an
-// existing opencode.jsonc is used rather than creating a second file beside it.
-// The file may contain comments; a file we cannot parse is refused, never rewritten.
-// https://opencode.ai/docs/config/
+// openCodeMCPPath returns OpenCode's config file: opencode.jsonc when it exists,
+// and opencode.json otherwise. A symbolic link counts as existing, so a dangling
+// link is chosen and the write refuses it. When both files exist, the CLI refuses
+// to choose, since it cannot tell which one OpenCode reads. The file may contain
+// comments; a file we cannot parse is refused, never rewritten.
+// See https://opencode.ai/docs/config/.
 func openCodeMCPPath(ctx context.Context) (string, error) {
 	dir, err := openCodeConfigDir(ctx)
 	if err != nil {
 		return "", err
 	}
-	jsonc := filepath.Join(dir, "opencode.jsonc")
-	_, err = os.Stat(jsonc)
+	jsonPath := filepath.Join(dir, "opencode.json")
+	jsoncPath := filepath.Join(dir, "opencode.jsonc")
+	hasJSON, err := linkExists(jsonPath)
+	if err != nil {
+		return "", err
+	}
+	hasJSONC, err := linkExists(jsoncPath)
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case hasJSON && hasJSONC:
+		return "", fmt.Errorf("%s and %s both exist; remove one, since this CLI cannot tell which one OpenCode reads",
+			filepath.ToSlash(jsonPath), filepath.ToSlash(jsoncPath))
+	case hasJSONC:
+		return jsoncPath, nil
+	default:
+		return jsonPath, nil
+	}
+}
+
+// linkExists reports whether path exists. It uses Lstat, so a symbolic link counts
+// even when its target is missing.
+func linkExists(path string) (bool, error) {
+	_, err := os.Lstat(path)
 	switch {
 	case err == nil:
-		return jsonc, nil
+		return true, nil
 	case errors.Is(err, fs.ErrNotExist):
-		return filepath.Join(dir, "opencode.json"), nil
+		return false, nil
 	default:
-		return "", fmt.Errorf("cannot read %s: %w", filepath.ToSlash(jsonc), err)
+		return false, fmt.Errorf("cannot read %s: %w", filepath.ToSlash(path), err)
 	}
 }
 
 // openCodeMCPEntry follows the current OpenCode schema: servers live under
 // mcp.servers, the env map is "environment", and there is no "enabled" key
 // (the schema forbids extra keys, and an absent key means enabled).
-// https://opencode.ai/docs/mcp-servers/
+// See https://opencode.ai/docs/mcp-servers/.
 func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
 	entry := map[string]any{"type": localServerType, "command": append([]string{cmd}, args...)}
 	if len(vars) > 0 {
@@ -496,7 +521,7 @@ func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[str
 }
 
 // copilotMCPPath returns Copilot CLI's user config. COPILOT_HOME replaces ~/.copilot.
-// https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference
+// See https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference.
 func copilotMCPPath(ctx context.Context) (string, error) {
 	if home := env.Get(ctx, "COPILOT_HOME"); home != "" {
 		return filepath.Join(home, "mcp-config.json"), nil
@@ -505,7 +530,7 @@ func copilotMCPPath(ctx context.Context) (string, error) {
 }
 
 // copilotMCPEntry is the stdio entry Copilot CLI documents, with all tools enabled.
-// https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
+// See https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers.
 func copilotMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
 	entry := stdioEntry(cmd, args, vars)
 	entry["type"] = localServerType
@@ -515,7 +540,7 @@ func copilotMCPEntry(cmd string, args []string, vars map[string]string) map[stri
 
 // geminiMCPPath returns Gemini CLI's user settings, which hold mcpServers. The
 // settings directory follows geminiConfigDir, which honors GEMINI_CLI_HOME.
-// https://geminicli.com/docs/tools/mcp-server/
+// See https://geminicli.com/docs/tools/mcp-server/.
 func geminiMCPPath(ctx context.Context) (string, error) {
 	dir, err := geminiConfigDir(ctx)
 	if err != nil {
@@ -526,7 +551,7 @@ func geminiMCPPath(ctx context.Context) (string, error) {
 
 // antigravityMCPPath is the global MCP file in Antigravity's docs, for both the
 // CLI and the IDE. It is not the skills directory (~/.gemini/antigravity).
-// https://antigravity.google/docs/mcp
+// See https://antigravity.google/docs/mcp.
 func antigravityMCPPath(ctx context.Context) (string, error) {
 	return homeSubdir(".gemini", "config", "mcp_config.json")(ctx)
 }

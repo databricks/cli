@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -48,28 +49,44 @@ type document interface {
 	entry(root []string, name string) (map[string]any, bool, error)
 	// entries returns the object-valued members under root, keyed by name.
 	entries(root []string) (map[string]map[string]any, error)
-	// set stores entry as name under root, replacing an existing entry and
-	// creating missing levels.
-	set(root []string, name string, entry map[string]any) error
-	// update changes the launch keys of the existing entry name under root to
-	// those of entry. Other keys of the entry keep their bytes where the format
-	// allows it.
-	update(root []string, name string, entry map[string]any) error
-	// remove deletes name under root. It is a no-op when name is absent.
-	remove(root []string, name string) error
+	// put writes entry as server name under root, creating missing levels and
+	// replacing an existing server. A nil entry removes the server, and removing
+	// an absent one is a no-op. With keys, an existing server changes only those
+	// keys, and its other keys keep their bytes where the format allows it.
+	put(root []string, name string, entry map[string]any, keys []string) error
 	// bytes serializes the document.
 	bytes() ([]byte, error)
 }
 
-// launchKeys are the entry keys that describe how the server starts. Upsert sets
-// them on an update, and an entry whose launch keys match is not rewritten. Any
-// other key is the user's after the entry is first added: a default that the
-// builder writes (Copilot's tools list) is not written again, and a key the user
-// added (disabled, or a tools table) is kept.
+// launchKeys are the entry keys that describe how a server starts. An agent's
+// builder writes only some of them (see ownedKeys).
 var launchKeys = []string{"command", "args", "env", "environment", "type"}
 
+// envKeys are the entry keys that hold environment variables: env, and
+// environment in OpenCode.
+var envKeys = []string{"env", "environment"}
+
+// pinnedEnv is the environment variable that this CLI pins into an entry when it
+// is set (SPEC 7.3). A write that does not pin it removes it from the entry. Other
+// variables are the user's, and are kept.
+const pinnedEnv = "DATABRICKS_CONFIG_FILE"
+
+// ownedKeys returns the launch keys that the agent's builder writes. Upsert
+// updates these keys and keeps every other key of the entry. The probe passes a
+// variable, since a builder writes its env key only when it has variables.
+func ownedKeys(spec *mcpconfig.Spec) []string {
+	probe := spec.Entry("", nil, map[string]string{pinnedEnv: ""})
+	var keys []string
+	for _, key := range launchKeys {
+		if _, ok := probe[key]; ok {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
-// env. An entry this CLI wrote gets its launch keys updated, and the other keys
+// env. An entry this CLI wrote gets its launch keys updated, and its other keys
 // are kept. A foreign entry is replaced only when force is set. The file is left
 // alone when the entry already matches. cmd must be the databricks binary, or
 // the entry could never be recognized as ours. It returns the config file path.
@@ -106,18 +123,23 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 
+	keys := ownedKeys(spec)
 	var status Status
 	switch {
 	case !found:
 		status = StatusAdded
-		err = doc.set(root, name, want)
+		err = doc.put(root, name, want, nil)
 	case !mcpconfig.IsDatabricksEntry(current) && !force:
 		return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
 	case !mcpconfig.IsDatabricksEntry(current):
 		status = StatusUpdated
-		err = doc.set(root, name, want)
+		err = doc.put(root, name, want, nil)
 	default:
-		same, cmpErr := sameEntry(launchKeysOf(current), launchKeysOf(want))
+		merged, mergeErr := keepUserKeys(current, ours, keys)
+		if mergeErr != nil {
+			return path, "", mergeErr
+		}
+		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
 		if cmpErr != nil {
 			return path, "", cmpErr
 		}
@@ -125,7 +147,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 			return path, StatusUnchanged, nil
 		}
 		status = StatusUpdated
-		err = doc.update(root, name, keepUserKeys(current, want))
+		err = doc.put(root, name, merged, keys)
 	}
 	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
@@ -166,7 +188,7 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if !mcpconfig.IsDatabricksEntry(current) {
 		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
 	}
-	if err := doc.remove(root, name); err != nil {
+	if err := doc.put(root, name, nil, nil); err != nil {
 		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if err := save(path, doc); err != nil {
@@ -270,12 +292,6 @@ func save(path string, doc document) error {
 	return nil
 }
 
-// stripBOM removes a leading UTF-8 byte order mark, reporting whether there was one.
-func stripBOM(data []byte) ([]byte, bool) {
-	rest, ok := bytes.CutPrefix(data, utf8BOM)
-	return rest, ok
-}
-
 // lineEnding returns CRLF when data uses it, and LF otherwise.
 func lineEnding(data []byte) string {
 	if bytes.Contains(data, []byte("\r\n")) {
@@ -292,10 +308,10 @@ func withBOM(data []byte, bom bool) []byte {
 	return append(append([]byte{}, utf8BOM...), data...)
 }
 
-// launchKeysOf returns the launch keys of entry.
-func launchKeysOf(entry map[string]any) map[string]any {
+// launchKeysOf returns the keys of entry that are listed in keys.
+func launchKeysOf(entry map[string]any, keys []string) map[string]any {
 	out := map[string]any{}
-	for _, key := range launchKeys {
+	for _, key := range keys {
 		if v, ok := entry[key]; ok {
 			out[key] = v
 		}
@@ -303,19 +319,61 @@ func launchKeysOf(entry map[string]any) map[string]any {
 	return out
 }
 
-// keepUserKeys returns current with its launch keys set to those of want, and
-// removes a launch key that want lacks. The other keys of current are kept, and
-// a key that want has but current lacks is not added.
-func keepUserKeys(current, want map[string]any) map[string]any {
+// keepUserKeys returns current with the keys listed in keys set to those of want,
+// and every other key of current kept. A listed key that want lacks is removed.
+// The env tables are merged by mergeEnv.
+func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, error) {
 	out := maps.Clone(current)
-	for _, key := range launchKeys {
-		if v, ok := want[key]; ok {
-			out[key] = v
+	for _, key := range keys {
+		value, ok := want[key]
+		if slices.Contains(envKeys, key) {
+			var err error
+			value, ok, err = mergeEnv(current[key], value, ok)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if ok {
+			out[key] = value
 		} else {
 			delete(out, key)
 		}
 	}
-	return out
+	return out, nil
+}
+
+// mergeEnv returns the env table after a write. It holds the variables of want,
+// and the variables of have other than pinnedEnv. It reports false when the table
+// is absent: want lacks it and no variable is left.
+func mergeEnv(have, want any, inWant bool) (any, bool, error) {
+	haveEnv, err := envTable(have)
+	if err != nil {
+		return nil, false, err
+	}
+	wantEnv, _ := want.(map[string]any)
+	out := map[string]any{}
+	for k, v := range haveEnv {
+		if k != pinnedEnv {
+			out[k] = v
+		}
+	}
+	maps.Copy(out, wantEnv)
+	if len(out) == 0 && !inWant {
+		return nil, false, nil
+	}
+	return out, true, nil
+}
+
+// envTable returns the variables of an env table, or nil when v is absent.
+func envTable(v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	table, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("environment variables are not a table: %w", ErrConfigInvalid)
+	}
+	return table, nil
 }
 
 // sameEntry compares two entries as JSON values, so the in-memory Go types of a
