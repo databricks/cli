@@ -146,24 +146,26 @@ func checkUnknownConfigFields(path string, root *yaml.Node) error {
 }
 
 // unknownConfigFields describes each key under node that field's schema does not
-// define. helpPath is the nearest documented ancestor, since hidden fields have
-// no `-h config.<field>` page. Sequences add no path segment, matching how the
-// schema addresses list elements.
+// define. helpPath is the nearest documented ancestor, since a hidden field and
+// everything below it have no `-h config.<field>` page. Sequences add no path
+// segment, matching how the schema addresses list elements.
+//
+// Aliases are never followed: one may point at its own ancestor, and the strict
+// decode checks whatever they expand to.
 func unknownConfigFields(node *yaml.Node, field configField, helpPath string, keys []string) []string {
-	if node.Kind == yaml.AliasNode {
-		node = node.Alias
+	// Only objects have schema-defined keys; free-form maps and leaves do not.
+	if len(field.children) == 0 {
+		return nil
 	}
 	var unknown []string
 	switch node.Kind {
 	case yaml.SequenceNode:
 		for _, element := range node.Content {
-			unknown = append(unknown, unknownConfigFields(element, field, helpPath, keys)...)
+			if element.Kind == yaml.MappingNode {
+				unknown = append(unknown, unknownConfigFields(element, field, helpPath, keys)...)
+			}
 		}
 	case yaml.MappingNode:
-		// Only objects have schema-defined keys; free-form maps and leaves do not.
-		if len(field.children) == 0 {
-			return nil
-		}
 		for i := 0; i+1 < len(node.Content); i += 2 {
 			key, value := node.Content[i], node.Content[i+1]
 			// A merge key pulls in another mapping's keys; the strict decode checks those.
@@ -183,13 +185,13 @@ func unknownConfigFields(node *yaml.Node, field configField, helpPath string, ke
 				continue
 			}
 			childHelpPath := helpPath
-			if !child.hidden {
+			if helpPath == field.path && !child.hidden {
 				childHelpPath = child.path
 			}
 			unknown = append(unknown, unknownConfigFields(value, child, childHelpPath, keyPath)...)
 		}
 	default:
-		// Scalars hold no keys.
+		// Scalars hold no keys, and aliases are left to the decoder.
 	}
 	return unknown
 }

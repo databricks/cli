@@ -390,6 +390,30 @@ func TestLoadRunConfig_UnknownFieldErrors(t *testing.T) {
 		require.ErrorContains(t, err, `unknown field "code_source.snapshot.remote_volum"; did you mean "remote_volume"? Run "databricks air run -h config.code_source" for the list of fields`)
 	})
 
+	t.Run("list elements resolve against the element schema", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"containers:\n  - name: a\n    comand: x\n"))
+		require.ErrorContains(t, err, `line 9: unknown field "containers.comand"; did you mean "command"? Run "databricks air run -h config.containers" for the list of fields`)
+	})
+
+	t.Run("help stays at the nearest documented ancestor below a hidden field", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"code_source:\n  snapshot:\n    root_path: src\n    git:\n      brnch: main\n"))
+		require.ErrorContains(t, err, `unknown field "code_source.snapshot.git.brnch"; did you mean "branch"? Run "databricks air run -h config.code_source" for the list of fields`)
+	})
+
+	// The schema check must leave aliases to the decoder: following one that
+	// points at its own ancestor never terminates.
+	for name, extra := range map[string]string{
+		"string list":  "code_source:\n  root_path: src\n  include_paths: &p [a, *p]\n",
+		"object list":  "containers: &c [*c]\n",
+		"free-form":    "parameters: &p [*p]\n",
+		"nested lists": "containers: [[{comand: x}]]\n",
+	} {
+		t.Run("decoder reports "+name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, minimalConfig+extra))
+			require.ErrorContains(t, err, "cannot unmarshal")
+		})
+	}
+
 	t.Run("free-form maps accept any key", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+"parameters:\n  environmnt: 1\n  nested:\n    zzz: 2\n"))
 		require.NoError(t, err)
