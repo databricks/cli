@@ -54,6 +54,7 @@ func TestIsDatabricksEntry(t *testing.T) {
 		{"unix path", map[string]any{"command": "/opt/homebrew/bin/databricks", "args": serve}, true},
 		{"bare name", map[string]any{"command": "databricks", "args": serve}, true},
 		{"windows path", map[string]any{"command": `C:\Program Files\databricks\databricks.exe`, "args": serve}, true},
+		{"binary name in any case", map[string]any{"command": `C:\Tools\Databricks.EXE`, "args": serve}, true},
 		{"opencode array", map[string]any{"command": []any{"/usr/bin/databricks", "aitools", "mcp", "serve"}}, true},
 		{"other binary", map[string]any{"command": "/usr/bin/other", "args": serve}, false},
 		{"other subcommand", map[string]any{"command": "databricks", "args": []any{"aitools", "mcp", "list"}}, false},

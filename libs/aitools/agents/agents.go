@@ -189,9 +189,8 @@ var Registry = []*Agent{
 		MCP: &mcpconfig.Spec{
 			Path:   claudeMCPPath,
 			Format: mcpconfig.FormatJSON,
-			Root:   "mcpServers",
+			Root:   mcpServersKey,
 			Entry:  claudeMCPEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -207,9 +206,8 @@ var Registry = []*Agent{
 		MCP: &mcpconfig.Spec{
 			Path:   homeSubdir(".cursor", "mcp.json"),
 			Format: mcpconfig.FormatJSON,
-			Root:   "mcpServers",
+			Root:   mcpServersKey,
 			Entry:  stdioEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -223,7 +221,6 @@ var Registry = []*Agent{
 			Format: mcpconfig.FormatTOML,
 			Root:   "mcp_servers",
 			Entry:  stdioEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -239,7 +236,6 @@ var Registry = []*Agent{
 			Format: mcpconfig.FormatJSON,
 			Root:   "mcp.servers",
 			Entry:  openCodeMCPEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -251,9 +247,8 @@ var Registry = []*Agent{
 		MCP: &mcpconfig.Spec{
 			Path:   copilotMCPPath,
 			Format: mcpconfig.FormatJSON,
-			Root:   "mcpServers",
+			Root:   mcpServersKey,
 			Entry:  copilotMCPEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -265,9 +260,8 @@ var Registry = []*Agent{
 		MCP: &mcpconfig.Spec{
 			Path:   antigravityMCPPath,
 			Format: mcpconfig.FormatJSON,
-			Root:   "mcpServers",
+			Root:   mcpServersKey,
 			Entry:  antigravityMCPEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -295,9 +289,8 @@ var Registry = []*Agent{
 		MCP: &mcpconfig.Spec{
 			Path:   geminiMCPPath,
 			Format: mcpconfig.FormatJSON,
-			Root:   "mcpServers",
+			Root:   mcpServersKey,
 			Entry:  stdioEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	},
 	{
@@ -432,11 +425,7 @@ func gooseConfigDir(ctx context.Context) (string, error) {
 // CLAUDE_CONFIG_DIR moves it to <dir>/.claude.json.
 // https://code.claude.com/docs/en/env-vars
 func claudeMCPPath(ctx context.Context) (string, error) {
-	if env.Get(ctx, "CLAUDE_CONFIG_DIR") != "" {
-		dir, err := claudeConfigDir(ctx)
-		if err != nil {
-			return "", err
-		}
+	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
 		return filepath.Join(dir, ".claude.json"), nil
 	}
 	return homeSubdir(".claude.json")(ctx)
@@ -451,6 +440,7 @@ func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[strin
 }
 
 // codexMCPPath returns Codex's config.toml, which honors CODEX_HOME.
+// https://learn.chatgpt.com/docs/config-file/config-advanced
 func codexMCPPath(ctx context.Context) (string, error) {
 	if home := env.Get(ctx, "CODEX_HOME"); home != "" {
 		return filepath.Join(home, "config.toml"), nil
@@ -458,13 +448,19 @@ func codexMCPPath(ctx context.Context) (string, error) {
 	return homeSubdir(".codex", "config.toml")(ctx)
 }
 
-// openCodeMCPPath returns OpenCode's config file. The file may contain comments
-// (JSONC); a file we cannot parse is refused, never rewritten.
+// openCodeMCPPath returns OpenCode's config file. OpenCode reads opencode.json or
+// opencode.jsonc, and the docs do not say which wins when both exist, so an
+// existing opencode.jsonc is used rather than creating a second file beside it.
+// The file may contain comments; a file we cannot parse is refused, never rewritten.
 // https://opencode.ai/docs/config/
 func openCodeMCPPath(ctx context.Context) (string, error) {
 	dir, err := openCodeConfigDir(ctx)
 	if err != nil {
 		return "", err
+	}
+	jsonc := filepath.Join(dir, "opencode.jsonc")
+	if _, err := os.Stat(jsonc); err == nil {
+		return jsonc, nil
 	}
 	return filepath.Join(dir, "opencode.json"), nil
 }
@@ -474,7 +470,7 @@ func openCodeMCPPath(ctx context.Context) (string, error) {
 // (the schema forbids extra keys, and an absent key means enabled).
 // https://opencode.ai/docs/mcp-servers/
 func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
-	entry := map[string]any{"type": "local", "command": append([]string{cmd}, args...)}
+	entry := map[string]any{"type": localServerType, "command": append([]string{cmd}, args...)}
 	if len(vars) > 0 {
 		entry["environment"] = vars
 	}
@@ -494,7 +490,7 @@ func copilotMCPPath(ctx context.Context) (string, error) {
 // https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
 func copilotMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
 	entry := stdioEntry(cmd, args, vars)
-	entry["type"] = "local"
+	entry["type"] = localServerType
 	entry["tools"] = []string{"*"}
 	return entry
 }
@@ -534,6 +530,14 @@ func stdioEntry(cmd string, args []string, vars map[string]string) map[string]an
 	}
 	return entry
 }
+
+// mcpServersKey is the key of the server table in the JSON MCP config files
+// that use it (every agent but Codex and OpenCode).
+const mcpServersKey = "mcpServers"
+
+// localServerType is the "type" of a local stdio server in the agents that
+// write one (Claude Code, Copilot, OpenCode).
+const localServerType = "local"
 
 // SupportsMCP reports whether this CLI writes the agent's MCP server entries.
 func (a *Agent) SupportsMCP() bool {

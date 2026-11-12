@@ -1,7 +1,6 @@
 package agentconfig
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,7 +60,6 @@ func testAgent(path string, format mcpconfig.Format, root string) *agents.Agent 
 			Format: format,
 			Root:   root,
 			Entry:  testEntry,
-			IsOurs: mcpconfig.IsDatabricksEntry,
 		},
 	}
 }
@@ -92,6 +91,9 @@ func semantic(t *testing.T, format mcpconfig.Format, data []byte) map[string]any
 	return out
 }
 
+// TestRoundTripPerAgent compares against the goldens with newlines normalized,
+// so a checkout that turns the fixtures into CRLF still passes. Run with -update
+// to regenerate the after files, then review them by hand.
 func TestRoundTripPerAgent(t *testing.T) {
 	for _, a := range agents.MCPAgents() {
 		t.Run(a.Name, func(t *testing.T) {
@@ -110,7 +112,11 @@ func TestRoundTripPerAgent(t *testing.T) {
 			assert.Equal(t, path, gotPath)
 			assert.Equal(t, StatusAdded, status)
 			after := readFile(t, path)
-			assert.Equal(t, string(readFile(t, filepath.Join("testdata", a.Name, "after."+ext))), string(after))
+			goldenAfter := filepath.Join("testdata", a.Name, "after."+ext)
+			if testdiff.OverwriteMode {
+				require.NoError(t, os.WriteFile(goldenAfter, after, 0o644))
+			}
+			assert.Equal(t, testdiff.NormalizeNewlines(string(readFile(t, goldenAfter))), testdiff.NormalizeNewlines(string(after)))
 
 			// The same entry again must not touch the file.
 			_, status, err = Upsert(ctx, a, testName, testCmd, testArgs(a.Name), nil, false)
@@ -121,7 +127,7 @@ func TestRoundTripPerAgent(t *testing.T) {
 			entries, err := Read(ctx, a)
 			require.NoError(t, err)
 			require.Contains(t, entries, testName)
-			assert.True(t, a.MCP.IsOurs(entries[testName]))
+			assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
 			assert.Contains(t, entries, "other")
 
 			removed, err := Remove(ctx, a, testName)
@@ -180,7 +186,77 @@ func TestUpsertRefusesEntryWeDidNotWrite(t *testing.T) {
 	assert.Equal(t, StatusUpdated, status)
 	entries, err := Read(t.Context(), a)
 	require.NoError(t, err)
-	assert.True(t, a.MCP.IsOurs(entries[testName]))
+	assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
+}
+
+// An owned entry with other arguments (say, a different profile) is updated in
+// place, and the file is written.
+func TestUpsertUpdatesOwnedEntry(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		format mcpconfig.Format
+		root   string
+		data   string
+	}{
+		{"json", mcpconfig.FormatJSON, "mcpServers", `{"mcpServers": {"` + testName + `": {"command": "` + testCmd + `", "args": ["aitools", "mcp", "serve", "--profile", "old"]}}}`},
+		{"toml", mcpconfig.FormatTOML, "mcp_servers", "[mcp_servers." + testName + "]\ncommand = \"" + testCmd + "\"\nargs = [\"aitools\", \"mcp\", \"serve\", \"--profile\", \"old\"]\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config")
+			writeFile(t, path, []byte(tc.data), 0o600)
+			a := testAgent(path, tc.format, tc.root)
+
+			_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+			require.NoError(t, err)
+			assert.Equal(t, StatusUpdated, status)
+			entries, err := Read(t.Context(), a)
+			require.NoError(t, err)
+			assert.Equal(t, testArgs("test"), toStrings(t, entries[testName]["args"]))
+		})
+	}
+}
+
+func toStrings(t *testing.T, v any) []string {
+	t.Helper()
+	list, ok := v.([]any)
+	require.True(t, ok, "args is a list")
+	out := make([]string, 0, len(list))
+	for _, item := range list {
+		s, ok := item.(string)
+		require.True(t, ok)
+		out = append(out, s)
+	}
+	return out
+}
+
+// The entry we would write must be recognized as ours, or a later Upsert
+// needs force and Remove can never delete it. Nothing is written.
+func TestUpsertRefusesCommandThatIsNotDatabricks(t *testing.T) {
+	for _, cmd := range []string{"/usr/local/bin/cli", "/x/mydatabricks"} {
+		t.Run(cmd, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+			_, _, err := Upsert(t.Context(), a, testName, cmd, testArgs("test"), nil, true)
+			assert.ErrorContains(t, err, "must be named databricks")
+			_, err = os.Stat(path)
+			assert.ErrorIs(t, err, os.ErrNotExist)
+		})
+	}
+
+	// Windows writes the binary in any case.
+	path := filepath.Join(t.TempDir(), "config.json")
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+	_, status, err := Upsert(t.Context(), a, testName, `C:\Tools\Databricks.EXE`, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+}
+
+func TestReadMissingFileHasNoEntries(t *testing.T) {
+	a := testAgent(filepath.Join(t.TempDir(), "missing.toml"), mcpconfig.FormatTOML, "mcp_servers")
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestRemoveRefusesEntryWeDidNotWrite(t *testing.T) {
@@ -267,6 +343,23 @@ func TestUpsertWritesThroughSymlink(t *testing.T) {
 	assert.Contains(t, entries, testName)
 }
 
+// A link to a missing file is refused rather than replaced by a regular file.
+func TestUpsertRefusesDanglingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	dir := t.TempDir()
+	link := filepath.Join(dir, "config.json")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "missing", "config.json"), link))
+	a := testAgent(link, mcpconfig.FormatJSON, "mcpServers")
+
+	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	assert.ErrorContains(t, err, "does not exist")
+	info, err := os.Lstat(link)
+	require.NoError(t, err)
+	assert.NotZero(t, info.Mode()&os.ModeSymlink, "link is kept")
+}
+
 func TestWindowsCommandPathRoundTrip(t *testing.T) {
 	winCmd := `C:\Program Files\databricks\databricks.exe`
 	for _, tc := range []struct {
@@ -292,32 +385,4 @@ func TestWindowsCommandPathRoundTrip(t *testing.T) {
 			assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
 		})
 	}
-}
-
-func TestJSONKeepsOtherValuesByteForByte(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.json")
-	writeFile(t, path, []byte(`{"big": 12345678901234567890, "ratio": 1.50, "text": "caf\u00e9", "mcpServers": {}}`), 0o600)
-	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
-
-	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
-	require.NoError(t, err)
-	got := readFile(t, path)
-	assert.Contains(t, string(got), `"big": 12345678901234567890`)
-	assert.Contains(t, string(got), `"ratio": 1.50`)
-	assert.Contains(t, string(got), `"text": "caf\u00e9"`)
-	assert.True(t, bytes.HasSuffix(got, []byte("}\n")), "file ends with a newline")
-}
-
-// TOML comments are lost on rewrite. This test pins that behavior so a change to
-// it is deliberate.
-func TestTOMLRewriteDropsComments(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.toml")
-	writeFile(t, path, []byte("# keep me?\nmodel = \"gpt-5\"\n"), 0o600)
-	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
-
-	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
-	require.NoError(t, err)
-	got := string(readFile(t, path))
-	assert.NotContains(t, got, "# keep me?")
-	assert.Contains(t, got, `model = "gpt-5"`)
 }

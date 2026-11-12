@@ -29,9 +29,6 @@ type Spec struct {
 	// Entry builds the entry for a stdio server that runs cmd with args and env.
 	// env is empty when there are no variables to pin.
 	Entry func(cmd string, args []string, env map[string]string) map[string]any
-	// IsOurs reports whether an entry was written by this CLI. It receives entries
-	// as they were decoded from the file.
-	IsOurs func(entry map[string]any) bool
 }
 
 // Argv returns the command line of a stdio entry as argv[0] and its arguments.
@@ -70,7 +67,7 @@ func Argv(entry map[string]any) ([]string, bool) {
 }
 
 // IsDatabricksEntry reports whether entry runs `databricks aitools mcp serve`,
-// which is how we recognize entries we wrote. It is the IsOurs of every agent.
+// which is how we recognize entries we wrote.
 func IsDatabricksEntry(entry map[string]any) bool {
 	argv, ok := Argv(entry)
 	if !ok {
@@ -82,9 +79,11 @@ func IsDatabricksEntry(entry map[string]any) bool {
 }
 
 // IsBinary reports whether cmd, a bare name or a path, has one of the given
-// base names. Both separators are accepted so that a Windows path is recognized
-// on any host.
+// base names, ignoring case as Windows does. Both separators are accepted so
+// that a Windows path is recognized on any host.
 func IsBinary(cmd string, names ...string) bool {
 	base := cmd[strings.LastIndexAny(cmd, `/\`)+1:]
-	return slices.Contains(names, base)
+	return slices.ContainsFunc(names, func(name string) bool {
+		return strings.EqualFold(base, name)
+	})
 }

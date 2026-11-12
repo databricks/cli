@@ -1,4 +1,4 @@
-# Codex settings. This comment is dropped on rewrite.
+# Codex settings. This comment is kept.
 model = "gpt-5"
 
 [projects."/work"]

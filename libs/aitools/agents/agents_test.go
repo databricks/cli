@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -99,6 +100,22 @@ func TestMCPPaths(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// OpenCode reads opencode.json or opencode.jsonc. An existing .jsonc is the
+// file to edit, so a second file is not created beside it.
+func TestOpenCodeMCPPathPrefersJSONC(t *testing.T) {
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	path, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "opencode.json"), path)
+
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode.jsonc"), []byte("{}"), 0o600))
+	path, err = ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "opencode.jsonc"), path)
 }
 
 func TestMCPEntries(t *testing.T) {

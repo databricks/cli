@@ -4,13 +4,8 @@
     "other": {
       "type": "local",
       "command": "npx",
-      "args": [
-        "-y",
-        "other-mcp"
-      ],
-      "tools": [
-        "*"
-      ]
+      "args": ["-y", "other-mcp"],
+      "tools": ["*"]
     },
     "genie_one_mcp-dogfood": {
       "args": [
