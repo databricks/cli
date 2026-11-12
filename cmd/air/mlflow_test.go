@@ -90,7 +90,7 @@ func TestMLflowIDs(t *testing.T) {
 		t.Cleanup(srv.Close)
 
 		w := newTestWorkspaceClient(t, srv.URL)
-		tasks := []jobs.RunTask{{RunId: 99}, {RunId: 100}}
+		tasks := []jobs.RunTask{{RunId: 99}, {RunId: 100, AttemptNumber: 1}}
 		finished := &jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}, Tasks: tasks}
 		assert.Equal(t, &mlflowIdentifiers{ExperimentID: "E1", RunID: "R1"}, mlflowIDs(ctx, w, finished))
 
@@ -104,6 +104,36 @@ func TestMLflowIDs(t *testing.T) {
 			Tasks: []jobs.RunTask{{TaskKey: "train", RunId: 99}, {TaskKey: "report", RunId: 100}},
 		}
 		assert.Nil(t, mlflowIDs(ctx, w, multiTask))
+	})
+
+	t.Run("a finished run links no older retry when a newer one's output can't be read", func(t *testing.T) {
+		// Given retry 0 logged to MLflow, but get-output fails for failingRunID.
+		finished := &jobs.Run{
+			State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated},
+			Tasks: []jobs.RunTask{{RunId: 98}, {RunId: 99, AttemptNumber: 1}, {RunId: 100, AttemptNumber: 2}},
+		}
+		for _, failingRunID := range []string{"100", "99"} {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.URL.Path != "/api/2.2/jobs/runs/get-output":
+					_, _ = w.Write([]byte(`{}`))
+				case r.URL.Query().Get("run_id") == failingRunID:
+					w.WriteHeader(http.StatusForbidden)
+					_, _ = w.Write([]byte(`{"error_code":"PERMISSION_DENIED","message":"denied"}`))
+				case r.URL.Query().Get("run_id") == "98":
+					_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R0"}}`))
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			// When the views pick the run's MLflow run.
+			got := mlflowIDs(ctx, newTestWorkspaceClient(t, srv.URL), finished)
+
+			// Then there is no link: the unread retry may have the newest MLflow run.
+			assert.Nil(t, got, "get-output fails for task run %s", failingRunID)
+		}
 	})
 }
 
