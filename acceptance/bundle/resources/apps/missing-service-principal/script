@@ -11,4 +11,3 @@ trace update_file.py databricks.yml MY_APP_DESCRIPTION my_app_description
 trace update_file.py databricks.yml "started: false" "started: true"
 trace errcode $CLI bundle deploy
 trace print_requests.py //apps
-
