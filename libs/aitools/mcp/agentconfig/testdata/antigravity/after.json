@@ -17,8 +17,7 @@
         "--agent",
         "antigravity"
       ],
-      "command": "/opt/databricks/bin/databricks",
-      "disabled": false
+      "command": "/opt/databricks/bin/databricks"
     }
   }
 }

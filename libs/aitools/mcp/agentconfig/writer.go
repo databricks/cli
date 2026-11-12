@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -55,12 +56,21 @@ type document interface {
 	bytes() ([]byte, error)
 }
 
+// builderKeys are the entry keys the agent builders write. Upsert overwrites
+// them. Any other key was added by the user (for example disabled or enabled)
+// and is kept when an entry we wrote is updated.
+var builderKeys = []string{"command", "args", "env", "environment", "type", "tools"}
+
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
-// env. It replaces an entry this CLI wrote, or any entry when force is set, and
-// leaves the file alone when the entry already matches. cmd must be the
-// databricks binary, or the entry could never be recognized as ours. It returns
-// the config file path.
+// env. An entry this CLI wrote is updated in its builder keys, and keys the user
+// added to it are kept. A foreign entry is replaced only when force is set. The
+// file is left alone when the entry already matches. cmd must be the databricks
+// binary, or the entry could never be recognized as ours. It returns the config
+// file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
+	if !mcpconfig.ValidServerName(name) {
+		return "", "", fmt.Errorf("server name %q must contain only letters, digits, '-' and '_'", name)
+	}
 	spec, err := specOf(a)
 	if err != nil {
 		return "", "", err
@@ -70,8 +80,11 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return "", "", err
 	}
+	if !mcpconfig.IsBinary(cmd, "databricks", "databricks.exe") {
+		return "", "", fmt.Errorf("server %q: command %q must be the databricks binary, named databricks or databricks.exe", name, cmd)
+	}
 	if !mcpconfig.IsDatabricksEntry(ours) {
-		return "", "", fmt.Errorf("server %q: command %q is not the databricks binary, which must be named databricks or databricks.exe", name, cmd)
+		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
 	}
 	path, err := spec.Path(ctx)
 	if err != nil {
@@ -84,22 +97,33 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	root := rootPath(spec)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
-		return path, "", fmt.Errorf("%s: %w", path, err)
+		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if found {
-		if !mcpconfig.IsDatabricksEntry(current) && !force {
-			return path, "", fmt.Errorf("%s: server %q: %w", path, name, ErrNotOwned)
-		}
-		same, err := sameEntry(current, want)
-		if err != nil {
-			return path, "", err
-		}
-		if same {
-			return path, StatusUnchanged, nil
+		if mcpconfig.IsDatabricksEntry(current) {
+			same, err := sameEntry(builderKeysOf(current), builderKeysOf(want))
+			if err != nil {
+				return path, "", err
+			}
+			if same {
+				return path, StatusUnchanged, nil
+			}
+			want = keepUserKeys(current, want)
+		} else {
+			if !force {
+				return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+			}
+			same, err := sameEntry(current, want)
+			if err != nil {
+				return path, "", err
+			}
+			if same {
+				return path, StatusUnchanged, nil
+			}
 		}
 	}
 	if err := doc.set(root, name, want); err != nil {
-		return path, "", fmt.Errorf("%s: %w", path, err)
+		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if err := save(path, doc); err != nil {
 		return path, "", err
@@ -129,16 +153,16 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	root := rootPath(spec)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
-		return false, fmt.Errorf("%s: %w", path, err)
+		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if !found {
 		return false, nil
 	}
 	if !mcpconfig.IsDatabricksEntry(current) {
-		return false, fmt.Errorf("%s: server %q: %w", path, name, ErrNotOwned)
+		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
 	}
 	if err := doc.remove(root, name); err != nil {
-		return false, fmt.Errorf("%s: %w", path, err)
+		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if err := save(path, doc); err != nil {
 		return false, err
@@ -163,7 +187,7 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	}
 	entries, err := doc.entries(rootPath(spec))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", path, err)
+		return nil, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	return entries, nil
 }
@@ -183,7 +207,7 @@ func rootPath(spec *mcpconfig.Spec) []string {
 func load(spec *mcpconfig.Spec, path string) (document, error) {
 	data, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return nil, fmt.Errorf("read %s: %w", path, err)
+		return nil, fmt.Errorf("read %s: %w", filepath.ToSlash(path), err)
 	}
 	var doc document
 	switch spec.Format {
@@ -195,7 +219,7 @@ func load(spec *mcpconfig.Spec, path string) (document, error) {
 		return nil, fmt.Errorf("unknown config format %d", spec.Format)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: %w", path, ErrConfigInvalid, err)
+		return nil, fmt.Errorf("%s: %w: %w", filepath.ToSlash(path), ErrConfigInvalid, err)
 	}
 	return doc, nil
 }
@@ -205,7 +229,7 @@ func load(spec *mcpconfig.Spec, path string) (document, error) {
 func save(path string, doc document) error {
 	data, err := doc.bytes()
 	if err != nil {
-		return fmt.Errorf("serialize %s: %w", path, err)
+		return fmt.Errorf("serialize %s: %w", filepath.ToSlash(path), err)
 	}
 	perm := os.FileMode(0o600)
 	if info, err := os.Stat(path); err == nil {
@@ -221,13 +245,13 @@ func save(path string, doc document) error {
 		target = resolved
 	case errors.Is(err, fs.ErrNotExist):
 		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("%s is a symlink to a file that does not exist", path)
+			return fmt.Errorf("%s is a symlink to a file that does not exist", filepath.ToSlash(path))
 		}
 	default:
-		return fmt.Errorf("resolve %s: %w", path, err)
+		return fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
 	}
 	if err := atomicfile.Write(target, data, perm, atomicfile.MkDir(0o755)); err != nil {
-		return fmt.Errorf("write %s: %w", path, err)
+		return fmt.Errorf("write %s: %w", filepath.ToSlash(path), err)
 	}
 	return nil
 }
@@ -240,12 +264,45 @@ func stripBOM(data []byte) ([]byte, bool) {
 	return data, false
 }
 
+// lineEnding returns CRLF when data uses it, and LF otherwise.
+func lineEnding(data []byte) string {
+	if bytes.Contains(data, []byte("\r\n")) {
+		return "\r\n"
+	}
+	return "\n"
+}
+
 // withBOM puts the byte order mark back in front of data when the file had one.
 func withBOM(data []byte, bom bool) []byte {
 	if !bom {
 		return data
 	}
 	return append(append([]byte{}, utf8BOM...), data...)
+}
+
+// builderKeysOf returns the keys of entry that the agent builders write.
+func builderKeysOf(entry map[string]any) map[string]any {
+	out := map[string]any{}
+	for _, key := range builderKeys {
+		if v, ok := entry[key]; ok {
+			out[key] = v
+		}
+	}
+	return out
+}
+
+// keepUserKeys returns current with its builder keys set to those of want. The
+// other keys of current are kept.
+func keepUserKeys(current, want map[string]any) map[string]any {
+	out := maps.Clone(current)
+	for _, key := range builderKeys {
+		if v, ok := want[key]; ok {
+			out[key] = v
+		} else {
+			delete(out, key)
+		}
+	}
+	return out
 }
 
 // sameEntry compares two entries as JSON values, so the in-memory Go types of a

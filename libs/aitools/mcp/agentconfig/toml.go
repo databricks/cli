@@ -89,15 +89,14 @@ func (d *tomlDoc) remove(root []string, name string) error {
 // entry, or deletes them when entry is nil. A server that exists without tables
 // of its own (an inline table or dotted keys) is an error, not rewritten.
 func (d *tomlDoc) edit(root []string, name string, entry map[string]any) error {
-	nl := "\n"
-	if bytes.Contains(d.text, []byte("\r\n")) {
-		nl = "\r\n"
-	}
+	nl := lineEnding(d.text)
 	lines := splitLines(d.text)
 	ranges := serverBlocks(lines, root, name)
-	if _, found, err := d.entry(root, name); err != nil {
+	_, found, err := d.entry(root, name)
+	if err != nil {
 		return err
-	} else if found && len(ranges) == 0 {
+	}
+	if found && len(ranges) == 0 {
 		return fmt.Errorf("server %q is not defined by its own [%s] tables (inline table or dotted keys), so it cannot be edited; edit it by hand",
 			name, strings.Join(append(root, name), "."))
 	}

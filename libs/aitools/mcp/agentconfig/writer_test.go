@@ -27,18 +27,13 @@ func testArgs(agent string) []string {
 }
 
 // testHome returns a context whose home is a fresh temp dir, with the override
-// variables cleared so the test does not depend on the developer's shell.
+// variables set to empty so the test does not depend on the developer's shell.
 func testHome(t *testing.T) context.Context {
-	clearAgentOverrides(t)
-	return env.WithUserHomeDir(t.Context(), t.TempDir())
-}
-
-// clearAgentOverrides empties the variables the agent resolvers read. An empty
-// value is treated as unset, and t.Setenv restores the originals afterwards.
-func clearAgentOverrides(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	for _, key := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_HOME", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME", "APPDATA"} {
-		t.Setenv(key, "")
+		ctx = env.Set(ctx, key, "") //nolint:fatcontext // each key is set on the same context
 	}
+	return ctx
 }
 
 func testEntry(cmd string, args []string, vars map[string]string) map[string]any {
@@ -162,7 +157,7 @@ func TestUpsertRefusesUnparsableFile(t *testing.T) {
 
 			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
 			require.ErrorIs(t, err, ErrConfigInvalid)
-			assert.ErrorContains(t, err, path)
+			assert.ErrorContains(t, err, filepath.ToSlash(path))
 			_, err = Remove(t.Context(), a, testName)
 			require.ErrorIs(t, err, ErrConfigInvalid)
 
@@ -238,7 +233,7 @@ func TestUpsertRefusesCommandThatIsNotDatabricks(t *testing.T) {
 			a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
 			_, _, err := Upsert(t.Context(), a, testName, cmd, testArgs("test"), nil, true)
-			assert.ErrorContains(t, err, "must be named databricks")
+			assert.ErrorContains(t, err, "must be the databricks binary")
 			_, err = os.Stat(path)
 			assert.ErrorIs(t, err, os.ErrNotExist)
 		})
@@ -385,4 +380,90 @@ func TestWindowsCommandPathRoundTrip(t *testing.T) {
 			assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
 		})
 	}
+}
+
+// A name that is not a valid server name is refused before anything is read or
+// written.
+func TestUpsertRefusesInvalidServerName(t *testing.T) {
+	for _, name := range []string{"genie.one", "genie one", "genie/one", ""} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+			_, _, err := Upsert(t.Context(), a, name, testCmd, testArgs("test"), nil, false)
+			assert.ErrorContains(t, err, "must contain only letters, digits, '-' and '_'")
+			_, err = os.Stat(path)
+			assert.ErrorIs(t, err, os.ErrNotExist)
+		})
+	}
+}
+
+// The error names the part that is wrong: the command or the args.
+func TestUpsertNamesTheWrongPart(t *testing.T) {
+	a := testAgent(filepath.Join(t.TempDir(), "config.json"), mcpconfig.FormatJSON, "mcpServers")
+
+	_, _, err := Upsert(t.Context(), a, testName, "/usr/local/bin/cli", testArgs("test"), nil, false)
+	assert.ErrorContains(t, err, "must be the databricks binary")
+
+	_, _, err = Upsert(t.Context(), a, testName, testCmd, []string{"aitools", "serve"}, nil, false)
+	assert.ErrorContains(t, err, "args must start with aitools mcp serve")
+	assert.NotContains(t, err.Error(), "binary")
+}
+
+// Keys the user added to an entry we wrote are kept when it is updated. An entry
+// that matches in the keys we write is not rewritten, and a changed arg is
+// repaired.
+func TestUpsertKeepsUserKeysJSON(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "mcp_config.json")
+	entry := testEntry(testCmd, testArgs("test"), nil)
+	entry["disabled"] = true
+	data, err := json.Marshal(map[string]any{"mcpServers": map[string]any{testName: entry}})
+	require.NoError(t, err)
+	writeFile(t, path, data, 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUnchanged, status)
+	assert.Equal(t, data, readFile(t, path))
+
+	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, testArgs("other"), toStrings(t, entries[testName]["args"]))
+	assert.Equal(t, true, entries[testName]["disabled"])
+
+	// --force replaces an entry we did not write, user keys included.
+	foreign := filepath.Join(t.TempDir(), "foreign.json")
+	writeFile(t, foreign, []byte(`{"mcpServers":{"`+testName+`":{"command":"/usr/bin/other","args":[],"disabled":true}}}`), 0o600)
+	_, status, err = Upsert(t.Context(), testAgent(foreign, mcpconfig.FormatJSON, "mcpServers"), testName, testCmd, testArgs("test"), nil, true)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err = Read(t.Context(), testAgent(foreign, mcpconfig.FormatJSON, "mcpServers"))
+	require.NoError(t, err)
+	assert.NotContains(t, entries[testName], "disabled")
+}
+
+// A Codex block keeps the keys the user added, such as enabled = false, when
+// it is updated in place.
+func TestUpsertKeepsUserKeysTOML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	data := testBlock + "enabled = false\n"
+	writeFile(t, path, []byte(data), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUnchanged, status)
+	assert.Equal(t, data, string(readFile(t, path)))
+
+	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, testArgs("other"), toStrings(t, entries[testName]["args"]))
+	assert.Equal(t, false, entries[testName]["enabled"])
 }
