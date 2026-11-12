@@ -14,7 +14,9 @@ trace update_file.py databricks.yml "#TO_ADD: " ""
 # The direct plan's "changes" map is the structdiff artifact: it records one
 # change at path default_endpoint_settings (the whole block) instead of descending
 # to its leaves. (The top-level plan verdict is 'update' on both engines.)
-$CLI bundle plan -o json | nostamp > out.plan.json
+# Whether GET echoes spec affects unchanged fields and remote metadata, so keep
+# the planned updates that this test exercises.
+$CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" | {action, changes} | del(.changes[] | select(.action == "skip")) | del(.changes[].remote)' > out.plan.json
 
 # The consequence shows up at deploy time, which diverges by engine, so route it to
 # per-engine files. Masking the whole message means the API requires the suspension
