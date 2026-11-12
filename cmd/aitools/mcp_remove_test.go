@@ -107,7 +107,7 @@ func TestSelectInstallsLeafAndCaseRules(t *testing.T) {
 	// A leaf is the last part of the service name. Here it names services in two schemas, so it is refused.
 	_, err = selectInstalls(state, []string{"github"}, "")
 	require.Error(t, err)
-	assert.Equal(t, "github matches more than one MCP service (system.ai.github, team.ai.github); pass the full service name", err.Error())
+	assert.Equal(t, "github matches more than one MCP service (system.ai.github, team.ai.github); pass the full service name or a server name", err.Error())
 	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
 
 	// Narrowed to a profile where only one schema is installed, the leaf is unambiguous.
@@ -478,4 +478,98 @@ func TestMcpRemoveFailsWithoutSelection(t *testing.T) {
 	assert.Equal(t, removeFlagsHint, out.Error)
 	assert.Empty(t, out.Removed)
 	assert.Empty(t, out.Skipped)
+}
+
+// TestSelectInstallsServerNameWins checks that a --names value equal to a server name selects that server only: it is
+// not also a service or a leaf of other servers, and it is not refused as ambiguous when another schema has the leaf.
+func TestSelectInstallsServerNameWins(t *testing.T) {
+	cases := []struct {
+		name  string
+		state []mcp.Entry
+		want  []string
+	}{
+		{
+			name: "server name does not also remove the other profile's server of the same service",
+			state: []mcp.Entry{
+				{Name: "github", Service: "system.ai.github", Profile: "logfood"},
+				{Name: "github-dogfood", Service: "system.ai.github", Profile: "dogfood"},
+			},
+			want: []string{"github"},
+		},
+		{
+			name: "server name is not refused as ambiguous when another schema has the leaf",
+			state: []mcp.Entry{
+				{Name: "github", Service: "system.ai.github", Profile: "logfood"},
+				{Name: "gh-team", Service: "team.ai.github", Profile: "logfood"},
+			},
+			want: []string{"github"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			selected, err := selectInstalls(&mcp.State{Servers: tc.state}, []string{"github"}, "")
+			require.NoError(t, err)
+			var names []string
+			for _, e := range selected {
+				names = append(names, e.Name)
+			}
+			assert.Equal(t, tc.want, names)
+		})
+	}
+}
+
+// TestMcpRemoveFromAnotherDirectoryFindsConfigSetRelative checks that a relative config dir given at add time is
+// recorded as an absolute path, so that remove run from another directory still edits the file the entry is in.
+func TestMcpRemoveFromAnotherDirectoryFindsConfigSetRelative(t *testing.T) {
+	withHome(t)
+	work := t.TempDir()
+	t.Chdir(work)
+	require.NoError(t, os.MkdirAll(filepath.Join(work, "cfg"), 0o755))
+	t.Setenv("CLAUDE_CONFIG_DIR", "cfg")
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	claudePath := filepath.Join(work, "cfg", ".claude.json")
+	require.Contains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood")
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	require.Len(t, state.Servers, 1)
+	assert.True(t, filepath.IsAbs(state.Servers[0].Agents["claude-code"].Path), "recorded path: %s", state.Servers[0].Agents["claude-code"].Path)
+
+	t.Chdir(t.TempDir())
+	stdout, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Empty(t, out.Skipped)
+	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood", "the entry is removed from the file it was written to")
+}
+
+// TestMcpRemoveTakesEntryFromFileAgentNowReads checks that when the recorded file no longer holds the entry, because the
+// user moved the file into the directory the agent now reads, the entry is removed from that file and the record goes.
+// It is pruned only when neither file holds it.
+func TestMcpRemoveTakesEntryFromFileAgentNowReads(t *testing.T) {
+	home := withHome(t)
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+
+	moved := t.TempDir()
+	require.NoError(t, os.Rename(claudePath, filepath.Join(moved, ".claude.json")))
+	t.Setenv("CLAUDE_CONFIG_DIR", moved)
+
+	stdout, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, []string{"claude-code"}, out.Removed[0].Agents)
+	assert.Empty(t, out.Skipped)
+	assert.NotContains(t, readJSONFile(t, filepath.Join(moved, ".claude.json"))["mcpServers"], "genie_one_mcp-logfood", "the entry is gone from the file the agent reads")
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers, "the record went with the entry")
 }

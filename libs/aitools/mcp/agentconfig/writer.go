@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/atomicfile"
 )
@@ -100,7 +101,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if !mcpconfig.IsDatabricksEntry(ours) {
 		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
 	}
-	path, err := spec.Path(ctx)
+	path, err := configPath(ctx, spec)
 	if err != nil {
 		return "", "", err
 	}
@@ -227,7 +228,18 @@ func Path(ctx context.Context, a *agents.Agent) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return spec.Path(ctx)
+	return configPath(ctx, spec)
+}
+
+// configPath returns the absolute path of the config file of spec. A config dir set to a relative path is made absolute
+// here, not when the path is used, so that a record of the path works from any directory. The path is not cleaned, as
+// mcp.AbsoluteAsWritten keeps it, so that a ".." after a symlink still resolves through the link.
+func configPath(ctx context.Context, spec *mcpconfig.Spec) (string, error) {
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return "", err
+	}
+	return mcp.AbsoluteAsWritten(path)
 }
 
 // checkName refuses a name that no agent would accept. Upsert and RemoveAt both

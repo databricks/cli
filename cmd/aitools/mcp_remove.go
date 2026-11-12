@@ -173,14 +173,13 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 				continue
 			}
-			rec := e.Agents[agentName]
-			key := recordedFileKey{agent: agentName, path: rec.Path}
-			file, ok := files[key]
-			if !ok {
-				file = readRecordedFile(a, rec.Path)
-				files[key] = file
+			path, file, err := entryFile(ctx, e, a, e.Agents[agentName].Path, files)
+			if err != nil {
+				errs = append(errs, err)
+				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
+				continue
 			}
-			outcome, reason, err := removeAgentEntry(ctx, e, a, rec.Path, file)
+			outcome, reason, err := removeAgentEntry(ctx, e, a, path, file)
 			if err != nil {
 				errs = append(errs, err)
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
@@ -274,14 +273,19 @@ func selectInstalls(state *mcp.State, names []string, profileName string) ([]mcp
 	return selected, nil
 }
 
-// matchInstalls returns the indexes of the entries of scope that name means: a server name, a full service name, or
-// the leaf of a service name (its last part), all without case. A leaf is refused when the entries it matches are of
-// more than one service, since then it does not say which one is meant.
+// matchInstalls returns the indexes of the entries of scope that name means. A server name is unique in state, so a
+// name equal to one selects that server and nothing else. Only when no server has the name, it means the service: the
+// full service name, or the leaf of a service name (its last part, when the name has no dot). All comparisons ignore
+// case. A leaf is refused when the entries it matches are of more than one service, since then it does not say which
+// one is meant.
 func matchInstalls(scope []mcp.Entry, name string) ([]int, error) {
+	if i := slices.IndexFunc(scope, func(e mcp.Entry) bool { return strings.EqualFold(e.Name, name) }); i >= 0 {
+		return []int{i}, nil
+	}
 	var matched []int
 	var services []string
 	for i, e := range scope {
-		if !matchesInstall(e, name) {
+		if !matchesService(e, name) {
 			continue
 		}
 		matched = append(matched, i)
@@ -290,16 +294,16 @@ func matchInstalls(scope []mcp.Entry, name string) ([]int, error) {
 		}
 	}
 	if len(services) > 1 && !strings.Contains(name, ".") {
-		return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s matches more than one MCP service (%s); pass the full service name",
+		return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s matches more than one MCP service (%s); pass the full service name or a server name",
 			name, strings.Join(services, ", "))
 	}
 	return matched, nil
 }
 
-// matchesInstall reports whether a --names value means the entry: its server name, its service name, or the leaf of its
-// service name when the value has no dot. Names compare without case.
-func matchesInstall(e mcp.Entry, name string) bool {
-	if strings.EqualFold(e.Name, name) || strings.EqualFold(e.Service, name) {
+// matchesService reports whether a --names value means the entry's service: its full name, or the leaf of its service
+// name when the value has no dot. Names compare without case.
+func matchesService(e mcp.Entry, name string) bool {
+	if strings.EqualFold(e.Service, name) {
 		return true
 	}
 	return !strings.Contains(name, ".") && strings.EqualFold(mcp.LeafOf(e.Service), name)
@@ -335,14 +339,44 @@ type recordedFileKey struct {
 	path  string
 }
 
+// readRecordedFile reads the agent config file at path, which a record names. A file that does not exist has no entries.
 func readRecordedFile(a *agents.Agent, path string) recordedFile {
 	entries, err := agentconfig.ReadAt(a, path)
 	return recordedFile{entries: entries, err: err}
 }
 
-// removeAgentEntry removes the server from the agent config file its record names, but only when the entry there is
-// the one this CLI wrote. The file is the one add wrote the entry to, even when the agent reads its config from
-// elsewhere now. A file that no longer exists, or has no entry of the name, is pruned.
+// cachedRecordedFile returns the agent config file at path from files, reading it on first use.
+func cachedRecordedFile(files map[recordedFileKey]recordedFile, a *agents.Agent, path string) recordedFile {
+	key := recordedFileKey{agent: a.Name, path: path}
+	file, ok := files[key]
+	if !ok {
+		file = readRecordedFile(a, path)
+		files[key] = file
+	}
+	return file
+}
+
+// entryFile returns the config file that holds the server's entry for the agent, and its contents. That is the file the
+// record names, unless the file does not hold the entry and the agent now reads its config from another file: then that
+// file, which may hold it, since the user may have moved the config with the agent's directory. A recorded file that
+// cannot be read is returned as it is, so the error is reported for it.
+func entryFile(ctx context.Context, e mcp.Entry, a *agents.Agent, recorded string, files map[recordedFileKey]recordedFile) (string, recordedFile, error) {
+	file := cachedRecordedFile(files, a, recorded)
+	if _, found := file.entries[e.Name]; found || file.err != nil {
+		return recorded, file, nil
+	}
+	current, err := agentconfig.Path(ctx, a)
+	if err != nil {
+		return "", recordedFile{}, err
+	}
+	if mcp.SamePath(current, recorded) {
+		return recorded, file, nil
+	}
+	return current, cachedRecordedFile(files, a, current), nil
+}
+
+// removeAgentEntry removes the server from the config file at path, but only when the entry there is the one this CLI
+// wrote. A file that has no entry of the name is pruned: the record goes without an edit.
 func removeAgentEntry(ctx context.Context, e mcp.Entry, a *agents.Agent, path string, file recordedFile) (removeOutcome, string, error) {
 	if file.err != nil {
 		return 0, "", file.err
