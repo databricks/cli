@@ -132,7 +132,7 @@ func TestBindProfileAbsent(t *testing.T) {
 		{
 			name:  "without state entry",
 			state: &mcp.State{},
-			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
+			want:  fmt.Sprintf(`MCP server system.ai.github needs Databricks profile "gone", which does not exist in %s. Set it up with: databricks auth login --profile gone`, filepath.ToSlash(path)),
 		},
 	}
 	for _, tt := range tests {
@@ -858,7 +858,7 @@ func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
 		contents string
 		problem  string
 	}{
-		{name: "missing", contents: "[other]\nhost = https://other.test\n", problem: "which no longer exists in "},
+		{name: "missing", contents: "[other]\nhost = https://other.test\n", problem: "which does not exist in "},
 		{name: "account profile without host", contents: "[" + bindingTestProfile + "]\naccount_id = 123\n", problem: "which has no host in "},
 	}
 	for _, tt := range tests {

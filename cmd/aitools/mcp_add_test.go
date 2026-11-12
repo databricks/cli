@@ -953,7 +953,7 @@ func TestMcpAddNamesResolvedConfigFileWhenDotDotFollowsSymlink(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
 	resolved, evalErr := filepath.EvalSymlinks(cfg)
 	require.NoError(t, evalErr)
-	assert.Contains(t, err.Error(), "which no longer exists in "+filepath.ToSlash(resolved)+". Recreate")
+	assert.Contains(t, err.Error(), "which does not exist in "+filepath.ToSlash(resolved)+". Set it up with: ")
 }
 
 // TestMcpAddRefusesNameThatSanitizesToNothing checks that a service whose generated name is empty is refused before any request, and the message
@@ -1155,6 +1155,8 @@ func TestMcpAddMissingProfileWithoutEntryMatchesBind(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
 	assert.Equal(t, bindErr.Error(), err.Error())
+	// Nothing is installed for the profile, so the message does not say the server is bound to it.
+	assert.NotContains(t, err.Error(), "remove the server")
 	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
 }
 

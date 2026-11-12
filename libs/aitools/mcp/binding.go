@@ -163,7 +163,12 @@ func profileFor(name, profileName, configFile string, entry *Entry) (profile.Pro
 	p, err := configFiles{}.profile(configFile, profileName)
 	switch {
 	case errors.Is(err, errProfileMissing):
-		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, "no longer exists")
+		problem := "no longer exists"
+		if entry == nil {
+			// Nothing records that the profile existed: the server is not installed yet, or its entry was written by hand.
+			problem = "does not exist"
+		}
+		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, problem)
 	case errors.Is(err, errProfileNoHost):
 		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, "has no host")
 	case err != nil:
@@ -184,15 +189,18 @@ func removeCommand(profileName string) string {
 
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
 // name with a host, either because it is absent or because its section has no host. problem completes
-// the sentence "which ... in <path>". Without a state entry the recorded host is unknown, so the
-// recreate hint omits --host. An entry pinned to a config file puts that file in the recreate hint.
+// the sentence "which ... in <path>". Without a state entry nothing was set up for the profile, so the
+// message only says how to set the profile up, without a host. An entry pinned to a config file puts that
+// file in the recreate hint.
 func profileGoneError(name, profileName, path string, entry *Entry, problem string) error {
-	recreate := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
-	if entry != nil {
-		recreate = authLoginCommand + " --host " + shellquote.BashArg(entry.Host) + " --profile " + shellquote.BashArg(profileName)
-		if entry.ConfigFile != "" {
-			recreate = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(path) + " " + recreate
-		}
+	if entry == nil {
+		login := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
+		message := fmt.Sprintf("MCP server %s needs Databricks profile \"%s\", which %s in %s. Set it up with: %s", name, profileName, problem, path, login)
+		return &BindError{Category: BindProfileNotFound, message: message}
+	}
+	recreate := authLoginCommand + " --host " + shellquote.BashArg(entry.Host) + " --profile " + shellquote.BashArg(profileName)
+	if entry.ConfigFile != "" {
+		recreate = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(path) + " " + recreate
 	}
 	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s",
 		name, profileName, problem, path, recreate, removeCommand(profileName))
