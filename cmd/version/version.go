@@ -44,7 +44,7 @@ func renderUpdateCheck(ctx context.Context, result *versioncheck.Result, output 
 		return err
 	}
 	if output == flags.OutputText {
-		agents.MaybeVersionCheckTip(ctx, installer.InstalledTools)
+		agents.MaybeVersionCheckTip(ctx, installer.InstalledPluginAgents)
 	}
 	return nil
 }

@@ -1,18 +1,30 @@
 package installer
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// captureWarnings routes warnings and errors logged through ctx into a buffer.
+func captureWarnings(ctx context.Context) (context.Context, *bytes.Buffer) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	return log.NewContext(ctx, logger), &buf
+}
+
+const localCopyWarning = "plugin came from its local copy and may be out of date"
 
 func stubAgentLookPath(t *testing.T, found bool) {
 	t.Helper()
@@ -62,7 +74,7 @@ func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "claude plugin --help")
 	assert.Contains(t, cmds, "claude plugin marketplace add databricks/databricks-agent-skills")
-	assert.Contains(t, cmds, "claude plugin marketplace update")
+	assert.Contains(t, cmds, "claude plugin marketplace update databricks-agent-skills")
 	assert.Contains(t, cmds, "claude plugin install databricks@databricks-agent-skills --scope user")
 }
 
@@ -83,7 +95,7 @@ func TestInstallPluginForAgentSharedMarketplace(t *testing.T) {
 
 	cmds := stub.Commands()
 	assert.Contains(t, cmds, "claude plugin marketplace add anthropics/claude-plugins-official")
-	assert.Contains(t, cmds, "claude plugin marketplace update")
+	assert.Contains(t, cmds, "claude plugin marketplace update claude-plugins-official")
 	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
 }
 
@@ -163,18 +175,75 @@ func TestInstallPluginRollsBackMarketplaceOnInstallFailure(t *testing.T) {
 	assert.Contains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
 }
 
-func TestInstallPluginRollsBackMarketplaceOnRefreshFailure(t *testing.T) {
+func TestInstallPluginContinuesWhenRefreshFails(t *testing.T) {
+	// The plugin's own marketplace can't be refreshed (e.g. it is unreachable),
+	// but the local copy still lists the plugin, so the install goes on.
+	for _, tc := range []struct {
+		name string
+		// listed is the `plugin marketplace list` output before the install.
+		listed            string
+		wantInstalledByUs bool
+		wantVersion       string
+		wantWarning       bool
+	}{
+		{
+			// We just added the marketplace, so its local copy is fresh.
+			name:              "just added",
+			wantInstalledByUs: true,
+			wantVersion:       "0.2.6",
+		},
+		{
+			// Registered before, so the local copy may be old, and the
+			// marketplace is not ours to remove or record.
+			name:        "already registered",
+			listed:      "databricks-agent-skills\n",
+			wantVersion: "",
+			wantWarning: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			ctx, logs := captureWarnings(ctx)
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+			stub.WithStdoutFor("plugin marketplace list", tc.listed)
+			stub.WithStderrFor("plugin marketplace update", "could not reach github.com").
+				WithFailureFor("plugin marketplace update", errors.New("exit status 1"))
+
+			rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantInstalledByUs, rec.InstalledMarketplace)
+			assert.Equal(t, tc.wantVersion, rec.Version)
+			assert.Contains(t, stub.Commands(), "claude plugin install databricks@databricks-agent-skills --scope user")
+			assert.NotContains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
+			if tc.wantWarning {
+				assert.Contains(t, logs.String(), localCopyWarning)
+				assert.Contains(t, logs.String(), "could not reach github.com")
+			} else {
+				assert.NotContains(t, logs.String(), localCopyWarning)
+			}
+		})
+	}
+}
+
+func TestInstallPluginRollsBackMarketplaceWhenRefreshAndInstallFail(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
-	// Marketplace absent (empty list) so we add it; then the refresh fails.
-	stub.WithFailureFor("plugin marketplace update", errors.New("boom"))
+	// Marketplace absent (empty list) so we add it; then refresh and install fail.
+	stub.WithFailureFor("plugin marketplace update", errors.New("refresh boom"))
+	stub.WithFailureFor("plugin install", errors.New("install boom"))
+	ctx, logs := captureWarnings(ctx)
 
 	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonInstallFailed, be.Reason)
-	// We added the marketplace, so a failed refresh must de-register it again.
+	assert.Contains(t, be.Detail, "install boom (refreshing the marketplace also failed: ")
+	assert.Contains(t, be.Detail, "refresh boom)")
+	// The refresh error is in the detail; the "local copy" advice would be wrong.
+	assert.NotContains(t, logs.String(), localCopyWarning)
+	// We added the marketplace, so a failed install must de-register it again.
 	assert.Contains(t, stub.Commands(), "claude plugin marketplace remove databricks-agent-skills")
 }
 
@@ -183,21 +252,79 @@ func TestUpdatePluginForAgentCodexTwoStep(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	require.NoError(t, UpdatePluginForAgent(ctx, codexAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}))
+	refreshErr, err := UpdatePluginForAgent(ctx, codexAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"})
+	require.NoError(t, err)
+	assert.NoError(t, refreshErr)
 	cmds := stub.Commands()
-	assert.Contains(t, cmds, "codex plugin marketplace upgrade")
+	assert.Contains(t, cmds, "codex plugin marketplace upgrade databricks-agent-skills")
 	assert.Contains(t, cmds, "codex plugin add databricks@databricks-agent-skills")
 }
 
 func TestUpdatePluginForAgentClaudeOneStep(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		rec  PluginRecord
+	}{
+		{"recorded marketplace", PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}},
+		// A record without a marketplace falls back to the agent's current one.
+		{"record without marketplace", PluginRecord{Plugin: "databricks", Scope: "user"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+			refreshErr, err := UpdatePluginForAgent(ctx, claudeAgent(), tc.rec)
+			require.NoError(t, err)
+			assert.NoError(t, refreshErr)
+			assert.Equal(t, []string{
+				"claude plugin marketplace update databricks-agent-skills",
+				"claude plugin update databricks@databricks-agent-skills --scope user",
+			}, stub.Commands())
+		})
+	}
+}
+
+func TestUpdatePluginForAgentContinuesWhenRefreshFails(t *testing.T) {
+	for _, tc := range []struct {
+		agent   *agents.Agent
+		refresh string
+		update  string
+	}{
+		{claudeAgent(), "claude plugin marketplace update databricks-agent-skills", "claude plugin update databricks@databricks-agent-skills --scope user"},
+		{codexAgent(), "codex plugin marketplace upgrade databricks-agent-skills", "codex plugin add databricks@databricks-agent-skills"},
+	} {
+		t.Run(tc.agent.Name, func(t *testing.T) {
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+			stub.WithStderrFor("plugin marketplace", "could not reach github.com").
+				WithFailureFor("plugin marketplace", errors.New("exit status 1"))
+
+			refreshErr, err := UpdatePluginForAgent(ctx, tc.agent, PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"})
+			require.NoError(t, err)
+			require.Error(t, refreshErr)
+			assert.Equal(t, "could not reach github.com", stderrOf(refreshErr))
+			assert.Equal(t, []string{tc.refresh, tc.update}, stub.Commands())
+		})
+	}
+}
+
+func TestUpdatePluginForAgentReportsRefreshWhenUpdateFails(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	stub.WithFailureFor("plugin marketplace update", errors.New("refresh boom"))
+	stub.WithFailureFor("plugin update", errors.New("update boom"))
+	ctx, logs := captureWarnings(ctx)
 
-	require.NoError(t, UpdatePluginForAgent(ctx, claudeAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"}))
-	cmds := stub.Commands()
-	assert.Contains(t, cmds, "claude plugin marketplace update")
-	assert.Contains(t, cmds, "claude plugin update databricks@databricks-agent-skills --scope user")
+	_, err := UpdatePluginForAgent(ctx, claudeAgent(), PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user"})
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	assert.Contains(t, be.Detail, "update boom (refreshing the marketplace also failed: ")
+	assert.Contains(t, be.Detail, "refresh boom)")
+	assert.NotContains(t, logs.String(), localCopyWarning)
 }
 
 func TestUninstallPluginClaudeAlreadyDisabledContinues(t *testing.T) {
@@ -441,6 +568,60 @@ func TestUpdateInstalledPlugins(t *testing.T) {
 	assert.Equal(t, "0.2.7", state.Plugins[agents.NameCopilot].Version)
 }
 
+func TestUpdateInstalledPluginsRecordsUnknownVersionWhenRefreshFails(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		recorded    string
+		want        string
+		wantWarning bool
+	}{
+		// The update ran from a local copy of unknown age.
+		{"older release recorded", "0.2.6", "", true},
+		// The record already holds this release, and the local copy can only
+		// have moved forward since the refresh that wrote it, so there is
+		// nothing to warn about.
+		{"current release recorded", "0.2.7", "0.2.7", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestHome(t)
+			stubAgentLookPath(t, true)
+			ctx, stub := process.WithStub(t.Context())
+			ctx, logs := captureWarnings(ctx)
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+			stub.WithStderrFor("plugin marketplace update", "could not reach github.com").
+				WithFailureFor("plugin marketplace update", errors.New("exit status 1"))
+
+			dir, err := GlobalSkillsDir(ctx)
+			require.NoError(t, err)
+			require.NoError(t, SaveState(dir, &InstallState{
+				SchemaVersion: schemaVersionV2,
+				Release:       "v" + tc.recorded,
+				Plugins: map[string]PluginRecord{
+					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: "user", Version: tc.recorded},
+				},
+			}))
+
+			updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+			require.NoError(t, err)
+			require.Len(t, updated, 1)
+			require.NoError(t, updated[0].Err)
+			assert.Equal(t, tc.want, updated[0].Version)
+			assert.Contains(t, stub.Commands(), "claude plugin update databricks@claude-plugins-official --scope user")
+
+			state, err := LoadState(dir)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, state.Plugins[agents.NameClaudeCode].Version)
+			if tc.wantWarning {
+				assert.Contains(t, logs.String(), localCopyWarning)
+				assert.Contains(t, logs.String(), "rerun `databricks aitools update` later")
+				assert.Contains(t, logs.String(), "could not reach github.com")
+			} else {
+				assert.NotContains(t, logs.String(), localCopyWarning)
+			}
+		})
+	}
+}
+
 func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
 	for _, scope := range []string{"project", "user", "local"} {
 		t.Run(scope, func(t *testing.T) {
@@ -464,7 +645,7 @@ func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
 			require.Len(t, updated, 1)
 
 			cmds := stub.Commands()
-			assert.Contains(t, cmds, "claude plugin marketplace update")
+			assert.Contains(t, cmds, "claude plugin marketplace update claude-plugins-official")
 			assert.Contains(t, cmds, "claude plugin update databricks@claude-plugins-official --scope "+scope)
 		})
 	}
