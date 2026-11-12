@@ -849,3 +849,31 @@ func TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst(t *testing
 	require.NotNil(t, entry)
 	assert.Equal(t, "github-default", entry.Name)
 }
+
+// TestCheckBindingChecksProfileWithoutEntry checks that a profile that is missing, or has no host, is refused when no entry
+// exists either, with the error Bind returns for it. An account-level profile has no workspace, so it has no host.
+func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
+	tests := []struct {
+		name     string
+		contents string
+		problem  string
+	}{
+		{name: "missing", contents: "[other]\nhost = https://other.test\n", problem: "which no longer exists in "},
+		{name: "account profile without host", contents: "[" + bindingTestProfile + "]\naccount_id = 123\n", problem: "which has no host in "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bindingTestConfig(t, tt.contents)
+
+			_, err := bindingTestCheck(t, &mcp.State{})
+			requireBindError(t, err, mcp.BindProfileNotFound)
+			assert.Contains(t, err.Error(), tt.problem)
+
+			_, _, bindErr := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile, Service: bindingTestService, State: &mcp.State{}, Stderr: io.Discard,
+			})
+			require.Error(t, bindErr)
+			assert.Equal(t, bindErr.Error(), err.Error())
+		})
+	}
+}

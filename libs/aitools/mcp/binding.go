@@ -87,12 +87,6 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if err != nil {
 		return nil, nil, err
 	}
-	if entry == nil {
-		// Without an entry the profile is still needed, under the service's name.
-		if _, err := profileFor(opts.Service, opts.Profile, configFile, nil); err != nil {
-			return nil, nil, err
-		}
-	}
 
 	cfg, err := BoundConfig(opts.Profile, configFile)
 	if err != nil {
@@ -140,12 +134,17 @@ func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName stri
 }
 
 // CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
-// resolved with ResolveConfigFile, or nil when there is none. With an entry, it returns the error Bind returns when the
-// profile no longer matches the entry: the profile is gone or has no host, or its host or workspace changed. It reads the
-// config files only and makes no request, so a caller can refuse before it sends a token to the profile's host.
+// resolved with ResolveConfigFile, or nil when there is none. It returns the error Bind returns when the profile does not
+// match: the profile is gone or has no host, or with an entry, its host or workspace changed. The profile is checked
+// without an entry too, under the service's name. It reads the config files only and makes no request, so a caller can
+// refuse before it sends a token to the profile's host.
 func CheckBinding(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
 	entry, err := FindEntry(ctx, state, service, profileName, configFile)
-	if err != nil || entry == nil {
+	if err != nil {
+		return nil, err
+	}
+	if entry == nil {
+		_, err := profileFor(service, profileName, configFile, nil)
 		return nil, err
 	}
 	p, err := profileFor(entry.Name, profileName, configFile, entry)
