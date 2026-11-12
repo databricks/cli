@@ -2,6 +2,9 @@ package agents
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -469,10 +472,15 @@ func openCodeMCPPath(ctx context.Context) (string, error) {
 		return "", err
 	}
 	jsonc := filepath.Join(dir, "opencode.jsonc")
-	if _, err := os.Stat(jsonc); err == nil {
+	_, err = os.Stat(jsonc)
+	switch {
+	case err == nil:
 		return jsonc, nil
+	case errors.Is(err, fs.ErrNotExist):
+		return filepath.Join(dir, "opencode.json"), nil
+	default:
+		return "", fmt.Errorf("cannot read %s: %w", filepath.ToSlash(jsonc), err)
 	}
-	return filepath.Join(dir, "opencode.json"), nil
 }
 
 // openCodeMCPEntry follows the current OpenCode schema: servers live under

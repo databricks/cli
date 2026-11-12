@@ -48,28 +48,34 @@ type document interface {
 	entry(root []string, name string) (map[string]any, bool, error)
 	// entries returns the object-valued members under root, keyed by name.
 	entries(root []string) (map[string]map[string]any, error)
-	// set stores entry as name under root, creating missing levels.
+	// set stores entry as name under root, replacing an existing entry and
+	// creating missing levels.
 	set(root []string, name string, entry map[string]any) error
+	// update changes the launch keys of the existing entry name under root to
+	// those of entry. Other keys of the entry keep their bytes where the format
+	// allows it.
+	update(root []string, name string, entry map[string]any) error
 	// remove deletes name under root. It is a no-op when name is absent.
 	remove(root []string, name string) error
 	// bytes serializes the document.
 	bytes() ([]byte, error)
 }
 
-// builderKeys are the entry keys the agent builders write. Upsert overwrites
-// them. Any other key was added by the user (for example disabled or enabled)
-// and is kept when an entry we wrote is updated.
-var builderKeys = []string{"command", "args", "env", "environment", "type", "tools"}
+// launchKeys are the entry keys that describe how the server starts. Upsert sets
+// them on an update, and an entry whose launch keys match is not rewritten. Any
+// other key is the user's after the entry is first added: a default that the
+// builder writes (Copilot's tools list) is not written again, and a key the user
+// added (disabled, or a tools table) is kept.
+var launchKeys = []string{"command", "args", "env", "environment", "type"}
 
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
-// env. An entry this CLI wrote is updated in its builder keys, and keys the user
-// added to it are kept. A foreign entry is replaced only when force is set. The
-// file is left alone when the entry already matches. cmd must be the databricks
-// binary, or the entry could never be recognized as ours. It returns the config
-// file path.
+// env. An entry this CLI wrote gets its launch keys updated, and the other keys
+// are kept. A foreign entry is replaced only when force is set. The file is left
+// alone when the entry already matches. cmd must be the databricks binary, or
+// the entry could never be recognized as ours. It returns the config file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
-	if !mcpconfig.ValidServerName(name) {
-		return "", "", fmt.Errorf("server name %q must contain only letters, digits, '-' and '_'", name)
+	if err := checkName(name); err != nil {
+		return "", "", err
 	}
 	spec, err := specOf(a)
 	if err != nil {
@@ -80,7 +86,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return "", "", err
 	}
-	if !mcpconfig.IsBinary(cmd, "databricks", "databricks.exe") {
+	if !mcpconfig.IsDatabricksBinary(cmd) {
 		return "", "", fmt.Errorf("server %q: command %q must be the databricks binary, named databricks or databricks.exe", name, cmd)
 	}
 	if !mcpconfig.IsDatabricksEntry(ours) {
@@ -99,45 +105,44 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
-	if found {
-		if mcpconfig.IsDatabricksEntry(current) {
-			same, err := sameEntry(builderKeysOf(current), builderKeysOf(want))
-			if err != nil {
-				return path, "", err
-			}
-			if same {
-				return path, StatusUnchanged, nil
-			}
-			want = keepUserKeys(current, want)
-		} else {
-			if !force {
-				return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
-			}
-			same, err := sameEntry(current, want)
-			if err != nil {
-				return path, "", err
-			}
-			if same {
-				return path, StatusUnchanged, nil
-			}
+
+	var status Status
+	switch {
+	case !found:
+		status = StatusAdded
+		err = doc.set(root, name, want)
+	case !mcpconfig.IsDatabricksEntry(current) && !force:
+		return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	case !mcpconfig.IsDatabricksEntry(current):
+		status = StatusUpdated
+		err = doc.set(root, name, want)
+	default:
+		same, cmpErr := sameEntry(launchKeysOf(current), launchKeysOf(want))
+		if cmpErr != nil {
+			return path, "", cmpErr
 		}
+		if same {
+			return path, StatusUnchanged, nil
+		}
+		status = StatusUpdated
+		err = doc.update(root, name, keepUserKeys(current, want))
 	}
-	if err := doc.set(root, name, want); err != nil {
+	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if err := save(path, doc); err != nil {
 		return path, "", err
 	}
-	if found {
-		return path, StatusUpdated, nil
-	}
-	return path, StatusAdded, nil
+	return path, status, nil
 }
 
 // Remove deletes server name from agent a's config. It reports false, without
 // writing, when there is no such entry, and refuses an entry this CLI did not
 // write.
 func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
+	if err := checkName(name); err != nil {
+		return false, err
+	}
 	spec, err := specOf(a)
 	if err != nil {
 		return false, err
@@ -192,6 +197,15 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	return entries, nil
 }
 
+// checkName refuses a name that no agent would accept. Upsert and Remove both
+// check it, so a name that cannot be written is never looked up either.
+func checkName(name string) error {
+	if !mcpconfig.ValidServerName(name) {
+		return fmt.Errorf("server name %q must contain only letters, digits, '-' and '_'", name)
+	}
+	return nil
+}
+
 func specOf(a *agents.Agent) (*mcpconfig.Spec, error) {
 	if a.MCP == nil {
 		return nil, fmt.Errorf("agent %s does not take MCP servers", a.DisplayName)
@@ -225,7 +239,7 @@ func load(spec *mcpconfig.Spec, path string) (document, error) {
 }
 
 // save writes doc to path atomically. The file keeps its mode; a new file gets
-// 0600 because agent configs can hold auth state.
+// 0600 and a new directory 0700, because agent configs can hold auth state.
 func save(path string, doc document) error {
 	data, err := doc.bytes()
 	if err != nil {
@@ -250,7 +264,7 @@ func save(path string, doc document) error {
 	default:
 		return fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
 	}
-	if err := atomicfile.Write(target, data, perm, atomicfile.MkDir(0o755)); err != nil {
+	if err := atomicfile.Write(target, data, perm, atomicfile.MkDir(0o700)); err != nil {
 		return fmt.Errorf("write %s: %w", filepath.ToSlash(path), err)
 	}
 	return nil
@@ -258,10 +272,8 @@ func save(path string, doc document) error {
 
 // stripBOM removes a leading UTF-8 byte order mark, reporting whether there was one.
 func stripBOM(data []byte) ([]byte, bool) {
-	if bytes.HasPrefix(data, utf8BOM) {
-		return data[len(utf8BOM):], true
-	}
-	return data, false
+	rest, ok := bytes.CutPrefix(data, utf8BOM)
+	return rest, ok
 }
 
 // lineEnding returns CRLF when data uses it, and LF otherwise.
@@ -280,10 +292,10 @@ func withBOM(data []byte, bom bool) []byte {
 	return append(append([]byte{}, utf8BOM...), data...)
 }
 
-// builderKeysOf returns the keys of entry that the agent builders write.
-func builderKeysOf(entry map[string]any) map[string]any {
+// launchKeysOf returns the launch keys of entry.
+func launchKeysOf(entry map[string]any) map[string]any {
 	out := map[string]any{}
-	for _, key := range builderKeys {
+	for _, key := range launchKeys {
 		if v, ok := entry[key]; ok {
 			out[key] = v
 		}
@@ -291,11 +303,12 @@ func builderKeysOf(entry map[string]any) map[string]any {
 	return out
 }
 
-// keepUserKeys returns current with its builder keys set to those of want. The
-// other keys of current are kept.
+// keepUserKeys returns current with its launch keys set to those of want, and
+// removes a launch key that want lacks. The other keys of current are kept, and
+// a key that want has but current lacks is not added.
 func keepUserKeys(current, want map[string]any) map[string]any {
 	out := maps.Clone(current)
-	for _, key := range builderKeys {
+	for _, key := range launchKeys {
 		if v, ok := want[key]; ok {
 			out[key] = v
 		} else {
@@ -325,8 +338,16 @@ func normalize(entry map[string]any) (map[string]any, error) {
 		return nil, err
 	}
 	var out map[string]any
-	if err := json.Unmarshal(raw, &out); err != nil {
+	if err := decodeJSON(raw, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// decodeJSON decodes data into v. Numbers stay as their text, so a value read
+// from a file is not rounded on the way.
+func decodeJSON(data []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	return dec.Decode(v)
 }

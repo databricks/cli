@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -162,4 +163,22 @@ func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 			assert.NotContains(t, names, a.DisplayName)
 		}
 	}
+}
+
+// A config file that cannot be inspected is an error, not a missing file. Creating
+// opencode.json beside it would leave the user's file unread.
+func TestOpenCodeMCPPathReturnsStatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	jsonc := filepath.Join(dir, "opencode.jsonc")
+	require.NoError(t, os.Symlink(jsonc, jsonc))
+
+	_, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.Error(t, err)
+	_, err = os.Stat(filepath.Join(dir, "opencode.json"))
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }

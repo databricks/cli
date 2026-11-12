@@ -3,10 +3,18 @@ package agentconfig
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/tailscale/hujson"
+)
+
+// RFC 6902 operations used to edit a document.
+const (
+	opAdd     = "add"
+	opReplace = "replace"
+	opRemove  = "remove"
 )
 
 // jsonDoc is an agent config file in JSON with comments (JSONC) and trailing
@@ -31,15 +39,20 @@ func parseJSON(data []byte) (document, error) {
 		return nil, err
 	}
 	if _, ok := root.Value.(*hujson.Object); !ok {
-		return nil, fmt.Errorf("top-level value is not a JSON object: %w", ErrConfigInvalid)
+		return nil, errors.New("top-level value is not a JSON object")
 	}
 	return &jsonDoc{bom: bom, nl: lineEnding(data), root: root}, nil
 }
 
 // object returns the object at path, or nil when a level is missing. A level
-// that exists but is not an object is an error.
+// that exists but is not an object is an error. Every object on the way must have
+// unique member names, since agents read the last of two equal names while an
+// edit would change the first.
 func (d *jsonDoc) object(path []string) (*hujson.Object, error) {
 	obj := d.root.Value.(*hujson.Object)
+	if err := checkUnique(obj); err != nil {
+		return nil, err
+	}
 	for i, key := range path {
 		member := findMember(obj, key)
 		if member == nil {
@@ -49,9 +62,24 @@ func (d *jsonDoc) object(path []string) (*hujson.Object, error) {
 		if !ok {
 			return nil, fmt.Errorf("%q is not a JSON object: %w", strings.Join(path[:i+1], "."), ErrConfigInvalid)
 		}
+		if err := checkUnique(next); err != nil {
+			return nil, err
+		}
 		obj = next
 	}
 	return obj, nil
+}
+
+func checkUnique(obj *hujson.Object) error {
+	seen := map[string]bool{}
+	for _, m := range obj.Members {
+		name := memberName(m)
+		if seen[name] {
+			return fmt.Errorf("duplicate key %q: %w", name, ErrConfigInvalid)
+		}
+		seen[name] = true
+	}
+	return nil
 }
 
 func findMember(obj *hujson.Object, name string) *hujson.ObjectMember {
@@ -75,7 +103,7 @@ func decodeObject(v *hujson.Value) (map[string]any, bool) {
 		return nil, false
 	}
 	var out map[string]any
-	if err := json.Unmarshal(std, &out); err != nil || out == nil {
+	if err := decodeJSON(std, &out); err != nil || out == nil {
 		return nil, false
 	}
 	return out, true
@@ -89,6 +117,11 @@ func (d *jsonDoc) entry(root []string, name string) (map[string]any, bool, error
 	member := findMember(table, name)
 	if member == nil {
 		return nil, false, nil
+	}
+	if obj, ok := member.Value.Value.(*hujson.Object); ok {
+		if err := checkUnique(obj); err != nil {
+			return nil, false, err
+		}
 	}
 	entry, ok := decodeObject(&member.Value)
 	if !ok {
@@ -141,16 +174,15 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 		return err
 	}
 	entryNew := parent == nil || findMember(parent, name) == nil
-	value, err := encodeIndented(entry, indent(n+1))
+	value, err := d.encodeValue(entry, n+1)
 	if err != nil {
 		return err
 	}
-	value = bytes.ReplaceAll(value, []byte("\n"), []byte(d.nl))
 	var ops []patch
 	for i := first; i < n; i++ {
-		ops = append(ops, patch{op: "add", path: jsonPointer(root[:i+1]...), value: []byte("{" + d.nl + indent(i+1) + "}")})
+		ops = append(ops, patch{op: opAdd, path: jsonPointer(root[:i+1]...), value: []byte("{" + d.nl + indent(i+1) + "}")})
 	}
-	ops = append(ops, patch{op: "add", path: jsonPointer(append(root, name)...), value: value})
+	ops = append(ops, patch{op: opAdd, path: jsonPointer(append(root, name)...), value: value})
 	if err := d.apply(ops); err != nil {
 		return err
 	}
@@ -174,6 +206,86 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 	}
 	place(obj, name, n+1, entryNew, d.nl)
 	return nil
+}
+
+// update changes the launch keys of the server name under root to those of
+// entry. A launch key that entry lacks is removed, and one that is missing from
+// the file is added. A launch key whose value is unchanged is not touched, and
+// the other keys of the server keep their bytes. name must exist.
+func (d *jsonDoc) update(root []string, name string, entry map[string]any) error {
+	current, _, err := d.entry(root, name)
+	if err != nil {
+		return err
+	}
+	depth := len(root) + 2
+	var ops []patch
+	var added, removed []string
+	for _, key := range launchKeys {
+		want, inEntry := entry[key]
+		have, inFile := current[key]
+		switch {
+		case inEntry && !inFile:
+			value, err := d.encodeValue(want, depth)
+			if err != nil {
+				return err
+			}
+			ops = append(ops, patch{op: opAdd, path: jsonPointer(append(root, name, key)...), value: value})
+			added = append(added, key)
+		case inFile && !inEntry:
+			removed = append(removed, key)
+		case inEntry:
+			same, err := sameEntry(map[string]any{key: have}, map[string]any{key: want})
+			if err != nil {
+				return err
+			}
+			if same {
+				continue
+			}
+			value, err := d.encodeValue(want, depth)
+			if err != nil {
+				return err
+			}
+			ops = append(ops, patch{op: opReplace, path: jsonPointer(append(root, name, key)...), value: value})
+		}
+	}
+	if len(ops) > 0 {
+		if err := d.apply(ops); err != nil {
+			return err
+		}
+	}
+	for _, key := range removed {
+		if err := d.remove(append(root, name), key); err != nil {
+			return err
+		}
+	}
+	server, err := d.server(root, name)
+	if err != nil {
+		return err
+	}
+	for _, key := range added {
+		place(server, key, depth, true, d.nl)
+	}
+	return nil
+}
+
+// server returns the object of the server name under root. The entry must exist
+// and be an object.
+func (d *jsonDoc) server(root []string, name string) (*hujson.Object, error) {
+	table, err := d.object(root)
+	if err != nil {
+		return nil, err
+	}
+	// entry decoded the member as an object, so its value is an object.
+	return findMember(table, name).Value.Value.(*hujson.Object), nil
+}
+
+// encodeValue encodes v for a member at depth, with the file's line endings.
+func (d *jsonDoc) encodeValue(v any, depth int) ([]byte, error) {
+	value, err := encodeIndented(v, indent(depth))
+	if err != nil {
+		return nil, err
+	}
+	return bytes.ReplaceAll(value, []byte("\n"), []byte(d.nl)), nil
 }
 
 // place lays out a member that set wrote: the value follows the colon after a
@@ -210,7 +322,7 @@ func (d *jsonDoc) remove(root []string, name string) error {
 		return err
 	}
 	trailing := hasTrailingComma(obj)
-	if err := d.apply([]patch{{op: "remove", path: jsonPointer(append(root, name)...)}}); err != nil {
+	if err := d.apply([]patch{{op: opRemove, path: jsonPointer(append(root, name)...)}}); err != nil {
 		return err
 	}
 	obj, err = d.object(root)

@@ -75,7 +75,7 @@ func TestTOMLRefusesServerWithoutOwnTables(t *testing.T) {
 
 			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
 			require.Error(t, err)
-			assert.ErrorContains(t, err, path)
+			assert.ErrorContains(t, err, filepath.ToSlash(path))
 			assert.ErrorContains(t, err, testName)
 			assert.Equal(t, tc.data, string(readFile(t, path)))
 
@@ -132,4 +132,158 @@ func TestTOMLEditOnlyTouchesServerBlockLines(t *testing.T) {
 	assert.True(t, ok)
 	_, ok = tomlTableKey(`key = "[x]"`)
 	assert.False(t, ok)
+}
+
+// blockFor is the table block Upsert writes for testName with the given agent's args.
+func blockFor(agent string) string {
+	return "[mcp_servers." + testName + "]\n" +
+		`args = ["aitools", "mcp", "serve", "--profile", "dogfood", "--service", "system.ai.genie_one_mcp", "--agent", "` + agent + `"]` + "\n" +
+		`command = "` + testCmd + `"` + "\n"
+}
+
+// requireTidyTOML fails when the layout has a double blank line, a blank first
+// line, or a blank last line that the file did not have.
+func requireTidyTOML(t *testing.T, got string) {
+	t.Helper()
+	assert.NotContains(t, got, "\n\n\n", "no double blank line")
+	assert.False(t, strings.HasPrefix(got, "\n"), "no blank first line")
+}
+
+// Env sub-tables are written, changed, dropped and removed with the server.
+func TestTOMLEnvTablesLayout(t *testing.T) {
+	other := "[mcp_servers.other]\ncommand = \"npx\"\n"
+	envTable := "[mcp_servers." + testName + ".env]\nTOKEN = \"one\"\n"
+
+	t.Run("add with env", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		writeFile(t, path, []byte(other), 0o600)
+		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"TOKEN": "one"}, false)
+		require.NoError(t, err)
+		assert.Equal(t, StatusAdded, status)
+		got := string(readFile(t, path))
+		requireTidyTOML(t, got)
+		entries, err := Read(t.Context(), a)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"TOKEN": "one"}, entries[testName]["env"])
+		assert.Contains(t, entries, "other")
+	})
+
+	t.Run("change env", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		writeFile(t, path, []byte(blockFor("test")+"\n"+envTable+"\n"+other), 0o600)
+		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"TOKEN": "two"}, false)
+		require.NoError(t, err)
+		assert.Equal(t, StatusUpdated, status)
+		got := string(readFile(t, path))
+		requireTidyTOML(t, got)
+		assert.Contains(t, got, `TOKEN = "two"`)
+		assert.NotContains(t, got, `"one"`)
+		assert.True(t, strings.HasSuffix(got, "\n"+other), got)
+	})
+
+	t.Run("drop env", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		writeFile(t, path, []byte(blockFor("test")+"\n"+envTable+"\n"+other), 0o600)
+		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+		_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+		require.NoError(t, err)
+		assert.Equal(t, StatusUpdated, status)
+		got := string(readFile(t, path))
+		requireTidyTOML(t, got)
+		assert.NotContains(t, got, "TOKEN")
+		assert.Equal(t, blockFor("other")+"\n"+other, got)
+	})
+
+	t.Run("remove server with env", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		writeFile(t, path, []byte(blockFor("test")+"\n"+envTable+"\n"+other), 0o600)
+		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+		removed, err := Remove(t.Context(), a, testName)
+		require.NoError(t, err)
+		assert.True(t, removed)
+		assert.Equal(t, other, string(readFile(t, path)))
+	})
+
+	t.Run("remove first server", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		writeFile(t, path, []byte(blockFor("test")+"\n"+other), 0o600)
+		a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+		removed, err := Remove(t.Context(), a, testName)
+		require.NoError(t, err)
+		assert.True(t, removed)
+		assert.Equal(t, other, string(readFile(t, path)))
+	})
+}
+
+// A table name in quotes can contain dots, and a server named like its prefix
+// is a different server. Neither is edited when the other one is.
+func TestTOMLQuotedDottedNameIsAnotherServer(t *testing.T) {
+	before := "[mcp_servers.\"genie.x\"]\ncommand = \"npx\"\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeFile(t, path, []byte(before), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	removed, err := Remove(t.Context(), a, testName)
+	require.NoError(t, err)
+	assert.False(t, removed)
+	assert.Equal(t, before, string(readFile(t, path)))
+
+	_, status, err := Upsert(t.Context(), a, "genie", testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	assert.Equal(t, before+"\n"+strings.Replace(testBlock, testName, "genie", 1), string(readFile(t, path)))
+}
+
+// A line that looks like a table header inside a multi-line string is text, not
+// a table, so it is not edited.
+func TestTOMLHeaderLikeLineInMultilineString(t *testing.T) {
+	notes := "[mcp_servers.notes]\ntext = \"\"\"\n[mcp_servers.genie]\ncommand = \"not a header\"\n\"\"\"\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeFile(t, path, []byte(notes), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, status, err := Upsert(t.Context(), a, "genie", testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	assert.Equal(t, notes+"\n"+strings.Replace(testBlock, testName, "genie", 1), string(readFile(t, path)))
+
+	// Removing our server leaves the string as it was.
+	removed, err := Remove(t.Context(), a, "genie")
+	require.NoError(t, err)
+	assert.True(t, removed)
+	assert.Equal(t, notes, string(readFile(t, path)))
+}
+
+// Removing a table between two others keeps one blank line between them when
+// the table had a blank line on either side of it.
+func TestTOMLRemoveKeepsOneSeparator(t *testing.T) {
+	other := "[mcp_servers.other]\ncommand = \"npx\"\n"
+	for _, tc := range []struct {
+		name   string
+		before string
+	}{
+		{"blank before", "[mcp_servers.first]\ncommand = \"a\"\n\n" + blockFor("test") + other},
+		{"blank after", "[mcp_servers.first]\ncommand = \"a\"\n" + blockFor("test") + "\n" + other},
+		{"blank both sides", "[mcp_servers.first]\ncommand = \"a\"\n\n" + blockFor("test") + "\n" + other},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.toml")
+			writeFile(t, path, []byte(tc.before), 0o600)
+			a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+			removed, err := Remove(t.Context(), a, testName)
+			require.NoError(t, err)
+			assert.True(t, removed)
+			got := string(readFile(t, path))
+			requireTidyTOML(t, got)
+			assert.Equal(t, "[mcp_servers.first]\ncommand = \"a\"\n\n"+other, got)
+		})
+	}
 }

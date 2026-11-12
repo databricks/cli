@@ -5,7 +5,6 @@ package mcpconfig
 
 import (
 	"context"
-	"regexp"
 	"slices"
 	"strings"
 )
@@ -75,8 +74,14 @@ func IsDatabricksEntry(entry map[string]any) bool {
 		return false
 	}
 	args := argv[1:]
-	return IsBinary(argv[0], "databricks", "databricks.exe") &&
+	return IsDatabricksBinary(argv[0]) &&
 		len(args) >= 3 && args[0] == "aitools" && args[1] == "mcp" && args[2] == "serve"
+}
+
+// IsDatabricksBinary reports whether cmd names the databricks binary, as a bare
+// name or a path.
+func IsDatabricksBinary(cmd string) bool {
+	return IsBinary(cmd, "databricks", "databricks.exe")
 }
 
 // IsBinary reports whether cmd, a bare name or a path, has one of the given
@@ -89,11 +94,20 @@ func IsBinary(cmd string, names ...string) bool {
 	})
 }
 
-// serverNamePattern is the strictest set of server names the agents accept, so a
-// name that matches it is valid for every agent.
-var serverNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
-
-// ValidServerName reports whether name may be used as an MCP server name.
+// ValidServerName reports whether name may be used as an MCP server name: one or
+// more ASCII letters, digits, '-' or '_'. That is the strictest set of names the
+// agents accept, so a name that passes is valid for every agent.
 func ValidServerName(name string) bool {
-	return serverNamePattern.MatchString(name)
+	if name == "" {
+		return false
+	}
+	for i := range len(name) {
+		c := name[i]
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-', c == '_':
+		default:
+			return false
+		}
+	}
+	return true
 }
