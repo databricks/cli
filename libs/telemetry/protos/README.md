@@ -5,3 +5,11 @@ You can find all lumberjack protos for the Databricks CLI in the `proto/logs/fro
 which config options were set, the outcome and latency, and how long packaging and
 uploading the code snapshot took. It never includes code, paths, names, parameters,
 or image references. Set `DATABRICKS_CLI_DISABLE_TELEMETRY=1` to opt out.
+
+The CLI logs an `aitools_hint_event` each time it prints the Claude Code install hint (any
+non-aitools command) or the `apps init` skills tip or install prompt. It carries only the kind of
+hint (`hint_kind`); the command it was shown on is the entry's `execution_context.command`. The
+event uploads at exit only when the command resolved auth. The install hint prints at most once per
+Claude Code session per hour, so when the command that printed it resolves no auth (e.g.
+`databricks version`), that session logs no install hint event for the next hour even though the
+agent saw the hint.

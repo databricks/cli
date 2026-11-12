@@ -1,0 +1,6 @@
+# Telemetry payloads of the install hint.
+RecordRequests = true
+
+Ignore = [
+    "home",
+]

@@ -1,0 +1,17 @@
+# A host that disables telemetry or sets a zero upload timeout would upload
+# nothing, so these cases would record no events.
+unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
+
+# print_telemetry prints each telemetry event uploaded since the last call, one
+# per line: the command it ran under, its exit code, and the event without the
+# rest of the execution context (timings and versions vary). print_requests.py
+# clears the recorded requests, so the next call sees only the next command's
+# upload. It fails when no request was recorded, hence the file check.
+print_telemetry() {
+    if [ -f "$OUT_REQUESTS" ]; then
+        print_requests.py --oneline //telemetry-ext | jq -c '.body.protoLogs[] | fromjson
+            | .entry.databricks_cli_log
+            | {command: .execution_context.command, exit_code: .execution_context.exit_code}
+              + (del(.execution_context))'
+    fi
+}
