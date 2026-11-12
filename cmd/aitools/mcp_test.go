@@ -96,6 +96,7 @@ host = https://b.test
 		_, err := resolveProfile(ctx, "")
 		require.Error(t, err)
 		assert.Equal(t, "several workspace profiles exist; pass --profile. Found: a, b", err.Error())
+		assert.Equal(t, categoryProfileRequired, errorCategory(err))
 	})
 
 	t.Run("no workspace profiles is an error naming the file", func(t *testing.T) {
@@ -103,6 +104,7 @@ host = https://b.test
 		_, err := resolveProfile(ctx, "")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no workspace profiles in ")
+		assert.Equal(t, categoryNoProfile, errorCategory(err))
 		assert.Contains(t, err.Error(), "databricks auth login --host <url> --profile <name>")
 	})
 }
