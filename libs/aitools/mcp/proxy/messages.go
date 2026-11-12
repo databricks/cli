@@ -82,7 +82,7 @@ func decodeErrorBody(body []byte) *errorBody {
 
 // isRequest reports whether m is a request, which expects a response, rather than a notification.
 func (m message) isRequest() bool {
-	return m.Method != "" && len(m.ID) > 0 && string(m.ID) != "null"
+	return m.Method != "" && len(m.ID) > 0 && !bytes.Equal(m.ID, jsonNull)
 }
 
 // isResponseTo reports whether m is a JSON-RPC response to request. Only a request can have one. The ids
@@ -103,6 +103,23 @@ func idKey(raw json.RawMessage) string {
 		return "n" + strconv.FormatFloat(v, 'g', -1, 64)
 	}
 	return string(raw)
+}
+
+// initializeProtocol returns the protocol version in the result of an initialize response. ok is false when the
+// response has no result.
+func initializeProtocol(data []byte) (version string, ok bool, err error) {
+	var r struct {
+		Result *struct {
+			ProtocolVersion string `json:"protocolVersion"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(data, &r); err != nil {
+		return "", false, fmt.Errorf("initialize result: %w", err)
+	}
+	if r.Result == nil {
+		return "", false, nil
+	}
+	return r.Result.ProtocolVersion, true, nil
 }
 
 // errorResponse builds a JSON-RPC error response. A nil id is sent as null.

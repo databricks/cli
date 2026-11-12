@@ -22,7 +22,8 @@ const (
 	sessionHeader     = "Mcp-Session-Id"
 	protocolHeader    = "MCP-Protocol-Version"
 	contentTypeHeader = "Content-Type"
-	acceptHeader      = "application/json, text/event-stream"
+	acceptHeader      = "Accept"
+	acceptTypes       = "application/json, text/event-stream"
 	jsonMIME          = "application/json"
 	eventStreamMIME   = "text/event-stream"
 
@@ -53,7 +54,8 @@ var (
 type Hooks interface {
 	// Result receives each upstream message for a client request, with the HTTP status (0 when the
 	// request failed before a response). It returns the messages to write in its place, in order:
-	// a single copy of message passes it through, an empty slice drops it.
+	// a single copy of message passes it through, an empty slice drops it. Result is called
+	// concurrently, from the goroutine of each request.
 	Result(ctx context.Context, request []byte, status int, message []byte) ([][]byte, error)
 }
 
@@ -257,9 +259,9 @@ func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m
 	idle := time.AfterFunc(idleTimeout, func() { cancel(errIdleTimeout) })
 	defer idle.Stop()
 
-	x := &exchange{c: c, line: line, m: m, req: ctx, idle: idle}
-	if err := x.send(idleCtx, true); err != nil {
-		x.fail(idleCtx, err)
+	x := &exchange{c: c, line: line, m: m, idle: idle}
+	if err := x.send(idleCtx, ctx, true); err != nil {
+		x.fail(idleCtx, ctx, err)
 	}
 }
 
@@ -273,10 +275,9 @@ func (c *conn) shutdown(ctx context.Context) {
 	select {
 	case <-done:
 	case <-time.After(shutdownGrace):
-		c.cancelBase()
-		<-done
 	}
 	c.cancelBase()
+	<-done
 	c.deleteSession(ctx)
 }
 
@@ -324,7 +325,7 @@ func (c *conn) newRequest(ctx context.Context, method string, body []byte, sent 
 	for k, v := range c.b.Headers {
 		req.Header.Set(k, v)
 	}
-	req.Header.Set("Accept", acceptHeader)
+	req.Header.Set(acceptHeader, acceptTypes)
 	if body != nil {
 		req.Header.Set(contentTypeHeader, jsonMIME)
 	}
@@ -465,63 +466,35 @@ type exchange struct {
 	c    *conn
 	line []byte
 	m    message
-	// req is the request's context. Hooks get it, so an idle timeout does not cancel them, while shutdown
-	// and the client still do.
-	req    context.Context
-	idle   *time.Timer
-	replay *upstreamState // set for a replayed handshake: its session and protocol stay here until the replay ends
+	idle *time.Timer // reset by every read of the response
 
 	status   int
 	answered bool // the upstream sent the response to m
 }
 
 // sending returns the session and protocol version to send with x. An initialize request starts a session,
-// so it carries neither (MCP transports, Session Management:
-// https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management).
+// so it carries neither (https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management).
 func (x *exchange) sending() upstreamState {
-	switch {
-	case x.m.Method == methodInitialize:
+	if x.m.Method == methodInitialize {
 		return upstreamState{}
-	case x.replay != nil:
-		return *x.replay
 	}
 	return x.c.current()
-}
-
-// recordSession keeps the Mcp-Session-Id of a successful response. A replay keeps it until it ends.
-func (x *exchange) recordSession(id string) {
-	switch {
-	case id == "":
-	case x.replay != nil:
-		x.replay.id = id
-	default:
-		x.c.setSession(id)
-	}
 }
 
 // recordProtocol keeps the protocol version from an initialize result, before the result is written.
 // The version the server chose governs the requests that follow.
 func (x *exchange) recordProtocol(data []byte) error {
-	var r struct {
-		Result *struct {
-			ProtocolVersion string `json:"protocolVersion"`
-		} `json:"result"`
+	v, ok, err := initializeProtocol(data)
+	if err != nil || !ok {
+		return err
 	}
-	if err := json.Unmarshal(data, &r); err != nil {
-		return fmt.Errorf("initialize result: %w", err)
-	}
-	switch {
-	case r.Result == nil:
-	case x.replay != nil:
-		x.replay.protocol = r.Result.ProtocolVersion
-	default:
-		x.c.setProtocol(r.Result.ProtocolVersion)
-	}
+	x.c.setProtocol(v)
 	return nil
 }
 
-// send posts the message and writes its answer.
-func (x *exchange) send(ctx context.Context, retry bool) error {
+// send posts the message and writes its answer. ctx is cancelled by the idle timeout; reqCtx is the request's
+// context, which hooks receive.
+func (x *exchange) send(ctx, reqCtx context.Context, retry bool) error {
 	sent := x.sending()
 	resp, err := x.c.post(ctx, x.line, sent)
 	if err != nil {
@@ -531,10 +504,12 @@ func (x *exchange) send(ctx context.Context, retry bool) error {
 	resp.Body = idleBody{ReadCloser: resp.Body, idle: x.idle}
 	x.status = resp.StatusCode
 	if resp.StatusCode/100 != 2 {
-		return x.httpFailure(ctx, resp, sent.id, retry)
+		return x.httpFailure(ctx, reqCtx, resp, sent.id, retry)
 	}
-	x.recordSession(resp.Header.Get(sessionHeader))
-	if err := x.read(resp); err != nil {
+	if id := resp.Header.Get(sessionHeader); id != "" {
+		x.c.setSession(id)
+	}
+	if err := x.read(reqCtx, resp); err != nil {
 		return err
 	}
 	if x.m.isRequest() && !x.answered {
@@ -543,33 +518,29 @@ func (x *exchange) send(ctx context.Context, retry bool) error {
 	return nil
 }
 
-// httpFailure handles a non-2xx response. A body that is the server's response to x.m passes through, as
-// the server sent it. Otherwise a 404 for a request that carried a session id means the server ended the
-// session: the client starts a new one and posts the request once more. That rule does not apply when the
-// 404 body answers the request. See https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management.
-func (x *exchange) httpFailure(ctx context.Context, resp *http.Response, sent string, retry bool) error {
+// httpFailure handles a non-2xx response. A body that is the server's response to x.m passes through. Otherwise
+// a 404 for a request that carried a session id means the server ended the session, so the client starts a new
+// one and posts the request once more.
+func (x *exchange) httpFailure(ctx, reqCtx context.Context, resp *http.Response, sent string, retry bool) error {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	e := decodeErrorBody(body)
 	if e != nil && e.isResponseTo(x.m) {
-		return x.deliverMessage(body, e.message)
+		return x.deliverMessage(reqCtx, body, e.message)
 	}
 	if resp.StatusCode == http.StatusNotFound && sent != "" && retry {
 		if err := x.rejoin(ctx, sent); err != nil {
 			return err
 		}
-		return x.send(ctx, false)
+		return x.send(ctx, reqCtx, false)
 	}
 	return httpError(resp.StatusCode, body, e)
 }
 
-// rejoin starts a new session after the server ended stale. The client's initialize and
-// notifications/initialized are replayed silently, since the client already has their answers. The new
-// session and protocol version replace the current ones only when the whole replay has succeeded, so a
-// request sent meanwhile still uses the old session, and a later 404 starts the replay again. One rejoin runs
-// at a time, and a request that finds the session already replaced just retries.
+// rejoin starts a new session after the server ended stale. The new session replaces the current one only when the
+// replay succeeds. One rejoin runs at a time, and a request that finds the session already replaced just retries.
 func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	c := x.c
 	c.rejoinMu.Lock()
@@ -584,25 +555,112 @@ func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	if init.line == nil {
 		return errors.New("the server ended the session, and no initialize request was sent to replay")
 	}
-	replay := []clientMsg{init}
+	msgs := []clientMsg{init}
 	if initialized.line != nil {
-		replay = append(replay, initialized)
+		msgs = append(msgs, initialized)
 	}
-	next := &upstreamState{}
-	for _, msg := range replay {
-		s := &exchange{c: c, line: msg.line, m: msg.m, req: x.req, idle: x.idle, replay: next}
-		if err := s.send(ctx, false); err != nil {
-			return fmt.Errorf("start a new session: %w", err)
+	next, err := c.replay(ctx, x.idle, msgs)
+	if err != nil {
+		return fmt.Errorf("start a new session: %w", err)
+	}
+	c.publish(next)
+	return nil
+}
+
+// replay posts the client's handshake messages, in order, to a new session. Their answers are read here and not
+// written to stdout. It returns the session and protocol version they establish.
+func (c *conn) replay(ctx context.Context, idle *time.Timer, msgs []clientMsg) (upstreamState, error) {
+	var next upstreamState
+	for _, msg := range msgs {
+		if err := c.replayOne(ctx, idle, msg, &next); err != nil {
+			return upstreamState{}, err
 		}
 	}
-	c.publish(*next)
+	return next, nil
+}
+
+// replayOne posts one handshake message with the session and protocol version replayed so far, and records what its
+// answer establishes in next: the session id from the response headers, the protocol version from an initialize result.
+func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, next *upstreamState) error {
+	resp, err := c.post(ctx, msg.line, *next)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	resp.Body = idleBody{ReadCloser: resp.Body, idle: idle}
+	if resp.StatusCode/100 != 2 {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		e := decodeErrorBody(body)
+		if e == nil || !e.isResponseTo(msg.m) {
+			return httpError(resp.StatusCode, body, e)
+		}
+		return recordProtocol(msg.m, body, next)
+	}
+	if id := resp.Header.Get(sessionHeader); id != "" {
+		next.id = id
+	}
+
+	var answer []byte
+	if strings.HasPrefix(resp.Header.Get(contentTypeHeader), eventStreamMIME) {
+		err = readEvents(resp.Body, func(data []byte) (bool, error) {
+			m, err := parseMessage(data)
+			if err != nil {
+				return false, fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
+			}
+			if m.isResponseTo(msg.m) {
+				answer = data
+				return false, nil
+			}
+			return true, nil
+		})
+	} else {
+		var body []byte
+		body, err = io.ReadAll(resp.Body)
+		if err == nil && len(bytes.TrimSpace(body)) > 0 && msg.m.isRequest() {
+			m, perr := parseMessage(body)
+			if perr != nil {
+				return fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", perr)
+			}
+			if !m.isResponseTo(msg.m) {
+				return fmt.Errorf("upstream sent %s instead of the response to the request", excerpt(body))
+			}
+			answer = body
+		}
+	}
+	if err != nil {
+		return err
+	}
+	if !msg.m.isRequest() {
+		return nil
+	}
+	if answer == nil {
+		return errNoResponse
+	}
+	return recordProtocol(msg.m, answer, next)
+}
+
+// recordProtocol sets next's protocol version from the result of an initialize response.
+func recordProtocol(m message, data []byte, next *upstreamState) error {
+	if m.Method != methodInitialize {
+		return nil
+	}
+	v, ok, err := initializeProtocol(data)
+	if err != nil || !ok {
+		return err
+	}
+	next.protocol = v
 	return nil
 }
 
 // read delivers the messages in a 2xx response: an event stream, or one JSON body.
-func (x *exchange) read(resp *http.Response) error {
+func (x *exchange) read(reqCtx context.Context, resp *http.Response) error {
 	if strings.HasPrefix(resp.Header.Get(contentTypeHeader), eventStreamMIME) {
-		return readEvents(resp.Body, x.deliverEvent)
+		return readEvents(resp.Body, func(data []byte) (bool, error) {
+			return x.deliverEvent(reqCtx, data)
+		})
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -623,33 +681,32 @@ func (x *exchange) read(resp *http.Response) error {
 	if !msg.isResponseTo(x.m) {
 		return fmt.Errorf("upstream sent %s instead of the response to the request", excerpt(body))
 	}
-	return x.deliverMessage(body, msg)
+	return x.deliverMessage(reqCtx, body, msg)
 }
 
-// deliverEvent handles one event of a 2xx event stream. It reports false once the response to the request is
-// written: the server SHOULD end the stream after the response, so the bridge stops reading rather than wait
-// for the stream to close. See https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#sending-messages-to-the-server.
-func (x *exchange) deliverEvent(data []byte) (bool, error) {
+// deliverEvent handles one event of a 2xx event stream. It reports false once the response is written, since the
+// server SHOULD end the stream after it (https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#sending-messages-to-the-server).
+func (x *exchange) deliverEvent(reqCtx context.Context, data []byte) (bool, error) {
 	msg, err := parseMessage(data)
 	if err != nil {
 		return false, fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
 	}
-	if err := x.deliverMessage(data, msg); err != nil {
+	if err := x.deliverMessage(reqCtx, data, msg); err != nil {
 		return false, err
 	}
 	return !x.answered, nil
 }
 
-// deliverMessage writes one upstream message, which msg is the parsed envelope of. The response to the request
-// marks it answered once written.
-func (x *exchange) deliverMessage(data []byte, msg message) error {
+// deliverMessage writes one upstream message, whose parsed envelope is msg. The response to the request marks it
+// answered once written.
+func (x *exchange) deliverMessage(reqCtx context.Context, data []byte, msg message) error {
 	answer := msg.isResponseTo(x.m)
 	if answer && x.m.Method == methodInitialize {
 		if err := x.recordProtocol(data); err != nil {
 			return err
 		}
 	}
-	if err := x.deliver(data); err != nil {
+	if err := x.deliver(reqCtx, data); err != nil {
 		return err
 	}
 	if answer {
@@ -658,12 +715,8 @@ func (x *exchange) deliverMessage(data []byte, msg message) error {
 	return nil
 }
 
-// deliver applies the initialize edit and the hooks, then writes the resulting messages. A replayed exchange
-// writes nothing: its answers stay inside the bridge.
-func (x *exchange) deliver(msg []byte) error {
-	if x.replay != nil {
-		return nil
-	}
+// deliver applies the initialize edit and the hooks, then writes the resulting messages.
+func (x *exchange) deliver(reqCtx context.Context, msg []byte) error {
 	var err error
 	if x.m.Method == methodInitialize && (x.c.b.Instructions != "" || x.c.b.ForceListChanged) {
 		if msg, err = editInitialize(msg, x.c.b.Instructions, x.c.b.ForceListChanged); err != nil {
@@ -672,7 +725,7 @@ func (x *exchange) deliver(msg []byte) error {
 	}
 	msgs := [][]byte{msg}
 	if x.c.b.Hooks != nil {
-		if msgs, err = x.c.b.Hooks.Result(x.req, x.line, x.status, msg); err != nil {
+		if msgs, err = x.c.b.Hooks.Result(reqCtx, x.line, x.status, msg); err != nil {
 			return err
 		}
 	}
@@ -685,8 +738,9 @@ func (x *exchange) deliver(msg []byte) error {
 }
 
 // fail logs err and, for a request the client still waits on, answers it with a JSON-RPC error. A request
-// that the client or shutdown cancelled is neither logged nor answered.
-func (x *exchange) fail(ctx context.Context, err error) {
+// that the client or shutdown cancelled is neither logged nor answered. ctx is the idle-watched context; reqCtx is
+// the request's context, which hooks receive.
+func (x *exchange) fail(ctx, reqCtx context.Context, err error) {
 	cause := context.Cause(ctx)
 	switch {
 	case errors.Is(cause, errIdleTimeout):
@@ -699,7 +753,7 @@ func (x *exchange) fail(ctx context.Context, err error) {
 		return
 	}
 	msg := errorResponse(x.m.ID, codeUpstream, fmt.Sprintf("MCP upstream error for request %s: %v", x.m.ID, err))
-	if derr := x.deliver(msg); derr != nil {
+	if derr := x.deliver(reqCtx, msg); derr != nil {
 		// The hook failed too; the client still needs an answer, so write the error unhooked.
 		x.c.logf("upstream: %v", derr)
 		x.c.reply(msg)

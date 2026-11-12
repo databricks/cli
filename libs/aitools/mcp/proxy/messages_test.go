@@ -88,17 +88,23 @@ func TestMessageIsRequest(t *testing.T) {
 	}
 }
 
+// parseRequestWithID parses a tools/call request with the given id, written as JSON.
+func parseRequestWithID(t *testing.T, id string) message {
+	t.Helper()
+	m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"method":"tools/call"}`))
+	require.NoError(t, err)
+	return m
+}
+
+// parseResponseWithID parses a result response with the given id, written as JSON.
+func parseResponseWithID(t *testing.T, id string) message {
+	t.Helper()
+	m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"result":{}}`))
+	require.NoError(t, err)
+	return m
+}
+
 func TestIsResponseToComparesIDsByValue(t *testing.T) {
-	request := func(id string) message {
-		m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"method":"tools/call"}`))
-		require.NoError(t, err)
-		return m
-	}
-	response := func(id string) message {
-		m, err := parseMessage([]byte(`{"jsonrpc":"2.0","id":` + id + `,"result":{}}`))
-		require.NoError(t, err)
-		return m
-	}
 	cases := []struct {
 		name     string
 		request  string
@@ -113,7 +119,7 @@ func TestIsResponseToComparesIDsByValue(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, response(tc.response).isResponseTo(request(tc.request)))
+			assert.Equal(t, tc.want, parseResponseWithID(t, tc.response).isResponseTo(parseRequestWithID(t, tc.request)))
 		})
 	}
 }
