@@ -108,7 +108,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err := json.Unmarshal(raw, &data); err != nil {
 		return false, fmt.Errorf("parsing migrated state: %w", err)
 	}
-	// The terraform state has no internal IDs (schema_id, volume_id); the plan check read them.
+	// The terraform state has schema_id but no volume_id (see BuildStateFromTF); the plan check read it.
 	if err := direct.RecordMissingInternalIDs(plan, &data); err != nil {
 		return false, fmt.Errorf("recording internal ids in migrated state: %w", err)
 	}
