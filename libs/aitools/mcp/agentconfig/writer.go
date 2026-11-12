@@ -153,9 +153,6 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 // writing, when there is no such entry, and refuses an entry this CLI did not
 // write.
 func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
-	if err := checkName(name); err != nil {
-		return false, err
-	}
 	path, err := Path(ctx, a)
 	if err != nil {
 		return false, err
@@ -233,7 +230,7 @@ func Path(ctx context.Context, a *agents.Agent) (string, error) {
 	return spec.Path(ctx)
 }
 
-// checkName refuses a name that no agent would accept. Upsert and Remove both
+// checkName refuses a name that no agent would accept. Upsert and RemoveAt both
 // check it, so a name that cannot be written is never looked up either.
 func checkName(name string) error {
 	if !mcpconfig.ValidServerName(name) {

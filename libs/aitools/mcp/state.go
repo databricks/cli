@@ -12,7 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// Drift kinds reported by Reconcile.
+// Drift kinds reported by CheckEntries.
 const (
 	DriftProfileMissing DriftKind = "profile_missing"
 	DriftHostChanged    DriftKind = "host_changed"
@@ -81,10 +81,12 @@ func SaveState(ctx context.Context, state *State) error {
 }
 
 // EntryCheck is the result of checking one state entry. Drift is nil when the entry's profile still names the recorded
-// host and workspace. Err is set when the entry cannot be checked.
+// host and workspace. Err is set when the entry cannot be checked. Path is the config file the entry is checked against,
+// resolved; it is "" when that file cannot be resolved, and Err says why.
 type EntryCheck struct {
 	Drift *Drift
 	Err   error
+	Path  string
 }
 
 // CheckEntries checks each entry of state against its profile and returns one result per entry, in state order. Each
@@ -95,47 +97,28 @@ func CheckEntries(ctx context.Context, state *State) []EntryCheck {
 	files := configFiles{}
 	checks := make([]EntryCheck, len(state.Servers))
 	for i, entry := range state.Servers {
-		drift, err := checkEntry(ctx, files, entry)
-		checks[i] = EntryCheck{Drift: drift, Err: err}
+		checks[i] = checkEntry(ctx, files, entry)
 	}
 	return checks
 }
 
-// Reconcile reports entries whose profile is gone or has no host, and entries whose profile now
-// names another host, or another workspace when both the entry and the profile name one. See
-// CheckEntries for how each entry is checked.
-//
-// An entry that cannot be checked does not stop the others. Its error is joined into the returned
-// error, and the drifts of the other entries are still returned.
-func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
-	var drifts []Drift
-	var errs []error
-	for i, check := range CheckEntries(ctx, state) {
-		switch {
-		case check.Err != nil:
-			errs = append(errs, fmt.Errorf("MCP server %s: %w", state.Servers[i].Name, check.Err))
-		case check.Drift != nil:
-			drifts = append(drifts, *check.Drift)
-		}
-	}
-	return drifts, errors.Join(errs...)
-}
-
-// checkEntry returns the drift of one entry, or nil when its profile still names the recorded host
-// and workspace. The entry's profile is read from the config file the entry is pinned to.
-func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, error) {
+// checkEntry checks one entry against the profile in the config file it is pinned to.
+func checkEntry(ctx context.Context, files configFiles, entry Entry) EntryCheck {
 	path, err := ResolveConfigFile(ctx, entry.ConfigFile)
 	if err != nil {
-		return nil, err
+		return EntryCheck{Err: err}
 	}
+	check := EntryCheck{Path: path}
 	p, err := files.profile(path, entry.Profile)
-	if errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost) {
-		return &Drift{Kind: DriftProfileMissing, Entry: entry, NoHost: errors.Is(err, errProfileNoHost)}, nil
+	switch {
+	case errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost):
+		check.Drift = &Drift{Kind: DriftProfileMissing, Entry: entry, NoHost: errors.Is(err, errProfileNoHost)}
+	case err != nil:
+		check.Err = err
+	default:
+		check.Drift = driftOf(entry, p)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return driftOf(entry, p), nil
+	return check
 }
 
 // configFiles holds the config files that one lookup has read, by resolved path, so that each file is

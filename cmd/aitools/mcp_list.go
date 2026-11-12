@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Agent entry statuses of `mcp list`. Server statuses are the drift kinds of mcp.Reconcile, plus statusOK and
+// Agent entry statuses of `mcp list`. Server statuses are the drift kinds of mcp.CheckEntries, plus statusOK and
 // statusUnknown, which is an entry or config that could not be checked.
 const (
 	agentStatusInstalled     = "installed"
@@ -173,9 +173,10 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 	checks := mcp.CheckEntries(ctx, &mcp.State{Servers: entries})
 	groups := map[profileKey]*mcpListProfile{}
 	for i, e := range entries {
-		path, err := mcp.ResolveConfigFile(ctx, e.ConfigFile)
-		if err != nil {
-			// The entry cannot be checked, so it is grouped under its file as written.
+		check := checks[i]
+		path := check.Path
+		if path == "" {
+			// The file cannot be resolved, so the entry is grouped under its file as written.
 			path = e.ConfigFile
 		}
 		key := profileKey{profile: e.Profile, path: path}
@@ -188,7 +189,6 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 			p.ConfigFile = filepath.ToSlash(path)
 		}
 		s := mcpListServer{Name: e.Name, Service: e.Service, SignInRequired: e.SignInRequired, Status: statusOK, Agents: []mcpListAgent{}, entry: e}
-		check := checks[i]
 		switch {
 		case check.Err != nil:
 			s.Status = statusUnknown
@@ -208,7 +208,7 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 			status := statusUnknown
 			if cfg := configs[agentName]; cfg.err == nil {
 				var err error
-				status, err = agentStatus(ctx, e, agentName, cfg)
+				status, err = agentStatus(ctx, e, agentName, cfg, check)
 				// When the entry itself could not be checked, its warning already names the cause.
 				if err != nil && check.Err == nil {
 					out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: could not check %s: %s", e.Name, agentDisplayName(agentName), err))
@@ -297,8 +297,9 @@ func readAgentConfig(ctx context.Context, name string) agentConfig {
 
 // agentStatus compares the server's entry for one agent with that agent's config, which must have been read. An
 // agent whose config moved is path_changed: the entry is in the file the record names, which this command does
-// not read. err is set when the entry cannot be checked for ownership.
-func agentStatus(ctx context.Context, rec mcp.Entry, agentName string, cfg agentConfig) (string, error) {
+// not read. check is the entry's check, whose Path is the config file the record is pinned to. err is set when the
+// entry cannot be checked for ownership.
+func agentStatus(ctx context.Context, rec mcp.Entry, agentName string, cfg agentConfig, check mcp.EntryCheck) (string, error) {
 	if !mcp.SamePath(rec.Agents[agentName].Path, cfg.path) {
 		return agentStatusPathChanged, nil
 	}
@@ -306,7 +307,10 @@ func agentStatus(ctx context.Context, rec mcp.Entry, agentName string, cfg agent
 	if !ok {
 		return agentStatusMissingOnDisk, nil
 	}
-	owned, err := ownedBy(ctx, rec, current)
+	if check.Path == "" {
+		return statusUnknown, check.Err
+	}
+	owned, err := mcp.EntryServes(ctx, current, rec.Service, rec.Profile, check.Path)
 	if err != nil {
 		return statusUnknown, err
 	}

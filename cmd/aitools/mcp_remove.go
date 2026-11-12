@@ -302,8 +302,7 @@ func matchesInstall(e mcp.Entry, name string) bool {
 	if strings.EqualFold(e.Name, name) || strings.EqualFold(e.Service, name) {
 		return true
 	}
-	leaf := e.Service[strings.LastIndex(e.Service, ".")+1:]
-	return !strings.Contains(name, ".") && strings.EqualFold(leaf, name)
+	return !strings.Contains(name, ".") && strings.EqualFold(mcp.LeafOf(e.Service), name)
 }
 
 // checkTargetsInstalled refuses an --agents agent that none of the selected servers is installed for. With no

@@ -146,7 +146,7 @@ func oauthProvider(svc *catalog.McpService) string {
 // returned name.
 func newService(svc *catalog.McpService) Service {
 	fullName := strings.TrimPrefix(svc.Name, mcpServicePrefix)
-	leaf := leafOf(fullName)
+	leaf := LeafOf(fullName)
 	provider := oauthProvider(svc)
 
 	s := Service{
