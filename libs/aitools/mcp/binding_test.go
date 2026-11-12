@@ -493,7 +493,7 @@ func TestBindUnpinnedEntryFailsForOtherConfigFile(t *testing.T) {
 		Stderr:  stderr,
 	})
 	requireBindError(t, err, mcp.BindProfileHostChanged)
-	assert.Contains(t, err.Error(), "was set up with config file "+bindingTestResolved(t, defaultPath))
+	assert.Contains(t, err.Error(), "was set up with config file "+filepath.ToSlash(bindingTestResolved(t, defaultPath)))
 	assert.Empty(t, stderr.String())
 }
 
@@ -719,7 +719,7 @@ func TestBindEntryInOtherConfigFileFailsClosed(t *testing.T) {
 		Stderr:  stderr,
 	})
 	requireBindError(t, err, mcp.BindProfileHostChanged)
-	assert.Contains(t, err.Error(), "was set up with config file "+bindingTestResolved(t, recordedPath))
+	assert.Contains(t, err.Error(), "was set up with config file "+filepath.ToSlash(bindingTestResolved(t, recordedPath)))
 	assert.Empty(t, stderr.String())
 }
 
