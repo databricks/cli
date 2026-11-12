@@ -28,6 +28,7 @@ These commands are under active development.`,
 	cmd.AddCommand(newCancelCommand())
 	cmd.AddCommand(newConvertToDabsCommand())
 	cmd.AddCommand(newImagesCommand())
+	cmd.AddCommand(newFeedbackCommand())
 
 	return cmd
 }

@@ -24,3 +24,6 @@ trace $CLI air logs --help
 
 title "cancel help"
 trace $CLI air cancel --help
+
+title "feedback help"
+trace $CLI air feedback --help
