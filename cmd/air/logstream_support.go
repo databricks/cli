@@ -234,6 +234,14 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 	if status.stateMessage != "" {
 		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)
 	}
+	// Only the latest attempt was checked; earlier ones may have logs.
+	if req.attempt < 0 && status.terminal() && status.latestAttempt > 0 {
+		retry := "0"
+		if status.latestAttempt > 1 {
+			retry = fmt.Sprintf("N (0 through %d)", status.latestAttempt-1)
+		}
+		msg = fmt.Sprintf("%s. Earlier retries may have logs; pass --retry %s to see them", strings.TrimRight(msg, "."), retry)
+	}
 	if req.jsonOutput {
 		printLogEvent(out, "ERROR", req.node, msg)
 		return

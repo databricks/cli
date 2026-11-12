@@ -59,12 +59,13 @@ type listRow struct {
 	Accelerators  string `json:"-"`
 }
 
-// listedRun pairs a row with its parent and task run ids, so the MLflow link can
-// be fetched after the run has been filtered in and cached afterward.
+// listedRun pairs a row with its parent run id and task runs, so the MLflow link
+// can be fetched after the run has been filtered in and cached afterward.
 type listedRun struct {
-	row       listRow
-	runID     int64
-	taskRunID int64
+	row      listRow
+	runID    int64
+	tasks    []jobs.RunTask // see retryTasks
+	terminal bool
 }
 
 // listQuery holds the resolved inputs to a runFetcher.
@@ -310,7 +311,7 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if !s.filters.matches(run) {
 			continue
 		}
-		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, taskRunID: taskRunID(run)})
+		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, tasks: retryTasks(run), terminal: isTerminal(run)})
 	}
 	return entries, nil
 }
@@ -343,13 +344,15 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			if entries[i].row.MLflowURL != "" && entries[i].row.MLflowURL != "-" {
 				return nil
 			}
-			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
+			ids := mlflowIDsForRetries(ctx, w, entries[i].tasks, entries[i].terminal)
 			if ids == nil {
 				return nil
 			}
 			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
 			name := fetchMLflowRunName(ctx, w, ids.RunID)
-			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID)
+			// Shorten the name, not the retry note, to fit the column.
+			note := ids.retryNote()
+			entries[i].row.MLflowLabel = truncate(mlflowRunLabel(name, ids.RunID), mlflowColWidth-len(note)) + note
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).
@@ -361,6 +364,6 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			return nil
 		})
 	}
-	// mlflowIDsForTask never returns an error (it logs and yields nil), so Wait can't fail.
+	// mlflowIDsForRetries never returns an error (it logs and yields nil), so Wait can't fail.
 	_ = g.Wait()
 }

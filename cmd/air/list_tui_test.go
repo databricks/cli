@@ -3,9 +3,11 @@ package aircmd
 import (
 	"io"
 	"strconv"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -283,6 +285,42 @@ func TestListModelDetailPaneAndBack(t *testing.T) {
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
 	assert.Contains(t, m.View(), "Run ID")
+}
+
+func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
+	m := detailLoadingModel(t)
+	reason := "Failure reason: " + strings.Repeat("the task exited with a long error ", 4) + "ENDOFREASON"
+	require.Greater(t, len(reason), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: reason})
+	m = next.(listModel)
+	assert.Contains(t, m.View(), "ENDOFREASON", "the end of a long line must be visible, not clipped at the pane edge")
+
+	// A narrower terminal re-wraps the same text.
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 24})
+	m = next.(listModel)
+	pane := m.viewport.View()
+	assert.Contains(t, pane, "ENDOFREASON")
+	for line := range strings.SplitSeq(pane, "\n") {
+		assert.LessOrEqual(t, ansi.StringWidth(line), 30, line)
+	}
+}
+
+func TestListModelDetailPaneKeepsBoxRowsAndURLsWhole(t *testing.T) {
+	m := detailLoadingModel(t)
+	boxRow := "│  command: python train.py " + strings.Repeat("--flag ", 12) + "│"
+	url := "MLflow URL: https://example.test/ml/experiments/1/runs/" + strings.Repeat("a", 64)
+	require.Greater(t, len(boxRow), 80)
+	require.Greater(t, len(url), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: boxRow + "\n" + url})
+	m = next.(listModel)
+	assert.Equal(t, 2, m.viewport.TotalLineCount(), "box rows and URLs must not wrap")
+
+	// ←/→ pans to the clipped end instead.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = next.(listModel)
+	assert.Positive(t, m.viewport.HorizontalScrollPercent())
 }
 
 func TestListModelDetailLateMsgDropped(t *testing.T) {

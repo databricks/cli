@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -15,19 +16,77 @@ import (
 type mlflowIdentifiers struct {
 	ExperimentID string
 	RunID        string
+	// OlderRetry is the retry the IDs came from when it isn't the run's latest
+	// (see mlflowIDsFromRetries), else nil.
+	OlderRetry *int
 }
 
-// mlflowIDs fetches the MLflow IDs for a run via its latest task. Returns nil if
-// they can't be obtained.
+// retryNote is " (retry N)" when ids come from an older retry, else "".
+func (ids *mlflowIdentifiers) retryNote() string {
+	if ids.OlderRetry == nil {
+		return ""
+	}
+	return fmt.Sprintf(" (retry %d)", *ids.OlderRetry)
+}
+
+// mlflowIDs fetches the MLflow IDs a run's views link to (see
+// mlflowIDsFromRetries). Returns nil if they can't be obtained.
 func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
-	return mlflowIDsFromOutput(aiRuntimeTaskOutput(ctx, w, run))
+	return mlflowIDsForRetries(ctx, w, run.Tasks, isTerminal(run))
+}
+
+// mlflowIDsForRetries is mlflowIDs given only the task runs and whether the run
+// has finished, which is what a cached list row keeps.
+func mlflowIDsForRetries(ctx context.Context, w *databricks.WorkspaceClient, tasks []jobs.RunTask, terminal bool) *mlflowIdentifiers {
+	latest, err := latestTaskOutput(ctx, w, tasks)
+	return mlflowIDsFromRetries(ctx, w, tasks, terminal, latest, err)
+}
+
+// mlflowIDsFromRetries returns the IDs from latest (the latest retry's output),
+// else, for a finished run, from the newest earlier retry of the same task that
+// has them: a last retry that failed before it started never got an MLflow run
+// of its own. A run still in progress keeps only the latest retry's IDs, so its
+// link and ETA never point at a previous retry.
+//
+// If a get-output call fails (latestErr, or an earlier retry's), it returns nil
+// rather than skip that retry: the retry it couldn't read may have the newest
+// MLflow run, and an older link would then look current.
+func mlflowIDsFromRetries(ctx context.Context, w *databricks.WorkspaceClient, tasks []jobs.RunTask, terminal bool, latest *jobs.AiRuntimeTaskOutput, latestErr error) *mlflowIdentifiers {
+	if latestErr != nil {
+		return nil
+	}
+	if ids := mlflowIDsFromOutput(latest); ids != nil || len(tasks) < 2 || !terminal {
+		return ids
+	}
+	last := tasks[len(tasks)-1]
+	for _, task := range slices.Backward(tasks[:len(tasks)-1]) {
+		if task.TaskKey != last.TaskKey {
+			continue
+		}
+		out, err := aiRuntimeTaskOutputForTask(ctx, w, task.RunId)
+		if err != nil {
+			return nil
+		}
+		if ids := mlflowIDsFromOutput(out); ids != nil {
+			ids.OlderRetry = &task.AttemptNumber
+			return ids
+		}
+	}
+	return nil
 }
 
 func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *jobs.AiRuntimeTaskOutput {
-	if len(run.Tasks) == 0 {
-		return nil
+	out, _ := latestTaskOutput(ctx, w, run.Tasks)
+	return out
+}
+
+// latestTaskOutput fetches the output of the last of tasks, the run's latest
+// retry (see aiRuntimeTaskOutputForTask).
+func latestTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, tasks []jobs.RunTask) (*jobs.AiRuntimeTaskOutput, error) {
+	if len(tasks) == 0 {
+		return nil, nil
 	}
-	return aiRuntimeTaskOutputForTask(ctx, w, run.Tasks[len(run.Tasks)-1].RunId)
+	return aiRuntimeTaskOutputForTask(ctx, w, tasks[len(tasks)-1].RunId)
 }
 
 // mlflowIDsForTask fetches a task run's MLflow experiment and run IDs from
@@ -35,21 +94,24 @@ func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run
 // link, so any failure (endpoint error, run not yet started, no MLflow output)
 // is logged and treated as "no link" rather than failing the command.
 func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *mlflowIdentifiers {
-	return mlflowIDsFromOutput(aiRuntimeTaskOutputForTask(ctx, w, taskRunID))
+	out, _ := aiRuntimeTaskOutputForTask(ctx, w, taskRunID)
+	return mlflowIDsFromOutput(out)
 }
 
-func aiRuntimeTaskOutputForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *jobs.AiRuntimeTaskOutput {
+// aiRuntimeTaskOutputForTask fetches a task run's AI runtime output, logging
+// any fetch error before returning it.
+func aiRuntimeTaskOutputForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) (*jobs.AiRuntimeTaskOutput, error) {
 	if taskRunID == 0 {
-		return nil
+		return nil, nil
 	}
 
 	out, err := w.Jobs.GetRunOutputByRunId(ctx, taskRunID)
 	if err != nil {
 		log.Debugf(ctx, "air: could not fetch run output for MLflow link: %v", err)
-		return nil
+		return nil, err
 	}
 
-	return out.AiRuntimeTaskOutput
+	return out.AiRuntimeTaskOutput, nil
 }
 
 func mlflowIDsFromOutput(output *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
