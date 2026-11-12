@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // AbsoluteAsWritten makes path absolute by joining it to the working directory, without cleaning it, so that a
@@ -18,5 +19,14 @@ func AbsoluteAsWritten(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to determine working directory: %w", err)
 	}
-	return wd + string(filepath.Separator) + path, nil
+	return joinWorkingDir(path, wd), nil
+}
+
+// joinWorkingDir joins a relative path to wd. A root-relative path, one that starts with a separator but has no volume
+// (such as "\claude" on Windows), is on the volume of wd, so it is joined to that volume, not to the whole directory.
+func joinWorkingDir(path, wd string) string {
+	if strings.HasPrefix(path, string(filepath.Separator)) {
+		return filepath.VolumeName(wd) + path
+	}
+	return wd + string(filepath.Separator) + path
 }
