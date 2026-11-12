@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -40,6 +39,8 @@ type removeRemoved struct {
 	Service string   `json:"service"`
 	Profile string   `json:"profile"`
 	Agents  []string `json:"agents"`
+	// RecordOnly names the agents whose record was dropped without an edit, because this CLI cannot edit their config.
+	RecordOnly []string `json:"record_only,omitempty"`
 }
 
 // removeSkipped is one server that was left in one agent: the agent is named, since a server can be removed from
@@ -58,9 +59,12 @@ const (
 	removeDeleted removeOutcome = iota
 	// removePruned means the entry was already gone from the agent config, so only the state record goes.
 	removePruned
-	// removeKept means the entry is left in place, because it is not the one this CLI wrote or the agent config moved.
+	// removeKept means the entry is left in place, because it is not the one this CLI wrote.
 	removeKept
 )
+
+// saveMCPState writes the MCP state. It is a variable so that a test can make the save fail.
+var saveMCPState = mcp.SaveState
 
 // recordDrop names one agent record to delete from state: the server's name and the agent.
 type recordDrop struct {
@@ -76,23 +80,19 @@ func NewMcpRemoveCmd() *cobra.Command {
 		Short: "Remove Databricks managed MCP servers from coding agents",
 		Long: `Remove Databricks managed MCP servers that this CLI installed.
 
-Choose servers with --names (server names as listed by 'aitools mcp list', or service names),
---profile, or --all. --profile narrows --all or --names to one profile, and --agents narrows
-them to some agents. Interactive selection is not available yet, so one of --names, --profile
-or --all is required.
+Choose servers with --names (server names as listed by 'aitools mcp list', or service names; the
+last part of a service name, such as github, is enough when only one schema has it), --profile, or
+--all. --profile narrows --all or --names to one profile, and --agents narrows them to some agents.
+Interactive selection is not available yet, so one of --names, --profile or --all is required.
 
-Only entries this CLI wrote are removed. An entry that was changed outside this CLI, or whose agent
-config moved, is left in place and reported. Entries that run 'aitools mcp serve' without an install
-record are not chosen by any flag; 'aitools mcp list' shows them as unmanaged. Provider credentials
-are not deleted.`,
+Only entries this CLI wrote are removed. An entry that was changed outside this CLI is left in place
+and reported. When an agent's config moved, the entry is removed from the file it was written to.
+Entries that run 'aitools mcp serve' without an install record are not chosen by any flag;
+'aitools mcp list' shows them as unmanaged. Provider credentials are not deleted.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
-			if jsonMode {
-				// JSON mode writes only the result document to stdout.
-				ctx = cmdio.WithQuiet(ctx)
-			}
 
 			out := &removeOutput{Removed: []removeRemoved{}, Skipped: []removeSkipped{}}
 			runErr := runMcpRemove(ctx, cmd, f, jsonMode, out)
@@ -154,8 +154,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		return err
 	}
 
-	// Each agent config is read once, when the first selected server needs it.
-	configs := map[string]agentConfig{}
+	// Each agent config file is read once, when the first selected server needs it.
+	files := map[recordedFileKey]recordedFile{}
 	var drops []recordDrop
 	var agentErrs []error
 	for _, e := range selected {
@@ -165,12 +165,22 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 			if targets != nil && !slices.ContainsFunc(targets, func(a *agents.Agent) bool { return a.Name == agentName }) {
 				continue
 			}
-			cfg, ok := configs[agentName]
-			if !ok {
-				cfg = readAgentConfig(ctx, agentName)
-				configs[agentName] = cfg
+			a := agents.ByName(agentName)
+			if a == nil || !a.SupportsMCP() {
+				// There is no config this CLI can edit for the agent, so only the record can go.
+				removed.Agents = append(removed.Agents, agentName)
+				removed.RecordOnly = append(removed.RecordOnly, agentName)
+				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
+				continue
 			}
-			outcome, reason, err := removeAgentEntry(ctx, e, agentName, cfg)
+			rec := e.Agents[agentName]
+			key := recordedFileKey{agent: agentName, path: rec.Path}
+			file, ok := files[key]
+			if !ok {
+				file = readRecordedFile(a, rec.Path)
+				files[key] = file
+			}
+			outcome, reason, err := removeAgentEntry(ctx, e, a, rec.Path, file)
 			if err != nil {
 				errs = append(errs, err)
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
@@ -183,7 +193,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 			removed.Agents = append(removed.Agents, agentName)
 			drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 		}
-		if len(removed.Agents) > 0 {
+		// A server with no agent left in state is removed from state too, so it is reported as removed.
+		if len(removed.Agents) > 0 || len(e.Agents) == 0 {
 			out.Removed = append(out.Removed, removed)
 		}
 		// A server that no agent gave up on is a failure. So is any agent failure when --agents named the agent.
@@ -195,8 +206,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	}
 
 	var saveErr error
-	if len(drops) > 0 {
-		saveErr = dropRecords(ctx, drops)
+	if len(drops) > 0 || slices.ContainsFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 }) {
+		saveErr = dropRecords(ctx, drops, selected)
 	}
 	if !jsonMode {
 		printRemoveResults(ctx, out)
@@ -221,42 +232,78 @@ func validateMCPRemoveFlags(all bool, names []string, profileName string) error 
 	return nil
 }
 
-// selectInstalls returns the state entries named by names (server or service names), or every entry when names is
-// empty. profileName, when set, narrows the choice to that profile. A name that matches nothing, and a profile with no
+// selectInstalls returns the state entries that names pick, in state order, or every entry in scope when names is
+// empty. profileName, when set, narrows the scope to that profile. A name that matches nothing, and a profile with no
 // installed server, are errors, so a typo does not look like a successful removal.
 func selectInstalls(state *mcp.State, names []string, profileName string) ([]mcp.Entry, error) {
+	var scope []mcp.Entry
+	for _, e := range state.Servers {
+		if profileName == "" || e.Profile == profileName {
+			scope = append(scope, e)
+		}
+	}
 	where := ""
 	if profileName != "" {
 		where = " on profile " + profileName
 	}
+	chosen := make([]bool, len(scope))
+	for _, name := range names {
+		matched, err := matchInstalls(scope, name)
+		if err != nil {
+			return nil, err
+		}
+		if len(matched) == 0 {
+			return nil, failure(categoryServiceNotFound, nil, "no installed MCP server named %s%s", name, where)
+		}
+		for _, i := range matched {
+			chosen[i] = true
+		}
+	}
+	if profileName != "" && len(scope) == 0 {
+		return nil, failure(categoryServiceNotFound, nil, "no installed MCP servers on profile %s", profileName)
+	}
+	if len(names) == 0 {
+		return scope, nil
+	}
 	var selected []mcp.Entry
-	found := make([]bool, len(names))
-	inProfile := 0
-	for _, e := range state.Servers {
-		if profileName != "" && e.Profile != profileName {
-			continue
-		}
-		inProfile++
-		chosen := len(names) == 0
-		for i, name := range names {
-			if matchesInstall(e, name) {
-				found[i] = true
-				chosen = true
-			}
-		}
-		if chosen {
+	for i, e := range scope {
+		if chosen[i] {
 			selected = append(selected, e)
 		}
 	}
-	for i, name := range names {
-		if !found[i] {
-			return nil, failure(categoryServiceNotFound, nil, "no installed MCP server named %s%s", name, where)
+	return selected, nil
+}
+
+// matchInstalls returns the indexes of the entries of scope that name means: a server name, a full service name, or
+// the leaf of a service name (its last part), all without case. A leaf is refused when the entries it matches are of
+// more than one service, since then it does not say which one is meant.
+func matchInstalls(scope []mcp.Entry, name string) ([]int, error) {
+	var matched []int
+	var services []string
+	for i, e := range scope {
+		if !matchesInstall(e, name) {
+			continue
+		}
+		matched = append(matched, i)
+		if !slices.ContainsFunc(services, func(s string) bool { return strings.EqualFold(s, e.Service) }) {
+			services = append(services, e.Service)
 		}
 	}
-	if profileName != "" && inProfile == 0 {
-		return nil, failure(categoryServiceNotFound, nil, "no installed MCP servers on profile %s", profileName)
+	if len(services) > 1 && !strings.Contains(name, ".") {
+		return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s matches more than one MCP service (%s); pass the full service name",
+			name, strings.Join(services, ", "))
 	}
-	return selected, nil
+	return matched, nil
+}
+
+// matchesInstall reports whether a --names value means the entry: its server name, its service name, or the leaf of its
+// service name when the value has no dot. Names compare without case.
+func matchesInstall(e mcp.Entry, name string) bool {
+	if strings.EqualFold(e.Name, name) || strings.EqualFold(e.Service, name) {
+		return true
+	}
+	leaf := e.Service[strings.LastIndex(e.Service, ".")+1:]
+	return !strings.Contains(name, ".") && strings.EqualFold(leaf, name)
 }
 
 // checkTargetsInstalled refuses an --agents agent that none of the selected servers is installed for. With no
@@ -276,24 +323,32 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 	return nil
 }
 
-// matchesInstall reports whether a --names value means the entry: its server name, or its service name.
-func matchesInstall(e mcp.Entry, name string) bool {
-	return e.Name == name || strings.EqualFold(e.Service, name)
+// recordedFile is an agent config file that a record names, read once for a command. err is set when it cannot be
+// read; a file that does not exist has no entries.
+type recordedFile struct {
+	entries map[string]map[string]any
+	err     error
 }
 
-// removeAgentEntry removes the server from one agent config, but only when the entry there is the one this CLI
-// wrote. The config was read by the caller; a config that could not be read is an error, not a removal. A config
-// that moved is kept, since the entry may be in the file the record names.
-func removeAgentEntry(ctx context.Context, e mcp.Entry, agentName string, cfg agentConfig) (removeOutcome, string, error) {
-	if cfg.err != nil {
-		return 0, "", cfg.err
+// recordedFileKey names a recordedFile: the agent and the path its record gives.
+type recordedFileKey struct {
+	agent string
+	path  string
+}
+
+func readRecordedFile(a *agents.Agent, path string) recordedFile {
+	entries, err := agentconfig.ReadAt(a, path)
+	return recordedFile{entries: entries, err: err}
+}
+
+// removeAgentEntry removes the server from the agent config file its record names, but only when the entry there is
+// the one this CLI wrote. The file is the one add wrote the entry to, even when the agent reads its config from
+// elsewhere now. A file that no longer exists, or has no entry of the name, is pruned.
+func removeAgentEntry(ctx context.Context, e mcp.Entry, a *agents.Agent, path string, file recordedFile) (removeOutcome, string, error) {
+	if file.err != nil {
+		return 0, "", file.err
 	}
-	recorded := e.Agents[agentName].Path
-	if !mcp.SamePath(recorded, cfg.path) {
-		return removeKept, fmt.Sprintf("%s reads its config from %s now, but %s was written to %s; left in place, and its record kept",
-			agentDisplayName(agentName), filepath.ToSlash(cfg.path), e.Name, filepath.ToSlash(recorded)), nil
-	}
-	current, found := cfg.entries[e.Name]
+	current, found := file.entries[e.Name]
 	if !found {
 		return removePruned, "", nil
 	}
@@ -302,18 +357,18 @@ func removeAgentEntry(ctx context.Context, e mcp.Entry, agentName string, cfg ag
 		return 0, "", err
 	}
 	if !owned {
-		return removeKept, fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place", agentDisplayName(agentName), e.Name), nil
+		return removeKept, fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place", agentDisplayName(a.Name), e.Name), nil
 	}
-	if _, err := agentconfig.Remove(ctx, cfg.agent, e.Name); err != nil {
+	if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
 		return 0, "", err
 	}
 	return removeDeleted, "", nil
 }
 
-// dropRecords deletes the agent records from state and then the entries left without any agent. Each record is
-// matched by the name of its server, which is unique in state. The state file is re-read first, so entries written
-// since the selection are kept.
-func dropRecords(ctx context.Context, drops []recordDrop) error {
+// dropRecords deletes the agent records in drops from state, then the entries that were selected or dropped and have
+// no agent left. Each record is matched by the name of its server, which is unique in state. The state file is re-read
+// first, so entries written since the selection are kept, and an entry that was not selected is never removed here.
+func dropRecords(ctx context.Context, drops []recordDrop, selected []mcp.Entry) error {
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err
@@ -326,10 +381,17 @@ func dropRecords(ctx context.Context, drops []recordDrop) error {
 			delete(state.Servers[i].Agents, d.agent)
 		}
 	}
+	touched := map[string]bool{}
+	for _, d := range drops {
+		touched[d.name] = true
+	}
+	for _, e := range selected {
+		touched[e.Name] = true
+	}
 	state.Servers = slices.DeleteFunc(state.Servers, func(e mcp.Entry) bool {
-		return len(e.Agents) == 0
+		return touched[e.Name] && len(e.Agents) == 0
 	})
-	return mcp.SaveState(ctx, state)
+	return saveMCPState(ctx, state)
 }
 
 func printRemoveResults(ctx context.Context, out *removeOutput) {
@@ -338,7 +400,14 @@ func printRemoveResults(ctx context.Context, out *removeOutput) {
 		return
 	}
 	for _, r := range out.Removed {
-		cmdio.LogString(ctx, fmt.Sprintf("Removed %s  %s  profile %s  (%s)", r.Name, r.Service, r.Profile, mcpAgentList(r.Agents)))
+		line := fmt.Sprintf("Removed %s  %s  profile %s", r.Name, r.Service, r.Profile)
+		if len(r.Agents) > 0 {
+			line += fmt.Sprintf("  (%s)", mcpAgentList(r.Agents))
+		}
+		cmdio.LogString(ctx, line)
+		for _, name := range r.RecordOnly {
+			cmdio.LogString(ctx, fmt.Sprintf("  only the record of %s was dropped: this CLI has no MCP config to edit for it", agentDisplayName(name)))
+		}
 	}
 	for _, s := range out.Skipped {
 		cmdio.LogString(ctx, fmt.Sprintf("Skipped %s: %s", s.Name, s.Reason))

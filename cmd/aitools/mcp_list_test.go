@@ -5,14 +5,18 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,7 +135,7 @@ func TestMcpHandEditedEntryIsModified(t *testing.T) {
 			saveState(t, entry)
 			editEntry(t, claudePath, entry.Name, func(server map[string]any) { tc.edit(t, server) })
 
-			out, err := buildMcpList(t.Context())
+			out, err := buildMcpList(t.Context(), "")
 			require.NoError(t, err)
 			require.Len(t, out.Profiles, 1)
 			require.Len(t, out.Profiles[0].Servers, 1)
@@ -166,7 +170,7 @@ func TestMcpReAddFromAnotherBinaryKeepsOtherAgentsRemovable(t *testing.T) {
 	first.Command = "/opt/other/databricks"
 	saveState(t, first)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.Len(t, out.Profiles, 1)
 	for _, a := range out.Profiles[0].Servers[0].Agents {
@@ -199,7 +203,7 @@ func TestBuildMcpListGroupsProfilesByConfigFile(t *testing.T) {
 	healthy := seedInstallEntry(t, claude, seed{"genie_one_mcp-other", "system.ai.genie_one_mcp", "logfood", "https://adb-2.test", testDatabricksCommand, second})
 	saveState(t, drifted, current, healthy)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.Len(t, out.Profiles, 2, "one profile name in two config files is two groups")
 
@@ -234,7 +238,7 @@ func TestBuildMcpListReportsAgentPathChanged(t *testing.T) {
 	// The agent config now lives elsewhere, so the entry is in a file this command does not read.
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.Len(t, out.Profiles, 1)
 	require.Len(t, out.Profiles[0].Servers, 1)
@@ -251,7 +255,7 @@ func TestBuildMcpListRecordForUnknownAgentIsUnknown(t *testing.T) {
 		Command: testDatabricksCommand, Agents: map[string]mcp.AgentRecord{"retired-agent": {Path: "/x/config.json", Scope: "user"}},
 	})
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.Len(t, out.Profiles, 1)
 	require.Len(t, out.Profiles[0].Servers, 1)
@@ -274,7 +278,7 @@ func TestBuildMcpListUnknownServerIsWarnedNotOK(t *testing.T) {
 	}
 	saveState(t, gone, unreadable)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.NotEmpty(t, out.Warnings)
 	assert.Contains(t, out.Warnings[0], "MCP server github-logfood")
@@ -282,7 +286,7 @@ func TestBuildMcpListUnknownServerIsWarnedNotOK(t *testing.T) {
 	require.Len(t, out.Profiles, 2)
 	logfood := out.Profiles[0]
 	assert.Equal(t, "logfood", logfood.Profile)
-	assert.Equal(t, statusOK, logfood.Status)
+	assert.Equal(t, statusUnknown, logfood.Status, "a profile with an entry that could not be checked is not ok")
 	require.Len(t, logfood.Servers, 1)
 	assert.Equal(t, statusUnknown, logfood.Servers[0].Status, "an entry that could not be checked is not reported as ok")
 	assert.Equal(t, "old", out.Profiles[1].Profile)
@@ -328,7 +332,7 @@ func TestBuildMcpListWarnsForUnreadableAgentConfig(t *testing.T) {
 	}
 	saveState(t, genie, github)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err, "one unreadable agent does not fail the listing")
 	require.Len(t, out.Warnings, 1)
 	assert.Contains(t, out.Warnings[0], "Codex CLI")
@@ -350,7 +354,7 @@ func TestBuildMcpListReportsOrphanDatabricksEntry(t *testing.T) {
 	// Written by this CLI, but its state record is gone.
 	seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	assert.Empty(t, out.Profiles)
 	assert.Equal(t, []mcpListUnmanaged{{Agent: "claude-code", Name: "genie_one_mcp-logfood", Kind: unmanagedKindNoRecord}}, out.Unmanaged)
@@ -386,7 +390,7 @@ token = t
 
 	saveState(t, genie, github, dogfood, absent, gone)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.Len(t, out.Profiles, 3)
 
@@ -428,7 +432,7 @@ func TestBuildMcpListEmpty(t *testing.T) {
 	withHome(t)
 	writeDatabricksCfg(t, "")
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	assert.NotNil(t, out.Profiles, "an empty listing is [] in JSON, not null")
 	assert.NotNil(t, out.Unmanaged)
@@ -447,6 +451,7 @@ func TestUnmanagedKind(t *testing.T) {
 		{"ug mcp-proxy as a command array", map[string]any{"command": []any{"ug", "mcp-proxy"}}, unmanagedKindUGProxy},
 		{"ai gateway URL", map[string]any{"url": "https://adb-1.test/ai-gateway/mcp-services/github"}, unmanagedKindAIGateway},
 		{"other command", map[string]any{"command": "npx", "args": []any{"some-server"}}, ""},
+		{"mcp-proxy under another command with an ai gateway URL", map[string]any{"command": "npx", "args": []any{"mcp-proxy"}, "url": "https://adb-1.test/ai-gateway/mcp-services/github"}, unmanagedKindAIGateway},
 		{"databricks serve without a record", map[string]any{"command": testDatabricksCommand, "args": []any{"aitools", "mcp", "serve"}}, unmanagedKindNoRecord},
 	}
 	for _, tc := range cases {
@@ -469,25 +474,29 @@ func TestRenderMcpListNamesTheFileAndTheRepair(t *testing.T) {
 
 	workspaceMoved := seedInstallEntry(t, claude, seed{"genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test", testDatabricksCommand, pinned})
 	workspaceMoved.WorkspaceID = "111"
+	// The workspace is named in the host's query, not in workspace_id.
+	workspaceFromQuery := seedInstallEntry(t, claude, seed{"genie_one_mcp-query", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test/?o=111", testDatabricksCommand, pinned})
+	hostMoved := seedInstallEntry(t, claude, seed{"github-moved", "system.ai.github", "logfood", "https://adb-old.test", testDatabricksCommand, pinned})
 	// The profile is not in the file at all, and the profile name needs quoting in the hint.
 	missing := seedInstallEntry(t, claude, seed{"github-gone", "system.ai.github", "gone profile", "https://adb-old.test", testDatabricksCommand, pinned})
 	noHost := seedInstallEntry(t, claude, seed{"dbsql-nohost", "system.ai.dbsql", "nohost", "https://adb-4.test", testDatabricksCommand, pinned})
-	saveState(t, workspaceMoved, missing, noHost)
+	saveState(t, workspaceMoved, workspaceFromQuery, hostMoved, missing, noHost)
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	renderMcpList(ctx, out)
+	renderMcpList(ctx, out, "")
 	text := stderr.String()
 
 	shownPath := filepath.ToSlash(pinnedPath)
 	assert.Contains(t, text, "Profile logfood  (https://adb-1.test)")
-	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile logfood now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-logfood` and add it again")
+	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile \"logfood\" now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-logfood` and add it again")
+	assert.Contains(t, text, "broken: it was set up for workspace 111, but profile \"logfood\" now points at workspace 222; run `databricks aitools mcp remove --names genie_one_mcp-query` and add it again")
+	assert.Contains(t, text, "broken: it was set up for https://adb-old.test, but profile \"logfood\" now points at https://adb-1.test; run `databricks aitools mcp remove --names github-moved` and add it again")
 	assert.Contains(t, text, "Profile gone profile  (profile not found in "+shownPath+")")
-	assert.Contains(t, text, "broken: run `databricks aitools mcp remove --names github-gone` or `DATABRICKS_CONFIG_FILE="+pinnedPath+" databricks auth login --host https://adb-old.test --profile 'gone profile'`")
+	assert.Contains(t, text, "broken: run `databricks aitools mcp remove --names github-gone` or `DATABRICKS_CONFIG_FILE="+shownPath+" databricks auth login --host https://adb-old.test --profile 'gone profile'`")
 	assert.Contains(t, text, "Profile nohost  (profile has no host in "+shownPath+")")
-	assert.NotContains(t, text, "host changed")
 	assert.NotContains(t, text, "Warning", "every entry in this test can be checked")
 }
 
@@ -497,9 +506,81 @@ func TestRenderMcpListWarnsAndNamesUnmanagedRecords(t *testing.T) {
 	claude := agents.ByName("claude-code")
 	seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 
-	out, err := buildMcpList(t.Context())
+	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	renderMcpList(ctx, out)
+	renderMcpList(ctx, out, "")
 	assert.Contains(t, stderr.String(), "  Claude Code    genie_one_mcp-logfood databricks aitools mcp serve, no install record")
+}
+
+// TestMcpListFiltersToProfile checks that --profile lists the servers of that profile only, with no unmanaged entries,
+// since those have no profile, and says so when the profile has no server.
+func TestMcpListFiltersToProfile(t *testing.T) {
+	home := withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n\n[dogfood]\nhost = https://adb-2.test\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	other := seedInstall(t, claude, "github-dogfood", "system.ai.github", "dogfood", "https://adb-2.test")
+	saveState(t, genie, other)
+	doc := readJSONFile(t, claudePath)
+	doc["mcpServers"].(map[string]any)["web_search"] = map[string]any{"command": "ug", "args": []any{"mcp-proxy"}}
+	data, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(claudePath, data, 0o600))
+
+	stdout, _, err := runMcpCmd(t, "list", "--profile", "logfood", "--output", "json")
+	require.NoError(t, err)
+	var out mcpListOutput
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
+	require.Len(t, out.Profiles, 1)
+	assert.Equal(t, "logfood", out.Profiles[0].Profile)
+	assert.Empty(t, out.Unmanaged)
+
+	_, stderr, err := runMcpCmd(t, "list", "--profile", "typo")
+	require.NoError(t, err)
+	assert.Contains(t, stderr.String(), "No Databricks MCP servers installed by this CLI on profile typo.")
+}
+
+// TestMcpListJSONReportsStateError checks that a state file that cannot be read is a JSON document with the error,
+// as remove writes it.
+func TestMcpListJSONReportsStateError(t *testing.T) {
+	withHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".state.json"), []byte("{not json"), 0o600))
+
+	stdout, _, err := runMcpCmd(t, "list", "--output", "json")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	var out mcpListOutput
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
+	assert.NotEmpty(t, out.Error)
+	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, out.ErrorCategory)
+	assert.Empty(t, out.Profiles)
+}
+
+// TestBuildMcpListWarnsOnceForUnresolvableConfigFile checks that an entry whose config file cannot be resolved gets one
+// warning, for the server, not another for each agent it is installed in. The name has a NUL byte, which no file system
+// accepts, on every platform.
+func TestBuildMcpListWarnsOnceForUnresolvableConfigFile(t *testing.T) {
+	withHome(t)
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	entry.ConfigFile = "unresolvable\x00.cfg"
+	saveState(t, entry)
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	var warnings []string
+	for _, w := range out.Warnings {
+		if strings.Contains(w, "genie_one_mcp-logfood") {
+			warnings = append(warnings, w)
+		}
+	}
+	require.Len(t, warnings, 1, "one cause, one warning: %v", out.Warnings)
+	assert.Contains(t, warnings[0], "MCP server genie_one_mcp-logfood: ")
+	require.Len(t, out.Profiles, 1)
+	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Status)
+	assert.Equal(t, statusUnknown, out.Profiles[0].Servers[0].Agents[0].Status)
 }

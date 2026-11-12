@@ -3,17 +3,20 @@ package aitools
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -41,6 +44,9 @@ type mcpListOutput struct {
 	Unmanaged []mcpListUnmanaged `json:"unmanaged"`
 	// Warnings name the entries and agent configs that could not be checked. The rest is still listed.
 	Warnings []string `json:"warnings"`
+	// Error and ErrorCategory are set when the state cannot be read. The listing is then empty.
+	Error         string                      `json:"error,omitempty"`
+	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
 }
 
 // mcpListProfile groups the servers that bind to one profile in one config file.
@@ -99,25 +105,42 @@ coding agents each one is in. Entries that drifted from their profile or from th
 reported. Entries in agent configs that this CLI did not write are listed as unmanaged and never changed.
 Entries that run 'aitools mcp serve' but have no install record are listed as unmanaged too.
 
+--profile lists the servers of that profile only. Unmanaged entries have no profile, so they are not
+listed then.
+
 This command makes no network calls. It always exits 0 when entries have drifted or cannot be checked;
 an entry or agent config that cannot be checked is a warning.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			out, err := buildMcpList(ctx)
+			profileName := profileFlag(cmd)
+			out, err := buildMcpList(ctx, profileName)
+			if !installOutputIsJSON(cmd) {
+				if err != nil {
+					return err
+				}
+				renderMcpList(ctx, out, profileName)
+				return nil
+			}
+			// The document carries the failure, as add and remove write theirs.
 			if err != nil {
-				return err
+				out.Error = err.Error()
+				out.ErrorCategory = errorCategory(err)
 			}
-			if installOutputIsJSON(cmd) {
-				return renderJSON(cmd.OutOrStdout(), out)
+			if renderErr := renderJSON(cmd.OutOrStdout(), out); renderErr != nil {
+				return errors.Join(err, renderErr)
 			}
-			renderMcpList(ctx, out)
+			if err != nil {
+				return root.ErrAlreadyPrinted
+			}
 			return nil
 		},
 	}
 }
 
-func buildMcpList(ctx context.Context) (mcpListOutput, error) {
+// buildMcpList reads the state and the agent configs and returns the listing. profileName, when set, lists the
+// servers of that profile only.
+func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error) {
 	out := mcpListOutput{Profiles: []mcpListProfile{}, Unmanaged: []mcpListUnmanaged{}, Warnings: []string{}}
 
 	state, err := mcp.LoadState(ctx)
@@ -141,8 +164,15 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 		}
 	}
 
-	groups := map[profileKey]*mcpListProfile{}
+	var entries []mcp.Entry
 	for _, e := range state.Servers {
+		if profileName == "" || e.Profile == profileName {
+			entries = append(entries, e)
+		}
+	}
+	checks := mcp.CheckEntries(ctx, &mcp.State{Servers: entries})
+	groups := map[profileKey]*mcpListProfile{}
+	for i, e := range entries {
 		path, err := mcp.ResolveConfigFile(ctx, e.ConfigFile)
 		if err != nil {
 			// The entry cannot be checked, so it is grouped under its file as written.
@@ -158,18 +188,19 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 			p.ConfigFile = filepath.ToSlash(path)
 		}
 		s := mcpListServer{Name: e.Name, Service: e.Service, SignInRequired: e.SignInRequired, Status: statusOK, Agents: []mcpListAgent{}, entry: e}
-		drift, err := checkServer(ctx, e)
+		check := checks[i]
 		switch {
-		case err != nil:
+		case check.Err != nil:
 			s.Status = statusUnknown
-			out.Warnings = append(out.Warnings, err.Error())
-		case drift != nil:
-			s.Status = string(drift.Kind)
-			s.drift = drift
+			p.Status = worseStatus(p.Status, statusUnknown)
+			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", e.Name, check.Err))
+		case check.Drift != nil:
+			s.Status = string(check.Drift.Kind)
+			s.drift = check.Drift
 			p.Status = worseStatus(p.Status, s.Status)
-			p.noHost = p.noHost || drift.NoHost
-			if drift.Kind == mcp.DriftHostChanged {
-				p.Host = drift.CurrentHost
+			p.noHost = p.noHost || check.Drift.NoHost
+			if check.Drift.Kind == mcp.DriftHostChanged {
+				p.Host = check.Drift.CurrentHost
 			}
 		}
 		for _, agentName := range slices.Sorted(maps.Keys(e.Agents)) {
@@ -178,7 +209,8 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 			if cfg := configs[agentName]; cfg.err == nil {
 				var err error
 				status, err = agentStatus(ctx, e, agentName, cfg)
-				if err != nil {
+				// When the entry itself could not be checked, its warning already names the cause.
+				if err != nil && check.Err == nil {
 					out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: could not check %s: %s", e.Name, agentDisplayName(agentName), err))
 				}
 			}
@@ -199,6 +231,10 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 		out.Profiles = append(out.Profiles, *groups[key])
 	}
 
+	// Unmanaged entries have no profile, so a --profile listing has none.
+	if profileName != "" {
+		return out, nil
+	}
 	for _, name := range mcpAgentNames() {
 		cfg := configs[name]
 		if cfg.err != nil {
@@ -215,19 +251,10 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 	return out, nil
 }
 
-// checkServer returns the drift of one state entry from its profile, or nil when the profile still names the
-// recorded host and workspace. err is set when the entry cannot be checked.
-func checkServer(ctx context.Context, e mcp.Entry) (*mcp.Drift, error) {
-	drifts, err := mcp.Reconcile(ctx, &mcp.State{Servers: []mcp.Entry{e}})
-	if err != nil || len(drifts) == 0 {
-		return nil, err
-	}
-	return &drifts[0], nil
-}
-
-// worseStatus returns the more serious of two server statuses, for the status of a profile.
+// worseStatus returns the more serious of two server statuses, for the status of a profile. A server that could not be
+// checked makes its profile unknown, which is worse than ok and less serious than a drift.
 func worseStatus(a, b string) string {
-	rank := map[string]int{statusOK: 0, string(mcp.DriftHostChanged): 1, string(mcp.DriftProfileMissing): 2}
+	rank := map[string]int{statusOK: 0, statusUnknown: 1, string(mcp.DriftHostChanged): 2, string(mcp.DriftProfileMissing): 3}
 	if rank[b] > rank[a] {
 		return b
 	}
@@ -237,7 +264,6 @@ func worseStatus(a, b string) string {
 // agentConfig is one agent's MCP config, read once for a command. err is set when the config cannot be located or
 // parsed; entries is nil then.
 type agentConfig struct {
-	agent   *agents.Agent
 	path    string
 	entries map[string]map[string]any
 	err     error
@@ -260,13 +286,13 @@ func readAgentConfig(ctx context.Context, name string) agentConfig {
 	}
 	path, err := agentconfig.Path(ctx, a)
 	if err != nil {
-		return agentConfig{agent: a, err: err}
+		return agentConfig{err: err}
 	}
-	entries, err := agentconfig.Read(ctx, a)
+	entries, err := agentconfig.ReadAt(a, path)
 	if err != nil {
-		return agentConfig{agent: a, path: path, err: err}
+		return agentConfig{path: path, err: err}
 	}
-	return agentConfig{agent: a, path: path, entries: entries}
+	return agentConfig{path: path, entries: entries}
 }
 
 // agentStatus compares the server's entry for one agent with that agent's config, which must have been read. An
@@ -308,13 +334,12 @@ func unmanagedKind(entry map[string]any) string {
 	switch {
 	case mcpconfig.IsDatabricksEntry(entry):
 		return unmanagedKindNoRecord
-	case !agentconfig.IsUnmanaged(entry):
-		return ""
-	}
-	if argv, ok := mcpconfig.Argv(entry); ok && len(argv) > 1 && argv[1] == "mcp-proxy" {
+	case agentconfig.IsUGProxy(entry):
 		return unmanagedKindUGProxy
+	case agentconfig.IsUnmanaged(entry):
+		return unmanagedKindAIGateway
 	}
-	return unmanagedKindAIGateway
+	return ""
 }
 
 // recordedFor reports whether state has a server with this name installed for the agent.
@@ -334,8 +359,12 @@ func mcpAgentList(names []string) string {
 	return strings.Join(display, ", ")
 }
 
-func renderMcpList(ctx context.Context, out mcpListOutput) {
+func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 	if len(out.Profiles) == 0 && len(out.Unmanaged) == 0 {
+		if profileName != "" {
+			cmdio.LogString(ctx, fmt.Sprintf("No Databricks MCP servers installed by this CLI on profile %s.", profileName))
+			return
+		}
 		cmdio.LogString(ctx, "No Databricks MCP servers installed by this CLI.")
 	}
 	for i, p := range out.Profiles {
@@ -388,16 +417,11 @@ func serverHint(p mcpListProfile, s mcpListServer) string {
 	if s.drift.Kind == mcp.DriftProfileMissing {
 		pinned := ""
 		if s.entry.ConfigFile != "" {
-			pinned = p.configPath
+			pinned = filepath.ToSlash(p.configPath)
 		}
 		return fmt.Sprintf("broken: run `%s` or `%s`", remove, mcp.RecreateCommand(s.entry.Host, p.Profile, pinned))
 	}
-	if mcp.NormalizeHost(s.entry.Host) != mcp.NormalizeHost(s.drift.CurrentHost) {
-		return fmt.Sprintf("broken: it was set up for %s, but profile %s now points at %s; run `%s` and add it again",
-			s.entry.Host, p.Profile, s.drift.CurrentHost, remove)
-	}
-	return fmt.Sprintf("broken: it was set up for workspace %s, but profile %s now points at workspace %s; run `%s` and add it again",
-		s.entry.WorkspaceID, p.Profile, s.drift.CurrentWorkspaceID, remove)
+	return fmt.Sprintf("broken: %s; run `%s` and add it again", mcp.DriftMessage("it", s.entry, p.Profile, *s.drift), remove)
 }
 
 func listAgentsText(agentList []mcpListAgent) string {

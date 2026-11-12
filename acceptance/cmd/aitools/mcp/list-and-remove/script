@@ -28,6 +28,9 @@ title "A hand-edited entry is listed as modified; an unmanaged ug entry is liste
 jq '.mcpServers["github-logfood"].command = "/usr/bin/other" | .mcpServers.web_search = {"command": "ug", "args": ["mcp-proxy"]}' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
 trace $CLI aitools mcp list
 
+title "--profile lists that profile only, without the unmanaged entries"
+trace $CLI aitools mcp list --profile logfood
+
 title "remove leaves the modified entry in place and says why"
 trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 trace jq '.mcpServers | keys' home/.claude.json

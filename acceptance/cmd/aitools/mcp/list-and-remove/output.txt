@@ -114,6 +114,13 @@ Profile logfood  ([DATABRICKS_URL])
 Unmanaged Databricks MCP entries (not changed by this command):
   Claude Code    web_search           ug mcp-proxy
 
+=== --profile lists that profile only, without the unmanaged entries
+
+>>> [CLI] aitools mcp list --profile logfood
+Profile logfood  ([DATABRICKS_URL])
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
+  github-logfood           system.ai.github               Claude Code (modified)
+
 === remove leaves the modified entry in place and says why
 
 >>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood

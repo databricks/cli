@@ -1,7 +1,9 @@
 package aitools
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"maps"
 	"os"
 	"path/filepath"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
-	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
@@ -89,6 +90,36 @@ func TestSelectInstalls(t *testing.T) {
 	none, err := selectInstalls(&mcp.State{}, nil, "")
 	require.NoError(t, err, "--all on an empty state is a no-op")
 	assert.Empty(t, none)
+}
+
+func TestSelectInstallsLeafAndCaseRules(t *testing.T) {
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood"},
+		{Name: "github-dogfood", Service: "system.ai.github", Profile: "dogfood"},
+		{Name: "github-team", Service: "team.ai.github", Profile: "logfood"},
+	}}
+
+	// Server names compare without case.
+	byName, err := selectInstalls(state, []string{"GITHUB-LOGFOOD"}, "")
+	require.NoError(t, err)
+	require.Len(t, byName, 1)
+
+	// A leaf is the last part of the service name. Here it names services in two schemas, so it is refused.
+	_, err = selectInstalls(state, []string{"github"}, "")
+	require.Error(t, err)
+	assert.Equal(t, "github matches more than one MCP service (system.ai.github, team.ai.github); pass the full service name", err.Error())
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
+
+	// Narrowed to a profile where only one schema is installed, the leaf is unambiguous.
+	byLeaf, err := selectInstalls(state, []string{"github"}, "dogfood")
+	require.NoError(t, err)
+	require.Len(t, byLeaf, 1)
+	assert.Equal(t, "dogfood", byLeaf[0].Profile)
+
+	// A name with a dot is a full service name, not a leaf.
+	full, err := selectInstalls(state, []string{"team.ai.github"}, "")
+	require.NoError(t, err)
+	require.Len(t, full, 1)
 }
 
 func readJSONFile(t *testing.T, path string) map[string]any {
@@ -176,14 +207,16 @@ func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
 	assert.Contains(t, state.Servers[0].Agents, "claude-code", "the record stays, so list keeps showing the entry")
 }
 
-func TestMcpRemoveKeepsEntryWhenAgentConfigMoved(t *testing.T) {
+// TestMcpRemoveRemovesEntryFromRecordedFileWhenAgentConfigMoved checks that an agent whose config moved loses its entry
+// from the file the record names, the file this CLI wrote, and that the record goes with it.
+func TestMcpRemoveRemovesEntryFromRecordedFileWhenAgentConfigMoved(t *testing.T) {
 	home := withHome(t)
 	claude := agents.ByName("claude-code")
 	claudePath := filepath.Join(home, ".claude.json")
 	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 	saveState(t, entry)
 
-	// The agent now reads its config from another directory. The entry is still in the file it was written to.
+	// The agent now reads its config from another directory.
 	moved := t.TempDir()
 	t.Setenv("CLAUDE_CONFIG_DIR", moved)
 
@@ -191,17 +224,115 @@ func TestMcpRemoveKeepsEntryWhenAgentConfigMoved(t *testing.T) {
 	require.NoError(t, err)
 
 	out := readRemoveOutput(t, stdout.String())
-	assert.Empty(t, out.Removed, "a file the agent no longer reads is not pruned")
-	require.Len(t, out.Skipped, 1)
-	assert.Equal(t, "claude-code", out.Skipped[0].Agent)
-	assert.Contains(t, out.Skipped[0].Reason, filepath.ToSlash(claudePath), "the reason names the file the entry was written to")
-	assert.Contains(t, out.Skipped[0].Reason, filepath.ToSlash(filepath.Join(moved, ".claude.json")), "and the file the agent reads now")
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, []string{"claude-code"}, out.Removed[0].Agents)
+	assert.Empty(t, out.Skipped)
+	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood")
+	_, err = os.Stat(filepath.Join(moved, ".claude.json"))
+	assert.ErrorIs(t, err, os.ErrNotExist, "the agent's current file is not written")
 
-	assert.Contains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood", "the entry in the old file is kept")
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers, "the record went with the entry")
+}
+
+// TestMcpRemovePrunesWhenRecordedFileIsGone checks that a record whose file no longer exists is pruned, even when the
+// agent's config moved to a directory that is not the recorded one.
+func TestMcpRemovePrunesWhenRecordedFileIsGone(t *testing.T) {
+	home := withHome(t)
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	require.NoError(t, os.Remove(claudePath))
+	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
+
+	stdout, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, []string{"claude-code"}, out.Removed[0].Agents)
+	assert.Empty(t, out.Skipped)
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers)
+}
+
+// TestMcpRemoveDropsRecordOfAgentThatCannotBeEdited checks that a record for an agent this CLI cannot edit, one
+// outside the registry or one without MCP support, is dropped and reported, not left to fail every remove --all.
+func TestMcpRemoveDropsRecordOfAgentThatCannotBeEdited(t *testing.T) {
+	withHome(t)
+	claude := agents.ByName("claude-code")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	retired := mcp.Entry{
+		Name: "dbsql-logfood", Service: "system.ai.dbsql", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
+		Agents: map[string]mcp.AgentRecord{"retired-agent": {Path: "/x/config.json", Scope: "user"}, "pi": {Path: "/x/pi.json", Scope: "user"}},
+	}
+	saveState(t, genie, retired)
+
+	stdout, _, err := runMcpCmd(t, "remove", "--all", "--output", "json")
+	require.NoError(t, err, "a record that cannot be edited is not a failure")
+
+	out := readRemoveOutput(t, stdout.String())
+	assert.Empty(t, out.Error)
+	assert.Empty(t, out.Skipped)
+	require.Len(t, out.Removed, 2)
+	assert.Equal(t, []string{"pi", "retired-agent"}, out.Removed[1].Agents)
+	assert.Equal(t, []string{"pi", "retired-agent"}, out.Removed[1].RecordOnly, "only the record of these agents was dropped")
+	assert.Equal(t, []string{"claude-code"}, out.Removed[0].Agents)
+	assert.Empty(t, out.Removed[0].RecordOnly)
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers)
+}
+
+// TestMcpRemoveDropsNamedEntryWithoutAgents checks that a named entry left with no agents is removed from state.
+func TestMcpRemoveDropsNamedEntryWithoutAgents(t *testing.T) {
+	withHome(t)
+	saveState(t, mcp.Entry{Name: "dangling", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand})
+
+	stdout, _, err := runMcpCmd(t, "remove", "--names", "dangling", "--output", "json")
+	require.NoError(t, err)
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, "dangling", out.Removed[0].Name)
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers)
+}
+
+// TestMcpRemoveKeepsUnselectedEntryWithoutAgents checks that removing one server does not drop another entry that
+// has no agents: only the entries this run selected or emptied are dropped.
+func TestMcpRemoveKeepsUnselectedEntryWithoutAgents(t *testing.T) {
+	withHome(t)
+	claude := agents.ByName("claude-code")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, genie, mcp.Entry{Name: "keep-me", Service: "system.ai.dbsql", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand})
+
+	_, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood")
+	require.NoError(t, err)
+
 	state, err := mcp.LoadState(t.Context())
 	require.NoError(t, err)
 	require.Len(t, state.Servers, 1)
-	assert.Contains(t, state.Servers[0].Agents, "claude-code", "the record is kept, so list can show the path change")
+	assert.Equal(t, "keep-me", state.Servers[0].Name)
+}
+
+// TestMcpRemoveNamesAcceptsLeafService checks that --names takes the leaf of a service name, as add does.
+func TestMcpRemoveNamesAcceptsLeafService(t *testing.T) {
+	withHome(t)
+	claude := agents.ByName("claude-code")
+	github := seedInstall(t, claude, "github-logfood", "system.ai.github", "logfood", "https://adb-1.test")
+	saveState(t, github)
+
+	stdout, _, err := runMcpCmd(t, "remove", "--names", "github", "--output", "json")
+	require.NoError(t, err)
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, "github-logfood", out.Removed[0].Name)
 }
 
 func TestMcpRemoveExplicitAgentFailureIsAnError(t *testing.T) {
@@ -285,14 +416,12 @@ func TestMcpRemoveReportsResultsWhenStateCannotBeSaved(t *testing.T) {
 	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 	saveState(t, entry)
 
-	// The agent entry is deleted first; then the state directory cannot take the new state file.
-	stateDir, err := installer.GlobalSkillsDir(t.Context())
-	require.NoError(t, err)
-	require.NoError(t, os.Chmod(stateDir, 0o500))
-	t.Cleanup(func() { _ = os.Chmod(stateDir, 0o700) })
+	// The agent entry is deleted first; then the state cannot be written.
+	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
+	t.Cleanup(func() { saveMCPState = mcp.SaveState })
 
 	stdout, stderr, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood")
-	require.Error(t, err)
+	require.ErrorContains(t, err, "state file is read-only")
 	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "Removed genie_one_mcp-logfood", "the results are printed before the error")
 	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood")

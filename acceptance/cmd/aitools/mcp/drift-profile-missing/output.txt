@@ -82,7 +82,7 @@ Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
 >>> [CLI] aitools mcp list
 Profile dogfood  (https://adb-2.test)
   genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
-  broken: it was set up for [DATABRICKS_URL], but profile dogfood now points at https://adb-2.test; run `databricks aitools mcp remove --names genie_one_mcp-dogfood` and add it again
+  broken: it was set up for [DATABRICKS_URL], but profile "dogfood" now points at https://adb-2.test; run `databricks aitools mcp remove --names genie_one_mcp-dogfood` and add it again
 
 Profile logfood  (profile not found in [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
