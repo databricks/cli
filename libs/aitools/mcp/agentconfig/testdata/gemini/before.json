@@ -1,0 +1,11 @@
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "mcpServers": {
+    "other": {
+      "command": "npx",
+      "args": ["-y", "other-mcp"]
+    }
+  }
+}
