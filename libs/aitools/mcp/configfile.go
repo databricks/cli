@@ -11,12 +11,12 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 )
 
-// resolveConfigFile returns the absolute path of the config file that name refers to. An empty
+// ResolveConfigFile returns the absolute path of the config file that name refers to. An empty
 // name is the default file, and a leading "~" is the home directory. Symlinks are resolved while
 // the path is still as the user wrote it: the OS reads "link/../x" through the link's target, so
 // the same file has one path however it is named. A path that does not exist is kept as written,
 // since there is no file to resolve and cleaning it could name another file.
-func resolveConfigFile(ctx context.Context, name string) (string, error) {
+func ResolveConfigFile(ctx context.Context, name string) (string, error) {
 	path, err := databrickscfg.ResolveConfigFilePath(ctx, name)
 	if err != nil {
 		return "", err

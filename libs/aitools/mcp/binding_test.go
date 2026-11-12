@@ -780,3 +780,42 @@ func TestBindRecreateHintQuotesValues(t *testing.T) {
 		filepath.ToSlash(bindingTestResolved(t, cfgPath)), filepath.ToSlash(bindingTestResolved(t, cfgPath)))
 	assert.Equal(t, want, err.Error())
 }
+
+// TestCheckBindingMatchesBind checks that CheckBinding refuses the same drift as Bind, before any request.
+func TestCheckBindingMatchesBind(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected request to the profile's host: %s %s", r.Method, r.URL)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(server.Close)
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, server.URL, bindingTestToken))
+	state := bindingTestState(cfgPath, bindingTestHost)
+
+	err := mcp.CheckBinding(t.Context(), state, bindingTestService, bindingTestProfile)
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+	assert.Equal(t, "MCP server github-logfood was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL+". Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+}
+
+func TestCheckBindingPassesWhenEntryMatchesOrIsAbsent(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	require.NoError(t, mcp.CheckBinding(t.Context(), bindingTestState(cfgPath, bindingTestHost), bindingTestService, bindingTestProfile))
+	require.NoError(t, mcp.CheckBinding(t.Context(), &mcp.State{}, bindingTestService, bindingTestProfile))
+}
+
+func TestCheckBindingRefusesWorkspaceChangeOnSameHost(t *testing.T) {
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nworkspace_id = 222\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, bindingTestToken))
+	state := bindingTestState(cfgPath, bindingTestHost)
+	state.Servers[0].WorkspaceID = "111"
+
+	err := mcp.CheckBinding(t.Context(), state, bindingTestService, bindingTestProfile)
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+}
+
+func TestCheckBindingRefusesEntryPinnedToOtherConfigFile(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	other := bindingTestWriteConfig(t, bindingTestProfileContents(bindingTestToken))
+	require.NotEqual(t, cfgPath, other)
+
+	err := mcp.CheckBinding(t.Context(), bindingTestState(other, bindingTestHost), bindingTestService, bindingTestProfile)
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+}

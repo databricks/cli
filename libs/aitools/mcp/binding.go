@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -76,7 +77,7 @@ func (e *BindError) ExitCode() int {
 // token store reads DATABRICKS_CONFIG_FILE from the process environment instead, so a caller
 // that sets the variable in the context must also set it in the process environment.
 func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
-	configFile, err := resolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
+	configFile, err := ResolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
 	if err != nil {
 		return nil, nil, uncategorizedError(err)
 	}
@@ -90,14 +91,9 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 		name = entry.Name
 	}
 
-	p, err := configFiles{}.profile(configFile, opts.Profile)
-	switch {
-	case errors.Is(err, errProfileMissing):
-		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(configFile), entry, "no longer exists")
-	case errors.Is(err, errProfileNoHost):
-		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(configFile), entry, "has no host")
-	case err != nil:
-		return nil, nil, uncategorizedError(err)
+	p, err := profileFor(name, opts.Profile, configFile, entry)
+	if err != nil {
+		return nil, nil, err
 	}
 	if entry != nil {
 		if drift := driftOf(*entry, p); drift != nil {
@@ -129,9 +125,48 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 		return nil, nil, uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
-		return nil, nil, authError(opts.Profile, err)
+		return nil, nil, AuthError(opts.Profile, err)
 	}
 	return cfg, entry, nil
+}
+
+// CheckBinding returns the error that Bind returns for the state entry of service and profileName
+// when the profile no longer matches it: the entry is pinned to another config file, the profile is
+// gone or has no host, or its host or workspace changed. It returns nil when there is no entry or the
+// entry still matches. It reads the config files only and makes no request, so a caller can refuse
+// before it sends a token to the profile's host.
+func CheckBinding(ctx context.Context, state *State, service, profileName string) error {
+	configFile, err := ResolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
+	if err != nil {
+		return uncategorizedError(err)
+	}
+	entry, err := findEntry(ctx, state, service, profileName, configFile)
+	if err != nil || entry == nil {
+		return err
+	}
+	p, err := profileFor(entry.Name, profileName, configFile, entry)
+	if err != nil {
+		return err
+	}
+	if drift := driftOf(*entry, p); drift != nil {
+		return driftError(entry.Name, profileName, *entry, *drift)
+	}
+	return nil
+}
+
+// profileFor returns the profile profileName in configFile, or the PROFILE_NOT_FOUND error that says it
+// is gone. name and entry describe the state entry the profile serves; entry is nil without one.
+func profileFor(name, profileName, configFile string, entry *Entry) (profile.Profile, error) {
+	p, err := configFiles{}.profile(configFile, profileName)
+	switch {
+	case errors.Is(err, errProfileMissing):
+		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, "no longer exists")
+	case errors.Is(err, errProfileNoHost):
+		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, "has no host")
+	case err != nil:
+		return profile.Profile{}, uncategorizedError(err)
+	}
+	return p, nil
 }
 
 // uncategorizedError wraps a failure that has no category of its own. Its message is the cause's.
@@ -184,9 +219,9 @@ func configFileError(name, profileName, recordedPath, currentPath string) error 
 	return &BindError{Category: BindProfileHostChanged, message: message}
 }
 
-// authError is the AUTH_FAILED error for a credential that the profile's own settings could not
+// AuthError is the AUTH_FAILED error for a credential that the profile's own settings could not
 // provide. The message points at the login command for the profile.
-func authError(profileName string, cause error) error {
+func AuthError(profileName string, cause error) error {
 	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, shellquote.BashArg(profileName))
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
@@ -208,7 +243,7 @@ func findEntry(ctx context.Context, state *State, service, profileName, configFi
 		if entry.Service != service || entry.Profile != profileName {
 			continue
 		}
-		path, err := resolveConfigFile(ctx, entry.ConfigFile)
+		path, err := ResolveConfigFile(ctx, entry.ConfigFile)
 		if err != nil {
 			unresolved = errors.Join(unresolved, fmt.Errorf("MCP server %s: %w", entry.Name, err))
 			continue
