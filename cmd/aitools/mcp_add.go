@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -26,9 +26,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
-
-// serverNamePattern is the strictest server-name rule among the agents.
-var serverNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 // Per-agent results of `mcp add`.
 const (
@@ -261,7 +258,7 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 		if len(names) != 1 {
 			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name needs exactly one service in --names")
 		}
-		if !serverNamePattern.MatchString(f.name) {
+		if !mcpconfig.ValidServerName(f.name) {
 			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %q may only contain letters, digits, '_' and '-'", f.name)
 		}
 	}
@@ -488,7 +485,7 @@ func unmanagedNames(ctx context.Context, a *agents.Agent) map[string]bool {
 	}
 	names := make(map[string]bool, len(entries))
 	for name, entry := range entries {
-		if !a.MCP.IsOurs(entry) {
+		if !mcpconfig.IsDatabricksEntry(entry) {
 			names[name] = true
 		}
 	}

@@ -92,17 +92,17 @@
 === Codex config
 
 >>> cat home/.codex/config.toml
-[mcp_servers]
-  [mcp_servers.genie_one_mcp-logfood]
-    args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "codex"]
-    command = "[CLI]"
-    [mcp_servers.genie_one_mcp-logfood.env]
-      DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
-  [mcp_servers.github-logfood]
-    args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.github", "--agent", "codex"]
-    command = "[CLI]"
-    [mcp_servers.github-logfood.env]
-      DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+[mcp_servers.genie_one_mcp-logfood]
+args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "codex"]
+command = "[CLI]"
+[mcp_servers.genie_one_mcp-logfood.env]
+DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+
+[mcp_servers.github-logfood]
+args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.github", "--agent", "codex"]
+command = "[CLI]"
+[mcp_servers.github-logfood.env]
+DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
 
 === State records the binding, without the time and CLI version
 
