@@ -1,0 +1,35 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+pipeline_id="$(read_id.py my_pipeline)"
+
+title "Add permissions remotely to resources that declare none"
+# The owner entry is managed by deploy, so it must not be written to the config.
+$CLI permissions set jobs $job_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_MANAGE","user_name":"viewer@example.com"},
+  {"permission_level":"CAN_MANAGE_RUN","user_name":"admin@example.com"}
+]}' > /dev/null
+$CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_VIEW","group_name":"users"}
+]}' > /dev/null
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Sync again: the permissions are now in the config"
+$CLI bundle config-remote-sync

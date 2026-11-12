@@ -161,7 +161,11 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+//
+// With readUnmanagedPermissions, deployed resources whose config and state have no permissions
+// also get a Skip ".permissions" entry holding the remote permissions in RemoteState. Only
+// config-remote-sync sets it, to write remote permission changes back to the config.
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, readUnmanagedPermissions bool) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -169,7 +173,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
+	plan, unmanagedPermissions, err := b.makePlan(ctx, configRoot, &b.StateDB.Data, readUnmanagedPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -267,6 +271,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
 		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
 			return false
+		}
+
+		if unmanagedPermissions[resourceKey] {
+			b.readUnmanagedPermissions(ctx, adapter, resourceKey, entry)
+			return true
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
@@ -413,6 +422,29 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	return plan, nil
+}
+
+// readUnmanagedPermissions records the remote permissions of a resource whose config declares
+// none. There is nothing to deploy for it, so a failed read is not fatal: the user may not be
+// allowed to read the permissions of a resource they can deploy.
+func (b *DeploymentBundle) readUnmanagedPermissions(ctx context.Context, adapter *dresources.Adapter, resourceKey string, entry *deployplan.PlanEntry) {
+	entry.Action = deployplan.Skip
+
+	sv, _ := b.StateCache.Load(resourceKey)
+	if len(sv.Refs) > 0 {
+		// The parent's ID is only known after deploy, e.g. it is recreated.
+		return
+	}
+
+	id := sv.Value.(*dresources.PermissionsState).ObjectID
+	remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if err != nil {
+		log.Warnf(ctx, "reading permissions of %s id=%q: %s", resourceKey, id, err)
+		return
+	}
+	entry.RemoteState = remoteState
 }
 
 func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
@@ -1149,7 +1181,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database, readUnmanagedPermissions bool) (*deployplan.Plan, map[string]bool, error) {
 	p := deployplan.NewPlanDirect()
 
 	// Copy state metadata to plan for validation during apply
@@ -1189,9 +1221,15 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				},
 			)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
+	}
+
+	var unmanagedPermissions map[string]bool
+	if readUnmanagedPermissions {
+		unmanagedPermissions = unmanagedPermissionsNodes(nodes, db)
+		nodes = slices.AppendSeq(nodes, maps.Keys(unmanagedPermissions))
 	}
 
 	slices.Sort(nodes)
@@ -1201,22 +1239,25 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		prefix := "cannot plan " + node
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+		if unmanagedPermissions[node] {
+			inputConfig = reflect.New(config.ResourcesTypes()[config.GetResourceTypeFromKey(node)]).Interface()
 		}
 
 		adapter, err := b.getAdapterForKey(node)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
+			return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
 		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
+			return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
 		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
+			return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
 		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
@@ -1226,7 +1267,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// extractReferences below still sees the escaped form and does not mistake
 		// these placeholders for bundle references.
 		if err := unescapeRefs(newStateConfig); err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
+			return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
 		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
@@ -1234,7 +1275,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		if _, hasState := db.State[node]; !hasState {
 			empty, err := adapter.IsEmptyState(newStateConfig)
 			if err != nil {
-				return nil, fmt.Errorf("%s: %w", prefix, err)
+				return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 			}
 			if empty {
 				continue
@@ -1245,9 +1286,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
 
-		refs, err := extractReferences(configRoot.Value(), node, adapter.StateType())
-		if err != nil {
-			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
+		refs := make(map[string]string)
+		if !unmanagedPermissions[node] {
+			refs, err = extractReferences(configRoot.Value(), node, adapter.StateType())
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
+			}
 		}
 
 		maps.Copy(refs, inputStructVar.Refs)
@@ -1262,7 +1306,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			for _, targetPath := range ref.References() {
 				targetPathParsed, err := dyn.NewPathFromString(targetPath)
 				if err != nil {
-					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
+					return nil, nil, fmt.Errorf("parsing %q: %w", targetPath, err)
 				}
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
@@ -1288,7 +1332,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
+			return nil, nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 		for _, dep := range lifecycleDeps {
 			if !slices.Contains(dependsOn, dep) {
@@ -1319,7 +1363,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// are resolved before plan time, so SyncToJSON (called when cross-resource
 		// refs are resolved during planNode) will never re-serialise these fields.
 		if err := redactStruct(adapter, newStateConfig); err != nil {
-			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
+			return nil, nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
 		}
 
 		newState := &structvar.StructVar{
@@ -1330,7 +1374,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		// Convert to JSON for serialization in plan (values already redacted above).
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
-			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
+			return nil, nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
 		}
 
 		e := deployplan.PlanEntry{
@@ -1360,7 +1404,31 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 	}
 
-	return p, nil
+	return p, unmanagedPermissions, nil
+}
+
+// unmanagedPermissionsNodes returns the ".permissions" nodes of deployed resources whose
+// config and state have no permissions. A resource key that cannot be referenced (e.g. one with
+// spaces) is left out: the node's object_id is a reference to the resource's ID.
+func unmanagedPermissionsNodes(nodes []string, db *dstate.Database) map[string]bool {
+	result := make(map[string]bool)
+	for _, node := range nodes {
+		if !dresources.HasObjectPermissions(config.GetResourceTypeFromKey(node)) {
+			continue
+		}
+		if _, deployed := db.State[node]; !deployed {
+			continue
+		}
+		if !dynvar.IsPureVariableReference("${" + node + ".id}") {
+			continue
+		}
+		permissionsNode := node + ".permissions"
+		if _, ok := db.State[permissionsNode]; ok || slices.Contains(nodes, permissionsNode) {
+			continue
+		}
+		result[permissionsNode] = true
+	}
+	return result
 }
 
 // ExtractReferences extracts variable references from the config subtree rooted at node,

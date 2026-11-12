@@ -8,10 +8,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type OperationType string
@@ -148,7 +150,8 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
 		// to YAML: their fields (e.g. object_id) are server-populated with no source
 		// location, and bundle-level permissions have no per-resource YAML node at all,
-		// so resolving them would fail the whole sync. Skip them instead.
+		// so resolving them would fail the whole sync. Skip them instead; only the
+		// permissions of resources that declare none are added below, as a whole.
 		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
@@ -187,5 +190,52 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
+	for resourceKey, entry := range plan.Plan {
+		permissions := unmanagedPermissions(b, resourceKey, entry)
+		if len(permissions) == 0 {
+			continue
+		}
+		value, err := normalizeValue(permissions)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
+		}
+		parentKey := strings.TrimSuffix(resourceKey, ".permissions")
+		if changes[parentKey] == nil {
+			changes[parentKey] = make(ResourceChanges)
+		}
+		changes[parentKey]["permissions"] = &ConfigChangeDesc{
+			Operation: OperationAdd,
+			Value:     value,
+		}
+	}
+
 	return changes, nil
+}
+
+// unmanagedPermissions returns the remote permissions the plan read for a resource whose config
+// declares none (see CalculatePlan), without the owner and the current user's CAN_MANAGE:
+// FixPermissions adds those on deploy, so they do not belong in the config.
+func unmanagedPermissions(b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry) []dresources.StatePermission {
+	remote, ok := entry.RemoteState.(*dresources.PermissionsState)
+	if !ok {
+		return nil
+	}
+	path, err := dyn.NewPathFromString(resourceKey)
+	if err != nil {
+		return nil
+	}
+	if _, err := dyn.GetByPath(b.Config.Value(), path); err == nil {
+		return nil
+	}
+
+	currentUser := b.Config.Workspace.CurrentUser.UserName
+	var result []dresources.StatePermission
+	for _, p := range remote.EmbeddedSlice {
+		isCurrentUser := p.UserName == currentUser || p.ServicePrincipalName == currentUser
+		if p.Level == iam.PermissionLevelIsOwner || (p.Level == iam.PermissionLevelCanManage && isCurrentUser) {
+			continue
+		}
+		result = append(result, p)
+	}
+	return result
 }
