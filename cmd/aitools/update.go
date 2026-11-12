@@ -300,7 +300,7 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 		rec := state.Plugins[name]
 		status := "up to date"
 		if rec.Version == "" {
-			status = "version unknown"
+			status = "update may be available"
 		} else if rec.Version != latest {
 			status = "update available"
 		}

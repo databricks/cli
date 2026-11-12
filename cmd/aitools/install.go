@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +32,33 @@ var (
 // errNoAgentsSelected is returned when the picker is confirmed with nothing
 // checked. The funnel reports it as CANCELLED: the user chose to act on nothing.
 var errNoAgentsSelected = errors.New("at least one agent must be selected")
+
+// installPromptsSupported reports whether install may show its prompts. Agents
+// often run commands in a pseudo-terminal (Cursor, Copilot in the VS Code
+// terminal) where stdin looks like a TTY but nobody can answer a TUI prompt.
+// Agent detection is the SDK's list of agent environment variables:
+// https://github.com/databricks/databricks-sdk-go/blob/main/useragent/agent.go
+// An agent caller always gets the documented non-interactive defaults.
+func installPromptsSupported(ctx context.Context) bool {
+	return cmdio.IsPromptSupported(ctx) && useragent.AgentProvider() == ""
+}
+
+// agentCallerNote is printed when install skips its prompts on a terminal
+// because the caller is a coding agent. It names the detected agent by its
+// --agents value when it has one, and the flags of `databricks aitools install`
+// that would have replaced the skipped prompts. The command is named because
+// the deprecated `experimental aitools skills install` alias does not accept
+// these flags.
+func agentCallerNote(missingFlags []string) string {
+	provider := useragent.AgentProvider()
+	detected := "a coding agent was"
+	if provider == "multiple" {
+		detected = "more than one coding agent was"
+	} else if agent := agents.AgentForProvider(provider); agent != nil {
+		detected = fmt.Sprintf("a coding agent (%s) was", agent.Name)
+	}
+	return fmt.Sprintf("No prompts shown because %s detected. Pass %s to databricks aitools install to choose what to install.", detected, strings.Join(missingFlags, " and "))
+}
 
 // delivery is how the databricks tools are delivered to one agent.
 type delivery int
@@ -102,6 +130,10 @@ Agent selection:
   (unset, interactive)   A picker over all known agents, detected ones pre-checked.
   (unset, non-interactive) Act on every detected agent.
 
+Non-interactive runs (no terminal, or called by a coding agent) never prompt:
+scope defaults to global and agents to every detected one. On a terminal, a
+coding agent caller gets a note saying so.
+
 Output:
   --output json          Emit a structured result instead of text. Requires --scope
                          and --agents so the command runs without interactive prompts.
@@ -118,7 +150,8 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				ctx = cmdio.WithQuiet(ctx)
 			}
 
-			funnel := startFunnel(ctx, protos.AitoolsCommandInstall, installModeType(skillsOnly, pathFlag))
+			interactive := installPromptsSupported(ctx)
+			funnel := startFunnel(ctx, protos.AitoolsCommandInstall, installModeType(skillsOnly, pathFlag), interactive)
 			defer func() { funnel.finish(ctx, err) }()
 
 			if skillsOnly && pathFlag != "" {
@@ -206,8 +239,24 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 			funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
 
+			// A person may be at this terminal with an agent env var inherited
+			// from an agent session, so say why the prompts they would expect
+			// were skipped.
+			if !interactive && cmdio.IsPromptSupported(ctx) {
+				var missing []string
+				if scope == "" {
+					missing = append(missing, "--scope")
+				}
+				if !explicit {
+					missing = append(missing, "--agents")
+				}
+				if len(missing) > 0 {
+					cmdio.LogString(ctx, agentCallerNote(missing))
+				}
+			}
+
 			if scope == "" {
-				scope, err = resolveScopeWithPrompt(ctx)
+				scope, err = resolveScopeWithPrompt(ctx, interactive)
 				if err != nil {
 					return err
 				}
@@ -217,7 +266,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			funnel.step(ctx, protos.AitoolsCommandStepScopeResolved)
 
 			if !explicit {
-				targetAgents, err = selectAgents(ctx, scope, skillsOnly)
+				targetAgents, err = selectAgents(ctx, scope, skillsOnly, interactive)
 				if err != nil {
 					return err
 				}
@@ -233,7 +282,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			funnel.step(ctx, protos.AitoolsCommandStepAgentsSelected)
 
 			// In the interactive picker path, show a plan summary and confirm.
-			if !explicit && cmdio.IsPromptSupported(ctx) {
+			if !explicit && interactive {
 				printPlanSummary(ctx, plan, scope)
 				proceed, err := promptProceed()
 				if err != nil {
@@ -340,10 +389,10 @@ func installOutputIsJSON(cmd *cobra.Command) bool {
 // needs a config dir, so in --skills-only mode an agent is "detected" by its
 // config dir (PATH-independent); plugin delivery additionally detects agents by
 // their CLI binary on PATH, which fixes the Codex/Copilot config-dir miss.
-func selectAgents(ctx context.Context, scope string, skillsOnly bool) ([]*agents.Agent, error) {
+func selectAgents(ctx context.Context, scope string, skillsOnly, interactive bool) ([]*agents.Agent, error) {
 	// Interactive: the picker decides; a prompt error or empty selection is a real
 	// error, not a "nothing detected" no-op.
-	if cmdio.IsPromptSupported(ctx) {
+	if interactive {
 		choices := agentChoices(ctx, scope, skillsOnly)
 		if len(choices) == 0 {
 			// Agents were detected but none can be acted on in this scope; the
@@ -591,9 +640,12 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 
 	pluginCount := 0
 	if len(pluginItems) > 0 {
+		// Plugins install from the agent's marketplace, so the skills ref only
+		// labels the recorded version. Record it as unknown when unresolved.
 		ref, _, err := installer.GetSkillsRef(ctx)
 		if err != nil {
-			return outcomes, err
+			log.Debugf(ctx, "Recording plugin version as unknown: %v", err)
+			ref = ""
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {
@@ -703,9 +755,9 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 		}
 		out.Agents = append(out.Agents, entry)
 	}
-	// A top-level failure (skills-group install, ref lookup, plugin recording)
-	// has no per-agent entry, so surface it here too; otherwise the consumer sees
-	// a non-zero exit with an empty agents array and no reason. Per-agent failures
+	// A top-level failure (skills-group install, plugin recording) has no
+	// per-agent entry, so surface it here too; otherwise the consumer sees a
+	// non-zero exit with an empty agents array and no reason. Per-agent failures
 	// stay in the agents entries above and are not repeated here.
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()

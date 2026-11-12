@@ -434,7 +434,9 @@ type PluginUpdate struct {
 }
 
 // UpdateInstalledPlugins runs the plugin update for every plugin recorded in the
-// given scope's state, bumping each record's version to ref. A plugin that can't
+// given scope's state, bumping each record's version to ref, or clearing it
+// (version unknown) when the marketplace refresh failed and the record did not
+// already hold ref. A plugin that can't
 // be updated (CLI missing, etc.) is skipped with a warning, never failed, to
 // keep the non-interactive update prompt-free and exit-0 on partial success;
 // it is returned after the updated ones with Err set.
@@ -461,14 +463,24 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 			continue
 		}
 		rec := state.Plugins[name]
-		if err := UpdatePluginForAgent(ctx, agent, rec); err != nil {
+		refreshErr, err := UpdatePluginForAgent(ctx, agent, rec)
+		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
 			failed = append(failed, PluginUpdate{Agent: agent.DisplayName, Err: err})
 			continue
 		}
-		rec.Version = version
+		// After a failed refresh the update ran from the local copy, so its
+		// version is unknown, unless the record already holds this release: the
+		// local copy can only have moved forward since the refresh that wrote it.
+		// Warn only when the version is cleared, as install does.
+		if refreshErr == nil || rec.Version == version {
+			rec.Version = version
+		} else {
+			warnLocalMarketplaceCopy(ctx, agent, recordedMarketplace(agent, rec), "rerun `databricks aitools update` later", refreshErr)
+			rec.Version = ""
+		}
 		state.Plugins[name] = rec
-		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})
+		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: rec.Version})
 	}
 
 	if len(updated) > 0 {

@@ -530,6 +530,7 @@ func TestMatchFatalPattern(t *testing.T) {
 func TestEmitNoLogs(t *testing.T) {
 	tests := []struct {
 		name   string
+		req    logRequest
 		status logRunStatus
 		want   string
 	}{
@@ -543,15 +544,42 @@ func TestEmitNoLogs(t *testing.T) {
 			status: logRunStatus{lifeCycleState: "RUNNING"},
 			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
 		},
+		{
+			name:   "latest retry of a terminal run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "Out of capacity.", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry N (0 through 1) to see them\n",
+		},
+		{
+			name:   "latest retry of a terminal run with one earlier retry",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 1},
+			want:   "No logs available for run 7. Run terminated in state FAILED. Earlier retries may have logs; pass --retry 0 to see them\n",
+		},
+		{
+			name:   "latest retry of a running run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 2},
+			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
+		},
+		{
+			name:   "explicitly requested retry",
+			req:    logRequest{attempt: 2},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED\n",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var text bytes.Buffer
-			emitNoLogs(&text, logRequest{runID: 7}, tc.status)
+			req := tc.req
+			req.runID = 7
+			emitNoLogs(&text, req, tc.status)
 			assert.Equal(t, tc.want, text.String())
 
 			var jsonBuf bytes.Buffer
-			emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, tc.status)
+			req.node, req.jsonOutput = 1, true
+			emitNoLogs(&jsonBuf, req, tc.status)
 			var ev logEvent
 			require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
 			assert.Equal(t, "ERROR", ev.Type)

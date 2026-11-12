@@ -6,6 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -269,6 +272,52 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
+	t.Setenv("DATABRICKS_CACHE_DIR", tmp)
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "compat-manifest.json"), []byte(`{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`), 0o600))
+	lookups := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		lookups++
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", srv.URL)
+
+	installRef, recordRef := "unset", "unset"
+	orig := installPluginForAgentFn
+	origRec := recordPluginInstallsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() {
+		installPluginForAgentFn = orig
+		recordPluginInstallsFn = origRec
+		cleanupLegacyFn = origCleanup
+	})
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	installPluginForAgentFn = func(_ context.Context, _ *agents.Agent, scope, ref string) (installer.PluginRecord, error) {
+		installRef = ref
+		return installer.PluginRecord{Plugin: "databricks", Scope: scope, Version: installer.DisplaySkillsVersion(ref)}, nil
+	}
+	recordPluginInstallsFn = func(_ context.Context, _ string, _ map[string]installer.PluginRecord, ref string) error {
+		recordRef = ref
+		return nil
+	}
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
+	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	require.NoError(t, err)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeInstalled, outcomes[0].status)
+	assert.Equal(t, 1, lookups)
+	// The marketplace picks the plugin version, so a failed lookup records it as unknown.
+	assert.Empty(t, installRef)
+	assert.Empty(t, recordRef)
+}
+
 // --- RunE: skills-only path (config-dir detection, no plugin) ---
 
 func TestInstallSkillsOnlyAllAgents(t *testing.T) {
@@ -339,6 +388,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 }
 
 func TestInstallInteractivePickerAndConfirm(t *testing.T) {
+	isolateAgents(t)
 	setupTestAgents(t)
 	fakeBinsOnPath(t, "claude")
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
@@ -609,6 +659,7 @@ func TestInstallSkillsRequiresSkillsOnlyOrPath(t *testing.T) {
 }
 
 func TestInstallInteractivePickerErrorPropagates(t *testing.T) {
+	isolateAgents(t)
 	setupTestAgents(t)
 	setupScopeMock(t, installer.ScopeGlobal)
 
@@ -857,6 +908,128 @@ func TestResolveScopeValidation(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, got)
 			}
+		})
+	}
+}
+
+// setupAgentCallerInstall sets up an install run by the agent caller that
+// agentEnv names (key/value pairs), with Claude Code and Cursor detected. Every
+// prompt fails the test if shown. isolateAgents clears the environment, so it
+// runs first and the HOME, PATH and skills ref set below survive.
+func setupAgentCallerInstall(t *testing.T, agentEnv ...string) (plugins *[]pluginCall, skills *[]installCall, scopePrompted *bool) {
+	t.Helper()
+	isolateAgents(t, agentEnv...)
+	setupTestAgents(t) // ~/.claude and ~/.cursor
+	fakeBinsOnPath(t, "claude")
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	plugins = setupPluginMock(t)
+	skills = setupInstallMock(t)
+	scopePrompted = setupScopeMock(t, installer.ScopeProject)
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(context.Context, []agentChoice) ([]*agents.Agent, error) {
+		t.Fatal("agent picker shown to an agent caller")
+		return nil, nil
+	}
+	origProceed := promptProceed
+	t.Cleanup(func() { promptProceed = origProceed })
+	promptProceed = func() (bool, error) {
+		t.Fatal("plan confirm shown to an agent caller")
+		return false, nil
+	}
+	return plugins, skills, scopePrompted
+}
+
+// runInstallWithStderr runs install with args and returns the telemetry
+// context and everything written to stderr.
+func runInstallWithStderr(t *testing.T, promptSupported bool, args ...string) (context.Context, string) {
+	t.Helper()
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: promptSupported})
+	go drainReader(test.Stdout)
+	// Buffered so the reader never blocks if the test stops before receiving.
+	stderr := make(chan []byte, 1)
+	go func() {
+		b, _ := io.ReadAll(test.Stderr)
+		stderr <- b
+	}()
+	ctx = telemetry.WithNewLogger(ctx)
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs(args)
+
+	err := cmd.Execute()
+	test.Done()
+	out := string(<-stderr)
+	require.NoError(t, err, "stderr:\n%s", out)
+	return ctx, out
+}
+
+func TestInstallAgentCallerInPTYNeverPrompts(t *testing.T) {
+	// Cursor and Copilot run agent commands in a pseudo-terminal, so stdin is a
+	// TTY, but no human answers the prompts. The run must use the
+	// non-interactive defaults instead of blocking on the scope select.
+	plugins, skills, scopePrompted := setupAgentCallerInstall(t, "CURSOR_AGENT", "1")
+
+	ctx, stderr := runInstallWithStderr(t, true)
+	assert.Contains(t, stderr, "No prompts shown because a coding agent (cursor) was detected. Pass --scope and --agents to databricks aitools install to choose what to install.")
+	events := funnelEvents(ctx)
+	require.NotEmpty(t, events)
+	assert.False(t, events[0].Interactive)
+	assert.False(t, *scopePrompted)
+	require.Len(t, *plugins, 1)
+	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
+	require.Len(t, *skills, 1)
+	assert.Equal(t, installer.ScopeGlobal, (*skills)[0].opts.Scope)
+}
+
+func TestInstallAgentCallerNoteNamesOnlyMissingFlags(t *testing.T) {
+	setupAgentCallerInstall(t, "CURSOR_AGENT", "1")
+
+	_, stderr := runInstallWithStderr(t, true, "--scope", "global")
+	assert.Contains(t, stderr, "No prompts shown because a coding agent (cursor) was detected. Pass --agents to databricks aitools install to choose what to install.")
+}
+
+func TestInstallAgentCallerNoteNamesAgent(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want string
+	}{
+		// The SDK reports copilot-cli; the note shows the --agents value.
+		{name: "registry alias", env: []string{"COPILOT_CLI", "1"}, want: "because a coding agent (copilot) was detected."},
+		// vscode-agent has no registry entry, so no name is shown.
+		{name: "no registry entry", env: []string{"VSCODE_AGENT", "1"}, want: "because a coding agent was detected."},
+		{name: "nested agents", env: []string{"CURSOR_AGENT", "1", "CLAUDECODE", "1"}, want: "because more than one coding agent was detected."},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			plugins, _, _ := setupAgentCallerInstall(t, tc.env...)
+
+			_, stderr := runInstallWithStderr(t, true)
+			assert.Contains(t, stderr, tc.want)
+			require.Len(t, *plugins, 1)
+		})
+	}
+}
+
+func TestInstallAgentCallerNoteSilent(t *testing.T) {
+	cases := []struct {
+		name            string
+		promptSupported bool
+		args            []string
+	}{
+		// Both flags given: no prompt would have run, so there is nothing to explain.
+		{name: "scope and agents passed", promptSupported: true, args: []string{"--scope", "global", "--agents", "claude-code"}},
+		// No terminal: prompts are skipped for every caller, as before.
+		{name: "no terminal", promptSupported: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			plugins, _, _ := setupAgentCallerInstall(t, "CURSOR_AGENT", "1")
+
+			_, stderr := runInstallWithStderr(t, tc.promptSupported, tc.args...)
+			assert.NotContains(t, stderr, "No prompts shown")
+			require.Len(t, *plugins, 1)
 		})
 	}
 }

@@ -15,7 +15,7 @@ title "a manifest the server does not have is MANIFEST_NOT_FOUND"
 musterr trace DATABRICKS_SKILLS_REF=missing-ref $CLI aitools install --skills-only --scope=global --agents=cursor
 trace print_telemetry
 
-title "any other HTTP error status from the manifest fetch is not classified yet (the error is untyped)"
+title "any other HTTP error status from the manifest fetch is SKILLS_FETCH_FAILED"
 musterr trace DATABRICKS_SKILLS_REF=broken-ref $CLI aitools install --skills-only --scope=global --agents=cursor
 trace print_telemetry
 
