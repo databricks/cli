@@ -124,7 +124,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	if ids != nil {
-		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID)
+		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID) + ids.retryNote()
 		view.mlflowURL = mlflowRunURL(w.Config.Host, ids)
 	}
 

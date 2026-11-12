@@ -16,13 +16,30 @@ import (
 type mlflowIdentifiers struct {
 	ExperimentID string
 	RunID        string
+	// OlderRetry is the retry the IDs came from when it isn't the run's latest
+	// (see mlflowIDsFromRetries), else nil.
+	OlderRetry *int
+}
+
+// retryNote is " (retry N)" when ids come from an older retry, else "".
+func (ids *mlflowIdentifiers) retryNote() string {
+	if ids.OlderRetry == nil {
+		return ""
+	}
+	return fmt.Sprintf(" (retry %d)", *ids.OlderRetry)
 }
 
 // mlflowIDs fetches the MLflow IDs a run's views link to (see
 // mlflowIDsFromRetries). Returns nil if they can't be obtained.
 func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
-	latest, err := latestTaskOutput(ctx, w, run.Tasks)
-	return mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), latest, err)
+	return mlflowIDsForRetries(ctx, w, run.Tasks, isTerminal(run))
+}
+
+// mlflowIDsForRetries is mlflowIDs given only the task runs and whether the run
+// has finished, which is what a cached list row keeps.
+func mlflowIDsForRetries(ctx context.Context, w *databricks.WorkspaceClient, tasks []jobs.RunTask, terminal bool) *mlflowIdentifiers {
+	latest, err := latestTaskOutput(ctx, w, tasks)
+	return mlflowIDsFromRetries(ctx, w, tasks, terminal, latest, err)
 }
 
 // mlflowIDsFromRetries returns the IDs from latest (the latest retry's output),
@@ -51,6 +68,7 @@ func mlflowIDsFromRetries(ctx context.Context, w *databricks.WorkspaceClient, ta
 			return nil
 		}
 		if ids := mlflowIDsFromOutput(out); ids != nil {
+			ids.OlderRetry = &task.AttemptNumber
 			return ids
 		}
 	}
