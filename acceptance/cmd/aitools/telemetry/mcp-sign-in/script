@@ -1,4 +1,5 @@
 sethome home
+mkdir -p home/.claude
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
