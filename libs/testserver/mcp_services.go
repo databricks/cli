@@ -3,11 +3,17 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// mcpServicesViewFull is the list view that includes source connections. Any other view,
+// including unset, omits them, as the API does.
+const mcpServicesViewFull = "FULL"
 
 // McpServicesCreate fakes POST /api/2.1/unity-catalog/mcp-services. See
 // ModelServicesCreate for the shape: the McpService body is sent directly,
@@ -66,4 +72,55 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 	return Response{
 		Body: existing,
 	}
+}
+
+// McpServicesList fakes GET /api/2.1/unity-catalog/mcp-services. It filters by parent
+// (schemas/{catalog}.{schema}) and drops the source connection unless view is FULL, as the
+// real API does. Pagination is not faked: every match is returned in one page.
+func (s *FakeWorkspace) McpServicesList(req Request) Response {
+	defer s.LockUnlock()()
+
+	query := req.URL.Query()
+	prefix := strings.TrimPrefix(query.Get("parent"), "schemas/") + "."
+	full := query.Get("view") == mcpServicesViewFull
+
+	var services []catalog.McpService
+	for _, key := range slices.Sorted(maps.Keys(s.McpServices)) {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		ms := s.McpServices[key]
+		if !full && ms.Config != nil {
+			// Copy so the stored service keeps its source connection for later FULL reads.
+			config := *ms.Config
+			config.SourceConnection = nil
+			ms.Config = &config
+		}
+		services = append(services, ms)
+	}
+
+	return Response{
+		Body: catalog.ListMcpServicesResponse{McpServices: services},
+	}
+}
+
+// SeedMcpService stores an MCP service under fullName (catalog.schema.leaf) for list tests.
+// An empty oauthProvider seeds an internal Databricks service with no source connection;
+// otherwise the service is backed by a source connection with that OAuth provider.
+func (s *FakeWorkspace) SeedMcpService(fullName, comment, oauthProvider string) {
+	defer s.LockUnlock()()
+
+	ms := catalog.McpService{
+		Name:    "mcp-services/" + fullName,
+		Comment: comment,
+	}
+	if oauthProvider != "" {
+		ms.Config = &catalog.McpServiceConfig{
+			SourceConnection: &catalog.McpServiceConfigSourceConnection{
+				Name:    "connections/" + fullName,
+				Options: map[string]string{"oauth_provider": oauthProvider},
+			},
+		}
+	}
+	s.McpServices[fullName] = ms
 }

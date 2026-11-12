@@ -1,0 +1,68 @@
+package testserver
+
+import (
+	"net/url"
+	"testing"
+
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// mcpServicesTestList calls the list handler with the given query string.
+func mcpServicesTestList(t *testing.T, workspace *FakeWorkspace, rawQuery string) []catalog.McpService {
+	t.Helper()
+	u, err := url.Parse("/api/2.1/unity-catalog/mcp-services?" + rawQuery)
+	require.NoError(t, err)
+
+	response := workspace.McpServicesList(Request{URL: u})
+	require.Equal(t, 0, response.StatusCode)
+	body, ok := response.Body.(catalog.ListMcpServicesResponse)
+	require.True(t, ok)
+	return body.McpServices
+}
+
+func mcpServicesTestWorkspace(t *testing.T) *FakeWorkspace {
+	t.Helper()
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	workspace.SeedMcpService("system.ai.genie_one_mcp", "Genie", "")
+	workspace.SeedMcpService("system.ai.github", "GitHub", "OAUTH_PROVIDER_GITHUB_MCP")
+	workspace.SeedMcpService("main.tools.crm", "CRM", "OAUTH_PROVIDER_GITHUB_MCP")
+	return workspace
+}
+
+func TestMcpServicesListFiltersByParent(t *testing.T) {
+	workspace := mcpServicesTestWorkspace(t)
+
+	services := mcpServicesTestList(t, workspace, "parent=schemas/system.ai&view=FULL")
+	require.Len(t, services, 2)
+	assert.Equal(t, "mcp-services/system.ai.genie_one_mcp", services[0].Name)
+	assert.Equal(t, "mcp-services/system.ai.github", services[1].Name)
+}
+
+func TestMcpServicesListViewFullKeepsSourceConnection(t *testing.T) {
+	workspace := mcpServicesTestWorkspace(t)
+
+	services := mcpServicesTestList(t, workspace, "parent=schemas/system.ai&view=FULL")
+	require.Len(t, services, 2)
+	assert.Nil(t, services[0].Config)
+	require.NotNil(t, services[1].Config)
+	require.NotNil(t, services[1].Config.SourceConnection)
+	assert.Equal(t, "OAUTH_PROVIDER_GITHUB_MCP", services[1].Config.SourceConnection.Options["oauth_provider"])
+}
+
+func TestMcpServicesListViewBasicOmitsSourceConnection(t *testing.T) {
+	workspace := mcpServicesTestWorkspace(t)
+
+	for _, query := range []string{"parent=schemas/system.ai&view=BASIC", "parent=schemas/system.ai"} {
+		services := mcpServicesTestList(t, workspace, query)
+		require.Len(t, services, 2, query)
+		require.NotNil(t, services[1].Config, query)
+		assert.Nil(t, services[1].Config.SourceConnection, query)
+	}
+
+	// BASIC must not strip the stored service, or a later FULL read would lose sign-in details.
+	services := mcpServicesTestList(t, workspace, "parent=schemas/system.ai&view=FULL")
+	require.NotNil(t, services[1].Config)
+	require.NotNil(t, services[1].Config.SourceConnection)
+}

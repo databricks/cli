@@ -923,6 +923,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesList(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
