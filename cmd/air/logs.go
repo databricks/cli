@@ -7,10 +7,13 @@ import (
 	"io"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -189,6 +192,9 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	}
 
 	out := cmd.OutOrStdout()
+	if !req.jsonOutput {
+		defer printLogLinks(ctx, w, out, req)
+	}
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -241,4 +247,31 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 		return mlflowLogFallback(ctx, w, out, req, status)
 	}
 	return success, err
+}
+
+// printLogLinks leaves browser links below the streamed output, including on
+// failure. Link enrichment is best-effort and cannot change the run's exit code.
+func printLogLinks(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+	runURL := dashboardURL(w.Config.Host, req.runID, 0)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
+	if err != nil {
+		log.Debugf(ctx, "air: could not fetch run for final logs link: %v", err)
+		return
+	}
+	_, taskRunID, err := resolveLogAttempt(run, req.attempt)
+	if err != nil {
+		log.Debugf(ctx, "air: could not resolve task for final logs link: %v", err)
+		return
+	}
+	if ids := mlflowIDsForTask(ctx, w, taskRunID); ids != nil {
+		url := mlflowLogsURL(w.Config.Host, ids)
+		fmt.Fprintln(out, "View logs at: "+link(colorOn, p.blue, url, url))
+	}
 }
