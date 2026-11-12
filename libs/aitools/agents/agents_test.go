@@ -61,11 +61,12 @@ func TestMCPAgents(t *testing.T) {
 // clearMCPOverrides returns ctx with a home dir and no override variables, so
 // the path tests do not depend on the developer's shell.
 func clearMCPOverrides(t *testing.T) (context.Context, string) {
-	for _, key := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_HOME", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME", "APPDATA"} {
-		t.Setenv(key, "")
-	}
 	home := t.TempDir()
-	return env.WithUserHomeDir(t.Context(), home), home
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	for _, key := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_HOME", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME", "APPDATA"} {
+		ctx = env.Set(ctx, key, "") //nolint:fatcontext // each key is set on the same context
+	}
+	return ctx, home
 }
 
 func TestMCPPaths(t *testing.T) {
@@ -92,10 +93,11 @@ func TestMCPPaths(t *testing.T) {
 		{"antigravity", NameAntigravity, nil, filepath.Join(home, ".gemini", "config", "mcp_config.json")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			tctx := ctx
 			for k, v := range tc.override {
-				t.Setenv(k, v)
+				tctx = env.Set(tctx, k, v) //nolint:fatcontext // each override is set on the same context
 			}
-			got, err := ByName(tc.agent).MCP.Path(ctx)
+			got, err := ByName(tc.agent).MCP.Path(tctx)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
@@ -142,8 +144,9 @@ func TestMCPEntries(t *testing.T) {
 		"environment": pinned,
 	}, opencode)
 
+	// Antigravity's "disabled" key is optional and defaults to false, so the entry does not write it.
 	antigravity := ByName(NameAntigravity).MCP.Entry("/bin/databricks", args, nil)
-	assert.Equal(t, false, antigravity["disabled"])
+	assert.Equal(t, map[string]any{"command": "/bin/databricks", "args": args}, antigravity)
 }
 
 func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {

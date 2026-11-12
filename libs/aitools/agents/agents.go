@@ -141,6 +141,16 @@ const (
 	NameKiro        = "kiro"
 )
 
+// MCP entry keys shared by the agents' MCP config specs.
+const (
+	// mcpServersKey is the key of the server table in the JSON MCP config files
+	// that use it (every agent but Codex and OpenCode).
+	mcpServersKey = "mcpServers"
+	// localServerType is the "type" of a local stdio server in Copilot and
+	// OpenCode. Claude Code writes "stdio" instead.
+	localServerType = "local"
+)
+
 // Databricks plugin identity, shared across the agents that ship a plugin.
 // The verified install commands are e.g.
 //
@@ -261,7 +271,7 @@ var Registry = []*Agent{
 			Path:   antigravityMCPPath,
 			Format: mcpconfig.FormatJSON,
 			Root:   mcpServersKey,
-			Entry:  antigravityMCPEntry,
+			Entry:  stdioEntry,
 		},
 	},
 	{
@@ -513,16 +523,9 @@ func antigravityMCPPath(ctx context.Context) (string, error) {
 	return homeSubdir(".gemini", "config", "mcp_config.json")(ctx)
 }
 
-// antigravityMCPEntry writes disabled:false explicitly, as the Antigravity docs
-// show it.
-func antigravityMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
-	entry := stdioEntry(cmd, args, vars)
-	entry["disabled"] = false
-	return entry
-}
-
-// stdioEntry is the command/args entry used by Cursor, Codex and Gemini. env is
-// omitted when empty.
+// stdioEntry is the command/args entry used by Cursor, Codex, Gemini and
+// Antigravity. env is omitted when empty. Antigravity's "disabled" key is
+// optional and defaults to false, so it is not written.
 func stdioEntry(cmd string, args []string, vars map[string]string) map[string]any {
 	entry := map[string]any{"command": cmd, "args": args}
 	if len(vars) > 0 {
@@ -530,14 +533,6 @@ func stdioEntry(cmd string, args []string, vars map[string]string) map[string]an
 	}
 	return entry
 }
-
-// mcpServersKey is the key of the server table in the JSON MCP config files
-// that use it (every agent but Codex and OpenCode).
-const mcpServersKey = "mcpServers"
-
-// localServerType is the "type" of a local stdio server in the agents that
-// write one (Claude Code, Copilot, OpenCode).
-const localServerType = "local"
 
 // SupportsMCP reports whether this CLI writes the agent's MCP server entries.
 func (a *Agent) SupportsMCP() bool {

@@ -66,3 +66,10 @@ func TestIsDatabricksEntry(t *testing.T) {
 		})
 	}
 }
+
+func TestValidServerName(t *testing.T) {
+	assert.True(t, ValidServerName("genie_one-mcp1"))
+	for _, name := range []string{"", "a.b", "a b", "a/b", "é"} {
+		assert.False(t, ValidServerName(name), name)
+	}
+}

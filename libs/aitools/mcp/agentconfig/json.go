@@ -14,26 +14,26 @@ import (
 // so every byte outside the changed member is kept.
 type jsonDoc struct {
 	bom bool
-	// fresh is set when the file had no members, so its layout is ours to
-	// choose: the output is re-indented with two spaces.
-	fresh bool
-	root  hujson.Value
+	// nl is the file's line ending. Inserted text uses it, so the file keeps a
+	// single line ending.
+	nl   string
+	root hujson.Value
 }
 
 func parseJSON(data []byte) (document, error) {
 	data, bom := stripBOM(data)
 	if len(bytes.TrimSpace(data)) == 0 {
-		data = []byte("{}")
+		// A missing or blank file is an empty object, written with a trailing newline.
+		data = []byte("{}\n")
 	}
 	root, err := hujson.Parse(data)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := root.Value.(*hujson.Object)
-	if !ok {
+	if _, ok := root.Value.(*hujson.Object); !ok {
 		return nil, fmt.Errorf("top-level value is not a JSON object: %w", ErrConfigInvalid)
 	}
-	return &jsonDoc{bom: bom, fresh: len(obj.Members) == 0, root: root}, nil
+	return &jsonDoc{bom: bom, nl: lineEnding(data), root: root}, nil
 }
 
 // object returns the object at path, or nil when a level is missing. A level
@@ -129,6 +129,13 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 			break
 		}
 	}
+	// Only the deepest existing object can be empty: the ones above it hold the
+	// next level of root.
+	holder, err := d.object(root[:first])
+	if err != nil {
+		return err
+	}
+	emptied := len(holder.Members) == 0
 	parent, err := d.object(root)
 	if err != nil {
 		return err
@@ -138,37 +145,55 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 	if err != nil {
 		return err
 	}
+	value = bytes.ReplaceAll(value, []byte("\n"), []byte(d.nl))
 	var ops []patch
 	for i := first; i < n; i++ {
-		ops = append(ops, patch{op: "add", path: jsonPointer(root[:i+1]...), value: []byte("{\n" + indent(i+1) + "}")})
+		ops = append(ops, patch{op: "add", path: jsonPointer(root[:i+1]...), value: []byte("{" + d.nl + indent(i+1) + "}")})
 	}
 	ops = append(ops, patch{op: "add", path: jsonPointer(append(root, name)...), value: value})
 	if err := d.apply(ops); err != nil {
 		return err
+	}
+	if emptied {
+		holder, err := d.object(root[:first])
+		if err != nil {
+			return err
+		}
+		holder.AfterExtra = relayout(holder.AfterExtra, d.nl+indent(first))
 	}
 	for i := first; i < n; i++ {
 		obj, err := d.object(root[:i])
 		if err != nil {
 			return err
 		}
-		place(obj, root[i], i+1, true)
+		place(obj, root[i], i+1, true, d.nl)
 	}
 	obj, err := d.object(root)
 	if err != nil {
 		return err
 	}
-	place(obj, name, n+1, entryNew)
+	place(obj, name, n+1, entryNew, d.nl)
 	return nil
 }
 
 // place lays out a member that set wrote: the value follows the colon after a
-// space, and a new member starts its own line at depth.
-func place(obj *hujson.Object, name string, depth int, newMember bool) {
+// space, and a new member starts its own line at depth. Comments before the
+// member stay where they are.
+func place(obj *hujson.Object, name string, depth int, newMember bool, nl string) {
 	m := findMember(obj, name)
-	m.Value.BeforeExtra = hujson.Extra(" ")
-	if newMember {
-		m.Name.BeforeExtra = hujson.Extra("\n" + indent(depth))
+	if m.Value.BeforeExtra == nil {
+		m.Value.BeforeExtra = hujson.Extra(" ")
 	}
+	if newMember {
+		m.Name.BeforeExtra = relayout(m.Name.BeforeExtra, nl+indent(depth))
+	}
+}
+
+// relayout keeps the comments in extra and replaces the whitespace after the
+// last one with layout. A line comment ends at its newline, which layout provides.
+func relayout(extra hujson.Extra, layout string) hujson.Extra {
+	kept := bytes.TrimRight(extra, " \t\r\n")
+	return append(append(hujson.Extra{}, kept...), layout...)
 }
 
 // indent returns the two-space indentation of the given depth.
@@ -176,8 +201,47 @@ func indent(depth int) string {
 	return strings.Repeat("  ", depth)
 }
 
+// remove deletes name under root. A missing name is a no-op. Removing the last
+// member keeps the file's trailing-comma state: a strict file gets no comma after
+// the member that becomes last.
 func (d *jsonDoc) remove(root []string, name string) error {
-	return d.apply([]patch{{op: "remove", path: jsonPointer(append(root, name)...)}})
+	obj, err := d.object(root)
+	if err != nil || obj == nil || findMember(obj, name) == nil {
+		return err
+	}
+	trailing := hasTrailingComma(obj)
+	if err := d.apply([]patch{{op: "remove", path: jsonPointer(append(root, name)...)}}); err != nil {
+		return err
+	}
+	obj, err = d.object(root)
+	if err != nil {
+		return err
+	}
+	setTrailingComma(obj, trailing)
+	return nil
+}
+
+// hasTrailingComma reports whether the last member of obj is followed by a
+// comma. hujson keeps that state in the last member's AfterExtra.
+func hasTrailingComma(obj *hujson.Object) bool {
+	return len(obj.Members) > 0 && obj.Members[len(obj.Members)-1].Value.AfterExtra != nil
+}
+
+// setTrailingComma gives the last member of obj a trailing comma when on is set,
+// and removes it otherwise. The whitespace before a removed comma moves to the
+// closing brace, so it stays where it was.
+func setTrailingComma(obj *hujson.Object, on bool) {
+	if len(obj.Members) == 0 {
+		return
+	}
+	last := &obj.Members[len(obj.Members)-1].Value
+	switch {
+	case on && last.AfterExtra == nil:
+		last.AfterExtra = hujson.Extra{}
+	case !on && last.AfterExtra != nil:
+		obj.AfterExtra = append(append(hujson.Extra{}, last.AfterExtra...), obj.AfterExtra...)
+		last.AfterExtra = nil
+	}
 }
 
 func (d *jsonDoc) apply(ops []patch) error {
@@ -188,25 +252,8 @@ func (d *jsonDoc) apply(ops []patch) error {
 	return d.root.Patch(data)
 }
 
-// bytes returns the document. A file that had no members is written with
-// two-space indentation and a trailing newline, as the agents write their own.
 func (d *jsonDoc) bytes() ([]byte, error) {
-	var out []byte
-	if d.fresh {
-		std, err := hujson.Standardize(d.root.Pack())
-		if err != nil {
-			return nil, err
-		}
-		var buf bytes.Buffer
-		if err := json.Indent(&buf, std, "", "  "); err != nil {
-			return nil, err
-		}
-		buf.WriteByte('\n')
-		out = buf.Bytes()
-	} else {
-		out = d.root.Pack()
-	}
-	return withBOM(out, d.bom), nil
+	return withBOM(d.root.Pack(), d.bom), nil
 }
 
 // patch is one RFC 6902 operation. value holds encoded JSON, spliced in as

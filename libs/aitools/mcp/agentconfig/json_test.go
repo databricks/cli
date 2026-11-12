@@ -1,6 +1,8 @@
 package agentconfig
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
@@ -106,4 +108,117 @@ func TestJSONEntriesSkipNonObjects(t *testing.T) {
 	entries, err := doc.entries([]string{"mcpServers"})
 	require.NoError(t, err)
 	assert.Equal(t, map[string]map[string]any{"a": {"command": "x"}}, entries)
+}
+
+// requireStrictJSON fails unless data is strict JSON, which agents such as
+// Claude Code read.
+func requireStrictJSON(t *testing.T, data string) {
+	t.Helper()
+	var v any
+	require.NoError(t, json.Unmarshal([]byte(data), &v), data)
+}
+
+// A comment after the last member is on that member's line. Adding a member
+// after it keeps the comment there.
+func TestJSONAddKeepsCommentOnPreviousMember(t *testing.T) {
+	data := "{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"} // other server\n  }\n}\n"
+	got := jsonEdit(t, data, func(d document) {
+		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+	})
+	assert.Equal(t, "{\n  \"mcpServers\": {\n    \"other\": {\"command\": \"npx\"}, // other server\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n", got)
+}
+
+// An empty table gets its member on its own line, and its closing brace on a
+// line of its own.
+func TestJSONAddToEmptyTable(t *testing.T) {
+	got := jsonEdit(t, "{\n  \"mcpServers\": {}\n}\n", func(d document) {
+		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+	})
+	assert.Equal(t, "{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n", got)
+}
+
+// A file with only comments and an empty object keeps its comments. Only the
+// layout of the object changes.
+func TestJSONAddKeepsCommentsOfEmptyObject(t *testing.T) {
+	for _, tc := range []struct {
+		data string
+		want string
+	}{
+		{"// x\n{}", "// x\n{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}"},
+		{"{ /* c */ }", "{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  } /* c */\n}"},
+	} {
+		t.Run(tc.data, func(t *testing.T) {
+			got := jsonEdit(t, tc.data, func(d document) {
+				require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+			})
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// An empty object file gets one trailing newline, as the file had.
+func TestJSONAddToEmptyObjectFile(t *testing.T) {
+	want := "{\n  \"mcpServers\": {\n    \"x\": {\n      \"command\": \"x\"\n    }\n  }\n}\n"
+	for _, data := range []string{"{}\n", "", " \n"} {
+		got := jsonEdit(t, data, func(d document) {
+			require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x"}))
+		})
+		assert.Equal(t, want, got, "input %q", data)
+	}
+}
+
+// Removing the last member keeps a strict file strict. The comma that stood
+// after the previous member's space is not left behind.
+func TestJSONRemoveLastKeepsStrictJSON(t *testing.T) {
+	for _, data := range []string{
+		"{\n  \"mcpServers\": {\n    \"a\": {} ,\n    \"b\": {\"command\": \"x\"}\n  }\n}\n",
+		"{\"mcpServers\": {\"a\": {} , \"b\": {\"command\": \"x\"}}}",
+		"{\"mcpServers\": {\"a\": {}  , \"b\": {\"command\": \"x\"}}}",
+	} {
+		got := jsonEdit(t, data, func(d document) {
+			require.NoError(t, d.remove([]string{"mcpServers"}, "b"))
+		})
+		requireStrictJSON(t, got)
+		assert.Equal(t, map[string]any{"mcpServers": map[string]any{"a": map[string]any{}}}, semantic(t, mcpconfig.FormatJSON, []byte(got)))
+	}
+}
+
+// A file with a trailing comma keeps the trailing comma when its last member is removed.
+func TestJSONRemoveLastKeepsTrailingComma(t *testing.T) {
+	got := jsonEdit(t, "{\"mcpServers\": {\"a\": {}, \"b\": {},}}", func(d document) {
+		require.NoError(t, d.remove([]string{"mcpServers"}, "b"))
+	})
+	assert.Equal(t, "{\"mcpServers\": {\"a\": {},}}", got)
+}
+
+// A CRLF file gets CRLF in inserted text, so the file has one line ending.
+func TestJSONKeepsCRLF(t *testing.T) {
+	data := "{\r\n  \"mcpServers\": {\r\n    \"other\": {\"command\": \"npx\"}\r\n  }\r\n}\r\n"
+	got := jsonEdit(t, data, func(d document) {
+		require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "x", "args": []string{"a"}}))
+	})
+	assert.Equal(t, strings.Count(got, "\n"), strings.Count(got, "\r\n"), got)
+	assert.Contains(t, got, "\"other\": {\"command\": \"npx\"},\r\n    \"x\": {\r\n")
+
+	got = jsonEdit(t, got, func(d document) {
+		require.NoError(t, d.remove([]string{"mcpServers"}, "x"))
+	})
+	assert.Equal(t, data, got)
+}
+
+// Adding a member to a strict file keeps it strict, whatever its layout.
+func TestJSONAddKeepsStrictJSON(t *testing.T) {
+	for _, data := range []string{
+		"{}",
+		"{\n}\n",
+		`{"mcpServers": {}}`,
+		"{\n  \"mcpServers\": {\n    \"a\": {} , \"b\": {\"command\": \"x\"}\n  }\n}\n",
+		"{\"theme\": \"dark\", \"mcpServers\": {\"a\": {\"command\": \"x\"}}}",
+	} {
+		got := jsonEdit(t, data, func(d document) {
+			require.NoError(t, d.set([]string{"mcpServers"}, "x", map[string]any{"command": "y"}))
+		})
+		requireStrictJSON(t, got)
+		assert.Equal(t, "y", semantic(t, mcpconfig.FormatJSON, []byte(got))["mcpServers"].(map[string]any)["x"].(map[string]any)["command"], data)
+	}
 }

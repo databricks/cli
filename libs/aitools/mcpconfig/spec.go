@@ -5,6 +5,7 @@ package mcpconfig
 
 import (
 	"context"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -86,4 +87,13 @@ func IsBinary(cmd string, names ...string) bool {
 	return slices.ContainsFunc(names, func(name string) bool {
 		return strings.EqualFold(base, name)
 	})
+}
+
+// serverNamePattern is the strictest set of server names the agents accept, so a
+// name that matches it is valid for every agent.
+var serverNamePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// ValidServerName reports whether name may be used as an MCP server name.
+func ValidServerName(name string) bool {
+	return serverNamePattern.MatchString(name)
 }
