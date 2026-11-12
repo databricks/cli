@@ -360,10 +360,13 @@ func cachedRecordedFile(files map[recordedFileKey]recordedFile, a *agents.Agent,
 // entryFile returns the config file that holds the server's entry for the agent, and its contents. That is the file the
 // record names, unless the file does not hold the entry and the agent now reads its config from another file: then that
 // file, which may hold it, since the user may have moved the config with the agent's directory. A recorded file that
-// cannot be read is returned as it is, so the error is reported for it.
+// cannot be read is an error, since it may be the one that holds the entry.
 func entryFile(ctx context.Context, e mcp.Entry, a *agents.Agent, recorded string, files map[recordedFileKey]recordedFile) (string, recordedFile, error) {
 	file := cachedRecordedFile(files, a, recorded)
-	if _, found := file.entries[e.Name]; found || file.err != nil {
+	if file.err != nil {
+		return "", recordedFile{}, file.err
+	}
+	if _, found := file.entries[e.Name]; found {
 		return recorded, file, nil
 	}
 	current, err := agentconfig.Path(ctx, a)
