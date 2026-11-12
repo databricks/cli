@@ -275,7 +275,10 @@ func TestBuildMcpListUnknownServerIsWarnedNotOK(t *testing.T) {
 	out, err := buildMcpList(t.Context(), "")
 	require.NoError(t, err)
 	require.NotEmpty(t, out.Warnings)
-	assert.Contains(t, out.Warnings[0], filepath.ToSlash(broken)+": failed to read Databricks profiles", "the file is warned about once, by name")
+	// The warning names the resolved file, which on Windows expands the short name of the temp directory.
+	resolved, err := filepath.EvalSymlinks(broken)
+	require.NoError(t, err)
+	assert.Contains(t, out.Warnings[0], filepath.ToSlash(resolved)+": failed to read Databricks profiles", "the file is warned about once, by name")
 
 	require.Len(t, out.Profiles, 2)
 	logfood := out.Profiles[0]
