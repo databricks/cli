@@ -62,10 +62,6 @@ type document interface {
 // builder writes only some of them (see ownedKeys).
 var launchKeys = []string{"command", "args", "env", "environment", "type"}
 
-// envKeys are the entry keys that hold environment variables: env, and
-// environment in OpenCode.
-var envKeys = []string{"env", "environment"}
-
 // ownedKeys returns the launch keys that the agent's builder writes. Upsert
 // updates these keys and keeps every other key of the entry. The probe passes a
 // variable, since a builder writes its env key only when it has variables.
@@ -321,7 +317,7 @@ func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, 
 	out := maps.Clone(current)
 	for _, key := range keys {
 		value, ok := want[key]
-		if slices.Contains(envKeys, key) {
+		if slices.Contains(mcpconfig.EnvKeys, key) {
 			var err error
 			value, ok, err = mergeEnv(current[key], value, ok)
 			if err != nil {

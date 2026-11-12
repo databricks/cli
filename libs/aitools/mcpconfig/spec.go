@@ -77,10 +77,13 @@ const (
 	ProfileFlag = "--profile"
 )
 
-// EntryEnv returns the environment variables of an entry: env for most agents, and environment for OpenCode. It returns
+// EnvKeys are the entry keys that hold environment variables: env for most agents, and environment for OpenCode.
+var EnvKeys = []string{"env", "environment"}
+
+// EntryEnv returns the environment variables of an entry, under the first of EnvKeys that holds an object. It returns
 // nil when the entry has none.
 func EntryEnv(entry map[string]any) map[string]any {
-	for _, key := range []string{"env", "environment"} {
+	for _, key := range EnvKeys {
 		if vars, ok := entry[key].(map[string]any); ok {
 			return vars
 		}
