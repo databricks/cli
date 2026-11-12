@@ -63,10 +63,9 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-Error: Alert with ID '[ALERT_ID]' does not exist.
+=== assert that the alert is gone
 
-Exit code: 1
+OK: alert does not exist
 
 >>> [CLI] bundle summary
 Name: alerts-basic-[UNIQUE_NAME]

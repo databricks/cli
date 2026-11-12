@@ -57,6 +57,7 @@ var dmsResourceTypes = []string{
 	"internal_immutable_snapshots",
 	"job_runs",
 	"jobs",
+	"materialization_sets",
 	"mcp_services",
 	"model_provider_services",
 	"model_services",

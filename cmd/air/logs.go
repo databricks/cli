@@ -31,11 +31,11 @@ func newLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Stream or fetch logs for a run",
+		Short: "Stream or fetch a run's logs",
 		Long: `Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		Example: `  databricks air logs 123456789
   databricks air logs 123456789 --node 1 --retry 0
   databricks air logs 123456789 --download-to ./logs`,

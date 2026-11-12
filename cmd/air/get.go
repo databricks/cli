@@ -30,6 +30,9 @@ type getData struct {
 	DashboardURL      string  `json:"dashboard_url"`
 	MLflowURL         *string `json:"mlflow_url"`
 	TerminationReason *string `json:"termination_reason,omitempty"`
+	// StatusMessage is the progress message the text view shows as the status,
+	// set only while the run is unfinished.
+	StatusMessage *string `json:"status_message,omitempty"`
 	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
 	// estimate for a running run, or null when one can't be made (see
 	// estimateTrainingETA).
@@ -105,10 +108,10 @@ func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show status, configuration, and timing details for a specified run",
-		Long: `Show status, configuration, and timing details for a specified run.
+		Short: "Show a run's status, configuration, and timing",
+		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},
@@ -181,6 +184,13 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				}
 			}
 		}
+		statusMessage := ""
+		if taskOutput != nil && run.State != nil && run.State.ResultState == "" {
+			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+		}
+		if statusMessage != "" {
+			data.StatusMessage = &statusMessage
+		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
 		} else if genAIComputeTask(run) == nil {
@@ -197,10 +207,6 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 			// job run link and render the foreach summary table (getTemplate).
 			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 			return renderEnvelope(ctx, data)
-		}
-		statusMessage := ""
-		if taskOutput != nil {
-			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
 		}
 		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
@@ -249,7 +255,7 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 func buildGetData(run *jobs.Run) getData {
 	data := getData{
 		RunID:             strconv.FormatInt(run.RunId, 10),
-		Status:            runStatus(run.State),
+		Status:            displayRunStatus(run),
 		DisplayStatus:     displayRunStatus(run),
 		TerminationReason: terminationReason(run),
 		StartedAt:         startedAt(run),

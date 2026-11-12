@@ -16,8 +16,9 @@ import (
 var lookPath = exec.LookPath
 
 // pluginProbeTimeout bounds the `<agent> plugin --help` capability probe so a
-// hung agent CLI cannot stall install.
-const pluginProbeTimeout = 5 * time.Second
+// hung agent CLI cannot stall install. It matches the probe timeout in
+// libs/aitools/installer, which leaves headroom for a slow agent CLI cold start.
+const pluginProbeTimeout = 20 * time.Second
 
 // DisplayState describes how an agent should be presented in the install
 // picker. It combines the two cheap presence signals (binary on PATH and

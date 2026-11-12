@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// UninstallOptions controls the behavior of UninstallSkillsOpts.
+// UninstallOptions controls the behavior of UninstallSkillsWithResult.
 type UninstallOptions struct {
 	Skills          []string // empty = all
 	Agents          []string // empty = all agents
@@ -24,15 +24,32 @@ type UninstallOptions struct {
 	KeepMarketplace bool     // keep the marketplace registration when removing a plugin
 }
 
-// UninstallSkills removes all installed skills, their symlinks, and the state file.
-func UninstallSkills(ctx context.Context) error {
-	return UninstallSkillsOpts(ctx, UninstallOptions{})
+// removeAllFn removes a skill's canonical dir or a targeted agent's entry. A
+// seam for tests.
+var removeAllFn = os.RemoveAll
+
+// UninstallResult reports what an uninstall did. A plugin or skill that could
+// not be removed is only warned about, so the run still returns no error;
+// telemetry reads PluginFailures and SkillFailures to tell a run that removed
+// nothing from a success.
+type UninstallResult struct {
+	PluginsRemoved int
+	// SkillsRemoved counts skills whose canonical dir was removed or, when
+	// opts.Agents is set, whose entry was removed from one of those agents. With
+	// opts.Agents set, a skill whose entry could not be removed from one of them
+	// is not counted.
+	SkillsRemoved  int
+	PluginFailures []error
+	// SkillFailures holds the errors from removing a skill's canonical dir or
+	// a targeted agent's entry.
+	SkillFailures []error
 }
 
-// UninstallSkillsOpts removes installed skills based on options.
-// When opts.Skills is empty, all skills are removed (same as UninstallSkills).
+// UninstallSkillsWithResult removes installed skills based on options and
+// reports what was removed and what could not be.
+// When opts.Skills is empty, all skills (and plugins) are removed.
 // When opts.Skills is non-empty, only the named skills are removed.
-func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
+func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*UninstallResult, error) {
 	scope := opts.Scope
 	if scope == "" {
 		scope = ScopeGlobal
@@ -40,27 +57,27 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 
 	baseDir, err := skillsDir(ctx, scope)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var cwd string
 	if scope == ScopeProject {
 		cwd, err = os.Getwd()
 		if err != nil {
-			return fmt.Errorf("failed to determine working directory: %w", err)
+			return nil, fmt.Errorf("failed to determine working directory: %w", err)
 		}
 	}
 
 	state, err := LoadState(baseDir)
 	if err != nil {
-		return fmt.Errorf("failed to load install state: %w", err)
+		return nil, fmt.Errorf("failed to load install state: %w", err)
 	}
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
+			return nil, fmt.Errorf("%w; run 'databricks aitools install' first, then uninstall", ErrLegacyInstall)
 		}
-		return errors.New("no skills or plugins installed")
+		return nil, ErrNothingInstalled
 	}
 
 	// A full uninstall (no --skills filter) also tears down plugins.
@@ -69,6 +86,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 	targetedAgents := len(agentFilter) > 0
 
 	pluginCount := 0
+	var pluginFailures []error
 	if fullUninstall {
 		for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 			if targetedAgents && !agentFilter[name] {
@@ -79,11 +97,13 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 				// We can't tear down an agent we don't know; keep the record (and
 				// the state file) rather than silently dropping a live plugin.
 				log.Warnf(ctx, "Leaving plugin record for unknown agent %q; remove its plugin manually", name)
+				pluginFailures = append(pluginFailures, unknownAgentInStateError(name))
 				continue
 			}
 			rec := state.Plugins[name]
 			if err := UninstallPluginForAgent(ctx, agent, rec, opts.KeepMarketplace); err != nil {
 				log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+				pluginFailures = append(pluginFailures, err)
 				continue
 			}
 			delete(state.Plugins, name)
@@ -106,10 +126,10 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 			if _, ok := state.Skills[name]; !ok {
 				if targetedAgents {
 					if foundIn, found := untrackedSkillAgents(ctx, name, opts.Agents, scope, cwd); found {
-						return fmt.Errorf("skill %q is not tracked in Databricks aitools state but exists for %s. Run 'databricks aitools install --skills-only --agents %s' to rebuild state before uninstalling, or remove it manually", name, strings.Join(foundIn, ", "), strings.Join(opts.Agents, ","))
+						return nil, fmt.Errorf("skill %q is not tracked in Databricks aitools state but exists for %s. Run 'databricks aitools install --skills-only --agents %s' to rebuild state before uninstalling, or remove it manually", name, strings.Join(foundIn, ", "), strings.Join(opts.Agents, ","))
 					}
 				}
-				return fmt.Errorf("skill %q is not installed", name)
+				return nil, &SkillError{Skill: name, Reason: ReasonSkillNotFound, Detail: "is not installed"}
 			}
 			if seen[name] {
 				continue
@@ -118,26 +138,45 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 			toRemove = append(toRemove, name)
 		}
 	} else {
-		for name := range state.Skills {
-			toRemove = append(toRemove, name)
-		}
+		// Sorted, like plugins above, so SkillFailures has a stable order.
+		toRemove = slices.Sorted(maps.Keys(state.Skills))
 	}
 
-	// Remove skill directories and symlinks for each skill.
+	// Remove skill directories and symlinks for each skill. skillsRemoved counts
+	// the skills dropped from the state on a full uninstall, and with --agents
+	// those whose canonical dir or a targeted agent's entry was removed.
+	skillsRemoved := 0
+	var skillFailures []error
 	for _, name := range toRemove {
 		canonicalDir := filepath.Join(baseDir, name)
 		removeCanonical := true
+		removed := false
+		var exposureFailures []error
 		if targetedAgents {
-			removeSkillExposuresFromAgents(ctx, name, canonicalDir, scope, cwd, state, opts.Agents)
+			removed, exposureFailures = removeSkillExposuresFromAgents(ctx, name, canonicalDir, scope, cwd, state, opts.Agents)
+			skillFailures = append(skillFailures, exposureFailures...)
 			removeCanonical = !hasRemainingSkillExposure(ctx, name, canonicalDir, scope, cwd, opts.Agents)
 		} else {
 			removeSymlinksFromAgents(ctx, name, canonicalDir, scope, cwd)
 		}
+		if removeCanonical {
+			// RemoveAll succeeds on a missing dir. Without --agents the skill's
+			// state record is dropped either way, so it counts; with --agents
+			// only an existing dir does.
+			_, statErr := os.Lstat(canonicalDir)
+			if err := removeAllFn(canonicalDir); err != nil {
+				log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
+				skillFailures = append(skillFailures, err)
+			} else if statErr == nil || !targetedAgents {
+				removed = true
+			}
+		}
+		// A targeted agent that keeps its entry still has the skill.
+		if removed && len(exposureFailures) == 0 {
+			skillsRemoved++
+		}
 		if !removeCanonical {
 			continue
-		}
-		if err := os.RemoveAll(canonicalDir); err != nil {
-			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 		}
 		delete(state.Skills, name)
 		delete(state.RepoDirs, name)
@@ -154,11 +193,11 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 		stateFile := filepath.Join(baseDir, stateFileName)
 		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to remove state file: %w", err)
+			return nil, fmt.Errorf("failed to remove state file: %w", err)
 		}
 	} else {
 		if err := SaveState(baseDir, state); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -176,7 +215,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", len(toRemove), noun))
 	}
-	return nil
+	return &UninstallResult{PluginsRemoved: pluginCount, SkillsRemoved: skillsRemoved, PluginFailures: pluginFailures, SkillFailures: skillFailures}, nil
 }
 
 func stringSet(items []string) map[string]bool {
@@ -190,7 +229,12 @@ func stringSet(items []string) map[string]bool {
 	return set
 }
 
-func removeSkillExposuresFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string, state *InstallState, agentNames []string) {
+// removeSkillExposuresFromAgents removes the skill from the named agents' skills
+// dirs and reports whether it removed an existing entry for any of them, plus
+// the errors from entries it failed to remove.
+func removeSkillExposuresFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string, state *InstallState, agentNames []string) (bool, []error) {
+	removed := false
+	var failures []error
 	for _, name := range agentNames {
 		agent := agents.ByName(name)
 		if agent == nil {
@@ -208,10 +252,18 @@ func removeSkillExposuresFromAgents(ctx context.Context, skillName, canonicalDir
 			log.Debugf(ctx, "Skipping unmanaged skill %s for %s", entry, agent.DisplayName)
 			continue
 		}
-		if err := os.RemoveAll(entry); err != nil {
-			log.Warnf(ctx, "Failed to remove %s: %v", entry, err)
+		// exposureRemovable also accepts a missing entry; there is nothing to remove.
+		if _, err := os.Lstat(entry); errors.Is(err, fs.ErrNotExist) {
+			continue
 		}
+		if err := removeAllFn(entry); err != nil {
+			log.Warnf(ctx, "Failed to remove %s: %v", entry, err)
+			failures = append(failures, err)
+			continue
+		}
+		removed = true
 	}
+	return removed, failures
 }
 
 func hasRemainingSkillExposure(ctx context.Context, skillName, canonicalDir, scope, cwd string, removedAgents []string) bool {

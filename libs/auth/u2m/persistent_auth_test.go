@@ -369,6 +369,67 @@ func TestToken_RefreshesTokenExpiringSoon(t *testing.T) {
 	}
 }
 
+func TestToken_WithoutRefresh(t *testing.T) {
+	tests := []struct {
+		name    string
+		expiry  time.Duration
+		wantTok string
+		wantErr error
+	}{
+		{name: "valid token is returned", expiry: time.Hour, wantTok: "cached"},
+		{name: "token expiring soon is returned, not refreshed", expiry: 4 * time.Minute, wantTok: "cached"},
+		{name: "expired token fails, not refreshed", expiry: -time.Minute, wantErr: ErrRefreshDisabled},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := &tokenStoreMock{
+				lookup: func(string) (*oauth2.Token, error) {
+					return &oauth2.Token{
+						AccessToken:  "cached",
+						RefreshToken: "cde",
+						Expiry:       time.Now().Add(tt.expiry),
+					}, nil
+				},
+				store: func(string, *oauth2.Token) error {
+					t.Fatal("store(): must not store a token")
+					return nil
+				},
+			}
+			arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+			if err != nil {
+				t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+			}
+			p, err := NewPersistentAuth(
+				t.Context(),
+				WithTokenStore(cache),
+				// An empty SliceTransport fails any request, so a refresh fails the test.
+				WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+				WithOAuthArgument(arg),
+				WithoutRefresh(),
+			)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+			}
+			defer p.Close()
+
+			tok, err := p.Token()
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("p.Token(): want error %v, got %v", tt.wantErr, err)
+			}
+			if tt.wantErr != nil {
+				return
+			}
+			if tok.AccessToken != tt.wantTok {
+				t.Errorf("p.Token(): want access token %q, got %q", tt.wantTok, tok.AccessToken)
+			}
+			if tok.RefreshToken != "" {
+				t.Errorf("p.Token(): want refresh token '', got %s", tok.RefreshToken)
+			}
+		})
+	}
+}
+
 func TestToken_ReturnsStillValidTokenWhenProactiveRefreshFails(t *testing.T) {
 	ctx := t.Context()
 	expectedKey := "https://accounts.cloud.databricks.test/oidc/accounts/xyz"

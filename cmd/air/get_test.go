@@ -242,6 +242,23 @@ func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
 	assert.NotContains(t, string(body), "termination_reason")
 }
 
+func TestBuildGetDataWaitingForComputeStatus(t *testing.T) {
+	run := &jobs.Run{
+		RunId: 8,
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}}},
+	}
+
+	body, err := json.Marshal(buildGetData(run))
+	require.NoError(t, err)
+
+	assert.JSONEq(t, `{
+		"run_id":"8","status":"PENDING","started_at":null,"duration_seconds":null,
+		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
+		"est_remaining_seconds":null,"est_percent_complete":null
+	}`, string(body))
+}
+
 func TestGetTemplateUsesDisplayStatus(t *testing.T) {
 	out := renderGet(t, getData{
 		RunID:         "456",
