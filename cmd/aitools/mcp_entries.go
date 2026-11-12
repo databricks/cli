@@ -2,10 +2,13 @@ package aitools
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 )
 
 // agentFile is an agent config file as a command reads it: the server entries it holds, or why it cannot be read. A
@@ -98,4 +101,15 @@ func (b bindingFile) owns(ctx context.Context, e mcp.Entry, current map[string]a
 		return false, b.err
 	}
 	return mcp.EntryServes(ctx, current, e.Service, e.Profile, b.path)
+}
+
+// changedEntryFix says how to clear an entry that was changed outside this CLI, so that remove can take the server out
+// of the agent. add replaces an entry this CLI did not write only with --force. It refuses a Databricks entry that serves
+// another binding whatever --force says, so that entry is deleted by hand.
+func changedEntryFix(name, path string, entry map[string]any) string {
+	fix := fmt.Sprintf("delete the entry from %s by hand and run `%s` again", filepath.ToSlash(path), mcp.RemoveNamesCommand(name))
+	if mcpconfig.IsDatabricksEntry(entry) {
+		return fix
+	}
+	return fix + ", or add the server again with --force"
 }

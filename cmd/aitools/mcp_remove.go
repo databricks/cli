@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -154,6 +153,10 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if err := checkTargetsInstalled(selected, targets); err != nil {
 		return err
 	}
+	if targets != nil {
+		// --agents chooses the servers installed for those agents, so a server with no agent left is not chosen.
+		selected = slices.DeleteFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 })
+	}
 
 	// Each agent config file is read once per command, and each server's config file is resolved once.
 	files := newAgentFiles()
@@ -269,14 +272,29 @@ func selectInstalls(state *mcp.State, names []string, profileName string) ([]mcp
 	return selected, nil
 }
 
-// matchInstalls returns the indexes of the entries of scope that name means. A server name is unique in state, so a
-// name equal to one selects that server and nothing else. Only when no server has the name, it means the service: the
-// full service name, or the leaf of a service name (its last part, when the name has no dot). All comparisons ignore
-// case. A leaf is refused when the entries it matches are of more than one service, since then it does not say which
-// one is meant.
+// matchInstalls returns the indexes of the entries of scope that name means. A server name selects that server: an
+// exact match first, and otherwise a match without case, which is refused when several servers match that way, since
+// state can hold names that differ only in case. Only when no server has the name, it means the service: the full
+// service name, or the leaf of a service name (its last part, when the name has no dot). A leaf is refused when the
+// entries it matches are of more than one service, since then it does not say which one is meant.
 func matchInstalls(scope []mcp.Entry, name string) ([]int, error) {
-	if i := slices.IndexFunc(scope, func(e mcp.Entry) bool { return strings.EqualFold(e.Name, name) }); i >= 0 {
+	if i := slices.IndexFunc(scope, func(e mcp.Entry) bool { return e.Name == name }); i >= 0 {
 		return []int{i}, nil
+	}
+	var byName []int
+	var serverNames []string
+	for i, e := range scope {
+		if strings.EqualFold(e.Name, name) {
+			byName = append(byName, i)
+			serverNames = append(serverNames, e.Name)
+		}
+	}
+	if len(byName) > 1 {
+		return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s matches more than one MCP server (%s); pass the exact server name",
+			name, strings.Join(serverNames, ", "))
+	}
+	if len(byName) == 1 {
+		return byName, nil
 	}
 	var matched []int
 	var services []string
@@ -346,10 +364,10 @@ func entryFile(ctx context.Context, files *agentFiles, e mcp.Entry, a *agents.Ag
 	return current, file, file.err
 }
 
-// keptReason says why an entry is left in place, and how to get it out: by hand, or by adding the server again with --force.
-func keptReason(e mcp.Entry, a *agents.Agent, path string) string {
-	return fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place. To remove it, delete the entry from %s by hand and run remove again, or add the server again with --force",
-		agentDisplayName(a.Name), e.Name, filepath.ToSlash(path))
+// keptReason says why an entry is left in place, and how to clear it.
+func keptReason(e mcp.Entry, a *agents.Agent, path string, entry map[string]any) string {
+	return fmt.Sprintf("%s has an entry named %s that was changed outside this CLI; left in place. To remove it, %s",
+		agentDisplayName(a.Name), e.Name, changedEntryFix(e.Name, path, entry))
 }
 
 // removeFromAgent removes the server's entry for agent a, but only when the entry there is the one this CLI wrote. The
@@ -369,7 +387,7 @@ func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *age
 		return 0, "", err
 	}
 	if !owned {
-		return removeKept, keptReason(e, a, path), nil
+		return removeKept, keptReason(e, a, path, current), nil
 	}
 	if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
 		return 0, "", err

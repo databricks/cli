@@ -197,7 +197,7 @@ func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
 	assert.Equal(t, "genie_one_mcp-logfood", out.Skipped[0].Name)
 	assert.Equal(t, "claude-code", out.Skipped[0].Agent)
 	assert.Equal(t, "Claude Code has an entry named genie_one_mcp-logfood that was changed outside this CLI; left in place. "+
-		"To remove it, delete the entry from "+filepath.ToSlash(claudePath)+" by hand and run remove again, "+
+		"To remove it, delete the entry from "+filepath.ToSlash(claudePath)+" by hand and run `databricks aitools mcp remove --names genie_one_mcp-logfood` again, "+
 		"or add the server again with --force", out.Skipped[0].Reason)
 
 	after, err := os.ReadFile(claudePath)
@@ -575,4 +575,75 @@ func TestMcpRemoveTakesEntryFromFileAgentNowReads(t *testing.T) {
 	state, err := mcp.LoadState(t.Context())
 	require.NoError(t, err)
 	assert.Empty(t, state.Servers, "the record went with the entry")
+}
+
+// TestSelectInstallsExactServerNameWins checks that --names matches a server name exactly before it matches without
+// case. State can hold names that differ only in case, since add adopts the name an agent entry already has.
+func TestSelectInstallsExactServerNameWins(t *testing.T) {
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Name: "Github", Service: "system.ai.github", Profile: "logfood"},
+		{Name: "github", Service: "system.ai.github", Profile: "dogfood"},
+	}}
+
+	exact, err := selectInstalls(state, []string{"github"}, "")
+	require.NoError(t, err)
+	require.Len(t, exact, 1)
+	assert.Equal(t, "github", exact[0].Name)
+
+	_, err = selectInstalls(state, []string{"GITHUB"}, "")
+	require.Error(t, err)
+	assert.Equal(t, "GITHUB matches more than one MCP server (Github, github); pass the exact server name", err.Error())
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
+
+	// Narrowed to one profile, the case-insensitive name is unambiguous again.
+	one, err := selectInstalls(state, []string{"GITHUB"}, "logfood")
+	require.NoError(t, err)
+	require.Len(t, one, 1)
+	assert.Equal(t, "Github", one[0].Name)
+}
+
+// TestMcpRemoveWithAgentsSkipsRecordWithoutAgents checks that --agents selects only servers installed for those agents.
+// An entry with no agent left is not chosen, so it is neither reported as removed nor dropped from state.
+func TestMcpRemoveWithAgentsSkipsRecordWithoutAgents(t *testing.T) {
+	withHome(t)
+	claude := agents.ByName("claude-code")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	dangling := mcp.Entry{Name: "dangling", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand}
+	saveState(t, genie, dangling)
+
+	stdout, _, err := runMcpCmd(t, "remove", "--all", "--agents", "claude-code", "--output", "json")
+	require.NoError(t, err)
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Removed, 1)
+	assert.Equal(t, "genie_one_mcp-logfood", out.Removed[0].Name)
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	require.Len(t, state.Servers, 1)
+	assert.Equal(t, "dangling", state.Servers[0].Name)
+
+	// Named explicitly, the same entry is a refusal: no selected server is installed for the agent.
+	_, _, err = runMcpCmd(t, "remove", "--names", "dangling", "--agents", "claude-code")
+	require.ErrorContains(t, err, "no selected MCP server is installed for Claude Code")
+}
+
+// TestMcpRemoveKeptReasonForDatabricksEntryOmitsForce checks that an entry this CLI wrote, but that serves another
+// binding now, is cleared by hand. add refuses such an entry whatever --force says, so the reason does not offer it.
+func TestMcpRemoveKeptReasonForDatabricksEntryOmitsForce(t *testing.T) {
+	home := withHome(t)
+	writeDatabricksCfg(t, "[logfood]\nhost = https://adb-1.test\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+	claudePath := filepath.Join(home, ".claude.json")
+	editEntry(t, claudePath, entry.Name, func(server map[string]any) { setServeFlag(t, server, "--profile", "other") })
+
+	stdout, _, err := runMcpCmd(t, "remove", "--names", entry.Name, "--output", "json")
+	require.NoError(t, err)
+	out := readRemoveOutput(t, stdout.String())
+	require.Len(t, out.Skipped, 1)
+	assert.Equal(t, "Claude Code has an entry named genie_one_mcp-logfood that was changed outside this CLI; left in place. "+
+		"To remove it, delete the entry from "+filepath.ToSlash(claudePath)+" by hand and run `databricks aitools mcp remove --names genie_one_mcp-logfood` again",
+		out.Skipped[0].Reason)
+	assert.NotContains(t, out.Skipped[0].Reason, "--force")
 }
