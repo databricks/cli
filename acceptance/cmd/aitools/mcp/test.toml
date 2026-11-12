@@ -13,3 +13,8 @@ Env.APPDATA = ""
 [[Repls]]
 Old = '\\\\'
 New = '/'
+
+# The login hint quotes a config path that a shell would read differently, such as the colon of a Windows drive.
+[[Repls]]
+Old = "'(\\[TEST_TMP_DIR\\][^']*)'"
+New = "$1"

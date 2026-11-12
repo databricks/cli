@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,7 +128,7 @@ func TestBindProfileAbsent(t *testing.T) {
 				Host:       bindingTestHost,
 				ConfigFile: path,
 			}}},
-			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --names github-gone`, filepath.ToSlash(path), filepath.ToSlash(path)),
+			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --names github-gone`, filepath.ToSlash(path), shellquote.BashArg(filepath.ToSlash(path))),
 		},
 		{
 			name:  "without state entry",
@@ -663,7 +664,7 @@ func TestBindProfileWithoutHost(t *testing.T) {
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
 	resolved := filepath.ToSlash(bindingTestResolved(t, path))
-	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --names github-logfood`, resolved, resolved), err.Error())
+	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --names github-logfood`, resolved, shellquote.BashArg(resolved)), err.Error())
 }
 
 // TestBindHostMetadataFailureIsNotAuthFailure checks that a host whose metadata cannot be fetched does
@@ -777,7 +778,7 @@ func TestBindRecreateHintQuotesValues(t *testing.T) {
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
 	want := fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "my profile", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile 'my profile' or remove the server with: databricks aitools mcp remove --names github-logfood`,
-		filepath.ToSlash(bindingTestResolved(t, cfgPath)), filepath.ToSlash(bindingTestResolved(t, cfgPath)))
+		filepath.ToSlash(bindingTestResolved(t, cfgPath)), shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath))))
 	assert.Equal(t, want, err.Error())
 }
 
