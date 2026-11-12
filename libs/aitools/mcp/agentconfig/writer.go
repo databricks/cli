@@ -67,8 +67,8 @@ var launchKeys = []string{"command", "args", "env", "environment", "type"}
 var envKeys = []string{"env", "environment"}
 
 // pinnedEnv is the environment variable that this CLI pins into an entry when it
-// is set (SPEC 7.3). A write that does not pin it removes it from the entry. Other
-// variables are the user's, and are kept.
+// is set in the caller's environment. A write that does not pin it removes it from
+// the entry. Other variables are the user's, and are kept.
 const pinnedEnv = "DATABRICKS_CONFIG_FILE"
 
 // ownedKeys returns the launch keys that the agent's builder writes. Upsert
