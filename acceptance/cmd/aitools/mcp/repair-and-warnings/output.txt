@@ -26,7 +26,7 @@ Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude
 >>> [CLI] aitools mcp list
 Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Codex CLI (unknown)
-Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 2: expected '.' or ']' to end table name, but got '\n' instead
+Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1 (last key "mcp_servers.broken"): expected a top-level item to end with a newline, comment, or EOF, but got ']' instead
 
 === An entry that runs aitools mcp serve without an install record is unmanaged, and remove does not touch it
 
@@ -38,7 +38,7 @@ Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
 
 Unmanaged Databricks MCP entries (not changed by this command):
   Claude Code    orphan               databricks aitools mcp serve, no install record
-Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 2: expected '.' or ']' to end table name, but got '\n' instead
+Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1 (last key "mcp_servers.broken"): expected a top-level item to end with a newline, comment, or EOF, but got ']' instead
 
 >>> musterr [CLI] aitools mcp remove --names orphan
 Error: no installed MCP server named orphan
