@@ -94,8 +94,13 @@ func main() {
 }
 
 // printNamed prints the tests the last commit message names, as go test -run patterns, and
-// the warnings the test runner would log for it.
+// the warnings the test runner would log for it. A commit that names nothing prints nothing,
+// like the test runner, which logs the section only when there is something in it.
 func printNamed(commit selection.CommitSelection) {
+	warnings := commit.Warnings()
+	if len(commit.Named) == 0 && len(warnings) == 0 {
+		return
+	}
 	fmt.Printf("Selected %d test dirs named in the last commit message (%s)\n", len(commit.Named), commit.Where)
 	for _, dir := range slices.Sorted(maps.Keys(commit.Named)) {
 		elements := strings.Split(dir, "/")
@@ -114,7 +119,7 @@ func printNamed(commit selection.CommitSelection) {
 			fmt.Printf("       %s\n", name)
 		}
 	}
-	for _, warning := range commit.Warnings() {
+	for _, warning := range warnings {
 		fmt.Printf("WARNING: %s\n", warning)
 	}
 }
