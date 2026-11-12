@@ -1,0 +1,70 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.my_job
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Settings the backend derives from is_single_node are not drift at any cluster-spec location
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Each is classified backend_default
+
+>>> [CLI] bundle plan -o json
+{
+  "job_clusters[job_cluster_key='job_cluster'].new_cluster.custom_tags": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "ResourceClass": "SingleNode"
+    }
+  },
+  "job_clusters[job_cluster_key='job_cluster'].new_cluster.spark_conf": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "spark.databricks.cluster.profile": "singleNode",
+      "spark.master": "local[*, 4]"
+    }
+  },
+  "tasks[task_key='for_each'].for_each_task.task.new_cluster.custom_tags": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "ResourceClass": "SingleNode"
+    }
+  },
+  "tasks[task_key='for_each'].for_each_task.task.new_cluster.spark_conf": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "spark.databricks.cluster.profile": "singleNode",
+      "spark.master": "local[*, 4]"
+    }
+  },
+  "tasks[task_key='task_cluster'].new_cluster.custom_tags": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "ResourceClass": "SingleNode"
+    }
+  },
+  "tasks[task_key='task_cluster'].new_cluster.spark_conf": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "spark.databricks.cluster.profile": "singleNode",
+      "spark.master": "local[*, 4]"
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

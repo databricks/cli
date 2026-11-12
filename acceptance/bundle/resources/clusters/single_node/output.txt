@@ -1,0 +1,90 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created clusters.explicit
+Created clusters.implicit
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Settings the backend derives from is_single_node are not drift
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== ...classified backend_default
+
+>>> [CLI] bundle plan -o json
+{
+  "resources.clusters.explicit": {
+    "custom_tags": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": {
+        "ResourceClass": "SingleNode"
+      }
+    },
+    "spark_conf['spark.databricks.cluster.profile']": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": "singleNode"
+    },
+    "spark_conf['spark.master']": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": "local[*, 4]"
+    }
+  },
+  "resources.clusters.implicit": {
+    "custom_tags": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": {
+        "ResourceClass": "SingleNode"
+      }
+    },
+    "spark_conf": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": {
+        "spark.databricks.cluster.profile": "singleNode",
+        "spark.master": "local[*, 4]"
+      }
+    }
+  }
+}
+
+=== An explicitly configured spark_conf key changed out-of-band is still drift
+
+>>> [CLI] bundle plan
+update clusters.explicit
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "spark_conf['spark.databricks.cluster.profile']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "singleNode"
+  },
+  "spark_conf['spark.master']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "local[*, 4]"
+  },
+  "spark_conf['spark.sql.shuffle.partitions']": {
+    "action": "update",
+    "new": "8",
+    "old": "8",
+    "remote": "16"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.explicit
+  delete resources.clusters.implicit
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted

@@ -795,3 +795,34 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
+
+// TestClustersSingleNodeBackendDefaults pins the clusters.yml rules for the settings the
+// backend derives from is_single_node (#7563). The whole-map shape is what a config without
+// spark_conf produces; the per-key shape is what a config with its own key produces, and an
+// explicit key that drifted must stay an update.
+func TestClustersSingleNodeBackendDefaults(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	require.NoError(t, err)
+
+	newState := &dresources.ClusterState{IsSingleNode: true, Kind: compute.KindClassicPreview}
+	changes := deployplan.Changes{
+		"spark_conf": &deployplan.ChangeDesc{Remote: map[string]string{
+			"spark.databricks.cluster.profile": "singleNode",
+			"spark.master":                     "local[*, 4]",
+		}},
+		"custom_tags": &deployplan.ChangeDesc{Remote: map[string]string{"ResourceClass": "SingleNode"}},
+		"spark_conf['spark.databricks.cluster.profile']": &deployplan.ChangeDesc{Remote: "singleNode"},
+		"spark_conf['spark.master']":                     &deployplan.ChangeDesc{Remote: "local[*, 8]"},
+		"spark_conf['spark.sql.shuffle.partitions']":     &deployplan.ChangeDesc{Old: "8", New: "8", Remote: "16"},
+		// A ResourceClass other than SingleNode is not something is_single_node produces.
+		"custom_tags['ResourceClass']": &deployplan.ChangeDesc{Remote: "Serverless"},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+
+	for _, path := range []string{"spark_conf", "custom_tags", "spark_conf['spark.databricks.cluster.profile']", "spark_conf['spark.master']"} {
+		assert.Equal(t, deployplan.Skip, changes[path].Action, path)
+		assert.Equal(t, deployplan.ReasonBackendDefault, changes[path].Reason, path)
+	}
+	assert.Equal(t, deployplan.Update, changes["spark_conf['spark.sql.shuffle.partitions']"].Action)
+	assert.Equal(t, deployplan.Update, changes["custom_tags['ResourceClass']"].Action)
+}

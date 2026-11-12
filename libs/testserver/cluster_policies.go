@@ -260,9 +260,16 @@ func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) stri
 	return ""
 }
 
+// applyClusterSpecPolicy applies the attached policy and the server-side single-node
+// expansion to one job cluster spec; the Jobs API stores the same expanded spec as
+// the Clusters API does.
 func (s *FakeWorkspace) applyClusterSpecPolicy(spec *compute.ClusterSpec) string {
 	if spec == nil {
 		return ""
 	}
-	return s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues)
+	if msg := s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues); msg != "" {
+		return msg
+	}
+	applySingleNodeDefaults(spec.IsSingleNode, spec.Kind, &spec.SparkConf, &spec.CustomTags)
+	return ""
 }
