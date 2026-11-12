@@ -13,8 +13,10 @@ type KnownService struct {
 	Note string
 }
 
-// knownSystemAI describes the system.ai services. Discovery from the API decides what is
-// offered; this table only adds labels and notes, so an unlisted service still appears.
+// knownSystemAI describes the system.ai services listed at
+// https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services. Discovery from
+// the API decides what is offered; this table only adds labels and notes, so an unlisted
+// service still appears.
 var knownSystemAI = map[string]KnownService{
 	"genie_one_mcp": {
 		Label: "Genie One", Summary: "Ask questions about your data",
@@ -34,7 +36,7 @@ var knownSystemAI = map[string]KnownService{
 	},
 	"github": {
 		Label: "GitHub", Summary: "Repositories, issues, pull requests",
-		Note: "Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector",
+		Note: "Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.",
 	},
 	"slack": {
 		Label: "Slack", Summary: "Channels and messages",
@@ -53,6 +55,6 @@ var knownSystemAI = map[string]KnownService{
 	},
 	"microsoft_365": {
 		Label: "Microsoft 365", Summary: "SharePoint, Outlook, Teams",
-		Note: "`.All` scopes usually need tenant admin consent.",
+		Note: "Scopes ending in .All usually need tenant admin consent.",
 	},
 }

@@ -27,7 +27,8 @@ type Service struct {
 	Leaf     string
 	// Comment is the user-provided description from the API.
 	Comment string
-	// SignInRequired is true for services backed by a per-user connection.
+	// SignInRequired is true when the service's source connection has an oauth_provider, so
+	// each user signs in to the provider once.
 	SignInRequired bool
 	// OAuthProvider is the connection's oauth_provider option, empty when SignInRequired is false.
 	OAuthProvider string
@@ -87,6 +88,7 @@ func (e *ListError) Error() string {
 	return fmt.Sprintf("cannot list MCP services in %s: %v", e.Location, e.Err)
 }
 
+// Unwrap returns the SDK error.
 func (e *ListError) Unwrap() error {
 	return e.Err
 }
@@ -106,19 +108,20 @@ var unrelatedErrorCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "PR
 
 // mapListError classifies a listing failure. Other errors are returned with context only.
 func mapListError(location string, err error) error {
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode) {
-		return fmt.Errorf("cannot list MCP services in %s: %w", location, err)
-	}
+	apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
 
 	var kind ListErrorKind
 	switch {
+	case isAPIErr && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode):
+		// Not about the schema or grants: leave it unclassified.
 	case errors.Is(err, apierr.ErrNotFound):
 		kind = ListErrLocationNotFound
 	case errors.Is(err, apierr.ErrPermissionDenied):
 		kind = ListErrPermissionDenied
 	case errors.Is(err, apierr.ErrTooManyRequests):
 		kind = ListErrRateLimited
-	default:
+	}
+	if kind == "" {
 		return fmt.Errorf("cannot list MCP services in %s: %w", location, err)
 	}
 	return &ListError{Kind: kind, Location: location, Err: err}

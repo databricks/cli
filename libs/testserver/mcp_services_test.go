@@ -25,6 +25,7 @@ func mcpServicesTestList(t *testing.T, workspace *FakeWorkspace, rawQuery string
 	return body.McpServices
 }
 
+// mcpServicesTestWorkspace returns a fake workspace with two system.ai services and one customer service.
 func mcpServicesTestWorkspace(t *testing.T) *FakeWorkspace {
 	t.Helper()
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
