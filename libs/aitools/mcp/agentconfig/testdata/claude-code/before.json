@@ -1,0 +1,16 @@
+{
+  "numStartups": 4,
+  "theme": "dark",
+  "userID": "not-a-real-id",
+  "mcpServers": {
+    "other": {
+      "type": "http",
+      "url": "https://mcp.example.test/mcp"
+    }
+  },
+  "projects": {
+    "/work": {
+      "allowedTools": []
+    }
+  }
+}

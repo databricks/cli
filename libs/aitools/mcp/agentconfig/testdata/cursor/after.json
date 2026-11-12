@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "mcpServers": {
+    "other": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "other-mcp"
+      ]
+    },
+    "genie_one_mcp-dogfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "dogfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "cursor"
+      ],
+      "command": "/opt/databricks/bin/databricks"
+    }
+  }
+}

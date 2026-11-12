@@ -1,0 +1,34 @@
+{
+  "banner": "never",
+  "mcpServers": {
+    "other": {
+      "type": "local",
+      "command": "npx",
+      "args": [
+        "-y",
+        "other-mcp"
+      ],
+      "tools": [
+        "*"
+      ]
+    },
+    "genie_one_mcp-dogfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "dogfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "copilot"
+      ],
+      "command": "/opt/databricks/bin/databricks",
+      "tools": [
+        "*"
+      ],
+      "type": "local"
+    }
+  }
+}

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/env"
 )
 
@@ -56,6 +57,9 @@ type Agent struct {
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
+	// MCP describes where the agent keeps user-scope MCP server entries, or nil
+	// when this CLI does not write them (Pi, Goose, Kiro).
+	MCP *mcpconfig.Spec
 	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
@@ -182,6 +186,13 @@ var Registry = []*Agent{
 		Binary:               "claude",
 		Plugin:               claudePlugin(),
 		pluginInstalls:       claudePluginInstalls,
+		MCP: &mcpconfig.Spec{
+			Path:   claudeMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcpServers",
+			Entry:  claudeMCPEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:        NameCursor,
@@ -193,6 +204,13 @@ var Registry = []*Agent{
 		// Cursor has a databricks plugin, but it can't be installed headlessly, so
 		// the CLI treats Cursor as a skills-only agent (Plugin nil) rather than
 		// referencing a plugin it can't act on.
+		MCP: &mcpconfig.Spec{
+			Path:   homeSubdir(".cursor", "mcp.json"),
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcpServers",
+			Entry:  stdioEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:        NameCodex,
@@ -200,6 +218,13 @@ var Registry = []*Agent{
 		ConfigDir:   homeSubdir(".codex"),
 		Binary:      "codex",
 		Plugin:      databricksPlugin(),
+		MCP: &mcpconfig.Spec{
+			Path:   codexMCPPath,
+			Format: mcpconfig.FormatTOML,
+			Root:   "mcp_servers",
+			Entry:  stdioEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:        NameOpenCode,
@@ -209,6 +234,13 @@ var Registry = []*Agent{
 		// OpenCode exposes an `opencode plugin <module>` command, but that's an
 		// npm-module system, not the agent-skills marketplace, so OpenCode stays
 		// skills-only (Plugin nil).
+		MCP: &mcpconfig.Spec{
+			Path:   openCodeMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcp.servers",
+			Entry:  openCodeMCPEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:        NameCopilot,
@@ -216,6 +248,13 @@ var Registry = []*Agent{
 		ConfigDir:   homeSubdir(".copilot"),
 		Binary:      "copilot",
 		Plugin:      databricksPlugin(),
+		MCP: &mcpconfig.Spec{
+			Path:   copilotMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcpServers",
+			Entry:  copilotMCPEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:         NameAntigravity,
@@ -223,6 +262,13 @@ var Registry = []*Agent{
 		ConfigDir:    homeSubdir(".gemini", "antigravity"),
 		SkillsSubdir: "global_skills",
 		// Antigravity is IDE-only with no CLI binary, so it has no plugin path.
+		MCP: &mcpconfig.Spec{
+			Path:   antigravityMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcpServers",
+			Entry:  antigravityMCPEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:                 NamePi,
@@ -246,6 +292,13 @@ var Registry = []*Agent{
 		// Gemini writes projects.json after real use. Antigravity shares ~/.gemini,
 		// and installation_id is not reliable, so detection uses this Gemini-only file.
 		MandatoryFile: "projects.json",
+		MCP: &mcpconfig.Spec{
+			Path:   geminiMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   "mcpServers",
+			Entry:  stdioEntry,
+			IsOurs: mcpconfig.IsDatabricksEntry,
+		},
 	},
 	{
 		Name:                 NameGoose,
@@ -372,6 +425,131 @@ func gooseConfigDir(ctx context.Context) (string, error) {
 		xdg = filepath.Join(home, ".config")
 	}
 	return filepath.Join(xdg, "goose"), nil
+}
+
+// claudeMCPPath returns Claude Code's global config file, which holds user-scope
+// mcpServers next to auth state. It sits in the home directory, not in ~/.claude;
+// CLAUDE_CONFIG_DIR moves it to <dir>/.claude.json.
+// https://code.claude.com/docs/en/env-vars
+func claudeMCPPath(ctx context.Context) (string, error) {
+	if env.Get(ctx, "CLAUDE_CONFIG_DIR") != "" {
+		dir, err := claudeConfigDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(dir, ".claude.json"), nil
+	}
+	return homeSubdir(".claude.json")(ctx)
+}
+
+// claudeMCPEntry matches `claude mcp add`, which always writes an env map, even an empty one.
+func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
+	if len(vars) == 0 {
+		vars = map[string]string{}
+	}
+	return map[string]any{"type": "stdio", "command": cmd, "args": args, "env": vars}
+}
+
+// codexMCPPath returns Codex's config.toml, which honors CODEX_HOME.
+func codexMCPPath(ctx context.Context) (string, error) {
+	if home := env.Get(ctx, "CODEX_HOME"); home != "" {
+		return filepath.Join(home, "config.toml"), nil
+	}
+	return homeSubdir(".codex", "config.toml")(ctx)
+}
+
+// openCodeMCPPath returns OpenCode's config file. The file may contain comments
+// (JSONC); a file we cannot parse is refused, never rewritten.
+// https://opencode.ai/docs/config/
+func openCodeMCPPath(ctx context.Context) (string, error) {
+	dir, err := openCodeConfigDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "opencode.json"), nil
+}
+
+// openCodeMCPEntry follows the current OpenCode schema: servers live under
+// mcp.servers, the env map is "environment", and there is no "enabled" key
+// (the schema forbids extra keys, and an absent key means enabled).
+// https://opencode.ai/docs/mcp-servers/
+func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
+	entry := map[string]any{"type": "local", "command": append([]string{cmd}, args...)}
+	if len(vars) > 0 {
+		entry["environment"] = vars
+	}
+	return entry
+}
+
+// copilotMCPPath returns Copilot CLI's user config. COPILOT_HOME replaces ~/.copilot.
+// https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference
+func copilotMCPPath(ctx context.Context) (string, error) {
+	if home := env.Get(ctx, "COPILOT_HOME"); home != "" {
+		return filepath.Join(home, "mcp-config.json"), nil
+	}
+	return homeSubdir(".copilot", "mcp-config.json")(ctx)
+}
+
+// copilotMCPEntry is the stdio entry Copilot CLI documents, with all tools enabled.
+// https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers
+func copilotMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
+	entry := stdioEntry(cmd, args, vars)
+	entry["type"] = "local"
+	entry["tools"] = []string{"*"}
+	return entry
+}
+
+// geminiMCPPath returns Gemini CLI's user settings, which hold mcpServers. The
+// settings directory follows geminiConfigDir, which honors GEMINI_CLI_HOME.
+// https://geminicli.com/docs/tools/mcp-server/
+func geminiMCPPath(ctx context.Context) (string, error) {
+	dir, err := geminiConfigDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "settings.json"), nil
+}
+
+// antigravityMCPPath is the global MCP file in Antigravity's docs, for both the
+// CLI and the IDE. It is not the skills directory (~/.gemini/antigravity).
+// https://antigravity.google/docs/mcp
+func antigravityMCPPath(ctx context.Context) (string, error) {
+	return homeSubdir(".gemini", "config", "mcp_config.json")(ctx)
+}
+
+// antigravityMCPEntry writes disabled:false explicitly, as the Antigravity docs
+// show it.
+func antigravityMCPEntry(cmd string, args []string, vars map[string]string) map[string]any {
+	entry := stdioEntry(cmd, args, vars)
+	entry["disabled"] = false
+	return entry
+}
+
+// stdioEntry is the command/args entry used by Cursor, Codex and Gemini. env is
+// omitted when empty.
+func stdioEntry(cmd string, args []string, vars map[string]string) map[string]any {
+	entry := map[string]any{"command": cmd, "args": args}
+	if len(vars) > 0 {
+		entry["env"] = vars
+	}
+	return entry
+}
+
+// SupportsMCP reports whether this CLI writes the agent's MCP server entries.
+func (a *Agent) SupportsMCP() bool {
+	return a.MCP != nil
+}
+
+// MCPAgents returns the agents whose MCP server entries this CLI writes, in
+// registry order.
+func MCPAgents() []*Agent {
+	var agents []*Agent
+	for _, a := range Registry {
+		if a.SupportsMCP() {
+			agents = append(agents, a)
+		}
+	}
+	return agents
 }
 
 // ByName returns the registry agent with the given name, or nil if not found.
