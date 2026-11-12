@@ -53,6 +53,16 @@ func TestClassifyInstallError(t *testing.T) {
 			want: protos.AitoolsErrorCategorySkillNotFound,
 		},
 		{
+			name: "legacy install without state",
+			err:  fmt.Errorf("%w; run install first", installer.ErrLegacyInstall),
+			want: protos.AitoolsErrorCategoryStateInvalid,
+		},
+		{
+			name: "unknown agent in the install state",
+			err:  fmt.Errorf("skipped: %w", installer.ErrUnknownAgent),
+			want: protos.AitoolsErrorCategoryUnknownAgent,
+		},
+		{
 			name: "version incompatible",
 			err:  &installer.SkillError{Skill: "databricks", Reason: installer.ReasonVersionIncompatible, Detail: "requires CLI version 0.5 (running 0.4)"},
 			want: protos.AitoolsErrorCategoryVersionIncompatible,

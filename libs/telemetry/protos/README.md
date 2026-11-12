@@ -14,10 +14,13 @@ Claude Code session per hour, so when the command that printed it resolves no au
 `databricks version`), that session logs no install hint event for the next hour even though the
 agent saw the hint.
 
-`databricks aitools install` logs an `aitools_command_event` funnel per run: STARTED, one
-STEP_COMPLETED per install step reached, and FINISHED with the outcome and error category. The CLI
-sets no calling-agent field on it: the upload's User-Agent carries the agent (`agent/<name>`), its
-Databricks tooling (`aitools-agent/...`) and the `cmd-exec-id` that every event of the run shares. It uploads at exit only when the command resolved
-auth. A run that ends before the install plan is confirmed (a flag error, a cancelled prompt, no
-agent detected, a `--path` dump) uploads only if auth has already resolved by then; it does not wait
-for it.
+`databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
+funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED
+with the outcome and error category. The CLI sets no calling-agent field on it: the upload's
+User-Agent carries the agent (`agent/<name>`), its Databricks tooling (`aitools-agent/...`) and the
+`cmd-exec-id` that every event of the run shares. It uploads at exit only when the command resolved
+auth. `list` and `version` upload only if auth has already resolved when they finish; they never
+wait for it. Neither does a run of `install`, `update` or `uninstall` that ends before its plan or
+confirmation step (a flag error, a cancelled prompt, no agent detected, a `--path` dump), nor an
+`update` or `uninstall` that finds nothing installed. A run that does not wait still uploads,
+within the upload timeout, when auth has already resolved.

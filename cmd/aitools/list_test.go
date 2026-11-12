@@ -567,6 +567,7 @@ func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
 }
 
 func TestListScopeFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	tests := []struct {
 		name      string
 		args      []string

@@ -93,8 +93,9 @@ const (
 	// The user declined the confirm prompt, aborted a prompt, or confirmed the
 	// agent picker with nothing selected.
 	AitoolsCommandOutcomeCancelled AitoolsCommandOutcome = "CANCELLED"
-	// The command had nothing to act on (e.g. no coding agents detected, or a
-	// --path dump where every skill was filtered out).
+	// The command had nothing to act on (e.g. no coding agents detected, a
+	// --path dump where every skill was filtered out, or nothing installed to
+	// update or uninstall).
 	AitoolsCommandOutcomeNothingToDo AitoolsCommandOutcome = "NOTHING_TO_DO"
 )
 
@@ -112,10 +113,11 @@ const (
 	AitoolsInstallModePath AitoolsInstallMode = "PATH"
 )
 
-// AitoolsCommandEvent is one funnel event of an aitools subcommand. Every
-// install run that gets past flag parsing emits a STARTED event, a
-// STEP_COMPLETED event per step reached and a FINISHED event. All events of one
-// run share ExecutionContext.CmdExecID.
+// AitoolsCommandEvent is one funnel event of an aitools subcommand. Every run
+// of install, update, list, version and uninstall that gets past flag parsing
+// emits a STARTED event and a FINISHED event; install also emits a
+// STEP_COMPLETED event per step reached. All events of one run share
+// ExecutionContext.CmdExecID.
 // The CLI sets no calling-agent field on this event: it reports the calling
 // agent through the User-Agent of the telemetry upload (`agent/<name>`, and its
 // Databricks tooling as `aitools-agent/...`), together with the same
@@ -140,11 +142,13 @@ type AitoolsCommandEvent struct {
 	// Install only: delivery mode. Set on every install event once flags parse.
 	InstallMode AitoolsInstallMode `json:"install_mode,omitempty"`
 
-	// Install only: agents the run targeted, deduplicated and sorted. Set on the
-	// FINISHED event once the targets are known.
+	// Install and uninstall: agents the run targeted (uninstall: from
+	// --agents), deduplicated and sorted. Set on the FINISHED event once the
+	// targets are known.
 	Agents []AitoolsAgentType `json:"agents,omitempty"`
 
-	// Install only: scope the run acted on. Set on events after the scope is
-	// resolved.
+	// Install, update, list and uninstall: the single scope the run acts on.
+	// Set on events once a scope flag selects one or the scope is resolved;
+	// omitted when none or both scopes are selected.
 	Scope AitoolsInstallScope `json:"scope,omitempty"`
 }

@@ -33,6 +33,12 @@ func setTelemetryAuth(t *testing.T, budget time.Duration, resolve func(cmd *cobr
 	telemetryAuthBudget = budget
 }
 
+// noTelemetryAuth replaces the auth resolver with a no-op, so a test that runs
+// an instrumented command through Execute never resolves the host's auth.
+func noTelemetryAuth(t *testing.T) {
+	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error { return nil })
+}
+
 // authTestCmd returns a command wired with withTelemetryAuth whose RunE
 // records that it ran and logs a telemetry event, plus a --profile flag like
 // root's. Telemetry is enabled on its context whatever the outer environment
@@ -296,4 +302,109 @@ func TestInstallPastPlanConfirmedWaitsForTelemetryAuth(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
 	assert.Equal(t, "https://ws.test", cmdctx.ConfigUsed(cmd.Context()).Host)
+}
+
+// runWithTelemetry runs cmd with args, with telemetry enabled and its events
+// buffered, and returns the context it ended with, how long it took and its
+// error.
+func runWithTelemetry(t *testing.T, cmd *cobra.Command, args ...string) (context.Context, time.Duration, error) {
+	t.Helper()
+	cmd.SetContext(telemetry.WithNewLogger(env.Set(cmdio.MockDiscard(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")))
+	cmd.SetArgs(args)
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	start := time.Now()
+	err := cmd.Execute()
+	return cmd.Context(), time.Since(start), err
+}
+
+// list, version, and update and uninstall runs that end at a flag or scope
+// error, find nothing installed, or name a skill that is not installed do not
+// wait for an unfinished resolution, so
+// their events are dropped instead of delaying exit.
+func TestInstrumentedCommandsDoNotWaitForTelemetryAuth(t *testing.T) {
+	cases := []struct {
+		name    string
+		newCmd  func() *cobra.Command
+		args    []string
+		seed    bool // record one installed skill first
+		wantErr string
+	}{
+		{name: "version", newCmd: NewVersionCmd},
+		{name: "list", newCmd: NewListCmd, wantErr: "127.0.0.1:1"},
+		{name: "update flag error", newCmd: NewUpdateCmd, args: []string{"--scope=global", "--project"}, wantErr: "cannot use --scope with --project or --global"},
+		{name: "uninstall flag error", newCmd: NewUninstallCmd, args: []string{"--project", "--global"}, wantErr: "cannot uninstall both scopes at once"},
+		{name: "update with nothing installed", newCmd: NewUpdateCmd, args: []string{"--scope=global"}, wantErr: "no skills or plugins installed"},
+		{name: "uninstall with nothing installed", newCmd: NewUninstallCmd, args: []string{"--scope=global"}, wantErr: "no skills or plugins installed"},
+		{name: "uninstall of a skill that is not installed", newCmd: NewUninstallCmd, args: []string{"--scope=global", "--skills=typo"}, seed: true, wantErr: `skill "typo" is not installed`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCommandEnv(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+			if tc.seed {
+				saveGlobalSkill(t)
+			}
+			blockTelemetryAuth(t)
+
+			ctx, took, err := runWithTelemetry(t, tc.newCmd(), tc.args...)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tc.wantErr)
+			}
+			assert.Less(t, took, 5*time.Second)
+			assert.False(t, cmdctx.HasConfigUsed(ctx), "an unfinished resolution leaves no config, so nothing uploads")
+		})
+	}
+}
+
+// saveGlobalSkill records one installed file skill in the global scope.
+func saveGlobalSkill(t *testing.T) {
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{SchemaVersion: 2, Release: "v0.2.6", Skills: map[string]string{"databricks": "0.2.6"}}))
+}
+
+// update and uninstall runs that get to their work keep waiting for the
+// resolution within the budget. The resolution finishes only some time after
+// the last step of the work, so the config reaches the context only if the
+// end of the run waits.
+func TestUpdateAndUninstallWorkWaitsForTelemetryAuth(t *testing.T) {
+	t.Run("update", func(t *testing.T) {
+		isolateCommandEnv(t)
+		saveGlobalSkill(t)
+		release := blockTelemetryAuth(t)
+		resetUpdatePluginSeams(t)
+		origRef, origUpdateSkills := updateGetSkillsRefFn, updateSkillsFn
+		t.Cleanup(func() { updateGetSkillsRefFn, updateSkillsFn = origRef, origUpdateSkills })
+		updateGetSkillsRefFn = func(context.Context) (string, bool, error) {
+			return "v0.2.6", true, nil
+		}
+		updateSkillsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.UpdateOptions) (*installer.UpdateResult, error) {
+			time.AfterFunc(200*time.Millisecond, release)
+			return &installer.UpdateResult{}, nil
+		}
+
+		ctx, _, err := runWithTelemetry(t, NewUpdateCmd(), "--scope=global")
+		require.NoError(t, err)
+		require.True(t, cmdctx.HasConfigUsed(ctx))
+	})
+
+	t.Run("uninstall", func(t *testing.T) {
+		isolateCommandEnv(t)
+		saveGlobalSkill(t)
+		release := blockTelemetryAuth(t)
+		orig := uninstallSkillsFn
+		t.Cleanup(func() { uninstallSkillsFn = orig })
+		uninstallSkillsFn = func(context.Context, installer.UninstallOptions) (*installer.UninstallResult, error) {
+			time.AfterFunc(200*time.Millisecond, release)
+			return &installer.UninstallResult{SkillsRemoved: 1}, nil
+		}
+
+		ctx, _, err := runWithTelemetry(t, NewUninstallCmd(), "--scope=global")
+		require.NoError(t, err)
+		require.True(t, cmdctx.HasConfigUsed(ctx))
+	})
 }

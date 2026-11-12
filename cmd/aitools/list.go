@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -36,22 +37,17 @@ func NewListCmd() *cobra.Command {
 			// doesn't silently degrade to --scope=both. Users who want both
 			// scopes should use --scope=both (the new explicit spelling).
 			if projectFlag && globalFlag && scopeFlag == "" {
-				return errors.New("cannot use --global and --project together")
+				return withCategory(errors.New("cannot use --global and --project together"), protos.AitoolsErrorCategoryInvalidFlags)
 			}
 
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
-				return err
+				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
 			}
 
 			// list: empty scope = show both. --scope=both also lands here.
-			var scope string
-			switch {
-			case projectFlag && !globalFlag:
-				scope = installer.ScopeProject
-			case globalFlag && !projectFlag:
-				scope = installer.ScopeGlobal
-			}
+			scope := explicitScope(projectFlag, globalFlag)
+			funnelFrom(cmd.Context()).setScope(scope)
 			return listSkillsFn(cmd, scope)
 		},
 	}
@@ -60,7 +56,7 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Show only project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Show only globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandList)
 }
 
 // listOutput is the structured representation of `aitools list` used by both

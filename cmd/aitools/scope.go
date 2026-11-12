@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -164,6 +165,19 @@ func detectInstalledScopes(globalDir, projectDir string) (global, project bool, 
 	return globalState != nil, projectState != nil, nil
 }
 
+// explicitScope returns the single scope the flags parsed by parseScopeFlag
+// select, or "" when they select both or none.
+func explicitScope(projectFlag, globalFlag bool) string {
+	switch {
+	case projectFlag && !globalFlag:
+		return installer.ScopeProject
+	case globalFlag && !projectFlag:
+		return installer.ScopeGlobal
+	default:
+		return ""
+	}
+}
+
 // resolveScopeForUpdate resolves scopes for the update command.
 // Returns one or more scopes to update. When both flags are set, global always passes through
 // (for legacy install detection) and project is checked via state.
@@ -199,7 +213,7 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
-			return nil, errors.New("skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update")
+			return nil, withCategory(errors.New("skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update"), protos.AitoolsErrorCategoryInvalidFlags)
 		}
 		scopes, err := promptUpdateScopeSelection(ctx)
 		if err != nil {
@@ -225,7 +239,7 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 // Unlike update, uninstall never allows "both" scopes at once.
 func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool, globalDir, projectDir string) (string, error) {
 	if projectFlag && globalFlag {
-		return "", errors.New("cannot uninstall both scopes at once; run uninstall separately with --scope=global and --scope=project")
+		return "", withCategory(errors.New("cannot uninstall both scopes at once; run uninstall separately with --scope=global and --scope=project"), protos.AitoolsErrorCategoryInvalidFlags)
 	}
 
 	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
@@ -249,7 +263,7 @@ func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool,
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
-			return "", errors.New("skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall")
+			return "", withCategory(errors.New("skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall"), protos.AitoolsErrorCategoryInvalidFlags)
 		}
 		scope, err := promptUninstallScopeSelection(ctx)
 		if err != nil {
@@ -308,8 +322,16 @@ func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProjec
 		msg += "\n\n" + hint
 	}
 
-	return errors.New(msg)
+	return &nothingInstalledInScopeError{msg: msg}
 }
+
+// nothingInstalledInScopeError carries scopeNotInstalledError's message and
+// matches installer.ErrNothingInstalled, so telemetry records the run as
+// NOTHING_TO_DO like the installer's own "nothing installed" error.
+type nothingInstalledInScopeError struct{ msg string }
+
+func (e *nothingInstalledInScopeError) Error() string { return e.msg }
+func (e *nothingInstalledInScopeError) Unwrap() error { return installer.ErrNothingInstalled }
 
 // crossScopeHint returns a hint string if the opposite scope has an installation.
 // The verb parameter (e.g. "update", "uninstall") controls the action in the hint message.
@@ -351,7 +373,7 @@ func defaultPromptUpdateScopeSelection(ctx context.Context) ([]string, error) {
 		Value(&scope).
 		Run()
 	if err != nil {
-		return nil, err
+		return nil, promptError(err)
 	}
 
 	if scope == scopeBoth {
@@ -386,7 +408,7 @@ func defaultPromptUninstallScopeSelection(ctx context.Context) (string, error) {
 		Value(&scope).
 		Run()
 	if err != nil {
-		return "", err
+		return "", promptError(err)
 	}
 
 	return scope, nil

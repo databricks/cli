@@ -60,6 +60,13 @@ func classifyInstallError(err error) protos.AitoolsErrorCategory {
 	if tagged, ok := errors.AsType[*categorizedError](err); ok {
 		return tagged.category
 	}
+	if errors.Is(err, installer.ErrUnknownAgent) {
+		return protos.AitoolsErrorCategoryUnknownAgent
+	}
+	// Skills on disk without the install state that update and uninstall need.
+	if errors.Is(err, installer.ErrLegacyInstall) {
+		return protos.AitoolsErrorCategoryStateInvalid
+	}
 	return stdlibErrorCategory(err)
 }
 
