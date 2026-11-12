@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.postgres_projects.my_project: retrying after 500 Internal Server Error from POST /api/2.0/postgres/projects
+Warn: deploying resources.postgres_projects.my_project: retrying after 500 Internal Server Error from GET /api/2.0/postgres/projects/test-pg-proj/operations/[UUID]
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres
+      2 POST /api/2.0/postgres/projects
+      2 GET /api/2.0/postgres/projects/test-pg-proj/operations/[UUID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

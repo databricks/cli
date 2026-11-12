@@ -1,0 +1,11 @@
+# One transient 500 on the create request and one on polling the create operation; both are
+# retried and the deploy succeeds.
+fault.py "POST /api/2.0/postgres/projects" 500 0 1 INTERNAL_ERROR
+fault.py "GET /api/2.0/postgres/projects/*/operations/*" 500 0 1 INTERNAL_ERROR
+
+trace $CLI bundle deploy
+
+# Two create requests (the 500 and the retry) and at least two operation polls (the 500 and the retry).
+trace print_requests.py --get //postgres | jq -r '.method + " " + .path' | uniq -c
+
+trace $CLI bundle destroy --auto-approve

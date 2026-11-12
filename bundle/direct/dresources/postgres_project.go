@@ -121,11 +121,14 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		},
 	})
 	if err != nil {
-		return "", nil, err
+		// The project is keyed by the caller-chosen project_id, so repeating the request cannot
+		// create a duplicate: if the failed request did create the project, the retry fails with
+		// ALREADY_EXISTS, just as the next deploy would have.
+		return "", nil, retrySafe(err)
 	}
 
 	// Wait for the project to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}
