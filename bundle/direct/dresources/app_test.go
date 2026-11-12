@@ -2,6 +2,8 @@ package dresources
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -268,4 +271,25 @@ func marshalFields(t *testing.T, app apps.App) map[string]any {
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(data, &m))
 	return m
+}
+
+func TestWithMissingServicePrincipalHint(t *testing.T) {
+	assert.NoError(t, withMissingServicePrincipalHint(nil, "myapp"))
+
+	other := errors.New("some other error")
+	assert.Same(t, other, withMissingServicePrincipalHint(other, "myapp"))
+
+	apiErr := &apierr.APIError{
+		StatusCode: 400,
+		ErrorCode:  "BAD_REQUEST",
+		Message:    "App: myapp's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.",
+	}
+	computeErr := errors.New("failed to reach ACTIVE, got ERROR: App service principal does not exist or is deleted, application cannot run without a valid service principal. Please delete the app and re-create it.")
+	capitalizedErr := errors.New("Service principal does not exist or is deleted")
+
+	for _, err := range []error{apiErr, fmt.Errorf("wrapped: %w", apiErr), computeErr, capitalizedErr} {
+		got := withMissingServicePrincipalHint(err, "myapp")
+		assert.ErrorIs(t, got, err)
+		assert.Contains(t, got.Error(), `delete it with "databricks apps delete myapp"`)
+	}
 }

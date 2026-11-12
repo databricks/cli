@@ -1,0 +1,78 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.mykey
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Update fails: the error explains how to recover
+
+>>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.apps.mykey: updating id=myappname: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
+
+The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again, using the same profile and target as for this deploy. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/apps/myappname/update
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "my_app_description",
+    "name": "myappname",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myappname/update",
+  "body": {
+    "app": {
+      "description": "MY_APP_DESCRIPTION",
+      "name": "myappname"
+    },
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_min_instances,compute_max_instances,git_repository,git_source,telemetry_export_destinations"
+  }
+}
+
+=== Start fails: the error explains how to recover
+
+>>> update_file.py databricks.yml MY_APP_DESCRIPTION my_app_description
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.apps.mykey: updating id=myappname: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
+
+The app cannot be updated or started without its service principal. To recreate the app, delete it with "databricks apps delete myappname", wait for the deletion to finish, and run "databricks bundle deploy" again, using the same profile and target as for this deploy. Deleting the app also deletes its deployment history (400 BAD_REQUEST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/apps/myappname/start
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myappname/start",
+  "body": {}
+}

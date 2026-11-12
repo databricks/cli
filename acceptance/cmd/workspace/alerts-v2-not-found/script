@@ -1,0 +1,27 @@
+# Alert get/update/trash responses for trashed, purged and unknown alerts.
+# Expected output was recorded against AWS on 2026-11-11; the test is local-only
+# because the messages are backend-owned and have changed before.
+create_alert() {
+  $CLI alerts-v2 create-alert --json '{"display_name": "'$1'", "query_text": "select 1", "warehouse_id": "w1", "evaluation": {"comparison_operator": "EQUAL", "source": {"name": "1"}, "threshold": {"value": {"double_value": 1}}}, "schedule": {"quartz_cron_schedule": "0 0 * * * ?", "timezone_id": "UTC"}}' | jq -r .id
+}
+
+alert_id=$(create_alert myalert)
+add_repl "$alert_id" ALERT_ID
+
+title "trashed alert is still readable"
+trace $CLI alerts-v2 trash-alert $alert_id
+trace $CLI alerts-v2 get-alert $alert_id | jq -r .lifecycle_state
+errcode trace $CLI alerts-v2 trash-alert $alert_id
+errcode trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
+
+title "purged alert is gone"
+trace $CLI alerts-v2 trash-alert $alert_id --purge
+errcode trace $CLI alerts-v2 get-alert $alert_id
+errcode trace $CLI alerts-v2 trash-alert $alert_id
+errcode trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
+
+title "unknown alert"
+unknown_id=00000000-0000-0000-0000-000000000000
+errcode trace $CLI alerts-v2 get-alert $unknown_id
+errcode trace $CLI alerts-v2 trash-alert $unknown_id
+errcode trace $CLI alerts-v2 update-alert $unknown_id display_name --json '{"display_name": "x"}'
