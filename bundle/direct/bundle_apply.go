@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
@@ -126,7 +127,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				// without calling the delete API.
 				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
-				err = d.Destroy(ctx, &b.StateDB)
+				err = d.Destroy(ctx, &b.StateDB, entry)
 			}
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -135,7 +136,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// A state-only delete performs no backend operation, so don't report it,
 			// consistent with the plan and apply summaries.
 			if reportApplied && !entry.IsStateOnlyDelete() {
-				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
+				if entry.Unbound {
+					cmdio.LogString(ctx, "Removed "+strings.TrimPrefix(resourceKey, "resources.")+" from state")
+				} else {
+					cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
+				}
 			}
 			entry.Applied = true
 			return true

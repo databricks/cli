@@ -2,6 +2,7 @@ title "Deploy three chained jobs"
 trace $CLI bundle deploy
 # Mask the job IDs (the destroy error below prints job_01's) so the golden is stable.
 replace_ids.py
+job_id=$(read_id.py job_01)
 
 title "Destroy: report two successful deletions and one failure"
 # Deletes run children-first (job_03, job_02, job_01); faulting the third makes only
@@ -9,3 +10,18 @@ title "Destroy: report two successful deletions and one failure"
 # report those completed deletions even though destroy returns an error.
 trace fault.py "POST /api/2.2/jobs/delete" 400 2 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle destroy --auto-approve
+
+title "A permission-denied delete removes state without reporting a deletion"
+trace fault.py "POST /api/2.2/jobs/delete" 403 0 1 PERMISSION_DENIED
+trace $CLI bundle destroy --auto-approve
+trace $CLI jobs get "$job_id" | jq '{name: .settings.name}'
+
+title "Without deployment history, ignored delete errors also report state removal"
+# The previous destroy removed the deployment, so this starts fresh without history.
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+trace $CLI bundle deploy
+replace_ids.py
+job_id=$(read_id.py job_01)
+trace fault.py "POST /api/2.2/jobs/delete" 400 2 1 INVALID_PARAMETER_VALUE
+trace $CLI bundle destroy --auto-approve
+trace $CLI jobs get "$job_id" | jq '{name: .settings.name}'

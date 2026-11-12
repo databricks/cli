@@ -113,6 +113,16 @@ func TestCountApplied(t *testing.T) {
 			want:  deployplan.AppliedCounts{Failed: 1},
 		},
 		{
+			name:  "ignored delete error only removes state",
+			entry: deployplan.PlanEntry{Action: deployplan.Delete, Attempted: true, Applied: true, Unbound: true},
+			want:  deployplan.AppliedCounts{Unbound: 1},
+		},
+		{
+			name:  "wait failure after unbinding still reports state removal",
+			entry: deployplan.PlanEntry{Action: deployplan.Delete, Attempted: true, Unbound: true},
+			want:  deployplan.AppliedCounts{Unbound: 1, Failed: 1},
+		},
+		{
 			name:  "state-only delete is excluded",
 			entry: deployplan.PlanEntry{Action: deployplan.Delete, StateOnly: true, Attempted: true},
 			want:  deployplan.AppliedCounts{},
