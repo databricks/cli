@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -19,14 +18,12 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -94,8 +91,10 @@ type addRequest struct {
 	explicit    bool
 	force       bool
 	binary      string
-	// configFile is the config file pinned into the entries, "" when DATABRICKS_CONFIG_FILE is unset.
+	// configFile is the resolved config file that the servers bind to.
 	configFile string
+	// pinned is the config file pinned into the entries and the state, "" when DATABRICKS_CONFIG_FILE is unset.
+	pinned string
 	// env is the entry env: DATABRICKS_CONFIG_FILE when it was set.
 	env map[string]string
 	// refused holds the agents named with --agents that are not installed, with the reason. Their
@@ -124,8 +123,8 @@ func NewMcpAddCmd() *cobra.Command {
 Each server runs through 'databricks aitools mcp serve' with that profile's credentials.
 
 Servers come from --names: full names such as system.ai.github, or leaf names resolved in
---location (default system.ai). Agents come from --agents. Without it, every detected
-MCP-capable agent is used.
+--location (default: the schema of the full names, else system.ai). Agents come from --agents.
+Without it, every detected MCP-capable agent is used.
 
 Interactive selection is not available yet: in a terminal, pass both --names and --agents.
 With --output json, both are required.
@@ -135,10 +134,6 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
-			if jsonMode {
-				// JSON mode writes only the result document to stdout.
-				ctx = cmdio.WithQuiet(ctx)
-			}
 
 			out := &addOutput{
 				Scope:         installer.ScopeGlobal,
@@ -167,7 +162,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	}
 
 	cmd.Flags().StringVar(&f.names, "names", "", "Services to install: full names (system.ai.github) or leaf names (github), comma-separated")
-	cmd.Flags().StringVar(&f.location, "location", "", "Schema to resolve leaf names in, as <catalog>.<schema> (default system.ai)")
+	cmd.Flags().StringVar(&f.location, "location", "", "Schema to resolve leaf names in, as <catalog>.<schema> (default: the schema of the full names in --names, else system.ai)")
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: every detected MCP-capable agent)")
 	cmd.Flags().StringVar(&f.name, "name", "", "Server name to use instead of the generated one; only with exactly one service")
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
@@ -176,7 +171,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 
 // runMcpAdd installs the requested servers and fills out. Every refusal that needs no request comes before
 // the first one: the flags, the agents, the binary name, the binding of each service that a recorded entry
-// holds, and the --name conflicts. A failure of an agent named with --agents is returned as an agentErrors;
+// holds, and the server names. A failure of an agent named with --agents is returned as an agentErrors;
 // detected agents only report theirs.
 func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode bool, out *addOutput) error {
 	names := splitAndTrim(f.names)
@@ -184,18 +179,12 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := validateMCPAddFlags(ctx, f, names, agentNames, jsonMode); err != nil {
 		return err
 	}
-	// Unity Catalog names are case-insensitive and the API returns them in lowercase, so the lowercase
-	// forms are the ones compared with the state and the agent entries.
-	location := strings.ToLower(f.location)
-	if location == "" {
-		location = defaultMCPLocation
-	}
-	if err := validateLocation(location); err != nil {
-		return err
-	}
-	fullNames, err := serviceNames(location, names)
+	location, fullNames, err := resolveServices(f.location, names)
 	if err != nil {
 		return err
+	}
+	if f.name != "" && len(fullNames) != 1 {
+		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name needs exactly one service in --names")
 	}
 	targets, explicit, err := targetAgents(ctx, agentNames)
 	if err != nil {
@@ -218,6 +207,13 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		}
 	}
 
+	// The config file is resolved once, as Bind resolves it. The profile is read from that same file, so the
+	// profile lookups and the bindings below all name one file.
+	configFile, pinned, err := addConfigFile(ctx)
+	if err != nil {
+		return err
+	}
+	ctx = env.Set(ctx, mcpconfig.ConfigFileEnv, configFile)
 	profileName, err := resolveProfile(ctx, profileFlag(cmd))
 	if err != nil {
 		return err
@@ -228,22 +224,17 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err != nil {
 		return err
 	}
-	configFile, pinned, err := addConfigFile(ctx)
-	if err != nil {
-		return err
-	}
 	for _, name := range fullNames {
-		if err := mcp.CheckBinding(ctx, state, name, profileName); err != nil {
+		if _, err := mcp.CheckBinding(ctx, state, name, profileName, configFile); err != nil {
 			return err
 		}
 	}
 	if err := requireProfile(ctx, profileName); err != nil {
 		return err
 	}
-	if f.name != "" {
-		if err := checkNameFlag(ctx, f.name, fullNames[0], profileName, pinned, state, targets); err != nil {
-			return err
-		}
+	plans, err := planAdds(ctx, f.name, addBinding{profile: profileName, configFile: configFile}, state, fullNames, targets, readAgentEntries(ctx, targets))
+	if err != nil {
+		return err
 	}
 
 	w, err := profileClient(ctx, profileName, configFile)
@@ -264,7 +255,9 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err != nil {
 		return err
 	}
-	plans := planAdds(ctx, f.name, profileName, pinned, state, picked, targets)
+	for i := range plans {
+		plans[i].service = picked[i]
+	}
 
 	req := addRequest{
 		jsonMode:    jsonMode,
@@ -276,7 +269,8 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		explicit:    explicit,
 		force:       f.force,
 		binary:      binary,
-		configFile:  pinned,
+		configFile:  configFile,
+		pinned:      pinned,
 		refused:     refused,
 	}
 	if pinned != "" {
@@ -305,9 +299,6 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 // validateMCPAddFlags rejects flag combinations that cannot run, before anything is read or written.
 func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames []string, jsonMode bool) error {
 	if f.name != "" {
-		if len(names) != 1 {
-			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name needs exactly one service in --names")
-		}
 		// A name must come out of mcp.Sanitize unchanged, so that mcp__<name>__<tool> splits the same way as
 		// a generated name.
 		if mcp.Sanitize(f.name) != f.name {
@@ -377,27 +368,19 @@ func addConfigFile(ctx context.Context) (path, pinned string, err error) {
 	return path, path, nil
 }
 
-// profileClient returns a workspace client bound to exactly the named profile in configFile. Its loaders
-// are the ones Bind uses: the profile and the non-auth environment. The environment's credentials are
-// never sent to the profile's host.
+// profileClient returns a workspace client bound to exactly the named profile in configFile. Its config is the one
+// Bind builds, so the environment's credentials are never sent to the profile's host.
 func profileClient(ctx context.Context, name, configFile string) (*databricks.WorkspaceClient, error) {
-	cfg := &config.Config{
-		Profile:    name,
-		ConfigFile: configFile,
-		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+	cfg, err := mcp.BoundConfig(name, configFile)
+	if err != nil {
+		return nil, err
 	}
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
-		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
 		return nil, err
 	}
-	// Authenticate only writes headers onto req, which is never sent.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
-	if err != nil {
+	if err := mcp.AuthenticateBound(ctx, cfg, name); err != nil {
 		return nil, err
-	}
-	if err := w.Config.Authenticate(req); err != nil {
-		return nil, mcp.AuthError(name, err)
 	}
 	return w, nil
 }
@@ -482,32 +465,85 @@ func mcpAgentNames() []string {
 	return names
 }
 
-// serviceNames returns the full name of each service in --names. A leaf name is resolved in location. A
+// resolveServices returns the schema that leaf names resolve in and the full name of each distinct service
+// that names pick. The names are lowercase, as the API returns them.
+func resolveServices(location string, names []string) (string, []string, error) {
+	location, err := locationOf(location, names)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := validateLocation(location); err != nil {
+		return "", nil, err
+	}
+	full, err := serviceNames(location, names)
+	if err != nil {
+		return "", nil, err
+	}
+	return location, full, nil
+}
+
+// locationOf returns the schema that leaf names resolve in, and that full names must be in. An explicit --location
+// is used in lowercase. Without one, full names that all name one schema give that schema, and otherwise the default
+// is system.ai. Leaf names resolve in that schema too, so a leaf with full names outside system.ai is refused rather
+// than resolved in a schema the user did not name.
+func locationOf(explicit string, names []string) (string, error) {
+	if explicit != "" {
+		return strings.ToLower(explicit), nil
+	}
+	var schemas []string
+	leaves := false
+	for _, name := range names {
+		parts := strings.Split(strings.ToLower(name), ".")
+		switch len(parts) {
+		case 1:
+			leaves = true
+		case 3:
+			if schema := parts[0] + "." + parts[1]; !slices.Contains(schemas, schema) {
+				schemas = append(schemas, schema)
+			}
+		}
+	}
+	switch {
+	case len(schemas) == 0:
+		return mcp.SystemAILocation, nil
+	case len(schemas) > 1:
+		return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--names are in different schemas (%s); run add once for each schema", strings.Join(schemas, ", "))
+	case leaves && schemas[0] != mcp.SystemAILocation:
+		return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "leaf names resolve in %s, but the full names are in %s; pass --location %s to resolve the leaves there, or use full names only", mcp.SystemAILocation, schemas[0], schemas[0])
+	}
+	return schemas[0], nil
+}
+
+// serviceNames returns the full name of each distinct service in --names. A leaf name is resolved in location. A
 // full name must be in location, so its catalog and schema must match it. Any other dotted name is refused,
 // since it cannot be either. The names are returned in lowercase, as the API returns them.
 func serviceNames(location string, names []string) ([]string, error) {
 	full := make([]string, 0, len(names))
 	for _, name := range names {
 		name = strings.ToLower(name)
+		var fullName string
 		switch parts := strings.Split(name, "."); len(parts) {
 		case 1:
-			full = append(full, location+"."+name)
+			fullName = location + "." + name
 		case 3:
 			if parts[0]+"."+parts[1] != location {
 				return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is not in %s; pass --location to match its schema", name, location)
 			}
-			full = append(full, name)
+			fullName = name
 		default:
 			return nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is not a service name: use a leaf such as github or a full name such as system.ai.github", name)
+		}
+		if !slices.Contains(full, fullName) {
+			full = append(full, fullName)
 		}
 	}
 	return full, nil
 }
 
-// pickServices maps the full names of --names to the discovered services of location. Unity Catalog names
-// are case-insensitive, so the comparison is too.
+// pickServices returns the discovered service of each full name, in the same order. Unity Catalog names are
+// case-insensitive, so the comparison is too.
 func pickServices(location string, names []string, services []mcp.Service) ([]mcp.Service, error) {
-	var picked []mcp.Service
+	picked := make([]mcp.Service, 0, len(names))
 	for _, name := range names {
 		i := slices.IndexFunc(services, func(s mcp.Service) bool { return strings.EqualFold(s.FullName, name) })
 		if i < 0 {
@@ -517,122 +553,156 @@ func pickServices(location string, names []string, services []mcp.Service) ([]mc
 			}
 			return nil, failure(categoryServiceNotFound, nil, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
 		}
-		if !slices.ContainsFunc(picked, func(s mcp.Service) bool { return s.FullName == services[i].FullName }) {
-			picked = append(picked, services[i])
-		}
+		picked = append(picked, services[i])
 	}
 	return picked, nil
 }
 
-// planAdds chooses the server name of each picked service before anything is written. A service
-// already installed for this profile keeps its name. A new name avoids the names of other state
-// entries and of every agent entry that is not this binding's, so that a name this CLI wrote for another
-// profile is never overwritten. The --name conflicts are checked by checkNameFlag.
-func planAdds(ctx context.Context, nameFlag, profileName, pinned string, state *mcp.State, picked []mcp.Service, targets []*agents.Agent) []addPlan {
+// addBinding is what the servers of one run bind to: the profile, and the config file it is read from.
+type addBinding struct {
+	profile    string
+	configFile string
+}
+
+// agentEntries holds the server entries of each target agent, as they were read once before planning. An agent whose
+// config cannot be read has none here: its write reports the failure.
+type agentEntries map[*agents.Agent]map[string]map[string]any
+
+func readAgentEntries(ctx context.Context, targets []*agents.Agent) agentEntries {
+	held := make(agentEntries, len(targets))
+	for _, a := range targets {
+		entries, err := agentconfig.Read(ctx, a)
+		if err != nil {
+			continue
+		}
+		held[a] = entries
+	}
+	return held
+}
+
+// planAdds chooses the server name of each service before anything is written, and refuses what would overwrite
+// another server. A service already installed for the binding keeps its name, and so does a name that an agent entry
+// holds for the same binding when the state has none. A new name avoids the names of other state entries and of every
+// agent entry, so that a name this CLI wrote for another profile is never overwritten.
+func planAdds(ctx context.Context, nameFlag string, b addBinding, state *mcp.State, fullNames []string, targets []*agents.Agent, held agentEntries) ([]addPlan, error) {
 	taken := map[string]bool{}
 	for i := range state.Servers {
 		taken[state.Servers[i].Name] = true
 	}
 
-	plans := make([]addPlan, 0, len(picked))
-	for _, svc := range picked {
-		entry := stateEntry(state, svc.FullName, profileName)
-		var name string
-		switch {
-		case entry != nil:
-			name = entry.Name
-		case nameFlag != "":
-			name = nameFlag
-		default:
-			reserved := map[string]bool{}
-			for _, a := range targets {
-				for n := range reservedNames(ctx, a, svc.FullName, profileName, pinned) {
-					reserved[n] = true
-				}
-			}
-			name = mcp.UniqueName(mcp.ServerName(svc.FullName, profileName), func(n string) bool { return taken[n] || reserved[n] })
+	plans := make([]addPlan, 0, len(fullNames))
+	for _, fullName := range fullNames {
+		entry, err := mcp.FindEntry(ctx, state, fullName, b.profile, b.configFile)
+		if err != nil {
+			return nil, err
+		}
+		name, err := chooseName(ctx, nameFlag, b, state, fullName, entry, taken, targets, held)
+		if err != nil {
+			return nil, err
 		}
 		taken[name] = true
-		plans = append(plans, addPlan{service: svc, name: name, entry: entry})
+		plans = append(plans, addPlan{service: mcp.Service{FullName: fullName}, name: name, entry: entry})
 	}
-	return plans
+	return plans, nil
 }
 
-// checkNameFlag refuses a --name that another server holds: the state gives the name to another service,
-// or a target agent holds it for another binding this CLI wrote. The service's own entry keeps its name, so
-// --name must match it. An unmanaged entry is left to the agent's write, which refuses it unless --force is
-// set. It reads files only, so it runs before any request.
-func checkNameFlag(ctx context.Context, nameFlag, fullName, profileName, pinned string, state *mcp.State, targets []*agents.Agent) error {
-	entry := stateEntry(state, fullName, profileName)
-	switch {
-	case entry != nil && nameFlag != entry.Name:
-		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is already installed on profile %s as %s; remove it before using --name %s", fullName, profileName, entry.Name, nameFlag)
-	case entry == nil && slices.ContainsFunc(state.Servers, func(e mcp.Entry) bool { return e.Name == nameFlag }):
-		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %s is used by another installed server; pick a different name", nameFlag)
-	}
-	for _, a := range targets {
-		// An unreadable config reserves nothing here. Its write reports the failure for the agent.
-		entries, err := agentconfig.Read(ctx, a)
+// chooseName returns the server name for fullName. entry is its state entry, nil for a new install. The name it holds is
+// kept, and then --name is used only when no other server holds it. Otherwise the name is generated.
+func chooseName(ctx context.Context, nameFlag string, b addBinding, state *mcp.State, fullName string, entry *mcp.Entry, taken map[string]bool, targets []*agents.Agent, held agentEntries) (string, error) {
+	stored := ""
+	if entry != nil {
+		stored = entry.Name
+	} else {
+		owned, err := ownedNames(ctx, held, targets, fullName, b)
 		if err != nil {
+			return "", err
+		}
+		switch len(owned) {
+		case 0:
+		case 1:
+			stored = owned[0]
+		default:
+			return "", failure(categoryNameConflict, nil, "%s is installed on profile %s under more than one name in the agents (%s); remove the extra entries", fullName, b.profile, strings.Join(owned, ", "))
+		}
+	}
+
+	if stored != "" {
+		if nameFlag != "" && nameFlag != stored {
+			return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is already installed on profile %s as %s; remove it before using --name %s", fullName, b.profile, stored, nameFlag)
+		}
+		other, err := foreignHolder(ctx, held, targets, stored, fullName, b)
+		if err != nil {
+			return "", err
+		}
+		if other != nil {
+			return "", failure(categoryNameConflict, nil, "%s is installed as %s, but %s holds %s for another server; remove that entry first", fullName, stored, other.Name, stored)
+		}
+		return stored, nil
+	}
+
+	if nameFlag != "" {
+		if slices.ContainsFunc(state.Servers, func(e mcp.Entry) bool { return e.Name == nameFlag }) {
+			return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %s is used by another installed server; pick a different name", nameFlag)
+		}
+		other, err := foreignHolder(ctx, held, targets, nameFlag, fullName, b)
+		if err != nil {
+			return "", err
+		}
+		if other != nil {
+			return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %s is used by another server in %s; pick a different name", nameFlag, other.Name)
+		}
+		return nameFlag, nil
+	}
+
+	base := mcp.ServerName(fullName, b.profile)
+	if base == "" {
+		return "", failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "cannot make a server name from %s for profile %s; pass --name", fullName, b.profile)
+	}
+	// No entry of this binding exists, so every name that an agent holds belongs to another server.
+	reserved := map[string]bool{}
+	for _, a := range targets {
+		for name := range held[a] {
+			reserved[name] = true
+		}
+	}
+	return mcp.UniqueName(base, func(n string) bool { return taken[n] || reserved[n] }), nil
+}
+
+// ownedNames returns the distinct names that the target agents hold for the binding of fullName, sorted.
+func ownedNames(ctx context.Context, held agentEntries, targets []*agents.Agent, fullName string, b addBinding) ([]string, error) {
+	var names []string
+	for _, a := range targets {
+		for name, entry := range held[a] {
+			serves, err := mcp.EntryServes(ctx, entry, fullName, b.profile, b.configFile)
+			if err != nil {
+				return nil, err
+			}
+			if serves && !slices.Contains(names, name) {
+				names = append(names, name)
+			}
+		}
+	}
+	slices.Sort(names)
+	return names, nil
+}
+
+// foreignHolder returns a target agent that holds name as a Databricks entry of another binding than fullName's, or nil.
+// An unmanaged entry is not returned: the agent's write refuses it unless --force is set.
+func foreignHolder(ctx context.Context, held agentEntries, targets []*agents.Agent, name, fullName string, b addBinding) (*agents.Agent, error) {
+	for _, a := range targets {
+		entry, ok := held[a][name]
+		if !ok || !mcpconfig.IsDatabricksEntry(entry) {
 			continue
 		}
-		if other, ok := entries[nameFlag]; ok && mcpconfig.IsDatabricksEntry(other) && !ownedBy(other, fullName, profileName, pinned) {
-			return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %s is used by another server in %s; pick a different name", nameFlag, a.Name)
+		serves, err := mcp.EntryServes(ctx, entry, fullName, b.profile, b.configFile)
+		if err != nil {
+			return nil, err
+		}
+		if !serves {
+			return a, nil
 		}
 	}
-	return nil
-}
-
-// reservedNames returns the server names in the agent's config that a new install of service for profileName
-// must not take: every entry except this binding's own. An unreadable config reserves nothing here, and its
-// write reports the failure for the agent.
-func reservedNames(ctx context.Context, a *agents.Agent, service, profileName, pinned string) map[string]bool {
-	entries, err := agentconfig.Read(ctx, a)
-	if err != nil {
-		return nil
-	}
-	names := make(map[string]bool, len(entries))
-	for name, entry := range entries {
-		if !ownedBy(entry, service, profileName, pinned) {
-			names[name] = true
-		}
-	}
-	return names
-}
-
-// ownedBy reports whether entry is a Databricks entry that serves service for profileName through the config
-// file pinned ("" for the default file). Only such an entry may be reused by an install.
-func ownedBy(entry map[string]any, service, profileName, pinned string) bool {
-	argv, ok := mcpconfig.Argv(entry)
-	if !ok || !mcpconfig.IsDatabricksEntry(entry) {
-		return false
-	}
-	if !strings.EqualFold(argValue(argv, "--service"), service) || argValue(argv, "--profile") != profileName {
-		return false
-	}
-	vars, _ := entry["env"].(map[string]any)
-	file, _ := vars[mcpconfig.ConfigFileEnv].(string)
-	return file == pinned
-}
-
-// argValue returns the value that follows flag in argv, or "" when flag is absent.
-func argValue(argv []string, flag string) string {
-	for i := 0; i+1 < len(argv); i++ {
-		if argv[i] == flag {
-			return argv[i+1]
-		}
-	}
-	return ""
-}
-
-func stateEntry(state *mcp.State, service, profileName string) *mcp.Entry {
-	i := slices.IndexFunc(state.Servers, func(e mcp.Entry) bool {
-		return strings.EqualFold(e.Service, service) && e.Profile == profileName
-	})
-	if i < 0 {
-		return nil
-	}
-	return &state.Servers[i]
+	return nil, nil
 }
 
 // installServer writes one server into every target agent. Each agent's result is reported; one
@@ -649,7 +719,7 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 		var status agentconfig.Status
 		err := req.refused[a]
 		if err == nil {
-			args := []string{"aitools", "mcp", "serve", "--profile", req.profile, "--service", plan.service.FullName, "--agent", a.Name}
+			args := []string{"aitools", "mcp", "serve", mcpconfig.ProfileFlag, req.profile, mcpconfig.ServiceFlag, plan.service.FullName, "--agent", a.Name}
 			path, status, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
 		}
 
@@ -715,7 +785,9 @@ func recordInstalls(ctx context.Context, req addRequest, plans []addPlan, server
 		if len(paths) == 0 {
 			continue
 		}
-		recordServer(state, req, plans[i], paths)
+		if err := recordServer(ctx, state, req, plans[i], paths); err != nil {
+			return err
+		}
 		recorded = true
 	}
 	if !recorded {
@@ -724,10 +796,13 @@ func recordInstalls(ctx context.Context, req addRequest, plans []addPlan, server
 	return mcp.SaveState(ctx, state)
 }
 
-// recordServer stores the install of plan's server for req.profile, with the agents that succeeded
+// recordServer stores the install of plan's server for req.profile in configFile, with the agents that succeeded
 // and their config paths.
-func recordServer(state *mcp.State, req addRequest, plan addPlan, paths map[string]string) {
-	entry := stateEntry(state, plan.service.FullName, req.profile)
+func recordServer(ctx context.Context, state *mcp.State, req addRequest, plan addPlan, paths map[string]string) error {
+	entry, err := mcp.FindEntry(ctx, state, plan.service.FullName, req.profile, req.configFile)
+	if err != nil {
+		return err
+	}
 	if entry == nil {
 		state.Servers = append(state.Servers, mcp.Entry{
 			Name:        plan.name,
@@ -741,7 +816,7 @@ func recordServer(state *mcp.State, req addRequest, plan addPlan, paths map[stri
 	entry.WorkspaceID = req.workspaceID
 	entry.SignInRequired = plan.service.SignInRequired
 	entry.Command = req.binary
-	entry.ConfigFile = req.configFile
+	entry.ConfigFile = req.pinned
 	entry.CLIVersion = build.GetInfo().Version
 	if entry.Agents == nil {
 		// A hand-edited state file can hold "agents": null.
@@ -750,6 +825,7 @@ func recordServer(state *mcp.State, req addRequest, plan addPlan, paths map[stri
 	for agent, path := range paths {
 		entry.Agents[agent] = mcp.AgentRecord{Path: path, Scope: agentScopeUser}
 	}
+	return nil
 }
 
 // agentFailureError returns the agents' failures as an agentErrors. The command fails when an agent was named

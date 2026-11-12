@@ -802,7 +802,6 @@ func TestCheckBindingMatchesBind(t *testing.T) {
 	_, err := bindingTestCheck(t, state)
 	requireBindError(t, err, mcp.BindProfileHostChanged)
 	assert.Equal(t, "MCP server github-logfood was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL+". Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
-
 }
 
 func TestCheckBindingPassesWhenEntryMatchesOrIsAbsent(t *testing.T) {
@@ -835,7 +834,7 @@ func TestCheckBindingRefusesEntryPinnedToOtherConfigFile(t *testing.T) {
 	requireBindError(t, err, mcp.BindProfileHostChanged)
 }
 
-// TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst returns the entry of the config file in use, even when an
+// TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst checks that CheckBinding returns the entry of the config file in use, even when an
 // entry for the same service and profile in another file comes first in the state.
 func TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst(t *testing.T) {
 	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))

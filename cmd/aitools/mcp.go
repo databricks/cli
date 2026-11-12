@@ -16,11 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// defaultMCPLocation is the schema that ships the Databricks managed MCP services.
-const defaultMCPLocation = "system.ai"
-
-// Error categories that the telemetry enum does not define yet. The JSON output reports them by name, as
-// SPEC section 13 names them. The binding categories come from mcp.BindCategory, which has the same names.
+// Error categories that the telemetry enum does not define yet. The JSON output reports them by name. The
+// binding categories come from mcp.BindCategory, which has the same names.
 const (
 	categoryAgentConfigInvalid protos.AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
 	categoryNameConflict       protos.AitoolsErrorCategory = "MCP_NAME_CONFLICT"
@@ -66,7 +63,8 @@ func errorCategory(err error) protos.AitoolsErrorCategory {
 	if ce, ok := errors.AsType[*cliError](err); ok {
 		return ce.category
 	}
-	if be, ok := errors.AsType[*mcp.BindError](err); ok {
+	// An uncategorized binding failure falls through, so that its cause (a filesystem or network error) is classified.
+	if be, ok := errors.AsType[*mcp.BindError](err); ok && be.Category != mcp.BindUncategorized {
 		return protos.AitoolsErrorCategory(be.Category)
 	}
 	switch {

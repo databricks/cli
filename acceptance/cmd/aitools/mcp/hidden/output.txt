@@ -1,5 +1,7 @@
 
 === The mcp group is hidden from aitools help
+
+>>> [CLI] aitools --help
 aitools help does not list mcp
 
 === The hidden group still answers help for its subcommands
@@ -9,8 +11,8 @@ Install Databricks managed MCP servers into coding agents, bound to a Databricks
 Each server runs through 'databricks aitools mcp serve' with that profile's credentials.
 
 Servers come from --names: full names such as system.ai.github, or leaf names resolved in
---location (default system.ai). Agents come from --agents. Without it, every detected
-MCP-capable agent is used.
+--location (default: the schema of the full names, else system.ai). Agents come from --agents.
+Without it, every detected MCP-capable agent is used.
 
 Interactive selection is not available yet: in a terminal, pass both --names and --agents.
 With --output json, both are required.
@@ -24,7 +26,7 @@ Flags:
       --agents string     Agents to install for, comma-separated (default: every detected MCP-capable agent)
       --force             Overwrite an existing server with the same name that this CLI did not write
   -h, --help              help for add
-      --location string   Schema to resolve leaf names in, as <catalog>.<schema> (default system.ai)
+      --location string   Schema to resolve leaf names in, as <catalog>.<schema> (default: the schema of the full names in --names, else system.ai)
       --name string       Server name to use instead of the generated one; only with exactly one service
       --names string      Services to install: full names (system.ai.github) or leaf names (github), comma-separated
 

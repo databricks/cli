@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -10,6 +11,8 @@ import (
 )
 
 func TestBinaryPathFor(t *testing.T) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
 	absolute := filepath.Join(t.TempDir(), "bin", "databricks")
 	onPath := filepath.Join(t.TempDir(), "databricks")
 	relativeOnPath := filepath.Join("bin", "databricks")
@@ -45,7 +48,15 @@ func TestBinaryPathFor(t *testing.T) {
 			name:     "dot-relative arg0 with a directory is made absolute",
 			arg0:     "." + string(filepath.Separator) + "databricks",
 			lookPath: found,
-			wantPath: mustAbs(t, "."+string(filepath.Separator)+"databricks"),
+			wantPath: wd + string(filepath.Separator) + "databricks",
+			wantAbs:  true,
+		},
+		{
+			// The OS reads "link/.." through the link's target, so the path must not be cleaned before the symlink is followed.
+			name:     "relative arg0 through a symlink keeps its dot-dot",
+			arg0:     "link" + string(filepath.Separator) + ".." + string(filepath.Separator) + "databricks",
+			lookPath: found,
+			wantPath: wd + string(filepath.Separator) + "link" + string(filepath.Separator) + ".." + string(filepath.Separator) + "databricks",
 			wantAbs:  true,
 		},
 		{
