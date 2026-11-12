@@ -16,19 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Error categories that the telemetry enum does not define yet. The JSON output reports them by name. The
-// binding categories come from mcp.BindCategory, which has the same names.
-const (
-	categoryAgentConfigInvalid protos.AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
-	categoryNameConflict       protos.AitoolsErrorCategory = "MCP_NAME_CONFLICT"
-	categoryServiceNotFound    protos.AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
-	categoryNoProfile          protos.AitoolsErrorCategory = "NO_PROFILE"
-	categoryProfileRequired    protos.AitoolsErrorCategory = "PROFILE_REQUIRED"
-	categoryPermissionDenied   protos.AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
-	categoryLocationNotFound   protos.AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
-	categorySignInTimeout      protos.AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
-)
-
 // NewMcpCmd returns the `aitools mcp` group. It stays hidden until the whole MCP
 // stack has landed, so a release never ships `add` without `serve`.
 func NewMcpCmd() *cobra.Command {
@@ -75,9 +62,9 @@ func errorCategory(err error) protos.AitoolsErrorCategory {
 	}
 	switch {
 	case errors.Is(err, agentconfig.ErrConfigInvalid):
-		return categoryAgentConfigInvalid
+		return protos.AitoolsErrorCategoryAgentConfigInvalid
 	case errors.Is(err, agentconfig.ErrNotOwned):
-		return categoryNameConflict
+		return protos.AitoolsErrorCategoryMCPNameConflict
 	}
 	return classifyInstallError(err)
 }
@@ -107,11 +94,11 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", failure(categoryNoProfile, nil, "no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", filepath.ToSlash(path))
+		return "", failure(protos.AitoolsErrorCategoryNoProfile, nil, "no workspace profiles in %s. Run: databricks auth login --host <url> --profile <name>", filepath.ToSlash(path))
 	case 1:
 		return profiles[0].Name, nil
 	}
-	return "", failure(categoryProfileRequired, &profileChoice{profiles: profiles}, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
+	return "", failure(protos.AitoolsErrorCategoryProfileRequired, &profileChoice{profiles: profiles}, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
 }
 
 // profileFlag returns the root --profile value, or "" when it is not set.

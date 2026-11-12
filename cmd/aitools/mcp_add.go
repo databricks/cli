@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -177,6 +178,11 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 				ErrorCategory: protos.AitoolsErrorCategoryUnspecified,
 			}
 			runErr := runMcpAdd(ctx, cmd, f, jsonMode, out)
+			logMcpEvent(ctx, protos.AitoolsMcpEvent{
+				CallingAgent: callingAgentType(),
+				Operation:    protos.AitoolsMcpOperationAdd,
+				Servers:      addServerResults(out.Servers),
+			})
 			if !jsonMode {
 				return runErr
 			}
@@ -342,6 +348,8 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 			return err
 		}
 	}
+	// The bound profile authenticates the exit-time telemetry upload.
+	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), w.Config))
 	for i := range plans {
 		plans[i].service = picked[i]
 	}
@@ -542,9 +550,9 @@ func describeListError(profileName string, err error) error {
 	var category protos.AitoolsErrorCategory
 	switch listErr.Kind {
 	case mcp.ListErrLocationNotFound:
-		category = categoryLocationNotFound
+		category = protos.AitoolsErrorCategoryMCPLocationNotFound
 	case mcp.ListErrPermissionDenied:
-		category = categoryPermissionDenied
+		category = protos.AitoolsErrorCategoryMCPPermissionDenied
 	case mcp.ListErrRateLimited:
 		category = protos.AitoolsErrorCategoryRateLimited
 	default:
@@ -705,13 +713,13 @@ func pickServices(location string, names []string, services []mcp.Service) ([]mc
 		i := slices.IndexFunc(services, func(s mcp.Service) bool { return strings.EqualFold(s.FullName, name) })
 		if i < 0 {
 			if len(services) == 0 {
-				return nil, failure(categoryServiceNotFound, nil, "%s is not an MCP service in %s, which has none", name, location)
+				return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "%s is not an MCP service in %s, which has none", name, location)
 			}
 			available := make([]string, 0, len(services))
 			for _, s := range services {
 				available = append(available, s.FullName)
 			}
-			return nil, failure(categoryServiceNotFound, nil, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
+			return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
 		}
 		picked = append(picked, services[i])
 	}
@@ -846,7 +854,7 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 		case 1:
 			stored = owned[0]
 		default:
-			return "", nil, failure(categoryNameConflict, nil, "%s is installed on profile %s under more than one name in the agents (%s); remove the extra entries", fullName, b.profile, strings.Join(owned, ", "))
+			return "", nil, failure(protos.AitoolsErrorCategoryMCPNameConflict, nil, "%s is installed on profile %s under more than one name in the agents (%s); remove the extra entries", fullName, b.profile, strings.Join(owned, ", "))
 		}
 	}
 
@@ -855,7 +863,7 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 			return "", nil, failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "%s is already installed on profile %s as %s; remove it before using --name %s", fullName, b.profile, stored, in.nameFlag)
 		}
 		if stateHolds(state, stored, entry) {
-			return "", nil, failure(categoryNameConflict, nil, "%s is installed as %s, but another server in the state holds %s; remove that entry first", fullName, stored, stored)
+			return "", nil, failure(protos.AitoolsErrorCategoryMCPNameConflict, nil, "%s is installed as %s, but another server in the state holds %s; remove that entry first", fullName, stored, stored)
 		}
 		failed, err := nameFailures(ctx, in, fullName, stored, true)
 		return stored, failed, err
@@ -943,7 +951,7 @@ func holderConflict(ctx context.Context, in planInput, a *agents.Agent, fullName
 		if in.force {
 			return nil, nil
 		}
-		return failure(categoryNameConflict, agentconfig.ErrNotOwned, "%s already has a server named %s that this CLI did not write; pass --force to replace it", a.DisplayName, name), nil
+		return failure(protos.AitoolsErrorCategoryMCPNameConflict, agentconfig.ErrNotOwned, "%s already has a server named %s that this CLI did not write; pass --force to replace it", a.DisplayName, name), nil
 	}
 	serves, err := mcp.EntryServes(ctx, entry, fullName, in.binding.profile, in.binding.configFile)
 	if err != nil {
@@ -953,7 +961,7 @@ func holderConflict(ctx context.Context, in planInput, a *agents.Agent, fullName
 	case serves:
 		return nil, nil
 	case stored:
-		return failure(categoryNameConflict, nil, "%s is installed as %s, but %s holds %s for another server; remove that entry first", fullName, name, a.Name, name), nil
+		return failure(protos.AitoolsErrorCategoryMCPNameConflict, nil, "%s is installed as %s, but %s holds %s for another server; remove that entry first", fullName, name, a.Name, name), nil
 	default:
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--name %s is used by another server in %s; pick a different name", name, a.Name), nil
 	}
@@ -1090,8 +1098,13 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			}
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		state, _, _, err := signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
+		state, alreadySignedIn, _, err := signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
 		server.SignIn = &addSignInOutput{State: state}
+		logMcpEvent(ctx, protos.AitoolsMcpEvent{
+			CallingAgent: callingAgentType(),
+			Operation:    protos.AitoolsMcpOperationSignIn,
+			Servers:      []protos.AitoolsMcpServerResult{signInServerResult(server.Service, state, alreadySignedIn, err)},
+		})
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)
 			server.SignIn.Error = err.Error()

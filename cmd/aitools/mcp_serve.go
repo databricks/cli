@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/browser"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -104,6 +105,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
+	agent := proxyAgentType(f.agent)
 	cfg, entry, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile: profileName,
 		Service: f.service,
@@ -111,8 +113,13 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Stderr:  cmd.ErrOrStderr(),
 	})
 	if err != nil {
+		logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service, err))
 		return serveFailure(cmd, err, serveBindStatus)
 	}
+
+	// The bound profile authenticates the exit-time telemetry upload.
+	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), cfg))
+	logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service, nil))
 
 	// A server pinned to a config file names that file in its hints, as add and login do.
 	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
@@ -131,6 +138,9 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		}
 	}
 	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
+	if challenge != nil {
+		challenge.Recorder = mcpProxyTelemetry{agent: agent, service: f.service}
+	}
 	if err != nil {
 		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
 		// message is the one that names the login.

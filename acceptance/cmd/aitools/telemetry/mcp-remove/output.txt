@@ -1,0 +1,70 @@
+
+=== Installed for two profiles: the bound profile count is 2 after the second add
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 2
+}
+
+=== remove --profile dogfood: CHANGED for its agent entry, and one profile stays bound
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== An entry changed outside this CLI is left in place: SKIPPED
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "SKIPPED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== An entry already gone from the agent config is SKIPPED, and the state record goes
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "SKIPPED"
+    }
+  ],
+  "bound_profile_count": 0
+}

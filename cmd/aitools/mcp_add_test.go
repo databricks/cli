@@ -201,7 +201,7 @@ func TestPickServices(t *testing.T) {
 	_, err = pickServices("system.ai", []string{"system.ai.foo"}, services)
 	require.Error(t, err)
 	assert.Equal(t, "system.ai.foo is not an MCP service in system.ai. Available: system.ai.genie_one_mcp, system.ai.github", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 }
 
 func TestResolveMCPAgents(t *testing.T) {
@@ -227,7 +227,7 @@ func TestDescribeListErrorNamesProfileAndKeepsCause(t *testing.T) {
 
 	err := describeListError("logfood", listErr)
 	assert.Equal(t, "profile logfood: "+listErr.Error(), err.Error())
-	assert.Equal(t, categoryPermissionDenied, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPPermissionDenied, errorCategory(err))
 
 	got, ok := errors.AsType[*mcp.ListError](err)
 	require.True(t, ok)
@@ -238,7 +238,7 @@ func TestDescribeListErrorNamesProfileAndKeepsCause(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategoryRateLimited, errorCategory(rateLimited))
 
 	notFound := describeListError("logfood", &mcp.ListError{Kind: mcp.ListErrLocationNotFound, Location: "main.tools", Err: cause})
-	assert.Equal(t, categoryLocationNotFound, errorCategory(notFound))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPLocationNotFound, errorCategory(notFound))
 
 	plain := errors.New("network down")
 	assert.Equal(t, plain, describeListError("logfood", plain))
@@ -517,7 +517,7 @@ func TestPlanAddsNaming(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(openCode, "opencode.json"), []byte(`{"mcp":{"servers":{"two":{"type":"local","command":["databricks","aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","opencode"]}}}}`), 0o600))
 		_, err := planNames(t, "", defaultBinding(t, "logfood"), &mcp.State{}, []string{"system.ai.github"}, []*agents.Agent{claude, agents.ByName("opencode")})
 		require.Error(t, err)
-		assert.Equal(t, categoryNameConflict, errorCategory(err))
+		assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 	})
 
 	t.Run("OpenCode entry with its variables in environment is reused", func(t *testing.T) {
@@ -560,7 +560,7 @@ func TestPlanAddsNaming(t *testing.T) {
 		require.Len(t, plans, 1)
 		assert.Equal(t, "github-logfood", plans[0].name)
 		require.Contains(t, plans[0].failed, claude)
-		assert.Equal(t, categoryNameConflict, errorCategory(plans[0].failed[claude]))
+		assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(plans[0].failed[claude]))
 	})
 
 	t.Run("planning reads the agent entries it is given, not the files", func(t *testing.T) {
@@ -794,7 +794,7 @@ func TestAgentFailureErrorWhenAServiceReachedNoAgent(t *testing.T) {
 }
 
 func TestErrorCategoryMapsTypedFailures(t *testing.T) {
-	assert.Equal(t, categoryNameConflict,
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict,
 		errorCategory(fmt.Errorf("claude-code: server %q: %w", "github", agentconfig.ErrNotOwned)))
 	assert.Equal(t, protos.AitoolsErrorCategoryTimeout, errorCategory(fmt.Errorf("list: %w", context.DeadlineExceeded)))
 	assert.Equal(t, protos.AitoolsErrorCategoryPermissionDenied, errorCategory(&fs.PathError{Op: "open", Path: "x", Err: fs.ErrPermission}))
@@ -952,7 +952,7 @@ func TestMcpAddRefusesStoredNameHeldByOtherBinding(t *testing.T) {
 
 	err := runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
 	require.Error(t, err)
-	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 	assert.ErrorContains(t, err, "github-logfood")
 	got, err := os.ReadFile(claudeFile)
 	require.NoError(t, err)
@@ -1137,7 +1137,7 @@ func TestPlanAddsRefusesRecoveredNameHeldByAnotherServer(t *testing.T) {
 
 	_, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{agents.ByName("claude-code")})
 	require.Error(t, err)
-	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 	assert.Equal(t, "system.ai.github is installed as github-logfood, but another server in the state holds github-logfood; remove that entry first", err.Error())
 }
 
@@ -1156,7 +1156,7 @@ func TestMcpAddRefusesUnmanagedEntryBeforeAnyRequest(t *testing.T) {
 
 	err := runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
 	require.Error(t, err)
-	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 	assert.ErrorContains(t, err, "Claude Code already has a server named github-logfood that this CLI did not write; pass --force to replace it")
 	got, err := os.ReadFile(claudeFile)
 	require.NoError(t, err)
@@ -1280,14 +1280,14 @@ func TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent(t *testing.T) {
 	require.Len(t, plans, 1)
 	assert.Equal(t, "github-logfood", plans[0].name)
 	require.Contains(t, plans[0].failed, claude)
-	assert.Equal(t, categoryNameConflict, errorCategory(plans[0].failed[claude]))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(plans[0].failed[claude]))
 	assert.NotContains(t, plans[0].failed, codex)
 	assert.NoError(t, planningRefusals(plans, targets))
 
 	in.explicit = true
 	_, err = planAdds(ctx, in, state, []string{"system.ai.github"})
 	require.Error(t, err)
-	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 
 	onlyClaude := []*agents.Agent{claude}
 	in = planInput{binding: defaultBinding(t, "logfood"), targets: onlyClaude, held: readHeld(ctx, onlyClaude)}
@@ -1295,7 +1295,7 @@ func TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent(t *testing.T) {
 	require.NoError(t, err)
 	refusal := planningRefusals(plans, onlyClaude)
 	require.Error(t, refusal)
-	assert.Equal(t, categoryNameConflict, errorCategory(refusal))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(refusal))
 }
 
 // TestPlanAddsUnmanagedEntryIsReplacedOnlyWithForce checks that a stored name held by an entry this CLI did not write is refused at planning,
@@ -1310,7 +1310,7 @@ func TestPlanAddsUnmanagedEntryIsReplacedOnlyWithForce(t *testing.T) {
 	in := planInput{binding: defaultBinding(t, "logfood"), targets: targets, held: held, explicit: true}
 	_, err := planAdds(ctx, in, state, []string{"system.ai.github"})
 	require.Error(t, err)
-	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPNameConflict, errorCategory(err))
 
 	in.force = true
 	plans, err := planAdds(ctx, in, state, []string{"system.ai.github"})
@@ -1323,7 +1323,7 @@ func TestPickServicesNamesSchemaWithNoServices(t *testing.T) {
 	_, err := pickServices("system.ai", []string{"system.ai.github"}, nil)
 	require.Error(t, err)
 	assert.Equal(t, "system.ai.github is not an MCP service in system.ai, which has none", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 }
 
 // TestInstallServerWritesOnlyAgentsInstalledForMCP checks that an agent named with --agents is written when it counts as installed for MCP, and that

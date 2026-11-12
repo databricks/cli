@@ -74,6 +74,23 @@ const (
 	// The command's context was cancelled. SIGINT outside a prompt is not
 	// counted here: it ends the process before telemetry is uploaded.
 	AitoolsErrorCategoryCommandInterrupted AitoolsErrorCategory = "COMMAND_INTERRUPTED"
+
+	// `aitools mcp`: profiles and sign-in.
+	AitoolsErrorCategoryNoProfile          AitoolsErrorCategory = "NO_PROFILE"
+	AitoolsErrorCategoryProfileRequired    AitoolsErrorCategory = "PROFILE_REQUIRED"
+	AitoolsErrorCategoryProfileNotFound    AitoolsErrorCategory = "PROFILE_NOT_FOUND"
+	AitoolsErrorCategoryProfileHostChanged AitoolsErrorCategory = "PROFILE_HOST_CHANGED"
+	AitoolsErrorCategoryAuthFailed         AitoolsErrorCategory = "AUTH_FAILED"
+	AitoolsErrorCategorySignInRequired     AitoolsErrorCategory = "SIGN_IN_REQUIRED"
+	AitoolsErrorCategorySignInTimeout      AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
+
+	// `aitools mcp`: the service list, agent configs and the proxy.
+	AitoolsErrorCategoryMCPServiceNotFound  AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
+	AitoolsErrorCategoryMCPPermissionDenied AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
+	AitoolsErrorCategoryMCPLocationNotFound AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
+	AitoolsErrorCategoryMCPNameConflict     AitoolsErrorCategory = "MCP_NAME_CONFLICT"
+	AitoolsErrorCategoryMCPUpstreamError    AitoolsErrorCategory = "MCP_UPSTREAM_ERROR"
+	AitoolsErrorCategoryAgentConfigInvalid  AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
 )
 
 // AitoolsAgentResult records one agent's failed or skipped outcome within an

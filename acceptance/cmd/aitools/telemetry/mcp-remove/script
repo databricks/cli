@@ -1,0 +1,34 @@
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Prints the aitools_mcp_event payloads uploaded since the last call, then forgets the recorded uploads.
+mcp_events() {
+  if [ -f "$OUT_REQUESTS" ]; then
+    jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.aitools_mcp_event | select(. != null)' "$OUT_REQUESTS"
+    rm -f "$OUT_REQUESTS"
+  fi
+}
+
+$CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
+rm -f "$OUT_REQUESTS"
+
+title "Installed for two profiles: the bound profile count is 2 after the second add"
+$CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code --output json > /dev/null
+mcp_events
+$CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code --output json > /dev/null
+mcp_events
+
+title "remove --profile dogfood: CHANGED for its agent entry, and one profile stays bound"
+$CLI aitools mcp remove --profile dogfood --output json > /dev/null
+mcp_events
+
+title "An entry changed outside this CLI is left in place: SKIPPED"
+jq '.mcpServers["genie_one_mcp-logfood"].command = "/usr/bin/other"' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
+$CLI aitools mcp remove --names genie_one_mcp-logfood --profile logfood --output json > /dev/null
+mcp_events
+
+title "An entry already gone from the agent config is SKIPPED, and the state record goes"
+jq 'del(.mcpServers["genie_one_mcp-logfood"])' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
+$CLI aitools mcp remove --names genie_one_mcp-logfood --profile logfood --output json > /dev/null
+mcp_events

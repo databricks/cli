@@ -32,6 +32,9 @@ type removeOutput struct {
 	Skipped       []removeSkipped             `json:"skipped"`
 	Error         string                      `json:"error,omitempty"`
 	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
+
+	// results is one telemetry result per (service, agent) attempted. It is not in the JSON.
+	results []protos.AitoolsMcpServerResult
 }
 
 type removeRemoved struct {
@@ -91,12 +94,19 @@ and reported. When an agent's config moved, the entry is removed from the file i
 Entries that run 'aitools mcp serve' without an install record are not chosen by any flag;
 'aitools mcp list' shows them as unmanaged. Provider credentials are not deleted.`,
 		Args: cobra.NoArgs,
+		// Resolve auth best-effort so telemetry can upload; see tryConfigureAuth.
+		PreRunE: tryConfigureAuth,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
 
 			out := &removeOutput{Removed: []removeRemoved{}, Skipped: []removeSkipped{}}
 			runErr := runMcpRemove(ctx, cmd, f, jsonMode, out)
+			logMcpEvent(ctx, protos.AitoolsMcpEvent{
+				CallingAgent: callingAgentType(),
+				Operation:    protos.AitoolsMcpOperationRemove,
+				Servers:      out.results,
+			})
 			if !jsonMode {
 				return runErr
 			}
@@ -205,10 +215,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				// There is no config this CLI can edit for the agent, so only the record can go.
 				removed.Agents = append(removed.Agents, agentName)
 				removed.RecordOnly = append(removed.RecordOnly, agentName)
+				out.results = append(out.results, removeServerResult(e.Service, agentName, removeDeleted, nil))
 				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 				continue
 			}
 			outcome, reason, err := removeFromAgent(ctx, files, e, a, pin)
+			out.results = append(out.results, removeServerResult(e.Service, agentName, outcome, err))
 			if err != nil {
 				errs = append(errs, err)
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
@@ -282,14 +294,14 @@ func selectInstalls(state *mcp.State, names []string, profileName string) ([]mcp
 			return nil, err
 		}
 		if len(matched) == 0 {
-			return nil, failure(categoryServiceNotFound, nil, "no installed MCP server named %s%s", name, where)
+			return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "no installed MCP server named %s%s", name, where)
 		}
 		for _, i := range matched {
 			chosen[i] = true
 		}
 	}
 	if profileName != "" && len(scope) == 0 {
-		return nil, failure(categoryServiceNotFound, nil, "no installed MCP servers on profile %s", profileName)
+		return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "no installed MCP servers on profile %s", profileName)
 	}
 	if len(names) == 0 {
 		return scope, nil
@@ -365,7 +377,7 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 			_, ok := e.Agents[a.Name]
 			return ok
 		}) {
-			return failure(categoryServiceNotFound, nil, "no MCP server is installed for %s", agentDisplayName(a.Name))
+			return failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "no MCP server is installed for %s", agentDisplayName(a.Name))
 		}
 	}
 	return nil

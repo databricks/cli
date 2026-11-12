@@ -50,6 +50,14 @@ type SignInRequest struct {
 // cancelled. Its error is the answer's text.
 type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, urlShown bool, err error)
 
+// Recorder receives the proxy's telemetry events. The command implements it, so the proxy does not
+// build telemetry events itself.
+type Recorder interface {
+	// SignInPrompted runs after the wait of an authenticate call that opened the sign-in page.
+	// signedIn reports whether the credential became ACTIVE.
+	SignInPrompted(ctx context.Context, signedIn bool)
+}
+
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
 type Challenge struct {
 	// Service is the full name of the MCP service, for example system.ai.github.
@@ -70,6 +78,8 @@ type Challenge struct {
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
 	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
+	// Recorder logs the sign-in prompt. The command provides it.
+	Recorder Recorder
 }
 
 // signInHooks applies the sign-in rules to the bridge. Services without a challenge get no hooks.
@@ -445,7 +455,12 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 		return [][]byte{toolResult(id, h.stillChallengedText(), true)}
 	}
 
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Progress: report, Stderr: h.stderr})
+	open := !h.pageCancelled
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: open, Progress: report, Stderr: h.stderr})
+	// A caller that was already signed in opened no page, so there is no prompt to record.
+	if open && !alreadySignedIn {
+		h.c.Recorder.SignInPrompted(ctx, err == nil)
+	}
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn

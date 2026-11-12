@@ -1,0 +1,235 @@
+package aitools
+
+import (
+	"encoding/json"
+	"errors"
+	"testing"
+
+	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestMcpServiceType(t *testing.T) {
+	// Every leaf in the CLI's known table has its own enum, so a known service never reports OTHER_SYSTEM.
+	cases := map[string]protos.AitoolsMcpService{
+		"system.ai.genie_one_mcp":   protos.AitoolsMcpServiceGenieOne,
+		"system.ai.dbsql":           protos.AitoolsMcpServiceDBSQL,
+		"system.ai.web_search":      protos.AitoolsMcpServiceWebSearch,
+		"system.ai.sandbox":         protos.AitoolsMcpServiceSandbox,
+		"system.ai.slack":           protos.AitoolsMcpServiceSlack,
+		"system.ai.github":          protos.AitoolsMcpServiceGitHub,
+		"system.ai.atlassian":       protos.AitoolsMcpServiceAtlassian,
+		"system.ai.google_drive":    protos.AitoolsMcpServiceGoogleDrive,
+		"system.ai.google_calendar": protos.AitoolsMcpServiceGoogleCalendar,
+		"system.ai.gmail":           protos.AitoolsMcpServiceGmail,
+		"system.ai.microsoft_365":   protos.AitoolsMcpServiceMicrosoft365,
+		// The schema name is case-insensitive in Unity Catalog.
+		"System.AI.GitHub": protos.AitoolsMcpServiceGitHub,
+		// A system.ai leaf the CLI does not know yet.
+		"system.ai.future_tool": protos.AitoolsMcpServiceOtherSystem,
+		// Anything outside system.ai, whatever its name.
+		"main.tools.github":  protos.AitoolsMcpServiceCustom,
+		"system.ai":          protos.AitoolsMcpServiceCustom,
+		"system.ai.a.github": protos.AitoolsMcpServiceCustom,
+	}
+	for name, want := range cases {
+		assert.Equal(t, want, mcpServiceType(name), name)
+	}
+}
+
+func TestAddServerResults(t *testing.T) {
+	servers := []addServerOutput{
+		{
+			Service:        "system.ai.github",
+			SignInRequired: true,
+			SignIn:         &addSignInOutput{State: signInStateActive},
+			Agents: []addAgentOutput{
+				{Name: "claude-code", Status: statusInstalled},
+				{Name: "codex", Status: statusReasserted},
+				{Name: "cursor", Status: statusFailed, ErrorCategory: protos.AitoolsErrorCategoryAgentConfigInvalid},
+			},
+		},
+		{
+			Service: "main.tools.custom",
+			Agents:  []addAgentOutput{{Name: "claude-code", Status: statusInstalled}},
+		},
+	}
+
+	assert.Equal(t, []protos.AitoolsMcpServerResult{
+		{
+			Service:     protos.AitoolsMcpServiceGitHub,
+			Agent:       protos.AitoolsAgentTypeClaudeCode,
+			Outcome:     protos.AitoolsTargetOutcomeChanged,
+			SignInState: protos.AitoolsMcpSignInStateActive,
+		},
+		{
+			Service:     protos.AitoolsMcpServiceGitHub,
+			Agent:       protos.AitoolsAgentTypeCodex,
+			Outcome:     protos.AitoolsTargetOutcomeUnchanged,
+			SignInState: protos.AitoolsMcpSignInStateActive,
+		},
+		{
+			Service:       protos.AitoolsMcpServiceGitHub,
+			Agent:         protos.AitoolsAgentTypeCursor,
+			Outcome:       protos.AitoolsTargetOutcomeFailed,
+			ErrorCategory: protos.AitoolsErrorCategoryAgentConfigInvalid,
+			SignInState:   protos.AitoolsMcpSignInStateActive,
+		},
+		{
+			Service:     protos.AitoolsMcpServiceCustom,
+			Agent:       protos.AitoolsAgentTypeClaudeCode,
+			Outcome:     protos.AitoolsTargetOutcomeChanged,
+			SignInState: protos.AitoolsMcpSignInStateNotRequired,
+		},
+	}, addServerResults(servers))
+}
+
+func TestRemoveServerResult(t *testing.T) {
+	assert.Equal(t, protos.AitoolsTargetOutcomeChanged,
+		removeServerResult("system.ai.github", "claude-code", removeDeleted, nil).Outcome)
+	// An entry already gone, or changed outside this CLI, is left as it is.
+	assert.Equal(t, protos.AitoolsTargetOutcomeSkipped,
+		removeServerResult("system.ai.github", "claude-code", removePruned, nil).Outcome)
+	assert.Equal(t, protos.AitoolsTargetOutcomeSkipped,
+		removeServerResult("system.ai.github", "claude-code", removeKept, nil).Outcome)
+
+	failed := removeServerResult("system.ai.github", "codex", removeDeleted, errors.New("config is not JSON"))
+	assert.Equal(t, protos.AitoolsMcpServerResult{
+		Service:       protos.AitoolsMcpServiceGitHub,
+		Agent:         protos.AitoolsAgentTypeCodex,
+		Outcome:       protos.AitoolsTargetOutcomeFailed,
+		ErrorCategory: protos.AitoolsErrorCategoryUncategorized,
+	}, failed)
+}
+
+func TestSignInServerResult(t *testing.T) {
+	cases := []struct {
+		name            string
+		state           string
+		alreadySignedIn bool
+		err             error
+		want            protos.AitoolsMcpServerResult
+	}{
+		{
+			name:  "signed in now",
+			state: signInStateActive,
+			want:  protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeChanged, SignInState: protos.AitoolsMcpSignInStateActive},
+		},
+		{
+			name:            "already active",
+			state:           signInStateActive,
+			alreadySignedIn: true,
+			want:            protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeUnchanged, SignInState: protos.AitoolsMcpSignInStateActive},
+		},
+		{
+			name:  "no sign-in needed",
+			state: signInStateNotRequired,
+			want:  protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeUnchanged, SignInState: protos.AitoolsMcpSignInStateNotRequired},
+		},
+		{
+			name:  "timed out",
+			state: signInStateTimeout,
+			err:   failure(protos.AitoolsErrorCategorySignInTimeout, nil, "timed out"),
+			want: protos.AitoolsMcpServerResult{
+				Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeFailed,
+				ErrorCategory: protos.AitoolsErrorCategorySignInTimeout, SignInState: protos.AitoolsMcpSignInStatePending,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, signInServerResult("system.ai.github", tc.state, tc.alreadySignedIn, tc.err))
+		})
+	}
+}
+
+func TestSignOutServerResult(t *testing.T) {
+	// Logout does not read the sign-in state, so the result has none.
+	assert.Equal(t, protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeChanged},
+		signOutServerResult("system.ai.github", signOutStateDeleted, nil))
+	assert.Equal(t, protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeUnchanged},
+		signOutServerResult("system.ai.github", signOutStateNotSignedIn, nil))
+}
+
+func TestProxyStartedEvent(t *testing.T) {
+	ok := proxyStartedEvent(protos.AitoolsAgentTypeClaudeCode, "system.ai.genie_one_mcp", nil)
+	assert.Equal(t, protos.AitoolsMcpEvent{
+		CallingAgent: protos.AitoolsAgentTypeClaudeCode,
+		Operation:    protos.AitoolsMcpOperationProxyStarted,
+		Servers:      []protos.AitoolsMcpServerResult{{Service: protos.AitoolsMcpServiceGenieOne}},
+	}, ok)
+
+	// Each binding failure has its category; the error text never reaches the event.
+	for category, bind := range map[protos.AitoolsErrorCategory]mcp.BindCategory{
+		protos.AitoolsErrorCategoryProfileNotFound:    mcp.BindProfileNotFound,
+		protos.AitoolsErrorCategoryProfileHostChanged: mcp.BindProfileHostChanged,
+		protos.AitoolsErrorCategoryAuthFailed:         mcp.BindAuthFailed,
+	} {
+		event := proxyStartedEvent(protos.AitoolsAgentTypeUnspecified, "main.tools.custom", &mcp.BindError{Category: bind})
+		require.Len(t, event.Servers, 1)
+		assert.Equal(t, category, event.Servers[0].ErrorCategory)
+		assert.Equal(t, protos.AitoolsMcpServiceCustom, event.Servers[0].Service)
+	}
+}
+
+func TestSignInPromptedEvent(t *testing.T) {
+	for signedIn, state := range map[bool]protos.AitoolsMcpSignInState{
+		true:  protos.AitoolsMcpSignInStateActive,
+		false: protos.AitoolsMcpSignInStatePending,
+	} {
+		event := signInPromptedEvent(protos.AitoolsAgentTypeCursor, "system.ai.github", signedIn)
+		assert.Equal(t, protos.AitoolsMcpEvent{
+			CallingAgent: protos.AitoolsAgentTypeCursor,
+			Operation:    protos.AitoolsMcpOperationSignInPrompted,
+			Servers: []protos.AitoolsMcpServerResult{{
+				Service:       protos.AitoolsMcpServiceGitHub,
+				ErrorCategory: protos.AitoolsErrorCategorySignInRequired,
+				SignInState:   state,
+			}},
+		}, event)
+	}
+}
+
+func TestBoundProfileCount(t *testing.T) {
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Profile: "logfood", Service: "system.ai.github"},
+		{Profile: "logfood", Service: "system.ai.genie_one_mcp"},
+		{Profile: "dogfood", Service: "system.ai.github"},
+	}}
+	assert.Equal(t, int64(2), boundProfileCount(state))
+	assert.Equal(t, int64(0), boundProfileCount(&mcp.State{}))
+}
+
+// The event carries enums and counts only. A custom service and the host of its profile must not
+// appear anywhere in the payload.
+func TestMcpEventOmitsUserContent(t *testing.T) {
+	event := protos.AitoolsMcpEvent{
+		CallingAgent:      protos.AitoolsAgentTypeClaudeCode,
+		Operation:         protos.AitoolsMcpOperationAdd,
+		BoundProfileCount: 1,
+		Servers: addServerResults([]addServerOutput{{
+			Service: "acme_catalog.secret_schema.internal_tool",
+			Agents:  []addAgentOutput{{Name: "claude-code", Status: statusInstalled}},
+		}}),
+	}
+	b, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(b, &got))
+	assert.ElementsMatch(t, []string{"calling_agent", "operation", "servers", "bound_profile_count"}, keys(got))
+	assert.NotContains(t, string(b), "acme_catalog")
+	assert.NotContains(t, string(b), "secret_schema")
+	assert.NotContains(t, string(b), "internal_tool")
+	assert.Contains(t, string(b), `"service":"CUSTOM"`)
+}
+
+func keys(m map[string]any) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}

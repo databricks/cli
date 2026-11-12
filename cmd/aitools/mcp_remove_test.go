@@ -82,13 +82,13 @@ func TestSelectInstalls(t *testing.T) {
 	_, err = selectInstalls(state, []string{"github-dogfood"}, "logfood")
 	require.Error(t, err)
 	assert.Equal(t, "no installed MCP server named github-dogfood on profile logfood", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 
 	// A profile with no installed server is a typo or an empty profile, not an empty removal.
 	_, err = selectInstalls(state, nil, "typo")
 	require.Error(t, err)
 	assert.Equal(t, "no installed MCP servers on profile typo", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 
 	none, err := selectInstalls(&mcp.State{}, nil, "")
 	require.NoError(t, err, "--all on an empty state is a no-op")
@@ -400,13 +400,13 @@ func TestMcpRemoveRefusesProfileAndAgentWithNothingInstalled(t *testing.T) {
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	out := readRemoveOutput(t, stdout.String())
 	assert.Equal(t, "no installed MCP servers on profile typo", out.Error)
-	assert.Equal(t, categoryServiceNotFound, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, out.ErrorCategory)
 
 	stdout, _, err = runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--agents", "cursor", "--output", "json")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	out = readRemoveOutput(t, stdout.String())
 	assert.Equal(t, "no MCP server is installed for Cursor", out.Error)
-	assert.Equal(t, categoryServiceNotFound, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, out.ErrorCategory)
 
 	// Nothing was removed by either refusal.
 	state, err := mcp.LoadState(t.Context())
@@ -696,7 +696,7 @@ func TestMcpRemovePickerRefusesAgentWithNoServer(t *testing.T) {
 	err := runInteractive(t, "mcp", "remove", "--agents", "codex")
 	require.Error(t, err)
 	assert.Equal(t, "no MCP server is installed for "+agents.ByName(agents.NameCodex).DisplayName, err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	state, err := mcp.LoadState(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, state.Servers, 1)

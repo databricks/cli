@@ -1,0 +1,38 @@
+
+=== serve logs PROXY_STARTED after the binding checks; the upload is sent when stdin closes
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "PROXY_STARTED",
+  "servers": [
+    {
+      "service": "GENIE_ONE"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== A binding that fails logs PROXY_STARTED with its category, but no upload follows: there is no config to upload with
+
+=== authenticate opens the sign-in page: PROXY_STARTED, then SIGN_IN_PROMPTED with the sign-in state after the wait
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "PROXY_STARTED",
+  "servers": [
+    {
+      "service": "GITHUB"
+    }
+  ],
+  "bound_profile_count": 0
+}
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "SIGN_IN_PROMPTED",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "error_category": "SIGN_IN_REQUIRED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 0
+}

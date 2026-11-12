@@ -68,6 +68,24 @@ func (s *signInStub) requests() []SignInRequest {
 // loginCommand is the hint that the command builds for a pinned config file and a profile name with a space.
 const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'`
 
+// promptRecorder records the SIGN_IN_PROMPTED events: one per sign-in page that authenticate opened.
+type promptRecorder struct {
+	mu       sync.Mutex
+	signedIn []bool
+}
+
+func (r *promptRecorder) SignInPrompted(_ context.Context, signedIn bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.signedIn = append(r.signedIn, signedIn)
+}
+
+func (r *promptRecorder) prompts() []bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]bool(nil), r.signedIn...)
+}
+
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
@@ -255,6 +273,37 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
+// The prompt is recorded once per page that was opened, after its wait, with whether the credential
+// became ACTIVE. A call that opens no page, or finds the caller already signed in, records nothing.
+func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := &signInStub{reply: func(call int) (bool, error) {
+		if call == 1 {
+			return false, errors.New("sign-in did not complete")
+		}
+		return call == 3, nil
+	}}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn.SignIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 1))
+	p.waitLines(t, 2)
+	p.send(t, fmt.Sprintf(authenticate, 2))
+	p.waitLines(t, 4)
+	p.send(t, fmt.Sprintf(authenticate, 3))
+	p.waitLines(t, 6)
+
+	assert.Equal(t, []bool{true, true, true}, signIn.calls(), "every call opens the page")
+	assert.Equal(t, []bool{false, true}, recorder.prompts(), "call 3 was already signed in and records nothing")
+	require.NoError(t, p.finish(t))
+}
+
 func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
@@ -343,7 +392,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 		return false, true, errors.New("sign-in to system.ai.github did not complete in 5 minutes. Finish at " + testURL + " then retry: " + loginCommand)
 	}
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn, Recorder: &promptRecorder{}}, io.Discard)
 	p := startPiped(t, t.Context(), b)
 
 	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
@@ -965,6 +1014,7 @@ func testChallenge(signIn SignInFunc) *Challenge {
 		LoginCommand:  "databricks aitools mcp login system.ai.github --profile logfood",
 		LogoutCommand: "databricks aitools mcp logout system.ai.github --profile logfood",
 		SignIn:        signIn,
+		Recorder:      &promptRecorder{},
 	}
 }
 

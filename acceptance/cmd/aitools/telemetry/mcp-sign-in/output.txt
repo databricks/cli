@@ -1,0 +1,98 @@
+
+=== login to a service that needs no sign-in: UNCHANGED, sign-in state NOT_REQUIRED
+system.ai.genie_one_mcp does not need sign-in.
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_IN",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== login completes once the credential is ACTIVE: CHANGED, sign-in state ACTIVE
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_IN",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "outcome": "CHANGED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== login while already signed in: UNCHANGED
+Already signed in to system.ai.github on profile logfood.
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_IN",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== logout removes the sign-in: CHANGED; a second logout finds nothing: UNCHANGED
+Signed out of system.ai.github on profile logfood.
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_OUT",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 0
+}
+Not signed in to system.ai.github on profile logfood.
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_OUT",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "outcome": "UNCHANGED"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== add --login signs in during the same run: SIGN_IN first, then ADD with sign-in state ACTIVE
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "SIGN_IN",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "outcome": "CHANGED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 1
+}
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 1
+}

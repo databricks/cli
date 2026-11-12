@@ -116,7 +116,7 @@ func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
 	out := mcpSignInOutput{Service: "system.ai.gihtub"}
 	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.gihtub", mcpLogout, &out)
 	require.Error(t, err)
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	assert.Contains(t, err.Error(), "system.ai.gihtub is not an MCP service visible to profile logfood")
 	assert.Empty(t, out.State)
 }
@@ -164,7 +164,7 @@ func TestMcpLogoutEndpointNotFoundIsNotAServiceError(t *testing.T) {
 	out := mcpSignInOutput{Service: "system.ai.github"}
 	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogout, &out)
 	require.Error(t, err)
-	assert.NotEqual(t, categoryServiceNotFound, errorCategory(err))
+	assert.NotEqual(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	assert.NotContains(t, err.Error(), "is not an MCP service visible")
 }
 

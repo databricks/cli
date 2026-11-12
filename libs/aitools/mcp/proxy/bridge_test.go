@@ -2319,7 +2319,7 @@ func TestSignInWritesShareTheBridgeStderr(t *testing.T) {
 			Config:       &config.Config{Host: testHost},
 			Authenticate: func(*http.Request) error { return nil },
 			Profile:      "logfood",
-			Challenge:    &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn},
+			Challenge:    &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn, Recorder: &promptRecorder{}},
 		})
 	}()
 
