@@ -212,50 +212,123 @@ func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 
 func TestSaveAndLoadStateKeepsMCPSection(t *testing.T) {
 	dir := t.TempDir()
-	original := &InstallState{
-		SchemaVersion: CurrentSchemaVersion,
-		Skills:        map[string]string{},
-		MCP: &MCPState{Servers: []MCPEntry{{
-			Name:           "github-logfood",
-			Service:        "system.ai.github",
-			Profile:        "logfood",
-			Host:           "https://adb-123.test",
-			WorkspaceID:    "123",
-			SignInRequired: true,
-			Command:        "/usr/local/bin/databricks",
-			Agents: map[string]MCPAgentRecord{
-				"claude-code": {Path: "/home/me/.claude.json", Scope: "user"},
-			},
-			InstalledAt: time.Date(2026, 11, 12, 10, 12, 0, 0, time.UTC),
-			CLIVersion:  "0.300.0",
-		}}},
-	}
-	require.NoError(t, SaveState(dir, original))
+	original := &MCPState{Servers: []MCPEntry{{
+		Name:           "github-logfood",
+		Service:        "system.ai.github",
+		Profile:        "logfood",
+		Host:           "https://adb-123.test",
+		WorkspaceID:    "123",
+		SignInRequired: true,
+		Command:        "/usr/local/bin/databricks",
+		Agents: map[string]MCPAgentRecord{
+			"claude-code": {Path: "/home/me/.claude.json", Scope: "user"},
+		},
+		InstalledAt: time.Date(2026, 11, 12, 10, 12, 0, 0, time.UTC),
+		CLIVersion:  "0.300.0",
+	}}}
+	require.NoError(t, SaveMCPState(dir, original))
 
 	loaded, err := LoadState(dir)
 	require.NoError(t, err)
-	assert.Equal(t, original, loaded)
+	assert.Equal(t, original, loaded.MCP)
 }
 
-// TestSaveStateKeepsMCPSectionWhenInstallerSaves checks that a skills write, which loads the
-// file before saving it, leaves the MCP section in place.
-func TestSaveStateKeepsMCPSectionWhenInstallerSaves(t *testing.T) {
+// TestSaveStateKeepsMCPRecordsSavedAfterLoad checks that an installer save writes the MCP section
+// on disk, not the copy loaded before an MCP save was made.
+func TestSaveStateKeepsMCPRecordsSavedAfterLoad(t *testing.T) {
 	dir := t.TempDir()
-	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: CurrentSchemaVersion,
-		MCP:           &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}},
-	}))
+	require.NoError(t, SaveState(dir, &InstallState{SchemaVersion: CurrentSchemaVersion, Skills: map[string]string{"databricks": "1.0.0"}}))
 
-	state, err := LoadState(dir)
+	stale, err := LoadState(dir)
 	require.NoError(t, err)
-	state.Skills = map[string]string{"databricks": "1.0.0"}
-	require.NoError(t, SaveState(dir, state))
+	require.NoError(t, SaveMCPState(dir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	stale.Skills["databricks"] = "1.1.0"
+	require.NoError(t, SaveState(dir, stale))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"databricks": "1.1.0"}, loaded.Skills)
+	require.NotNil(t, loaded.MCP)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+}
+
+// TestSaveMCPStateKeepsSkillRecords checks that an MCP save changes only the MCP section.
+func TestSaveMCPStateKeepsSkillRecords(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, SaveState(dir, &InstallState{SchemaVersion: CurrentSchemaVersion, Skills: map[string]string{"databricks": "1.0.0"}}))
+
+	require.NoError(t, SaveMCPState(dir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+	require.NoError(t, SaveMCPState(dir, &MCPState{}))
 
 	loaded, err := LoadState(dir)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{"databricks": "1.0.0"}, loaded.Skills)
-	require.NotNil(t, loaded.MCP)
-	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+	assert.Nil(t, loaded.MCP)
+}
+
+// TestSaveMCPStateRemovesFileWhenNothingLeft checks that the file goes once neither skills, plugins
+// nor MCP servers remain, and that it is not created for an empty MCP section.
+func TestSaveMCPStateRemovesFileWhenNothingLeft(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, stateFileName)
+
+	require.NoError(t, SaveMCPState(dir, &MCPState{}))
+	_, err := os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+
+	require.NoError(t, SaveMCPState(dir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+	require.NoError(t, SaveMCPState(dir, &MCPState{}))
+	_, err = os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+// TestSaveMCPStateCreatesMapsForInstaller checks that a file created by an MCP save loads with the
+// maps the installer writes into, so a later skills write does not panic.
+func TestSaveMCPStateCreatesMapsForInstaller(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, SaveMCPState(dir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.NotNil(t, loaded.Skills)
+	assert.False(t, loaded.HasSkillsOrPlugins())
+}
+
+func TestHasSkillsOrPlugins(t *testing.T) {
+	tests := []struct {
+		name  string
+		state *InstallState
+		want  bool
+	}{
+		{name: "nil", state: nil},
+		{name: "mcp only", state: &InstallState{MCP: &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}}},
+		{name: "skills", state: &InstallState{Skills: map[string]string{"databricks": "1.0.0"}}, want: true},
+		{name: "plugins", state: &InstallState{Plugins: map[string]PluginRecord{"claude-code": {Plugin: "databricks"}}}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.state.HasSkillsOrPlugins())
+		})
+	}
+}
+
+// TestMCPRecordedOnDisk checks the re-read that uninstall makes before it deletes the state file.
+func TestMCPRecordedOnDisk(t *testing.T) {
+	dir := t.TempDir()
+	recorded, err := mcpRecordedOnDisk(dir)
+	require.NoError(t, err)
+	assert.False(t, recorded, "no file")
+
+	require.NoError(t, SaveState(dir, &InstallState{SchemaVersion: CurrentSchemaVersion, Skills: map[string]string{"databricks": "1.0.0"}}))
+	recorded, err = mcpRecordedOnDisk(dir)
+	require.NoError(t, err)
+	assert.False(t, recorded, "skills only")
+
+	require.NoError(t, SaveMCPState(dir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+	recorded, err = mcpRecordedOnDisk(dir)
+	require.NoError(t, err)
+	assert.True(t, recorded)
 }
 
 func TestLoadStateMigratesV2ToV3AndSavesV3(t *testing.T) {

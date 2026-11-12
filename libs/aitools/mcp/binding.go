@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"slices"
 
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
@@ -18,6 +18,12 @@ import (
 // bindExitCode is the exit status for binding failures, so callers can tell them apart
 // from other errors.
 const bindExitCode = 2
+
+// Commands that binding messages tell the user to run.
+const (
+	authLoginCommand = "databricks auth login"
+	mcpRemoveCommand = "databricks aitools mcp remove"
+)
 
 // BindCategory names the kind of a binding failure. The values are stable identifiers
 // for the failure, not telemetry values.
@@ -67,35 +73,41 @@ func (e *BindError) ExitCode() int {
 // The profile is checked before any credential is resolved, so a re-pointed host is never
 // contacted. The config file is the one in the context, the same file the profile lookup reads.
 func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
-	configFile := env.Get(ctx, configFileEnv)
-	entry := findEntry(opts.State, opts.Service, opts.Profile, configFile)
+	configFile, err := resolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
+	if err != nil {
+		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+	}
+	entry, err := findEntry(ctx, opts.State, opts.Service, opts.Profile, configFile)
+	if err != nil {
+		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+	}
 	name := opts.Service
 	if entry != nil {
 		name = entry.Name
 	}
 
 	profiler := profile.GetProfiler(ctx)
-	path, err := profiler.GetPath(ctx)
-	if err != nil {
-		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
-	}
 	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(opts.Profile))
 	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 		return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
 	}
 	if len(profiles) == 0 {
+		path, err := profiler.GetPath(ctx)
+		if err != nil {
+			return nil, nil, &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+		}
 		return nil, nil, profileGoneError(name, opts.Profile, filepath.ToSlash(path), entry)
 	}
 	p := profiles[0]
 
 	if entry != nil && hostChanged(*entry, p) {
-		message := fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: databricks aitools mcp remove --profile %s and add it again",
-			name, entry.Host, opts.Profile, p.Host, opts.Profile)
+		message := fmt.Sprintf("MCP server %s was set up for %s, but profile \"%s\" now points at %s. Run: %s --profile %s and add it again",
+			name, entry.Host, opts.Profile, p.Host, mcpRemoveCommand, opts.Profile)
 		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
 	}
 	if entry != nil && workspaceChanged(*entry, p) {
-		message := fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: databricks aitools mcp remove --profile %s and add it again",
-			name, entry.WorkspaceID, opts.Profile, p.WorkspaceID, opts.Profile)
+		message := fmt.Sprintf("MCP server %s was set up for workspace %s, but profile \"%s\" now points at workspace %s. Run: %s --profile %s and add it again",
+			name, entry.WorkspaceID, opts.Profile, profileWorkspaceID(p), mcpRemoveCommand, opts.Profile)
 		return nil, nil, &BindError{Category: BindProfileHostChanged, message: message}
 	}
 
@@ -130,27 +142,35 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 // profileGoneError builds the error for a profile that is missing from the config file.
 // Without a state entry the recorded host is unknown, so the recreate hint omits --host.
 func profileGoneError(name, profileName, path string, entry *Entry) error {
-	recreate := "databricks auth login --profile " + profileName
+	recreate := authLoginCommand + " --profile " + profileName
 	if entry != nil {
-		recreate = "databricks auth login --host " + entry.Host + " --profile " + profileName
+		recreate = authLoginCommand + " --host " + entry.Host + " --profile " + profileName
 	}
-	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which no longer exists in %s. Recreate it with: %s   or remove the server with: databricks aitools mcp remove --profile %s",
-		name, profileName, path, recreate, profileName)
+	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which no longer exists in %s. Recreate it with: %s   or remove the server with: %s --profile %s",
+		name, profileName, path, recreate, mcpRemoveCommand, profileName)
 	return &BindError{Category: BindProfileNotFound, message: message}
 }
 
 func authError(profileName string, cause error) error {
-	message := fmt.Sprintf("%s\nRun: databricks auth login --profile %s", cause, profileName)
+	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, profileName)
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
 
-// findEntry returns the entry for the service and profile that is pinned to configFile, or nil.
-func findEntry(state *State, service, profileName, configFile string) *Entry {
-	i := slices.IndexFunc(state.Servers, func(e Entry) bool {
-		return e.Service == service && e.Profile == profileName && e.ConfigFile == configFile
-	})
-	if i < 0 {
-		return nil
+// findEntry returns the entry for the service and profile whose config file is configFile, or nil.
+// Both are compared as resolved paths, so an entry with no pinned file matches the default file.
+func findEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+	for i := range state.Servers {
+		entry := &state.Servers[i]
+		if entry.Service != service || entry.Profile != profileName {
+			continue
+		}
+		path, err := resolveConfigFile(ctx, entry.ConfigFile)
+		if err != nil {
+			return nil, err
+		}
+		if path == configFile {
+			return entry, nil
+		}
 	}
-	return &state.Servers[i]
+	return nil, nil
 }

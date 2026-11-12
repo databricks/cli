@@ -118,12 +118,12 @@ func TestBindProfileAbsent(t *testing.T) {
 				Host:       bindingTestHost,
 				ConfigFile: path,
 			}}},
-			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, path),
+			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --host https://adb-123.test --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
 		},
 		{
 			name:  "without state entry",
 			state: &mcp.State{},
-			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, path),
+			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone   or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
 		},
 	}
 	for _, tt := range tests {
@@ -337,4 +337,123 @@ func requireBindError(t *testing.T, err error, want mcp.BindCategory) {
 	require.ErrorAs(t, err, &bindErr)
 	assert.Equal(t, want, bindErr.Category)
 	assert.Equal(t, 2, bindErr.ExitCode())
+}
+
+// bindingTestDefaultConfig writes contents to ~/.databrickscfg in a fresh home directory, with
+// DATABRICKS_CONFIG_FILE empty, and returns the path of the default file.
+func bindingTestDefaultConfig(t *testing.T, contents string) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv(env.HomeEnvVar(), home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	t.Setenv("DATABRICKS_HOST", "https://adb-999.test")
+	t.Setenv("DATABRICKS_TOKEN", "dapi-env-token")
+	path := filepath.Join(home, ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0o600))
+	return path
+}
+
+// TestBindWorkspaceFromHostQueryChanged checks that a workspace named in the profile's host query
+// is compared with the recorded one, as the SDK resolves it.
+func TestBindWorkspaceFromHostQueryChanged(t *testing.T) {
+	for _, query := range []string{"?o=222", "?w=222", "?workspace_id=222"} {
+		t.Run(query, func(t *testing.T) {
+			cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s/%s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, query, bindingTestToken))
+			state := bindingTestState(cfgPath, bindingTestHost)
+			state.Servers[0].WorkspaceID = "111"
+
+			_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   state,
+				Stderr:  &bytes.Buffer{},
+			})
+			requireBindError(t, err, mcp.BindProfileHostChanged)
+			assert.Equal(t, "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+		})
+	}
+}
+
+// TestBindWorkspaceFromHostQueryNoneIsUnset checks that a host query naming no workspace is not
+// compared.
+func TestBindWorkspaceFromHostQueryNoneIsUnset(t *testing.T) {
+	for _, query := range []string{"?o=none", "?w=none"} {
+		t.Run(query, func(t *testing.T) {
+			cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s/%s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, query, bindingTestToken))
+			state := bindingTestState(cfgPath, bindingTestHost)
+			state.Servers[0].WorkspaceID = "111"
+
+			_, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   state,
+				Stderr:  &bytes.Buffer{},
+			})
+			require.NoError(t, err)
+			assert.NotNil(t, entry)
+		})
+	}
+}
+
+// TestBindUnpinnedEntryMatchesDefaultConfigFile checks that an entry with no pinned config file
+// names the default file, so it matches whether DATABRICKS_CONFIG_FILE is unset or names that file.
+func TestBindUnpinnedEntryMatchesDefaultConfigFile(t *testing.T) {
+	defaultPath := bindingTestDefaultConfig(t, bindingTestProfileContents(bindingTestToken))
+	state := &mcp.State{Servers: []mcp.Entry{{
+		Name:    "github-logfood",
+		Service: bindingTestService,
+		Profile: bindingTestProfile,
+		Host:    "https://adb-999.test",
+	}}}
+
+	for _, configFile := range []string{"", defaultPath} {
+		t.Run("env="+configFile, func(t *testing.T) {
+			t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+			_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile,
+				Service: bindingTestService,
+				State:   state,
+				Stderr:  &bytes.Buffer{},
+			})
+			requireBindError(t, err, mcp.BindProfileHostChanged)
+		})
+	}
+}
+
+// TestBindUnpinnedEntryDoesNotMatchOtherConfigFile checks that an entry with no pinned config file
+// does not bind a profile of the same name in another config file.
+func TestBindUnpinnedEntryDoesNotMatchOtherConfigFile(t *testing.T) {
+	bindingTestDefaultConfig(t, bindingTestProfileContents(bindingTestToken))
+	other := bindingTestWriteConfig(t, "[logfood]\nhost = https://adb-456.test\nauth_type = pat\ntoken = dapi-other\n")
+	t.Setenv("DATABRICKS_CONFIG_FILE", other)
+	stderr := &bytes.Buffer{}
+
+	cfg, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState("", bindingTestHost),
+		Stderr:  stderr,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, entry)
+	assert.Equal(t, "https://adb-456.test", cfg.Host)
+	assert.Contains(t, stderr.String(), "No install record for system.ai.github on profile \"logfood\"")
+}
+
+// TestBindWithoutHomeAndAbsoluteConfigFile checks that a bind needs no home directory when the
+// config file is named by an absolute path.
+func TestBindWithoutHomeAndAbsoluteConfigFile(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	t.Setenv(env.HomeEnvVar(), "")
+
+	cfg, entry, err := mcp.Bind(t.Context(), mcp.BindOptions{
+		Profile: bindingTestProfile,
+		Service: bindingTestService,
+		State:   bindingTestState(cfgPath, bindingTestHost),
+		Stderr:  &bytes.Buffer{},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, entry)
+	assert.Equal(t, bindingTestToken, cfg.Token)
 }

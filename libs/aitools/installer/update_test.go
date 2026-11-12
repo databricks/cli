@@ -695,3 +695,15 @@ func TestFormatUpdateResultCheckMode(t *testing.T) {
 	assert.Contains(t, checkOutput, "would add databricks-notebooks")
 	assert.Contains(t, checkOutput, "Would update 2 skills.")
 }
+
+func TestUpdateMCPOnlyStateReturnsInstallHint(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
+}

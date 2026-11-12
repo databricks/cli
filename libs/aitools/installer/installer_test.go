@@ -1654,3 +1654,23 @@ func TestInstallAllSkillsWithNoSkillToInstall(t *testing.T) {
 	require.NoError(t, InstallAllSkills(ctx))
 	assert.Contains(t, stderr.String(), NoSkillsResolvedMessage)
 }
+
+// TestLegacyTargetedInstallBlockedWithMCPOnlyState checks that MCP records in the state file do not
+// count as tracked skills, so skills on disk without a skills record still block a targeted install.
+func TestLegacyTargetedInstallBlockedWithMCPOnlyState(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{testAgent(tmp)}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy install detected")
+}

@@ -129,15 +129,19 @@ func TestSaveStateUpgradesV2FileToV3(t *testing.T) {
 	assert.Contains(t, raw, "mcp")
 }
 
-// stateTestProfiles is the profiles file used by the drift tests.
+// stateTestProfiles is the profiles file used by the drift tests. The profiles named
+// spog-query and spog-none name their workspace in the host query instead of workspace_id.
 func stateTestProfiles() profile.InMemoryProfiler {
 	return profile.InMemoryProfiler{Profiles: profile.Profiles{
 		{Name: bindingTestProfile, Host: bindingTestHost, WorkspaceID: stateTestWorkspaceID},
 		{Name: stateTestOtherProfile, Host: stateTestOtherHost, WorkspaceID: "456"},
+		{Name: "spog-query", Host: "https://spog.test/?o=222"},
+		{Name: "spog-none", Host: "https://spog.test/?w=none"},
 	}}
 }
 
 func TestReconcile(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
 	tests := []struct {
 		name            string
 		entry           mcp.Entry
@@ -156,6 +160,21 @@ func TestReconcile(t *testing.T) {
 		{
 			name:  "workspace not compared when the entry names none",
 			entry: stateTestEntryWith(bindingTestProfile, bindingTestHost, "none"),
+		},
+		{
+			name:  "workspace from host query matches the entry",
+			entry: stateTestEntryWith("spog-query", "https://spog.test", "222"),
+		},
+		{
+			name:            "workspace from host query differs from the entry",
+			entry:           stateTestEntryWith("spog-query", "https://spog.test", stateTestWorkspaceID),
+			wantKind:        mcp.DriftHostChanged,
+			wantHost:        "https://spog.test/?o=222",
+			wantWorkspaceID: "222",
+		},
+		{
+			name:  "host query naming none is not compared",
+			entry: stateTestEntryWith("spog-none", "https://spog.test", stateTestWorkspaceID),
 		},
 		{
 			name:     "profile missing",
@@ -181,7 +200,7 @@ func TestReconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			state := &mcp.State{Servers: []mcp.Entry{tt.entry}}
 
-			drifts, err := mcp.Reconcile(t.Context(), stateTestProfiles(), state)
+			drifts, err := mcp.Reconcile(ctx, stateTestProfiles(), state)
 			require.NoError(t, err)
 			if tt.wantKind == "" {
 				assert.Empty(t, drifts)
@@ -198,7 +217,8 @@ func TestReconcile(t *testing.T) {
 }
 
 func TestReconcileWithoutConfigFileReportsEveryProfileMissing(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "absent"))
+	ctx, _ := stateTestCtx(t)
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "absent"))
 	entry := stateTestEntry()
 	state := &mcp.State{Servers: []mcp.Entry{entry}}
 
@@ -219,6 +239,27 @@ func TestReconcileChecksEntryAgainstPinnedConfigFile(t *testing.T) {
 	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
 	require.NoError(t, err)
 	assert.Empty(t, drifts)
+}
+
+// TestReconcileUnpinnedEntryChecksDefaultConfigFile checks that an entry with no pinned config file
+// is checked against ~/.databrickscfg, even when DATABRICKS_CONFIG_FILE names another file.
+func TestReconcileUnpinnedEntryChecksDefaultConfigFile(t *testing.T) {
+	ctx, _ := stateTestCtx(t)
+	home, err := env.UserHomeDir(ctx)
+	require.NoError(t, err)
+	writeStateFile(t, filepath.Join(home, ".databrickscfg"), "[logfood]\nhost = https://adb-456.test\n")
+	ambient := bindingTestWriteConfig(t, bindingTestProfileContents(bindingTestToken))
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", ambient)
+	state := &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}
+
+	drifts, err := mcp.Reconcile(ctx, profile.FileProfilerImpl{}, state)
+	require.NoError(t, err)
+	assert.Equal(t, []mcp.Drift{{
+		Kind:               mcp.DriftHostChanged,
+		Entry:              stateTestEntry(),
+		CurrentHost:        "https://adb-456.test",
+		CurrentWorkspaceID: "",
+	}}, drifts)
 }
 
 func TestNormalizeHostIgnoresSchemeCaseAndTrailingSlash(t *testing.T) {

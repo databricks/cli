@@ -562,12 +562,12 @@ func TestUpsertUpdateAddsAndRemovesLaunchKeys(t *testing.T) {
 	writeFile(t, path, []byte(`{"mcpServers":{"`+testName+`":{"command":"`+testCmd+`","args":["aitools","mcp","serve","--agent","test"]}}}`), 0o600)
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
-	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{pinnedEnv: "/cfg"}, false)
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{mcpconfig.ConfigFileEnv: "/cfg"}, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
 	entries, err := Read(t.Context(), a)
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{pinnedEnv: "/cfg"}, entries[testName]["env"])
+	assert.Equal(t, map[string]any{mcpconfig.ConfigFileEnv: "/cfg"}, entries[testName]["env"])
 	requireStrictJSON(t, string(readFile(t, path)))
 
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
@@ -780,7 +780,7 @@ func TestUpsertRefusesEnvThatIsNotATable(t *testing.T) {
 	writeFile(t, path, []byte(data), 0o600)
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
-	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{pinnedEnv: "/cfg"}, false)
+	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{mcpconfig.ConfigFileEnv: "/cfg"}, false)
 	require.ErrorIs(t, err, ErrConfigInvalid)
 	assert.Equal(t, data, string(readFile(t, path)))
 }

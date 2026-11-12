@@ -4,16 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 )
-
-// configFileEnv names the variable that selects the Databricks config file.
-const configFileEnv = "DATABRICKS_CONFIG_FILE"
 
 // Drift kinds reported by Reconcile.
 const (
@@ -62,35 +62,28 @@ func LoadState(ctx context.Context) (*State, error) {
 	return st.MCP, nil
 }
 
-// SaveState replaces the MCP section of the aitools state file. The file is re-read first,
-// so the skills and plugins records written since the caller's LoadState are kept.
+// SaveState replaces the MCP section of the aitools state file. The skills and plugins records
+// are kept as they are on disk, including those written since the caller's LoadState.
 func SaveState(ctx context.Context, state *State) error {
 	dir, err := installer.GlobalSkillsDir(ctx)
 	if err != nil {
 		return err
 	}
-	st, err := installer.LoadState(dir)
-	if err != nil {
-		return err
-	}
-	if st == nil {
-		st = &installer.InstallState{SchemaVersion: installer.CurrentSchemaVersion}
-	}
-	st.MCP = state
-	return installer.SaveState(dir, st)
+	return installer.SaveMCPState(dir, state)
 }
 
 // Reconcile reports entries whose profile is gone, or whose profile now names another host,
 // or another workspace when both the entry and the profile name one. Each entry is checked
 // against the config file it is pinned to; an entry with no pinned file is checked against
-// the current one.
+// the default file, ~/.databrickscfg, whatever the environment names.
 func Reconcile(ctx context.Context, profiler profile.Profiler, state *State) ([]Drift, error) {
 	var drifts []Drift
 	for _, entry := range state.Servers {
-		entryCtx := ctx
-		if entry.ConfigFile != "" {
-			entryCtx = env.Set(ctx, configFileEnv, entry.ConfigFile)
+		path, err := resolveConfigFile(ctx, entry.ConfigFile)
+		if err != nil {
+			return nil, err
 		}
+		entryCtx := env.Set(ctx, mcpconfig.ConfigFileEnv, path)
 		profiles, err := profiler.LoadProfiles(entryCtx, profile.WithName(entry.Profile))
 		if errors.Is(err, profile.ErrNoConfiguration) {
 			profiles = nil
@@ -107,7 +100,7 @@ func Reconcile(ctx context.Context, profiler profile.Profiler, state *State) ([]
 				Kind:               DriftHostChanged,
 				Entry:              entry,
 				CurrentHost:        p.Host,
-				CurrentWorkspaceID: namedWorkspaceID(p.WorkspaceID),
+				CurrentWorkspaceID: profileWorkspaceID(p),
 			})
 		}
 	}
@@ -123,8 +116,18 @@ func hostChanged(entry Entry, p profile.Profile) bool {
 // two differ. A profile without a workspace has nothing to compare.
 func workspaceChanged(entry Entry, p profile.Profile) bool {
 	recorded := namedWorkspaceID(entry.WorkspaceID)
-	current := namedWorkspaceID(p.WorkspaceID)
+	current := profileWorkspaceID(p)
 	return recorded != "" && current != "" && recorded != current
+}
+
+// profileWorkspaceID returns the workspace a profile names: its workspace_id when it has one,
+// otherwise the workspace in its host's query, which the SDK resolves the same way. It returns
+// "" when the profile names none.
+func profileWorkspaceID(p profile.Profile) string {
+	if p.WorkspaceID != "" {
+		return namedWorkspaceID(p.WorkspaceID)
+	}
+	return namedWorkspaceID(auth.ExtractHostQueryParams(p.Host).WorkspaceID)
 }
 
 // namedWorkspaceID returns the workspace ID a value names, or "" when it names none. The
@@ -141,4 +144,21 @@ func namedWorkspaceID(id string) string {
 // lowercases the result, because hostnames are case-insensitive.
 func NormalizeHost(host string) string {
 	return strings.ToLower((&config.Config{Host: host}).CanonicalHostName())
+}
+
+// resolveConfigFile returns the absolute path of the config file that name refers to. An empty
+// name is the default file, ~/.databrickscfg. A leading "~" is the home directory, as the
+// profile loader reads it. Only an absolute name needs no home directory.
+func resolveConfigFile(ctx context.Context, name string) (string, error) {
+	if name == "" {
+		name = "~/.databrickscfg"
+	}
+	if strings.HasPrefix(name, "~") {
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		name = filepath.Join(home, name[1:])
+	}
+	return filepath.Abs(name)
 }

@@ -177,7 +177,7 @@ The command exits with code 1 when every update or check it attempts fails.`,
 				// Reconcile file skills for non-plugin agents. Skip entirely for a
 				// pure-plugin install (no file skills to maintain); keep calling for
 				// no-state installs so the "no skills or plugins installed" guidance still fires.
-				if state == nil || len(state.Skills) > 0 {
+				if !state.HasSkillsOrPlugins() || len(state.Skills) > 0 {
 					opts := installer.UpdateOptions{
 						Check:   check,
 						Force:   force,

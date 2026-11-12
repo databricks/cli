@@ -616,11 +616,7 @@ func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
 func TestUninstallKeepsStateFileWithMCPRecords(t *testing.T) {
 	tmp := setupTestHome(t)
 	globalDir := installTestSkills(t, tmp)
-
-	state, err := LoadState(globalDir)
-	require.NoError(t, err)
-	state.MCP = &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}
-	require.NoError(t, SaveState(globalDir, state))
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
 
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, UninstallSkills(ctx))
@@ -632,4 +628,20 @@ func TestUninstallKeepsStateFileWithMCPRecords(t *testing.T) {
 	assert.Empty(t, loaded.Skills)
 	require.NotNil(t, loaded.MCP)
 	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, loaded.MCP.Servers)
+}
+
+// TestUninstallMCPOnlyStateReturnsError checks that a state file holding only MCP records counts
+// as having no skills or plugins, and that uninstall leaves the MCP records in place.
+func TestUninstallMCPOnlyStateReturnsError(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	err := UninstallSkills(cmdio.MockDiscard(t.Context()))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
+
+	recorded, err := mcpRecordedOnDisk(globalDir)
+	require.NoError(t, err)
+	assert.True(t, recorded)
 }

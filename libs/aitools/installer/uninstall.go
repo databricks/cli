@@ -75,7 +75,7 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 		return nil, fmt.Errorf("failed to load install state: %w", err)
 	}
 
-	if state == nil {
+	if !state.HasSkillsOrPlugins() {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return nil, fmt.Errorf("%w; run 'databricks aitools install' first, then uninstall", ErrLegacyInstall)
 		}
@@ -199,11 +199,17 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 
 	// If nothing remains in this scope, clean up orphaned symlinks. Delete the
 	// state file unless it still holds MCP records, which uninstall does not own;
-	// otherwise persist the trimmed state.
-	if len(state.Skills) == 0 && len(state.Plugins) == 0 {
+	// otherwise persist the trimmed state. The MCP records are read from disk now,
+	// since an MCP save may have happened after state was loaded above.
+	noSkillsOrPlugins := len(state.Skills) == 0 && len(state.Plugins) == 0
+	if noSkillsOrPlugins {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 	}
-	if len(state.Skills) == 0 && len(state.Plugins) == 0 && (state.MCP == nil || len(state.MCP.Servers) == 0) {
+	mcpRecorded, err := mcpRecordedOnDisk(baseDir)
+	if err != nil {
+		return err
+	}
+	if noSkillsOrPlugins && !mcpRecorded {
 		stateFile := filepath.Join(baseDir, stateFileName)
 		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("failed to remove state file: %w", err)

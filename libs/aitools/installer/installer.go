@@ -358,13 +358,13 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	}
 
 	// A "legacy install" is one from before the CLI tracked install state in a
-	// JSON file: skills exist on disk but there's no state file (state == nil).
+	// JSON file: skills exist on disk but there's no record of them in state.
 	// A targeted install (--skills foo) here would write a state file listing only
 	// foo, leaving the other on-disk skills untracked. Block it so the user runs a
 	// full install first, which rebuilds complete state. Global scope only, since
 	// legacy installs only ever wrote to the global dir.
 	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
-	legacyInstall := state == nil && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
+	legacyInstall := !state.HasSkillsOrPlugins() && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
 	if legacyInstall && len(opts.SpecificSkills) > 0 {
 		return &RefusedError{Err: errors.New("legacy install detected without state tracking; run 'databricks aitools install --scope=global --skills-only' (without --skills) first to rebuild state")}
 	}

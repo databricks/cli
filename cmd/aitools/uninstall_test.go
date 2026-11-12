@@ -133,3 +133,14 @@ func TestUninstallConfirmMessage(t *testing.T) {
 	require.True(t, ask3)
 	assert.Contains(t, msg3, "from cursor")
 }
+
+// TestUninstallConfirmMessageMCPOnlyState checks that an explicit skill list does not prompt when
+// the state holds only MCP records.
+func TestUninstallConfirmMessageMCPOnlyState(t *testing.T) {
+	st := &installer.InstallState{MCP: &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}}
+
+	_, ask := uninstallConfirmMessage(st, installer.UninstallOptions{Scope: installer.ScopeGlobal})
+	assert.False(t, ask)
+	_, ask = uninstallConfirmMessage(st, installer.UninstallOptions{Scope: installer.ScopeGlobal, Skills: []string{"databricks-sql"}})
+	assert.False(t, ask)
+}
