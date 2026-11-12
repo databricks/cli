@@ -93,9 +93,10 @@ By default this installs the databricks plugin through each agent's own CLI
 (` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files.
 
 Escape hatches:
-  --skills-only          Force raw skill files for every agent (no plugin).
+  --skills-only          Force raw skill files for every agent (no plugin; not with --path).
   --skills name1,name2   Install only the named skills (with --skills-only/--path).
   --path <dir>           Write resolved skill files to a directory (no agents, no state).
+                         Use instead of --skills-only when choosing an output directory.
 
 Agent selection:
   --agents <name>[,...]  Act only on the named agents (works for undetected ones).
@@ -107,6 +108,11 @@ Output:
                          and --agents so the command runs without interactive prompts.
 
 Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
+		Example: `  # Install a selected skill for coding agents.
+  databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
+
+  # Write a selected skill to a custom directory (omit --skills-only).
+  databricks aitools install --skills databricks-ai-runtime --experimental --path ./skills`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			ctx := cmd.Context()
@@ -309,8 +315,8 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
 	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
 	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
-	cmd.Flags().BoolVar(&skillsOnly, "skills-only", false, "Force raw skill files for every agent instead of the plugin")
-	cmd.Flags().StringVar(&pathFlag, "path", "", "Write resolved skill files to this directory (no agents, no state)")
+	cmd.Flags().BoolVar(&skillsOnly, "skills-only", false, "Force raw skill files for every agent instead of the plugin (not with --path)")
+	cmd.Flags().StringVar(&pathFlag, "path", "", "Write resolved skill files to this directory instead of using --skills-only (no agents, no state)")
 	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Install scope: project or global (default: global, or prompt when interactive)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
