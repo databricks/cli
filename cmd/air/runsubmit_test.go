@@ -717,9 +717,7 @@ containers:
 	}
 }
 
-// The run link's workspace ID is best-effort: when it cannot be resolved the
-// submit still succeeds with a link that omits ?o=. The lookup must also be
-// done before the run is created, so nothing delays showing a new run's ID.
+// An unresolved workspace ID yields a link without ?o=, looked up before the run is created.
 func TestSubmitWorkloadWithoutWorkspaceID(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)

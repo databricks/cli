@@ -389,8 +389,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 			return stageErr
 		})
 	})
-	// Resolved here, not after submission: once the run exists nothing may delay
-	// showing its ID.
 	var workspaceID int64
 	group.Go(func() error {
 		workspaceID = workspaceIDForRunLink(stagingCtx, w)
@@ -458,13 +456,13 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	return runID, dashboardURL(w.Config.Host, runID, workspaceID), nil
 }
 
-// workspaceIDLookupTimeout bounds the workspace ID lookup for the run link, so
-// an unresponsive lookup cannot hold up submission for the SDK's retry window.
+// workspaceIDLookupTimeout caps workspaceIDForRunLink.
 const workspaceIDLookupTimeout = 10 * time.Second
 
 // workspaceIDForRunLink returns the workspace ID for the run link's ?o= hint,
-// or 0 when it cannot be resolved: the link is a convenience and must never
-// fail or stall a submission.
+// or 0 when it cannot be resolved. The link is a convenience, so the lookup
+// never fails a submission; it is capped, and callers run it before creating
+// the run, so that it cannot hold back a new run's ID either.
 func workspaceIDForRunLink(ctx context.Context, w *databricks.WorkspaceClient) int64 {
 	ctx, cancel := context.WithTimeout(ctx, workspaceIDLookupTimeout)
 	defer cancel()
