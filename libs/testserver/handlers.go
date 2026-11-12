@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -1178,21 +1177,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Alerts v2:
 	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
-
-		id := req.Vars["id"]
-
-		value, ok := req.Workspace.Alerts[id]
-		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
-			return Response{
-				StatusCode: 404,
-				Body:       map[string]string{"message": "Alert with ID '" + id + "' does not exist."},
-			}
-		}
-
-		return Response{
-			Body: value,
-		}
+		return req.Workspace.AlertsGet(req.Vars["id"])
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
