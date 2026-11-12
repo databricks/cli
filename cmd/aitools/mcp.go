@@ -37,6 +37,8 @@ func NewMcpCmd() *cobra.Command {
 		Hidden: true,
 	}
 	cmd.AddCommand(NewMcpAddCmd())
+	cmd.AddCommand(NewMcpListCmd())
+	cmd.AddCommand(NewMcpRemoveCmd())
 	return cmd
 }
 

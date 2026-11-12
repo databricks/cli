@@ -1,0 +1,3 @@
+[dogfood]
+host = https://adb-2.test
+token = test-token-dogfood

@@ -1,0 +1,19 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "Both profiles get a server"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code
+
+title "logfood is deleted from the Databricks config file: list reports it and exits 0"
+envsubst < dogfood-only.databrickscfg > out && mv out .databrickscfg
+trace $CLI aitools mcp list
+
+title "dogfood now points at another host: list reports the host change"
+envsubst < dogfood-moved.databrickscfg > out && mv out .databrickscfg
+trace $CLI aitools mcp list --output json
+
+title "The same change in text"
+trace $CLI aitools mcp list

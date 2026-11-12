@@ -1,0 +1,84 @@
+
+=== Both profiles get a server
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+
+>>> [CLI] aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code
+Profile dogfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+genie_one_mcp-dogfood  system.ai.genie_one_mcp
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+
+=== logfood is deleted from the Databricks config file: list reports it and exits 0
+
+>>> [CLI] aitools mcp list
+Profile dogfood  ([DATABRICKS_URL])
+  genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
+
+Profile logfood  (profile not found in .databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
+  broken: run `databricks aitools mcp remove --profile logfood` or `databricks auth login --host [DATABRICKS_URL] --profile logfood`
+
+=== dogfood now points at another host: list reports the host change
+
+>>> [CLI] aitools mcp list --output json
+{
+  "profiles": [
+    {
+      "profile": "dogfood",
+      "host": "https://adb-2.test",
+      "status": "host_changed",
+      "servers": [
+        {
+          "name": "genie_one_mcp-dogfood",
+          "service": "system.ai.genie_one_mcp",
+          "sign_in_required": false,
+          "agents": [
+            {
+              "name": "claude-code",
+              "path": "[TEST_TMP_DIR]/home/.claude.json",
+              "status": "installed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "profile": "logfood",
+      "host": "[DATABRICKS_URL]",
+      "status": "profile_missing",
+      "servers": [
+        {
+          "name": "genie_one_mcp-logfood",
+          "service": "system.ai.genie_one_mcp",
+          "sign_in_required": false,
+          "agents": [
+            {
+              "name": "claude-code",
+              "path": "[TEST_TMP_DIR]/home/.claude.json",
+              "status": "installed"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unmanaged": []
+}
+
+=== The same change in text
+
+>>> [CLI] aitools mcp list
+Profile dogfood  (host changed, now https://adb-2.test)
+  genie_one_mcp-dogfood    system.ai.genie_one_mcp        Claude Code
+  broken: run `databricks aitools mcp remove --profile dogfood` and add the servers again
+
+Profile logfood  (profile not found in .databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
+  broken: run `databricks aitools mcp remove --profile logfood` or `databricks auth login --host [DATABRICKS_URL] --profile logfood`

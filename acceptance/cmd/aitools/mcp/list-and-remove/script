@@ -1,0 +1,32 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "Two profiles, add twice: logfood gets two services, dogfood gets one"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code
+trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code
+
+title "list groups the servers by profile"
+trace $CLI aitools mcp list
+
+title "list as JSON"
+trace $CLI aitools mcp list --output json
+
+title "remove --profile removes that profile only"
+trace $CLI aitools mcp remove --profile dogfood
+trace $CLI aitools mcp list
+
+title "A hand-edited entry is listed as modified; an unmanaged ug entry is listed and never changed"
+jq '.mcpServers["github-logfood"].command = "/usr/bin/other" | .mcpServers.web_search = {"command": "ug", "args": ["mcp-proxy"]}' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
+trace $CLI aitools mcp list
+
+title "remove leaves the modified entry in place and says why"
+trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
+trace jq '.mcpServers | keys' home/.claude.json
+trace jq '[.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp/state.json
+
+title "remove --all removes what this CLI wrote and nothing else"
+trace $CLI aitools mcp remove --all --output json
+trace jq '.mcpServers | keys' home/.claude.json
+trace $CLI aitools mcp list
