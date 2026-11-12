@@ -103,6 +103,10 @@ does not contact the workspace.`,
 		}
 
 		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
+		if note := retryDefaultsNote(cfg); note != "" {
+			cmdio.LogString(ctx, "")
+			cmdio.LogString(ctx, note)
+		}
 		return nil
 	}
 
@@ -206,7 +210,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// generated_artifacts/, the output tarball) into it. Reject rather than emit that;
 	// the user should point root_path at a subdirectory.
 	if codeDirRel == "." {
-		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot package code there (no code directory to nest under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
+		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot package code there (no code directory to nest under %s/<dir>). Move the code into a subdirectory (for example ./src) and point root_path at it, or pass --output-dir with a parent directory that contains the code directory", snap.RootPath, runtimeCodeSourceRoot)
 	}
 	dirName := path.Base(codeDirRel)
 	art := &codeArtifact{
@@ -645,6 +649,17 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
 	cmdio.LogString(ctx, "job and its uploaded files with:")
 	cmdio.LogString(ctx, "  "+self+" bundle destroy")
+}
+
+// retryDefaultsNote reports the retry settings the bundle carries that the YAML does
+// not spell out. `air run` applies them implicitly on every submit, but in a bundle
+// they are written down, so without the note they look invented by the conversion.
+// Returns "" when the YAML sets max_retries.
+func retryDefaultsNote(cfg *runConfig) string {
+	if cfg.MaxRetries != nil {
+		return ""
+	}
+	return fmt.Sprintf("Note: the YAML does not set max_retries, so the job uses the `air run` default\n(max_retries: %d, retry_on_timeout: true). Edit databricks.yml to change it.", defaultMaxRetries)
 }
 
 // cliInvocation is how the user should spell this binary in a follow-up command.

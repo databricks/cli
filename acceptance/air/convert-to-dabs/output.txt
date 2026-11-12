@@ -20,6 +20,9 @@ persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
 
+Note: the YAML does not set max_retries, so the job uses the `air run` default
+(max_retries: 3, retry_on_timeout: true). Edit databricks.yml to change it.
+
 === emitted databricks.yml (code_source packaged as a tgz artifact; no code is copied)
 
 >>> cat databricks.yml
@@ -111,6 +114,9 @@ persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
 
+Note: the YAML does not set max_retries, so the job uses the `air run` default
+(max_retries: 3, retry_on_timeout: true). Edit databricks.yml to change it.
+
 === convert a B300 run using the current SDK
 
 >>> [CLI] air convert-to-dabs b300.yaml --output-dir generated-b300
@@ -132,6 +138,9 @@ Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
+
+Note: the YAML does not set max_retries, so the job uses the `air run` default
+(max_retries: 3, retry_on_timeout: true). Edit databricks.yml to change it.
 
 === the B300 bundle preserves its accelerator and AI Runtime version
 
@@ -197,6 +206,9 @@ Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
+
+Note: the YAML does not set max_retries, so the job uses the `air run` default
+(max_retries: 3, retry_on_timeout: true). Edit databricks.yml to change it.
 
 >>> grep -E environment_version|base_environment databricks.yml
             base_environment: workspace-base-environments/databricks_ai_v5

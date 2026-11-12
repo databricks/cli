@@ -648,8 +648,20 @@ func TestConvertToDabsDotRootPathRejected(t *testing.T) {
 
 			_, _, err = convertToDabs(t.Context(), loaded, path, dir)
 			require.ErrorContains(t, err, "resolves to the bundle root")
+			require.ErrorContains(t, err, "--output-dir")
 		})
 	}
+}
+
+func TestRetryDefaultsNote(t *testing.T) {
+	// Unset: the bundle carries the `air run` default, which the YAML never mentions.
+	note := retryDefaultsNote(&runConfig{})
+	assert.Contains(t, note, "max_retries: 3")
+	assert.Contains(t, note, "retry_on_timeout: true")
+
+	// Set (including 0): the bundle value is the user's own, so there is nothing to explain.
+	assert.Empty(t, retryDefaultsNote(&runConfig{MaxRetries: new(0)}))
+	assert.Empty(t, retryDefaultsNote(&runConfig{MaxRetries: new(2)}))
 }
 
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {
