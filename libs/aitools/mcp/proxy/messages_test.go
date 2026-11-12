@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -124,4 +125,24 @@ func TestIsResponseToComparesIDsByValue(t *testing.T) {
 			assert.Equal(t, tc.want, parseResponseWithID(t, tc.response).isResponseTo(parseRequestWithID(t, tc.request)))
 		})
 	}
+}
+
+// TestIDKeyComparesNumbersByValue: numbers match by value in any spelling, and a large exponent is keyed by its
+// digits, so the key stays short.
+func TestIDKeyComparesNumbersByValue(t *testing.T) {
+	same := [][2]string{
+		{"7", "7.0"}, {"7", "70e-1"}, {"7", "7E0"}, {"-0", "0"}, {"0.0", "0e5"},
+		{"1.5", "15e-1"}, {"100", "1e2"}, {"1e1000000", "1E1000000"},
+	}
+	for _, tc := range same {
+		assert.Equal(t, idKey(json.RawMessage(tc[0])), idKey(json.RawMessage(tc[1])), tc)
+	}
+	different := [][2]string{
+		{"9007199254740993", "9007199254740992"}, {"1", "10"}, {"-1", "1"}, {"0.1", "0.10001"},
+		{"1e1000000", "1e1000001"},
+	}
+	for _, tc := range different {
+		assert.NotEqual(t, idKey(json.RawMessage(tc[0])), idKey(json.RawMessage(tc[1])), tc)
+	}
+	assert.Less(t, len(idKey(json.RawMessage("1e1000000"))), 32, "the key is built from the digits, not the expanded value")
 }

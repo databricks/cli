@@ -2,10 +2,12 @@ package proxy
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
+	"strconv"
+	"strings"
 )
 
 // Method names and member names the bridge reads or edits.
@@ -21,8 +23,8 @@ const (
 	keyListChanged  = "listChanged"
 )
 
-// errNotObject is returned for valid JSON whose top-level value is not an object.
 var (
+	// errNotObject is returned for valid JSON whose top-level value is not an object.
 	errNotObject = errors.New("message is not a JSON object")
 	jsonNull     = json.RawMessage("null")
 )
@@ -72,7 +74,8 @@ func parseMessage(line []byte) (message, error) {
 	return m, nil
 }
 
-// decodeErrorBody decodes a non-2xx body. It returns nil when the body is not a JSON object.
+// decodeErrorBody decodes a non-2xx body. It returns nil when the body does not decode as an object; a null body
+// decodes to an empty errorBody.
 func decodeErrorBody(body []byte) *errorBody {
 	var e errorBody
 	if json.Unmarshal(body, &e) != nil {
@@ -103,11 +106,40 @@ func idKey(raw json.RawMessage) string {
 	case string:
 		return "s" + v
 	case json.Number:
-		if r, ok := new(big.Rat).SetString(v.String()); ok {
-			return "n" + r.RatString()
-		}
+		return "n" + numberKey(v.String())
 	}
 	return string(raw)
+}
+
+// numberKey returns the key of a JSON number by its value: its significant digits and the power of ten they are
+// scaled by, so 7, 7.0 and 70e-1 share one key and -0 is 0. It works on the text, so an exponent such as 1e1000000
+// costs no more than its digits. An exponent that does not fit an int64 is keyed by the text.
+func numberKey(s string) string {
+	s = strings.ToLower(s)
+	neg := strings.HasPrefix(s, "-")
+	mant, exp, _ := strings.Cut(strings.TrimPrefix(s, "-"), "e")
+	whole, frac, _ := strings.Cut(mant, ".")
+	scale, err := strconv.ParseInt(cmp.Or(exp, "0"), 10, 64)
+	if err != nil {
+		return s
+	}
+	scale -= int64(len(frac))
+	digits := strings.TrimLeft(whole+frac, "0")
+	if digits == "" {
+		return "0"
+	}
+	trimmed := strings.TrimRight(digits, "0")
+	scale += int64(len(digits) - len(trimmed))
+	sign := ""
+	if neg {
+		sign = "-"
+	}
+	return sign + trimmed + "e" + strconv.FormatInt(scale, 10)
+}
+
+// initializeResultError wraps an error found while reading an initialize result.
+func initializeResultError(err error) error {
+	return fmt.Errorf("initialize result: %w", err)
 }
 
 // initializeProtocol returns the protocol version in the result of an initialize response. ok is false when the
@@ -119,7 +151,7 @@ func initializeProtocol(data []byte) (version string, ok bool, err error) {
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(data, &r); err != nil {
-		return "", false, fmt.Errorf("initialize result: %w", err)
+		return "", false, initializeResultError(err)
 	}
 	if r.Result == nil {
 		return "", false, nil
@@ -149,7 +181,7 @@ func editInitialize(msg []byte, instructions string, listChanged bool) ([]byte, 
 	}
 	result, err := decodeObject(env[keyResult])
 	if err != nil {
-		return nil, fmt.Errorf("initialize result: %w", err)
+		return nil, initializeResultError(err)
 	}
 	if instructions != "" {
 		var prev string

@@ -82,9 +82,8 @@ type Bridge struct {
 	Transport http.RoundTripper
 }
 
-// Run forwards stdin to the endpoint until stdin closes or ctx is done. Shutdown waits up to 2 s for
-// in-flight requests, cancels the rest, and sends DELETE for the session. Run returns an error only
-// when reading stdin fails.
+// Run forwards stdin to the endpoint until stdin closes or ctx is done. It returns an error only when reading stdin
+// fails.
 func (b *Bridge) Run(ctx context.Context) error {
 	base, cancelBase := context.WithCancel(context.WithoutCancel(ctx))
 	c := &conn{
@@ -206,10 +205,8 @@ func newClient(rt http.RoundTripper) *http.Client {
 	}
 }
 
-// handle starts one stdin message and returns the gate for the next one. A request or notification runs in
-// its own goroutine. Each message waits for the notification before it (see await), so the server sees
-// notifications in order: the lifecycle needs notifications/initialized before the first request. A
-// notification's gate is the channel that closes when its POST has finished.
+// handle starts one stdin message and returns the gate for the next one. Each message waits for the notification
+// before it (see await), so the server sees the lifecycle in order.
 func (c *conn) handle(base context.Context, gate <-chan struct{}, line []byte) <-chan struct{} {
 	m, err := parseMessage(line)
 	if err != nil {
@@ -266,7 +263,8 @@ func await(ctx context.Context, gate <-chan struct{}) {
 }
 
 // forward waits (see await), then POSTs one client message exactly as received and writes what the upstream
-// answers. The idle watchdog covers every response, plain JSON included.
+// answers. The idle watchdog covers every response, plain JSON included. It starts before the POST, so it also
+// bounds the wait for response headers, and the run time of a hook counts toward it.
 func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m message) {
 	await(ctx, gate)
 	idleCtx, cancel := context.WithCancelCause(ctx)
@@ -296,24 +294,30 @@ func (c *conn) shutdown(ctx context.Context) {
 	c.deleteSession(ctx, c.current())
 }
 
-// deleteSession ends the server-side session that sent names, best effort.
+// deleteSession ends the session sent, best effort.
 func (c *conn) deleteSession(ctx context.Context, sent upstreamState) {
 	if sent.id == "" {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), deleteTimeout)
 	defer cancel()
+	if err := c.sendDelete(ctx, sent); err != nil {
+		c.logf("session DELETE: %v", err)
+	}
+}
+
+// sendDelete sends the DELETE that ends the session sent.
+func (c *conn) sendDelete(ctx context.Context, sent upstreamState) error {
 	req, err := c.newRequest(ctx, http.MethodDelete, nil, sent)
 	if err != nil {
-		c.logf("session DELETE: %v", err)
-		return
+		return err
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.logf("session DELETE: %v", err)
-		return
+		return err
 	}
 	resp.Body.Close()
+	return nil
 }
 
 // post sends one JSON-RPC message to the endpoint.
@@ -592,6 +596,8 @@ func (x *exchange) httpFailure(ctx, reqCtx context.Context, resp *http.Response,
 
 // rejoin starts a new session after the server ended stale. The new session replaces the current one only when the
 // replay succeeds. One rejoin runs at a time, and a request that finds the session already replaced just retries.
+// The replay sends only initialize and notifications/initialized, so session state set later (a logging level,
+// subscriptions) is not restored.
 func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	c := x.c
 	if err := c.lockRejoin(ctx); err != nil {
@@ -605,9 +611,6 @@ func (x *exchange) rejoin(ctx context.Context, stale string) error {
 	c.mu.Lock()
 	init, initialized := c.initialize, c.initialized
 	c.mu.Unlock()
-	if init.line == nil {
-		return errors.New("the server ended the session, and no initialize request was sent to replay")
-	}
 	msgs := []clientMsg{init}
 	if initialized.line != nil {
 		msgs = append(msgs, initialized)
@@ -647,11 +650,7 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 	defer resp.Body.Close()
 	resp.Body = idleBody{ReadCloser: resp.Body, idle: idle}
 	if resp.StatusCode/100 != 2 {
-		body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBytes))
-		if err != nil {
-			return err
-		}
-		return httpError(resp.StatusCode, body, decodeErrorBody(body))
+		return statusError(resp)
 	}
 	if id := resp.Header.Get(sessionHeader); id != "" && msg.m.Method == methodInitialize {
 		next.id = id
@@ -660,9 +659,9 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 	var answer []byte
 	if isEventStream(resp.Header.Get(contentTypeHeader)) {
 		err = readEvents(resp.Body, func(data []byte) (bool, error) {
-			m, err := parseMessage(data)
+			m, err := parseUpstream(data)
 			if err != nil {
-				return false, fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
+				return false, err
 			}
 			if m.isResponseTo(msg.m) {
 				answer = data
@@ -674,14 +673,9 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 		var body []byte
 		body, err = readBody(resp.Body, maxLineBytes)
 		if err == nil && len(bytes.TrimSpace(body)) > 0 && msg.m.isRequest() {
-			m, perr := parseMessage(body)
-			if perr != nil {
-				return fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", perr)
+			if _, err = responseBody(body, msg.m); err == nil {
+				answer = body
 			}
-			if !m.isResponseTo(msg.m) {
-				return fmt.Errorf("upstream sent %s instead of the response to the request", excerpt(body))
-			}
-			answer = body
 		}
 	}
 	if err != nil {
@@ -743,12 +737,9 @@ func (x *exchange) read(reqCtx context.Context, resp *http.Response) error {
 		x.c.logf("upstream sent a JSON body for a notification or client response; it is not forwarded")
 		return nil
 	}
-	msg, err := parseMessage(body)
+	msg, err := responseBody(body, x.m)
 	if err != nil {
-		return fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
-	}
-	if !msg.isResponseTo(x.m) {
-		return fmt.Errorf("upstream sent %s instead of the response to the request", excerpt(body))
+		return err
 	}
 	return x.deliverMessage(reqCtx, body, msg)
 }
@@ -756,9 +747,9 @@ func (x *exchange) read(reqCtx context.Context, resp *http.Response) error {
 // deliverEvent handles one event of a 2xx event stream. It reports false once the response is written, since the
 // server SHOULD end the stream after it (https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#sending-messages-to-the-server).
 func (x *exchange) deliverEvent(reqCtx context.Context, data []byte) (bool, error) {
-	msg, err := parseMessage(data)
+	msg, err := parseUpstream(data)
 	if err != nil {
-		return false, fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
+		return false, err
 	}
 	if err := x.deliverMessage(reqCtx, data, msg); err != nil {
 		return false, err
@@ -817,16 +808,51 @@ func (x *exchange) fail(ctx, reqCtx context.Context, err error) {
 	case cause != nil:
 		return
 	}
-	x.c.logf("upstream: %v", err)
+	x.c.logUpstream(err)
 	if !x.m.isRequest() || x.answered {
 		return
 	}
 	msg := errorResponse(x.m.ID, codeUpstream, fmt.Sprintf("MCP upstream error for request %s: %v", x.m.ID, err))
 	if derr := x.deliver(reqCtx, msg); derr != nil {
 		// The hook failed too; the client still needs an answer, so write the error unhooked.
-		x.c.logf("upstream: %v", derr)
+		x.c.logUpstream(derr)
 		x.c.reply(msg)
 	}
+}
+
+// logUpstream logs an error from the upstream.
+func (c *conn) logUpstream(err error) {
+	c.logf("upstream: %v", err)
+}
+
+// parseUpstream parses one message the upstream sent.
+func parseUpstream(data []byte) (message, error) {
+	m, err := parseMessage(data)
+	if err != nil {
+		return m, fmt.Errorf("upstream sent an invalid JSON-RPC message: %w", err)
+	}
+	return m, nil
+}
+
+// responseBody parses a JSON body that must be the response to request. Any other message is an error that names it.
+func responseBody(body []byte, request message) (message, error) {
+	m, err := parseUpstream(body)
+	if err != nil {
+		return m, err
+	}
+	if !m.isResponseTo(request) {
+		return m, fmt.Errorf("upstream sent %s instead of the response to the request", excerpt(body))
+	}
+	return m, nil
+}
+
+// statusError is the error for a non-2xx response, read as httpFailure reads one.
+func statusError(resp *http.Response) error {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBytes))
+	if err != nil {
+		return err
+	}
+	return httpError(resp.StatusCode, body, decodeErrorBody(body))
 }
 
 // httpError describes a non-2xx response: its status, then the message of a JSON error body, or an excerpt of
