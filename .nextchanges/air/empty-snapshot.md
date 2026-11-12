@@ -1,1 +1,1 @@
-* `air run` now refuses to upload a `code_source` snapshot that selects no files (for example when `root_path` is git-ignored) and explains the cause, and `--dry-run` runs the snapshot file selection and reports the file count.
+* `air run` now refuses to upload a `code_source` snapshot that selects no files (for example when `root_path` is git-ignored) and explains the cause, and `--dry-run` runs the snapshot file selection and reports the file count. ([#7570](https://github.com/databricks/cli/pull/7570))
