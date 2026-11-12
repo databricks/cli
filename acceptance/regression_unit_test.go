@@ -69,6 +69,39 @@ func TestRenderRegressionReport(t *testing.T) {
 	assert.Contains(t, report, "failing=1")
 }
 
+func TestRenderRegressionReportHeading(t *testing.T) {
+	testCases := []struct {
+		name         string
+		branchStatus string
+		mainStatus   string
+		want         string
+	}{
+		{"passed", statusPass, statusPass, "✅"},
+		{"main failed", statusPass, statusFail, "✅"},
+		{"skipped", statusSkip, statusPass, "✅"},
+		{"branch failed", statusFail, statusPass, "❌"},
+		{"both failed", statusFail, statusFail, "❌"},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			columns := []regrColumn{
+				{Title: "branch", Results: map[string]*testResult{
+					"TestAccept/bundle/a": {Status: statusPass},
+					"TestAccept/bundle/b": {Status: testCase.branchStatus},
+				}},
+				{Title: "main", Category: catRegression, Results: map[string]*testResult{
+					"TestAccept/bundle/a": {Status: statusPass},
+					"TestAccept/bundle/b": {Status: testCase.mainStatus},
+				}},
+			}
+
+			report := renderRegressionReport("Selected 2", columns)
+			heading, _, _ := strings.Cut(report, "\n")
+			assert.Equal(t, "## Regression test report "+testCase.want, heading)
+		})
+	}
+}
+
 func TestRenderRegressionReportDedupesIdenticalFailures(t *testing.T) {
 	failure := func(tmp string) *testResult {
 		return &testResult{Status: statusFail, Output: []string{"Messages: output.txt vs /tmp/TestAcceptfoo" + tmp + "/002/output.txt", "diff"}}

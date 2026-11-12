@@ -160,7 +160,7 @@ jobs:
               report = kept + `_${blocks.length - shown} more failure details omitted, see the full report in the [run](${runUrl})._\n`;
             }
 
-            const body = report.replace(HEADING, `${HEADING}\n\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})`);
+            const body = report.replace('\n\n', `\n\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n`);
 
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
