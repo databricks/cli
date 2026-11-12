@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -77,8 +78,8 @@ func (e *ListError) Error() string {
 	case ListErrLocationNotFound:
 		return fmt.Sprintf("%s is not a schema visible to this profile: %v", e.Location, e.Err)
 	case ListErrPermissionDenied:
-		// Listing needs these two grants; services the caller cannot use are left out
-		// of the result instead of failing it.
+		// Listing needs these two grants. Services the caller has no privilege on are
+		// left out of the result instead of failing it.
 		return fmt.Sprintf("cannot list MCP services in %s (listing needs USE_CATALOG on the catalog and USE_SCHEMA on the schema): %v", e.Location, e.Err)
 	case ListErrRateLimited:
 		return fmt.Sprintf("MCP service listing in %s was rate limited; retry in a minute: %v", e.Location, e.Err)
@@ -90,6 +91,7 @@ func (e *ListError) Unwrap() error {
 	return e.Err
 }
 
+// listServices reads every page of the services in location, with source connections.
 func listServices(ctx context.Context, w *databricks.WorkspaceClient, location string) ([]catalog.McpService, error) {
 	return w.AiGateway.ListMcpServicesAll(ctx, catalog.ListMcpServicesRequest{
 		Parent: "schemas/" + location,
@@ -97,8 +99,17 @@ func listServices(ctx context.Context, w *databricks.WorkspaceClient, location s
 	})
 }
 
+// unrelatedErrorCodes are failures that look like a missing schema (404) or missing grants
+// (403) but are about the workspace or network: the API is not available, or private link
+// blocked the request. They keep the server's message and get no location or grants hint.
+var unrelatedErrorCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "PRIVATE_LINK_VALIDATION_ERROR"}
+
 // mapListError classifies a listing failure. Other errors are returned with context only.
 func mapListError(location string, err error) error {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode) {
+		return fmt.Errorf("cannot list MCP services in %s: %w", location, err)
+	}
+
 	var kind ListErrorKind
 	switch {
 	case errors.Is(err, apierr.ErrNotFound):
@@ -113,6 +124,7 @@ func mapListError(location string, err error) error {
 	return &ListError{Kind: kind, Location: location, Err: err}
 }
 
+// isDeletedSource reports whether the service's source connection was deleted.
 func isDeletedSource(svc *catalog.McpService) bool {
 	return svc.Config != nil && svc.Config.SourceConnection != nil && svc.Config.SourceConnection.IsDeleted
 }
@@ -126,12 +138,12 @@ func oauthProvider(svc *catalog.McpService) string {
 	return svc.Config.SourceConnection.Options[oauthProviderOption]
 }
 
+// newService builds a Service from an API service. The API returns lowercase names whatever
+// casing the caller used for the location, so the leaf and the system.ai check use the
+// returned name.
 func newService(svc *catalog.McpService) Service {
 	fullName := strings.TrimPrefix(svc.Name, mcpServicePrefix)
-	// The API returns lowercase names whatever casing the caller used for the location, so
-	// the schema and leaf come from the returned name. Unity Catalog names cannot contain ".".
-	dot := strings.LastIndex(fullName, ".")
-	namespace, leaf := fullName[:max(dot, 0)], fullName[dot+1:]
+	leaf := leafOf(fullName)
 	provider := oauthProvider(svc)
 
 	s := Service{
@@ -141,7 +153,7 @@ func newService(svc *catalog.McpService) Service {
 		SignInRequired: provider != "",
 		OAuthProvider:  provider,
 	}
-	if known, ok := knownSystemAI[leaf]; ok && namespace == systemAILocation {
+	if known, ok := knownSystemAI[leaf]; ok && inSystemAI(fullName) {
 		s.Known = &known
 	}
 	return s

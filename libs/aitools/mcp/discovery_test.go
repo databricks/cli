@@ -59,13 +59,13 @@ func discoveryTestPage(t *testing.T, nextPageToken string, services ...catalog.M
 
 // discoveryTestInternal is a Databricks-owned service with no source connection.
 func discoveryTestInternal(fullName string) catalog.McpService {
-	return catalog.McpService{Name: "mcp-services/" + fullName}
+	return catalog.McpService{Name: mcpServicePrefix + fullName}
 }
 
 // discoveryTestExternal is a service backed by a source connection with the given options.
 func discoveryTestExternal(fullName string, options map[string]string) catalog.McpService {
 	return catalog.McpService{
-		Name: "mcp-services/" + fullName,
+		Name: mcpServicePrefix + fullName,
 		Config: &catalog.McpServiceConfig{
 			SourceConnection: &catalog.McpServiceConfigSourceConnection{
 				Name:    "connections/" + fullName,
@@ -77,7 +77,7 @@ func discoveryTestExternal(fullName string, options map[string]string) catalog.M
 
 func TestDiscoverMakesOneCallForSingleSchemaPage(t *testing.T) {
 	w, calls := discoveryTestServe(t, "system.ai",
-		discoveryTestPage(t, "", discoveryTestInternal("system.ai.genie_one_mcp"), discoveryTestExternal("system.ai.github", map[string]string{"oauth_provider": discoveryTestGitHubProvider})),
+		discoveryTestPage(t, "", discoveryTestInternal("system.ai.genie_one_mcp"), discoveryTestExternal("system.ai.github", map[string]string{oauthProviderOption: discoveryTestGitHubProvider})),
 	)
 
 	services, err := Discover(t.Context(), w, "system.ai")
@@ -114,7 +114,7 @@ func TestDiscoverDetectsSignInFromOptions(t *testing.T) {
 		},
 		{
 			name:         "source connection with oauth_provider needs sign-in",
-			svc:          discoveryTestExternal("main.tools.crm", map[string]string{"oauth_provider": discoveryTestGitHubProvider}),
+			svc:          discoveryTestExternal("main.tools.crm", map[string]string{oauthProviderOption: discoveryTestGitHubProvider}),
 			wantSignIn:   true,
 			wantProvider: discoveryTestGitHubProvider,
 		},
@@ -138,7 +138,7 @@ func TestDiscoverDetectsSignInFromOptions(t *testing.T) {
 }
 
 func TestDiscoverDropsDeletedSourceConnections(t *testing.T) {
-	deleted := discoveryTestExternal("main.tools.old", map[string]string{"oauth_provider": discoveryTestGitHubProvider})
+	deleted := discoveryTestExternal("main.tools.old", map[string]string{oauthProviderOption: discoveryTestGitHubProvider})
 	deleted.Config.SourceConnection.IsDeleted = true
 
 	w, _ := discoveryTestServe(t, "main.tools",
@@ -153,7 +153,7 @@ func TestDiscoverDropsDeletedSourceConnections(t *testing.T) {
 }
 
 func TestDiscoverAttachesKnownOnlyInSystemAI(t *testing.T) {
-	github := discoveryTestExternal("system.ai.github", map[string]string{"oauth_provider": discoveryTestGitHubProvider})
+	github := discoveryTestExternal("system.ai.github", map[string]string{oauthProviderOption: discoveryTestGitHubProvider})
 	github.Comment = "API comment"
 	custom := discoveryTestInternal("system.ai.custom")
 
@@ -166,7 +166,7 @@ func TestDiscoverAttachesKnownOnlyInSystemAI(t *testing.T) {
 	assert.Equal(t, "API comment", services[0].Comment)
 	assert.Nil(t, services[1].Known)
 
-	w, _ = discoveryTestServe(t, "main.tools", discoveryTestPage(t, "", discoveryTestExternal("main.tools.github", map[string]string{"oauth_provider": discoveryTestGitHubProvider})))
+	w, _ = discoveryTestServe(t, "main.tools", discoveryTestPage(t, "", discoveryTestExternal("main.tools.github", map[string]string{oauthProviderOption: discoveryTestGitHubProvider})))
 	services, err = Discover(t.Context(), w, "main.tools")
 	require.NoError(t, err)
 	require.Len(t, services, 1)
@@ -174,7 +174,7 @@ func TestDiscoverAttachesKnownOnlyInSystemAI(t *testing.T) {
 }
 
 func TestDiscoverTakesLeafFromReturnedNameForMixedCaseLocation(t *testing.T) {
-	w, _ := discoveryTestServe(t, "System.AI", discoveryTestPage(t, "", discoveryTestExternal("system.ai.github", map[string]string{"oauth_provider": discoveryTestGitHubProvider})))
+	w, _ := discoveryTestServe(t, "System.AI", discoveryTestPage(t, "", discoveryTestExternal("system.ai.github", map[string]string{oauthProviderOption: discoveryTestGitHubProvider})))
 	services, err := Discover(t.Context(), w, "System.AI")
 	require.NoError(t, err)
 	require.Len(t, services, 1)
@@ -270,6 +270,28 @@ func TestListErrorMessages(t *testing.T) {
 		t.Run(string(tt.kind), func(t *testing.T) {
 			err := &ListError{Kind: tt.kind, Location: "system.ai", Err: cause}
 			assert.EqualError(t, err, tt.want)
+		})
+	}
+}
+
+func TestMapListErrorLeavesWorkspaceAndNetworkFailuresUnclassified(t *testing.T) {
+	tests := []struct {
+		code   string
+		status int
+	}{
+		{code: "ENDPOINT_NOT_FOUND", status: http.StatusNotFound},
+		{code: "FEATURE_DISABLED", status: http.StatusNotFound},
+		{code: "PRIVATE_LINK_VALIDATION_ERROR", status: http.StatusForbidden},
+	}
+	for _, tt := range tests {
+		t.Run(tt.code, func(t *testing.T) {
+			apiErr := &apierr.APIError{ErrorCode: tt.code, StatusCode: tt.status, Message: "server message"}
+			err := mapListError("system.ai", apiErr)
+
+			_, ok := errors.AsType[*ListError](err)
+			assert.False(t, ok)
+			assert.ErrorIs(t, err, apiErr)
+			assert.EqualError(t, err, "cannot list MCP services in system.ai: server message")
 		})
 	}
 }

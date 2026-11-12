@@ -31,21 +31,21 @@ func TestSanitize(t *testing.T) {
 func TestServerName(t *testing.T) {
 	tests := []struct {
 		name     string
-		location string
-		leaf     string
+		fullName string
 		profile  string
 		want     string
 	}{
-		{name: "system.ai keeps the leaf", location: "system.ai", leaf: "genie_one_mcp", profile: "logfood", want: "genie_one_mcp-logfood"},
-		{name: "system.ai github", location: "system.ai", leaf: "github", profile: "dogfood", want: "github-dogfood"},
-		{name: "customer schema includes catalog and schema", location: "main.tools", leaf: "crm", profile: "prod", want: "main-tools-crm-prod"},
-		{name: "profile is sanitized", location: "system.ai", leaf: "dbsql", profile: "My.Profile", want: "dbsql-my-profile"},
-		{name: "system.ai location is case-insensitive", location: "System.AI", leaf: "github", profile: "prod", want: "github-prod"},
-		{name: "trailing underscore cannot form __ before the tool name", location: "system.ai", leaf: "github", profile: "prod_", want: "github-prod"},
+		{name: "system.ai keeps the leaf", fullName: "system.ai.genie_one_mcp", profile: "logfood", want: "genie_one_mcp-logfood"},
+		{name: "system.ai github", fullName: "system.ai.github", profile: "dogfood", want: "github-dogfood"},
+		{name: "customer schema includes catalog and schema", fullName: "main.tools.crm", profile: "prod", want: "main-tools-crm-prod"},
+		{name: "profile is sanitized", fullName: "system.ai.dbsql", profile: "My.Profile", want: "dbsql-my-profile"},
+		{name: "system.ai is case-insensitive", fullName: "System.AI.github", profile: "prod", want: "github-prod"},
+		{name: "trailing underscore cannot form __ before the tool name", fullName: "system.ai.github", profile: "prod_", want: "github-prod"},
+		{name: "parts that sanitize to nothing are left out", fullName: "main.tools.\u9867\u5ba2", profile: "prod", want: "main-tools-prod"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, ServerName(tt.location, tt.leaf, tt.profile))
+			assert.Equal(t, tt.want, ServerName(tt.fullName, tt.profile))
 		})
 	}
 }

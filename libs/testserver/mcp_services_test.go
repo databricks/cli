@@ -28,9 +28,9 @@ func mcpServicesTestList(t *testing.T, workspace *FakeWorkspace, rawQuery string
 func mcpServicesTestWorkspace(t *testing.T) *FakeWorkspace {
 	t.Helper()
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	workspace.SeedMcpService("system.ai.genie_one_mcp", "Genie", "")
-	workspace.SeedMcpService("system.ai.github", "GitHub", mcpServicesTestGitHubProvider)
-	workspace.SeedMcpService("main.tools.crm", "CRM", mcpServicesTestGitHubProvider)
+	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
+	mcpServicesTestSeed(workspace, "system.ai.github", "GitHub", mcpServicesTestGitHubProvider)
+	mcpServicesTestSeed(workspace, "main.tools.crm", "CRM", mcpServicesTestGitHubProvider)
 	return workspace
 }
 
@@ -41,6 +41,14 @@ func TestMcpServicesListFiltersByParent(t *testing.T) {
 	require.Len(t, services, 2)
 	assert.Equal(t, "mcp-services/system.ai.genie_one_mcp", services[0].Name)
 	assert.Equal(t, "mcp-services/system.ai.github", services[1].Name)
+}
+
+func TestMcpServicesListMatchesParentInAnyCase(t *testing.T) {
+	workspace := mcpServicesTestWorkspace(t)
+
+	services := mcpServicesTestList(t, workspace, "parent=schemas/System.AI&view=FULL")
+	require.Len(t, services, 2)
+	assert.Equal(t, "mcp-services/system.ai.genie_one_mcp", services[0].Name)
 }
 
 func TestMcpServicesListViewFullKeepsSourceConnection(t *testing.T) {
@@ -68,4 +76,23 @@ func TestMcpServicesListViewBasicOmitsSourceConnection(t *testing.T) {
 	services := mcpServicesTestList(t, workspace, "parent=schemas/system.ai&view=FULL")
 	require.NotNil(t, services[1].Config)
 	require.NotNil(t, services[1].Config.SourceConnection)
+}
+
+// mcpServicesTestSeed stores an MCP service under fullName (catalog.schema.leaf).
+// An empty oauthProvider seeds an internal Databricks service with no source connection;
+// otherwise the service is backed by a source connection with that OAuth provider.
+func mcpServicesTestSeed(s *FakeWorkspace, fullName, comment, oauthProvider string) {
+	ms := catalog.McpService{
+		Name:    mcpServicesNamePrefix + fullName,
+		Comment: comment,
+	}
+	if oauthProvider != "" {
+		ms.Config = &catalog.McpServiceConfig{
+			SourceConnection: &catalog.McpServiceConfigSourceConnection{
+				Name:    "connections/" + fullName,
+				Options: map[string]string{"oauth_provider": oauthProvider},
+			},
+		}
+	}
+	s.McpServices[fullName] = ms
 }

@@ -17,10 +17,6 @@ const (
 	mcpServicesParentPrefix = "schemas/"
 )
 
-// mcpServicesViewFull is the list view that includes source connections. Any other view,
-// including unset, omits them, as the API does.
-const mcpServicesViewFull = "FULL"
-
 // McpServicesCreate fakes POST /api/2.1/unity-catalog/mcp-services. See
 // ModelServicesCreate for the shape: the McpService body is sent directly,
 // parent and mcp_service_id are query parameters, and the map is keyed by the
@@ -81,18 +77,19 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 }
 
 // McpServicesList fakes GET /api/2.1/unity-catalog/mcp-services. It filters by parent
-// (schemas/{catalog}.{schema}) and drops the source connection unless view is FULL, as the
-// real API does. Pagination is not faked: every match is returned in one page.
+// (schemas/{catalog}.{schema}, in any casing, as Unity Catalog names are case-insensitive) and
+// drops the source connection unless view is FULL, as the real API does. Pagination is not
+// faked: every match is returned in one page.
 func (s *FakeWorkspace) McpServicesList(req Request) Response {
 	defer s.LockUnlock()()
 
 	query := req.URL.Query()
-	prefix := strings.TrimPrefix(query.Get("parent"), mcpServicesParentPrefix) + "."
-	full := query.Get("view") == mcpServicesViewFull
+	prefix := strings.ToLower(strings.TrimPrefix(query.Get("parent"), mcpServicesParentPrefix)) + "."
+	full := query.Get("view") == string(catalog.ListMcpServicesRequestViewFull)
 
 	var services []catalog.McpService
 	for _, key := range slices.Sorted(maps.Keys(s.McpServices)) {
-		if !strings.HasPrefix(key, prefix) {
+		if !strings.HasPrefix(strings.ToLower(key), prefix) {
 			continue
 		}
 		ms := s.McpServices[key]
@@ -108,25 +105,4 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 	return Response{
 		Body: catalog.ListMcpServicesResponse{McpServices: services},
 	}
-}
-
-// SeedMcpService stores an MCP service under fullName (catalog.schema.leaf) for list tests.
-// An empty oauthProvider seeds an internal Databricks service with no source connection;
-// otherwise the service is backed by a source connection with that OAuth provider.
-func (s *FakeWorkspace) SeedMcpService(fullName, comment, oauthProvider string) {
-	defer s.LockUnlock()()
-
-	ms := catalog.McpService{
-		Name:    mcpServicesNamePrefix + fullName,
-		Comment: comment,
-	}
-	if oauthProvider != "" {
-		ms.Config = &catalog.McpServiceConfig{
-			SourceConnection: &catalog.McpServiceConfigSourceConnection{
-				Name:    "connections/" + fullName,
-				Options: map[string]string{"oauth_provider": oauthProvider},
-			},
-		}
-	}
-	s.McpServices[fullName] = ms
 }
