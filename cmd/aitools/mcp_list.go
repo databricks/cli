@@ -112,7 +112,7 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 	if err != nil {
 		return out, err
 	}
-	disk, err := readAgentEntries(ctx)
+	disk, err := readListEntries(ctx)
 	if err != nil {
 		return out, err
 	}
@@ -175,9 +175,9 @@ func buildMcpList(ctx context.Context) (mcpListOutput, error) {
 	return out, nil
 }
 
-// readAgentEntries returns the MCP server entries of every MCP-capable agent, keyed by agent name then
+// readListEntries returns the MCP server entries of every MCP-capable agent, keyed by agent name then
 // server name. A config that cannot be parsed fails the command: the listing would otherwise be wrong.
-func readAgentEntries(ctx context.Context) (map[string]map[string]map[string]any, error) {
+func readListEntries(ctx context.Context) (map[string]map[string]map[string]any, error) {
 	disk := map[string]map[string]map[string]any{}
 	for _, a := range agents.MCPAgents() {
 		entries, err := agentconfig.Read(ctx, a)

@@ -4,6 +4,12 @@ mkdir -p home/.claude
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
+# The services of system.ai, created in the fake workspace. The fake keeps one workspace per token, so each profile
+# gets its own copy.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' &> LOG.create-github-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile dogfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-dogfood
+
 title "Two profiles, add twice: logfood gets two services, dogfood gets one"
 trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code
 trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code
