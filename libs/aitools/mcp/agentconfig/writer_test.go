@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -315,6 +316,9 @@ func TestUpsertKeepsFileModeAndCreatesPrivateFile(t *testing.T) {
 	info, err = os.Stat(created)
 	require.NoError(t, err)
 	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	dirInfo, err := os.Stat(filepath.Dir(created))
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
 }
 
 func TestUpsertWritesThroughSymlink(t *testing.T) {
@@ -466,4 +470,171 @@ func TestUpsertKeepsUserKeysTOML(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, testArgs("other"), toStrings(t, entries[testName]["args"]))
 	assert.Equal(t, false, entries[testName]["enabled"])
+}
+
+// Copilot narrows the tools of an entry we wrote after the first add. The list
+// is the user's from then on: a re-add with the same launch keys leaves the file
+// alone, and a changed argument keeps the list.
+func TestUpsertKeepsToolsNarrowedByUser(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "mcp-config.json")
+	entry := testEntry(testCmd, testArgs("test"), nil)
+	entry["tools"] = []string{"search"}
+	data, err := json.Marshal(map[string]any{"mcpServers": map[string]any{testName: entry}})
+	require.NoError(t, err)
+	writeFile(t, path, data, 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUnchanged, status)
+	assert.Equal(t, data, readFile(t, path))
+
+	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, []any{"search"}, entries[testName]["tools"])
+}
+
+// An update writes only the launch keys that changed. The other members keep
+// their bytes: comments, key order, number text and the user's keys. Only the
+// command and args are replaced, in place.
+func TestUpsertPatchesOnlyChangedKeysJSON(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	before := `{
+  "mcpServers": {
+    "` + testName + `": {
+      "disabled": false,
+      // written by hand
+      "timeout": 1.50,
+      "command": "/old/databricks",
+      "args": ["aitools", "mcp", "serve", "--profile", "old"],
+      "big": 12345678901234567890
+    },
+    "other": {"command": "npx"}
+  }
+}
+`
+	writeFile(t, path, []byte(before), 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	assert.Equal(t, `{
+  "mcpServers": {
+    "`+testName+`": {
+      "disabled": false,
+      // written by hand
+      "timeout": 1.50,
+      "command": "/opt/databricks/bin/databricks",
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "dogfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "test"
+      ],
+      "big": 12345678901234567890
+    },
+    "other": {"command": "npx"}
+  }
+}
+`, string(readFile(t, path)))
+}
+
+// A launch key that the file lacks is added on update, and one that the entry
+// no longer has is removed. Either way the file stays strict JSON, whether the
+// key was the last member or not.
+func TestUpsertUpdateAddsAndRemovesLaunchKeys(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeFile(t, path, []byte(`{"mcpServers":{"`+testName+`":{"command":"`+testCmd+`","args":["aitools","mcp","serve","--agent","test"]}}}`), 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{"B": "2"}, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"B": "2"}, entries[testName]["env"])
+	requireStrictJSON(t, string(readFile(t, path)))
+
+	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err = Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.NotContains(t, entries[testName], "env")
+	requireStrictJSON(t, string(readFile(t, path)))
+}
+
+// Keys of an entry we wrote that the user keeps in TOML are kept on update,
+// including sub-tables such as [mcp_servers.<name>.tools.<tool>].
+func TestTOMLUpdateKeepsUserTables(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	data := testBlock + "\n[mcp_servers." + testName + ".tools.search]\napproval_mode = \"approve\"\n"
+	writeFile(t, path, []byte(data), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	entries, err := Read(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"search": map[string]any{"approval_mode": "approve"}}, entries[testName]["tools"])
+}
+
+// Duplicate member names on the path to the server are refused. Agents read the
+// last of two equal names while an edit would change the first, so the file is
+// left alone.
+func TestUpsertAndRemoveRefuseDuplicateKeysJSON(t *testing.T) {
+	argsJSON, err := json.Marshal(testArgs("test"))
+	require.NoError(t, err)
+	ours := `{"command": "` + testCmd + `", "args": ` + string(argsJSON) + `}`
+	for _, data := range []string{
+		`{"mcpServers": {}, "mcpServers": {"` + testName + `": ` + ours + `}}`,
+		`{"mcpServers": {"` + testName + `": ` + ours + `, "` + testName + `": {"command": "/usr/bin/other", "args": []}}}`,
+		`{"mcpServers": {"` + testName + `": {"command": "` + testCmd + `", "args": ` + string(argsJSON) + `, "command": "/usr/bin/other"}}}`,
+	} {
+		t.Run(data, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			writeFile(t, path, []byte(data), 0o600)
+			a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
+			require.ErrorIs(t, err, ErrConfigInvalid)
+			_, err = Remove(t.Context(), a, testName)
+			require.ErrorIs(t, err, ErrConfigInvalid)
+			assert.Equal(t, data, string(readFile(t, path)))
+		})
+	}
+}
+
+// A file whose top-level value is not an object names the problem once.
+func TestUpsertNonObjectTopLevelNamesProblemOnce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeFile(t, path, []byte(`[]`), 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.ErrorIs(t, err, ErrConfigInvalid)
+	assert.Equal(t, 1, strings.Count(err.Error(), ErrConfigInvalid.Error()), err.Error())
+}
+
+// Remove checks the name the way Upsert does, so an invalid name is an error
+// and nothing is read as a match.
+func TestRemoveRefusesInvalidServerName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	data := `{"mcpServers":{"` + testName + `":{"command":"` + testCmd + `","args":[]}}}`
+	writeFile(t, path, []byte(data), 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, err := Remove(t.Context(), a, "genie.one")
+	assert.ErrorContains(t, err, "must contain only letters, digits, '-' and '_'")
+	assert.Equal(t, data, string(readFile(t, path)))
 }

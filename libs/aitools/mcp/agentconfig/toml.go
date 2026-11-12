@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/databricks/cli/libs/localenv"
 )
 
 // tomlDoc is an agent config file in TOML. Reads decode the file. An edit
@@ -77,7 +79,14 @@ func (d *tomlDoc) entries(root []string) (map[string]map[string]any, error) {
 	return out, nil
 }
 
+// set and update rewrite the tables of the server from entry. The user's keys
+// keep their values, but the text of those tables is rendered again, so their
+// comments and layout inside the server's tables are not kept.
 func (d *tomlDoc) set(root []string, name string, entry map[string]any) error {
+	return d.edit(root, name, entry)
+}
+
+func (d *tomlDoc) update(root []string, name string, entry map[string]any) error {
 	return d.edit(root, name, entry)
 }
 
@@ -88,9 +97,14 @@ func (d *tomlDoc) remove(root []string, name string) error {
 // edit replaces the tables of server name under root with the rendering of
 // entry, or deletes them when entry is nil. A server that exists without tables
 // of its own (an inline table or dotted keys) is an error, not rewritten.
+// Headers are found in the text with multi-line strings protected, so a line
+// inside such a string is never taken for a table.
 func (d *tomlDoc) edit(root []string, name string, entry map[string]any) error {
-	nl := lineEnding(d.text)
-	lines := splitLines(d.text)
+	protected, restore, err := localenv.ProtectMultilineStrings(string(d.text))
+	if err != nil {
+		return err
+	}
+	lines := splitLines([]byte(protected))
 	ranges := serverBlocks(lines, root, name)
 	_, found, err := d.entry(root, name)
 	if err != nil {
@@ -107,49 +121,86 @@ func (d *tomlDoc) edit(root []string, name string, entry map[string]any) error {
 			strings.Join(root, "."), name)
 	}
 
-	var block []byte
+	nl := lineEnding(d.text)
+	var block [][]byte
 	if entry != nil {
-		var err error
-		if block, err = renderBlock(root, name, entry, nl); err != nil {
+		rendered, err := renderBlock(root, name, entry, nl)
+		if err != nil {
 			return err
 		}
+		block = splitLines(rendered)
 	}
-	var out []byte
-	pos := 0
-	placed := block == nil
-	for _, r := range ranges {
-		start := r.start
-		// Removing a block also removes the blank line that separated it from the
-		// lines before, so the file does not gain a double blank line.
-		if block == nil && start > pos && strings.TrimSpace(string(lines[start-1])) == "" {
-			start--
-		}
-		for _, line := range lines[pos:start] {
-			out = append(out, line...)
-		}
-		if !placed {
-			out = append(out, block...)
-			placed = true
-		}
-		pos = r.end
-	}
-	for _, line := range lines[pos:] {
-		out = append(out, line...)
-	}
-	if !placed {
-		out = appendBlock(out, block, nl)
-	}
+	text := restore(string(bytes.Join(spliceBlock(lines, ranges, block, nl), nil)))
 
 	parsed := map[string]any{}
-	if _, err := toml.Decode(string(out), &parsed); err != nil {
+	if _, err := toml.Decode(text, &parsed); err != nil {
 		return fmt.Errorf("server %q: the edited file does not decode: %w", name, err)
 	}
 	if err := checkEdit(d.root, parsed, root, name, entry); err != nil {
 		return fmt.Errorf("server %q: %w", name, err)
 	}
-	d.text = out
+	d.text = []byte(text)
 	d.root = parsed
 	return nil
+}
+
+// spliceBlock returns lines with the tables at ranges replaced by block, or
+// removed when block is nil. The first table takes block and the others are
+// dropped, each with its separating blank lines.
+func spliceBlock(lines [][]byte, ranges []lineRange, block [][]byte, nl string) [][]byte {
+	var out [][]byte
+	pos := 0
+	placed := false
+	for _, r := range ranges {
+		out = append(out, lines[pos:r.start]...)
+		pos = r.end
+		if block != nil && !placed {
+			out = append(out, block...)
+			placed = true
+			continue
+		}
+		out, pos = dropTable(out, lines, pos, nl)
+	}
+	out = append(out, lines[pos:]...)
+	if block != nil && !placed {
+		out = appendBlock(out, block, nl)
+	}
+	return out
+}
+
+// dropTable is called after a table is dropped, with the lines emitted so far
+// and the index of the first line after the table. When nothing is emitted yet,
+// the blank lines after the table go, so the file does not start with a blank
+// line. Otherwise the blank lines around the table become one blank line, when
+// there was one on either side of it and something follows.
+func dropTable(out, lines [][]byte, pos int, nl string) ([][]byte, int) {
+	if !hasContent(out) {
+		for pos < len(lines) && isBlankLine(lines[pos]) {
+			pos++
+		}
+		return out, pos
+	}
+	blank := false
+	for len(out) > 0 && isBlankLine(out[len(out)-1]) {
+		out = out[:len(out)-1]
+		blank = true
+	}
+	for pos < len(lines) && isBlankLine(lines[pos]) {
+		pos++
+		blank = true
+	}
+	if blank && pos < len(lines) {
+		out = append(out, []byte(nl))
+	}
+	return out, pos
+}
+
+func hasContent(lines [][]byte) bool {
+	return slices.ContainsFunc(lines, func(line []byte) bool { return !isBlankLine(line) })
+}
+
+func isBlankLine(line []byte) bool {
+	return strings.TrimSpace(string(line)) == ""
 }
 
 // checkEdit verifies an edit: the server is entry (or gone when entry is nil),
@@ -264,12 +315,12 @@ func renderBlock(root []string, name string, entry map[string]any, nl string) ([
 }
 
 // appendBlock appends block after out, separated by one blank line.
-func appendBlock(out, block []byte, nl string) []byte {
+func appendBlock(out, block [][]byte, nl string) [][]byte {
 	if len(out) > 0 {
-		if out[len(out)-1] != '\n' {
-			out = append(out, nl...)
+		if last := out[len(out)-1]; !bytes.HasSuffix(last, []byte("\n")) {
+			out[len(out)-1] = append(slices.Clip(last), nl...)
 		}
-		out = append(out, nl...)
+		out = append(out, []byte(nl))
 	}
 	return append(out, block...)
 }
@@ -322,22 +373,85 @@ func isServerTable(parts, root []string, name string) bool {
 }
 
 // tomlTableKey returns the key path of a table header line, such as
-// [mcp_servers.name] or [[mcp_servers.name]]. Other lines report false.
+// [mcp_servers.name] or [[mcp_servers."a.b"]], with the quoted keys unquoted.
+// Other lines, including an array element that starts with a bracket, report
+// false.
 func tomlTableKey(line string) ([]string, bool) {
 	s := strings.TrimSpace(line)
-	if !strings.HasPrefix(s, "[") {
-		return nil, false
-	}
-	s = strings.TrimLeft(s, "[")
-	end := strings.IndexByte(s, ']')
-	if end < 0 {
+	closing := "]"
+	switch {
+	case strings.HasPrefix(s, "[["):
+		s, closing = s[2:], "]]"
+	case strings.HasPrefix(s, "["):
+		s = s[1:]
+	default:
 		return nil, false
 	}
 	var parts []string
-	for p := range strings.SplitSeq(s[:end], ".") {
-		parts = append(parts, strings.Trim(strings.TrimSpace(p), `"'`))
+	for {
+		s = strings.TrimLeft(s, " \t")
+		key, rest, ok := tomlKey(s)
+		if !ok {
+			return nil, false
+		}
+		parts = append(parts, key)
+		s = strings.TrimLeft(rest, " \t")
+		if !strings.HasPrefix(s, ".") {
+			break
+		}
+		s = s[1:]
+	}
+	if !strings.HasPrefix(s, closing) {
+		return nil, false
+	}
+	if tail := strings.TrimSpace(s[len(closing):]); tail != "" && !strings.HasPrefix(tail, "#") {
+		return nil, false
 	}
 	return parts, true
+}
+
+// tomlKey reads one key at the start of s, a bare key or a basic ("...") or
+// literal ('...') quoted key, and returns it with the rest of s.
+func tomlKey(s string) (key, rest string, ok bool) {
+	if s == "" {
+		return "", "", false
+	}
+	switch s[0] {
+	case '"':
+		end := 1
+		for end < len(s) && s[end] != '"' {
+			if s[end] == '\\' {
+				end++
+			}
+			end++
+		}
+		if end >= len(s) {
+			return "", "", false
+		}
+		name, err := strconv.Unquote(s[:end+1])
+		if err != nil {
+			return "", "", false
+		}
+		return name, s[end+1:], true
+	case '\'':
+		end := strings.IndexByte(s[1:], '\'')
+		if end < 0 {
+			return "", "", false
+		}
+		return s[1 : end+1], s[end+2:], true
+	}
+	end := 0
+	for end < len(s) && isBareKeyChar(s[end]) {
+		end++
+	}
+	if end == 0 {
+		return "", "", false
+	}
+	return s[:end], s[end:], true
+}
+
+func isBareKeyChar(c byte) bool {
+	return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' || c == '-' || c == '_'
 }
 
 func isBlankOrComment(line string) bool {

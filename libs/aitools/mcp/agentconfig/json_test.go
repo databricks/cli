@@ -99,7 +99,7 @@ func TestJSONNewFileLayout(t *testing.T) {
 
 func TestJSONRejectsNonObjectTopLevel(t *testing.T) {
 	_, err := parseJSON([]byte(`"text"`))
-	require.ErrorIs(t, err, ErrConfigInvalid)
+	require.ErrorContains(t, err, "top-level value is not a JSON object")
 }
 
 func TestJSONEntriesSkipNonObjects(t *testing.T) {
