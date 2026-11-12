@@ -22,7 +22,7 @@ func TestListCacheRoundTrip(t *testing.T) {
 
 	row := listRow{
 		RunID: "42", Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
-		AcceleratorType: new("GPU_1xA10"), AcceleratorCount: new(1), Experiment: "exp",
+		AcceleratorType: new("GPU_1xA10"), NumAccelerators: new(1), DashboardURL: new("https://host.test/jobs/runs/42?o=1"), Experiment: "exp",
 	}
 	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
 	tasks := []jobs.RunTask{{RunId: 420, TaskKey: "train"}, {RunId: 421, TaskKey: "train", AttemptNumber: 1}}

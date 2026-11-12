@@ -37,17 +37,18 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID            string  `json:"run_id"`
-	RunName          string  `json:"run_name"`
-	User             string  `json:"user"`
-	Status           string  `json:"status"`
-	DisplayStatus    string  `json:"-"`
-	StartedAt        *string `json:"started_at"`
-	IsSweep          bool    `json:"is_sweep"`
-	ExperimentName   *string `json:"experiment_name"`
-	DurationSeconds  *int64  `json:"duration_seconds"`
-	AcceleratorType  *string `json:"accelerator_type"`
-	AcceleratorCount *int    `json:"accelerator_count"`
+	RunID           string  `json:"run_id"`
+	RunName         string  `json:"run_name"`
+	User            string  `json:"user"`
+	Status          string  `json:"status"`
+	DisplayStatus   string  `json:"-"`
+	StartedAt       *string `json:"started_at"`
+	IsSweep         bool    `json:"is_sweep"`
+	ExperimentName  *string `json:"experiment_name"`
+	DurationSeconds *int64  `json:"duration_seconds"`
+	AcceleratorType *string `json:"accelerator_type"`
+	NumAccelerators *int    `json:"num_accelerators"`
+	DashboardURL    *string `json:"dashboard_url"`
 
 	// The fields below are pre-rendered table cells or text-only enrichment.
 	Experiment string `json:"-"`
@@ -57,7 +58,7 @@ type listRow struct {
 	Progress      string `json:"-"`
 	MLflowURL     string `json:"-"`
 	MLflowLabel   string `json:"-"`
-	RunURL        string `json:"dashboard_url"`
+	RunURL        string `json:"-"`
 	ExperimentURL string `json:"-"`
 	Accelerators  string `json:"-"`
 }
