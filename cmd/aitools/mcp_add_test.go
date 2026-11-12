@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -374,7 +375,8 @@ func defaultBinding(t *testing.T, profile string) addBinding {
 // planNames runs planAdds for the services with the agent entries read as the command reads them.
 func planNames(t *testing.T, nameFlag string, b addBinding, state *mcp.State, fullNames []string, targets []*agents.Agent) ([]addPlan, error) {
 	t.Helper()
-	return planAdds(t.Context(), nameFlag, b, state, fullNames, targets, readAgentEntries(t.Context(), targets))
+	in := planInput{binding: b, nameFlag: nameFlag, targets: targets, held: readAgentEntries(t.Context(), targets)}
+	return planAdds(t.Context(), in, state, fullNames)
 }
 
 // claudeEntry is a Databricks entry for claude-code that runs the serve command for service and profile, with the
@@ -397,7 +399,6 @@ func TestPlanAddsNaming(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, plans, 1)
 		assert.Equal(t, "genie_one_mcp-logfood", plans[0].name)
-		assert.Nil(t, plans[0].entry)
 		assert.Equal(t, "system.ai.genie_one_mcp", plans[0].service.FullName)
 	})
 
@@ -407,7 +408,6 @@ func TestPlanAddsNaming(t *testing.T) {
 		plans, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{claude})
 		require.NoError(t, err)
 		assert.Equal(t, "custom-name", plans[0].name)
-		assert.NotNil(t, plans[0].entry)
 	})
 
 	t.Run("stored entry for the same binding is found in its own config file only", func(t *testing.T) {
@@ -535,13 +535,16 @@ func TestPlanAddsNaming(t *testing.T) {
 		assert.Equal(t, "--name taken is used by another installed server; pick a different name", err.Error())
 	})
 
-	t.Run("stored name held by another binding in an agent is refused", func(t *testing.T) {
+	t.Run("stored name held by another binding in a detected agent fails only that agent", func(t *testing.T) {
 		home := withHome(t)
 		require.NoError(t, os.WriteFile(filepath.Join(home, ".claude.json"), []byte(`{"mcpServers":{"github-logfood":`+claudeEntry("system.ai.github", "dev-foo", "")+`}}`), 0o600))
 		state := &mcp.State{Servers: []mcp.Entry{{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: host}}}
-		_, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{claude})
-		require.Error(t, err)
-		assert.Equal(t, categoryNameConflict, errorCategory(err))
+		plans, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{claude})
+		require.NoError(t, err)
+		require.Len(t, plans, 1)
+		assert.Equal(t, "github-logfood", plans[0].name)
+		require.Contains(t, plans[0].failed, claude)
+		assert.Equal(t, categoryNameConflict, errorCategory(plans[0].failed[claude]))
 	})
 
 	t.Run("planning reads the agent entries it is given, not the files", func(t *testing.T) {
@@ -550,7 +553,8 @@ func TestPlanAddsNaming(t *testing.T) {
 		held := map[*agents.Agent]map[string]map[string]any{
 			claude: {"genie_one_mcp-logfood": map[string]any{"type": "stdio", "command": "ug", "args": []any{"mcp-proxy"}}},
 		}
-		plans, err := planAdds(t.Context(), "", defaultBinding(t, "logfood"), &mcp.State{}, []string{"system.ai.genie_one_mcp"}, []*agents.Agent{claude}, held)
+		in := planInput{binding: defaultBinding(t, "logfood"), targets: []*agents.Agent{claude}, held: held}
+		plans, err := planAdds(t.Context(), in, &mcp.State{}, []string{"system.ai.genie_one_mcp"})
 		require.NoError(t, err)
 		assert.Equal(t, "genie_one_mcp-logfood-2", plans[0].name)
 	})
@@ -734,87 +738,6 @@ type failingWriter struct{}
 
 func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("disk full") }
 
-// TestInstallServerCodexHomeCountsAsInstalled checks that an agent with a config directory is installed for MCP even when Detected would say otherwise.
-func TestInstallServerCodexHomeCountsAsInstalled(t *testing.T) {
-	home := withHome(t)
-	codexHome := filepath.Join(t.TempDir(), "codex")
-	require.NoError(t, os.MkdirAll(codexHome, 0o700))
-	t.Setenv(codexHomeEnv, codexHome)
-
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("codex")}, binary: "databricks"}
-	req.refused = refusedAgents(t.Context(), req.agents)
-	require.Empty(t, req.refused, "the agent must count as installed, so the refusal path must not refuse it")
-	out := installServer(t.Context(), req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
-	require.Len(t, out.Agents, 1)
-	assert.Equal(t, statusInstalled, out.Agents[0].Status)
-	assert.NoError(t, out.Agents[0].err)
-	assert.FileExists(t, filepath.Join(codexHome, "config.toml"))
-	assert.NoDirExists(t, filepath.Join(home, ".codex"))
-}
-
-// TestInstallServerGeminiDirAloneIsRefused checks that gemini CLI's directory is shared with Antigravity, so ~/.gemini alone does not install Gemini CLI.
-func TestInstallServerGeminiDirAloneIsRefused(t *testing.T) {
-	home := withHome(t)
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o700))
-
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("gemini")}, binary: "databricks"}
-	req.refused = refusedAgents(t.Context(), req.agents)
-	out := installServer(t.Context(), req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
-	require.Len(t, out.Agents, 1)
-	assert.Equal(t, statusFailed, out.Agents[0].Status)
-	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, out.Agents[0].ErrorCategory)
-	assert.NoFileExists(t, filepath.Join(home, ".gemini", "settings.json"))
-}
-
-// TestInstallServerGeminiWithProjectsJSON checks that gemini CLI is installed once it has written projects.json, as the registry detects it.
-func TestInstallServerGeminiWithProjectsJSON(t *testing.T) {
-	home := withHome(t)
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini"), 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("{}"), 0o600))
-
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("gemini")}, binary: "databricks"}
-	req.refused = refusedAgents(t.Context(), req.agents)
-	require.Empty(t, req.refused, "projects.json must count as installed, so the refusal path must not refuse it")
-	out := installServer(t.Context(), req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
-	require.Len(t, out.Agents, 1)
-	assert.Equal(t, statusInstalled, out.Agents[0].Status)
-	assert.FileExists(t, filepath.Join(home, ".gemini", "settings.json"))
-}
-
-// TestInstallServerAntigravityFromItsOwnDir checks that antigravity is installed from its own directory, and its MCP file is written under ~/.gemini/config.
-func TestInstallServerAntigravityFromItsOwnDir(t *testing.T) {
-	home := withHome(t)
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o700))
-
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("antigravity")}, binary: "databricks"}
-	req.refused = refusedAgents(t.Context(), req.agents)
-	require.Empty(t, req.refused, "its own directory must count as installed, so the refusal path must not refuse it")
-	out := installServer(t.Context(), req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
-	require.Len(t, out.Agents, 1)
-	assert.Equal(t, statusInstalled, out.Agents[0].Status)
-	assert.FileExists(t, filepath.Join(home, ".gemini", "config", "mcp_config.json"))
-}
-
-// TestInstallServerCLIOnPathCountsAsInstalled checks that a CLI found only on PATH counts as installed, so its MCP config is written.
-func TestInstallServerCLIOnPathCountsAsInstalled(t *testing.T) {
-	home := withHome(t)
-	dir := t.TempDir()
-	name := "codex"
-	if runtime.GOOS == "windows" {
-		name += ".exe"
-	}
-	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), 0o755))
-	t.Setenv("PATH", dir)
-
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("codex")}, binary: "databricks"}
-	req.refused = refusedAgents(t.Context(), req.agents)
-	require.Empty(t, req.refused, "a CLI on PATH must count as installed, so the refusal path must not refuse it")
-	out := installServer(t.Context(), req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
-	require.Len(t, out.Agents, 1)
-	assert.Equal(t, statusInstalled, out.Agents[0].Status)
-	assert.FileExists(t, filepath.Join(home, ".codex", "config.toml"))
-}
-
 // TestInstallServerReassertsFromAgentFile checks that a second install of the same entry reports "re-asserted" from the agent file, even when the state
 // that recorded it is gone.
 func TestInstallServerReassertsFromAgentFile(t *testing.T) {
@@ -852,16 +775,6 @@ func TestAgentFailureErrorWhenAServiceReachedNoAgent(t *testing.T) {
 	// Agents named with --agents fail the command on any failure.
 	assert.Error(t, agentFailureError(addRequest{explicit: true}, []addServerOutput{installed, mixed}))
 	assert.NoError(t, agentFailureError(addRequest{explicit: true}, []addServerOutput{installed}))
-}
-
-func TestRequireProfileNamesProfileAndPath(t *testing.T) {
-	ctx := t.Context()
-	path := writeAddConfig(t, "[other]\nhost = https://other.test\n")
-
-	err := requireProfile(ctx, "logfood")
-	require.Error(t, err)
-	assert.Equal(t, "profile logfood not found in "+filepath.ToSlash(path), err.Error())
-	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
 }
 
 func TestErrorCategoryMapsTypedFailures(t *testing.T) {
@@ -953,7 +866,7 @@ func TestMcpAddEmptyHostIsProfileNotFound(t *testing.T) {
 	err := runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
 	require.Error(t, err)
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
-	assert.Contains(t, err.Error(), "profile logfood not found in ")
+	assert.Contains(t, err.Error(), "profile \"logfood\", which has no host in ")
 }
 
 // TestMcpAddRejectedTokenIsAuthFailed checks that a credential the workspace rejects on the first real request is AUTH_FAILED, with the login command.
@@ -1040,7 +953,7 @@ func TestMcpAddNamesResolvedConfigFileWhenDotDotFollowsSymlink(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
 	resolved, evalErr := filepath.EvalSymlinks(cfg)
 	require.NoError(t, evalErr)
-	assert.Equal(t, "profile logfood not found in "+filepath.ToSlash(resolved), err.Error())
+	assert.Contains(t, err.Error(), "which no longer exists in "+filepath.ToSlash(resolved)+". Recreate")
 }
 
 // TestMcpAddRefusesNameThatSanitizesToNothing checks that a service whose generated name is empty is refused before any request, and the message
@@ -1094,52 +1007,60 @@ func TestMcpAddTakesLocationFromFullNames(t *testing.T) {
 }
 
 // TestMcpAddAgreesWithBind checks that add refuses the same bindings that Bind refuses, with the same message where the failure is about the server.
+// setupHostChanged prepares the case "host changed" for a profile in the default config file.
+func setupHostChanged(t *testing.T, home, host string) {
+	writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"})
+}
+
+// setupWorkspaceChanged prepares the case "workspace changed on the same host" for a profile in the default config file.
+func setupWorkspaceChanged(t *testing.T, home, host string) {
+	writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: host, WorkspaceID: "111"})
+}
+
+// setupOtherConfigFile prepares the case "entry pinned to another config file" for a profile in the default config file.
+func setupOtherConfigFile(t *testing.T, home, host string) {
+	writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: host, ConfigFile: filepath.Join(t.TempDir(), "other")})
+}
+
+// setupProfileGoneWithEntry prepares the case "profile gone while an entry is bound to it" for a profile in the default config file.
+func setupProfileGoneWithEntry(t *testing.T, home, host string) {
+	writeHomeConfig(t, home, "[other]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-other\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: host})
+}
+
+// setupProfileGoneWithoutEntry prepares the case "profile gone with no entry" for a profile in the default config file.
+func setupProfileGoneWithoutEntry(t *testing.T, home, host string) {
+	writeHomeConfig(t, home, "[other]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-other\n")
+}
+
 func TestMcpAddAgreesWithBind(t *testing.T) {
 	const service = "system.ai.github"
 	cases := []struct {
 		name  string
 		setup func(t *testing.T, home, host string)
-		// sameMessage is false when add reports the profile as missing with its own wording.
-		sameMessage bool
 	}{
 		{
-			name: "host changed",
-			setup: func(t *testing.T, home, host string) {
-				writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
-				saveEntry(t, mcp.Entry{Name: "github-logfood", Service: service, Profile: "logfood", Host: "https://adb-123.test"})
-			},
-			sameMessage: true,
+			name:  "host changed",
+			setup: setupHostChanged,
 		},
 		{
-			name: "workspace changed on the same host",
-			setup: func(t *testing.T, home, host string) {
-				writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
-				saveEntry(t, mcp.Entry{Name: "github-logfood", Service: service, Profile: "logfood", Host: host, WorkspaceID: "111"})
-			},
-			sameMessage: true,
+			name:  "workspace changed on the same host",
+			setup: setupWorkspaceChanged,
 		},
 		{
-			name: "entry pinned to another config file",
-			setup: func(t *testing.T, home, host string) {
-				writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
-				saveEntry(t, mcp.Entry{Name: "github-logfood", Service: service, Profile: "logfood", Host: host, ConfigFile: filepath.Join(t.TempDir(), "other")})
-			},
-			sameMessage: true,
+			name:  "entry pinned to another config file",
+			setup: setupOtherConfigFile,
 		},
 		{
-			name: "profile gone while an entry is bound to it",
-			setup: func(t *testing.T, home, host string) {
-				writeHomeConfig(t, home, "[other]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-other\n")
-				saveEntry(t, mcp.Entry{Name: "github-logfood", Service: service, Profile: "logfood", Host: host})
-			},
-			sameMessage: true,
+			name:  "profile gone while an entry is bound to it",
+			setup: setupProfileGoneWithEntry,
 		},
 		{
-			name: "profile gone with no entry",
-			setup: func(t *testing.T, home, host string) {
-				writeHomeConfig(t, home, "[other]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-other\n")
-			},
-			sameMessage: false,
+			name:  "profile gone with no entry",
+			setup: setupProfileGoneWithoutEntry,
 		},
 	}
 	for _, tc := range cases {
@@ -1157,9 +1078,7 @@ func TestMcpAddAgreesWithBind(t *testing.T) {
 			addErr := runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
 			require.Error(t, addErr)
 			assert.Equal(t, errorCategory(bindErr), errorCategory(addErr))
-			if tc.sameMessage {
-				assert.Equal(t, bindErr.Error(), addErr.Error())
-			}
+			assert.Equal(t, bindErr.Error(), addErr.Error())
 			assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
 		})
 	}
@@ -1169,4 +1088,273 @@ func TestMcpAddAgreesWithBind(t *testing.T) {
 func saveEntry(t *testing.T, entry mcp.Entry) {
 	t.Helper()
 	require.NoError(t, mcp.SaveState(t.Context(), &mcp.State{Servers: []mcp.Entry{entry}}))
+}
+
+// TestPlanAddsRefusesRecoveredNameHeldByAnotherServer checks that a name recovered from an agent entry, which has no state record, is refused
+// when another state entry holds it. Two servers with one name would overwrite each other's state.
+func TestPlanAddsRefusesRecoveredNameHeldByAnotherServer(t *testing.T) {
+	home := withHome(t)
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".claude.json"), []byte(`{"mcpServers":{"github-logfood":`+claudeEntry("system.ai.github", "logfood", "")+`}}`), 0o600))
+	state := &mcp.State{Servers: []mcp.Entry{{Name: "github-logfood", Service: "system.ai.genie_one_mcp", Profile: "logfood", Host: "https://adb-123.test"}}}
+
+	_, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{agents.ByName("claude-code")})
+	require.Error(t, err)
+	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.Equal(t, "system.ai.github is installed as github-logfood, but another server in the state holds github-logfood; remove that entry first", err.Error())
+}
+
+// TestMcpAddRefusesUnmanagedEntryBeforeAnyRequest checks that the stored name of a server is refused before any request when an agent holds that
+// name as an entry this CLI did not write. The agent's write would refuse it only after the workspace was contacted.
+func TestMcpAddRefusesUnmanagedEntryBeforeAnyRequest(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	require.NoError(t, mcp.SaveState(t.Context(), &mcp.State{Servers: []mcp.Entry{{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: server.URL,
+	}}}))
+	claudeFile := filepath.Join(home, ".claude.json")
+	unmanaged := `{"mcpServers":{"github-logfood":{"type":"stdio","command":"npx","args":["-y","other-server"]}}}`
+	require.NoError(t, os.WriteFile(claudeFile, []byte(unmanaged), 0o600))
+
+	err := runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, categoryNameConflict, errorCategory(err))
+	assert.ErrorContains(t, err, "Claude Code already has a server named github-logfood that this CLI did not write; pass --force to replace it")
+	got, err := os.ReadFile(claudeFile)
+	require.NoError(t, err)
+	assert.Equal(t, unmanaged, string(got))
+}
+
+// TestMcpAddAccountProfileRefusedBeforeAnyRequest checks that a profile with no host, such as an account-level profile, is refused before any
+// request, with the same error as a missing profile in bind.
+func TestMcpAddAccountProfileRefusedBeforeAnyRequest(t *testing.T) {
+	home := withHome(t)
+	noRequestServer(t)
+	writeHomeConfig(t, home, "[account]\naccount_id = 123\n")
+
+	err := runAdd(t, "--profile", "account", "--names", "github", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
+	assert.Contains(t, err.Error(), "profile \"account\", which has no host in ")
+	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+}
+
+// TestMcpAddMissingProfileWithoutEntryMatchesBind checks that a profile that is missing when no server is installed is reported by the shared
+// check, so add and bind word the failure the same way.
+func TestMcpAddMissingProfileWithoutEntryMatchesBind(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[other]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-other\n")
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	_, _, bindErr := mcp.Bind(t.Context(), mcp.BindOptions{Profile: "logfood", Service: "system.ai.github", State: state, Stderr: io.Discard})
+	require.Error(t, bindErr)
+
+	err = runAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
+	assert.Equal(t, bindErr.Error(), err.Error())
+	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+}
+
+// TestRecordInstallsSavesServersThatCanBeSaved checks that a server whose state record fails does not stop the other servers from being
+// recorded. The agent files of every server were written, so their state must be saved, and the failure is still returned.
+func TestRecordInstallsSavesServersThatCanBeSaved(t *testing.T) {
+	ctx := t.Context()
+	withHome(t)
+	// A config file name with a NUL byte cannot be resolved, so the record of the first service fails.
+	require.NoError(t, mcp.SaveState(ctx, &mcp.State{Servers: []mcp.Entry{{
+		Name: "bad-logfood", Service: "system.ai.bad", Profile: "logfood", Host: "https://adb-123.test", ConfigFile: "bad\x00name",
+	}}}))
+	configFile, err := mcp.ResolveConfigFile(ctx, "")
+	require.NoError(t, err)
+	req := addRequest{profile: "logfood", host: "https://adb-456.test", configFile: configFile}
+	plans := []addPlan{
+		{service: mcp.Service{FullName: "system.ai.bad"}, name: "bad-logfood"},
+		{service: mcp.Service{FullName: "system.ai.github"}, name: "github-logfood"},
+	}
+	servers := []addServerOutput{
+		{Name: "bad-logfood", Service: "system.ai.bad", Agents: []addAgentOutput{{Name: "claude-code", Status: statusInstalled, Path: "/x/.claude.json"}}},
+		{Name: "github-logfood", Service: "system.ai.github", Agents: []addAgentOutput{{Name: "claude-code", Status: statusInstalled, Path: "/x/.claude.json"}}},
+	}
+
+	err = recordInstalls(ctx, req, plans, servers)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "MCP server bad-logfood")
+
+	state, loadErr := mcp.LoadState(ctx)
+	require.NoError(t, loadErr)
+	names := []string{}
+	for _, entry := range state.Servers {
+		names = append(names, entry.Name)
+	}
+	assert.Equal(t, []string{"bad-logfood", "github-logfood"}, names)
+}
+
+// TestAgentFailureErrorKeepsEveryDistinctFailure checks that an agent's failures are all reported when they differ, and that one failure that repeats for
+// each service, such as a refusal, is reported once.
+func TestAgentFailureErrorKeepsEveryDistinctFailure(t *testing.T) {
+	refusal := errors.New("Claude Code is not installed")
+	denied := fmt.Errorf("write ~/.claude.json: %w", fs.ErrPermission)
+	servers := []addServerOutput{
+		{Agents: []addAgentOutput{{Name: "claude-code", Status: statusFailed, err: refusal}}},
+		{Agents: []addAgentOutput{{Name: "claude-code", Status: statusFailed, err: denied}}},
+		{Agents: []addAgentOutput{{Name: "claude-code", Status: statusFailed, err: refusal}}},
+	}
+
+	err := agentFailureError(addRequest{explicit: true}, servers)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "write ~/.claude.json")
+	assert.Equal(t, 1, strings.Count(err.Error(), "Claude Code is not installed"), err.Error())
+}
+
+// TestResolveServicesMalformedFullNameIsNotALocationError checks that a name with an empty part is reported as a malformed service name, not as a
+// --location error, since no --location was passed.
+func TestResolveServicesMalformedFullNameIsNotALocationError(t *testing.T) {
+	for _, name := range []string{"system..github", "system.ai."} {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := resolveServices("", []string{name})
+			require.Error(t, err)
+			assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
+			assert.Equal(t, name+" is not a service name: use a leaf such as github or a full name such as system.ai.github", err.Error())
+		})
+	}
+}
+
+// TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent checks that a name conflict in an agent that was only detected fails that agent for the server, and
+// the other agents still take it. The same conflict in an agent named with --agents refuses the run. When every agent fails, the run is refused.
+func TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent(t *testing.T) {
+	ctx := t.Context()
+	home := withHome(t)
+	claude := agents.ByName("claude-code")
+	codex := agents.ByName("codex")
+	// claude-code holds the stored name of this server for another server, so the name conflicts in claude-code only.
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".claude.json"), []byte(`{"mcpServers":{"github-logfood":`+claudeEntry("system.ai.other", "logfood", "")+`}}`), 0o600))
+	state := &mcp.State{Servers: []mcp.Entry{{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"}}}
+	targets := []*agents.Agent{claude, codex}
+	in := planInput{binding: defaultBinding(t, "logfood"), targets: targets, held: readAgentEntries(ctx, targets)}
+
+	plans, err := planAdds(ctx, in, state, []string{"system.ai.github"})
+	require.NoError(t, err)
+	require.Len(t, plans, 1)
+	assert.Equal(t, "github-logfood", plans[0].name)
+	require.Contains(t, plans[0].failed, claude)
+	assert.Equal(t, categoryNameConflict, errorCategory(plans[0].failed[claude]))
+	assert.NotContains(t, plans[0].failed, codex)
+	assert.NoError(t, planningRefusals(plans, targets))
+
+	in.explicit = true
+	_, err = planAdds(ctx, in, state, []string{"system.ai.github"})
+	require.Error(t, err)
+	assert.Equal(t, categoryNameConflict, errorCategory(err))
+
+	onlyClaude := []*agents.Agent{claude}
+	in = planInput{binding: defaultBinding(t, "logfood"), targets: onlyClaude, held: readAgentEntries(ctx, onlyClaude)}
+	plans, err = planAdds(ctx, in, state, []string{"system.ai.github"})
+	require.NoError(t, err)
+	refusal := planningRefusals(plans, onlyClaude)
+	require.Error(t, refusal)
+	assert.Equal(t, categoryNameConflict, errorCategory(refusal))
+}
+
+// TestPlanAddsUnmanagedEntryIsReplacedOnlyWithForce checks that a stored name held by an entry this CLI did not write is refused at planning,
+// and that --force lets the write replace it.
+func TestPlanAddsUnmanagedEntryIsReplacedOnlyWithForce(t *testing.T) {
+	ctx := t.Context()
+	claude := agents.ByName("claude-code")
+	state := &mcp.State{Servers: []mcp.Entry{{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"}}}
+	held := agentEntries{claude: {"github-logfood": map[string]any{"type": "stdio", "command": "npx", "args": []any{"-y", "other"}}}}
+	targets := []*agents.Agent{claude}
+
+	in := planInput{binding: defaultBinding(t, "logfood"), targets: targets, held: held, explicit: true}
+	_, err := planAdds(ctx, in, state, []string{"system.ai.github"})
+	require.Error(t, err)
+	assert.Equal(t, categoryNameConflict, errorCategory(err))
+
+	in.force = true
+	plans, err := planAdds(ctx, in, state, []string{"system.ai.github"})
+	require.NoError(t, err)
+	assert.Empty(t, plans[0].failed)
+}
+
+// TestPickServicesNamesSchemaWithNoServices checks the message for a schema that has no MCP services, which has no list of available services.
+func TestPickServicesNamesSchemaWithNoServices(t *testing.T) {
+	_, err := pickServices("system.ai", []string{"system.ai.github"}, nil)
+	require.Error(t, err)
+	assert.Equal(t, "system.ai.github is not an MCP service in system.ai, which has none", err.Error())
+	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+}
+
+// TestInstallServerWritesOnlyAgentsInstalledForMCP checks that an agent named with --agents is written when it counts as installed for MCP, and that
+// the write goes to the file its config lives in. An agent that does not count is refused, and nothing is created for it.
+func TestInstallServerWritesOnlyAgentsInstalledForMCP(t *testing.T) {
+	tests := []struct {
+		name    string
+		agent   string
+		homeEnv string // moves the MCP config out of the agent's directory
+		homeDir string // the directory under home that homeEnv names
+		dirs    []string
+		files   map[string]string
+		onPath  bool
+		// written is the config file, under home, that the write creates; empty when the agent is refused.
+		written string
+		// absent is the path, under home, that must not exist after the run.
+		absent string
+	}{
+		{name: "codex home directory exists", agent: "codex", homeEnv: codexHomeEnv, homeDir: "codex-home", dirs: []string{"codex-home"}, written: "codex-home/config.toml"},
+		{name: "codex home directory missing although ~/.codex exists", agent: "codex", homeEnv: codexHomeEnv, homeDir: "codex-home", dirs: []string{".codex"}, absent: "codex-home"},
+		{name: "gemini with projects.json", agent: "gemini", dirs: []string{".gemini"}, files: map[string]string{".gemini/projects.json": "{}"}, written: ".gemini/settings.json"},
+		{name: "gemini directory alone is refused", agent: "gemini", dirs: []string{".gemini/antigravity"}, absent: ".gemini/settings.json"},
+		{name: "antigravity from its own directory", agent: "antigravity", dirs: []string{".gemini/antigravity"}, written: ".gemini/config/mcp_config.json"},
+		{name: "cli on PATH", agent: "codex", onPath: true, written: ".codex/config.toml"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			home := withHome(t)
+			if tt.homeEnv != "" {
+				t.Setenv(tt.homeEnv, filepath.Join(home, tt.homeDir))
+			}
+			for _, dir := range tt.dirs {
+				require.NoError(t, os.MkdirAll(filepath.Join(home, dir), 0o700))
+			}
+			for name, contents := range tt.files {
+				require.NoError(t, os.WriteFile(filepath.Join(home, name), []byte(contents), 0o600))
+			}
+			if tt.onPath {
+				writeFakeCLI(t, agents.ByName(tt.agent).Binary)
+			}
+
+			req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName(tt.agent)}, binary: "databricks"}
+			req.refused = refusedAgents(ctx, req.agents)
+			out := installServer(ctx, req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
+			require.Len(t, out.Agents, 1)
+
+			if tt.written == "" {
+				assert.Equal(t, statusFailed, out.Agents[0].Status)
+				assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, out.Agents[0].ErrorCategory)
+			} else {
+				assert.Equal(t, statusInstalled, out.Agents[0].Status)
+				assert.NoError(t, out.Agents[0].err)
+				assert.FileExists(t, filepath.Join(home, filepath.FromSlash(tt.written)))
+			}
+			if tt.absent != "" {
+				_, err := os.Stat(filepath.Join(home, filepath.FromSlash(tt.absent)))
+				assert.ErrorIs(t, err, fs.ErrNotExist)
+			}
+		})
+	}
+}
+
+// writeFakeCLI puts an executable named binary in a directory that is the only one on PATH, so the agent counts as installed.
+func writeFakeCLI(t *testing.T, binary string) {
+	t.Helper()
+	dir := t.TempDir()
+	name := binary
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), 0o755))
+	t.Setenv("PATH", dir)
 }

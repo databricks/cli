@@ -14,16 +14,14 @@ func TestBinaryPathFor(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	absolute := filepath.Join(t.TempDir(), "bin", "databricks")
-	onPath := filepath.Join(t.TempDir(), "databricks")
+	foundPath := filepath.Join(t.TempDir(), "databricks")
 	relativeOnPath := filepath.Join("bin", "databricks")
-	notFound := func(string) (string, error) { return "", errors.New("not found") }
-	found := func(string) (string, error) { return onPath, nil }
-	relative := func(string) (string, error) { return relativeOnPath, nil }
 
 	tests := []struct {
-		name     string
-		arg0     string
-		lookPath func(string) (string, error)
+		name string
+		arg0 string
+		// onPath is what the PATH lookup finds, or "" when the name is not on PATH.
+		onPath string
 		// wantLookup is the name the PATH lookup receives, or "" when the lookup must not run.
 		wantLookup string
 		wantPath   string
@@ -33,21 +31,20 @@ func TestBinaryPathFor(t *testing.T) {
 			// The invoked path is kept as is, so a Homebrew symlink is not replaced by its target.
 			name:     "absolute arg0 is kept",
 			arg0:     absolute,
-			lookPath: nil,
 			wantPath: absolute,
 			wantAbs:  true,
 		},
 		{
 			name:     "relative arg0 with a directory is made absolute, not looked up",
 			arg0:     filepath.Join("bin", "databricks"),
-			lookPath: found,
+			onPath:   foundPath,
 			wantPath: mustAbs(t, filepath.Join("bin", "databricks")),
 			wantAbs:  true,
 		},
 		{
 			name:     "dot-relative arg0 with a directory is made absolute",
 			arg0:     "." + string(filepath.Separator) + "databricks",
-			lookPath: found,
+			onPath:   foundPath,
 			wantPath: wd + string(filepath.Separator) + "databricks",
 			wantAbs:  true,
 		},
@@ -55,22 +52,22 @@ func TestBinaryPathFor(t *testing.T) {
 			// The OS reads "link/.." through the link's target, so the path must not be cleaned before the symlink is followed.
 			name:     "relative arg0 through a symlink keeps its dot-dot",
 			arg0:     "link" + string(filepath.Separator) + ".." + string(filepath.Separator) + "databricks",
-			lookPath: found,
+			onPath:   foundPath,
 			wantPath: wd + string(filepath.Separator) + "link" + string(filepath.Separator) + ".." + string(filepath.Separator) + "databricks",
 			wantAbs:  true,
 		},
 		{
 			name:       "bare name is looked up on PATH",
 			arg0:       "databricks",
-			lookPath:   found,
+			onPath:     foundPath,
 			wantLookup: "databricks",
-			wantPath:   onPath,
+			wantPath:   foundPath,
 			wantAbs:    true,
 		},
 		{
 			name:       "bare name not on PATH falls back to the bare name",
 			arg0:       "databricks",
-			lookPath:   notFound,
+			onPath:     "",
 			wantLookup: "databricks",
 			wantPath:   "databricks",
 		},
@@ -78,33 +75,25 @@ func TestBinaryPathFor(t *testing.T) {
 			// Only a databricks argv[0] may fall back to the bare name; another name is kept, so the caller refuses it.
 			name:       "other bare name not on PATH is kept",
 			arg0:       "dbx",
-			lookPath:   notFound,
+			onPath:     "",
 			wantLookup: "dbx",
 			wantPath:   "dbx",
 		},
 		{
 			name:       "relative PATH entry falls back to the bare name",
 			arg0:       "databricks",
-			lookPath:   relative,
+			onPath:     relativeOnPath,
 			wantLookup: "databricks",
 			wantPath:   "databricks",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var looked string
-			lookPath := func(name string) (string, error) {
-				looked = name
-				if tt.lookPath == nil {
-					t.Fatal("PATH lookup must not run for this arg0")
-				}
-				return tt.lookPath(name)
-			}
-
-			path, abs := binaryPathFor(tt.arg0, lookPath)
+			lookup := &pathLookup{path: tt.onPath}
+			path, abs := binaryPathFor(tt.arg0, lookup.lookPath)
 			assert.Equal(t, tt.wantPath, path)
 			assert.Equal(t, tt.wantAbs, abs)
-			assert.Equal(t, tt.wantLookup, looked)
+			assert.Equal(t, tt.wantLookup, lookup.asked)
 		})
 	}
 }
@@ -114,4 +103,19 @@ func mustAbs(t *testing.T, path string) string {
 	abs, err := filepath.Abs(path)
 	require.NoError(t, err)
 	return abs
+}
+
+// pathLookup stands in for the PATH lookup. It finds the name at path, or reports it not found when path is "". It
+// records the name it was asked for, so a case can check whether the lookup ran at all.
+type pathLookup struct {
+	path  string
+	asked string
+}
+
+func (l *pathLookup) lookPath(name string) (string, error) {
+	l.asked = name
+	if l.path == "" {
+		return "", errors.New("not found")
+	}
+	return l.path, nil
 }
