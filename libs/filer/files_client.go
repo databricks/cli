@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
+	"github.com/databricks/sdk-go/core/apiretry"
 	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/databricks/sdk-go/options/call"
@@ -40,12 +42,18 @@ func httpStatus(err error) int {
 }
 
 // filesRetryStatusCodes are the HTTP statuses on which Files API calls are
-// retried. Throttled cloud storage comes back as 429 RESOURCE_EXHAUSTED (e.g.
-// "AWS S3 is throttling requests; try again later.") and an unavailable backend
-// as 503; both ask the caller to retry. files/v2 retries nothing unless the
-// caller passes a retrier, so the filer supplies one to keep the retries the
-// databricks-sdk-go client used to do for it.
-var filesRetryStatusCodes = []int{http.StatusTooManyRequests, http.StatusServiceUnavailable}
+// retried; the same set files/v2 retries for its own upload control-plane calls.
+// Throttled cloud storage comes back as 429 RESOURCE_EXHAUSTED (e.g. "AWS S3 is
+// throttling requests; try again later."), which asks the caller to retry.
+// files/v2 retries nothing unless the caller passes a retrier, so the filer
+// supplies one to keep the retries the databricks-sdk-go client used to do.
+var filesRetryStatusCodes = []int{
+	http.StatusRequestTimeout,     // 408
+	http.StatusTooManyRequests,    // 429
+	http.StatusBadGateway,         // 502
+	http.StatusServiceUnavailable, // 503
+	http.StatusGatewayTimeout,     // 504
+}
 
 // filesMaxRetries bounds the retries of one call. Non-streaming files/v2 calls
 // also have a 5 minute SDK timeout, but the single-shot upload retried by the
@@ -55,17 +63,18 @@ const filesMaxRetries = 10
 // filesRetryBackoff is the default delay policy between retries.
 var filesRetryBackoff = ops.BackoffPolicy{Initial: time.Second, Maximum: 10 * time.Second}
 
-type filesRetrier struct {
-	backoff ops.BackoffPolicy
+// cappedRetrier stops retrying after filesMaxRetries retries.
+type cappedRetrier struct {
+	ops.Retrier
 	retries int
 }
 
-func (r *filesRetrier) IsRetriable(err error) (time.Duration, bool) {
-	if r.retries >= filesMaxRetries || !slices.Contains(filesRetryStatusCodes, httpStatus(err)) {
+func (r *cappedRetrier) IsRetriable(err error) (time.Duration, bool) {
+	if r.retries >= filesMaxRetries {
 		return 0, false
 	}
 	r.retries++
-	return r.backoff.Delay(), true
+	return r.Retrier.IsRetriable(err)
 }
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
@@ -189,7 +198,7 @@ type FilesClient struct {
 }
 
 func (w *FilesClient) newRetrier() ops.Retrier {
-	return &filesRetrier{backoff: w.retryBackoff}
+	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
 }
 
 // retry is the call option that retries a files/v2 call on throttling.
@@ -305,31 +314,60 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 // uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
 // call because it cannot replay a streamed body, so a seekable reader is rewound
-// to its starting offset and retried here; other readers get one attempt.
+// to its starting offset and retried here. Other readers get one attempt; that
+// includes pipes, which are *os.File and so implement io.Seeker but fail Seek.
 func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
-	upload := func(ctx context.Context) error {
-		_, err := w.client.UploadFile(ctx, files.UploadFileRequest{
-			FilePath:  &absPath,
-			Contents:  io.NopCloser(reader),
-			Overwrite: &overwrite,
-		})
-		return err
-	}
-
 	seeker, ok := reader.(io.Seeker)
 	if !ok {
-		return upload(ctx)
+		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
 	}
 	start, err := seeker.Seek(0, io.SeekCurrent)
 	if err != nil {
-		return upload(ctx)
+		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
 	}
 	return ops.Execute(ctx, func(ctx context.Context) error {
 		if _, err := seeker.Seek(start, io.SeekStart); err != nil {
 			return err
 		}
-		return upload(ctx)
+		body := &attemptBody{r: reader}
+		err := w.putFile(ctx, absPath, body, overwrite)
+		body.Close()
+		return err
 	}, ops.WithRetrier(w.newRetrier))
+}
+
+func (w *FilesClient) putFile(ctx context.Context, absPath string, body io.ReadCloser, overwrite bool) error {
+	_, err := w.client.UploadFile(ctx, files.UploadFileRequest{
+		FilePath:  &absPath,
+		Contents:  body,
+		Overwrite: &overwrite,
+	})
+	return err
+}
+
+// attemptBody is the request body of one upload attempt. net/http may still be
+// sending the body after the response has arrived; Close waits for an in-flight
+// Read and stops further ones, so the next attempt can safely rewind the reader.
+type attemptBody struct {
+	mu     sync.Mutex
+	r      io.Reader
+	closed bool
+}
+
+func (b *attemptBody) Read(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return b.r.Read(p)
+}
+
+func (b *attemptBody) Close() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.closed = true
+	return nil
 }
 
 // isSeekable reports whether r can be seeked, without moving it: a no-op
