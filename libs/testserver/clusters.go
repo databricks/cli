@@ -180,26 +180,27 @@ func clusterFixUps(cluster *compute.ClusterDetails) {
 		cluster.DriverNodeTypeId = cluster.NodeTypeId
 	}
 
-	applySingleNodeDefaults(cluster.IsSingleNode, cluster.Kind, &cluster.SparkConf, &cluster.CustomTags)
+	applySingleNodeDefaults(cluster)
 }
 
-// applySingleNodeDefaults mirrors the backend expanding is_single_node on a CLASSIC_PREVIEW
-// cluster spec into the legacy single-node settings, which then read back next to the flag.
-// num_workers is also forced to 0 but that is the Go zero value already.
+// applySingleNodeDefaults mirrors the Clusters API expanding is_single_node on a CLASSIC_PREVIEW
+// cluster into the legacy single-node settings, which then read back next to the flag.
+// num_workers is also forced to 0 but that is the Go zero value already. The Jobs API does not
+// do this for new_cluster specs: they read back as authored.
 // https://docs.databricks.com/api/workspace/clusters/create#is_single_node
-func applySingleNodeDefaults(isSingleNode bool, kind compute.Kind, sparkConf, customTags *map[string]string) {
-	if !isSingleNode || kind != compute.KindClassicPreview {
+func applySingleNodeDefaults(cluster *compute.ClusterDetails) {
+	if !cluster.IsSingleNode || cluster.Kind != compute.KindClassicPreview {
 		return
 	}
-	if *sparkConf == nil {
-		*sparkConf = map[string]string{}
+	if cluster.SparkConf == nil {
+		cluster.SparkConf = map[string]string{}
 	}
-	(*sparkConf)["spark.databricks.cluster.profile"] = "singleNode"
-	(*sparkConf)["spark.master"] = "local[*, 4]"
-	if *customTags == nil {
-		*customTags = map[string]string{}
+	cluster.SparkConf["spark.databricks.cluster.profile"] = "singleNode"
+	cluster.SparkConf["spark.master"] = "local[*, 4]"
+	if cluster.CustomTags == nil {
+		cluster.CustomTags = map[string]string{}
 	}
-	(*customTags)["ResourceClass"] = "SingleNode"
+	cluster.CustomTags["ResourceClass"] = "SingleNode"
 }
 
 func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {

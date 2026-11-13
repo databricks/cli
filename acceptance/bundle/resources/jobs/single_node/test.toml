@@ -1,9 +1,0 @@
-# The drift-suppression under test is a direct-engine feature (bundle/direct). Cloud = true adds
-# a real-workspace run; the test also runs locally against the testserver.
-Cloud = true
-
-RecordRequests = false
-
-Ignore = [
-    "databricks.yml",
-]
