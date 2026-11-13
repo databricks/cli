@@ -1,0 +1,37 @@
+
+=== Create foo/bar.txt
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded foo
+Uploaded foo/bar.txt
+
+>>> remote_tree
+DIRECTORY foo
+FILE foo/bar.txt
+
+>>> snapshot_files
+foo/bar.txt
+
+=== Delete foo/bar.txt and the foo folder
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Deleted foo
+Deleted foo/bar.txt
+Initial Sync Complete
+
+>>> remote_tree
+
+>>> snapshot_files
+
+=== Create a file named foo where the folder used to be
+
+>>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded foo
+
+>>> remote_tree
+FILE foo
+
+>>> snapshot_files
+foo
