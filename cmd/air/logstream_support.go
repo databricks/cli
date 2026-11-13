@@ -166,6 +166,28 @@ func printStatusEvent(out io.Writer, current, previous string) {
 	fmt.Fprintln(out, string(b))
 }
 
+// newStatusTransitionReporter wraps a STATUS sink so a consumer sees each
+// lifecycle transition once and never sees the run leave a terminal state.
+// The Bricklens stream and its MLflow fallback track transitions separately, so
+// without this guard a handoff re-reports states the consumer already saw.
+// previous is always the last state actually reported.
+func newStatusTransitionReporter(report func(current, previous string)) func(current, previous string) {
+	lastReported := ""
+	return func(current, _ string) {
+		if current == lastReported || isTerminalDisplayState(lastReported) {
+			return
+		}
+		report(current, lastReported)
+		lastReported = current
+	}
+}
+
+// isTerminalDisplayState reports whether a logRunStatus.displayState value is
+// one a run never leaves.
+func isTerminalDisplayState(state string) bool {
+	return terminalResultStates[state] || terminalLifeCycleStates[state]
+}
+
 // terminalEvent is the closing envelope `air run --watch -o json` emits after
 // streaming, carrying the run's terminal status.
 type terminalEvent struct {

@@ -315,10 +315,17 @@ func (req logRequest) toSeconds(status logRunStatus) int64 {
 // completion. It returns whether the run finished with SUCCESS;
 // errBricklensFeatureDisabled means the caller should fall back to MLflow.
 func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	success, _, err := streamBricklensLogsWithLatestStatus(ctx, w, out, req, status)
+	return success, err
+}
+
+// streamBricklensLogsWithLatestStatus is streamBricklensLogs that also returns
+// the most recent run status the stream observed.
+func streamBricklensLogsWithLatestStatus(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, logRunStatus, error) {
 	// Build the API client once and reuse it for every page fetch in the loop.
 	apiClient, err := client.New(w.Config)
 	if err != nil {
-		return false, fmt.Errorf("failed to create API client: %w", err)
+		return false, status, fmt.Errorf("failed to create API client: %w", err)
 	}
 	st := &bricklensStreamer{
 		ctx:       ctx,
@@ -330,7 +337,8 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 		status:    status,
 		seen:      newSeenSet(seenRecordsCap),
 	}
-	return st.run()
+	success, err := st.run()
+	return success, st.status, err
 }
 
 // bricklensStreamer holds the poll-loop state: the from-second cursor, the

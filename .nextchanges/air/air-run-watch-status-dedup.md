@@ -1,0 +1,1 @@
+* `air run --watch -o json` now reports each lifecycle `STATUS` transition once and never reports a non-terminal state after the run has ended, including when logs are served from MLflow artifacts.

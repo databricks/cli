@@ -247,9 +247,9 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
 		req.retryTracker = newRetryTracker(status)
 	}
-	success, err := streamBricklensLogs(ctx, w, out, req, status)
+	success, latest, err := streamBricklensLogsWithLatestStatus(ctx, w, out, req, status)
 	if errors.Is(err, errBricklensFeatureDisabled) {
-		return mlflowLogFallback(ctx, w, out, req, status)
+		return mlflowLogFallbackReporting(ctx, w, out, req, status, latest)
 	}
 	return success, err
 }

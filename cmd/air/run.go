@@ -274,9 +274,9 @@ field, pass its path to -h as a separate argument:
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
-		req.onStatusChange = func(current, previous string) {
+		req.onStatusChange = newStatusTransitionReporter(func(current, previous string) {
 			printStatusEvent(out, current, previous)
-		}
+		})
 		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
