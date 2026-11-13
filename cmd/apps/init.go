@@ -97,6 +97,7 @@ func newInitCmd() *cobra.Command {
 		setValues      []string
 		autoApprove    bool
 		skipInstall    bool
+		skipExamples   bool
 		packageManager string
 		authMode       string
 	)
@@ -191,6 +192,7 @@ Environment variables:
 				setValues:             setValues,
 				autoApprove:           autoApprove,
 				skipInstall:           skipInstall,
+				skipExamples:          skipExamples,
 				packageManager:        packageManager,
 				packageManagerChanged: cmd.Flags().Changed("package-manager"),
 				authMode:              authMode,
@@ -215,6 +217,7 @@ Environment variables:
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 	cmd.Flags().StringVar(&authMode, "auth-mode", "", "Default resource auth mode: obo (on behalf of the user) or sp (service principal). With obo, resources that cannot be accessed on behalf of the user use sp. Prompts if not provided in interactive mode, otherwise sp.")
 	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
+	cmd.Flags().BoolVar(&skipExamples, "skip-examples", false, "Leave out the template's example files (sample SQL queries and the example test) that a real app replaces")
 	cmd.Flags().StringVar(&packageManager, "package-manager", "", "Node.js package manager (pnpm, npm; default: inferred from template)")
 
 	return cmd
@@ -243,6 +246,7 @@ type createOptions struct {
 	setValues             []string // --set plugin.resourceKey.field=value pairs
 	autoApprove           bool
 	skipInstall           bool
+	skipExamples          bool
 	packageManager        string
 	packageManagerChanged bool
 	authMode              string // --auth-mode default for all resources
@@ -527,6 +531,9 @@ type templateVars struct {
 	DotEnv         dotEnvVars
 	AppEnv         string
 	PackageManager string
+	// SkipExamples is set by --skip-examples. Templates leave their example
+	// files out when it is true; a missing key (older CLIs) keeps them.
+	SkipExamples bool
 	// Plugins maps plugin name to its metadata
 	// Missing keys return nil, enabling {{if .plugins.analytics}} conditionals.
 	Plugins map[string]*pluginVar
@@ -1807,6 +1814,7 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 		},
 		AppEnv:         generator.GenerateAppEnv(selectedPluginList, genConfig),
 		PackageManager: selectedManager.Name,
+		SkipExamples:   opts.skipExamples,
 		Plugins:        plugins,
 	}
 
@@ -2271,6 +2279,7 @@ func templateData(vars templateVars) map[string]any {
 		"appDescription": vars.AppDescription,
 		"workspaceHost":  vars.WorkspaceHost,
 		"packageManager": vars.PackageManager,
+		"skipExamples":   vars.SkipExamples,
 		"bundle": map[string]any{
 			"variables":       vars.Bundle.Variables,
 			"resources":       vars.Bundle.Resources,

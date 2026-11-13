@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -270,6 +271,24 @@ func TestPackageManagerTemplateVariable(t *testing.T) {
 			expected := "['" + tt.packageManager + "', 'run', 'start']"
 			assert.Equal(t, expected, string(result))
 		})
+	}
+}
+
+func TestSkipExamplesTemplateVariable(t *testing.T) {
+	ctx := t.Context()
+	input := "{{if not .skipExamples}}x{{end}}"
+	for _, tt := range []struct {
+		skipExamples bool
+		expected     string
+	}{
+		{false, "x"},
+		{true, ""},
+	} {
+		vars := testVars()
+		vars.SkipExamples = tt.skipExamples
+		result, err := executeTemplate(ctx, "test.sql", []byte(input), vars)
+		require.NoError(t, err)
+		assert.Equal(t, tt.expected, string(result), "skipExamples=%v", tt.skipExamples)
 	}
 }
 
@@ -1340,6 +1359,61 @@ func TestInitCmd_SkipInstallFlagRegistered(t *testing.T) {
 	flag := cmd.Flags().Lookup("skip-install")
 	require.NotNil(t, flag)
 	assert.Equal(t, "false", flag.DefValue)
+}
+
+func TestInitCmd_SkipExamplesFlagRegistered(t *testing.T) {
+	cmd := newInitCmd()
+	flag := cmd.Flags().Lookup("skip-examples")
+	require.NotNil(t, flag)
+	assert.Equal(t, "false", flag.DefValue)
+}
+
+// TestRunCreateSkipExamples scaffolds a template whose example files are
+// gated on {{if not .skipExamples}}. With --skip-examples they render empty,
+// so they are not written and config/queries/ is removed once it is empty.
+func TestRunCreateSkipExamples(t *testing.T) {
+	src := t.TempDir()
+	files := map[string]string{
+		"appkit.plugins.json":            `{"plugins":{}}`,
+		"README.md":                      "# {{.projectName}}\n",
+		"config/queries/hello_world.sql": "{{if not .skipExamples -}}\nSELECT 1\n{{- end}}\n",
+		"server/server.ts":               "export {};\n",
+		"server/example.test.ts":         "{{if not .skipExamples -}}\ntest('x', () => {});\n{{- end}}\n",
+	}
+	for name, content := range files {
+		path := filepath.Join(src, filepath.FromSlash(name))
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	}
+
+	for _, skipExamples := range []bool{false, true} {
+		t.Run(fmt.Sprintf("skipExamples=%v", skipExamples), func(t *testing.T) {
+			output := t.TempDir()
+			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), nil)
+			err := runCreate(ctx, createOptions{
+				templatePath: src,
+				name:         "test-app",
+				nameProvided: true,
+				outputDir:    output,
+				skipInstall:  true,
+				skipExamples: skipExamples,
+			})
+			require.NoError(t, err)
+
+			app := filepath.Join(output, "test-app")
+			assert.FileExists(t, filepath.Join(app, "README.md"))
+			assert.FileExists(t, filepath.Join(app, "server", "server.ts"))
+			if skipExamples {
+				assert.NoDirExists(t, filepath.Join(app, "config"))
+				assert.NoFileExists(t, filepath.Join(app, "server", "example.test.ts"))
+				return
+			}
+			got, err := os.ReadFile(filepath.Join(app, "config", "queries", "hello_world.sql"))
+			require.NoError(t, err)
+			assert.Equal(t, "SELECT 1\n", string(got))
+			assert.FileExists(t, filepath.Join(app, "server", "example.test.ts"))
+		})
+	}
 }
 
 func TestPrependInstall(t *testing.T) {
