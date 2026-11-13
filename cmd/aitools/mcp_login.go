@@ -20,7 +20,10 @@ import (
 )
 
 // mcpLoginCommand is the command that signs a profile in to a service. The hints name it.
-const mcpLoginCommand = "databricks aitools mcp login"
+const (
+	mcpLoginCommand  = "databricks aitools mcp login"
+	mcpLogoutCommand = "databricks aitools mcp logout"
+)
 
 // Sign-in states of `mcp login` and `mcp logout`, reported in JSON.
 const (
@@ -216,6 +219,11 @@ func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceCli
 // pinned to, which the command sets, or "" for the file the shell reads.
 func mcpLoginHint(service, profileName, pinnedFile string) string {
 	return mcp.ConfigFileCommand(pinnedFile, mcpLoginCommand+" "+shellquote.BashArg(service)+" --profile "+shellquote.BashArg(profileName))
+}
+
+// mcpLogoutHint returns the command that removes profileName's sign-in to service. pinnedFile is as in mcpLoginHint.
+func mcpLogoutHint(service, profileName, pinnedFile string) string {
+	return mcp.ConfigFileCommand(pinnedFile, mcpLogoutCommand+" "+shellquote.BashArg(service)+" --profile "+shellquote.BashArg(profileName))
 }
 
 // lastCheckText names the failure of the last poll of a sign-in that timed out, for the timeout message. It is empty

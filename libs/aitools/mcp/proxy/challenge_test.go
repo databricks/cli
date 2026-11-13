@@ -71,7 +71,7 @@ const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks 
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
-	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}, io.Discard)
+	b.Hooks = newSignInHooks(testChallenge(signIn), io.Discard)
 	return b
 }
 
@@ -523,10 +523,10 @@ func TestChallengeTextAroundSignInURL(t *testing.T) {
 	}
 }
 
-// TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn checks that when the service challenges again after
-// an "Already signed in" answer, the next authenticate starts a new sign-in from no credential. The credential reads
-// ACTIVE, but the service does not accept it, so answering "Already signed in" again would loop.
-func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testing.T) {
+// TestChallengeAfterAlreadySignedInAsksForLogout checks that when the service challenges again after an "Already signed in"
+// answer, the next authenticate does not sign in. The credential reads ACTIVE but the service refuses it, so the answer names
+// the logout command. The authenticate after that runs the sign-in as usual.
+func TestChallengeAfterAlreadySignedInAsksForLogout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) { return call == 1, nil }}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
@@ -539,36 +539,17 @@ func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testi
 	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
 	p.waitLines(t, 4)
 	p.send(t, fmt.Sprintf(authenticate, 7))
-	lines := p.waitLines(t, 5)
+	p.waitLines(t, 5)
+	p.send(t, fmt.Sprintf(authenticate, 8))
+	lines := p.waitLines(t, 7)
 	require.NoError(t, p.finish(t))
 
-	reqs := signIn.requests()
-	require.Len(t, reqs, 2)
-	assert.False(t, reqs[0].Restart)
-	assert.True(t, reqs[1].Restart, "the sign-in after the challenge starts from no credential")
-	assert.Contains(t, lines[1], "Already signed in to system.ai.github")
-	assert.Equal(t, listChangedMsg, lines[2])
-	assert.Contains(t, lines[4], "Signed in to system.ai.github")
-}
-
-// TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential checks that a second authenticate that is not preceded by a
-// challenge does not delete the credential, so it answers "Already signed in" again.
-func TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential(t *testing.T) {
-	srv, _ := challengedService(t)
-	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
-	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
-	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
-	challenge(t, p)
-
-	p.send(t, fmt.Sprintf(authenticate, 5))
-	p.waitLines(t, 2)
-	p.send(t, fmt.Sprintf(authenticate, 6))
-	p.waitLines(t, 3)
-	require.NoError(t, p.finish(t))
-
-	for _, req := range signIn.requests() {
-		assert.False(t, req.Restart)
-	}
+	// The answer to 7 names the logout command and sends no list_changed; the answer to 8 is the sign-in's.
+	assert.Len(t, signIn.requests(), 2, "the answer with the logout command starts no sign-in")
+	assert.Equal(t, "system.ai.github on profile logfood reads as signed in, but the service still asks for a sign-in. "+
+		"Run: databricks aitools mcp logout system.ai.github --profile logfood, then call authenticate again.", resultText(t, lines[4]))
+	assert.Contains(t, resultText(t, lines[5]), "Signed in to system.ai.github on profile logfood.")
+	assert.Equal(t, listChangedMsg, lines[6])
 }
 
 // TestAuthenticateSendsProgressOnEachPoll checks that an authenticate call with a progress token gets a progress
@@ -658,10 +639,10 @@ func listAnswer(challenged *atomic.Bool) http.HandlerFunc {
 	}
 }
 
-// TestChallengeAfterSuccessDoesNotRestartSignIn checks that a challenge long after an "Already signed in" answer does not
-// start the next sign-in from no credential. A successful answer from the service ends that state, so only a challenge
-// that follows the answer with no success in between does.
-func TestChallengeAfterSuccessDoesNotRestartSignIn(t *testing.T) {
+// TestChallengeAfterSuccessDoesNotAskForLogout checks that a challenge long after an "Already signed in" answer does not
+// get the logout answer. A successful answer from the service ends that state, so only a challenge that follows the answer
+// with no success in between does.
+func TestChallengeAfterSuccessDoesNotAskForLogout(t *testing.T) {
 	var challenged atomic.Bool
 	challenged.Store(true)
 	srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
@@ -679,66 +660,11 @@ func TestChallengeAfterSuccessDoesNotRestartSignIn(t *testing.T) {
 	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/list"}`)
 	p.waitLines(t, 5)
 	p.send(t, fmt.Sprintf(authenticate, 8))
-	p.waitLines(t, 6)
+	lines := p.waitLines(t, 6)
 	require.NoError(t, p.finish(t))
 
-	reqs := signIn.requests()
-	require.Len(t, reqs, 2)
-	assert.False(t, reqs[1].Restart, "a challenge after a success is not a challenge to the credential that was reported signed in")
-}
-
-// TestRestartIsNotRepeatedAfterItsPageWasShown checks the restart that a challenge after "Already signed in" asks for.
-// Once its page was shown the credential was deleted, and a sign-in cancelled after that does not delete again, since
-// the user may finish the page that is still open. A restart whose page was never shown is asked for again.
-func TestRestartIsNotRepeatedAfterItsPageWasShown(t *testing.T) {
-	for name, urlShown := range map[string]bool{"page shown": true, "page not shown": false} {
-		t.Run(name, func(t *testing.T) {
-			var challenged atomic.Bool
-			challenged.Store(true)
-			srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
-			entered, returned := make(chan struct{}), make(chan struct{})
-			var mu sync.Mutex
-			var reqs []SignInRequest
-			signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
-				mu.Lock()
-				reqs = append(reqs, req)
-				n := len(reqs)
-				mu.Unlock()
-				switch n {
-				case 1:
-					return true, false, nil
-				case 2:
-					close(entered)
-					<-ctx.Done()
-					close(returned)
-					return false, urlShown, ctx.Err()
-				default:
-					return false, true, nil
-				}
-			}
-			p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
-			authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
-			challenge(t, p)
-
-			p.send(t, fmt.Sprintf(authenticate, 5))
-			p.waitLines(t, 3)
-			p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
-			p.waitLines(t, 4)
-			p.send(t, fmt.Sprintf(authenticate, 7))
-			waitClosed(t, entered, "the restart to start")
-			p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":7}}`)
-			waitClosed(t, returned, "the restart to return")
-			p.send(t, fmt.Sprintf(authenticate, 8))
-			p.waitLines(t, 5)
-			require.NoError(t, p.finish(t))
-
-			mu.Lock()
-			defer mu.Unlock()
-			require.Len(t, reqs, 3)
-			assert.True(t, reqs[1].Restart, "the challenge after the answer asks for a restart")
-			assert.Equal(t, !urlShown, reqs[2].Restart)
-		})
-	}
+	assert.Len(t, signIn.requests(), 2, "a challenge after a success is not a challenge to the credential that was reported signed in")
+	assert.Contains(t, resultText(t, lines[5]), "Already signed in to system.ai.github")
 }
 
 // TestAuthenticateIsForwardedOnceTheListPasses checks that the authenticate tool is the proxy's only while its list is
@@ -939,10 +865,10 @@ func TestUnauthorizedIsAuthFailureUnlessItAsksForSignIn(t *testing.T) {
 	}
 }
 
-// TestRejectedCredentialDoesNotRestartSignIn checks the loop that a rejected Databricks token made: the credential reads as
-// signed in, the service rejects the token with a 401, and a later authenticate used to delete the provider credential.
-// The 401 is an auth failure, so no sign-in is restarted.
-func TestRejectedCredentialDoesNotRestartSignIn(t *testing.T) {
+// TestRejectedCredentialDoesNotAskForLogout checks a rejected Databricks token after "Already signed in": the credential reads
+// as signed in, and the service rejects the token with a 401. The 401 is an auth failure, not a challenge, so the next
+// authenticate runs the sign-in as usual, and the logout answer is not given.
+func TestRejectedCredentialDoesNotAskForLogout(t *testing.T) {
 	var rejected atomic.Bool
 	var challenged atomic.Bool
 	challenged.Store(true)
@@ -965,12 +891,11 @@ func TestRejectedCredentialDoesNotRestartSignIn(t *testing.T) {
 	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
 	p.waitLines(t, 4)
 	p.send(t, fmt.Sprintf(authenticate, 7))
-	p.waitLines(t, 6)
+	lines := p.waitLines(t, 6)
 	require.NoError(t, p.finish(t))
 
-	reqs := signIn.requests()
-	require.Len(t, reqs, 2)
-	assert.False(t, reqs[1].Restart, "the rejected token does not restart the provider sign-in")
+	assert.Len(t, signIn.requests(), 2)
+	assert.Contains(t, resultText(t, lines[4]), "Already signed in to system.ai.github")
 }
 
 // TestAuthFailureNamesPinnedConfigFile checks that the auth hint names the config file a server is pinned to, as the
@@ -1010,7 +935,7 @@ func TestOnlyTheResponseToTheRequestEndsTheSignInState(t *testing.T) {
 
 			_, err = h.Result(t.Context(), []byte(tc.request), http.StatusOK, []byte(tc.challenge))
 			require.NoError(t, err)
-			assert.True(t, h.restart, "the challenge after the answer asks for a restart")
+			assert.True(t, h.stillChallenged, "the challenge after the answer leaves the logout answer for the next authenticate")
 		})
 		t.Run(tc.name+" answers that are not results", func(t *testing.T) {
 			rpcError := fmt.Sprintf(`{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"rate limited"}}`, tc.id)
@@ -1032,17 +957,25 @@ func TestOnlyTheResponseToTheRequestEndsTheSignInState(t *testing.T) {
 
 // testChallenge is the challenge of the tests that drive the hooks directly. signIn is its sign-in.
 func testChallenge(signIn SignInFunc) *Challenge {
-	return &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}
+	return &Challenge{
+		Service:       testService,
+		Profile:       "logfood",
+		Host:          testHost,
+		Label:         "GitHub",
+		LoginCommand:  "databricks aitools mcp login system.ai.github --profile logfood",
+		LogoutCommand: "databricks aitools mcp logout system.ai.github --profile logfood",
+		SignIn:        signIn,
+	}
 }
 
-// TestSuccessEndsAPendingRestart checks that a restart asked for by a challenge after "Already signed in" ends with the
-// next success. The agent may not call authenticate before the service answers again, so a restart left pending would
-// delete a working credential on a much later, unrelated challenge.
-func TestSuccessEndsAPendingRestart(t *testing.T) {
+// TestSuccessEndsStillChallenged checks that a challenge after "Already signed in" leaves the logout answer only until the
+// next success. The agent may not call authenticate before the service answers again, so a state left pending would answer a
+// much later, unrelated authenticate with the logout command.
+func TestSuccessEndsStillChallenged(t *testing.T) {
 	var challenged atomic.Bool
 	challenged.Store(true)
 	srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
-	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
+	signIn := &signInStub{reply: func(call int) (bool, error) { return call == 1, nil }}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
 	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
 	challenge(t, p)
@@ -1058,12 +991,12 @@ func TestSuccessEndsAPendingRestart(t *testing.T) {
 	p.send(t, `{"jsonrpc":"2.0","id":8,"method":"tools/list"}`)
 	p.waitLines(t, 6)
 	p.send(t, fmt.Sprintf(authenticate, 9))
-	p.waitLines(t, 8)
+	lines := p.waitLines(t, 8)
 	require.NoError(t, p.finish(t))
 
-	reqs := signIn.requests()
-	require.Len(t, reqs, 2)
-	assert.False(t, reqs[1].Restart, "a success after the challenge ends the restart it asked for")
+	assert.Len(t, signIn.requests(), 2, "a success after the challenge ends the state, so the authenticate signs in")
+	assert.NotContains(t, strings.Join(lines, "\n"), "reads as signed in")
+	assert.Contains(t, resultText(t, lines[6]), "Signed in to system.ai.github on profile logfood.")
 }
 
 // callAnswer answers a tools/call with the sign-in challenge while challenged is set, and each tools/list with the
@@ -1171,7 +1104,7 @@ func TestUndecodableResponsePassesThrough(t *testing.T) {
 
 // TestAlreadySignedInSurvivesListAfterCallChallenge checks the sequence where a challenged tools/call is answered with "Already
 // signed in" and the list then passes. The list does not end that state, since the call challenge is still pending, so
-// the next challenge to a call starts the sign-in again from no credential.
+// the next challenge to a call gets the logout answer.
 func TestAlreadySignedInSurvivesListAfterCallChallenge(t *testing.T) {
 	var challenged atomic.Bool
 	challenged.Store(true)
@@ -1191,29 +1124,28 @@ func TestAlreadySignedInSurvivesListAfterCallChallenge(t *testing.T) {
 	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
 	p.waitLines(t, 7)
 	p.send(t, fmt.Sprintf(authenticate, 8))
-	p.waitLines(t, 9)
+	lines = p.waitLines(t, 8)
 	require.NoError(t, p.finish(t))
 
-	reqs := signIn.requests()
-	require.Len(t, reqs, 2)
-	assert.True(t, reqs[1].Restart, "the challenge after the answer, with the list passing in between, asks for a restart")
+	assert.Len(t, signIn.requests(), 1, "the challenge after the answer, with the list passing in between, gets the logout answer")
+	assert.Contains(t, resultText(t, lines[7]), "reads as signed in, but the service still asks for a sign-in")
 }
 
 // TestIsErrorResultChangesNoSignInState checks that a tools/call result with isError and no sign-in URL changes no state.
-// It is neither a challenge nor a success, so "Already signed in", a pending restart and a call challenge all stay.
+// It is neither a challenge nor a success, so "Already signed in", the pending logout answer and a call challenge all stay.
 func TestIsErrorResultChangesNoSignInState(t *testing.T) {
 	result := `{"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"boom"}],"isError":true}}`
 	h := newSignInHooks(testChallenge(nil), io.Discard)
 	h.exposed = true
 	h.alreadySignedIn = true
-	h.restart = true
+	h.stillChallenged = true
 	h.callChallenged = true
 	h.callPending = true
 
 	out, err := h.Result(t.Context(), []byte(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`), http.StatusOK, []byte(result))
 	require.NoError(t, err)
 	assert.Equal(t, [][]byte{[]byte(result)}, out)
-	assert.Equal(t, signInHooks{exposed: true, alreadySignedIn: true, restart: true, callChallenged: true, callPending: true}, signInHooks{
-		exposed: h.exposed, alreadySignedIn: h.alreadySignedIn, restart: h.restart, callChallenged: h.callChallenged, callPending: h.callPending,
+	assert.Equal(t, signInHooks{exposed: true, alreadySignedIn: true, stillChallenged: true, callChallenged: true, callPending: true}, signInHooks{
+		exposed: h.exposed, alreadySignedIn: h.alreadySignedIn, stillChallenged: h.stillChallenged, callChallenged: h.callChallenged, callPending: h.callPending,
 	})
 }

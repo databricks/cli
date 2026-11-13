@@ -38,9 +38,6 @@ var listChangedNotification = []byte(`{"jsonrpc":"` + jsonrpcVersion + `","metho
 type SignInRequest struct {
 	// Open opens the sign-in page. It is false when the page must not open again in this session.
 	Open bool
-	// Restart deletes the caller's sign-in before the sign-in runs, so that it starts from no credential. The proxy asks
-	// for it when the service challenged the session again after an "Already signed in" answer.
-	Restart bool
 	// Progress is called on each poll of the wait with the sign-in page, so that the client can show where the user
 	// finishes, whether or not this attempt opened the page. It is never nil.
 	Progress func(pageURL string)
@@ -67,6 +64,9 @@ type Challenge struct {
 	LoginCommand string
 	// PinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile). The auth hint names it.
 	PinnedFile string
+	// LogoutCommand is the command that removes the profile's sign-in to the service. The answer names it when the service
+	// still asks for a sign-in after the credential reads as signed in.
+	LogoutCommand string
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
 	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
@@ -93,9 +93,10 @@ type signInHooks struct {
 	exposed bool
 	// alreadySignedIn means the last authenticate answered "Already signed in".
 	alreadySignedIn bool
-	// restart means the next sign-in starts from no credential. A challenge that follows an "Already signed in" answer
-	// sets it: the credential reads as signed in, but the service does not accept it.
-	restart bool
+	// stillChallenged means the service challenged the session after an "Already signed in" answer: the credential reads as
+	// signed in, but the service does not accept it. The next authenticate does not sign in, since the proxy never deletes a
+	// credential; it answers with the logout command instead, and clears this.
+	stillChallenged bool
 	// callChallenged means the last challenge came from a tools/call, and no sign-in has ended and no call has passed
 	// since. The agent was told to call authenticate, so a tools/list that passes still lists it.
 	callChallenged bool
@@ -185,7 +186,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 }
 
 // recordChallenge records a challenge to a request of method. The authenticate tool is listed from now on, and a challenge
-// that follows an "Already signed in" answer asks for a restart of the sign-in.
+// that follows an "Already signed in" answer leaves the next authenticate with the logout answer.
 func (h *signInHooks) recordChallenge(method string) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
@@ -193,29 +194,29 @@ func (h *signInHooks) recordChallenge(method string) {
 	h.callChallenged = method == methodToolsCall
 	h.callPending = h.callChallenged
 	if h.alreadySignedIn {
-		h.restart = true
+		h.stillChallenged = true
 		h.alreadySignedIn = false
 	}
 }
 
 // succeeded records a successful answer to a request of method, and returns the message to write. A successful tools/call
-// ends the "Already signed in" state, a pending restart, a call challenge. A tools/list answer ends the same state unless
-// the pending challenge came from a tools/call, which only a successful tools/call ends. It also takes the authenticate
-// tool off the list, since the list is the service's again, unless a call challenge is still pending; then the tool
-// stays on it.
+// ends the "Already signed in" state, the pending logout answer, and a call challenge. A tools/list answer ends the first
+// two too, unless the pending challenge came from a tools/call, which only a successful tools/call ends. It also takes the
+// authenticate tool off the list, since the list is the service's again, unless a call challenge is still pending; then
+// the tool stays on it.
 func (h *signInHooks) succeeded(method string, message []byte) ([]byte, error) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	if method == methodToolsCall {
 		h.alreadySignedIn = false
-		h.restart = false
+		h.stillChallenged = false
 		h.callPending = false
 		h.callChallenged = false
 		return message, nil
 	}
 	if !h.callPending {
 		h.alreadySignedIn = false
-		h.restart = false
+		h.stillChallenged = false
 	}
 	if !h.callChallenged {
 		h.exposed = false
@@ -339,7 +340,7 @@ func (h *signInHooks) authFailure() string {
 
 // authenticateList is the one-tool list a challenged service answers with.
 func (h *signInHooks) authenticateList(id json.RawMessage) []byte {
-	return resultResponse(id, map[string]any{"tools": []any{h.authenticateToolDef()}})
+	return resultResponse(id, map[string]any{keyTools: []any{h.authenticateToolDef()}})
 }
 
 // authenticateToolDef is the definition of the authenticate tool, as a tools/list result lists it.
@@ -380,21 +381,25 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	defer h.release()
 
 	h.stateMu.Lock()
-	restart := h.restart
-	h.restart = false
+	stillChallenged := h.stillChallenged
+	h.stillChallenged = false
 	h.stateMu.Unlock()
+	if stillChallenged {
+		// A sign-in cannot change what the service accepts, and the proxy does not delete the credential, so the caller logs
+		// out first. The page is not opened.
+		if ctx.Err() != nil {
+			return nil
+		}
+		return [][]byte{toolResult(id, h.stillChallengedText(), true)}
+	}
 
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: report, Stderr: h.stderr})
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Progress: report, Stderr: h.stderr})
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
 	if err == nil {
 		// The sign-in ended, so the next list is the service's own, unless it is challenged again.
 		h.callChallenged = false
-	}
-	if restart && !urlShown && err != nil {
-		// A restart that failed before its page was shown may not have deleted the credential, so it is asked for again.
-		h.restart = true
 	}
 	h.stateMu.Unlock()
 	if ctx.Err() != nil {
@@ -417,6 +422,13 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	default:
 		return [][]byte{toolResult(id, err.Error(), true)}
 	}
+}
+
+// stillChallengedText is the answer to authenticate while the service still asks for a sign-in after the credential
+// reads as signed in.
+func (h *signInHooks) stillChallengedText() string {
+	return fmt.Sprintf("%s on profile %s reads as signed in, but the service still asks for a sign-in. Run: %s, then call authenticate again.",
+		h.c.Service, h.c.Profile, h.c.LogoutCommand)
 }
 
 // acquire takes the turn that lets an authenticate call run its sign-in. While the call waits for the turn, it reports

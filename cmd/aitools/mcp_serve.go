@@ -28,7 +28,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/httpclient"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -226,8 +225,9 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		Profile:      t.profile,
 		Host:         t.w.Config.Host,
 		Label:        mcp.ProviderLabel(t.service),
-		LoginCommand: mcpLoginHint(t.service, t.profile, t.pinnedFile),
-		PinnedFile:   t.pinnedFile,
+		LoginCommand:  mcpLoginHint(t.service, t.profile, t.pinnedFile),
+		LogoutCommand: mcpLogoutHint(t.service, t.profile, t.pinnedFile),
+		PinnedFile:    t.pinnedFile,
 		SignIn:       serveSignIn(t),
 	}, nil
 }
@@ -245,36 +245,6 @@ func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, profileNa
 	return svc, nil
 }
 
-// restartWaitTimeout bounds the wait, after a restart deletes the credential, for the credential to stop reading as ACTIVE.
-// Tests shorten it.
-var restartWaitTimeout = 30 * time.Second
-
-// waitDeleted waits, up to restartWaitTimeout, until the caller's credential no longer reads as ACTIVE. A delete can take
-// a moment to show, and a sign-in that read ACTIVE then would answer that the caller is already signed in, with no page.
-// The bound covers the reads too, so a read that does not return ends the wait at the bound.
-func waitDeleted(parent context.Context, w *databricks.WorkspaceClient, service, profileName, pinnedFile string) error {
-	ctx, cancel := context.WithTimeout(parent, restartWaitTimeout)
-	defer cancel()
-	for {
-		state, err := mcp.CredentialState(ctx, w, service)
-		switch {
-		case err == nil && state != catalog.ProvisioningInfoStateActive:
-			return nil
-		case parent.Err() != nil:
-			return parent.Err()
-		case ctx.Err() != nil:
-			return fmt.Errorf("the removed sign-in to %s on profile %s still reads as signed in; run: %s",
-				service, profileName, mcpLoginHint(service, profileName, pinnedFile))
-		case err != nil:
-			return describeRequestError(profileName, pinnedFile, err)
-		}
-		select {
-		case <-ctx.Done():
-		case <-time.After(signInPollInterval):
-		}
-	}
-}
-
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
 // proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
 // often the browser opens. w must be guardedClient's.
@@ -283,19 +253,6 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
 	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
-		if req.Restart {
-			// The credential is deleted first, so that the sign-in below starts from no credential.
-			deleted, err := mcp.SignOut(ctx, w, service)
-			if err != nil {
-				return false, false, describeRequestError(profileName, pinnedFile, err)
-			}
-			if deleted {
-				fmt.Fprintf(req.Stderr, "%s did not accept the sign-in on profile %s, so it was removed; sign in again.\n", service, profileName)
-			}
-			if err := waitDeleted(ctx, w, service, profileName, pinnedFile); err != nil {
-				return false, false, err
-			}
-		}
 		if workspaceID == "" {
 			id, err := auth.ResolveWorkspaceID(ctx, w)
 			if err != nil {
