@@ -150,29 +150,31 @@ func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
 
 	resp, err := httpClient().Do(req)
 	if err != nil {
-		return "", err
+		return "", &FetchError{Stage: FetchStageRelease, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP %d fetching latest skills release", resp.StatusCode)
+		return "", newHTTPFetchError(FetchStageRelease, resp, fmt.Errorf("HTTP %d fetching latest skills release", resp.StatusCode))
 	}
 
 	var payload struct {
 		TagName string `json:"tag_name"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
-		return "", fmt.Errorf("parse latest skills release: %w", err)
+	// A response that arrived but names no usable release is still a failed
+	// release lookup, so these errors carry the stage too.
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxFetchBodySize)).Decode(&payload); err != nil {
+		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: fmt.Errorf("parse latest skills release: %w", err)}
 	}
 	tag := strings.TrimSpace(payload.TagName)
 	if tag == "" {
-		return "", errors.New("latest skills release has empty tag_name")
+		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: errors.New("latest skills release has empty tag_name")}
 	}
 	if !strings.HasPrefix(tag, "v") {
 		tag = "v" + tag
 	}
 	if !semver.IsValid(tag) {
-		return "", fmt.Errorf("latest skills release has invalid tag %q", payload.TagName)
+		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: fmt.Errorf("latest skills release has invalid tag %q", payload.TagName)}
 	}
 	return tag, nil
 }
@@ -240,17 +242,17 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 
 	resp, err := httpClient().Do(req)
 	if err != nil {
-		return nil, err
+		return nil, &FetchError{Stage: FetchStageFile, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+		return nil, newHTTPFetchError(FetchStageFile, resp, fmt.Errorf("HTTP %d", resp.StatusCode))
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
+		return nil, &FetchError{Stage: FetchStageFile, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to read response: %w", err)}
 	}
 	return data, nil
 }
@@ -316,7 +318,7 @@ func installedSkillsRelease(state *InstallState) (ref string, allowFallback bool
 
 func checkSkillsDowngrade(installedRef, ref string, explicit bool) error {
 	if !explicit && semver.Compare(ref, installedRef) < 0 {
-		return fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)
+		return &RefusedError{Err: fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)}
 	}
 	return nil
 }
@@ -364,7 +366,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
 	legacyInstall := state == nil && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
 	if legacyInstall && len(opts.SpecificSkills) > 0 {
-		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
+		return &RefusedError{Err: errors.New("legacy install detected without state tracking; run 'databricks aitools install --scope=global --skills-only' (without --skills) first to rebuild state")}
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)

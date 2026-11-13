@@ -106,9 +106,9 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 	// The cache key excludes the filter, so a cached row is still run through the
 	// active filter; a non-matching hit is dropped, not re-fetched.
 	for _, id := range ids {
-		if row, fields, taskRunID, ok := cachedRow(s.ctx, s.cache, host, id); ok {
+		if row, fields, tasks, ok := cachedRow(s.ctx, s.cache, host, id); ok {
 			if s.filters.matchesFields(fields) {
-				rows = append(rows, listedRun{row: row, runID: id, taskRunID: taskRunID})
+				rows = append(rows, listedRun{row: row, runID: id, tasks: tasks, terminal: true})
 			}
 			continue
 		}
@@ -125,11 +125,11 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 			continue
 		}
 		row := buildListRow(run, s.host, s.workspaceID)
-		taskRunID := taskRunID(run)
-		rows = append(rows, listedRun{row: row, runID: run.RunId, taskRunID: taskRunID})
+		tasks := retryTasks(run)
+		rows = append(rows, listedRun{row: row, runID: run.RunId, tasks: tasks, terminal: isTerminal(run)})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunId, taskRunID, start, row, fields)
+			putRow(s.ctx, s.cache, host, run.RunId, tasks, start, row, fields)
 		}
 	}
 

@@ -238,32 +238,57 @@ func TestInstallFunnelSkillsFailureThroughJSON(t *testing.T) {
 	}, funnelShape(funnelEvents(ctx)))
 }
 
-func TestInstallFunnelInteractiveConfirm(t *testing.T) {
+// Picking agents is the confirmation, so an interactive run goes straight from
+// AGENTS_SELECTED to PLAN_CONFIRMED and the install.
+func TestInstallFunnelInteractiveSuccess(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t)
+	setupScopeMock(t, installer.ScopeGlobal)
+	setupInstallMock(t)
+	origPicker := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPicker })
+	// Cursor gets raw skills, which setupInstallMock stands in for.
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+		return []*agents.Agent{agents.ByName(agents.NameCursor)}, nil
+	}
+
+	ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+
+	ctx := telemetry.WithNewLogger(ioCtx)
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.RunE(cmd, nil))
+
+	events := funnelEvents(ctx)
+	require.Equal(t, []string{"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED", "SKILLS_INSTALLED", "FINISHED:SUCCESS:"}, funnelShape(events))
+	assert.True(t, events[0].Interactive)
+}
+
+func TestInstallFunnelInteractiveCancel(t *testing.T) {
+	// The agent picker is the last prompt before the install, so it is where
+	// an interactive user cancels.
 	cases := []struct {
-		name    string
-		proceed func() (bool, error)
-		wantErr bool
-		want    []string
+		name string
+		err  error
+		want string
 	}{
-		{name: "confirmed", proceed: func() (bool, error) { return true, nil }, want: []string{"PLAN_CONFIRMED", "SKILLS_INSTALLED", "FINISHED:SUCCESS:"}},
-		{name: "declined", proceed: func() (bool, error) { return false, nil }, want: []string{"FINISHED:CANCELLED:"}},
-		{name: "aborted", proceed: func() (bool, error) { return false, huh.ErrUserAborted }, wantErr: true, want: []string{"FINISHED:CANCELLED:USER_ABORTED"}},
-		// The real prompt tags its own failure (defaultPromptProceed).
-		{name: "prompt failed", proceed: func() (bool, error) { return false, promptError(assert.AnError) }, wantErr: true, want: []string{"FINISHED:FAILURE:PROMPT_FAILED"}},
+		{name: "aborted", err: huh.ErrUserAborted, want: "FINISHED:CANCELLED:USER_ABORTED"},
+		// The real picker tags its own failure (defaultPromptAgentSelection).
+		{name: "prompt failed", err: promptError(assert.AnError), want: "FINISHED:FAILURE:PROMPT_FAILED"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			isolateAgents(t)
 			setupTestAgents(t)
 			setupScopeMock(t, installer.ScopeGlobal)
-			setupInstallMock(t)
-			origPicker, origProceed := promptAgentSelection, promptProceed
-			t.Cleanup(func() { promptAgentSelection, promptProceed = origPicker, origProceed })
-			// Cursor gets raw skills, which setupInstallMock stands in for.
-			promptAgentSelection = func(context.Context, []agentChoice) ([]*agents.Agent, error) {
-				return []*agents.Agent{agents.ByName(agents.NameCursor)}, nil
+			origPicker := promptAgentSelection
+			t.Cleanup(func() { promptAgentSelection = origPicker })
+			promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+				return nil, tc.err
 			}
-			promptProceed = tc.proceed
 
 			ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 			defer test.Done()
@@ -273,16 +298,10 @@ func TestInstallFunnelInteractiveConfirm(t *testing.T) {
 			ctx := telemetry.WithNewLogger(ioCtx)
 			cmd := newTestInstallCmd()
 			cmd.SetContext(ctx)
-			err := cmd.RunE(cmd, nil)
-			if tc.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
+			require.Error(t, cmd.RunE(cmd, nil))
 
 			events := funnelEvents(ctx)
-			want := append([]string{"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED"}, tc.want...)
-			require.Equal(t, want, funnelShape(events))
+			require.Equal(t, []string{"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", tc.want}, funnelShape(events))
 			assert.True(t, events[0].Interactive)
 		})
 	}
@@ -338,14 +357,14 @@ func TestInstallFunnelAbortedScopePromptKeepsNamedAgents(t *testing.T) {
 }
 
 // Confirming the picker with nothing checked is the user opting out, so it
-// finishes CANCELLED like a declined confirm, though the command still errors.
+// finishes CANCELLED, though the command still errors.
 func TestInstallFunnelEmptyPickerSelectionIsCancelled(t *testing.T) {
 	isolateAgents(t)
 	setupTestAgents(t)
 	setupScopeMock(t, installer.ScopeGlobal)
 	origPicker := promptAgentSelection
 	t.Cleanup(func() { promptAgentSelection = origPicker })
-	promptAgentSelection = func(context.Context, []agentChoice) ([]*agents.Agent, error) {
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
 		return nil, errNoAgentsSelected
 	}
 
@@ -359,7 +378,7 @@ func TestInstallFunnelEmptyPickerSelectionIsCancelled(t *testing.T) {
 	cmd.SetContext(ctx)
 	err := cmd.RunE(cmd, nil)
 	require.ErrorIs(t, err, errNoAgentsSelected)
-	assert.Equal(t, "at least one agent must be selected", err.Error())
+	assert.Equal(t, "at least one agent must be selected\nTo install without prompts, name the scope and agents, for example: databricks aitools install --scope=global --agents=<name>", err.Error())
 	assert.Equal(t, []string{"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "FINISHED:CANCELLED:"}, funnelShape(funnelEvents(ctx)))
 }
 

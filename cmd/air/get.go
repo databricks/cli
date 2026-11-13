@@ -167,8 +167,8 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
-		ids := mlflowIDsFromOutput(taskOutput)
+		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
+		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url

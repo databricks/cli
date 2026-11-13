@@ -348,6 +348,17 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
 }
 
+func TestAgentStatusLabelKeepsUnknownStaleScope(t *testing.T) {
+	// The project record has no version (its last install could not refresh the
+	// marketplace), the global one is current. The unknown scope is stale and
+	// must not be hidden behind the up-to-date version.
+	a := agentEntry{Installed: map[string]installInfo{
+		installer.ScopeProject: {Delivery: deliveryPlugin.String(), Version: ""},
+		installer.ScopeGlobal:  {Delivery: deliveryPlugin.String(), Version: "0.2.7"},
+	}}
+	assert.Equal(t, "databricks plugin · version unknown · update available", agentStatusLabel(a, "0.2.7"))
+}
+
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
 	out := listOutput{
 		Release: "0.1.0",

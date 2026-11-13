@@ -25,9 +25,10 @@ func PrintSkillsTip(ctx context.Context) {
 // when a coding agent is detected without Databricks tooling. Claude Code
 // callers are skipped because MaybeHint already covers them, with its
 // per-session throttle. installedPlugins is a parameter because this package
-// cannot import the installer; callers pass installer.InstalledTools. No
-// telemetry is logged: `databricks version` never resolves auth, so the event
-// would not be uploaded (see logHintShown).
+// cannot import the installer; callers pass installer.InstalledPluginAgents,
+// which counts a plugin recorded in the CLI install state with or without a
+// known version. No telemetry is logged: `databricks version` never resolves
+// auth, so the event would not be uploaded (see logHintShown).
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
 	if useragent.AgentProvider() == claudeAgentProvider {
 		return

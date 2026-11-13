@@ -418,9 +418,11 @@ func TestFromGitExclusionChanges(t *testing.T) {
 	}
 }
 
-func runSelectionGit(t *testing.T, args ...string) {
+// runSelectionGit runs git with a fixed identity and returns its output.
+func runSelectionGit(t *testing.T, args ...string) string {
 	t.Helper()
 	args = append([]string{"-c", "user.name=Test", "-c", "user.email=test@example.test", "-c", "commit.gpgsign=false"}, args...)
 	out, err := exec.Command("git", args...).CombinedOutput()
 	require.NoError(t, err, "git %v: %s", args, out)
+	return string(out)
 }

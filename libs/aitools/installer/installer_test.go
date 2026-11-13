@@ -670,6 +670,8 @@ func TestCheckSkillsDowngrade(t *testing.T) {
 			err := checkSkillsDowngrade(tc.installedRef, tc.ref, false)
 			if tc.wantErr {
 				require.ErrorContains(t, err, "refusing to downgrade skills")
+				// The message names the fix; callers add no generic step to it.
+				assert.ErrorAs(t, err, new(*RefusedError))
 			} else {
 				require.NoError(t, err)
 			}
@@ -1015,6 +1017,7 @@ func TestLegacyTargetedInstallBlockedFromLegacyDir(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "legacy install detected")
+	assert.ErrorAs(t, err, new(*RefusedError))
 }
 
 func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
@@ -1103,6 +1106,38 @@ func TestLegacyFullInstallAllowed(t *testing.T) {
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Len(t, state.Skills, 2)
+}
+
+// The recovery step for a corrupt state file is to move it aside and install
+// all skills: with skills on disk and no state, a targeted install is refused.
+func TestCorruptStateRecoveryNeedsFullInstall(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
+	statePath := filepath.Join(globalDir, ".state.json")
+	require.NoError(t, os.WriteFile(statePath, []byte("{not json"), 0o644))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	targeted := InstallOptions{SpecificSkills: []string{"databricks-sql"}}
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, targeted)
+	_, ok := errors.AsType[*StateError](err)
+	require.True(t, ok, "want *StateError, got %v", err)
+
+	require.NoError(t, os.Rename(statePath, statePath+".bak"))
+	err = InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, targeted)
+	require.ErrorContains(t, err, "legacy install detected")
+
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	require.NotNil(t, state)
@@ -1489,4 +1524,86 @@ func withCachedCompat(t *testing.T, skills string) {
 	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
 	manifest := fmt.Sprintf(`{"0.0.0":{"appkit":"0.24.0","skills":%q}}`, skills)
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), []byte(manifest), 0o644))
+}
+
+func TestFetchLatestSkillsReleaseRefRateLimited(t *testing.T) {
+	tests := []struct {
+		name        string
+		header      map[string]string
+		status      int
+		rateLimited bool
+	}{
+		{name: "403 with no remaining requests", status: http.StatusForbidden, header: map[string]string{"X-RateLimit-Remaining": "0"}, rateLimited: true},
+		{name: "403 secondary limit", status: http.StatusForbidden, header: map[string]string{"Retry-After": "60"}, rateLimited: true},
+		{name: "429", status: http.StatusTooManyRequests, rateLimited: true},
+		// A proxy or access policy denying the request is not a rate limit.
+		{name: "plain 403", status: http.StatusForbidden, rateLimited: false},
+		{name: "403 with requests left", status: http.StatusForbidden, header: map[string]string{"X-RateLimit-Remaining": "12"}, rateLimited: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				for k, v := range tc.header {
+					w.Header().Set(k, v)
+				}
+				w.WriteHeader(tc.status)
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
+
+			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			ferr, ok := errors.AsType[*FetchError](err)
+			require.True(t, ok, "want *FetchError, got %T", err)
+			assert.Equal(t, FetchStageRelease, ferr.Stage)
+			assert.Equal(t, tc.status, ferr.StatusCode)
+			assert.Equal(t, tc.rateLimited, ferr.RateLimited)
+		})
+	}
+}
+
+func TestFetchLatestSkillsReleaseRefUnusableResponse(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "HTML page", body: "<html>login</html>"},
+		{name: "empty body", body: ""},
+		{name: "empty tag_name", body: `{"tag_name": ""}`},
+		{name: "invalid tag", body: `{"tag_name": "not-a-version"}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
+
+			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			ferr, ok := errors.AsType[*FetchError](err)
+			require.True(t, ok, "want *FetchError, got %T", err)
+			assert.Equal(t, FetchStageRelease, ferr.Stage)
+			assert.Equal(t, http.StatusOK, ferr.StatusCode)
+		})
+	}
+}
+
+func TestFetchErrorsCarryStage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+	_, err := (&GitHubManifestSource{}).FetchManifest(t.Context(), "v1")
+	ferr, ok := errors.AsType[*FetchError](err)
+	require.True(t, ok, "want *FetchError, got %T", err)
+	assert.Equal(t, FetchStageManifest, ferr.Stage)
+	assert.Equal(t, http.StatusServiceUnavailable, ferr.StatusCode)
+	assert.False(t, ferr.RateLimited)
+
+	_, err = fetchSkillFile(t.Context(), "v1", "skills", "s", "SKILL.md")
+	ferr, ok = errors.AsType[*FetchError](err)
+	require.True(t, ok, "want *FetchError, got %T", err)
+	assert.Equal(t, FetchStageFile, ferr.Stage)
 }

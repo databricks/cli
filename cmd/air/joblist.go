@@ -53,12 +53,14 @@ func isSweep(r *jobs.Run) bool {
 	return len(r.Tasks) > 0 && r.Tasks[0].ForEachTask != nil
 }
 
-// taskRunID returns the run id of the AIR task, used to fetch its MLflow output.
-func taskRunID(r *jobs.Run) int64 {
-	if len(r.Tasks) == 0 {
-		return 0
+// retryTasks returns the run's task runs with only the fields that pick its
+// MLflow run (see mlflowIDsFromRetries), so the list cache stays small.
+func retryTasks(r *jobs.Run) []jobs.RunTask {
+	tasks := make([]jobs.RunTask, len(r.Tasks))
+	for i, t := range r.Tasks {
+		tasks[i] = jobs.RunTask{RunId: t.RunId, TaskKey: t.TaskKey, AttemptNumber: t.AttemptNumber}
 	}
-	return r.Tasks[0].RunId
+	return tasks
 }
 
 // jobExperiment returns the run's MLflow experiment name (user-folder prefix
