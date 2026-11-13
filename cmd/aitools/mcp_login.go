@@ -97,7 +97,7 @@ func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAct
 		out.ErrorCategory = errorCategory(runErr)
 	}
 	if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
-		return err
+		return errors.Join(runErr, err)
 	}
 	if runErr != nil {
 		return root.ErrAlreadyPrinted

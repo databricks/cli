@@ -204,3 +204,21 @@ func TestMcpLoginJSONNamesProfileWhenBindingFails(t *testing.T) {
 	assert.Equal(t, "PROFILE_HOST_CHANGED", string(out.ErrorCategory))
 	assert.NotContains(t, stdout.String(), `"state"`)
 }
+
+// TestMcpSignInJSONWriteFailureKeepsRunError checks that a document that cannot be written does not hide why the command
+// failed, as add and remove keep it.
+func TestMcpSignInJSONWriteFailureKeepsRunError(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"})
+
+	parent := newMCPTestRoot()
+	parent.SetOut(failingWriter{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "login", "system.ai.github", "--profile", "logfood", "--output", "json"})
+	err := parent.ExecuteContext(cmdio.MockDiscard(t.Context()))
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "disk full")
+	assert.ErrorContains(t, err, "MCP server github-logfood was set up for https://adb-123.test")
+}
