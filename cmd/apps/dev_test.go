@@ -36,11 +36,9 @@ func TestIsViteReady(t *testing.T) {
 			}
 		}()
 
-		// Give the listener a moment to start
-		time.Sleep(50 * time.Millisecond)
-
-		ready := isViteReady(5173)
-		assert.True(t, ready)
+		// A single probe uses a 100ms dial timeout, which a loaded CI runner can exceed; the dev
+		// command polls the same way, so retry instead of relying on one dial.
+		assert.Eventually(t, func() bool { return isViteReady(5173) }, 10*time.Second, 50*time.Millisecond)
 	})
 }
 
