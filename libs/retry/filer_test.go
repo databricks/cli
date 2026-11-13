@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -58,6 +59,14 @@ func TestFilerRewindsToInitialReaderPosition(t *testing.T) {
 	_, err := r.Seek(2, io.SeekStart)
 	require.NoError(t, err)
 	err = Filer(f).Write(testContext(t), "a", r, filer.OverwriteIfExists)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
+}
+
+func TestFilerRetriesWriteOnUnexpectedEOF(t *testing.T) {
+	eof := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: io.ErrUnexpectedEOF}
+	f := &flakyFiler{failures: 1, err: eof}
+	err := Filer(f).Write(testContext(t), "a", strings.NewReader("hello"), filer.OverwriteIfExists)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
 }

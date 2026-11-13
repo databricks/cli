@@ -73,18 +73,21 @@ func isInactivityTimeout(err error) bool {
 	return strings.HasPrefix(msg, "request timed out after ") && strings.HasSuffix(msg, " of inactivity")
 }
 
-// transientReadMessages are the transport errors, matched by message, that are worth retrying on a read:
+// transientReadMessages are the transport errors, matched by message, that are worth retrying on
+// an idempotent call:
 //   - REFUSED_STREAM, the HTTP/2 refusal in issue #6472, where the server refused the stream before
 //     processing the request.
-//   - unexpected EOF, where the connection was cut mid-response. Observed on GET /clusters/get.
+//   - unexpected EOF, where the connection was cut mid-response. Observed on GET /clusters/get and
+//     POST /workspace-files/import-file.
 var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF"}
 
-// IsTransientRead returns true for errors worth retrying on an idempotent read: the transient
-// server errors IsTransient covers, plus the transport errors in transientReadMessages. The SDK
-// already retries the transport errors it recognizes (connection reset/refused, i/o timeout,
-// TLS handshake) for its full RetryTimeout, so retrying every *url.Error would restart that
-// multi-minute loop; these are the gaps it leaves. net/http bundles unexported http2
-// types, so we match the message, as the SDK does for its own transient url errors.
+// IsTransientRead returns true for errors worth retrying on an idempotent call (a read or an
+// overwriting write): the transient server errors IsTransient covers, plus the transport errors
+// in transientReadMessages. The SDK already retries the transport errors it recognizes
+// (connection reset/refused, i/o timeout, TLS handshake) for its full RetryTimeout, so retrying
+// every *url.Error would restart that multi-minute loop; these are the gaps it leaves. net/http
+// bundles unexported http2 types, so we match the message, as the SDK does for its own transient
+// url errors.
 func IsTransientRead(ctx context.Context, err error) bool {
 	if IsTransient(ctx, err) {
 		return true
