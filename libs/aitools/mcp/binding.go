@@ -181,11 +181,16 @@ func RemoveNamesCommand(name string) string {
 // RecreateCommand returns the command that logs in to host for profileName again. configFile is the file the login must
 // write, passed as DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
 func RecreateCommand(host, profileName, configFile string) string {
-	command := authLoginCommand + " --host " + shellquote.BashArg(host) + " --profile " + shellquote.BashArg(profileName)
-	if configFile != "" {
-		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
+	return ConfigFileCommand(configFile, authLoginCommand+" --host "+shellquote.BashArg(host)+" --profile "+shellquote.BashArg(profileName))
+}
+
+// ConfigFileCommand returns command with DATABRICKS_CONFIG_FILE set to configFile, when configFile is not "". A command
+// that a hint prints names the file of a profile that is not the one the shell reads.
+func ConfigFileCommand(configFile, command string) string {
+	if configFile == "" {
+		return command
 	}
-	return command
+	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
 }
 
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
