@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
@@ -104,6 +105,22 @@ func TestMcpLoginRejectedTokenIsAuthFailed(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(err))
 	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
+}
+
+// TestMcpLoginRejectedTokenHasOneSetOfNextSteps checks the error that root prints for a rejected token after login has
+// its client: the MCP login command is the only set of next steps, since root's auth enrichment leaves it alone.
+func TestMcpLoginRejectedTokenHasOneSetOfNextSteps(t *testing.T) {
+	home := withHome(t)
+	server := loginTestServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-expired\n")
+
+	out := mcpSignInOutput{Service: "system.ai.github"}
+	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogin, &out)
+	require.Error(t, err)
+	require.NotNil(t, out.cfg, "the client exists, so root enriches errors")
+	enriched := auth.EnrichAuthError(t.Context(), out.cfg, err)
+	assert.Equal(t, err.Error(), enriched.Error())
+	assert.Equal(t, 0, strings.Count(enriched.Error(), "Next steps:"))
 }
 
 // TestMcpLogoutUnknownServiceIsAnError checks that logout of a service the profile cannot see fails, rather than

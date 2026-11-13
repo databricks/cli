@@ -82,6 +82,13 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 	return false, err
 }
 
+// nextStepsIncluded is implemented by an error whose message already gives the next steps for the failure, such as the
+// login command of an MCP server. EnrichAuthError leaves such an error as it is, so the user is given one set of steps.
+type nextStepsIncluded interface {
+	error
+	NextStepsIncluded() bool
+}
+
 // EnrichAuthError appends identity context and remediation steps to 401/403 API errors.
 // For non-API errors or other status codes, the original error is returned unchanged.
 func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
@@ -90,6 +97,9 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 		return err
 	}
 	if apiErr.StatusCode != http.StatusUnauthorized && apiErr.StatusCode != http.StatusForbidden {
+		return err
+	}
+	if steps, ok := errors.AsType[nextStepsIncluded](err); ok && steps.NextStepsIncluded() {
 		return err
 	}
 
