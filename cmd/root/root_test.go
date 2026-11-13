@@ -3,7 +3,12 @@ package root
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -176,4 +181,34 @@ func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 	err := Execute(ctx, cmd)
 	require.Error(t, err)
 	assert.Empty(t, stderr.String())
+}
+
+func TestExecuteLogsExitStatus(t *testing.T) {
+	logFile := filepath.Join(t.TempDir(), "run.log")
+	cmd := New(t.Context())
+	cmd.AddCommand(&cobra.Command{
+		Use: "fail",
+		RunE: func(*cobra.Command, []string) error {
+			return &testStatusError{status: 2, err: errors.New("binding failed")}
+		},
+	})
+	cmd.SetArgs([]string{"fail", "--log-file", logFile, "--log-level", "info", "--log-format", "json"})
+	cmd.SetErr(io.Discard)
+
+	err := Execute(t.Context(), cmd)
+	require.Error(t, err)
+	assert.Equal(t, 2, ExitStatus(err))
+
+	content, readErr := os.ReadFile(logFile)
+	require.NoError(t, readErr)
+	var failed map[string]any
+	for line := range strings.SplitSeq(strings.TrimSpace(string(content)), "\n") {
+		var rec map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &rec))
+		if rec["msg"] == "failed execution" {
+			failed = rec
+		}
+	}
+	require.NotNil(t, failed, "no failed execution record in %s", logFile)
+	assert.Equal(t, "2", failed["exit_code"])
 }

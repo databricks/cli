@@ -62,8 +62,8 @@ func (e *BindError) Unwrap() error {
 	return e.cause
 }
 
-// ExitCode returns the process exit status for this failure.
-func (e *BindError) ExitCode() int {
+// ExitStatus returns the process exit status for this failure.
+func (e *BindError) ExitStatus() int {
 	return bindExitCode
 }
 

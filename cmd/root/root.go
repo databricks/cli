@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -170,6 +171,8 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
+	exitCode := ExitStatus(err)
+
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
@@ -179,17 +182,15 @@ Stack Trace:
 				slog.String("exit_code", "0"))
 		} else if errors.Is(err, ErrAlreadyPrinted) {
 			logger.Debug("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 			)
 		} else {
 			logger.Info("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 				slog.String("error", err.Error()),
 			)
 		}
 	}
-
-	exitCode := ExitStatus(err)
 
 	commandStr := commandString(cmd)
 	ctx = cmd.Context()

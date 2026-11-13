@@ -22,10 +22,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// serveExitCode is the exit status for binding and auth failures, so agents and `list --check`
-// can tell them from transport errors.
-const serveExitCode = 2
-
 // serveConnectTimeout bounds one upstream connect. http.DefaultTransport waits 30 s.
 const serveConnectTimeout = 10 * time.Second
 
@@ -99,7 +95,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 
 	state, err := mcp.LoadState(cmd.Context())
 	if err != nil {
-		return serveFailure(cmd, 1, err)
+		return serveFailure(cmd, err)
 	}
 	cfg, _, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile: profileName,
@@ -108,7 +104,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Stderr:  cmd.ErrOrStderr(),
 	})
 	if err != nil {
-		return serveFailure(cmd, serveExitCode, err)
+		return serveFailure(cmd, err)
 	}
 
 	// The bound profile authenticates the exit-time telemetry upload.
@@ -133,19 +129,20 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Transport:    serveTransport(cfg),
 	})
 	if err != nil {
-		return serveFailure(cmd, 1, err)
+		return serveFailure(cmd, err)
 	}
 	if refreshErr := refresh.failure(); refreshErr != nil {
-		return serveFailure(cmd, serveExitCode, refreshErr)
+		return serveFailure(cmd, refreshErr)
 	}
 	return nil
 }
 
-// serveFailure prints err to stderr and returns the error that sets the exit status. Execute does
-// not print it again, so the message is written exactly once.
-func serveFailure(cmd *cobra.Command, status int, err error) error {
+// serveFailure prints err to stderr and returns it with the exit status that err carries: a binding
+// or auth failure exits 2 (mcp.BindError), any other error exits 1. Execute does not print it again,
+// so the message is written exactly once.
+func serveFailure(cmd *cobra.Command, err error) error {
 	fmt.Fprintln(cmd.ErrOrStderr(), err)
-	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
+	return errors.Join(root.ErrAlreadyPrinted, err)
 }
 
 // refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed
@@ -166,13 +163,14 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	if err == nil {
 		return nil
 	}
+	authErr := mcp.AuthError(g.profile, err)
 	g.mu.Lock()
 	if g.err == nil {
-		g.err = err
+		g.err = authErr
 	}
 	g.mu.Unlock()
 	g.cancel()
-	return fmt.Errorf("token refresh failed for profile %s: %w\nRun: databricks auth login --profile %s", g.profile, err, g.profile)
+	return authErr
 }
 
 // failure returns the first refresh error, or nil when every token was refreshed.

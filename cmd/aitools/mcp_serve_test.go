@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,6 @@ func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 	err := g.authenticateRequest(&http.Request{Header: http.Header{}})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cause)
-	assert.Contains(t, err.Error(), `profile logfood`)
 	assert.Contains(t, err.Error(), "databricks auth login --profile logfood")
 	assert.Equal(t, context.Canceled, ctx.Err())
 
@@ -58,15 +58,43 @@ func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
+// The refresh failure reaches the user as the AUTH_FAILED error, which names the profile and its login command
+// and exits 2.
+func TestRefreshGuardStoresAuthError(t *testing.T) {
+	cause := errors.New("refresh token expired")
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error { return cause },
+		profile:      "my profile",
+		cancel:       func() {},
+	}
+
+	_ = g.authenticateRequest(&http.Request{Header: http.Header{}})
+
+	be, ok := errors.AsType[*mcp.BindError](g.failure())
+	require.True(t, ok)
+	assert.Equal(t, mcp.BindAuthFailed, be.Category)
+	assert.ErrorIs(t, be, cause)
+	assert.Contains(t, be.Error(), "databricks auth login --profile 'my profile'")
+	assert.Equal(t, 2, root.ExitStatus(g.failure()))
+}
+
 func TestServeFailureSetsExitStatusWithoutReprinting(t *testing.T) {
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
 	cause := errors.New("MCP server x is bound to Databricks profile")
 
-	err := serveFailure(cmd, serveExitCode, cause)
+	err := serveFailure(cmd, cause)
 
 	assert.Equal(t, "MCP server x is bound to Databricks profile\n", stderr.String())
+	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, 1, root.ExitStatus(err))
+
+	bindErr := mcp.AuthError("logfood", cause)
+	stderr.Reset()
+	err = serveFailure(cmd, bindErr)
+
+	assert.Equal(t, bindErr.Error()+"\n", stderr.String())
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
 }
