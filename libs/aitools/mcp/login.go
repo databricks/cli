@@ -61,10 +61,10 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	if err != nil {
 		return false, err
 	}
-	if state == catalog.ProvisioningInfoStateActive {
+	switch state {
+	case catalog.ProvisioningInfoStateActive:
 		return true, nil
-	}
-	if state == catalog.ProvisioningInfoStateFailed {
+	case catalog.ProvisioningInfoStateFailed:
 		// A FAILED credential is left by an earlier attempt. It is deleted, so that a FAILED state seen while waiting is
 		// the result of this attempt, and so that the page starts from no credential.
 		if _, err := SignOut(ctx, w, service); err != nil {
@@ -84,9 +84,11 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	}
 	fmt.Fprintln(out, "Waiting for sign-in...")
 
-	// The timeout cancels the wait from a timer, not with a context deadline: the SDK rate limiter refuses a request
-	// whose wait would exceed a deadline, which would hide the timeout. A poll still in flight is cut off too, so the
-	// SDK's retries of a slow poll cannot hold the command past the timeout.
+	// The timeout cancels the wait from a timer, not with a context deadline: the SDK's rate limiter refuses a request
+	// whose wait would exceed a deadline, which would hide the timeout (see
+	// https://github.com/databricks/databricks-sdk-go/blob/v0.197.0/httpclient/api_client.go and
+	// https://github.com/golang/time/blob/v0.14.0/rate/rate.go). A poll still in flight is cut off too, so the SDK's
+	// retries of a slow poll cannot hold the command past the timeout.
 	waitCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	timer := time.AfterFunc(opts.Timeout, cancel)
@@ -114,10 +116,10 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 			return false, err
 		}
 		// Other states (PROVISIONING, UPDATING, ...) mean the login has not completed yet.
-		if state == catalog.ProvisioningInfoStateActive {
+		switch state {
+		case catalog.ProvisioningInfoStateActive:
 			return false, nil
-		}
-		if state == catalog.ProvisioningInfoStateFailed {
+		case catalog.ProvisioningInfoStateFailed:
 			return false, ErrSignInFailed
 		}
 	}

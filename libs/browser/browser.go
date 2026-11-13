@@ -69,7 +69,8 @@ func openDefault(url string, stdoutToStderr bool) error {
 	defaultOpenMu.Lock()
 	defer defaultOpenMu.Unlock()
 	// github.com/pkg/browser writes xdg-open's output to os.Stdout and its error output to os.Stderr, even when the
-	// open succeeds, producing spurious noise on Linux desktops. The error output is discarded.
+	// open succeeds, producing spurious noise on Linux desktops. The error output is discarded. The streams are the
+	// package variables Stdout and Stderr (https://github.com/pkg/browser/blob/5ac0b6a4141c/browser.go).
 	originalStdout, originalStderr := browserpkg.Stdout, browserpkg.Stderr
 	defer func() {
 		browserpkg.Stdout = originalStdout

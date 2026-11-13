@@ -19,6 +19,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// mcpLoginCommand is the command that signs a profile in to a service. The hints name it.
+const mcpLoginCommand = "databricks aitools mcp login"
+
 // Sign-in states of `mcp login` and `mcp logout`, reported in JSON.
 const (
 	signInStateActive       = "ACTIVE"
@@ -107,6 +110,9 @@ func isServiceName(service string) bool {
 	return isFullName(strings.Split(service, ".")) && mcp.PathSafeName(service)
 }
 
+// runMcpSignIn checks the service name, resolves the profile and checks its binding to the server, then runs action with
+// the profile's client. out records the outcome: the profile is set once it is resolved, and the host once the client
+// exists. Its errors are returned for the command to print.
 func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service string, action mcpSignInAction, out *mcpSignInOutput) error {
 	if !isServiceName(service) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "service must be a full name such as system.ai.github, got %q", service)
@@ -154,6 +160,8 @@ func serviceFor(ctx context.Context, w *databricks.WorkspaceClient, profileName,
 	return svc, nil
 }
 
+// mcpLogin signs the profile in to the service, when the service needs sign-in. A service that does not need it is
+// NOT_REQUIRED and nothing is done. The sign-in URL is the one for the workspace the profile is in now.
 func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error {
 	svc, err := serviceFor(ctx, w, out.Profile, pinnedFile, out.Service)
 	if err != nil {
@@ -182,6 +190,8 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 	return err
 }
 
+// mcpLogout removes the profile's sign-in to the service. The state is DELETED, or NOT_SIGNED_IN when there was no
+// sign-in, which is not an error. A service the profile cannot see is an error, since a misspelled name looks the same.
 func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error {
 	// The credential is deleted first, so that the credential of a service the profile can no longer see is removed too.
 	// The service is looked up only when there is no credential, to tell a name that is not a service from a caller who
@@ -202,9 +212,6 @@ func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceCli
 	fmt.Fprintf(errOut, "Not signed in to %s on profile %s.\n", out.Service, out.Profile)
 	return nil
 }
-
-// mcpLoginCommand is the command that signs a profile in to a service. The hints name it.
-const mcpLoginCommand = "databricks aitools mcp login"
 
 // mcpLoginHint returns the command that signs profileName in to service. pinnedFile is the config file the server is
 // pinned to, which the command sets, or "" for the file the shell reads.
