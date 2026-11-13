@@ -8,7 +8,12 @@ export DATABRICKS_HOST=https://elsewhere.test
 
 # Responses may arrive in any order, so they are sorted by id. jq -s also fails when any stdout line is not JSON.
 title "Stdout holds one JSON-RPC message per line; the notification gets no reply"
-$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> out.stderr.txt | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
 
 title "Diagnostics go to stderr only"
-trace cat out.stderr.txt
+trace cat LOG.stderr
+
+# An agent this binary does not know still serves; it is left out of the User-Agent and logged at debug.
+title "An agent this binary does not know is accepted"
+$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent --log-level debug < requests.ndjson 2> LOG.debug | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+trace grep -c "not a known agent" LOG.debug

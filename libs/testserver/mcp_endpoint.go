@@ -16,11 +16,13 @@ const (
 )
 
 const (
+	jsonRPCVersion         = "2.0"
 	fakeMcpProtocolVersion = "2025-06-18"
 	fakeMcpInstructions    = "Fake Databricks MCP service for tests."
 	fakeMcpEchoTool        = "echo"
 )
 
+// mcpRPC is the part of a client message the fake reads: the id, the method, and the tool call's name and arguments.
 type mcpRPC struct {
 	ID     json.RawMessage `json:"id,omitempty"`
 	Method string          `json:"method"`
@@ -92,13 +94,15 @@ func (s *FakeWorkspace) mcpServiceIsExternal(name string) bool {
 		ms.Config.SourceConnection.Options["oauth_provider"] != ""
 }
 
+// rpcResult is the response to the request with id, carrying result.
 func rpcResult(id json.RawMessage, result any) Response {
-	return Response{Body: map[string]any{"jsonrpc": "2.0", "id": id, "result": result}}
+	return Response{Body: map[string]any{"jsonrpc": jsonRPCVersion, "id": id, "result": result}}
 }
 
+// rpcError is the error response to the request with id.
 func rpcError(id json.RawMessage, code int, message string) map[string]any {
 	return map[string]any{
-		"jsonrpc": "2.0",
+		"jsonrpc": jsonRPCVersion,
 		"id":      id,
 		"error":   map[string]any{"code": code, "message": message, "data": nil},
 	}

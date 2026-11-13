@@ -26,6 +26,8 @@ func answerInitialize(w http.ResponseWriter, r *http.Request) {
 	answer(w, r)
 }
 
+// runOptions returns Options that send input from stdin to endpoint as profile logfood and agent claude-code, with
+// testToken as the authorization. It also returns the buffers that receive stdout and stderr.
 func runOptions(t *testing.T, endpoint string, cfg *config.Config, input string) (Options, *syncBuffer, *syncBuffer) {
 	t.Helper()
 	var out, errOut syncBuffer

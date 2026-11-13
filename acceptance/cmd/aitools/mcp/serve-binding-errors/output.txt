@@ -1,7 +1,7 @@
 
 === The bound profile is not in the config file
 
->>> cat out.stderr.txt
+>>> cat LOG.stderr
 MCP server system.ai.genie_one_mcp needs Databricks profile "gone", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile gone
 
 Exit code: 2
@@ -9,7 +9,7 @@ stdout bytes: 0
 
 === The profile now points at another host than the one recorded
 
->>> cat out.stderr.txt
+>>> cat LOG.stderr
 MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
 
 Exit code: 2
@@ -17,22 +17,20 @@ stdout bytes: 0
 
 === Flags are required and validated before the binding checks
 
->>> cat out.stderr.txt
+>>> cat LOG.stderr
 Error: --profile is required
 
 Exit code: 1
 
->>> cat out.stderr.txt
-MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
-
-Exit code: 2
-
->>> cat out.stderr.txt
+>>> cat LOG.stderr
 Error: --output does not apply to serve: its stdout carries the MCP protocol
 
 Exit code: 1
 
->>> cat out.stderr.txt
+=== A log file on stdout is refused before anything is logged
+
+>>> cat LOG.stderr
 Error: databricks aitools mcp serve writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file
 
 Exit code: 1
+stdout bytes: 0

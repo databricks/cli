@@ -6,5 +6,13 @@
 
 === Diagnostics go to stderr only
 
->>> cat out.stderr.txt
+>>> cat LOG.stderr
 No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
+
+=== An agent this binary does not know is accepted
+{"id":1,"instructions":"Fake Databricks MCP service for tests.\n\nThis server is bound to Databricks workspace [DATABRICKS_URL] (CLI profile \"logfood\"). Its tools act on that workspace only.","tools":[],"text":null,"error":null}
+{"id":2,"instructions":null,"tools":["echo"],"text":null,"error":null}
+{"id":3,"instructions":null,"tools":[],"text":"hello","error":null}
+
+>>> grep -c not a known agent LOG.debug
+1
