@@ -210,7 +210,7 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 		Profile: profileName,
 		Poll:    mcp.SignInPollInterval,
 		Timeout: mcp.SignInWaitTimeout,
-		Open:    browser.Open,
+		Open:    browser.OpenOutputToStderr,
 	})
 	switch {
 	case errors.Is(err, mcp.ErrSignInTimeout):
