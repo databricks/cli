@@ -1,6 +1,6 @@
 Action: PUT: databricks.yml
-Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
 Uploaded databricks.yml
 Initial Sync Complete
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
 /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
 /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
