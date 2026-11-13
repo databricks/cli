@@ -1,0 +1,389 @@
+
+=== add goes through each agent's own CLI: the stand-ins are the only agent CLIs on PATH
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex,gemini,copilot --output json
+{
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "scope": "global",
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "sign_in_required": false,
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        },
+        {
+          "name": "codex",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml"
+        },
+        {
+          "name": "gemini",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.gemini/settings.json"
+        },
+        {
+          "name": "copilot",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.copilot/mcp-config.json"
+        }
+      ]
+    },
+    {
+      "name": "github-logfood",
+      "service": "system.ai.github",
+      "sign_in_required": true,
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        },
+        {
+          "name": "codex",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.codex/config.toml"
+        },
+        {
+          "name": "gemini",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.gemini/settings.json"
+        },
+        {
+          "name": "copilot",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.copilot/mcp-config.json"
+        }
+      ]
+    }
+  ],
+  "error_category": "TYPE_UNSPECIFIED"
+}
+
+=== the argv each agent CLI ran for add
+
+>>> cat agent-calls.log
+claude
+	mcp
+	add-json
+	--scope
+	user
+	genie_one_mcp-logfood
+	{"args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.genie_one_mcp","--agent","claude-code"],"command":"[CLI]","env":{"DATABRICKS_CONFIG_FILE":"[TEST_TMP_DIR]/.databrickscfg"},"type":"stdio"}
+codex
+	mcp
+	add
+	genie_one_mcp-logfood
+	--env
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	--
+	[CLI]
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.genie_one_mcp
+	--agent
+	codex
+gemini
+	mcp
+	add
+	--scope
+	user
+	-e
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	genie_one_mcp-logfood
+	[CLI]
+	--
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.genie_one_mcp
+	--agent
+	gemini
+copilot
+	mcp
+	add
+	genie_one_mcp-logfood
+	--tools
+	*
+	--env
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	--
+	[CLI]
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.genie_one_mcp
+	--agent
+	copilot
+claude
+	mcp
+	add-json
+	--scope
+	user
+	github-logfood
+	{"args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"],"command":"[CLI]","env":{"DATABRICKS_CONFIG_FILE":"[TEST_TMP_DIR]/.databrickscfg"},"type":"stdio"}
+codex
+	mcp
+	add
+	github-logfood
+	--env
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	--
+	[CLI]
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.github
+	--agent
+	codex
+gemini
+	mcp
+	add
+	--scope
+	user
+	-e
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	github-logfood
+	[CLI]
+	--
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.github
+	--agent
+	gemini
+copilot
+	mcp
+	add
+	github-logfood
+	--tools
+	*
+	--env
+	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
+	--
+	[CLI]
+	aitools
+	mcp
+	serve
+	--profile
+	logfood
+	--service
+	system.ai.github
+	--agent
+	copilot
+
+=== the config each agent CLI wrote
+
+>>> cat home/.claude.json
+{
+  "mcpServers": {
+    "genie_one_mcp-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "claude-code"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "type": "stdio"
+    },
+    "github-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.github",
+        "--agent",
+        "claude-code"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "type": "stdio"
+    }
+  }
+}
+
+>>> cat home/.codex/config.toml
+[mcp_servers.genie_one_mcp-logfood]
+args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "codex"]
+command = "[CLI]"
+[mcp_servers.genie_one_mcp-logfood.env]
+DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+
+[mcp_servers.github-logfood]
+args = ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.github", "--agent", "codex"]
+command = "[CLI]"
+[mcp_servers.github-logfood.env]
+DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
+
+>>> cat home/.gemini/settings.json
+{
+  "mcpServers": {
+    "genie_one_mcp-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "gemini"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      }
+    },
+    "github-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.github",
+        "--agent",
+        "gemini"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      }
+    }
+  }
+}
+
+>>> cat home/.copilot/mcp-config.json
+{
+  "mcpServers": {
+    "genie_one_mcp-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "copilot"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "tools": [
+        "*"
+      ],
+      "type": "local"
+    },
+    "github-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.github",
+        "--agent",
+        "copilot"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      },
+      "tools": [
+        "*"
+      ],
+      "type": "local"
+    }
+  }
+}
+
+=== remove goes through each agent's CLI too
+
+>>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood
+Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
+Removed github-logfood  system.ai.github  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
+
+=== the argv each agent CLI ran for remove
+
+>>> cat agent-calls.log
+claude
+	mcp
+	remove
+	--scope
+	user
+	genie_one_mcp-logfood
+codex
+	mcp
+	remove
+	genie_one_mcp-logfood
+copilot
+	mcp
+	remove
+	genie_one_mcp-logfood
+gemini
+	mcp
+	remove
+	--scope
+	user
+	genie_one_mcp-logfood
+claude
+	mcp
+	remove
+	--scope
+	user
+	github-logfood
+codex
+	mcp
+	remove
+	github-logfood
+copilot
+	mcp
+	remove
+	github-logfood
+gemini
+	mcp
+	remove
+	--scope
+	user
+	github-logfood

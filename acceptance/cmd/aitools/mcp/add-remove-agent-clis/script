@@ -1,0 +1,27 @@
+# Isolate HOME so the agent config files land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The services of system.ai, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' &> LOG.create-github-logfood
+
+title "add goes through each agent's own CLI: the stand-ins are the only agent CLIs on PATH"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex,gemini,copilot --output json
+
+title "the argv each agent CLI ran for add"
+trace cat agent-calls.log
+rm agent-calls.log
+
+title "the config each agent CLI wrote"
+trace cat home/.claude.json
+trace cat home/.codex/config.toml
+trace cat home/.gemini/settings.json
+trace cat home/.copilot/mcp-config.json
+
+title "remove goes through each agent's CLI too"
+trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
+
+title "the argv each agent CLI ran for remove"
+trace cat agent-calls.log

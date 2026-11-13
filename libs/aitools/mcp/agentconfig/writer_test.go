@@ -819,7 +819,7 @@ func TestReadAtAndRemoveAtUseTheGivenFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, entries, "the spec's file does not have the entry")
 
-	removed, err := RemoveAt(a, recorded, testName)
+	removed, err := RemoveAt(t.Context(), a, recorded, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	entries, err = ReadAt(a, recorded)
@@ -852,5 +852,5 @@ func removeAgent(ctx context.Context, a *agents.Agent, name string) (bool, error
 	if err != nil {
 		return false, err
 	}
-	return RemoveAt(a, path, name)
+	return RemoveAt(ctx, a, path, name)
 }

@@ -1,7 +1,8 @@
 // Package agentconfig reads and writes the user-scope MCP server entries of
-// coding agents. A write changes only the bytes of the one entry it is asked to
-// change, writes the file back atomically, and keeps comments and layout
-// elsewhere in the file.
+// coding agents. The direct writer changes only the bytes of the one entry it is
+// asked to change, writes the file back atomically, and keeps comments and layout
+// elsewhere in the file. An add or remove that the agent's own CLI makes (see
+// cli.go) leaves the file in the layout that the CLI writes.
 package agentconfig
 
 import (
@@ -79,8 +80,10 @@ func ownedKeys(spec *mcpconfig.Spec) []string {
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
 // env. An entry this CLI wrote gets its launch keys updated, and its other keys
 // are kept. A foreign entry is replaced only when force is set. The file is left
-// alone when the entry already matches. cmd must be the databricks binary, or
-// the entry could never be recognized as ours. It returns the config file path.
+// alone when the entry already matches. A new entry goes through the agent's own
+// CLI when that CLI is on PATH (see addViaCLI), and the file then has the CLI's
+// layout. cmd must be the databricks binary, or the entry could never be recognized
+// as ours. It returns the config file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
 	if err := checkName(name); err != nil {
 		return "", "", err
@@ -119,6 +122,13 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	switch {
 	case !found:
 		status = StatusAdded
+		done, cliErr := addViaCLI(ctx, a, spec, path, name, cmd, args, env, ours)
+		if cliErr != nil {
+			return path, "", cliErr
+		}
+		if done {
+			return path, status, nil
+		}
 		err = doc.put(root, name, want, nil)
 	case !mcpconfig.IsDatabricksEntry(current) && !force:
 		return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
@@ -130,7 +140,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		if mergeErr != nil {
 			return path, "", mergeErr
 		}
-		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
+		same, cmpErr := sameEntry(launchOf(current, keys), launchOf(merged, keys))
 		if cmpErr != nil {
 			return path, "", cmpErr
 		}
@@ -151,8 +161,10 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 
 // RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
 // false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
-// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry.
-func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry. The
+// removal runs through the agent's own CLI when that CLI is on PATH and path is the file it reads now (see removeViaCLI);
+// otherwise, or when the CLI leaves the entry behind, the direct writer removes it.
+func RemoveAt(ctx context.Context, a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err
 	}
@@ -160,6 +172,43 @@ func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if spec.RemoveArgs == nil {
+		return removeDirect(spec, path, name)
+	}
+	current, found, err := entryAt(spec, path, name)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+	if !mcpconfig.IsDatabricksEntry(current) {
+		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	}
+	removed, err := removeViaCLI(ctx, a, spec, path, name)
+	if err != nil || removed {
+		return removed, err
+	}
+	return removeDirect(spec, path, name)
+}
+
+// putDirect writes entry as server name in the config file at path with the direct writer. It reads the file again,
+// since the agent's CLI may have changed it. Unlike removeDirect, it does not check who wrote the entry: it is used for
+// an entry that this run's CLI wrote.
+func putDirect(spec *mcpconfig.Spec, path, name string, entry map[string]any) error {
+	doc, err := load(spec, path)
+	if err != nil {
+		return err
+	}
+	if err := doc.put(rootPath(spec), name, entry, nil); err != nil {
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return save(path, doc)
+}
+
+// removeDirect deletes server name from the config file at path, with the direct writer. It reads the file again, since
+// the agent's CLI may have changed it, and it refuses an entry this CLI did not write.
+func removeDirect(spec *mcpconfig.Spec, path, name string) (bool, error) {
 	doc, err := load(spec, path)
 	if err != nil {
 		return false, err
@@ -284,7 +333,7 @@ func save(path string, doc document) error {
 	case err == nil:
 		target = resolved
 	case errors.Is(err, fs.ErrNotExist):
-		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+		if isSymlink(path) {
 			return fmt.Errorf("%s is a symlink to a file that does not exist", filepath.ToSlash(path))
 		}
 	default:

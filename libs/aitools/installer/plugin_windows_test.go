@@ -22,9 +22,9 @@ func TestProbeRealCmdShimPrintedHelp(t *testing.T) {
 	shim := filepath.Join(dir, "copilot.cmd")
 	require.NoError(t, os.WriteFile(shim, []byte("@type \"%~dp0help.txt\"\r\n@exit /b 1\r\n"), 0o755))
 
-	origLook := lookPath
-	t.Cleanup(func() { lookPath = origLook })
-	lookPath = func(string) (string, error) { return shim, nil }
+	origLook := agents.LookPath
+	t.Cleanup(func() { agents.LookPath = origLook })
+	agents.LookPath = func(string) (string, error) { return shim, nil }
 
 	_, err := InstallPluginForAgent(t.Context(), pluginAgent(agents.NameCopilot, "GitHub Copilot", "copilot"), "", "v0.2.6")
 	var be *BlockedError
