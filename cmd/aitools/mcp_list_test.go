@@ -1205,3 +1205,29 @@ func TestAddChecksAuthWarningNamesPinnedConfigFile(t *testing.T) {
 	require.Len(t, out.Warnings, 1)
 	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(resolved))+" databricks auth login --profile logfood")
 }
+
+// TestAddChecksAuthWarningNamesFileTheShellNames checks the login command in the warning for a rejected token of an
+// unpinned server. The profile is checked in ~/.databrickscfg, and login writes the file DATABRICKS_CONFIG_FILE names, so
+// the command names the checked file when the shell names another one.
+func TestAddChecksAuthWarningNamesFileTheShellNames(t *testing.T) {
+	home := withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "other.cfg"))
+	checked, err := mcp.ResolveConfigFile(t.Context(), "")
+	require.NoError(t, err)
+
+	_, out := checkedListServer(t)
+	require.Len(t, out.Warnings, 1)
+	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(checked))+" databricks auth login --profile logfood")
+}

@@ -361,8 +361,11 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 		if p.Status != statusOK {
 			continue
 		}
+		// The login hints name the file that login writes, which the shell's environment decides. It is derived before
+		// withConfigFile sets the environment to the profile's file.
+		login := loginFile(ctx, *p, p.ConfigFile != "")
 		err := withConfigFile(ctx, p.configPath, func(ctx context.Context) {
-			addProfileChecks(ctx, p, out)
+			addProfileChecks(ctx, p, login, out)
 		})
 		if err != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
@@ -370,14 +373,15 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 	}
 }
 
-// addProfileChecks runs the checks of one profile, whose config file is in ctx. A profile whose token cannot be minted
-// has no sign-in checks: its warning says why.
-func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput) {
-	w, err := profileClient(ctx, p.Profile, p.configPath, p.ConfigFile)
+// addProfileChecks runs the checks of one profile, whose config file is in ctx. login is the config file that the
+// profile's login hints name, or "" (see loginFile). A profile whose token cannot be minted has no sign-in checks: its
+// warning says why.
+func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out *mcpListOutput) {
+	w, err := profileClient(ctx, p.Profile, p.configPath, login)
 	if err == nil {
 		// A personal access token is sent only with a request, so the token is checked with one.
 		if _, err = w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			err = describeRequestError(p.Profile, p.ConfigFile, err)
+			err = describeRequestError(p.Profile, login, err)
 		}
 	}
 	p.token = statusOK
@@ -395,7 +399,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 			}
 			continue
 		}
-		status, signInErr := signInStatus(ctx, w, p.Profile, p.ConfigFile, s.Service)
+		status, signInErr := signInStatus(ctx, w, p.Profile, login, s.Service)
 		s.Check.SignIn = status
 		if signInErr != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
@@ -587,17 +591,18 @@ func serverHint(ctx context.Context, p mcpListProfile, s mcpListServer) string {
 	}
 	remove := mcp.RemoveNamesCommand(s.Name)
 	if s.drift.Kind == mcp.DriftProfileMissing {
-		return fmt.Sprintf("broken: run `%s` or `%s`", remove, mcp.RecreateCommand(s.entry.Host, p.Profile, loginFile(ctx, p, s.entry)))
+		return fmt.Sprintf("broken: run `%s` or `%s`", remove, mcp.RecreateCommand(s.entry.Host, p.Profile, loginFile(ctx, p, s.entry.ConfigFile != "")))
 	}
 	return fmt.Sprintf("broken: %s; run `%s` and add it again", mcp.DriftMessage("it", s.entry, p.Profile, *s.drift), remove)
 }
 
-// loginFile returns the config file that a login hint for a server with a missing profile must name, or "" when the
-// login's default file is that file. A pinned server logs in to the file it is pinned to. An unpinned server is checked
-// against ~/.databrickscfg, and login writes to the file DATABRICKS_CONFIG_FILE names, so the hint names the checked
-// file when the environment names another one, or one that cannot be resolved.
-func loginFile(ctx context.Context, p mcpListProfile, entry mcp.Entry) string {
-	if entry.ConfigFile != "" {
+// loginFile returns the config file that a login hint for the servers of profile p must name, or "" when the login's
+// default file is that file. pinned says whether the servers are pinned to a config file. A pinned server logs in to the
+// file it is pinned to. An unpinned server is checked against ~/.databrickscfg, and login writes to the file
+// DATABRICKS_CONFIG_FILE names, so the hint names the checked file when the environment names another one, or one that
+// cannot be resolved. ctx must be the caller's, not one that withConfigFile has set to the profile's file.
+func loginFile(ctx context.Context, p mcpListProfile, pinned bool) string {
+	if pinned {
 		return filepath.ToSlash(p.configPath)
 	}
 	environment := env.Get(ctx, mcpconfig.ConfigFileEnv)
