@@ -3,6 +3,8 @@ package testserver
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // JSON-RPC codes the fake endpoint answers with.
@@ -33,12 +35,17 @@ type mcpRPC struct {
 }
 
 // McpEndpoint fakes POST /ai-gateway/mcp-services/{name}, a streamable HTTP MCP server with one
-// tool, echo. A service stored with an OAuth source connection is external: no credential is
-// ever mapped to it here, so tools/list and tools/call answer -32006 as the gateway does before
-// sign-in. Notifications and client responses, which have no method or no id, get 202 with no body.
+// tool, echo. A name the workspace has no service for is 404. A service stored with an OAuth source
+// connection is external: no credential is ever mapped to it here, so tools/list and tools/call
+// answer -32006 as the gateway does before sign-in. Notifications and client responses, which have
+// no method or no id, get 202 with no body.
 func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	defer s.LockUnlock()()
 
+	service, ok := s.McpServices[name]
+	if !ok {
+		return Response{StatusCode: http.StatusNotFound}
+	}
 	var msg mcpRPC
 	if err := json.Unmarshal(req.Body, &msg); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: rpcError(nil, rpcCodeParseError, "Parse error")}
@@ -47,7 +54,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 		return Response{StatusCode: http.StatusAccepted}
 	}
 
-	external := s.mcpServiceIsExternal(name)
+	external := mcpServiceIsExternal(service)
 	switch msg.Method {
 	case "initialize":
 		return rpcResult(msg.ID, map[string]any{
@@ -87,10 +94,9 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	}
 }
 
-// mcpServiceIsExternal reports whether the stored service name takes an OAuth source connection.
-func (s *FakeWorkspace) mcpServiceIsExternal(name string) bool {
-	ms, ok := s.McpServices[name]
-	return ok && ms.Config != nil && ms.Config.SourceConnection != nil &&
+// mcpServiceIsExternal reports whether the service takes an OAuth source connection.
+func mcpServiceIsExternal(ms catalog.McpService) bool {
+	return ms.Config != nil && ms.Config.SourceConnection != nil &&
 		ms.Config.SourceConnection.Options["oauth_provider"] != ""
 }
 

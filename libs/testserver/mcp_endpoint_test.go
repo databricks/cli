@@ -23,6 +23,7 @@ func mcpEndpointTestCall(t *testing.T, workspace *FakeWorkspace, name, message s
 func TestMcpEndpointAnswersInternalService(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	const name = "system.ai.genie_one_mcp"
+	mcpServicesTestSeed(workspace, name, "Genie", "")
 
 	reply := mcpEndpointTestCall(t, workspace, name, `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)
 	assert.Nil(t, reply["error"])
@@ -46,8 +47,24 @@ func TestMcpEndpointRejectsExternalServiceWithoutCredential(t *testing.T) {
 	assert.Nil(t, reply["result"])
 }
 
+// A service the fake does not have is 404, as the gateway answers a name that no service has, whatever the message.
+func TestMcpEndpointUnknownServiceIsNotFound(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
+
+	for _, body := range []string{
+		`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`,
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
+	} {
+		response := workspace.McpEndpoint(Request{Body: []byte(body)}, "system.ai.genie_one_mc")
+		assert.Equal(t, 404, response.StatusCode, body)
+		assert.Nil(t, response.Body)
+	}
+}
+
 func TestMcpEndpointNotificationGetsNoBody(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
 	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","method":"notifications/initialized"}`)}, "system.ai.genie_one_mcp")
 	assert.Equal(t, 202, response.StatusCode)
 	assert.Nil(t, response.Body)
@@ -56,6 +73,7 @@ func TestMcpEndpointNotificationGetsNoBody(t *testing.T) {
 // A client's answer to a request from the server has an id and no method. It is not a request, so it gets 202 with no body.
 func TestMcpEndpointClientResponseGetsNoBody(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
 	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","id":7,"result":{}}`)}, "system.ai.genie_one_mcp")
 	assert.Equal(t, 202, response.StatusCode)
 	assert.Nil(t, response.Body)

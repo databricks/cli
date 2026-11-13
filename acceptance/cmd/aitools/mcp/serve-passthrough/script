@@ -6,6 +6,9 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 # DATABRICKS_HOST points elsewhere; the proxy must still talk to the profile's host.
 export DATABRICKS_HOST=https://elsewhere.test
 
+# The service the proxy serves, created in the fake workspace. The fake answers 404 for a service it does not have.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+
 # Responses may arrive in any order, so they are sorted by id. jq -s also fails when any stdout line is not JSON.
 title "Stdout holds one JSON-RPC message per line; the notification gets no reply"
 $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
