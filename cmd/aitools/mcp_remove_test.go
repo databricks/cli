@@ -819,7 +819,8 @@ func runRemoveWithTelemetry(t *testing.T, stdout, logs *bytes.Buffer, logLevel s
 	return remove, err
 }
 
-// A run that removes nothing logs no event, so it resolves no auth for an upload.
+// TestMcpRemoveResolvesNothingWithoutAnEvent checks that a run that removes nothing logs no event, so it resolves no auth
+// for an upload.
 func TestMcpRemoveResolvesNothingWithoutAnEvent(t *testing.T) {
 	withHome(t)
 	resolves := 0
@@ -834,8 +835,9 @@ func TestMcpRemoveResolvesNothingWithoutAnEvent(t *testing.T) {
 	assert.Zero(t, resolves)
 }
 
-// The upload is authenticated with the profile only when no server recorded for it has drifted: its host here is the one
-// the server was set up against. The removal is done either way, and the output is written before the auth resolves.
+// TestMcpRemoveUploadSkipsDriftedProfile checks that the upload is not authenticated with a profile that a server recorded
+// for it no longer matches, as its host here is not the one the server was set up against. The removal is done either
+// way, and the output is written before the auth resolves.
 func TestMcpRemoveUploadSkipsDriftedProfile(t *testing.T) {
 	home := withHome(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-2.test\nauth_type = pat\ntoken = t\n")
@@ -860,7 +862,7 @@ func TestMcpRemoveUploadSkipsDriftedProfile(t *testing.T) {
 	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood", "the removal is done")
 }
 
-// A profile whose recorded servers still match is used for the upload.
+// TestMcpRemoveUploadUsesMatchingProfile checks that a profile whose recorded servers still match is used for the upload.
 func TestMcpRemoveUploadUsesMatchingProfile(t *testing.T) {
 	home := withHome(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
@@ -880,7 +882,8 @@ func TestMcpRemoveUploadUsesMatchingProfile(t *testing.T) {
 	assert.Equal(t, "https://adb-1.test", cmdctx.ConfigUsed(remove.Context()).Host)
 }
 
-// An auth resolution that fails, as it does offline, leaves nothing in the output: its logs are debug only.
+// TestMcpRemoveOfflineResolutionWarnsNothing checks that an auth resolution that fails, as it does offline, leaves nothing
+// in the output: its logs are debug only.
 func TestMcpRemoveOfflineResolutionWarnsNothing(t *testing.T) {
 	home := withHome(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
@@ -898,4 +901,28 @@ func TestMcpRemoveOfflineResolutionWarnsNothing(t *testing.T) {
 	assert.False(t, cmdctx.HasConfigUsed(remove.Context()))
 	assert.Empty(t, logs.String())
 	assert.Contains(t, stdout.String(), `"removed"`)
+}
+
+// TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved checks that a removal that only drops state records is reported
+// FAILED when the state cannot be saved, since nothing was removed.
+func TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved(t *testing.T) {
+	withHome(t)
+	retired := mcp.Entry{
+		Name: "dbsql-logfood", Service: "system.ai.dbsql", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
+		Agents: map[string]mcp.AgentRecord{"retired-agent": {Path: "/x/config.json", Scope: "user"}},
+	}
+	saveState(t, retired)
+	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
+	t.Cleanup(func() { saveMCPState = mcp.SaveState })
+	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error { return nil })
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "dbsql-logfood", "--output", "json")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeFailed, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, events[0].AitoolsMcpEvent.Servers[0].ErrorCategory)
 }

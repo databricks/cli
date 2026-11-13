@@ -273,8 +273,9 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
-// The prompt is recorded once per page that was opened, after its wait, with whether the credential
-// became ACTIVE. A call that opens no page, or finds the caller already signed in, records nothing.
+// TestAuthenticateRecordsPromptWhenPageOpens checks that the prompt is recorded once per page that was opened, after its
+// wait, with whether the credential became ACTIVE. A call that opens no page, or finds the caller already signed in,
+// records nothing.
 func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
@@ -304,7 +305,8 @@ func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
-// A sign-in that fails before its URL is printed, such as a read of the workspace ID, shows no page: nothing is recorded.
+// TestAuthenticateRecordsNoPromptWhenNoURLShown checks that a sign-in that fails before its URL is printed, such as a read
+// of the workspace ID, shows no page, so nothing is recorded.
 func TestAuthenticateRecordsNoPromptWhenNoURLShown(t *testing.T) {
 	srv, _ := challengedService(t)
 	var calls int

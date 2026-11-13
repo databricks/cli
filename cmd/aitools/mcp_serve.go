@@ -81,7 +81,7 @@ func NewMcpServeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&f.service, strings.TrimPrefix(mcpconfig.ServiceFlag, "--"), "",
 		"Full name of the MCP service, for example system.ai.github")
 	cmd.Flags().StringVar(&f.agent, strings.TrimPrefix(mcpconfig.AgentFlag, "--"), "",
-		"Registry name of the calling agent, used only for the User-Agent")
+		"Registry name of the calling agent, for the User-Agent and telemetry")
 	return cmd
 }
 

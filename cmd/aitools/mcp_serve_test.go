@@ -337,7 +337,8 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 
 // TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
 // exits 2 like the other binding failures.
-// A start that fails its binding checks logs no PROXY_STARTED, so nothing uploads.
+// TestMcpServeFailedStartLogsNothing checks that a start that fails its binding checks logs no PROXY_STARTED, so nothing
+// uploads.
 func TestMcpServeFailedStartLogsNothing(t *testing.T) {
 	withHome(t)
 	parent := newMCPTestRoot()

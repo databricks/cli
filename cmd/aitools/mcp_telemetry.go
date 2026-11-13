@@ -51,10 +51,10 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 	if len(parts) != 3 || !strings.EqualFold(parts[0]+"."+parts[1], mcp.SystemAILocation) {
 		return protos.AitoolsMcpServiceCustom
 	}
-	if mcp.KnownOf(fullName) == nil {
-		return protos.AitoolsMcpServiceOtherSystem
+	if t, ok := mcpServiceTypes[strings.ToLower(parts[2])]; ok {
+		return t
 	}
-	return mcpServiceTypes[strings.ToLower(parts[2])]
+	return protos.AitoolsMcpServiceOtherSystem
 }
 
 // callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.
@@ -114,9 +114,9 @@ func boundProfileCount(ctx context.Context, state *mcp.State) int64 {
 }
 
 // addSignInState is the sign-in state of a server after an add: the state that --login reports, else PENDING for a
-// server that needs sign-in, else NOT_REQUIRED.
+// server that needs sign-in, else NOT_REQUIRED. A sign-in that failed before it read a state is PENDING.
 func addSignInState(s addServerOutput) protos.AitoolsMcpSignInState {
-	if s.SignIn != nil {
+	if s.SignIn != nil && s.SignIn.State != "" {
 		return signInStateOf(s.SignIn.State)
 	}
 	if s.SignInRequired {

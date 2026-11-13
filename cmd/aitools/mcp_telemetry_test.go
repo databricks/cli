@@ -44,8 +44,8 @@ func TestMcpServiceType(t *testing.T) {
 	}
 }
 
-// Every service in the CLI's known table has its own enum, so a known service never reports OTHER_SYSTEM. A new table
-// entry needs a new value in mcpServiceTypes.
+// TestMcpServiceTypeCoversKnownServices checks that every service in the CLI's known table has its own enum, so a known
+// service never reports OTHER_SYSTEM. A new table entry needs a new value in mcpServiceTypes.
 func TestMcpServiceTypeCoversKnownServices(t *testing.T) {
 	for _, leaf := range mcp.KnownLeaves() {
 		assert.Contains(t, mcpServiceTypes, leaf, "system.ai.%s has no telemetry enum: add it to mcpServiceTypes", leaf)
@@ -185,7 +185,8 @@ func TestProxyStartedEvent(t *testing.T) {
 	}, proxyStartedEvent(protos.AitoolsAgentTypeClaudeCode, "system.ai.genie_one_mcp"))
 }
 
-// An event that names a rejected credential is not logged: its upload would authenticate with that credential again.
+// TestLogMcpEventDropsRejectedCredential checks that an event that names a rejected credential is not logged: its upload
+// would authenticate with that credential again.
 func TestLogMcpEventDropsRejectedCredential(t *testing.T) {
 	withHome(t)
 	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
@@ -256,7 +257,8 @@ func TestAddSignInEvent(t *testing.T) {
 	}, addSignInEvent("system.ai.github", signInStateActive, true, nil))
 }
 
-// The event carries enums and counts only. A custom service's name must not appear anywhere in the payload.
+// TestMcpEventOmitsUserContent checks that the event carries enums and counts only: a custom service's name must not
+// appear anywhere in the payload.
 func TestMcpEventOmitsUserContent(t *testing.T) {
 	event := protos.AitoolsMcpEvent{
 		CallingAgent:      protos.AitoolsAgentTypeClaudeCode,
@@ -277,4 +279,12 @@ func TestMcpEventOmitsUserContent(t *testing.T) {
 	assert.NotContains(t, string(b), "secret_schema")
 	assert.NotContains(t, string(b), "internal_tool")
 	assert.Contains(t, string(b), `"service":"CUSTOM"`)
+}
+
+// TestAddSignInStateWithoutAState checks that a sign-in that failed before it read a state is PENDING, as a server that
+// needs sign-in is until its state is known. A server that needs no sign-in is NOT_REQUIRED.
+func TestAddSignInStateWithoutAState(t *testing.T) {
+	failed := addServerOutput{Service: "system.ai.github", SignInRequired: true, SignIn: &addSignInOutput{ErrorCategory: protos.AitoolsErrorCategoryUncategorized}}
+	assert.Equal(t, protos.AitoolsMcpSignInStatePending, addSignInState(failed))
+	assert.Equal(t, protos.AitoolsMcpSignInStateNotRequired, addSignInState(addServerOutput{Service: "system.ai.dbsql"}))
 }

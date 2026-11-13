@@ -938,7 +938,8 @@ func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
 		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
 }
 
-// The config of a telemetry upload never refreshes a token; the config a serve session binds keeps the default chain.
+// TestBoundUploadConfigNeverRefreshes checks that the config of a telemetry upload never refreshes a token, and that the
+// config a serve session binds keeps the default chain.
 func TestBoundUploadConfigNeverRefreshes(t *testing.T) {
 	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
 
@@ -949,4 +950,13 @@ func TestBoundUploadConfigNeverRefreshes(t *testing.T) {
 	session, err := mcp.BoundConfigWithin(bindingTestProfile, cfgPath, time.Second)
 	require.NoError(t, err)
 	assert.NotEqual(t, auth.CredentialsWithoutRefresh(), session.Credentials)
+}
+
+// TestBindErrorNextStepsIncludedOnlyForAuthFailed checks that only an AUTH_FAILED message names the next steps, so root
+// adds no second set of steps to the others.
+func TestBindErrorNextStepsIncludedOnlyForAuthFailed(t *testing.T) {
+	assert.True(t, (&mcp.BindError{Category: mcp.BindAuthFailed}).NextStepsIncluded())
+	for _, category := range []mcp.BindCategory{mcp.BindProfileNotFound, mcp.BindProfileHostChanged, mcp.BindUncategorized} {
+		assert.False(t, (&mcp.BindError{Category: category}).NextStepsIncluded(), category)
+	}
 }

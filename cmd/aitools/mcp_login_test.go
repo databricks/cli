@@ -110,7 +110,7 @@ func TestMcpLoginRejectedTokenIsAuthFailed(t *testing.T) {
 
 // TestMcpLoginRejectedTokenHasOneSetOfNextSteps checks the error that root prints for a rejected token after login has
 // its client: the MCP login command is the only set of next steps, since root's auth enrichment leaves it alone. Root
-// enriches the errors of a command whose upload config is set, which is the profile's config.
+// enriches the errors of a command whose telemetry upload is authenticated with the profile.
 func TestMcpLoginRejectedTokenHasOneSetOfNextSteps(t *testing.T) {
 	home := withHome(t)
 	server := loginTestServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)

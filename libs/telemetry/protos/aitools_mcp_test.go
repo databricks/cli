@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The lumberjack proto keys these fields in snake_case. This pins the wire keys of an event
-// and of one server result, and that unset enums are omitted rather than sent empty.
+// TestAitoolsMcpEventEncodesSnakeCaseKeys checks that the lumberjack proto keys these fields in snake_case. It pins the
+// wire keys of an event and of one server result, and that unset enums are omitted rather than sent empty.
 func TestAitoolsMcpEventEncodesSnakeCaseKeys(t *testing.T) {
 	b, err := json.Marshal(DatabricksCliLog{AitoolsMcpEvent: &AitoolsMcpEvent{
 		CallingAgent:      AitoolsAgentTypeClaudeCode,
@@ -49,7 +49,8 @@ func TestAitoolsMcpEventEncodesSnakeCaseKeys(t *testing.T) {
 	}, server)
 }
 
-// A proxy event has no agent on the result, no outcome and no error category when it succeeded.
+// TestAitoolsMcpServerResultOmitsUnsetFields checks that a proxy event has no agent on the result, no outcome and no error
+// category when it succeeded.
 func TestAitoolsMcpServerResultOmitsUnsetFields(t *testing.T) {
 	b, err := json.Marshal(AitoolsMcpServerResult{Service: AitoolsMcpServiceOtherSystem})
 	require.NoError(t, err)

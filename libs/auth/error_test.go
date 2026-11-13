@@ -81,7 +81,7 @@ func (e *stepsIncludedError) NextStepsIncluded() bool {
 }
 
 func TestEnrichAuthErrorLeavesErrorWithNextStepsAsIs(t *testing.T) {
-	cfg := &config.Config{Profile: "test", Host: "https://example.com", AuthType: "pat"}
+	cfg := &config.Config{Profile: "test", Host: "https://ws.test", AuthType: "pat"}
 	original := &stepsIncludedError{cause: &apierr.APIError{StatusCode: 401, Message: "Unauthorized"}}
 	assert.Equal(t, original, EnrichAuthError(t.Context(), cfg, original))
 

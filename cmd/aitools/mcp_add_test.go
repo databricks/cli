@@ -277,9 +277,11 @@ func withDatabricksBinary(t *testing.T) {
 }
 
 // noRequestServer returns a server that fails the test on any request. A command that refuses before
-// it contacts the profile's host never reaches it.
+// it contacts the profile's host never reaches it. Telemetry is off: its auth resolution, which starts with the command,
+// reads the host's metadata, a request the refusal does not make.
 func noRequestServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	t.Setenv("DATABRICKS_CLI_DISABLE_TELEMETRY", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("unexpected request before the refusal: %s %s", r.Method, r.URL)
 		w.WriteHeader(http.StatusInternalServerError)

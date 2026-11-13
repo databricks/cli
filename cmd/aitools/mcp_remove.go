@@ -235,6 +235,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	files := newAgentFiles()
 	var drops []recordDrop
 	var agentErrs []error
+	// recordOnly are the indexes of out.results whose removal only drops a state record.
+	var recordOnly []int
 	for _, e := range selected {
 		removed := removeRemoved{Name: e.Name, Service: e.Service, Profile: e.Profile, Agents: []string{}}
 		pin := resolveBinding(ctx, e)
@@ -248,6 +250,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				// There is no config this CLI can edit for the agent, so only the record can go.
 				removed.Agents = append(removed.Agents, agentName)
 				removed.RecordOnly = append(removed.RecordOnly, agentName)
+				recordOnly = append(recordOnly, len(out.results))
 				out.results = append(out.results, removeServerResult(e.Service, agentName, removeDeleted, nil))
 				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 				continue
@@ -269,6 +272,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		// A server with no agent left in state is removed from state too, so it is reported as removed. Only its
 		// record goes, which is a change to the state.
 		if len(e.Agents) == 0 {
+			recordOnly = append(recordOnly, len(out.results))
 			out.results = append(out.results, protos.AitoolsMcpServerResult{Service: mcpServiceType(e.Service), Outcome: protos.AitoolsTargetOutcomeChanged})
 		}
 		if len(removed.Agents) > 0 || len(e.Agents) == 0 {
@@ -285,6 +289,13 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	var saveErr error
 	if len(drops) > 0 || slices.ContainsFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 }) {
 		saveErr = dropRecords(ctx, drops, selected)
+	}
+	if saveErr != nil {
+		// A record-only removal changes nothing but the state, so the save that failed undid it.
+		for _, i := range recordOnly {
+			out.results[i].Outcome = protos.AitoolsTargetOutcomeFailed
+			out.results[i].ErrorCategory = errorCategory(saveErr)
+		}
 	}
 	if !jsonMode {
 		printRemoveResults(ctx, out)
