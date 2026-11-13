@@ -513,15 +513,18 @@ func TestServeProxyTransientRefreshFailureKeepsServing(t *testing.T) {
 	cmd.SetContext(t.Context())
 	cmd.SetErr(&stderr)
 
-	err := serveProxy(cmd, proxy.Options{
+	ctx, stop := context.WithCancel(t.Context())
+	defer stop()
+	refresh := &refreshGuard{authenticate: failsToolsListOnce(errors.New("dial tcp: i/o timeout")), profile: "logfood", cancel: stop}
+	err := serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:           in,
 		Out:          &stdout,
 		Err:          &stderr,
 		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
 		Config:       &config.Config{Host: server.URL},
-		Authenticate: failsToolsListOnce(errors.New("dial tcp: i/o timeout")),
+		Authenticate: refresh.authenticateRequest,
 		Profile:      "logfood",
-	}, "")
+	})
 
 	require.NoError(t, err)
 	out := stdout.String()
@@ -553,15 +556,18 @@ func TestServeProxyRefreshRejectionStopsAfterTransientFailure(t *testing.T) {
 		return expiresOnToolsList(r)
 	}
 
-	err := serveProxy(cmd, proxy.Options{
+	ctx, stop := context.WithCancel(t.Context())
+	defer stop()
+	refresh := &refreshGuard{authenticate: rejected, profile: "logfood", cancel: stop}
+	err := serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:           in,
 		Out:          &stdout,
 		Err:          &stderr,
 		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
 		Config:       &config.Config{Host: server.URL},
-		Authenticate: rejected,
+		Authenticate: refresh.authenticateRequest,
 		Profile:      "logfood",
-	}, "")
+	})
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
@@ -884,7 +890,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 // failingGuard returns a refresh guard whose token cannot be refreshed, and records whether the proxy was stopped.
 func failingGuard(stopped *bool) *refreshGuard {
 	return &refreshGuard{
-		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      testProfile,
 		cancel:       func() { *stopped = true },
 	}
@@ -1136,7 +1142,7 @@ func TestServeSignInRestartDeleteRefreshFailureStopsProxy(t *testing.T) {
 	guard := &refreshGuard{
 		authenticate: func(r *http.Request) error {
 			if r.Method == http.MethodDelete {
-				return errors.New(refreshTokenExpired)
+				return refreshRejected
 			}
 			return nil
 		},
