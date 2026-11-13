@@ -168,7 +168,13 @@ func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *m
 func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile string, errOut io.Writer) proxy.SignInFunc {
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
-	return func(ctx context.Context, open bool) (bool, bool, error) {
+	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
+		if req.Restart {
+			// The credential is deleted first, so that the sign-in below starts from no credential.
+			if _, err := mcp.SignOut(ctx, w, service); err != nil {
+				return false, false, err
+			}
+		}
 		if workspaceID == "" {
 			id, err := auth.ResolveWorkspaceID(ctx, w)
 			if err != nil {
@@ -179,7 +185,7 @@ func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile
 		url := mcp.SignInURL(w.Config.Host, service, workspaceID)
 		// The opener is called even when the page must not open, so a call that must not open it passes one that does nothing.
 		openPage := func(context.Context, string) error { return nil }
-		if open {
+		if req.Open {
 			openPage = browser.OpenOutputToStderr
 		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}

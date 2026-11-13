@@ -30,26 +30,38 @@ const (
 	listChangedMsg = `{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`
 )
 
-// signInStub replaces the command's sign-in. Each call records its open flag and returns reply(call), with the page
+// signInStub replaces the command's sign-in. Each call records its request and returns reply(call), with the page
 // reported as shown.
 type signInStub struct {
 	mu    sync.Mutex
-	opens []bool
+	reqs  []SignInRequest
 	reply func(call int) (bool, error)
 }
 
-func (s *signInStub) SignIn(_ context.Context, open bool) (bool, bool, error) {
+func (s *signInStub) SignIn(_ context.Context, req SignInRequest) (bool, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.opens = append(s.opens, open)
-	alreadySignedIn, err := s.reply(len(s.opens))
+	s.reqs = append(s.reqs, req)
+	alreadySignedIn, err := s.reply(len(s.reqs))
 	return alreadySignedIn, true, err
 }
 
+// calls returns whether each sign-in opened the page.
 func (s *signInStub) calls() []bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return append([]bool(nil), s.opens...)
+	var opens []bool
+	for _, req := range s.reqs {
+		opens = append(opens, req.Open)
+	}
+	return opens
+}
+
+// requests returns the request of each sign-in.
+func (s *signInStub) requests() []SignInRequest {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]SignInRequest(nil), s.reqs...)
 }
 
 // loginCommand is the hint that the command builds for a pinned config file and a profile name with a space.
@@ -234,10 +246,11 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	p.send(t, fmt.Sprintf(authenticate, 5))
 	p.waitLines(t, 3)
 	p.send(t, fmt.Sprintf(authenticate, 6))
-	lines := p.waitLines(t, 5)
+	lines := p.waitLines(t, 4)
 
 	assert.Equal(t, []bool{true, true}, signIn.calls(), "a sign-in that completed does not hold the page back")
 	assert.Contains(t, lines[3], "Already signed in to system.ai.github")
+	assert.NotContains(t, lines[3:], listChangedMsg, "an answer that changed nothing does not ask the agent to list again")
 	require.NoError(t, p.finish(t))
 }
 
@@ -329,7 +342,7 @@ func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
 func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, callChallenge))
 	var calls atomic.Int32
-	signIn := func(ctx context.Context, _ bool) (bool, bool, error) {
+	signIn := func(ctx context.Context, _ SignInRequest) (bool, bool, error) {
 		calls.Add(1)
 		return false, true, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
 	}
@@ -360,7 +373,7 @@ func TestAuthenticateWritesNothingWhenCancelled(t *testing.T) {
 		answerWith(http.StatusOK, listChallenge)(w, r)
 	})
 	entered, returned := make(chan struct{}), make(chan struct{})
-	signIn := func(ctx context.Context, _ bool) (bool, bool, error) {
+	signIn := func(ctx context.Context, _ SignInRequest) (bool, bool, error) {
 		close(entered)
 		<-ctx.Done()
 		close(returned)
@@ -413,9 +426,9 @@ func TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt(t *testing.T)
 			entered, done := make(chan struct{}), make(chan struct{})
 			var mu sync.Mutex
 			var opens []bool
-			signIn := func(ctx context.Context, open bool) (bool, bool, error) {
+			signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
 				mu.Lock()
-				opens = append(opens, open)
+				opens = append(opens, req.Open)
 				first := len(opens) == 1
 				mu.Unlock()
 				if !first {
@@ -507,5 +520,48 @@ func TestChallengeTextAroundSignInURL(t *testing.T) {
 			assert.Equal(t, listChangedMsg, out[1])
 			assert.Contains(t, out[0], "needs a one-time sign-in")
 		})
+	}
+}
+
+// TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn checks that when the service challenges again after
+// an "Already signed in" answer, the next authenticate starts a new sign-in from no credential. The credential reads
+// ACTIVE, but the service does not accept it, so answering "Already signed in" again would loop.
+func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := &signInStub{reply: func(call int) (bool, error) { return call == 1, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 2)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 3)
+	p.send(t, fmt.Sprintf(authenticate, 7))
+	lines := p.waitLines(t, 4)
+	require.NoError(t, p.finish(t))
+
+	assert.Equal(t, []SignInRequest{{Open: true}, {Open: true, Restart: true}}, signIn.requests())
+	assert.Contains(t, lines[1], "Already signed in to system.ai.github")
+	assert.Contains(t, lines[3], "Signed in to system.ai.github")
+}
+
+// TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential checks that a second authenticate that is not preceded by a
+// challenge does not delete the credential, so it answers "Already signed in" again.
+func TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 2)
+	p.send(t, fmt.Sprintf(authenticate, 6))
+	p.waitLines(t, 3)
+	require.NoError(t, p.finish(t))
+
+	for _, req := range signIn.requests() {
+		assert.False(t, req.Restart)
 	}
 }

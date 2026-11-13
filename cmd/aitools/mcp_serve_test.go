@@ -806,3 +806,67 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
 }
+
+// TestServeSignInRestartDeletesCredentialFirst checks the sign-in of the authenticate tool. A restart deletes the caller's
+// credential before the sign-in reads it, so the sign-in waits for a new one rather than answering that the caller is
+// already signed in. Without a restart a credential that reads ACTIVE is already signed in and is kept.
+func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	const active = `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`
+	for _, tc := range []struct {
+		name        string
+		req         proxy.SignInRequest
+		wantDeleted bool
+		wantAlready bool
+	}{
+		{name: "without restart the credential is kept", req: proxy.SignInRequest{Open: true}, wantAlready: true},
+		{name: "restart deletes it first", req: proxy.SignInRequest{Open: true, Restart: true}, wantDeleted: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			deleted, gets := false, 0
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				defer mu.Unlock()
+				if r.URL.Path != credentialPath {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				rw.Header().Set("Content-Type", "application/json")
+				switch {
+				case r.Method == http.MethodDelete:
+					deleted = true
+					_, _ = io.WriteString(rw, `{}`)
+				case !deleted:
+					_, _ = io.WriteString(rw, active)
+				default:
+					// The caller has not signed in yet after the delete, and then does.
+					gets++
+					if gets == 1 {
+						rw.WriteHeader(http.StatusNotFound)
+						_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+						return
+					}
+					_, _ = io.WriteString(rw, active)
+				}
+			}))
+			t.Cleanup(server.Close)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
+			require.NoError(t, err)
+
+			signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantAlready, alreadySignedIn)
+			mu.Lock()
+			defer mu.Unlock()
+			assert.Equal(t, tc.wantDeleted, deleted)
+		})
+	}
+}

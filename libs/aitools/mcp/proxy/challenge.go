@@ -38,11 +38,19 @@ func (e *SignInTimeout) Unwrap() error {
 	return e.LastCheck
 }
 
-// SignInFunc runs the sign-in for the authenticate tool and waits for it. open is false when the
-// sign-in page must not be opened again in this session. It reports alreadySignedIn when the caller
-// needed no sign-in, and urlShown when the sign-in page's URL was printed, which is so even when the
-// wait is then cancelled. It returns a *SignInTimeout when the wait ended first.
-type SignInFunc func(ctx context.Context, open bool) (alreadySignedIn, urlShown bool, err error)
+// SignInRequest says how one sign-in runs.
+type SignInRequest struct {
+	// Open opens the sign-in page. It is false when the page must not open again in this session.
+	Open bool
+	// Restart deletes the caller's sign-in before the sign-in runs, so that it starts from no credential. The proxy asks
+	// for it when the service challenged the session again after an "Already signed in" answer.
+	Restart bool
+}
+
+// SignInFunc runs the sign-in for the authenticate tool and waits for it. It reports alreadySignedIn when the caller
+// needed no sign-in, and urlShown when the sign-in page's URL was printed, which is so even when the wait is then
+// cancelled. It returns a *SignInTimeout when the wait ended first.
+type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, urlShown bool, err error)
 
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
 type Challenge struct {
@@ -70,10 +78,16 @@ type signInHooks struct {
 	// completed. The user may still be on that page, so the next attempt does not open it again.
 	pageCancelled bool
 
-	// stateMu guards challenged. It is held only briefly, so an answer to a request is not held up by a sign-in.
+	// stateMu guards the three fields below. It is held only briefly, so an answer to a request is not held up by a
+	// sign-in.
 	stateMu sync.Mutex
 	// sessionChallenged means a request of this session was challenged. The authenticate tool is the proxy's only after that.
 	sessionChallenged bool
+	// alreadySignedIn means the last authenticate answered "Already signed in".
+	alreadySignedIn bool
+	// restart means the next sign-in starts from no credential. A challenge that follows an "Already signed in" answer
+	// sets it: the credential reads as signed in, but the service does not accept it.
+	restart bool
 }
 
 // Local answers the authenticate tool call once the session has been challenged. Before that, and for other requests and
@@ -123,8 +137,12 @@ func (h *signInHooks) isChallenge(status int, message []byte) bool {
 		return false
 	}
 	h.stateMu.Lock()
+	defer h.stateMu.Unlock()
 	h.sessionChallenged = true
-	h.stateMu.Unlock()
+	if h.alreadySignedIn {
+		h.restart = true
+		h.alreadySignedIn = false
+	}
 	return true
 }
 
@@ -240,8 +258,20 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, !h.pageCancelled)
+	h.stateMu.Lock()
+	restart := h.restart
+	h.restart = false
+	h.stateMu.Unlock()
+
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart})
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
+	h.stateMu.Lock()
+	h.alreadySignedIn = err == nil && alreadySignedIn
+	if ctx.Err() != nil {
+		// A restart that was cancelled may not have deleted the credential, so the next sign-in restarts again.
+		h.restart = h.restart || restart
+	}
+	h.stateMu.Unlock()
 	if ctx.Err() != nil {
 		// The client cancelled the request or shutdown began. Nothing is answered for a cancelled request.
 		return nil
@@ -250,10 +280,8 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 
 	switch {
 	case err == nil && alreadySignedIn:
-		return [][]byte{
-			toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
-			listChangedNotification,
-		}
+		// The credential was already there, so nothing changed for the agent's tool list.
+		return [][]byte{toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false)}
 	case err == nil:
 		return [][]byte{
 			toolResult(id, fmt.Sprintf("Signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
