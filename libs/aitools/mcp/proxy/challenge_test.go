@@ -72,7 +72,7 @@ const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks 
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
-	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}, stderr: io.Discard}
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}, io.Discard)
 	return b
 }
 
@@ -340,7 +340,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 		return false, true, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
 	}
 	b := bridgeFor(srv.URL)
-	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, stderr: io.Discard}
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, io.Discard)
 	p := startPiped(t, t.Context(), b)
 
 	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
@@ -484,7 +484,7 @@ func TestChallengeMatchesServiceNameWithoutCase(t *testing.T) {
 		`{"mode":"url","url":"` + testURL + `"}]}}}`
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
 	b := bridgeFor(srv.URL)
-	b.Hooks = &signInHooks{c: &Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}, stderr: io.Discard}
+	b.Hooks = newSignInHooks(&Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}, io.Discard)
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)
@@ -763,4 +763,100 @@ func TestAuthenticateIsForwardedOnceTheListPasses(t *testing.T) {
 
 	assert.Equal(t, []bool{true}, signIn.calls(), "the forwarded call starts no sign-in")
 	assert.Equal(t, `{"jsonrpc":"2.0","id":7,"result":{"content":[{"type":"text","text":"upstream"}],"isError":false}}`, lines[4])
+}
+
+// TestQueuedAuthenticateCancelledTouchesNothing checks that an authenticate call the client cancels while it waits for
+// the sign-in ahead of it neither answers nor starts a sign-in, and does not clear the record that the page was cancelled.
+// The next call therefore does not open the page again.
+func TestQueuedAuthenticateCancelledTouchesNothing(t *testing.T) {
+	srv, _ := challengedService(t)
+	entered, returned := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	var opens []bool
+	signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
+		mu.Lock()
+		opens = append(opens, req.Open)
+		first := len(opens) == 1
+		mu.Unlock()
+		if !first {
+			return false, false, nil
+		}
+		close(entered)
+		<-ctx.Done()
+		close(returned)
+		return false, true, ctx.Err()
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	waitClosed(t, entered, "the first sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":6}}`)
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+	waitClosed(t, returned, "the first sign-in to return")
+	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(opens) == 2
+	}, 10*time.Second, time.Millisecond)
+	require.NoError(t, p.finish(t))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []bool{true, false}, opens, "the call after the cancelled ones keeps the page closed")
+	out := p.out.String()
+	assert.NotContains(t, out, `"id":5`, "a cancelled call is not answered")
+	assert.NotContains(t, out, `"id":6`, "a call cancelled while it waits is not answered")
+}
+
+// TestQueuedAuthenticateReportsProgress checks that an authenticate call waiting for the sign-in ahead of it reports
+// progress on its progress token, so that a client that times out requests without progress does not give up on it.
+func TestQueuedAuthenticateReportsProgress(t *testing.T) {
+	prev := queueProgressInterval
+	queueProgressInterval = time.Millisecond
+	t.Cleanup(func() { queueProgressInterval = prev })
+	srv, _ := challengedService(t)
+	entered, release := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	calls := 0
+	signIn := func(context.Context, SignInRequest) (bool, bool, error) {
+		mu.Lock()
+		calls++
+		first := calls == 1
+		mu.Unlock()
+		if first {
+			close(entered)
+			<-release
+			return false, true, nil
+		}
+		return true, false, nil
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	waitClosed(t, entered, "the first sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":"queued"}}}`)
+	require.Eventually(t, func() bool {
+		return strings.Contains(p.out.String(), `"progressToken":"queued"`)
+	}, 10*time.Second, time.Millisecond)
+	close(release)
+	require.Eventually(t, func() bool {
+		return strings.Contains(p.out.String(), "Already signed in")
+	}, 10*time.Second, time.Millisecond)
+	require.NoError(t, p.finish(t))
+
+	lines := outLines(p.out.String())
+	var queued, signedIn int
+	for _, line := range lines {
+		if strings.Contains(line, `"progressToken":"queued"`) {
+			queued++
+		}
+		if strings.Contains(line, "Signed in to") {
+			signedIn = queued
+		}
+	}
+	assert.Positive(t, signedIn, "the queued call's progress comes before the first sign-in answers")
 }

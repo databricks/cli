@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
 )
@@ -25,6 +26,9 @@ const (
 // urlPattern finds the http and https URLs in a text. A URL ends at a space or at a character that cannot be in one
 // here, such as a bracket, a quote or an emphasis mark, so the URL of a markdown link or a `<url>` is found too.
 var urlPattern = regexp.MustCompile("https?://[^\\s<>()\\[\\]\"'*`]+")
+
+// queueProgressInterval is how often a call that waits for the sign-in ahead of it reports progress. Tests shorten it.
+var queueProgressInterval = 2 * time.Second
 
 var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
 
@@ -68,8 +72,9 @@ type signInHooks struct {
 	// stderr is the bridge's stderr, which SignIn writes its progress to.
 	stderr io.Writer
 
-	// mu serializes authenticate calls, which may run a sign-in for minutes. pageCancelled is read and written under it.
-	mu sync.Mutex
+	// turn is held by the authenticate call whose sign-in runs, so that the calls run one at a time. It has room for one
+	// call. A call waits for it under its own context (see acquire). pageCancelled is read and written under it.
+	turn chan struct{}
 	// pageCancelled means the last attempt showed the sign-in page and the client cancelled it before the sign-in
 	// completed. The user may still be on that page, so the next attempt does not open it again.
 	pageCancelled bool
@@ -85,6 +90,11 @@ type signInHooks struct {
 	// restart means the next sign-in starts from no credential. A challenge that follows an "Already signed in" answer
 	// sets it: the credential reads as signed in, but the service does not accept it.
 	restart bool
+}
+
+// newSignInHooks returns the sign-in hooks of c. Progress lines of a sign-in are written to stderr.
+func newSignInHooks(c *Challenge, stderr io.Writer) *signInHooks {
+	return &signInHooks{c: c, stderr: stderr, turn: make(chan struct{}, 1)}
 }
 
 // Local answers the authenticate tool call once the session has been challenged. Before that, and for other requests and
@@ -271,27 +281,29 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 	return toolResult(id, text, true)
 }
 
-// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call waits for the first.
-// The page opens unless the last attempt was cancelled while its page was showing (see pageCancelled). With a
-// progressToken, each poll of the wait is reported to the client through notify.
+// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call waits for the first. The
+// page opens unless the last attempt was cancelled while its page was showing (see pageCancelled). With a progressToken,
+// each poll of the wait, and each poll while the call is queued, is reported to the client through notify.
 func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.RawMessage, notify func([]byte)) [][]byte {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	var polls int
+	report := func() {
+		if len(progressToken) == 0 {
+			return
+		}
+		polls++
+		notify(progressNotification(progressToken, polls, h.c.Label))
+	}
+	if !h.acquire(ctx, report) {
+		return nil
+	}
+	defer h.release()
 
 	h.stateMu.Lock()
 	restart := h.restart
 	h.restart = false
 	h.stateMu.Unlock()
 
-	progress := func() {}
-	if len(progressToken) > 0 {
-		polls := 0
-		progress = func() {
-			polls++
-			notify(progressNotification(progressToken, polls, h.c.Label))
-		}
-	}
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: progress, Stderr: h.stderr})
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: report, Stderr: h.stderr})
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
@@ -328,6 +340,34 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	default:
 		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
 	}
+}
+
+// acquire takes the turn that lets an authenticate call run its sign-in. While the call waits for the turn, it reports
+// progress every queueProgressInterval, so that a client does not give up on it, and it returns false when ctx is done
+// first. A call whose ctx is done once it has the turn gives the turn back and returns false, so a call the client
+// cancelled before its own attempt starts touches no state.
+func (h *signInHooks) acquire(ctx context.Context, report func()) bool {
+	ticker := time.NewTicker(queueProgressInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case h.turn <- struct{}{}:
+			if ctx.Err() != nil {
+				h.release()
+				return false
+			}
+			return true
+		case <-ticker.C:
+			report()
+		case <-ctx.Done():
+			return false
+		}
+	}
+}
+
+// release gives the turn taken by acquire to the next call.
+func (h *signInHooks) release() {
+	<-h.turn
 }
 
 // progressNotification is the notifications/progress message for the n-th poll of a sign-in that the client asked to

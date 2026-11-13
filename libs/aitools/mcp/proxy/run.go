@@ -72,7 +72,7 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.Challenge != nil {
 		// The initialize result must advertise tools/list_changed so an agent re-lists after sign-in.
 		b.ForceListChanged = true
-		b.Hooks = &signInHooks{c: opts.Challenge, stderr: stderr}
+		b.Hooks = newSignInHooks(opts.Challenge, stderr)
 	}
 	return b.Run(ctx)
 }
