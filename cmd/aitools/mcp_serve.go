@@ -3,6 +3,7 @@ package aitools
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,8 +21,11 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 // serveConnectTimeout bounds one upstream connect. http.DefaultTransport waits 30 s.
@@ -120,7 +124,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 }
 
 // serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
-// refreshGuard, so a refresh failure stops the proxy; see proxyResult.
+// refreshGuard, so a rejected token stops the proxy; see proxyResult.
 func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
@@ -129,8 +133,8 @@ func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
 
-// proxyResult returns the outcome of serve once the bridge has returned with runErr. A refresh failure wins, since a
-// stdin error after it is a consequence. The final line always names the failure, as the bridge may not have logged it.
+// proxyResult returns the outcome of serve once the bridge has returned with runErr. A rejected token wins, since a
+// stdin error after it is a consequence. The final line always names the rejection, as the bridge may not have logged it.
 func proxyResult(cmd *cobra.Command, refresh *refreshGuard, runErr error) error {
 	if refreshErr := refresh.failure(); refreshErr != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "stopped after a token refresh failure for profile %s\n", refresh.profile)
@@ -188,10 +192,11 @@ func exitAlreadyPrinted(err error, status int) error {
 	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
 }
 
-// refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed mid-session fails
-// that request with an error that names the profile and its login command, then stops the proxy, which exits 2. Later
-// requests fail at once, without asking for a token again. A request whose own context ended does not stop it, nor
-// does the session DELETE at shutdown, which is skipped after a refresh failure.
+// refreshGuard wraps the profile's authenticate for the bridge. A rejected token (see credentialRejected) fails that
+// request with an error that names the profile and its login command, then stops the proxy, which exits 2. Later
+// requests fail at once, without asking for a token again. A transient failure fails only its request, and the next
+// request asks for a token again. A request whose own context ended does not stop it, nor does the session DELETE at
+// shutdown, which is skipped after a rejection.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
@@ -216,6 +221,10 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	if r.Context().Err() != nil || r.Method == http.MethodDelete {
 		return err
 	}
+	if !credentialRejected(err) {
+		// Serve keeps running and the next request asks for a token again, so the hint does not say to restart.
+		return mcp.AuthError(g.profile, err)
+	}
 	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
 	// new login.
 	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, err))
@@ -237,9 +246,41 @@ func (g *refreshGuard) stoppedError() error {
 	return fmt.Errorf("the session is stopping after a token refresh failure for profile %s", g.profile)
 }
 
-// failure returns the first refresh error, or nil when every token was refreshed.
+// failure returns the first rejection, or nil while no token has been rejected.
 func (g *refreshGuard) failure() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.err
+}
+
+// credentialRejected reports whether a token failure is one that a new login fixes. That is the CLI's U2M reporting an
+// invalid refresh token, or a token endpoint that answers 400 or 401 with the RFC 6749 section 5.2 error invalid_grant
+// or invalid_client. Everything else is transient and returns false: network errors, timeouts, 5xx responses, and
+// any error this check cannot classify. A transient failure is retried by the next request.
+func credentialRejected(err error) bool {
+	if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
+		return true
+	}
+	// The CLI's U2M client returns an *httpclient.HttpError for an error response, with the response body as its message.
+	if httpErr, ok := errors.AsType[*httpclient.HttpError](err); ok {
+		var body struct {
+			Error string `json:"error"`
+		}
+		if json.Unmarshal([]byte(httpErr.Message), &body) != nil {
+			return false
+		}
+		return rejectedOAuthError(httpErr.StatusCode, body.Error)
+	}
+	// golang.org/x/oauth2 returns this for an error response from its own HTTP client. It always sets Response.
+	if retrieveErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
+		return rejectedOAuthError(retrieveErr.Response.StatusCode, retrieveErr.ErrorCode)
+	}
+	return false
+}
+
+// rejectedOAuthError reports whether a token endpoint's error response, with its HTTP status and RFC 6749 error code,
+// is a rejection.
+func rejectedOAuthError(status int, code string) bool {
+	return (status == http.StatusBadRequest || status == http.StatusUnauthorized) &&
+		(code == "invalid_grant" || code == "invalid_client")
 }
