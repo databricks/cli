@@ -28,7 +28,7 @@ func TestConfigFiles(t *testing.T) {
 
 	for _, name := range names {
 		resourceType := strings.TrimSuffix(strings.TrimSuffix(path.Base(name), ymlSuffix), generatedSuffix)
-		assert.Containsf(t, SupportedResources, resourceType, "%s: %q is not a supported resource type", name, resourceType)
+		assert.NotEmptyf(t, configResourceTypes(resourceType), "%s: %q is not a supported resource type or sub-resource", name, resourceType)
 	}
 
 	for _, cfg := range []*Config{MustLoadConfig(), MustLoadGeneratedConfig()} {
@@ -41,6 +41,27 @@ func TestConfigFiles(t *testing.T) {
 func TestGetResourceConfig(t *testing.T) {
 	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
+}
+
+// TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
+// permissions of every parent, except where a parent has its own file.
+func TestSubResourceConfig(t *testing.T) {
+	for resourceType := range SupportedResources {
+		var field string
+		switch {
+		case resourceType == "secret_scopes.permissions":
+			field = "scope_name" // secret_scopes.permissions.yml
+		case strings.HasSuffix(resourceType, ".grants"):
+			field = "full_name" // grants.yml
+		case strings.HasSuffix(resourceType, ".permissions"):
+			field = "object_id" // permissions.yml
+		default:
+			continue
+		}
+		rules := GetResourceConfig(resourceType).UpdatableIDFields
+		require.Lenf(t, rules, 1, "%s", resourceType)
+		assert.Equalf(t, field, rules[0].Field.String(), "%s", resourceType)
+	}
 }
 
 // TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root

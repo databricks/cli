@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  notebook_root:
+    default: /Users/{{workspace_user_name}}
+
+resources:
+  jobs:
+    "job with spaces":
+      name: spaced-job
+      tasks:
+        - task_key: main
+          timeout_seconds: 60
+          notebook_task:
+            notebook_path: ${var.notebook_root}/notebook
+    "job's\"quotes":
+      name: quoted-job
+      tasks:
+        - task_key: main
+          timeout_seconds: 60
+          notebook_task:
+            notebook_path: ${var.notebook_root}/notebook
+
+targets:
+  default:
+    mode: development

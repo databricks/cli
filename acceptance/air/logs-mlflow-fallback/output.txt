@@ -1,8 +1,20 @@
 
 === logs falls back to mlflow (no logs)
+
 >>> [CLI] air logs 123
 No logs available for run 123. Run terminated in state SUCCESS
 
 === logs falls back to mlflow (json)
+
 >>> [CLI] air logs 123 -o json
 {"type":"ERROR","ts":"[TIMESTAMP]","node":0,"line":"No logs available for run 123. Run terminated in state SUCCESS"}
+
+=== logs falls back to mlflow for a specific node
+
+>>> [CLI] air logs 123 --node 0
+No logs available for node 0 in run 123. Run terminated in state SUCCESS
+
+=== logs falls back to mlflow for a specific node (json)
+
+>>> [CLI] air logs 123 --node 0 -o json
+{"type":"ERROR","ts":"[TIMESTAMP]","node":0,"line":"No logs available for node 0 in run 123. Run terminated in state SUCCESS"}

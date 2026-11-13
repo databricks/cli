@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created catalogs.catalog1
@@ -7,12 +8,19 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op despite UC auto-populating managed properties
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The remote-only properties map is skipped as a backend default (confirms the matched rule)
+
 >>> [CLI] bundle plan --output json
 {
+  "isolation_mode": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "OPEN"
+  },
   "properties": {
     "action": "skip",
     "reason": "backend_default",
@@ -29,6 +37,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Redeploy is a no-op (no UpdateCatalog call)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted

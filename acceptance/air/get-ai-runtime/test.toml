@@ -46,11 +46,12 @@ Response.Body = '''
 }
 '''
 
-# MLflow identifiers for the deep-link, under ai_runtime_task_output.
+# MLflow identifiers for the deep-link, under ai_runtime_task_output. The
+# leftover status_message must not appear in the output of a finished run.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get-output"
 Response.Body = '''
-{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1", "status_message": "STATUS:Waiting for GPU compute capacity to become available."}}
 '''
 
 # The MLflow Run cell shows the run's name, fetched from the MLflow REST API.

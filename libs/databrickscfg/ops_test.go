@@ -212,6 +212,38 @@ func TestSaveResourcesToProfile(t *testing.T) {
 	assert.NotContains(t, string(contents), "resources")
 }
 
+func TestSaveToProfile_DottedNameDoesNotWriteParentSection(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := os.WriteFile(path, []byte("[team]\nhost = https://team.test\ntoken = xyz\nresources = https://team.test/a\n"), 0o600)
+	require.NoError(t, err)
+
+	require.NoError(t, SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "team.prod",
+		Host:       "https://prod.test",
+		AuthType:   "databricks-cli",
+	}))
+	require.NoError(t, SaveResourcesToProfile(ctx, "team.prod", path, []string{"https://prod.test/b"}))
+
+	file, err := loadConfigFile(ctx, path)
+	require.NoError(t, err)
+	parent, err := file.GetSection("team")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"host":      "https://team.test",
+		"token":     "xyz",
+		"resources": "https://team.test/a",
+	}, parent.KeysHash())
+	child, err := file.GetSection("team.prod")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"host":      "https://prod.test",
+		"auth_type": "databricks-cli",
+		"resources": "https://prod.test/b",
+	}, child.KeysHash())
+}
+
 func TestSaveResourcesToProfile_MissingProfile(t *testing.T) {
 	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")

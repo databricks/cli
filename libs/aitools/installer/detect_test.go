@@ -55,6 +55,20 @@ func TestInstalledTools(t *testing.T) {
 			want:           []string{"codex_0.2.7"},
 		},
 		{
+			// A record without a version (its last update ran from a marketplace
+			// copy that could not be refreshed) yields no token.
+			name:          "state without version omitted",
+			globalPlugins: map[string]string{"codex": ""},
+			want:          nil,
+		},
+		{
+			// A project record without a version does not hide the global one.
+			name:           "project state without version keeps global",
+			globalPlugins:  map[string]string{"codex": "0.2.7"},
+			projectPlugins: map[string]string{"codex": ""},
+			want:           []string{"codex_0.2.7"},
+		},
+		{
 			// Manifest (claude) and state (codex) contribute; output is sorted.
 			name:                  "mixed sources sorted",
 			claudeManifestVersion: "0.2.9",
@@ -78,6 +92,57 @@ func TestInstalledTools(t *testing.T) {
 			savePluginState(t, ProjectSkillsDir, tc.projectPlugins)
 
 			assert.Equal(t, tc.want, InstalledTools(t.Context()))
+		})
+	}
+}
+
+// TestInstalledPluginAgents counts a plugin as installed whether or not its
+// version is known, so `databricks version --check` does not suggest installing
+// Databricks tooling to a user who has the plugin.
+func TestInstalledPluginAgents(t *testing.T) {
+	tests := []struct {
+		name                  string
+		claudeManifestVersion string
+		globalPlugins         map[string]string
+		projectPlugins        map[string]string
+		want                  []string
+	}{
+		{
+			name: "none installed",
+			want: nil,
+		},
+		{
+			name:          "state with version",
+			globalPlugins: map[string]string{"codex": "0.2.7"},
+			want:          []string{"codex"},
+		},
+		{
+			name:           "state without version",
+			projectPlugins: map[string]string{"codex": ""},
+			want:           []string{"codex"},
+		},
+		{
+			name:                  "manifest and state sorted",
+			claudeManifestVersion: "0.2.9",
+			globalPlugins:         map[string]string{"codex": ""},
+			want:                  []string{"claude-code", "codex"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			t.Setenv("HOME", tmp)
+			t.Setenv("USERPROFILE", tmp)
+			t.Chdir(t.TempDir())
+
+			if tc.claudeManifestVersion != "" {
+				writeClaudeManifest(t, filepath.Join(tmp, ".claude"), tc.claudeManifestVersion)
+			}
+			savePluginState(t, GlobalSkillsDir, tc.globalPlugins)
+			savePluginState(t, ProjectSkillsDir, tc.projectPlugins)
+
+			assert.Equal(t, tc.want, InstalledPluginAgents(t.Context()))
 		})
 	}
 }

@@ -1,10 +1,12 @@
 
 === list (text)
+
 >>> [CLI] air list
    Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
    334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
 
 === list (json)
+
 >>> [CLI] air list -o json
 {
   "v": 1,
@@ -24,11 +26,13 @@
 }
 
 === list --all-status (text, via AiTrainingService index)
+
 >>> [CLI] air list --all-status
    Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
    334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
 
 === list --all-status (json)
+
 >>> [CLI] air list --all-status -o json
 {
   "v": 1,

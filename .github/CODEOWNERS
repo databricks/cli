@@ -4,14 +4,17 @@
 
 # Bundles
 /bundle/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/bundle/configsync/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/acceptance/bundle/config-remote-sync/  @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
+/acceptance/bundle/telemetry/config-remote-sync*/ @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
-/cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
-/acceptance/pipelines/                  @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/                         @databricks/eng-deco-cli @databricks/eng-pipelines
+/acceptance/pipelines/                  @databricks/eng-deco-cli @databricks/eng-pipelines
 
 # Labs
 /cmd/labs/                              @databricks/eng-deco-cli @alexott @asnare
@@ -79,6 +82,11 @@
 /integration/                           @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 /integration/cmd/environments/          @databricks/eng-deco-cli @databricks/eng-deco-ax
+
+# Setup-local files outside the local environments paths. These rules come
+# after /libs/telemetry/ because the last matching rule wins.
+/cmd/workspace/environments/overrides.go @databricks/eng-deco-cli @databricks/eng-deco-ax
+/libs/telemetry/protos/setup_local.go   @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Internal
 /internal/                              @databricks/eng-deco-cli @databricks/eng-deco-platform

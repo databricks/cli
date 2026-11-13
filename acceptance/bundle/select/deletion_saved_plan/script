@@ -8,7 +8,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Deploy both jobs.
-title "Initial deploy\n"
+title "Initial deploy"
 trace $CLI bundle deploy
 # Register [KEEP_ID]/[GONE_ID] from state while both still exist, so the delete
 # request body below is masked deterministically.
@@ -24,7 +24,7 @@ $CLI bundle plan --select jobs.gone -o json > plan.json
 # Deploy from the plan file WITHOUT re-passing --select: the deletion was selected
 # at plan time and survives serialization, so applying the saved plan deletes 'gone'
 # and reports the ", 1 not selected" suffix from plan.NotSelected, not the flag.
-title "bundle deploy --plan (no --select)\n"
+title "bundle deploy --plan (no --select)"
 trace $CLI bundle deploy --plan plan.json
 
 # The delete call targeted 'gone' only.

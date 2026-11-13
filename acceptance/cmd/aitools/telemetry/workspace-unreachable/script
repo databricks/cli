@@ -1,0 +1,22 @@
+# Isolate HOME so the real machine's agents and skills are not seen.
+sethome home
+
+# The workspace host does not resolve, so the background telemetry auth
+# resolution fails to fetch host metadata. The skills manifest still comes from
+# the mock server (DATABRICKS_SKILLS_BASE_URL is set from the original host).
+# A hostmetadata warning only reaches the output if the failed lookup ends
+# before the command stops waiting for the resolution. .test resolution fails
+# fast (NXDOMAIN), and install, update and uninstall wait for it once they get
+# to their work, so they catch a regression; list and version never wait, and
+# update and uninstall with nothing installed do not either.
+export DATABRICKS_HOST=https://unreachable.test
+mkdir -p "${USERPROFILE:-$HOME}/.cursor"
+
+title "install: the background auth resolution prints nothing"
+trace $CLI aitools install --skills-only --scope=global --agents=cursor
+
+title "update: the background auth resolution prints nothing"
+trace $CLI aitools update --scope=global
+
+title "uninstall: the background auth resolution prints nothing"
+trace $CLI aitools uninstall --scope=global

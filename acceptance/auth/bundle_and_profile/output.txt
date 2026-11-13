@@ -1,17 +1,21 @@
 
 === Inside the bundle, no flags
+
 >>> errcode [CLI] current-user me
 "[USERNAME]"
 
 === Inside the bundle, target flags
+
 >>> errcode [CLI] current-user me -t dev
 "[USERNAME]"
 
 === Inside the bundle, target and matching profile
+
 >>> errcode [CLI] current-user me -t dev -p DEFAULT
 "[USERNAME]"
 
 === Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle.
+
 >>> errcode [CLI] current-user me -p profile_name
 Warn: [hostmetadata] failed to fetch host metadata for https://non.existing.subdomain.databricks.test, will skip for 1m0s
 Error: Get "https://non.existing.subdomain.databricks.test/api/2.0/preview/scim/v2/Me": (redacted)
@@ -19,6 +23,7 @@ Error: Get "https://non.existing.subdomain.databricks.test/api/2.0/preview/scim/
 Exit code: 1
 
 === Inside the bundle, target and not matching profile
+
 >>> errcode [CLI] current-user me -t dev -p profile_name
 Error: cannot resolve bundle auth configuration: the host in the profile (https://non.existing.subdomain.databricks.test) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
 
@@ -26,6 +31,7 @@ Error: cannot resolve bundle auth configuration: the host in the profile (https:
 Exit code: 1
 
 === Bundle commands load bundle configuration when no flags, validation OK
+
 >>> errcode [CLI] bundle validate
 Name: test-auth
 Target: dev
@@ -37,6 +43,7 @@ Workspace:
 Validation OK!
 
 === Bundle commands load bundle configuration with -t flag, validation OK
+
 >>> errcode [CLI] bundle validate -t dev
 Name: test-auth
 Target: dev
@@ -48,6 +55,7 @@ Workspace:
 Validation OK!
 
 === Bundle commands load bundle configuration with -p flag, validation not OK (profile host don't match bundle host)
+
 >>> errcode [CLI] bundle validate -p profile_name
 Error: cannot resolve bundle auth configuration: the host in the profile (https://non.existing.subdomain.databricks.test) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
 
@@ -61,6 +69,7 @@ Found 1 error
 Exit code: 1
 
 === Bundle commands load bundle configuration with -t and -p flag, validation OK (profile host match bundle host)
+
 >>> errcode [CLI] bundle validate -t dev -p DEFAULT
 Name: test-auth
 Target: dev
@@ -72,6 +81,7 @@ Workspace:
 Validation OK!
 
 === Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)
+
 >>> errcode [CLI] bundle validate -t prod -p DEFAULT
 Warn: [hostmetadata] failed to fetch host metadata for https://bar.test, will skip for 1m0s
 Error: cannot resolve bundle auth configuration: the host in the profile ([DATABRICKS_TARGET]) doesn’t match the host configured in the bundle (https://bar.test)
@@ -86,9 +96,11 @@ Found 1 error
 Exit code: 1
 
 === Outside the bundle, no flags
+
 >>> errcode [CLI] current-user me
 "[USERNAME]"
 
 === Outside the bundle, profile flag
+
 >>> errcode [CLI] current-user me -p profile_name
 "[USERNAME]"

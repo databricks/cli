@@ -23,7 +23,7 @@
     ],
     "name": "DABs Revenue Pipeline",
     "run_as": {
-      "service_principal_name": "[UUID]"
+      "service_principal_name": "[UUID][0]"
     },
     "serverless": true,
     "target": "team_eng_deco"
@@ -36,7 +36,7 @@
     ]
   },
   "method": "PUT",
-  "path": "/api/2.0/permissions/pipelines/[UUID]",
+  "path": "/api/2.0/permissions/pipelines/[UUID][1]",
   "body": {
     "access_control_list": [
       {

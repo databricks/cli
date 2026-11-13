@@ -1,5 +1,6 @@
 
 === Apps create with correct input
+
 >>> [CLI] apps create --json @input.json
 {
   "active_deployment": {
@@ -35,13 +36,14 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][0]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with correct input
+
 >>> [CLI] apps update test-name --json @input.json
 {
   "active_deployment": {
@@ -77,13 +79,14 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][1]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with missing parameter
+
 >>> [CLI] apps update --json @input.json
 Error: accepts 1 arg(s), received 0
 

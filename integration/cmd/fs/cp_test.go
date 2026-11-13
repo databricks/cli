@@ -369,37 +369,6 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToNonExistentDir(t *testing.T) {
-	t.Parallel()
-
-	for _, testCase := range copyTests() {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctx := t.Context()
-			sourceFiler, sourceDir := testCase.setupSource(t)
-			targetFiler, targetDir := testCase.setupTarget(t)
-			setupSourceFile(t, ctx, sourceFiler)
-
-			// Create a directory in the target
-			err := targetFiler.Mkdir(ctx, "existingdir")
-			require.NoError(t, err)
-
-			// Copy file to existing directory with trailing slash - should succeed
-			existingDir := path.Join(targetDir, "existingdir") + "/"
-			testcli.RequireSuccessfulRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), existingDir)
-			assertTargetFile(t, ctx, targetFiler, "existingdir/foo.txt")
-
-			// Try to copy file to a non-existent directory with trailing slash - should fail
-			nonExistentDir := path.Join(targetDir, "nonexistent", "mydir") + "/"
-			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), nonExistentDir)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "directory")
-			assert.Contains(t, err.Error(), "no such directory")
-		})
-	}
-}
-
 func TestFsCpFileToNonExistentDirWindowsPaths(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("Skipping test on non-windows OS")

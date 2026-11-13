@@ -21,18 +21,14 @@ class SubscriptionAttachmentDataAttachmentWidget:
 
     page_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The URL identifier of the page containing the widget. This is the value of the `name`
+    The URL identifier of the page containing the widget. This is the value of the `name`
     field of the corresponding entry under `pages` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
 
     widget_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The URL identifier of the widget. This is the value of the `name` field of the
+    The URL identifier of the widget. This is the value of the `name` field of the
     corresponding widget under that page's `layout` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
@@ -52,18 +48,14 @@ class SubscriptionAttachmentDataAttachmentWidgetDict(TypedDict, total=False):
 
     page_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The URL identifier of the page containing the widget. This is the value of the `name`
+    The URL identifier of the page containing the widget. This is the value of the `name`
     field of the corresponding entry under `pages` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
 
     widget_id: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The URL identifier of the widget. This is the value of the `name` field of the
+    The URL identifier of the widget. This is the value of the `name` field of the
     corresponding widget under that page's `layout` in the serialized dashboard definition.
     Format: alphanumeric, hyphen, and underscore characters allowed, max length 63.
     """
