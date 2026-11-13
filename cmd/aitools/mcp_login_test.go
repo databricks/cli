@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -344,7 +345,8 @@ func TestSignInTimeoutNamesTheLastFailedCheck(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
-	state, _, err := signIn(ctx, io.Discard, w, "logfood", "", "https://example.test/login", mcp.Service{FullName: "system.ai.github", SignInRequired: true})
+	state, _, _, err := signIn(ctx, io.Discard, w, "", "https://example.test/login", mcp.Service{FullName: "system.ai.github", SignInRequired: true},
+		signInOptions{Profile: "logfood", Open: func(context.Context, string) error { return nil }})
 	require.Error(t, err)
 	assert.Equal(t, signInStateTimeout, state)
 	_, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)

@@ -56,8 +56,13 @@ var (
 	ErrSkipRequest = errors.New("request skipped")
 )
 
-// Hooks intercepts upstream messages before they are written to stdout.
+// Hooks intercepts client requests and upstream messages.
 type Hooks interface {
+	// Local answers a client request without forwarding it when handled is true; the messages it
+	// returns are written in order. Requests it does not handle are forwarded as usual. Local is
+	// called from the goroutine of each request, as Result is. It may write a message before its
+	// answer, such as a progress notification, through notify.
+	Local(ctx context.Context, request []byte, notify func(msg []byte)) (msgs [][]byte, handled bool)
 	// Result receives each upstream message for a client request, with the HTTP status (0 when the
 	// request failed before a response). It returns the messages to write in its place, in order:
 	// a single copy of message passes it through, an empty slice drops it. Result is called
@@ -80,7 +85,8 @@ type Bridge struct {
 	Instructions string
 	// ForceListChanged sets capabilities.tools.listChanged on the initialize result.
 	ForceListChanged bool
-	// Hooks, when set, sees every upstream message before it is written.
+	// Hooks, when set, answers the client requests it handles and sees every upstream message
+	// before it is written. Nil passes everything through unchanged.
 	Hooks Hooks
 	// Transport performs the upstream requests. Nil means http.DefaultTransport, which has a 30 s dial timeout. A caller
 	// that needs the profile's TLS settings or a shorter connect timeout sets it.
@@ -260,6 +266,37 @@ func await(ctx context.Context, gate <-chan struct{}) {
 	}
 }
 
+// answerLocally writes the hooks' answer to a client message that they handle, and reports whether it did. Nothing is
+// forwarded upstream then, and no idle watchdog runs for it.
+func (c *conn) answerLocally(ctx context.Context, line []byte) bool {
+	if c.b.Hooks == nil {
+		return false
+	}
+	msgs, handled := c.b.Hooks.Local(ctx, line, c.notifyLocal)
+	if handled {
+		c.writeHook(msgs)
+	}
+	return handled
+}
+
+// notifyLocal writes a message that a hook sends before its answer.
+func (c *conn) notifyLocal(msg []byte) {
+	c.writeHook([][]byte{msg})
+}
+
+// writeHook writes the messages a hook produced, as lines and in order. A message that is not JSON is logged, and none is
+// written.
+func (c *conn) writeHook(msgs [][]byte) {
+	lines, err := oneLines(msgs)
+	if err != nil {
+		c.logf("hook: %v", err)
+		return
+	}
+	if err := c.writeLines(lines); err != nil {
+		c.logf("stdout: %v", err)
+	}
+}
+
 // forward waits (see await), then POSTs one client message exactly as received and writes what the upstream
 // answers. The idle watchdog covers every response, plain JSON included. It starts before the POST, so it also
 // bounds the wait for response headers, and the run time of a hook counts toward it. For a notification, release
@@ -269,6 +306,9 @@ func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m
 	if release != nil {
 		timer := time.AfterFunc(notificationWait, release)
 		defer timer.Stop()
+	}
+	if c.answerLocally(ctx, line) {
+		return
 	}
 	idleCtx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
@@ -833,6 +873,12 @@ func (x *exchange) lines(reqCtx context.Context, msg []byte) ([][]byte, error) {
 			return nil, err
 		}
 	}
+	return oneLines(msgs)
+}
+
+// oneLines returns each message as a single line, in order (see oneLine). When one is not JSON, it returns the error and
+// no lines.
+func oneLines(msgs [][]byte) ([][]byte, error) {
 	lines := make([][]byte, 0, len(msgs))
 	for _, out := range msgs {
 		line, err := oneLine(out)

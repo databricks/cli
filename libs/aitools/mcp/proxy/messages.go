@@ -15,7 +15,11 @@ const (
 	methodInitialize  = "initialize"
 	methodInitialized = "notifications/initialized"
 	methodCancelled   = "notifications/cancelled"
+	methodProgress    = "notifications/progress"
+	methodListChanged = "notifications/tools/list_changed"
 	methodPing        = "ping"
+	methodToolsList   = "tools/list"
+	methodToolsCall   = "tools/call"
 
 	keyResult       = "result"
 	keyInstructions = "instructions"
@@ -23,6 +27,9 @@ const (
 	keyTools        = "tools"
 	keyListChanged  = "listChanged"
 )
+
+// jsonrpcVersion is the version member of each JSON-RPC message the bridge writes.
+const jsonrpcVersion = "2.0"
 
 var (
 	// errNotObject is returned for valid JSON whose top-level value is not an object.
@@ -54,11 +61,12 @@ type rpcError struct {
 	Message string `json:"message"`
 }
 
-// rpcErrorResponse is a JSON-RPC error response.
-type rpcErrorResponse struct {
+// rpcResponse is a JSON-RPC response the bridge writes: a result, or an error.
+type rpcResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id"`
-	Error   rpcError        `json:"error"`
+	Result  any             `json:"result,omitempty"`
+	Error   *rpcError       `json:"error,omitempty"`
 }
 
 // parseMessage decodes the envelope of one JSON-RPC message. A syntax error is reported as a
@@ -166,7 +174,14 @@ func errorResponse(id json.RawMessage, code int, text string) []byte {
 		id = jsonNull
 	}
 	// Cannot fail: the id came from a parsed message and the other fields are plain values.
-	b, _ := json.Marshal(rpcErrorResponse{JSONRPC: "2.0", ID: id, Error: rpcError{Code: code, Message: text}})
+	b, _ := json.Marshal(rpcResponse{JSONRPC: jsonrpcVersion, ID: id, Error: &rpcError{Code: code, Message: text}})
+	return b
+}
+
+// resultResponse builds a JSON-RPC success response.
+func resultResponse(id json.RawMessage, result any) []byte {
+	// Cannot fail: the id came from a parsed request and result holds only plain values.
+	b, _ := json.Marshal(rpcResponse{JSONRPC: jsonrpcVersion, ID: id, Result: result})
 	return b
 }
 

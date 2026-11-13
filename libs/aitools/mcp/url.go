@@ -8,8 +8,11 @@ func ServiceURL(host, fullName string) string {
 	return host + "/ai-gateway/mcp-services/" + url.PathEscape(fullName)
 }
 
+// SignInPath is the path of the page where a user signs in to a sign-in-required service, on the workspace host.
+const SignInPath = "/mcp-service-login"
+
 // SignInURL returns the page where a user signs in to a sign-in-required service.
 func SignInURL(host, fullName, workspaceID string) string {
 	query := url.Values{"name": {fullName}, "o": {workspaceID}}
-	return host + "/mcp-service-login?" + query.Encode()
+	return host + SignInPath + "?" + query.Encode()
 }

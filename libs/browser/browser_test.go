@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -57,6 +58,8 @@ const (
 	openerSleeperEnv = "LIBS_BROWSER_TEST_SLEEPER"
 	// openerSleepTime is how long the sleeper runs. It is short, so that the tests end soon even when the wait is wrong.
 	openerSleepTime = 3 * time.Second
+	// openerStdinEnv, when set in the browser command, makes it read up to 16 bytes of its stdin and print them.
+	openerStdinEnv = "LIBS_BROWSER_TEST_STDIN"
 )
 
 // TestMain lets the tests use this test binary as a browser command that writes to stdout, as a launcher can.
@@ -76,6 +79,11 @@ func TestOpenerChild(t *testing.T) {
 		t.Skip("runs only as the browser command of the tests below")
 	}
 	fmt.Print("opener stdout")
+	if os.Getenv(openerStdinEnv) != "" {
+		buf := make([]byte, 16)
+		n, _ := os.Stdin.Read(buf)
+		fmt.Fprintf(os.Stderr, "stdin: %q", buf[:n])
+	}
 	sleepFile := os.Getenv(openerBackgroundEnv)
 	if sleepFile == "" {
 		return
@@ -230,4 +238,36 @@ func TestOpenDefaultOverlappingOpensRestoreStreams(t *testing.T) {
 
 	assert.Equal(t, stdout, browserpkg.Stdout)
 	assert.Equal(t, stderr, browserpkg.Stderr)
+}
+
+// TestOpenWithoutStdinGivesCommandNoInput checks that a browser command opened without stdin reads none, so it cannot read
+// the stream on this process's stdin, while the other openers give it that stream. The command writes what it read to
+// stderr.
+func TestOpenWithoutStdinGivesCommandNoInput(t *testing.T) {
+	t.Setenv(openerStdinEnv, "1")
+	// stdinWith makes the stdin of this process a pipe that holds data and stays open, so a command that inherits it
+	// would wait for more input than the 16 bytes it reads.
+	stdinWith := func(data string) {
+		r, w, err := os.Pipe()
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			r.Close()
+			w.Close()
+		})
+		_, err = io.WriteString(w, data)
+		require.NoError(t, err)
+		prevStdin := os.Stdin
+		os.Stdin = r
+		t.Cleanup(func() { os.Stdin = prevStdin })
+	}
+
+	stdinWith("protocol")
+	_, stderr, err := runOpener(t, OpenOutputToStderrWithoutStdin)
+	require.NoError(t, err)
+	assert.Contains(t, stderr, `stdin: ""`)
+
+	stdinWith("protocol")
+	_, stderr, err = runOpener(t, OpenOutputToStderr)
+	require.NoError(t, err)
+	assert.Contains(t, stderr, `stdin: "protocol"`)
 }

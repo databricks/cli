@@ -37,3 +37,11 @@ func TestKnownSystemAITable(t *testing.T) {
 		})
 	}
 }
+
+func TestProviderLabel(t *testing.T) {
+	assert.Equal(t, "GitHub", ProviderLabel("system.ai.github"))
+	assert.Equal(t, "Genie One", ProviderLabel("SYSTEM.AI.genie_one_mcp"))
+	assert.Equal(t, "system.ai.unknown_service", ProviderLabel("system.ai.unknown_service"))
+	assert.Equal(t, "main.mcp.github", ProviderLabel("main.mcp.github"))
+	assert.Equal(t, "GitHub", ProviderLabel("SYSTEM.AI.GITHUB"), "the leaf is compared without case")
+}
