@@ -13,7 +13,7 @@ $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --age
 title "Diagnostics go to stderr only"
 trace cat LOG.stderr
 
-# An agent this binary does not know still serves; it is left out of the User-Agent and logged at debug.
+# An agent this binary does not know still serves; it is left out of the User-Agent, with one line on stderr.
 title "An agent this binary does not know is accepted"
-$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent --log-level debug < requests.ndjson 2> LOG.debug | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
-trace grep -c "not a known agent" LOG.debug
+$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent < requests.ndjson 2> LOG.future | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+trace cat LOG.future

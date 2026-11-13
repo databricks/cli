@@ -52,3 +52,11 @@ func TestMcpEndpointNotificationGetsNoBody(t *testing.T) {
 	assert.Equal(t, 202, response.StatusCode)
 	assert.Nil(t, response.Body)
 }
+
+// A client's answer to a request from the server has an id and no method. It is not a request, so it gets 202 with no body.
+func TestMcpEndpointClientResponseGetsNoBody(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","id":7,"result":{}}`)}, "system.ai.genie_one_mcp")
+	assert.Equal(t, 202, response.StatusCode)
+	assert.Nil(t, response.Body)
+}

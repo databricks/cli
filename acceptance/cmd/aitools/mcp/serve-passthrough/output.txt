@@ -14,5 +14,6 @@ No install record for system.ai.genie_one_mcp on profile "logfood"; using its cu
 {"id":2,"instructions":null,"tools":["echo"],"text":null,"error":null}
 {"id":3,"instructions":null,"tools":[],"text":"hello","error":null}
 
->>> grep -c not a known agent LOG.debug
-1
+>>> cat LOG.future
+No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
+unknown agent "future-agent"; it is left out of the User-Agent

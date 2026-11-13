@@ -5,10 +5,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -18,8 +20,6 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -34,12 +34,16 @@ func serveDialer() *net.Dialer {
 
 // serveTransport is the transport of the bridge's upstream requests. It starts from
 // http.DefaultTransport, so proxy use and the other timeouts stay as they are, and replaces the
-// dialer to set the connect timeout. The profile's InsecureSkipVerify is honored.
+// dialer to set the connect timeout. The profile's InsecureSkipVerify is honored; the clone keeps
+// HTTP/2 enabled.
 func serveTransport(cfg *config.Config) *http.Transport {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.DialContext = serveDialer().DialContext
 	if cfg.InsecureSkipVerify {
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		if tr.TLSClientConfig == nil {
+			tr.TLSClientConfig = &tls.Config{}
+		}
+		tr.TLSClientConfig.InsecureSkipVerify = true
 	}
 	return tr
 }
@@ -82,10 +86,13 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if f.service == "" {
 		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
+	if !isFullName(strings.Split(f.service, ".")) {
+		return fmt.Errorf("%s needs a full service name such as system.ai.github", mcpconfig.ServiceFlag)
+	}
 
 	state, err := mcp.LoadState(cmd.Context())
 	if err != nil {
-		return serveFailure(cmd, err, 1)
+		return serveFailure(cmd, err, serveBindStatus)
 	}
 	cfg, _, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile: profileName,
@@ -97,31 +104,32 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
 
-	// The bound profile authenticates the exit-time telemetry upload.
-	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), cfg))
-
-	ctx, stop := serveSignalContext(cmd.Context())
-	defer stop()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	refresh := &refreshGuard{authenticate: cfg.Authenticate, profile: profileName, cancel: cancel}
-	err = proxy.Run(ctx, proxy.Options{
+	return serveProxy(cmd, proxy.Options{
 		In:           cmd.InOrStdin(),
 		Out:          cmd.OutOrStdout(),
 		Err:          cmd.ErrOrStderr(),
 		Endpoint:     mcp.ServiceURL(cfg.Host, f.service),
 		Config:       cfg,
-		Authenticate: refresh.authenticateRequest,
+		Authenticate: cfg.Authenticate,
 		Profile:      profileName,
-		Agent:        serveAgent(cmd.Context(), f.agent),
+		Agent:        serveAgent(f.agent, cmd.ErrOrStderr()),
 		Transport:    serveTransport(cfg),
 	})
-	if err != nil {
+}
+
+// serveProxy bridges opts to the service until stdin closes or a signal arrives. opts.Authenticate is wrapped by a
+// refreshGuard. A token that cannot be refreshed mid-session stops the proxy with serveBindStatus. The bridge has
+// already logged that error on the request that needed the token, so it is returned without being printed again.
+func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
+	ctx, stop := serveSignalContext(cmd.Context())
+	defer stop()
+	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, cancel: stop}
+	opts.Authenticate = refresh.authenticateRequest
+	if err := proxy.Run(ctx, opts); err != nil {
 		return serveFailure(cmd, err, 1)
 	}
 	if refreshErr := refresh.failure(); refreshErr != nil {
-		return serveFailure(cmd, refreshErr, serveBindStatus)
+		return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: serveBindStatus, Err: refreshErr})
 	}
 	return nil
 }
@@ -146,12 +154,13 @@ func serveSignalContext(parent context.Context) (context.Context, context.Cancel
 }
 
 // serveAgent returns the registry name of the calling agent for the User-Agent. A name this binary does
-// not know, such as an agent added by a later release, is left out and logged; the server still serves.
-func serveAgent(ctx context.Context, name string) string {
+// not know, such as an agent added by a later release, is left out and reported on stderr, so the server
+// still serves. The registry filter also keeps useragent.With from panicking on a value it does not accept.
+func serveAgent(name string, stderr io.Writer) string {
 	if name == "" || agents.ByName(name) != nil {
 		return name
 	}
-	log.Debugf(ctx, "--agent %q is not a known agent; leaving it out of the User-Agent", name)
+	fmt.Fprintf(stderr, "unknown agent %q; it is left out of the User-Agent\n", name)
 	return ""
 }
 
@@ -168,9 +177,10 @@ func serveFailure(cmd *cobra.Command, err error, status int) error {
 
 // refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed
 // mid-session fails that request with an error naming the profile, then stops the proxy, so the
-// command exits 2 and the next spawn re-runs the binding checks. Two failures do not stop it: a request
-// whose own context ended, which the client cancelled or shutdown ended, and the session DELETE at
-// shutdown, which is best effort.
+// command exits 2 and the next spawn re-runs the binding checks. A request whose own context ended,
+// which the client cancelled or shutdown ended, does not stop it. Nor does the session DELETE at
+// shutdown, which is best effort: after a refresh failure it is sent without a credential, as the
+// session is already over.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
@@ -182,6 +192,9 @@ type refreshGuard struct {
 
 // authenticateRequest is the bridge's Authenticate. It is safe for concurrent use.
 func (g *refreshGuard) authenticateRequest(r *http.Request) error {
+	if g.failure() != nil && r.Method == http.MethodDelete {
+		return nil
+	}
 	err := g.authenticate(r)
 	if err == nil {
 		return nil

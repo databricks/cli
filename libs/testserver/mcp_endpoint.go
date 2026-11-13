@@ -35,7 +35,7 @@ type mcpRPC struct {
 // McpEndpoint fakes POST /ai-gateway/mcp-services/{name}, a streamable HTTP MCP server with one
 // tool, echo. A service stored with an OAuth source connection is external: no credential is
 // ever mapped to it here, so tools/list and tools/call answer -32006 as the gateway does before
-// sign-in. Notifications get 202 with no body.
+// sign-in. Notifications and client responses, which have no method or no id, get 202 with no body.
 func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -43,7 +43,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	if err := json.Unmarshal(req.Body, &msg); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: rpcError(nil, rpcCodeParseError, "Parse error")}
 	}
-	if msg.ID == nil {
+	if msg.ID == nil || msg.Method == "" {
 		return Response{StatusCode: http.StatusAccepted}
 	}
 

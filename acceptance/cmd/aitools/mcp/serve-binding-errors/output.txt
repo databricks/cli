@@ -23,6 +23,11 @@ Error: --profile is required
 Exit code: 1
 
 >>> cat LOG.stderr
+Error: --service needs a full service name such as system.ai.github
+
+Exit code: 1
+
+>>> cat LOG.stderr
 Error: --output does not apply to serve: its stdout carries the MCP protocol
 
 Exit code: 1

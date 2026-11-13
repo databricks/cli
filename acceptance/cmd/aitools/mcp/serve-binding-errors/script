@@ -49,6 +49,8 @@ echo "stdout bytes: $(wc -c < LOG.stdout | tr -d ' ')"
 title "Flags are required and validated before the binding checks"
 errcode $CLI aitools mcp serve --service system.ai.genie_one_mcp < requests.ndjson > LOG.stdout 2> LOG.stderr
 trace cat LOG.stderr
+errcode $CLI aitools mcp serve --profile logfood --service github < requests.ndjson > LOG.stdout 2> LOG.stderr
+trace cat LOG.stderr
 errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --output json < requests.ndjson > LOG.stdout 2> LOG.stderr
 trace cat LOG.stderr
 
