@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -108,7 +109,8 @@ func TestMcpLoginRejectedTokenIsAuthFailed(t *testing.T) {
 }
 
 // TestMcpLoginRejectedTokenHasOneSetOfNextSteps checks the error that root prints for a rejected token after login has
-// its client: the MCP login command is the only set of next steps, since root's auth enrichment leaves it alone.
+// its client: the MCP login command is the only set of next steps, since root's auth enrichment leaves it alone. Root
+// enriches the errors of a command whose upload config is set, which is the profile's config.
 func TestMcpLoginRejectedTokenHasOneSetOfNextSteps(t *testing.T) {
 	home := withHome(t)
 	server := loginTestServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
@@ -117,8 +119,8 @@ func TestMcpLoginRejectedTokenHasOneSetOfNextSteps(t *testing.T) {
 	out := mcpSignInOutput{Service: "system.ai.github"}
 	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogin, &out)
 	require.Error(t, err)
-	require.NotNil(t, out.cfg, "the client exists, so root enriches errors")
-	enriched := auth.EnrichAuthError(t.Context(), out.cfg, err)
+	require.NotEmpty(t, out.Host, "the client exists, so the profile's config is known")
+	enriched := auth.EnrichAuthError(t.Context(), &config.Config{Host: out.Host, Profile: "logfood"}, err)
 	assert.Equal(t, err.Error(), enriched.Error())
 	assert.Equal(t, 0, strings.Count(enriched.Error(), "Next steps:"))
 }

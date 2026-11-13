@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -151,6 +150,7 @@ func (o *addOutput) slashPaths() {
 // NewMcpAddCmd returns `aitools mcp add`.
 func NewMcpAddCmd() *cobra.Command {
 	var f mcpAddFlags
+	var auth *telemetryAuth
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Install Databricks managed MCP servers into coding agents",
@@ -171,6 +171,8 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
+			// The events upload with the auth resolved for the profile, and a run that logs one waits for it.
+			auth.waitAtExit = true
 
 			out := &addOutput{
 				Scope:         installer.ScopeGlobal,
@@ -210,6 +212,8 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
 	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server that was installed, after the installs")
 	cmd.Flags().BoolVar(&f.noLogin, "no-login", false, "Do not sign in; print the login commands for sign-in-required servers (default without a terminal; in a terminal, the default asks for each one)")
+	// Resolve auth best-effort so the telemetry can upload, as install does.
+	auth = withTelemetryAuth(cmd)
 	return cmd
 }
 
@@ -348,8 +352,6 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 			return err
 		}
 	}
-	// The bound profile authenticates the exit-time telemetry upload.
-	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), w.Config))
 	for i := range plans {
 		plans[i].service = picked[i]
 	}
