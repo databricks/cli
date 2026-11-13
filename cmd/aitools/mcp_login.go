@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -149,7 +148,7 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 // misspelled name is reported rather than treated as a service with no sign-in.
 func signInService(ctx context.Context, w *databricks.WorkspaceClient, out *mcpSignInOutput) (mcp.Service, error) {
 	svc, err := mcp.GetService(ctx, w, out.Service)
-	if errors.Is(err, apierr.ErrNotFound) {
+	if mcp.IsNotFound(err) {
 		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", out.Service, out.Profile)
 	}
 	if err != nil {

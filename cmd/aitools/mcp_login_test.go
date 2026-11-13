@@ -112,6 +112,20 @@ func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
 	assert.Empty(t, out.State)
 }
 
+// TestMcpLogoutEndpointNotFoundIsNotAServiceError checks that a 404 for an endpoint the API does not have is not read as a
+// service the profile cannot see, which would send the user to look for a typo in the name.
+func TestMcpLogoutEndpointNotFoundIsNotAServiceError(t *testing.T) {
+	home := withHome(t)
+	server := loginTestServer(t, http.StatusNotFound, `{"error_code":"ENDPOINT_NOT_FOUND","message":"endpoint is not available"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+
+	out := mcpSignInOutput{Service: "system.ai.github"}
+	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogout, &out)
+	require.Error(t, err)
+	assert.NotEqual(t, categoryServiceNotFound, errorCategory(err))
+	assert.NotContains(t, err.Error(), "is not an MCP service visible")
+}
+
 // TestSignInInstalledSignsInToEveryServer checks that add --login attempts every installed sign-in server after one of
 // them fails. The failed server gets the login hint, and the failure is returned, so the others are still signed in.
 func TestSignInInstalledSignsInToEveryServer(t *testing.T) {

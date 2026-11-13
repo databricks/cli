@@ -141,6 +141,12 @@ func isUnrelatedError(err error) bool {
 	return ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode)
 }
 
+// IsNotFound reports whether err is the API's answer that the resource does not exist. An unrelated 404, such as
+// ENDPOINT_NOT_FOUND, is not: the API did not answer about the resource.
+func IsNotFound(err error) bool {
+	return errors.Is(err, apierr.ErrNotFound) && !isUnrelatedError(err)
+}
+
 // mapListError classifies a listing failure. Other errors are returned with context only.
 func mapListError(location string, err error) error {
 	var kind ListErrorKind

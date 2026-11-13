@@ -350,3 +350,26 @@ func TestServiceNamesReachTheirOwnCredential(t *testing.T) {
 		})
 	}
 }
+
+// TestEndpointNotFoundIsNotTheAnswerAboutTheCredential checks that a 404 for an endpoint the API does not have is an
+// error. It does not mean that the caller is not signed in, or that the credential is gone.
+func TestEndpointNotFoundIsNotTheAnswerAboutTheCredential(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		http.Error(rw, `{"error_code":"ENDPOINT_NOT_FOUND","message":"endpoint is not available"}`, http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	state, err := CredentialState(t.Context(), w, loginTestService)
+	require.Error(t, err)
+	assert.Empty(t, state)
+
+	deleted, err := SignOut(t.Context(), w, loginTestService)
+	require.Error(t, err)
+	assert.False(t, deleted)
+}

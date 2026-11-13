@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -41,7 +40,7 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 	cred, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, catalog.GetMcpServiceUserMappedCredentialRequest{
 		Name: serviceResourceName(service),
 	})
-	if errors.Is(err, apierr.ErrNotFound) {
+	if IsNotFound(err) {
 		return "", nil
 	}
 	if err != nil {
@@ -130,7 +129,7 @@ func SignOut(ctx context.Context, w *databricks.WorkspaceClient, service string)
 	_, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, catalog.DeleteMcpServiceUserMappedCredentialRequest{
 		Name: serviceResourceName(service),
 	})
-	if errors.Is(err, apierr.ErrNotFound) {
+	if IsNotFound(err) {
 		return false, nil
 	}
 	if err != nil {
