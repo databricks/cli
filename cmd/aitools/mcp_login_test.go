@@ -168,12 +168,66 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 		{Name: "genie-logfood", Service: "system.ai.genie_one_mcp", SignInRequired: true, Agents: installed},
 	}
 
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	var errOut bytes.Buffer
-	err = signInInstalled(t.Context(), &errOut, w, req, plans, servers)
+	err = signInInstalled(ctx, &errOut, w, req, plans, servers)
 	require.Error(t, err)
 	assert.Equal(t, []string{githubPath, geniePath}, reads)
-	assert.Contains(t, errOut.String(), "system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood\n")
-	assert.NotContains(t, errOut.String(), "system.ai.genie_one_mcp needs sign-in")
+	assert.Contains(t, stderr.String(), "system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood\n")
+	assert.NotContains(t, stderr.String(), "system.ai.genie_one_mcp needs sign-in")
+}
+
+// signInInstalledOne signs in to one installed sign-in server of the test's workspace and returns the error and what the
+// command wrote to stderr, on either stream. The server answers with status and body for the credential.
+func signInInstalledOne(t *testing.T, status int, body string) (error, string) {
+	t.Helper()
+	const githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.URL.Path == githubPath {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(status)
+			_, _ = rw.Write([]byte(body))
+			return
+		}
+		rw.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	req := addRequest{profile: "logfood", workspaceID: "123", agents: []*agents.Agent{agents.ByName("claude-code")}}
+	plans := []addPlan{{service: mcp.Service{FullName: "system.ai.github", SignInRequired: true}}}
+	servers := []addServerOutput{{
+		Name: "github-logfood", Service: "system.ai.github", SignInRequired: true,
+		Agents: []addAgentOutput{{Name: "claude-code", Status: statusInstalled}},
+	}}
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	var errOut bytes.Buffer
+	err = signInInstalled(ctx, &errOut, w, req, plans, servers)
+	return err, errOut.String() + stderr.String()
+}
+
+// TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand checks that a sign-in that failed does not print the
+// login hint again, since its error already names the command to run.
+func TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand(t *testing.T) {
+	err, output := signInInstalledOne(t, http.StatusOK, `{"provisioning_info":{"state":"FAILED"}}`)
+	require.ErrorIs(t, err, mcp.ErrSignInFailed)
+	assert.Contains(t, err.Error(), "Run: databricks aitools mcp login system.ai.github --profile logfood")
+	assert.NotContains(t, output, "needs sign-in")
+}
+
+// TestSignInInstalledAuthFailureNamesTheAuthCommand checks that a credential the workspace rejects gets the auth command
+// in its error, and no login hint, which would not fix it.
+func TestSignInInstalledAuthFailureNamesTheAuthCommand(t *testing.T) {
+	err, output := signInInstalledOne(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
+	assert.NotContains(t, output, "mcp login")
+	assert.NotContains(t, output, "needs sign-in")
 }
 
 // TestMcpLoginHintQuotesItsArguments checks that the login command a hint prints can be pasted into a shell as written.
