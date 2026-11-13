@@ -93,30 +93,20 @@ Resources:
 === Plan after deploy shows no changes
 
 >>> [CLI] bundle plan
-update postgres_branches.production
-update postgres_databases.my_database
-update postgres_projects.my_project
-
-Plan: 0 to add, 3 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === Removing the resource turns off the Data API but keeps the database
 
 >>> [CLI] bundle plan
-update postgres_branches.production
 delete postgres_data_apis.my_data_api
-update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 0 to add, 3 to change, 1 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 1 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default/files...
 Deleted postgres_data_apis.my_data_api
-Updated postgres_branches.production
-Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 3 changed, 1 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 1 deleted, 4 unchanged
 
 >>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 Error: Data API is not enabled for this database

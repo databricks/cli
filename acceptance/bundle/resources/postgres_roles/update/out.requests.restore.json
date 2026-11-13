@@ -11,30 +11,12 @@
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role"
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
-  "q": {
-    "update_mask": "spec.display_name,spec.history_retention_duration"
-  },
-  "body": {
-    "spec": {
-      "display_name": "Test Project for Role Update",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  }
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-  "q": {
-    "update_mask": "spec.expiration"
-  },
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  }
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
 }
 {
   "method": "PATCH",

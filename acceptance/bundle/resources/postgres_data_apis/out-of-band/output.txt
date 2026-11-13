@@ -46,21 +46,15 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 === Plan detects the change from status, and deploy restores the config
 
 >>> [CLI] bundle plan
-update postgres_branches.production
 update postgres_data_apis.my_data_api
-update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 0 to add, 4 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/oob-pg-data-api-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.production
 Updated postgres_data_apis.my_data_api
-Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 4 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 
 >>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {
@@ -78,11 +72,7 @@ Resources: 0 created, 4 changed, 0 deleted, 1 unchanged
 }
 
 >>> [CLI] bundle plan
-update postgres_branches.production
-update postgres_databases.my_database
-update postgres_projects.my_project
-
-Plan: 0 to add, 3 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === Disable the Data API out of band
 
@@ -91,21 +81,15 @@ Plan: 0 to add, 3 to change, 0 to delete, 2 unchanged
 === Plan detects the Data API is gone and re-creates it
 
 >>> [CLI] bundle plan
-update postgres_branches.production
 create postgres_data_apis.my_data_api
-update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 1 to add, 3 to change, 0 to delete, 1 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/oob-pg-data-api-[UNIQUE_NAME]/default/files...
 Created postgres_data_apis.my_data_api
-Updated postgres_branches.production
-Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 3 changed, 0 deleted, 1 unchanged
+Resources: 1 created, 0 changed, 0 deleted, 4 unchanged
 
 >>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {

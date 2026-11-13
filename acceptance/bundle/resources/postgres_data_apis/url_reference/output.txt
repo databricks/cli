@@ -30,21 +30,15 @@ Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml db_max_rows: 100 db_max_rows: 500
 
 >>> [CLI] bundle plan
-update postgres_branches.production
 update postgres_data_apis.my_data_api
-update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 0 to add, 4 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 5 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/url-ref-pg-data-api-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.production
 Updated postgres_data_apis.my_data_api
-Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 4 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 5 unchanged
 
 >>> [CLI] jobs get [MY_JOB_ID]
 [
@@ -57,11 +51,7 @@ Resources: 0 created, 4 changed, 0 deleted, 2 unchanged
 === Plan after update shows no changes
 
 >>> [CLI] bundle plan
-update postgres_branches.production
-update postgres_databases.my_database
-update postgres_projects.my_project
-
-Plan: 0 to add, 3 to change, 0 to delete, 3 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

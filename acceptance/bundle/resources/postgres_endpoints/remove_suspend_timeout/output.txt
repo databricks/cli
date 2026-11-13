@@ -29,11 +29,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml       suspend_timeout_duration: 300s 
 
 >>> [CLI] bundle plan
-update postgres_branches.main
-recreate postgres_endpoints.my_endpoint
-update postgres_projects.my_project
+update postgres_endpoints.my_endpoint
 
-Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -50,7 +48,7 @@ Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
     "autoscaling_limit_min_cu": 0.5,
     "autoscaling_limit_max_cu": 8,
-    "suspend_timeout_duration": "86400s"
+    "suspend_timeout_duration": "300s"
   }
 }
 

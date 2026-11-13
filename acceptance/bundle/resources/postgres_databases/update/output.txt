@@ -46,21 +46,14 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 === Verify no changes
 
 >>> [CLI] bundle plan
-update postgres_branches.main
-update postgres_databases.my_database
-update postgres_projects.my_project
-
-Plan: 0 to add, 3 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.main
-Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 3 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -103,21 +96,17 @@ resources:
       role: ${resources.postgres_roles.owner.id}
 
 >>> [CLI] bundle plan
-update postgres_branches.main
 update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 0 to add, 3 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.main
 Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 3 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -138,21 +127,17 @@ Resources: 0 created, 3 changed, 0 deleted, 1 unchanged
 >>> update_file.py databricks.yml postgres_database: renamed_db_name postgres_database: initial_db_name
 
 >>> [CLI] bundle plan
-update postgres_branches.main
 update postgres_databases.my_database
-update postgres_projects.my_project
 
-Plan: 0 to add, 3 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.main
 Updated postgres_databases.my_database
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 3 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

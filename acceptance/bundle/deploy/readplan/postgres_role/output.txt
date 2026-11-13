@@ -24,10 +24,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 >>> [CLI] bundle plan
-update postgres_branches.branch
-update postgres_projects.project
-
-Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

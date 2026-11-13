@@ -11,51 +11,10 @@
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
-  "q": {
-    "update_mask": "spec.display_name,spec.history_retention_duration"
-  },
-  "body": {
-    "spec": {
-      "display_name": "Test Project for Endpoint Update",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-  "q": {
-    "update_mask": "spec.expiration"
-  },
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  }
-}
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
-  "q": {
-    "endpoint_id": "my-endpoint"
-  },
-  "body": {
-    "spec": {
-      "autoscaling_limit_max_cu": 8,
-      "autoscaling_limit_min_cu": 0.5,
-      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
-      "suspend_timeout_duration": "300s"
-    }
-  }
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
 }
