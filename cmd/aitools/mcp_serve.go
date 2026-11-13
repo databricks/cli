@@ -133,6 +133,11 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	}
 	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
 	if err != nil {
+		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
+		// message is the one that names the login.
+		if refreshErr := refresh.failure(); refreshErr != nil {
+			return serveFailure(cmd, refreshErr, serveBindStatus)
+		}
 		if ctx.Err() != nil {
 			// A signal during the start ends serve as a shutdown does, with no line.
 			return nil
@@ -203,11 +208,11 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		switch {
 		case err == nil:
 			signInRequired = svc.SignInRequired
+		case authFailed(err):
+			return nil, err
 		case ctx.Err() != nil:
 			// The serve is stopping, so the read's failure is its cancellation, which is not reported.
 			return nil, ctx.Err()
-		case serveStartStatus(err) == serveBindStatus:
-			return nil, err
 		default:
 			fmt.Fprintf(errOut, "%v; serving it with sign-in handling on\n", err)
 			signInRequired = true
@@ -367,10 +372,16 @@ const serveBindStatus = 2
 // serveStartStatus is the exit status of a failure while serve starts. A credential the profile cannot provide exits
 // with serveBindStatus, as the other binding and auth failures do; any other failure exits 1.
 func serveStartStatus(err error) int {
-	if be, ok := errors.AsType[*mcp.BindError](err); ok && be.Category == mcp.BindAuthFailed {
+	if authFailed(err) {
 		return serveBindStatus
 	}
 	return 1
+}
+
+// authFailed reports whether err is a credential the profile cannot provide.
+func authFailed(err error) bool {
+	be, ok := errors.AsType[*mcp.BindError](err)
+	return ok && be.Category == mcp.BindAuthFailed
 }
 
 // serveFailure prints err to stderr and returns it with the exit status. Execute does not print it again,

@@ -887,12 +887,13 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 	}
 }
 
-// failingGuard returns a refresh guard whose token cannot be refreshed, and records whether the proxy was stopped.
-func failingGuard(stopped *bool) *refreshGuard {
+// failingGuard returns a refresh guard whose token cannot be refreshed. cancel stops the serve, as serve's signal
+// context does.
+func failingGuard(cancel context.CancelFunc) *refreshGuard {
 	return &refreshGuard{
 		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      testProfile,
-		cancel:       func() { *stopped = true },
+		cancel:       cancel,
 	}
 }
 
@@ -1063,13 +1064,14 @@ func TestServeRefreshFailureStopsProxy(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
-			var stopped bool
-			w := guardedTestClient(t, server.URL, failingGuard(&stopped))
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			w := guardedTestClient(t, server.URL, failingGuard(cancel))
 
-			err := call(t.Context(), w)
+			err := call(ctx, w)
 
 			require.Error(t, err)
-			assert.True(t, stopped, "the proxy is stopped")
+			assert.Error(t, ctx.Err(), "the proxy is stopped")
 			assert.Equal(t, serveBindStatus, serveStartStatus(err))
 			assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
 		})
