@@ -500,6 +500,10 @@ func TestChallengeTextAroundSignInURL(t *testing.T) {
 		{"Sign in [", "]"},
 		{`Sign in "`, `".`},
 		{"Sign in '", "';"},
+		{"[Sign in](", ")"},
+		{"<", ">"},
+		{"**", "**"},
+		{"Open **", "** now."},
 	} {
 		t.Run(around.before+"URL"+around.after, func(t *testing.T) {
 			text, err := json.Marshal(around.before + testURL + around.after)
@@ -610,5 +614,22 @@ func TestAuthenticateSendsNoProgressWithoutToken(t *testing.T) {
 	require.NoError(t, p.finish(t))
 
 	require.Len(t, lines, 3)
+	assert.NotContains(t, strings.Join(lines, "\n"), "notifications/progress")
+}
+
+// TestAuthenticateSendsNoProgressForNullToken checks that a progressToken of null is no token: the client asked for no
+// progress, so none is sent.
+func TestAuthenticateSendsNoProgressForNullToken(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
+		req.Progress()
+		return false, true, nil
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":null}}}`)
+	lines := p.waitLines(t, 3)
+	require.NoError(t, p.finish(t))
+
 	assert.NotContains(t, strings.Join(lines, "\n"), "notifications/progress")
 }

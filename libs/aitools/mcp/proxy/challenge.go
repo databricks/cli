@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -19,6 +20,10 @@ const (
 	codeSignInRequired = -32006
 	codeURLElicitation = -32042
 )
+
+// urlPattern finds the http and https URLs in a text. A URL ends at a space or at a character that cannot be in one
+// here, such as a bracket, a quote or an emphasis mark, so the URL of a markdown link or a `<url>` is found too.
+var urlPattern = regexp.MustCompile("https?://[^\\s<>()\\[\\]\"'*`]+")
 
 var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
 
@@ -84,7 +89,7 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 		Params struct {
 			Name string `json:"name"`
 			Meta struct {
-				ProgressToken json.RawMessage `json:"progressToken"`
+				ProgressToken *json.RawMessage `json:"progressToken"`
 			} `json:"_meta"`
 		} `json:"params"`
 	}
@@ -97,7 +102,11 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 	if !challenged {
 		return nil, false
 	}
-	return h.authenticate(ctx, req.ID, req.Params.Meta.ProgressToken, notify), true
+	var progressToken json.RawMessage
+	if req.Params.Meta.ProgressToken != nil {
+		progressToken = *req.Params.Meta.ProgressToken
+	}
+	return h.authenticate(ctx, req.ID, progressToken, notify), true
 }
 
 // Result replaces a challenged tools/list answer with the authenticate tool. A challenged tools/call
@@ -193,12 +202,12 @@ func (h *signInHooks) urlElicitation(data json.RawMessage) bool {
 	return true
 }
 
-// textHasSignInURL reports whether one of the texts has a word that is a sign-in URL. Punctuation around the word, such as
-// the brackets of a sentence or the period that ends it, is not part of the URL.
+// textHasSignInURL reports whether one of the texts contains a sign-in URL. A period, comma or colon after the URL is
+// the punctuation of the sentence, not part of the URL.
 func (h *signInHooks) textHasSignInURL(content []textContent) bool {
 	for _, c := range content {
-		for word := range strings.FieldsSeq(c.Text) {
-			if h.isSignInURL(strings.Trim(word, "([\"'.,;:)]")) {
+		for _, found := range urlPattern.FindAllString(c.Text, -1) {
+			if h.isSignInURL(strings.TrimRight(found, ".,:;")) {
 				return true
 			}
 		}
