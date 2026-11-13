@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -94,4 +95,53 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 	assert.Contains(t, info, "train-R1 (retry 1)")
 	assert.Contains(t, info, "MLflow URL: "+srv.URL+"/ml/experiments/E1/runs/R1\n")
 	assert.Contains(t, logs, "\nMLflow URL (retry 1): "+wantURL+"\n")
+}
+
+func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testing.T) {
+	// Given a failed run whose retry 0 logged to an MLflow run with no name and
+	// whose last retry failed before it started.
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	const mlflowRunID = "0123456789abcdef0123456789abcdef"
+	run := indexRun(7, 1000_000)
+	run.State.ResultState = jobs.RunResultStateFailed
+	task := run.Tasks[0]
+	run.Tasks = nil
+	for attempt, taskRunID := range []int64{70, 71} {
+		task.RunId, task.AttemptNumber = taskRunID, attempt
+		run.Tasks = append(run.Tasks, task)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case aiTrainingWorkflowsPath:
+			_, _ = w.Write([]byte(`{"training_workflows": [{"job_run_id": "7", "submit_time": {"seconds": 1000}}]}`))
+		case "/api/2.2/jobs/runs/get":
+			_ = json.NewEncoder(w).Encode(run)
+		case "/api/2.2/jobs/runs/get-output":
+			if r.URL.Query().Get("run_id") == "70" {
+				_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "` + mlflowRunID + `"}}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	// When the list and the info pane render the run.
+	rows, err := newRunFetcher(ctx, w, listQuery{
+		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10, fetchMLflow: true,
+	}).next(10)
+	require.NoError(t, err)
+	info, err := runDetailText(ctx, w, 7)
+	require.NoError(t, err)
+
+	// Then the list row keeps the end of the ID and the whole retry note within
+	// the column, and the info pane shows the whole ID.
+	require.Len(t, rows, 1)
+	assert.Equal(t, "…56789abcdef (retry 0)", rows[0].MLflowLabel)
+	assert.Equal(t, mlflowColWidth, lipgloss.Width(rows[0].MLflowLabel))
+	assert.Contains(t, info, mlflowRunID+" (retry 0)")
 }

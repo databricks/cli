@@ -577,14 +577,23 @@ func TestEmitNoLogs(t *testing.T) {
 			emitNoLogs(&text, req, tc.status)
 			assert.Equal(t, tc.want, text.String())
 
+			wantNode := strings.Replace(tc.want, "for run 7", "for node 1 in run 7", 1)
+			nodeReq := req
+			nodeReq.node = 1
+			nodeReq.nodeSet = true
+
+			var nodeText bytes.Buffer
+			emitNoLogs(&nodeText, nodeReq, tc.status)
+			assert.Equal(t, wantNode, nodeText.String())
+
 			var jsonBuf bytes.Buffer
-			req.node, req.jsonOutput = 1, true
-			emitNoLogs(&jsonBuf, req, tc.status)
+			nodeReq.jsonOutput = true
+			emitNoLogs(&jsonBuf, nodeReq, tc.status)
 			var ev logEvent
 			require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
 			assert.Equal(t, "ERROR", ev.Type)
 			assert.Equal(t, 1, ev.Node)
-			assert.Equal(t, strings.TrimRight(tc.want, "\n"), ev.Line)
+			assert.Equal(t, strings.TrimRight(wantNode, "\n"), ev.Line)
 		})
 	}
 }

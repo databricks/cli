@@ -156,14 +156,16 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
-// "...{last 8 of run id}" when the name is unknown. Mirrors Python's
-// _get_mlflow_run_name (cli_display.py).
-func mlflowRunLabel(name, mlflowRunID string) string {
-	if name != "" {
-		return name
+// its run ID when the name is unknown. A label wider than width keeps its end
+// behind a leading "…", because run names often share a prefix and differ at
+// the end. A width of 0 or less means no limit.
+func mlflowRunLabel(name, mlflowRunID string, width int) string {
+	label := name
+	if label == "" {
+		label = mlflowRunID
 	}
-	if len(mlflowRunID) > 8 {
-		return "..." + mlflowRunID[len(mlflowRunID)-8:]
+	if width <= 0 {
+		return label
 	}
-	return "..." + mlflowRunID
+	return truncateStart(label, width)
 }

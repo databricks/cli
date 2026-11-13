@@ -97,11 +97,15 @@ func newListCommand() *cobra.Command {
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or full YAML type. Examples:
+                    A10, H100, GPU_1xA10, GPU_8xH100.
+                    Workspace types: databricks air run -h config.compute.accelerator_type
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
 		Example: `  databricks air list --filter accelerator_type=H100
+
+  databricks air list --filter accelerator_type=GPU_8xH100
 
   databricks air list --all-status \
     --filter 'experiment=qwen*' \
@@ -127,6 +131,9 @@ Filters:
 		f, err := parseListFilters(filters)
 		if err != nil {
 			return err
+		}
+		if f.AcceleratorType != "" {
+			configureAcceleratorFilter(&f)
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
@@ -162,6 +169,11 @@ Filters:
 			limit:       limit,
 			workspaceID: workspaceID,
 		})
+		if f.AcceleratorType != "" {
+			fetcher.validateEmpty = func() error {
+				return validateEmptyAcceleratorFilter(ctx, w, f.AcceleratorType)
+			}
+		}
 
 		// JSON prints the newest `limit` runs once. Text renders the table:
 		// navigable in a terminal (paging in older runs on demand), printed once
@@ -180,6 +192,15 @@ Filters:
 	return cmd
 }
 
+func validateEmptyAcceleratorFilter(ctx context.Context, w *databricks.WorkspaceClient, value string) error {
+	options, err := listWorkspaceComputeOptions(ctx, w)
+	if err != nil {
+		log.Debugf(ctx, "air list: could not validate accelerator filter against workspace compute options: %v", err)
+		return fmt.Errorf("no runs matched --filter accelerator_type=%q\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", value)
+	}
+	return validateAcceleratorFilter(value, options)
+}
+
 // listStrategy is a source of matching runs, pulled in batches. Two implement it:
 // jobsScanStrategy pages runs/list; indexStrategy hydrates the AiTrainingService
 // index. The fetcher wraps whichever is chosen.
@@ -196,13 +217,16 @@ type listStrategy interface {
 // the interactive table's lazy paging. It wraps a listStrategy and adds the
 // shared tail: MLflow enrichment (text only) and row projection.
 type runFetcher struct {
-	ctx         context.Context
-	w           *databricks.WorkspaceClient
-	fetchMLflow bool
-	strategy    listStrategy
-	workspaceID int64
+	ctx           context.Context
+	w             *databricks.WorkspaceClient
+	fetchMLflow   bool
+	strategy      listStrategy
+	workspaceID   int64
+	validateEmpty func() error
 
-	exhausted bool
+	exhausted      bool
+	matchedAny     bool
+	validatedEmpty bool
 }
 
 func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
@@ -242,6 +266,15 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 		return nil, err
 	}
 	f.exhausted = f.strategy.done()
+	if len(entries) > 0 {
+		f.matchedAny = true
+	}
+	if len(entries) == 0 && f.exhausted && !f.matchedAny && f.validateEmpty != nil && !f.validatedEmpty {
+		f.validatedEmpty = true
+		if err := f.validateEmpty(); err != nil {
+			return nil, err
+		}
+	}
 
 	// MLflow links appear only in the text table, so the per-run get-output
 	// lookups are skipped for JSON output (which omits the column anyway).
@@ -350,9 +383,9 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			}
 			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
 			name := fetchMLflowRunName(ctx, w, ids.RunID)
-			// Shorten the name, not the retry note, to fit the column.
+			// Shorten the label, not the retry note, to fit the column.
 			note := ids.retryNote()
-			entries[i].row.MLflowLabel = truncate(mlflowRunLabel(name, ids.RunID), mlflowColWidth-len(note)) + note
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID, mlflowColWidth-len(note)) + note
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).

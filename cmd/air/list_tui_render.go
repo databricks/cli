@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 )
 
@@ -282,11 +283,29 @@ func pad(s string, n int, right bool) string {
 
 // truncate shortens s to a visible width of n, appending "…" on overflow.
 func truncate(s string, n int) string {
-	if lipgloss.Width(s) <= n {
+	return ansi.Truncate(s, n, "…")
+}
+
+// truncateStart shortens s to a visible width of n, keeping its end behind a
+// leading "…" on overflow.
+func truncateStart(s string, n int) string {
+	width := lipgloss.Width(s)
+	if width <= n {
 		return s
 	}
 	if n <= 1 {
+		return truncate(s, n)
+	}
+	// TruncateLeft never splits a character, so a cut that lands inside a
+	// two-cell character leaves the result one cell too wide.
+	cut := width - (n - 1)
+	out := ansi.TruncateLeft(s, cut, "…")
+	if lipgloss.Width(out) > n {
+		out = ansi.TruncateLeft(s, cut+1, "…")
+	}
+	// TruncateLeft drops the "…" when nothing of s is left.
+	if out == "" {
 		return "…"
 	}
-	return string([]rune(s)[:n-1]) + "…"
+	return out
 }
