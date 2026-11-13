@@ -1,6 +1,8 @@
 package configsync
 
 import (
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -379,4 +382,39 @@ func TestWithoutCurrentUserManage(t *testing.T) {
 		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
 		{Level: iam.PermissionLevelCanView, GroupName: "users"},
 	}, withoutCurrentUserManage(permissions, "me@example.com"))
+}
+
+func TestUnmanagedPermissionsAdapters(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.Adapters = adapters
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.unmanaged":            {Action: deployplan.Skip},
+		"resources.jobs.declared":             {Action: deployplan.Skip},
+		"resources.jobs.declared.permissions": {Action: deployplan.Skip},
+		"resources.jobs.removed":              {Action: deployplan.Update},
+		"resources.jobs.removed.permissions":  {Action: deployplan.Delete},
+		"resources.jobs.not_deployed":         {Action: deployplan.Create},
+		"resources.pipelines.unmanaged":       {Action: deployplan.Skip},
+		"resources.secret_scopes.scope":       {Action: deployplan.Skip},
+		"resources.schemas.schema":            {Action: deployplan.Skip},
+		"resources.schemas.schema.grants":     {Action: deployplan.Skip},
+	}}
+
+	assert.ElementsMatch(t,
+		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.pipelines.unmanaged"},
+		slices.Collect(maps.Keys(unmanagedPermissionsAdapters(b, plan))),
+	)
+}
+
+func TestLookupDeployedFieldReadsRemoteState(t *testing.T) {
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.RemoteStateCache.Store("resources.model_serving_endpoints.my_endpoint",
+		&dresources.ModelServingEndpointRemote{EndpointId: "abc123"})
+
+	value, err := lookupDeployedField(b, structpath.MustParsePath("resources.model_serving_endpoints.my_endpoint.endpoint_id"))
+	require.NoError(t, err)
+	assert.Equal(t, "abc123", value)
 }

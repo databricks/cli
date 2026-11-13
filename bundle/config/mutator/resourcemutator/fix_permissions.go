@@ -156,7 +156,7 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 	}
 
 	levelPerPrincipal := make(map[string]string)
-	firstPermission := make(map[string]dyn.Value)
+	maxPermission := make(map[string]dyn.Value)
 	var principals []string
 
 	for _, permission := range permissionArray {
@@ -169,20 +169,23 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 		if principal == "" {
 			continue
 		}
-		_, ok = firstPermission[principal]
+		_, ok = maxPermission[principal]
 		if !ok {
-			firstPermission[principal] = permission
 			principals = append(principals, principal)
 		}
-		levelPerPrincipal[principal] = resources.GetMaxLevel(levelPerPrincipal[principal], level)
+		maxLevel := resources.GetMaxLevel(levelPerPrincipal[principal], level)
+		if maxLevel != levelPerPrincipal[principal] {
+			maxPermission[principal] = permission
+		}
+		levelPerPrincipal[principal] = maxLevel
 	}
 
 	var newPermissions []dyn.Value
 
 	for _, principal := range principals {
 		permission := createPermissionFromPrincipal(principal, levelPerPrincipal[principal])
-		// Keep an unchanged entry as is: its source location lets config-remote-sync write it back.
-		if original := firstPermission[principal]; reflect.DeepEqual(original.AsAny(), permission.AsAny()) {
+		// Keep the entry that sets the level as is: its source location lets config-remote-sync write it back.
+		if original := maxPermission[principal]; reflect.DeepEqual(original.AsAny(), permission.AsAny()) {
 			permission = original
 		}
 		newPermissions = append(newPermissions, permission)

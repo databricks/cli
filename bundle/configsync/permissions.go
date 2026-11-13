@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"golang.org/x/sync/errgroup"
@@ -115,8 +116,8 @@ func (c Changes) set(resourceKey, fieldPath string, change *ConfigChangeDesc) {
 	c[resourceKey][fieldPath] = change
 }
 
-// readUnmanagedPermissions reads the remote permissions of deployed resources whose config and
-// state have none, keyed by resource. They are imported as a whole: the current ACL cannot tell
+// readUnmanagedPermissions reads the remote permissions of deployed resources whose config
+// declares none, keyed by resource. They are imported as a whole: the current ACL cannot tell
 // grants made before the deployment from the ones made since.
 func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) map[string][]dresources.StatePermission {
 	var mu sync.Mutex
@@ -125,18 +126,9 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 	result := make(map[string][]dresources.StatePermission)
 	currentUser := currentUserName(b)
 
-	for resourceKey, entry := range plan.Plan {
-		permissionsKey := resourceKey + ".permissions"
-		if isPermissionsOrGrantsSubResource(resourceKey) || !entry.Action.KeepsID() || plan.Plan[permissionsKey] != nil {
-			continue
-		}
-		adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
-		if adapter == nil || adapter.RemoteType() != reflect.TypeFor[*dresources.PermissionsState]() {
-			continue
-		}
-
+	for resourceKey, adapter := range unmanagedPermissionsAdapters(b, plan) {
 		g.Go(func() error {
-			permissions, err := readPermissions(ctx, b, adapter, permissionsKey)
+			permissions, err := readPermissions(ctx, b, adapter, resourceKey+".permissions")
 			if err != nil {
 				// A user who can deploy a resource is not necessarily allowed to read its ACL.
 				log.Warnf(ctx, "reading permissions of %s: %s", resourceKey, err)
@@ -156,6 +148,27 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 	return result
 }
 
+// unmanagedPermissionsAdapters returns the permissions adapter of every deployed resource whose
+// config declares no permissions. A state-only permissions entry is deleted on the next deploy
+// without changing the ACL, so it does not count.
+func unmanagedPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[string]*dresources.Adapter {
+	result := make(map[string]*dresources.Adapter)
+	for resourceKey, entry := range plan.Plan {
+		if isPermissionsOrGrantsSubResource(resourceKey) || !entry.Action.KeepsID() {
+			continue
+		}
+		permissionsKey := resourceKey + ".permissions"
+		if permissions := plan.Plan[permissionsKey]; permissions != nil && permissions.Action != deployplan.Delete {
+			continue
+		}
+		adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
+		if adapter != nil && adapter.RemoteType() == reflect.TypeFor[*dresources.PermissionsState]() {
+			result[resourceKey] = adapter
+		}
+	}
+	return result
+}
+
 func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.Adapter, permissionsKey string) ([]dresources.StatePermission, error) {
 	sv, err := adapter.PrepareInputConfig([]dresources.StatePermission{}, permissionsKey)
 	if err != nil {
@@ -172,7 +185,7 @@ func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.
 		if err != nil {
 			return nil, err
 		}
-		value, err := b.DeploymentBundle.LookupReferencePreDeploy(ctx, path)
+		value, err := lookupDeployedField(b, path)
 		if err != nil {
 			return nil, fmt.Errorf("resolving %s: %w", target, err)
 		}
@@ -191,12 +204,27 @@ func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.
 	return remote.(*dresources.PermissionsState).EmbeddedSlice, nil
 }
 
+// lookupDeployedField reads a field of a deployed resource, such as the ID its permissions are
+// keyed by. The plan drops the new state of unchanged resources, so other fields come from the
+// remote state it read.
+func lookupDeployedField(b *bundle.Bundle, path *structpath.PathNode) (any, error) {
+	resourceKey, field := path.Prefix(3).String(), path.SkipPrefix(3)
+	if field.String() == "id" {
+		return b.DeploymentBundle.StateDB.GetResourceID(resourceKey), nil
+	}
+	remote, ok := b.DeploymentBundle.RemoteStateCache.Load(resourceKey)
+	if !ok {
+		return nil, fmt.Errorf("no remote state for %s", resourceKey)
+	}
+	return structaccess.Get(remote, field)
+}
+
 // withoutCurrentUserManage drops the current user's IS_OWNER and CAN_MANAGE, one of which
 // FixPermissions adds on deploy. Another principal's IS_OWNER is kept, so a transferred owner
 // stays the owner after the next deploy.
 func withoutCurrentUserManage(permissions []dresources.StatePermission, currentUser string) []dresources.StatePermission {
 	return slices.DeleteFunc(permissions, func(p dresources.StatePermission) bool {
-		isCurrentUser := p.UserName == currentUser || p.ServicePrincipalName == currentUser
+		isCurrentUser := currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
 		return isCurrentUser && (p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage)
 	})
 }

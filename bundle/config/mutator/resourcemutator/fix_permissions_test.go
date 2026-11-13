@@ -32,18 +32,19 @@ func TestGetMaxLevel(t *testing.T) {
 	assert.Equal(t, "UNKNOWN_B", resources.GetMaxLevel("UNKNOWN_B", "UNKNOWN_A"))
 }
 
-func TestUseMaximumLevelKeepsUnchangedEntries(t *testing.T) {
-	loc := []diag.Location{{File: "databricks.yml", Line: 10}}
-	viewer := dyn.NewValue(map[string]dyn.Value{"level": dyn.V("CAN_VIEW"), "user_name": dyn.V("viewer@example.com")}, loc)
-	raised := dyn.NewValue(map[string]dyn.Value{"level": dyn.V("CAN_VIEW"), "group_name": dyn.V("users")}, loc)
-	duplicate := dyn.V(map[string]dyn.Value{"level": dyn.V("CAN_MANAGE"), "group_name": dyn.V("users")})
+func TestUseMaximumLevelKeepsDeclaredEntries(t *testing.T) {
+	viewerLoc := []diag.Location{{File: "databricks.yml", Line: 10}}
+	managerLoc := []diag.Location{{File: "databricks.yml", Line: 14}}
+	viewer := dyn.NewValue(map[string]dyn.Value{"level": dyn.V("CAN_VIEW"), "user_name": dyn.V("viewer@example.com")}, viewerLoc)
+	lower := dyn.NewValue(map[string]dyn.Value{"level": dyn.V("CAN_VIEW"), "group_name": dyn.V("users")}, viewerLoc)
+	higher := dyn.NewValue(map[string]dyn.Value{"level": dyn.V("CAN_MANAGE"), "group_name": dyn.V("users")}, managerLoc)
 
-	result, err := useMaximumLevel(dyn.V([]dyn.Value{viewer, raised, duplicate}), "jobs")
+	result, err := useMaximumLevel(dyn.V([]dyn.Value{viewer, lower, higher}), "jobs")
 	require.NoError(t, err)
 
 	permissions := result.MustSequence()
 	require.Len(t, permissions, 2)
-	assert.Equal(t, loc, permissions[0].Locations())
-	assert.Empty(t, permissions[1].Locations())
+	assert.Equal(t, viewerLoc, permissions[0].Locations())
+	assert.Equal(t, managerLoc, permissions[1].Locations())
 	assert.Equal(t, "CAN_MANAGE", permissions[1].Get("level").MustString())
 }
