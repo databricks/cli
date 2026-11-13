@@ -63,15 +63,15 @@ func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
 	if a == nil {
 		return ctx
 	}
-	tooling := a.DatabricksTooling(ctx, func() bool { return globalPluginRecorded(ctx, a.Name) })
+	tooling := a.DatabricksTooling(ctx, func() bool { return GlobalPluginRecorded(ctx, a.Name) })
 	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, tooling.String())
 }
 
-// globalPluginRecorded reports whether the global CLI install state records a
+// GlobalPluginRecorded reports whether the global CLI install state records a
 // databricks plugin install for the agent. Only the global state is read: the
 // CLI installs plugins in project scope only for agents with SupportsProjectScope
 // (see mapAgentScope in cmd/aitools), and those have a manifest reader.
-func globalPluginRecorded(ctx context.Context, agentName string) bool {
+func GlobalPluginRecorded(ctx context.Context, agentName string) bool {
 	dir, err := GlobalSkillsDir(ctx)
 	if err != nil {
 		return false

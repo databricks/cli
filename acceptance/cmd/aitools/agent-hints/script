@@ -1,0 +1,27 @@
+# aitools commands skip the install hint; version exercises it without auth or network.
+sethome ./home
+unset XDG_CONFIG_HOME GEMINI_CLI_HOME CODEX_THREAD_ID
+
+title "Codex is hinted once per thread"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI version
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI version
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI version
+
+title "Cursor exposes no session id, so it is hinted once per machine"
+trace CURSOR_AGENT=1 $CLI version
+trace CURSOR_AGENT=1 $CLI version
+
+title "Copilot CLI maps to the copilot registry agent"
+trace COPILOT_CLI=1 $CLI version
+
+title "Gemini CLI with its own Databricks skills is not hinted"
+sethome ./gemini-home
+trace GEMINI_CLI=1 $CLI version
+sethome ./home
+
+title "Agents the CLI cannot install for are not hinted"
+trace WINDSURF_AGENT=1 $CLI version
+trace VSCODE_AGENT=1 $CLI version
+
+title "Nested agents are not hinted"
+trace CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 $CLI version
