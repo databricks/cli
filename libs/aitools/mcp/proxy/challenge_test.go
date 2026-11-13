@@ -247,11 +247,11 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	p.send(t, fmt.Sprintf(authenticate, 5))
 	p.waitLines(t, 3)
 	p.send(t, fmt.Sprintf(authenticate, 6))
-	lines := p.waitLines(t, 4)
+	lines := p.waitLines(t, 5)
 
 	assert.Equal(t, []bool{true, true}, signIn.calls(), "a sign-in that completed does not hold the page back")
 	assert.Contains(t, lines[3], "Already signed in to system.ai.github")
-	assert.NotContains(t, lines[3:], listChangedMsg, "an answer that changed nothing does not ask the agent to list again")
+	assert.Equal(t, listChangedMsg, lines[4], "an agent whose list still shows only authenticate is asked to list again")
 	require.NoError(t, p.finish(t))
 }
 
@@ -534,12 +534,13 @@ func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testi
 	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
 	challenge(t, p)
 
+	// "Already signed in" is followed by tools/list_changed.
 	p.send(t, fmt.Sprintf(authenticate, 5))
-	p.waitLines(t, 2)
-	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
 	p.waitLines(t, 3)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 4)
 	p.send(t, fmt.Sprintf(authenticate, 7))
-	lines := p.waitLines(t, 4)
+	lines := p.waitLines(t, 5)
 	require.NoError(t, p.finish(t))
 
 	reqs := signIn.requests()
@@ -547,7 +548,8 @@ func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testi
 	assert.False(t, reqs[0].Restart)
 	assert.True(t, reqs[1].Restart, "the sign-in after the challenge starts from no credential")
 	assert.Contains(t, lines[1], "Already signed in to system.ai.github")
-	assert.Contains(t, lines[3], "Signed in to system.ai.github")
+	assert.Equal(t, listChangedMsg, lines[2])
+	assert.Contains(t, lines[4], "Signed in to system.ai.github")
 }
 
 // TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential checks that a second authenticate that is not preceded by a

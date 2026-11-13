@@ -294,8 +294,13 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 
 	switch {
 	case err == nil && alreadySignedIn:
-		// The credential was already there, so nothing changed for the agent's tool list.
-		return [][]byte{toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false)}
+		// The credential was already there, for example from `mcp login` in a terminal, while the agent's tool list
+		// still shows only authenticate, so the agent is still asked to list again. If the service challenges again
+		// after this answer, the next authenticate starts a new sign-in instead.
+		return [][]byte{
+			toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
+			listChangedNotification,
+		}
 	case err == nil:
 		return [][]byte{
 			toolResult(id, fmt.Sprintf("Signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
