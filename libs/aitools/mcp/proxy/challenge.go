@@ -25,7 +25,9 @@ const (
 
 // urlPattern finds the http and https URLs in a text. A URL ends at a space or at a character that cannot be in one
 // here, such as a bracket, a quote or an emphasis mark, so the URL of a markdown link or a `<url>` is found too.
-var urlPattern = regexp.MustCompile("https?://[^\\s<>()\\[\\]\"'*`]+")
+var urlPattern = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile("https?://[^\\s<>()\\[\\]\"'*`]+")
+})
 
 // queueProgressInterval is how often a call that waits for the sign-in ahead of it reports progress. Tests shorten it.
 var queueProgressInterval = 2 * time.Second
@@ -291,7 +293,7 @@ func (h *signInHooks) urlElicitation(data json.RawMessage) bool {
 // the punctuation of the sentence, not part of the URL.
 func (h *signInHooks) textHasSignInURL(content []textContent) bool {
 	for _, c := range content {
-		for _, found := range urlPattern.FindAllString(c.Text, -1) {
+		for _, found := range urlPattern().FindAllString(c.Text, -1) {
 			if h.isSignInURL(strings.TrimRight(found, ".,:;")) {
 				return true
 			}

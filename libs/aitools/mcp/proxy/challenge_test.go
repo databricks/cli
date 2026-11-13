@@ -1140,3 +1140,10 @@ func TestProgressIsNotSentAfterCancel(t *testing.T) {
 		assert.NotContains(t, line, "notifications/progress", "a cancelled call gets no progress")
 	}
 }
+
+// TestURLPatternFindsURLsInText checks that a sign-in URL is found in the text of a tool result, both in a markdown link
+// and between angle brackets, and that the punctuation around it is left out.
+func TestURLPatternFindsURLsInText(t *testing.T) {
+	text := "Open [the page](" + testURL + ") or <" + testHost + "/x>."
+	assert.Equal(t, []string{testURL, testHost + "/x"}, urlPattern().FindAllString(text, -1))
+}
