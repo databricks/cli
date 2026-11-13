@@ -144,21 +144,21 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	return action(ctx, errOut, w, out)
 }
 
-// signInService returns the service of a sign-in command. A service the profile cannot see is an error, so that a
-// misspelled name is reported rather than treated as a service with no sign-in.
-func signInService(ctx context.Context, w *databricks.WorkspaceClient, out *mcpSignInOutput) (mcp.Service, error) {
-	svc, err := mcp.GetService(ctx, w, out.Service)
+// serviceFor returns the service with its sign-in requirement, as the profile sees it. A service the profile cannot see
+// is an error, so that a misspelled name is reported rather than treated as a service with no sign-in.
+func serviceFor(ctx context.Context, w *databricks.WorkspaceClient, profileName, service string) (mcp.Service, error) {
+	svc, err := mcp.GetService(ctx, w, service)
 	if mcp.IsNotFound(err) {
-		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", out.Service, out.Profile)
+		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", service, profileName)
 	}
 	if err != nil {
-		return mcp.Service{}, describeRequestError(out.Profile, err)
+		return mcp.Service{}, describeRequestError(profileName, err)
 	}
 	return svc, nil
 }
 
 func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
-	svc, err := signInService(ctx, w, out)
+	svc, err := serviceFor(ctx, w, out.Profile, out.Service)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 }
 
 func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
-	if _, err := signInService(ctx, w, out); err != nil {
+	if _, err := serviceFor(ctx, w, out.Profile, out.Service); err != nil {
 		return err
 	}
 	deleted, err := mcp.SignOut(ctx, w, out.Service)
