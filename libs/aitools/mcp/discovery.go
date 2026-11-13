@@ -20,7 +20,8 @@ import (
 const mcpServicePrefix = "mcp-services/"
 
 // PathSafeName reports whether fullName is free of the characters that change a request path: "/", "?", "#", "%" and
-// control characters. A service name never contains them, so a name that has one is refused, not escaped.
+// control characters. A service name never contains them, so the commands refuse a name that has one, before any
+// request. Names read from the state are escaped by the library instead.
 func PathSafeName(fullName string) bool {
 	return !strings.ContainsAny(fullName, "/?#%") && !strings.ContainsFunc(fullName, unicode.IsControl)
 }
