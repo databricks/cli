@@ -97,8 +97,8 @@ func (e *Executor) WithInheritOutput() {
 	e.inheritOutput = true
 }
 
-// WithInheritOutputToStderr is WithInheritOutput, except that the command's stdout goes to stderr. A command that holds
-// its stdout open after it returns does not hold up Wait.
+// WithInheritOutputToStderr is WithInheritOutput, except that the command's stdout goes to stderr. The output is not
+// piped, so Wait does not wait for a child that the command leaves holding its output open.
 func (e *Executor) WithInheritOutputToStderr() {
 	e.inheritOutput = true
 	e.stdoutToStderr = true

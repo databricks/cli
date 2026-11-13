@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	osexec "os/exec"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
@@ -39,6 +40,36 @@ func TestExecutorWithStderr(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	assert.Equal(t, "Hello\nError\n", string(out))
+}
+
+// TestExecutorWithInheritOutputToStderrSendsStdoutToStderr checks that the command's stdout goes to the process's stderr,
+// as the browser command's does for JSON output, and that its stderr stays on stderr.
+func TestExecutorWithInheritOutputToStderrSendsStdoutToStderr(t *testing.T) {
+	dir := t.TempDir()
+	stdoutFile, err := os.Create(filepath.Join(dir, "stdout"))
+	require.NoError(t, err)
+	defer stdoutFile.Close()
+	stderrFile, err := os.Create(filepath.Join(dir, "stderr"))
+	require.NoError(t, err)
+	defer stderrFile.Close()
+	prevStdout, prevStderr := os.Stdout, os.Stderr
+	os.Stdout, os.Stderr = stdoutFile, stderrFile
+	defer func() { os.Stdout, os.Stderr = prevStdout, prevStderr }()
+
+	executor, err := NewCommandExecutor(".")
+	require.NoError(t, err)
+	executor.WithInheritOutputToStderr()
+	cmd, err := executor.StartCommand(t.Context(), "echo 'Hello' && >&2 echo 'Error'")
+	require.NoError(t, err)
+	require.NoError(t, cmd.Wait())
+
+	gotStdout, err := os.ReadFile(stdoutFile.Name())
+	require.NoError(t, err)
+	gotStderr, err := os.ReadFile(stderrFile.Name())
+	require.NoError(t, err)
+	assert.Empty(t, gotStdout)
+	assert.Contains(t, string(gotStderr), "Hello")
+	assert.Contains(t, string(gotStderr), "Error")
 }
 
 func TestExecutorWithInvalidCommand(t *testing.T) {
