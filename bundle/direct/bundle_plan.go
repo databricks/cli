@@ -437,6 +437,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// lifecycle.prevent_destroy is kept next to the state, not in it, so toggling it alone
+		// leaves the resource unchanged. Mark the skip so the apply still rewrites the state entry.
+		if action == deployplan.Skip && dbentry.PreventDestroy != entry.PreventDestroy {
+			entry.PreventDestroyChanged = true
+		}
+
 		entry.Action = action
 		return true
 	})
@@ -1764,8 +1770,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		e := deployplan.PlanEntry{
-			DependsOn: dependsOn,
-			NewState:  newStateJSON,
+			DependsOn:      dependsOn,
+			PreventDestroy: LifecyclePreventDestroy(inputConfig),
+			NewState:       newStateJSON,
 		}
 
 		p.Plan[node] = &e
@@ -1785,8 +1792,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action:    deployplan.Delete,
-			DependsOn: entry.DependsOn,
+			Action:         deployplan.Delete,
+			DependsOn:      entry.DependsOn,
+			PreventDestroy: entry.PreventDestroy,
 		}
 	}
 
@@ -1880,6 +1888,16 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 }
 
 const lifecycleDependsOnLabel = "depends_on"
+
+// LifecyclePreventDestroy returns lifecycle.prevent_destroy of a resource, given its config as
+// returned by [config.Root.GetResourceConfig]. Nodes without a lifecycle (permissions, grants)
+// are never protected on their own: they are deleted with their parent, which is.
+func LifecyclePreventDestroy(inputConfig any) bool {
+	resource, ok := inputConfig.(interface {
+		GetLifecycle() resources.LifecycleConfig
+	})
+	return ok && resource.GetLifecycle().HasPreventDestroy()
+}
 
 // LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
 // given its config as returned by [config.Root.GetResourceConfig].

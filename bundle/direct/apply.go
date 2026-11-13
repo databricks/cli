@@ -99,7 +99,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, nil)
+	err = d.saveState(ctx, db, newID, newState, nil)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -197,7 +197,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
+		err = d.saveState(ctx, db, id, newState, planEntry.RemoteState)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -246,7 +246,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, planEntry.RemoteState)
+	err = d.saveState(ctx, db, newID, newState, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -276,7 +276,7 @@ func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, 
 	}
 	log.Infof(ctx, "Re-keyed %s id=%#v (previously %#v)", d.ResourceKey, newID, oldID)
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, planEntry.RemoteState)
+	err = d.saveState(ctx, db, newID, newState, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", newID, err)
 	}
@@ -286,7 +286,7 @@ func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, 
 // RecordState saves the state at its ID without a backend call. A state-only update does this to
 // record the internal ID the state lacks, from the plan's remote state.
 func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
-	err := d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
+	err := d.saveState(ctx, db, id, newState, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -365,12 +365,24 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(ctx, db, id, newState, d.DependsOn, entry.RemoteState)
+	err = d.saveState(ctx, db, id, newState, entry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil
+}
+
+// RecordPreventDestroy rewrites the resource's state entry with the planned lifecycle.prevent_destroy,
+// keeping its id and state. For a resource the plan skips: nothing is sent to the backend, but the
+// flag changed and the next plan must read the new value from the state.
+func (d *DeploymentUnit) RecordPreventDestroy(ctx context.Context, db *dstate.DeploymentState) error {
+	entry, ok := db.GetResourceEntry(d.ResourceKey)
+	if !ok {
+		return errors.New("state entry not found")
+	}
+	log.Infof(ctx, "Recording lifecycle.prevent_destroy=%t for %s id=%#v", d.PreventDestroy, d.ResourceKey, entry.ID)
+	return db.SaveState(ctx, d.ResourceKey, entry.ID, entry.State, d.DependsOn, d.PreventDestroy)
 }
 
 // saveState compacts the state (replacing fields declared in hashed_fields
@@ -381,7 +393,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 // It first records the internal ID in state (see ResourceLifecycleConfig.InternalIDField), from the
 // remote state the operation returned or else from planRemote, the object as the plan read it (nil
 // for a new object).
-func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry, planRemote any) error {
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state, planRemote any) error {
 	remote := d.RemoteState
 	if remote == nil {
 		remote = planRemote
@@ -397,7 +409,7 @@ func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentSta
 	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(ctx, d.ResourceKey, newID, compacted, dependsOn)
+	return db.SaveState(ctx, d.ResourceKey, newID, compacted, d.DependsOn, d.PreventDestroy)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

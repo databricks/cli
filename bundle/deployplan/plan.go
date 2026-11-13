@@ -146,10 +146,19 @@ type PlanEntry struct {
 	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
 	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
 	//     likewise left out of the textual plan and counted as unchanged.
-	StateOnly   bool                     `json:"state_only,omitempty"`
-	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
-	RemoteState any                      `json:"remote_state,omitempty"`
-	Changes     Changes                  `json:"changes,omitempty"`
+	StateOnly bool `json:"state_only,omitempty"`
+	// PreventDestroy is the resource's lifecycle.prevent_destroy: as configured, or for a Delete
+	// entry of a resource the configuration no longer declares, as its last deployment recorded
+	// it in the state. Applying the entry persists it with the resource state so that a later
+	// plan can still read it once the resource is removed from the configuration.
+	PreventDestroy bool `json:"prevent_destroy,omitempty"`
+	// PreventDestroyChanged is set on Skip entries whose recorded PreventDestroy differs from
+	// the configured one. The resource itself is unchanged, so applying the entry only rewrites
+	// its state entry; no backend call is made.
+	PreventDestroyChanged bool                     `json:"prevent_destroy_changed,omitempty"`
+	NewState              *structvar.StructVarJSON `json:"new_state,omitempty"`
+	RemoteState           any                      `json:"remote_state,omitempty"`
+	Changes               Changes                  `json:"changes,omitempty"`
 }
 
 // IsStateOnly reports whether applying this entry makes no backend call and only changes the
@@ -267,10 +276,12 @@ func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
 		actions = append(actions, Action{
-			ResourceKey: key,
-			ActionType:  entry.Action,
-			Gone:        entry.Gone,
-			StateOnly:   entry.StateOnly,
+			ResourceKey:           key,
+			ActionType:            entry.Action,
+			Gone:                  entry.Gone,
+			StateOnly:             entry.StateOnly,
+			PreventDestroy:        entry.PreventDestroy,
+			PreventDestroyChanged: entry.PreventDestroyChanged,
 		})
 	}
 

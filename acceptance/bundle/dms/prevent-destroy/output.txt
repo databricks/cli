@@ -1,0 +1,89 @@
+
+=== Deploy a protected job: prevent_destroy is recorded in the state the service holds
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions/1/operations
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "[FOO_ID]",
+    "sequence_id": 0,
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[DEPLOYMENT_ID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}},\"prevent_destroy\":true}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== Removing the job from the config: deploy and destroy refuse to delete it
+
+>>> [CLI] bundle plan
+delete jobs.foo
+
+Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
+Error: resources.jobs.foo was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+
+Files: 1 uploaded, 1 deleted
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: resources.jobs.foo was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+
+
+=== Adding it back with prevent_destroy: false leaves the job unchanged, but records the flag as an update of its state
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 1 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --dms //versions/2/operations
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "[FOO_ID]",
+    "sequence_id": 0,
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[DEPLOYMENT_ID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== The job can now be removed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-prevent-destroy-[UNIQUE_NAME]/default/files...
+Deleted jobs.foo
+Files: 0 uploaded, 1 deleted
+Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions/3/operations
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "",
+    "sequence_id": 0,
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
