@@ -7,6 +7,8 @@
 === Diagnostics go to stderr only
 
 >>> cat LOG.stderr
+
+>>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
 No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
 
 === An agent this binary does not know is accepted
@@ -15,5 +17,7 @@ No install record for system.ai.genie_one_mcp on profile "logfood"; using its cu
 {"id":3,"instructions":null,"tools":[],"text":"hello","error":null}
 
 >>> cat LOG.future
+
+>>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent
 No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
 unknown agent "future-agent"; it is left out of the User-Agent

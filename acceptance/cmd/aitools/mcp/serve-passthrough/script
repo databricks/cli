@@ -11,12 +11,12 @@ MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=sch
 
 # Responses may arrive in any order, so they are sorted by id. jq -s also fails when any stdout line is not JSON.
 title "Stdout holds one JSON-RPC message per line; the notification gets no reply"
-$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
 
 title "Diagnostics go to stderr only"
 trace cat LOG.stderr
 
 # An agent this binary does not know still serves; it is left out of the User-Agent, with one line on stderr.
 title "An agent this binary does not know is accepted"
-$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent < requests.ndjson 2> LOG.future | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
+trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent future-agent < requests.ndjson 2> LOG.future | jq -sc 'sort_by(.id)[] | {id, instructions: .result.instructions, tools: [.result.tools[]?.name], text: .result.content[0].text, error}'
 trace cat LOG.future
