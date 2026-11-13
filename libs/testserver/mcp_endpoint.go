@@ -3,7 +3,6 @@ package testserver
 import (
 	"encoding/json"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -17,8 +16,6 @@ const (
 	// rpcCodeSignInRequired is the gateway's answer to a service that needs a credential the
 	// caller does not have.
 	rpcCodeSignInRequired = -32006
-	// rpcCodeURLElicitation is the gateway's URL elicitation answer, which carries the sign-in page.
-	rpcCodeURLElicitation = -32042
 )
 
 const (
@@ -38,24 +35,11 @@ type mcpRPC struct {
 	} `json:"params"`
 }
 
-// McpSignInChallenge is how the fake answers a caller who has no credential for an external service.
-type McpSignInChallenge string
-
-const (
-	// McpChallengeRPC is JSON-RPC -32006, the gateway's answer before sign-in.
-	McpChallengeRPC McpSignInChallenge = "rpc"
-	// McpChallengeURL is JSON-RPC -32042 with one URL elicitation to the sign-in page.
-	McpChallengeURL McpSignInChallenge = "url"
-	// McpChallengeHTTP is HTTP 401 with no JSON-RPC body.
-	McpChallengeHTTP McpSignInChallenge = "http"
-)
-
 // McpEndpoint fakes POST /ai-gateway/mcp-services/{name}, a streamable HTTP MCP server with one
 // tool, echo. A name the workspace has no service for is 404. A service stored with an OAuth source
 // connection is external: until a credential exists for it in McpUserCredentials, tools/list and
-// tools/call answer the challenge selected by McpSignInChallenge (-32006 by default, as the gateway
-// does before sign-in). Notifications and client responses, which have no method or no id, get 202
-// with no body.
+// tools/call answer JSON-RPC -32006, as the gateway does before sign-in. Notifications and client
+// responses, which have no method or no id, get 202 with no body.
 func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -72,8 +56,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	}
 
 	external := mcpServiceIsExternal(service)
-	_, signedIn := s.McpUserCredentials[name]
-	challenged := external && !signedIn
+	challenged := external && !s.mcpSignedIn(name)
 	switch msg.Method {
 	case "initialize":
 		return rpcResult(msg.ID, map[string]any{
@@ -84,7 +67,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 		})
 	case "tools/list":
 		if challenged {
-			return s.signInRequired(msg.ID, name)
+			return s.signInRequired(msg.ID)
 		}
 		return rpcResult(msg.ID, map[string]any{"tools": []any{
 			map[string]any{
@@ -98,7 +81,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 		}})
 	case "tools/call":
 		if challenged {
-			return s.signInRequired(msg.ID, name)
+			return s.signInRequired(msg.ID)
 		}
 		if msg.Params.Name != fakeMcpEchoTool {
 			return Response{Body: rpcError(msg.ID, rpcCodeInvalidParams, "Unknown tool: "+msg.Params.Name)}
@@ -124,6 +107,16 @@ func (s *FakeWorkspace) mcpServiceNamed(name string) (catalog.McpService, bool) 
 	return catalog.McpService{}, false
 }
 
+// mcpSignedIn reports whether the caller has a credential for the service. Like mcpServiceNamed, the match ignores case.
+func (s *FakeWorkspace) mcpSignedIn(name string) bool {
+	for key := range s.McpUserCredentials {
+		if strings.EqualFold(key, name) {
+			return true
+		}
+	}
+	return false
+}
+
 // mcpServiceIsExternal reports whether the service takes an OAuth source connection.
 func mcpServiceIsExternal(ms catalog.McpService) bool {
 	return ms.Config != nil && ms.Config.SourceConnection != nil &&
@@ -144,28 +137,8 @@ func rpcError(id json.RawMessage, code int, message string) map[string]any {
 	}
 }
 
-// signInRequired answers with the challenge the service is configured for.
-func (s *FakeWorkspace) signInRequired(id json.RawMessage, name string) Response {
-	switch s.McpSignInChallenge[name] {
-	case McpChallengeURL:
-		query := url.Values{"name": {name}}
-		return Response{Body: map[string]any{
-			"jsonrpc": "2.0",
-			"id":      id,
-			"error": map[string]any{
-				"code":    rpcCodeURLElicitation,
-				"message": "This request requires more information.",
-				"data": map[string]any{"elicitations": []any{map[string]any{
-					"mode":    "url",
-					"message": "Sign in to continue.",
-					"url":     s.url + "/mcp-service-login?" + query.Encode(),
-				}}},
-			},
-		}}
-	case McpChallengeHTTP:
-		return Response{StatusCode: http.StatusUnauthorized, Body: "Unauthorized"}
-	default:
-		return Response{Body: rpcError(id, rpcCodeSignInRequired,
-			"The MCP service request was rejected (HTTP 401). Sign-in is required.")}
-	}
+// signInRequired answers with the gateway's -32006 challenge.
+func (s *FakeWorkspace) signInRequired(id json.RawMessage) Response {
+	return Response{Body: rpcError(id, rpcCodeSignInRequired,
+		"The MCP service request was rejected (HTTP 401). Sign-in is required.")}
 }

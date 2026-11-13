@@ -114,26 +114,13 @@ func TestMcpEndpointPassesThroughOnceCredentialExists(t *testing.T) {
 	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
 }
 
-func TestMcpEndpointURLElicitationChallenge(t *testing.T) {
+func TestMcpEndpointCredentialMatchesNameWithoutCase(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	const name = "system.ai.github"
 	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
-	workspace.McpSignInChallenge = map[string]McpSignInChallenge{name: McpChallengeURL}
+	workspace.McpUserCredentialCreate(name)
+	const list = `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`
 
-	reply := mcpEndpointTestCall(t, workspace, name, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo"}}`)
-	errBody := reply["error"].(map[string]any)
-	assert.EqualValues(t, -32042, errBody["code"])
-	elicitation := errBody["data"].(map[string]any)["elicitations"].([]any)[0].(map[string]any)
-	assert.Equal(t, "url", elicitation["mode"])
-	assert.Equal(t, "http://test/mcp-service-login?name=system.ai.github", elicitation["url"])
-}
-
-func TestMcpEndpointHTTPUnauthorizedChallenge(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	const name = "system.ai.github"
-	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
-	workspace.McpSignInChallenge = map[string]McpSignInChallenge{name: McpChallengeHTTP}
-
-	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)}, name)
-	assert.Equal(t, 401, response.StatusCode)
+	reply := mcpEndpointTestCall(t, workspace, "SYSTEM.AI.GITHUB", list)
+	assert.Nil(t, reply["error"], "the service and the credential match the name without case")
 }
