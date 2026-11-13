@@ -26,12 +26,29 @@ AIR:
           - 'cmd/air/**'
           - 'acceptance/air/**'
 
+aitools:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'cmd/aitools/**'
+          - 'libs/aitools/**'
+          - 'experimental/aitools/**'
+          - 'acceptance/cmd/aitools/**'
+          - 'acceptance/experimental/aitools/**'
+
 DABs:
   - changed-files:
       - any-glob-to-any-file:
           - 'bundle/**'
           - 'cmd/bundle/**'
           - 'acceptance/bundle/**'
+
+Dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          # Go module files at the root and under tools/. Covers Go SDK and
+          # toolchain bumps as well as PRs that add or change a dependency.
+          - '**/go.mod'
+          - '**/go.sum'
 
 PyDABs:
   - any:
