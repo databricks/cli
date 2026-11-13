@@ -74,9 +74,9 @@ type mcpListProfile struct {
 	configPath string
 	// noHost is set when Status is profile_missing because the profile's section has no host.
 	noHost bool
-	// Token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
+	// token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
 	// so it is text only.
-	Token string `json:"-"`
+	token string
 }
 
 type mcpListServer struct {
@@ -363,13 +363,13 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 			continue
 		}
 		w, err := profileClient(ctx, p.Profile, p.configPath)
-		p.Token = statusOK
+		p.token = statusOK
 		if err != nil {
-			p.Token = checkFailed
+			p.token = checkFailed
 		}
 		for j := range p.Servers {
 			s := &p.Servers[j]
-			s.Check = &mcpListCheck{Token: p.Token, Binary: binaryStatus(s.entry.Command)}
+			s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
 			if s.SignInRequired {
 				s.Check.SignIn = statusUnknown
 				if err == nil {
@@ -392,16 +392,14 @@ func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, service st
 	return checkNeeded
 }
 
-// binaryStatus reports whether the recorded command exists: an absolute path on disk, or a bare name
-// on PATH.
-func binaryStatus(command string) string {
-	var err error
-	if filepath.IsAbs(command) {
-		_, err = os.Stat(command)
-	} else {
-		_, err = exec.LookPath(command)
+// binaryStatus reports whether the recorded command exists. It resolves the command as binaryPathFor does: an
+// absolute path must be on disk, and a bare name must be found by lookPath.
+func binaryStatus(command string, lookPath func(string) (string, error)) string {
+	path, absolute := binaryPathFor(command, lookPath)
+	if !absolute {
+		return checkFailed
 	}
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		return checkFailed
 	}
 	return statusOK
@@ -453,8 +451,8 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 			cmdio.LogString(ctx, "")
 		}
 		header := profileHeader(p)
-		if p.Token != "" {
-			header += "  token " + p.Token
+		if p.token != "" {
+			header += "  token " + p.token
 		}
 		cmdio.LogString(ctx, header)
 		for _, s := range p.Servers {

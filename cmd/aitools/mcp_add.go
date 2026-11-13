@@ -858,7 +858,8 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 		if !server.SignInRequired || !installedAnywhere(server) {
 			continue
 		}
-		if _, err := signIn(ctx, errOut, w, req.profile, req.workspaceID, plans[i].service); err != nil {
+		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
+		if _, err := signIn(ctx, errOut, w, req.profile, url, plans[i].service); err != nil {
 			return err
 		}
 	}
@@ -949,15 +950,12 @@ func agentFailureError(req addRequest, servers []addServerOutput) error {
 	var errs []error
 	fail := req.explicit
 	for _, server := range servers {
-		reached := false
 		for _, a := range server.Agents {
-			if a.err == nil {
-				reached = true
-				continue
+			if a.err != nil {
+				errs = appendDistinct(errs, a.err)
 			}
-			errs = appendDistinct(errs, a.err)
 		}
-		if !reached {
+		if !installedAnywhere(server) {
 			fail = true
 		}
 	}
@@ -991,18 +989,14 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 	for _, server := range servers {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, server.Name+"  "+server.Service)
-		succeeded := false
 		cursor := false
 		for _, a := range server.Agents {
 			cmdio.LogString(ctx, "  "+agentResultLine(ctx, a))
-			if a.Status != statusFailed {
-				succeeded = true
-			}
 			if a.Name == agents.NameCursor && a.Status == statusInstalled {
 				cursor = true
 			}
 		}
-		if server.SignInRequired && succeeded && !req.login {
+		if server.SignInRequired && installedAnywhere(server) && !req.login {
 			cmdio.LogString(ctx, fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, shellquote.BashArg(server.Service), shellquote.BashArg(req.profile)))
 		}
 		if cursor {

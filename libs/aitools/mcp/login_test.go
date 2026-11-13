@@ -67,6 +67,15 @@ func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// loginTestSignInURL is the sign-in URL that SignIn is given for the fake's workspace, with workspace ID 123.
+func loginTestSignInURL(w *databricks.WorkspaceClient) string {
+	return SignInURL(w.Config.Host, loginTestService, "123")
+}
+
+func noopOpen(context.Context, string) error {
+	return nil
+}
+
 // loginTestClient starts the fake and returns a client for it.
 func loginTestClient(t *testing.T, s *loginTestServer) *databricks.WorkspaceClient {
 	t.Helper()
@@ -83,7 +92,7 @@ func TestSignInPollsUntilActive(t *testing.T) {
 
 	var opened []string
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, w.Config.Host, "123", loginTestService, &out, SignInOptions{
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(_ context.Context, url string) error {
@@ -105,7 +114,7 @@ func TestSignInAlreadyActiveDoesNotOpenBrowser(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, w.Config.Host, "123", loginTestService, &out, SignInOptions{
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: time.Second,
 		Open: func(context.Context, string) error {
@@ -123,7 +132,7 @@ func TestSignInBrowserNoneOnlyPrintsURL(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, w.Config.Host, "123", loginTestService, &out, SignInOptions{
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
@@ -140,7 +149,8 @@ func TestSignInTimeout(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, w.Config.Host, "123", loginTestService, &out, SignInOptions{
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+		Open: noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 30 * time.Millisecond,
 	})
@@ -154,7 +164,8 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	err := SignIn(ctx, w, w.Config.Host, "123", loginTestService, io.Discard, SignInOptions{
+	err := SignIn(ctx, w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open: noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: time.Minute,
 	})
@@ -166,7 +177,8 @@ func TestSignInFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"", "FAILED"}}
 	w := loginTestClient(t, s)
 
-	err := SignIn(t.Context(), w, w.Config.Host, "123", loginTestService, io.Discard, SignInOptions{
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open: noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 	})

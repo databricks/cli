@@ -25,12 +25,11 @@ var ErrSignInTimeout = errors.New("sign-in did not complete before the timeout")
 // ErrSignInFailed means the credential reached the FAILED provisioning state.
 var ErrSignInFailed = errors.New("sign-in failed")
 
-// SignInOptions controls how SignIn waits. Callers set both durations.
+// SignInOptions controls how SignIn waits. Callers set all three fields.
 type SignInOptions struct {
 	Poll    time.Duration
 	Timeout time.Duration
-	// Open opens the sign-in page. Nil leaves the page to the user. It is not called when
-	// BROWSER=none, because the URL is already printed.
+	// Open opens the sign-in page. It is not called when BROWSER=none, because the URL is already printed.
 	Open func(ctx context.Context, url string) error
 }
 
@@ -52,10 +51,10 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 	return cred.ProvisioningInfo.State, nil
 }
 
-// SignIn signs the caller in to a sign-in-required service. It returns nil at once when the
-// caller is already signed in. Otherwise it prints the sign-in URL to out, opens it, and polls
-// until the credential is ACTIVE. The errors are ErrSignInTimeout, ErrSignInFailed, or an API error.
-func SignIn(ctx context.Context, w *databricks.WorkspaceClient, host, workspaceID, service string, out io.Writer, opts SignInOptions) error {
+// SignIn signs the caller in to a sign-in-required service, at url from SignInURL. It returns nil at once when the
+// caller is already signed in. Otherwise it prints url to out, opens it, and polls until the credential is ACTIVE.
+// The errors are ErrSignInTimeout, ErrSignInFailed, or an API error.
+func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) error {
 	state, err := CredentialState(ctx, w, service)
 	if err != nil {
 		return err
@@ -64,9 +63,8 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, host, workspaceI
 		return nil
 	}
 
-	url := SignInURL(host, service, workspaceID)
 	fmt.Fprintf(out, "Open this URL to sign in to %s:\n%s\n", service, url)
-	if opts.Open != nil && !browser.IsDisabled(ctx) {
+	if !browser.IsDisabled(ctx) {
 		if err := opts.Open(ctx, url); err != nil {
 			fmt.Fprintf(out, "Could not open a browser (%v). Open the URL above.\n", err)
 		}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -13,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -91,9 +89,6 @@ stays in place. Running it when you are not signed in is not an error.
 func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAction) error {
 	ctx := cmd.Context()
 	jsonMode := installOutputIsJSON(cmd)
-	if jsonMode {
-		ctx = cmdio.WithQuiet(ctx)
-	}
 
 	out := &mcpSignInOutput{Service: service}
 	runErr := runMcpSignIn(ctx, cmd.ErrOrStderr(), profileFlag(cmd), service, action, out)
@@ -114,7 +109,7 @@ func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAct
 }
 
 func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service string, action mcpSignInAction, out *mcpSignInOutput) error {
-	if parts := strings.Split(service, "."); len(parts) != 3 || slices.Contains(parts, "") {
+	if !isFullName(strings.Split(service, ".")) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "service must be a full name such as system.ai.github, got %q", service)
 	}
 	// The config file is resolved once, as add resolves it, so that the profile lookup and the client read the same file.
@@ -159,7 +154,7 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 		return err
 	}
 	out.URL = mcp.SignInURL(out.Host, svc.FullName, workspaceID)
-	state, err := signIn(ctx, errOut, w, out.Profile, workspaceID, svc)
+	state, err := signIn(ctx, errOut, w, out.Profile, out.URL, svc)
 	out.State = state
 	return err
 }
@@ -181,14 +176,13 @@ func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceCli
 
 // signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns
 // the sign-in state name and the failure, which is categorized for JSON. `add --login` shares it.
-func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, workspaceID string, svc mcp.Service) (string, error) {
+func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, url string, svc mcp.Service) (string, error) {
 	fmt.Fprintf(errOut, "Sign in with the same account you use for Databricks profile %s.\n", profileName)
-	err := mcp.SignIn(ctx, w, w.Config.Host, workspaceID, svc.FullName, errOut, mcp.SignInOptions{
+	err := mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
 		Poll:    mcp.SignInPollInterval,
 		Timeout: mcp.SignInWaitTimeout,
 		Open:    browser.Open,
 	})
-	url := mcp.SignInURL(w.Config.Host, svc.FullName, workspaceID)
 	switch {
 	case errors.Is(err, mcp.ErrSignInTimeout):
 		return signInStateTimeout, failure(categorySignInTimeout, err,
