@@ -60,6 +60,16 @@ type addServerOutput struct {
 	Service        string           `json:"service"`
 	SignInRequired bool             `json:"sign_in_required"`
 	Agents         []addAgentOutput `json:"agents"`
+	// SignIn is the sign-in of the server under --login, with the state that login reports. It is absent without --login.
+	SignIn *addSignInOutput `json:"sign_in,omitempty"`
+}
+
+// addSignInOutput is the sign-in of one server under --login: its state, as login reports it, and the failure when the
+// sign-in failed.
+type addSignInOutput struct {
+	State         string                      `json:"state,omitempty"`
+	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
+	Error         string                      `json:"error,omitempty"`
 }
 
 type addAgentOutput struct {
@@ -853,18 +863,27 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
 }
 
-// signInInstalled signs in to each sign-in-required server that reached an agent, in order. A failure does not stop the
-// others, and the failures are joined. The servers are installed either way. A failure names the command to run next
-// when a sign-in can fix it, as the timeout and failed errors do. Other failures get no hint, since logging in again
-// would not fix them.
+// signInInstalled signs in to each sign-in-required server that reached an agent, in order, and records the sign-in of
+// each server in servers. A failure does not stop the others, and the failures are joined. The servers are installed
+// either way. A failure names the command to run next when a sign-in can fix it, as the timeout and failed errors do.
+// Other failures get no hint, since logging in again would not fix them.
 func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
 	var errs []error
-	for i, server := range servers {
-		if !server.SignInRequired || !installedAnywhere(server) {
+	for i := range servers {
+		server := &servers[i]
+		if !server.SignInRequired {
+			server.SignIn = &addSignInOutput{State: signInStateNotRequired}
+			continue
+		}
+		if !installedAnywhere(*server) {
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		if _, _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service); err != nil {
+		state, _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service)
+		server.SignIn = &addSignInOutput{State: state}
+		if err != nil {
+			server.SignIn.ErrorCategory = errorCategory(err)
+			server.SignIn.Error = err.Error()
 			errs = append(errs, err)
 		}
 	}

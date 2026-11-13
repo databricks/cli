@@ -216,6 +216,64 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 	assert.NotContains(t, stderr.String(), "needs sign-in")
 }
 
+// TestSignInInstalledRecordsTheSignInOfEachServer checks that each server of add --login records its sign-in, with the state
+// that login reports: a server that does not need sign-in, one that is signed in, and one whose sign-in failed. A server
+// that reached no agent gets no sign-in, since none was attempted.
+func TestSignInInstalledRecordsTheSignInOfEachServer(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	prevPoll := signInPollInterval
+	t.Cleanup(func() { signInPollInterval = prevPoll })
+	signInPollInterval = time.Millisecond
+	const (
+		githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == githubPath {
+			_, _ = rw.Write([]byte(`{"provisioning_info":{"state":"FAILED"}}`))
+			return
+		}
+		_, _ = rw.Write([]byte(`{"provisioning_info":{"state":"ACTIVE"}}`))
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	req := addRequest{profile: "logfood", workspaceID: "123", agents: []*agents.Agent{agents.ByName("claude-code")}}
+	plans := []addPlan{
+		{service: mcp.Service{FullName: "system.ai.github", SignInRequired: true}},
+		{service: mcp.Service{FullName: "system.ai.genie_one_mcp", SignInRequired: true}},
+		{service: mcp.Service{FullName: "system.ai.plain"}},
+		{service: mcp.Service{FullName: "system.ai.unused", SignInRequired: true}},
+	}
+	installed := []addAgentOutput{{Name: "claude-code", Status: statusInstalled}}
+	servers := []addServerOutput{
+		{Name: "github-logfood", Service: "system.ai.github", SignInRequired: true, Agents: installed},
+		{Name: "genie-logfood", Service: "system.ai.genie_one_mcp", SignInRequired: true, Agents: installed},
+		{Name: "plain-logfood", Service: "system.ai.plain", Agents: installed},
+		{Name: "unused-logfood", Service: "system.ai.unused", SignInRequired: true, Agents: []addAgentOutput{{Name: "claude-code", Status: statusFailed}}},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	var errOut bytes.Buffer
+	require.Error(t, signInInstalled(ctx, &errOut, w, req, plans, servers))
+
+	require.NotNil(t, servers[0].SignIn)
+	assert.Equal(t, signInStateFailed, servers[0].SignIn.State)
+	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, servers[0].SignIn.ErrorCategory)
+	assert.Contains(t, servers[0].SignIn.Error, "sign-in to system.ai.github failed on profile logfood")
+	require.NotNil(t, servers[1].SignIn)
+	assert.Equal(t, signInStateActive, servers[1].SignIn.State)
+	assert.Empty(t, servers[1].SignIn.Error)
+	require.NotNil(t, servers[2].SignIn)
+	assert.Equal(t, signInStateNotRequired, servers[2].SignIn.State)
+	assert.Nil(t, servers[3].SignIn)
+}
+
 // signInInstalledOne signs in to one installed sign-in server of the test's workspace and returns the error and what the
 // command wrote to stderr, on either stream. The server answers with status and body for the credential.
 func signInInstalledOne(t *testing.T, status int, body string) (string, error) {
