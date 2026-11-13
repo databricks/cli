@@ -17,9 +17,10 @@ import (
 
 // ServerOptions describes a relay whose SSH configuration was prepared by the caller.
 type ServerOptions struct {
-	SSHD        string
-	Config      string
-	IdleTimeout time.Duration
+	SSHD            string
+	Config          string
+	IdleTimeout     time.Duration
+	OutputHeartbeat time.Duration
 }
 
 // Readiness is written to command output only after the listener has been bound.
@@ -29,6 +30,8 @@ type Readiness struct {
 
 // Serve runs a sandbox relay without workspace credentials or compute initialization.
 // Each invocation owns its listener and all the SSH processes it starts.
+// With heartbeats enabled, output must support Close interrupting pending writes;
+// Serve closes it during shutdown and waits for the output worker to finish.
 func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, output io.Writer) error {
 	defer listener.Close()
 	if opts.IdleTimeout <= 0 {
@@ -36,6 +39,14 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 	}
 	if opts.Config == "" || opts.SSHD == "" {
 		return errors.New("sshd executable and configuration are required")
+	}
+	var heartbeatOutput io.WriteCloser
+	if opts.OutputHeartbeat > 0 {
+		var ok bool
+		heartbeatOutput, ok = output.(io.WriteCloser)
+		if !ok {
+			return errors.New("command heartbeat output must support closing")
+		}
 	}
 	// Validate the configuration before announcing readiness.
 	check := exec.CommandContext(ctx, opts.SSHD, "-t", "-f", opts.Config)
@@ -96,8 +107,36 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 	if err := json.NewEncoder(output).Encode(Readiness{Port: listener.Addr().(*net.TCPAddr).Port}); err != nil {
 		return fmt.Errorf("report relay readiness: %w", err)
 	}
+	heartbeatErrors := make(chan error, 1)
+	if opts.OutputHeartbeat > 0 {
+		heartbeatDone := make(chan struct{})
+		defer func() {
+			cancel()
+			heartbeatOutput.Close()
+			<-heartbeatDone
+		}()
+		go func() {
+			defer close(heartbeatDone)
+			ticker := time.NewTicker(opts.OutputHeartbeat)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					// SSH traffic travels over a separate WebSocket connection.
+					if _, err := io.WriteString(heartbeatOutput, "\n"); err != nil {
+						heartbeatErrors <- err
+						return
+					}
+				}
+			}
+		}()
+	}
 	for {
 		select {
+		case err := <-heartbeatErrors:
+			return fmt.Errorf("write command heartbeat: %w", err)
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-connections.TimedOut:

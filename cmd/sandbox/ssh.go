@@ -4,312 +4,268 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
+	"os/signal"
+	"runtime"
 	"strings"
+	"syscall"
+	"unicode"
 
 	"github.com/databricks/cli/cmd/root"
+	sshtunnel "github.com/databricks/cli/experimental/ssh/sandbox"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/spf13/cobra"
 )
 
-const defaultGatewayPort = "2222"
-
 func newSSHCommand() *cobra.Command {
-	var gatewayPort string
-
+	var proxy bool
+	var releasesDir string
+	var expectedIdentity string
+	var configFile string
 	cmd := &cobra.Command{
 		Use:   "ssh [sandbox-id] [-- <ssh-args-or-command>...]",
 		Short: "SSH into a Sandbox environment",
-		Long: `SSH into a Sandbox environment.
+		Long: `Connect to your default or a named sandbox through authenticated WebSocket port forwarding.
 
-Connect to your default or a named sandbox via SSH. Extra arguments
-after -- are passed directly to the ssh process. This lets you run
-remote commands, set up port forwarding, or pass any other ssh flags.
+The CLI creates a local SSH key automatically. No Gateway SSH key registration
+or persistent SSH Host configuration is required. The sandbox must have Python 3
+and openssh-server installed, and the local machine must have OpenSSH.
 
 Examples:
-  databricks sandbox ssh                                  # interactive shell on default sandbox
-  databricks sandbox ssh happy-panda-1234                 # interactive shell on specific sandbox
-  databricks sandbox ssh -- ls -la /home                  # run command on default sandbox
-  databricks sandbox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific sandbox
-  databricks sandbox ssh -- -L 8080:localhost:8080        # port forwarding on default sandbox`,
-		Args:              cobra.ArbitraryArgs,
-		PreRunE:           root.MustWorkspaceClient,
-		ValidArgsFunction: completeSandboxIDs,
+  databricks sandbox ssh
+  databricks sandbox ssh happy-panda-1234
+  databricks sandbox ssh happy-panda-1234 -- cat /etc/os-release
+  databricks sandbox ssh -- -L 8080:localhost:8080`,
+		Args: cobra.ArbitraryArgs, ValidArgsFunction: completeSandboxIDs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if configFile == "" {
+				return root.MustWorkspaceClient(cmd, args)
+			}
+			if !proxy {
+				return errors.New("--ssh-config-file requires --proxy")
+			}
+			// The SDK reads this setting from process environment during initialization.
+			previous, present := env.Lookup(cmd.Context(), "DATABRICKS_CONFIG_FILE")
+			if err := os.Setenv("DATABRICKS_CONFIG_FILE", configFile); err != nil {
+				return err
+			}
+			defer func() {
+				if present {
+					_ = os.Setenv("DATABRICKS_CONFIG_FILE", previous)
+				} else {
+					_ = os.Unsetenv("DATABRICKS_CONFIG_FILE")
+				}
+			}()
+			return root.MustWorkspaceClient(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var requested string
+			var extra []string
+			dash := cmd.ArgsLenAtDash()
+			if dash == -1 {
+				dash = len(args)
+			}
+			if dash > 1 {
+				return errors.New("specify at most one sandbox before --")
+			}
+			if dash == 1 {
+				requested = args[0]
+			}
+			extra = args[dash:]
+			if proxy && len(extra) != 0 {
+				return errors.New("--proxy does not accept SSH arguments")
+			}
 			ctx := cmd.Context()
+			if proxy {
+				var stop context.CancelFunc
+				ctx, stop = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+				defer stop()
+			}
 			w := cmdctx.WorkspaceClient(ctx)
-
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
-
-			keyPath, err := sandboxKeyPath(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to determine sandbox key path: %w", err)
-			}
-			if _, err := os.Stat(keyPath); errors.Is(err, fs.ErrNotExist) {
-				return fmt.Errorf("sandbox SSH key not found at %s — run 'databricks sandbox register' first", keyPath)
-			}
-
-			var sandboxID string
-			var extraArgs []string
-
-			switch dashAt := cmd.ArgsLenAtDash(); dashAt {
-			case -1:
-				if len(args) > 0 {
-					sandboxID = args[0]
-				}
-			case 0:
-				extraArgs = args[dashAt:]
-			default:
-				sandboxID = args[0]
-				extraArgs = args[dashAt:]
-			}
-
-			if sandboxID != "" {
-				resolved, err := resolveLocalID(ctx, profile, sandboxID)
-				if err != nil {
-					return err
-				}
-				sandboxID = resolved
-			}
-
-			// Captured from any Sandbox response we touch below; "" when
-			// we never hit the API in this invocation.
-			var (
-				sandboxGatewayHost string
-				sandboxStatus      string
-			)
-
-			api, err := newSandboxAPI(w)
+			name, err := resolveSSHName(ctx, w, requested)
 			if err != nil {
 				return err
 			}
-
-			// Surface deleted-key errors before ssh's opaque "Permission denied".
-			if err := verifyKeyRegistered(ctx, api, keyPath); err != nil {
+			identity, err := prepareSSHIdentity(ctx, w, name)
+			if err != nil {
 				return err
 			}
-
-			if sandboxID == "" {
-				def := getDefault(ctx, profile)
-				if def == "" {
-					return errors.New("no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox")
-				}
-				// Confirm the saved default still exists. A stale entry is
-				// almost always user-correctable (deleted from another
-				// machine, reaped by an admin); fail fast with an actionable
-				// message rather than silently provisioning a fresh sandbox
-				// and surprising the user with a bill.
-				sb, err := api.get(ctx, def)
-				switch {
-				case err == nil:
-					sandboxID = def
-					sandboxGatewayHost = sb.GatewayHost
-					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
-					_ = clearDefault(ctx, profile)
-					return fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", def)
-				default:
-					warn(ctx, fmt.Sprintf("Could not validate default %s: %v", def, err))
-					sandboxID = def
-				}
-			} else {
-				// Validate the explicit ID against the server. Two reasons:
-				//   1. Surface `sandbox ssh fake-id` as a clear 404 instead of
-				//      letting the user wade through `Permission denied` from
-				//      ssh when the gateway can't route an unknown sandbox.
-				//   2. Capture `gateway_host` to drive the resolution below.
-				// Non-NotFound errors fall through so transient API hiccups
-				// don't block a connection the gateway can still route.
-				sb, err := api.get(ctx, sandboxID)
-				switch {
-				case err == nil:
-					sandboxGatewayHost = sb.GatewayHost
-					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
-					return fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
-				default:
-					warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))
-				}
+			if expectedIdentity != "" && identity.HostKeyAlias != expectedIdentity {
+				return errors.New("SSH workspace or caller changed; rerun ssh-setup with the intended Databricks profile")
 			}
-
-			// Drive start ourselves so the user sees a spinner instead
-			// of an opaque multi-minute hang inside ssh's connect path.
-			if sandboxStatus != "" && !strings.EqualFold(sandboxStatus, "running") {
-				final, err := ensureRunning(ctx, api, sandboxID, sandboxStatus)
-				if err != nil {
-					return err
-				}
-				if final.GatewayHost != "" {
-					sandboxGatewayHost = final.GatewayHost
-				}
+			if proxy {
+				return sshtunnel.ConnectProxy(ctx, w, name, identity, releasesDir, os.Stdin, cmd.OutOrStdout(), cmd.ErrOrStderr())
 			}
-
-			// Resolution precedence: fresh API response → cached value
-			// for this profile. The server stamps the workspace's
-			// gateway on every Sandbox / SshKey response, so the cache
-			// is populated after the first call against the workspace
-			// (sandbox register / list / create / etc.).
-			host := sandboxGatewayHost
-			if host == "" {
-				host = getGatewayHost(ctx, profile)
+			options, err := sshClientOptions(cmd, w.Config, name, identity, releasesDir, extra)
+			if err != nil {
+				return err
 			}
-			if host == "" {
-				return errors.New("could not resolve the sandbox SSH gateway — run `databricks sandbox register` first")
-			}
-
-			// Persist whatever the server just told us, so the next invocation
-			// can short-circuit the explicit-id `get` above.
-			if sandboxGatewayHost != "" {
-				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
-			}
-
-			// No "Connecting…" spinner here. execSSHDirect replaces
-			// the CLI process via execv, so a deferred Close() would
-			// never run — and Bubble Tea hides the terminal cursor at
-			// init and only restores it on clean shutdown, leaving the
-			// cursor invisible for the entire ssh session and after it
-			// exits. The spinner couldn't animate during the handshake
-			// anyway (the CLI process is gone by then).
-			return execSSHDirect(sandboxID, host, gatewayPort, keyPath, extraArgs)
+			return execv.Execv(options)
 		},
 	}
-
-	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Sandbox gateway SSH port")
-
+	cmd.Flags().BoolVar(&proxy, "proxy", false, "Relay SSH bytes over stdin/stdout without launching ssh")
+	cmd.Flags().MarkHidden("proxy")
+	cmd.Flags().StringVar(&expectedIdentity, "ssh-identity", "", "Expected local SSH identity scope")
+	cmd.Flags().MarkHidden("ssh-identity")
+	cmd.Flags().StringVar(&configFile, "ssh-config-file", "", "Databricks configuration file saved by ssh-setup")
+	cmd.Flags().MarkHidden("ssh-config-file")
+	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory containing version-matched Linux CLI archives")
 	return cmd
 }
 
-// verifyKeyRegistered confirms the local sandbox public key is still
-// registered with the workspace before we open the SSH socket. The
-// gateway itself already does this check during userauth, but the
-// SSH protocol's reply surface (USERAUTH_FAILURE has no free-form
-// reason; USERAUTH_BANNER is widely swallowed) flattens "unknown
-// key", "key registered but not authorized for this sandbox", and
-// "upstream service is down" into the same "Permission denied
-// (publickey)". This out-of-band HTTP check surfaces the specific
-// case in language the user can act on. listKeys errors fall
-// through with a warning so a transient API hiccup doesn't block a
-// connection the gateway could still route.
-func verifyKeyRegistered(ctx context.Context, api *sandboxAPI, keyPath string) error {
-	pub, err := os.ReadFile(keyPath + ".pub")
+func sshClientOptions(cmd *cobra.Command, cfg *config.Config, name string, identity *sshtunnel.Identity, releasesDir string, extra []string) (execv.Options, error) {
+	executable, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("reading public key %s.pub: %w", keyPath, err)
+		return execv.Options{}, err
 	}
-	want := keyHash(string(pub))
-
-	keys, err := api.listKeys(ctx)
+	profile := ""
+	if flag := cmd.Flag("profile"); flag != nil && flag.Changed {
+		profile = flag.Value.String()
+	}
+	target := ""
+	for _, flagName := range []string{"target", "environment"} {
+		if flag := cmd.Flag(flagName); flag != nil && flag.Value.String() != "" {
+			target = flag.Value.String()
+			break
+		}
+	}
+	transport, err := sshProxyCommand(executable, name, sshProxyOptions{Profile: profile, ReleasesDir: releasesDir, IdentityScope: identity.HostKeyAlias, Target: target})
 	if err != nil {
-		warn(ctx, fmt.Sprintf("Could not verify SSH key registration: %v", err))
-		return nil
+		return execv.Options{}, err
 	}
-	for _, k := range keys {
-		if k.KeyHash == want {
-			return nil
-		}
-	}
-	return fmt.Errorf("your sandbox SSH key (%s) is not registered with this workspace — run `databricks sandbox register` to re-register it", want)
+	return execv.Options{Args: buildSSHArgs(identity, transport, extra), Env: sshProcessEnvironment(cmd.Context(), cfg)}, nil
 }
 
-// ensureRunning owns the lifecycle transition so SSH does not hang inside
-// connection setup. The caller must not have a spinner open.
-func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sandboxEntry, error) {
-	if strings.EqualFold(currentStatus, "running") {
-		return &sandboxEntry{SandboxID: id, Status: currentStatus}, nil
+func sshProcessEnvironment(ctx context.Context, cfg *config.Config) []string {
+	variables := env.All(ctx)
+	variables["DATABRICKS_HOST"] = cfg.Host
+	variables["DATABRICKS_ACCOUNT_ID"] = cfg.AccountID
+	variables["DATABRICKS_WORKSPACE_ID"] = cfg.WorkspaceID
+	if cfg.Profile != "" {
+		// An implicit profile must retain environment-first auth precedence.
+		// Converting it to --profile would give the profile precedence instead.
+		variables["DATABRICKS_CONFIG_PROFILE"] = cfg.Profile
 	}
-
-	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
-	defer s.Close()
-
-	var sb *sandboxEntry
-	if strings.EqualFold(currentStatus, "stopping") {
-		stopped, err := waitForStopped(ctx, api, s, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, err
-		}
-		currentStatus = stopped.Status
-		s.Update("Starting " + id + "…")
+	if cfg.ConfigFile != "" {
+		variables["DATABRICKS_CONFIG_FILE"] = cfg.ConfigFile
 	}
-
-	if strings.EqualFold(currentStatus, "stopped") {
-		updated, err := api.start(ctx, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, fmt.Errorf("failed to start sandbox %s: %w", id, err)
-		}
-		sb = updated
+	result := make([]string, 0, len(variables))
+	for key, value := range variables {
+		result = append(result, key+"="+value)
 	}
-
-	if sb == nil || !strings.EqualFold(sb.Status, "running") {
-		final, err := waitForRunning(ctx, api, s, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, err
-		}
-		sb = final
-	}
-
-	s.ok("Started " + cmdio.Bold(ctx, id))
-	return sb, nil
+	return result
 }
 
-// execSSHDirect replaces the CLI process with ssh (or simulates that on
-// Windows via execv). All options are passed on the command line, so no
-// ~/.ssh/config entry is required.
-func execSSHDirect(sandboxID, host, port, keyPath string, extraArgs []string) error {
-	return execv.Execv(execv.Options{
-		Args: buildSSHArgs(sandboxID, host, port, keyPath, extraArgs),
-		Env:  os.Environ(),
-	})
+func resolveSSHName(ctx context.Context, w *databricks.WorkspaceClient, requested string) (string, error) {
+	profile := w.Config.Profile
+	if profile == "" {
+		profile = w.Config.Host
+	}
+	savedDefault := requested == ""
+	if savedDefault {
+		requested = getDefault(ctx, profile)
+	}
+	if requested == "" {
+		return "", errors.New("no default sandbox configured — specify a sandbox ID or run 'databricks sandbox default <id>'")
+	}
+	id, err := resolveLocalID(ctx, profile, strings.TrimPrefix(requested, "sandboxes/"))
+	if err != nil {
+		return "", err
+	}
+	if id == "" || strings.ContainsAny(id, "/\\?#") || strings.ContainsFunc(id, unicode.IsSpace) {
+		return "", fmt.Errorf("invalid sandbox ID %q", id)
+	}
+	name := "sandboxes/" + id
+	if _, err := w.Sandbox.GetSandbox(ctx, sdk.GetSandboxRequest{Name: name}); err != nil {
+		if savedDefault && errors.Is(err, apierr.ErrNotFound) {
+			return "", fmt.Errorf("saved default %q is unavailable through the Sandbox API; verify the profile or choose another sandbox: %w", id, err)
+		}
+		return "", err
+	}
+	return name, nil
 }
 
-// buildSSHArgs assembles the argv we hand to the `ssh` binary.
-//
-// `ssh` concatenates remote-command words with spaces and the remote
-// shell re-parses them. That makes the two natural user shapes
-// incompatible by default:
-//
-//   - Single arg that's already a complete shell command:
-//     `sandbox ssh <id> -- 'echo hi | head -3'`
-//     The user expects the remote shell to split and execute this
-//     string. ssh's "concat with spaces" is a no-op here, so we hand
-//     the arg through untouched.
-//
-//   - Multi-arg exec-style invocation:
-//     `sandbox ssh <id> -- bash -c 'echo hi'`
-//     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
-//     produces `bash -c echo hi` on the wire, which bash re-splits into
-//     `-c=echo` and `$0=hi` — losing the second word. We fix that by shell-quoting
-//     each arg before append, so the remote sees `bash -c 'echo hi'`.
-//
-// The heuristic: if there's exactly one extra arg, pass it untouched;
-// otherwise quote every arg. shellquote.BashArg leaves safe args alone,
-// so `ls -la /tmp` round-trips unchanged in the multi-arg path.
-func buildSSHArgs(sandboxID, host, port, keyPath string, extraArgs []string) []string {
+func prepareSSHIdentity(ctx context.Context, w *databricks.WorkspaceClient, name string) (*sshtunnel.Identity, error) {
+	caller, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("resolve SSH caller: %w", err)
+	}
+	workspace, err := auth.ResolveWorkspaceID(ctx, w)
+	if err != nil {
+		return nil, fmt.Errorf("resolve SSH workspace: %w", err)
+	}
+	return sshtunnel.LocalIdentity(ctx, w.Config.Host+"/"+workspace, caller.Id, name)
+}
+
+type sshProxyOptions struct {
+	Profile, ReleasesDir, IdentityScope, Target, ConfigFile string
+}
+
+func sshProxyCommand(executable, name string, options sshProxyOptions) (string, error) {
+	args := []string{executable, "sandbox", "ssh", name, "--proxy"}
+	if options.Profile != "" {
+		args = append(args, "--profile", options.Profile)
+	}
+	if options.ReleasesDir != "" {
+		args = append(args, "--releases-dir", options.ReleasesDir)
+	}
+	if options.IdentityScope != "" {
+		args = append(args, "--ssh-identity", options.IdentityScope)
+	}
+	if options.Target != "" {
+		args = append(args, "--target", options.Target)
+	}
+	if options.ConfigFile != "" {
+		args = append(args, "--ssh-config-file", options.ConfigFile)
+	}
+	for i, arg := range args {
+		// OpenSSH expands percent tokens before invoking the shell, even inside quotes.
+		if strings.ContainsFunc(arg, unicode.IsControl) {
+			return "", errors.New("control characters are not supported in SSH proxy arguments")
+		}
+		arg = strings.ReplaceAll(arg, "%", "%%")
+		if runtime.GOOS == "windows" {
+			quoted, ok := shellquote.WindowsArg(arg)
+			if !ok {
+				return "", fmt.Errorf("unsupported Windows SSH proxy argument %q", arg)
+			}
+			args[i] = quoted
+		} else {
+			args[i] = shellquote.BashArg(arg)
+		}
+	}
+	return strings.Join(args, " "), nil
+}
+
+func buildSSHArgs(identity *sshtunnel.Identity, proxyCommand string, extraArgs []string) []string {
 	args := []string{
-		"ssh",
-		"-i", keyPath,
-		"-p", port,
-		"-o", "IdentitiesOnly=yes",
-		"-o", "PreferredAuthentications=publickey",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
-		fmt.Sprintf("%s@%s", sandboxID, host),
+		"ssh", "-i", identity.KeyPath, "-o", "IdentitiesOnly=yes", "-o", "PreferredAuthentications=publickey",
+		// Include authentication and the proxy's ten-minute remote setup budget.
+		"-o", "ConnectTimeout=900",
+		"-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + quoteSSHOption(identity.KnownHostsPath),
+		"-o", "HostKeyAlias=" + identity.HostKeyAlias, "-o", "ServerAliveInterval=30", "-o", "ProxyCommand=" + proxyCommand,
+		"sandbox-agent@" + identity.HostKeyAlias,
 	}
 	if len(extraArgs) == 1 {
 		return append(args, extraArgs[0])
 	}
-	for _, a := range extraArgs {
-		args = append(args, shellquote.BashArg(a))
+	for _, arg := range extraArgs {
+		args = append(args, shellquote.BashArg(arg))
 	}
 	return args
 }
+
+func quoteSSHOption(value string) string {
+	return `"` + strings.ReplaceAll(filepathToSSH(value), `"`, `\"`) + `"`
+}
+
+func filepathToSSH(value string) string { return strings.ReplaceAll(value, `\`, "/") }

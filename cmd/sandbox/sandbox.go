@@ -18,7 +18,6 @@ tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
 Getting started:
   databricks auth login --host https://...   # authenticate to a Databricks workspace
-  databricks sandbox register                # generate and register an SSH key
   databricks sandbox create                  # provision a sandbox (becomes your default)
   databricks sandbox ssh                     # SSH to your default sandbox
 

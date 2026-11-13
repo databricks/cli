@@ -14,9 +14,11 @@ import (
 
 // moduleToGitHub maps non-GitHub go.mod paths to their GitHub org/repo slug.
 var moduleToGitHub = map[string]string{
-	"gopkg.in/ini.v1":    "go-ini/ini",
-	"go.yaml.in/yaml/v3": "yaml/go-yaml",
-	"dario.cat/mergo":    "darccio/mergo",
+	"google.golang.org/grpc":     "grpc/grpc-go",
+	"google.golang.org/protobuf": "protocolbuffers/protobuf-go",
+	"gopkg.in/ini.v1":            "go-ini/ini",
+	"go.yaml.in/yaml/v3":         "yaml/go-yaml",
+	"dario.cat/mergo":            "darccio/mergo",
 }
 
 // Modules excluded from NOTICE requirements (Databricks-owned).

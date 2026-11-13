@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/sandbox"
@@ -21,6 +22,20 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if endpoint := os.Getenv("DATABRICKS_TEST_SANDBOX_PROXY_URL"); endpoint != "" {
+		// TestMain also runs as a standalone SSH transport subprocess.
+		//nolint:gocritic // TestMain has no testing.T context.
+		err := sandbox.ProxyStreamForTest(context.Background(), os.Stdin, os.Stdout, func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
+			conn, err := dialWebSocket(ctx, endpoint+"?id="+uuid.New().String())
+			return conn, err
+		})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	if os.Getenv("DATABRICKS_TEST_SANDBOX_SSHD") == "1" {
 		if os.Args[1] == "-t" {
 			os.Exit(0)
@@ -93,6 +108,38 @@ func TestServerIdleShutdown(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("idle server did not stop")
 	}
+}
+
+func TestCommandHeartbeatDoesNotPreventIdleShutdown(t *testing.T) {
+	t.Setenv("DATABRICKS_TEST_SANDBOX_SSHD", "1")
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	executable, err := os.Executable()
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	t.Cleanup(func() { writer.Close() })
+	finished := make(chan error, 1)
+	go func() {
+		finished <- sandbox.Serve(ctx, listener, sandbox.ServerOptions{SSHD: executable, Config: "test-config", IdleTimeout: time.Second, OutputHeartbeat: 10 * time.Millisecond}, writer)
+	}()
+	var ready sandbox.Readiness
+	require.NoError(t, json.NewDecoder(reader).Decode(&ready))
+	var newline [1]byte
+	_, err = io.ReadFull(reader, newline[:])
+	require.NoError(t, err)
+	assert.Equal(t, byte('\n'), newline[0])
+	// Stop draining output: the next heartbeat blocks, but idle shutdown must not.
+	select {
+	case err := <-finished:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("stalled command output prevented idle shutdown")
+	}
+	_, err = writer.Write([]byte("after shutdown"))
+	require.ErrorIs(t, err, io.ErrClosedPipe)
 }
 
 func TestServerRejectsInvalidConfigurationBeforeReadiness(t *testing.T) {

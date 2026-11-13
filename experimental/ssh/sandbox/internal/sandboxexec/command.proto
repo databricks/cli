@@ -1,0 +1,36 @@
+syntax = "proto2";
+package databricks.sandbox;
+option go_package = "github.com/databricks/cli/experimental/ssh/sandbox/internal/sandboxexec";
+
+// Streaming command messages used by the sandbox SSH client.
+message ExecuteCommandRequest {
+ optional string cmd = 1;
+ repeated string args = 2;
+ map<string, string> envs = 4;
+ optional string command_id = 5;
+}
+message ExecuteCommandResponse {
+ optional ProcessEvent process_event = 1;
+ optional int64 sequence_number = 2;
+}
+message ProcessEvent {
+ oneof event {
+  StartEvent start = 1;
+  DataEvent data = 2;
+  EndEvent end = 3;
+ }
+}
+message StartEvent {
+ optional int64 pid = 1;
+ optional string command_id = 2;
+}
+message DataEvent {
+ oneof output {
+  bytes stdout = 1;
+  bytes stderr = 2;
+  bytes pty = 3;
+ }
+}
+message EndEvent { optional int32 exit_code = 1; }
+message TerminateCommandRequest { optional string command_id = 1; }
+message TerminateCommandResponse {}
