@@ -314,3 +314,36 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 	require.Len(t, out, 1)
 	assert.Contains(t, resultText(t, out[0]), "then retry, or run: "+loginCommand)
 }
+
+// TestAuthenticateWritesNothingWhenCancelled checks that an authenticate call the client cancelled is not answered: the
+// MCP spec has no response to a cancelled request, and the client has stopped waiting for one.
+func TestAuthenticateWritesNothingWhenCancelled(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if m, _ := parseMessage(body); m.Method != "tools/list" {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		answerWith(http.StatusOK, listChallenge)(w, r)
+	})
+	entered, returned := make(chan struct{}), make(chan struct{})
+	signIn := func(ctx context.Context, _ bool) (bool, bool, error) {
+		close(entered)
+		<-ctx.Done()
+		close(returned)
+		return false, true, ctx.Err()
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 1)
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	waitClosed(t, entered, "the sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+	waitClosed(t, returned, "the sign-in to return")
+
+	require.NoError(t, p.finish(t))
+	lines := outLines(p.out.String())
+	require.Len(t, lines, 1, "only the tools/list answer is written")
+	assert.Equal(t, []string{"authenticate"}, toolNames(t, lines[0]))
+}

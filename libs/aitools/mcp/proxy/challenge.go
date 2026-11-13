@@ -219,6 +219,10 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 	open := !h.opened || h.timedOut
 	h.opened = true
 	alreadySignedIn, _, err := h.c.SignIn(ctx, open)
+	if ctx.Err() != nil {
+		// The client cancelled the request or shutdown began. Nothing is answered for a cancelled request.
+		return nil
+	}
 	timeout, timedOut := errors.AsType[*SignInTimeout](err)
 	h.timedOut = timedOut
 
