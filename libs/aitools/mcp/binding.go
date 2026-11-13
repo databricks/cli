@@ -17,10 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// bindExitCode is the exit status for binding failures, so callers can tell them apart
-// from other errors.
-const bindExitCode = 2
-
 // Commands that binding messages tell the user to run.
 const (
 	authLoginCommand = "databricks auth login"
@@ -60,11 +56,6 @@ func (e *BindError) Error() string {
 
 func (e *BindError) Unwrap() error {
 	return e.cause
-}
-
-// ExitCode returns the process exit status for this failure.
-func (e *BindError) ExitCode() int {
-	return bindExitCode
 }
 
 // Bind checks that the profile still names the host and workspace recorded for the service,

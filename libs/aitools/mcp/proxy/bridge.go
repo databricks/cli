@@ -51,6 +51,9 @@ var (
 	errNoResponse    = errors.New("upstream sent no response")
 	// errUpstreamTooLarge is the error for an upstream message over maxLineBytes, whether it is a body or an event.
 	errUpstreamTooLarge = fmt.Errorf("an upstream message exceeds the %d MiB limit", maxLineBytes>>20)
+	// ErrSkipRequest is returned by Authenticate to leave the session DELETE unsent, which needs no answer. Any other
+	// request that returns it fails like any other.
+	ErrSkipRequest = errors.New("request skipped")
 )
 
 // Hooks intercepts upstream messages before they are written to stdout.
@@ -68,7 +71,8 @@ type Bridge struct {
 	Out      io.Writer
 	Err      io.Writer
 	Endpoint string
-	// Authenticate sets the Authorization header on each upstream request.
+	// Authenticate sets the Authorization header on each upstream request. It may return ErrSkipRequest for the
+	// session DELETE (see ErrSkipRequest).
 	Authenticate func(*http.Request) error
 	// Headers are set on every upstream request.
 	Headers map[string]string
@@ -305,9 +309,12 @@ func (c *conn) deleteSession(ctx context.Context, sent upstreamState) {
 	}
 }
 
-// sendDelete sends the DELETE that ends the session sent.
+// sendDelete sends the DELETE that ends the session sent. A DELETE that Authenticate skips (ErrSkipRequest) is not sent.
 func (c *conn) sendDelete(ctx context.Context, sent upstreamState) error {
 	req, err := c.newRequest(ctx, http.MethodDelete, nil, sent)
+	if errors.Is(err, ErrSkipRequest) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}

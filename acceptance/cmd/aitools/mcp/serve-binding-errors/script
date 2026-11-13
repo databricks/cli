@@ -1,0 +1,55 @@
+# Isolate HOME so the state file written below lands in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The state records the config file as the binary spells it. Git Bash's $PWD is /c/..., which the Windows binary does
+# not match, so there use pwd -W, as sethome does.
+case "$OSTYPE" in
+  msys*|cygwin*) cfgdir="$(pwd -W)" ;;
+  *) cfgdir="$PWD" ;;
+esac
+
+# Binding failures exit 2 with one message on stderr. Nothing reaches stdout, and stdin is not read.
+title "The bound profile is not in the config file"
+trace errcode $CLI aitools mcp serve --profile gone --service system.ai.genie_one_mcp < requests.ndjson > LOG.stdout
+echo "stdout bytes: $(wc -c < LOG.stdout | tr -d ' ')"
+
+# A state record for logfood that points at another host: the proxy never follows the profile.
+mkdir -p home/.databricks/aitools/skills
+cat > home/.databricks/aitools/skills/.state.json <<JSON
+{
+  "schema_version": 3,
+  "mcp": {
+    "servers": [
+      {
+        "name": "genie_one_mcp-logfood",
+        "service": "system.ai.genie_one_mcp",
+        "profile": "logfood",
+        "host": "https://other.test",
+        "workspace_id": "",
+        "sign_in_required": false,
+        "command": "",
+        "config_file": "$cfgdir/.databrickscfg",
+        "agents": {},
+        "installed_at": "2026-01-01T00:00:00Z",
+        "cli_version": "0.0.0"
+      }
+    ]
+  }
+}
+JSON
+
+title "The profile now points at another host than the one recorded"
+trace errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp < requests.ndjson > LOG.stdout
+echo "stdout bytes: $(wc -c < LOG.stdout | tr -d ' ')"
+
+title "Flags are required and validated before the binding checks"
+trace errcode $CLI aitools mcp serve --service system.ai.genie_one_mcp < requests.ndjson > LOG.stdout
+trace errcode $CLI aitools mcp serve --profile logfood --service github < requests.ndjson > LOG.stdout
+trace errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --output json < requests.ndjson > LOG.stdout
+
+# Logs and the stale-version warning never share stdout with the protocol, even at debug level.
+title "A log file on stdout is refused before anything is logged"
+trace errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --log-file stdout --log-level debug < requests.ndjson > LOG.stdout
+echo "stdout bytes: $(wc -c < LOG.stdout | tr -d ' ')"

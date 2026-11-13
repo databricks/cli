@@ -1,0 +1,41 @@
+
+=== The bound profile is not in the config file
+
+>>> errcode [CLI] aitools mcp serve --profile gone --service system.ai.genie_one_mcp
+MCP server system.ai.genie_one_mcp needs Databricks profile "gone", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile gone
+
+Exit code: 2
+stdout bytes: 0
+
+=== The profile now points at another host than the one recorded
+
+>>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp
+MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
+
+Exit code: 2
+stdout bytes: 0
+
+=== Flags are required and validated before the binding checks
+
+>>> errcode [CLI] aitools mcp serve --service system.ai.genie_one_mcp
+Error: --profile is required
+
+Exit code: 1
+
+>>> errcode [CLI] aitools mcp serve --profile logfood --service github
+Error: --service needs a full service name such as system.ai.github
+
+Exit code: 1
+
+>>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --output json
+Error: --output does not apply to serve: its stdout carries the MCP protocol
+
+Exit code: 1
+
+=== A log file on stdout is refused before anything is logged
+
+>>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --log-file stdout --log-level debug
+Error: databricks aitools mcp serve writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file
+
+Exit code: 1
+stdout bytes: 0

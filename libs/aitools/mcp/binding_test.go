@@ -391,7 +391,6 @@ func requireBindError(t *testing.T, err error, want mcp.BindCategory) {
 	var bindErr *mcp.BindError
 	require.ErrorAs(t, err, &bindErr)
 	assert.Equal(t, want, bindErr.Category)
-	assert.Equal(t, 2, bindErr.ExitCode())
 }
 
 // bindingTestDefaultConfig writes contents to ~/.databrickscfg in a fresh home directory, with

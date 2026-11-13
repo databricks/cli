@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 
@@ -43,7 +44,24 @@ func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions)
 	}
 }
 
-func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
+// logFileKey is the context key of the logFileSlot that Execute puts in the context.
+type logFileKey struct{}
+
+// logFileSlot holds the log file that initializeContext opened. Execute closes it when it returns.
+type logFileSlot struct {
+	file io.Closer // nil until initializeContext opens the log file
+}
+
+// close closes the log file, if one was opened.
+func (s *logFileSlot) close() {
+	if s.file != nil {
+		_ = s.file.Close()
+	}
+}
+
+// initializeContext opens the log file and installs the default logger. For a command whose stdout carries a protocol,
+// it refuses a log file on stdout before the logger is installed, so not even a refused command's telemetry reaches stdout.
+func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	if f.debug {
 		err := f.level.Set("debug")
 		if err != nil {
@@ -63,6 +81,14 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 	err := f.file.Open()
 	if err != nil {
 		return nil, err
+	}
+	// Commands run without Execute have no slot, and then nothing closes the file.
+	if slot, ok := ctx.Value(logFileKey{}).(*logFileSlot); ok {
+		slot.file = &f.file
+	}
+
+	if carriesProtocol(cmd) && writesToStdout(f.file.Writer(), os.Stdout, os.Stderr) {
+		return nil, fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
 	}
 
 	handler, err := f.makeLogHandler(ctx, opts)
