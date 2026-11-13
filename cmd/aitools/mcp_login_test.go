@@ -114,6 +114,39 @@ func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
 	assert.Empty(t, out.State)
 }
 
+// TestMcpLogoutRemovesCredentialOfDeletedService checks that logout removes a credential whose service is gone from the
+// profile's view, because its source connection was deleted. The service lookup fails, but the credential is still there.
+func TestMcpLogoutRemovesCredentialOfDeletedService(t *testing.T) {
+	home := withHome(t)
+	const (
+		servicePath    = "/api/2.1/unity-catalog/mcp-services/system.ai.github"
+		credentialPath = servicePath + "/user-credentials"
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == servicePath && r.Method == http.MethodGet:
+			_, _ = w.Write([]byte(`{"name":"mcp-services/system.ai.github","config":{"source_connection":{"is_deleted":true}}}`))
+		case r.URL.Path == credentialPath && r.Method == http.MethodDelete:
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not found"}`))
+		}
+	}))
+	t.Cleanup(server.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+
+	out := mcpSignInOutput{Service: "system.ai.github"}
+	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogout, &out)
+	require.NoError(t, err)
+	assert.Equal(t, signOutStateDeleted, out.State)
+}
+
 // TestMcpLogoutEndpointNotFoundIsNotAServiceError checks that a 404 for an endpoint the API does not have is not read as a
 // service the profile cannot see, which would send the user to look for a typo in the name.
 func TestMcpLogoutEndpointNotFoundIsNotAServiceError(t *testing.T) {

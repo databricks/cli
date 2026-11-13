@@ -178,20 +178,23 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 }
 
 func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error {
-	if _, err := serviceFor(ctx, w, out.Profile, pinnedFile, out.Service); err != nil {
-		return err
-	}
+	// The credential is deleted first, so that the credential of a service the profile can no longer see is removed too.
+	// The service is looked up only when there is no credential, to tell a name that is not a service from a caller who
+	// is not signed in.
 	deleted, err := mcp.SignOut(ctx, w, out.Service)
 	if err != nil {
 		return describeRequestError(out.Profile, pinnedFile, err)
 	}
-	if !deleted {
-		out.State = signOutStateNotSignedIn
-		fmt.Fprintf(errOut, "Not signed in to %s on profile %s.\n", out.Service, out.Profile)
+	if deleted {
+		out.State = signOutStateDeleted
+		fmt.Fprintf(errOut, "Signed out of %s on profile %s.\n", out.Service, out.Profile)
 		return nil
 	}
-	out.State = signOutStateDeleted
-	fmt.Fprintf(errOut, "Signed out of %s on profile %s.\n", out.Service, out.Profile)
+	if _, err := serviceFor(ctx, w, out.Profile, pinnedFile, out.Service); err != nil {
+		return err
+	}
+	out.State = signOutStateNotSignedIn
+	fmt.Fprintf(errOut, "Not signed in to %s on profile %s.\n", out.Service, out.Profile)
 	return nil
 }
 
