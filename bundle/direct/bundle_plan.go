@@ -267,7 +267,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Collected before resolveReferences, which drops the references it resolves. Only a resource
 		// that can follow a rename needs them (see followsParentRename).
 		var parentRenames map[string]*deployplan.ChangeDesc
-		if adapter.HasDoUpdateWithID() && adapter.HasIDFromState() {
+		if canFollowParentRename(adapter) {
 			parentRenames, err = b.parentRenames(resourceKey)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -741,15 +741,13 @@ func (b *DeploymentBundle) parentRenames(resourceKey string) (map[string]*deploy
 
 	result := make(map[string]*deployplan.ChangeDesc)
 	for fieldPath, refString := range sv.Refs {
-		ref, ok := dynvar.NewRef(dyn.V(refString))
-		if !ok || !ref.IsPure() {
+		targetKey, targetField, ok, err := pureRefTarget(refString)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
 			continue
 		}
-		targetPath, err := structpath.ParsePath(ref.References()[0])
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse reference %q: %w", refString, err)
-		}
-		targetKey, targetField := splitResourcePath(targetPath)
 		change, err := b.renameChange(targetKey, targetField.String())
 		if err != nil {
 			return nil, err
@@ -878,16 +876,13 @@ func (b *DeploymentBundle) recordRefTypes(resourceKey string) error {
 	}
 	types := make(map[string]string, len(sv.Refs))
 	for fieldPath, refString := range sv.Refs {
-		ref, ok := dynvar.NewRef(dyn.V(refString))
-		if !ok || !ref.IsPure() {
-			continue
-		}
-		targetPath, err := structpath.ParsePath(ref.References()[0])
+		targetKey, _, ok, err := pureRefTarget(refString)
 		if err != nil {
-			return fmt.Errorf("cannot parse reference %q: %w", refString, err)
+			return err
 		}
-		targetKey, _ := splitResourcePath(targetPath)
-		types[fieldPath] = config.GetResourceTypeFromKey(targetKey)
+		if ok {
+			types[fieldPath] = config.GetResourceTypeFromKey(targetKey)
+		}
 	}
 	b.refTypes.Store(resourceKey, types)
 	return nil
@@ -896,16 +891,26 @@ func (b *DeploymentBundle) recordRefTypes(resourceKey string) error {
 // dependencyRename returns the rename of the field a depends_on label references, nil if the label
 // is not a pure reference or that field is not renamed in this plan.
 func (b *DeploymentBundle) dependencyRename(label string) (*deployplan.ChangeDesc, error) {
-	ref, ok := dynvar.NewRef(dyn.V(label))
+	targetKey, targetField, ok, err := pureRefTarget(label)
+	if err != nil || !ok {
+		return nil, err
+	}
+	return b.renameChange(targetKey, targetField.String())
+}
+
+// pureRefTarget returns the resource key and field that a pure reference such as
+// ${resources.schemas.s.name} points to; ok is false for anything else.
+func pureRefTarget(refString string) (string, *structpath.PathNode, bool, error) {
+	ref, ok := dynvar.NewRef(dyn.V(refString))
 	if !ok || !ref.IsPure() {
-		return nil, nil
+		return "", nil, false, nil
 	}
 	targetPath, err := structpath.ParsePath(ref.References()[0])
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse reference %q: %w", label, err)
+		return "", nil, false, fmt.Errorf("cannot parse reference %q: %w", refString, err)
 	}
 	targetKey, targetField := splitResourcePath(targetPath)
-	return b.renameChange(targetKey, targetField.String())
+	return targetKey, targetField, true, nil
 }
 
 // findMoved looks for a resource missing from its recorded ID at the ID its config gives it, where a
@@ -1078,7 +1083,14 @@ func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) 
 // The old values must match too: a child moved to the renamed parent from somewhere else
 // still has to be recreated.
 func followsParentRename(adapter *dresources.Adapter, parentChange, ch *deployplan.ChangeDesc) bool {
-	return parentChange != nil && adapter.HasDoUpdateWithID() && adapter.HasIDFromState() && structdiff.IsEqual(ch.Old, parentChange.Old)
+	return parentChange != nil && canFollowParentRename(adapter) && structdiff.IsEqual(ch.Old, parentChange.Old)
+}
+
+// canFollowParentRename reports whether the resource can follow a renamed parent with an update_id:
+// with no other change it is only re-keyed (StateOnly, via IDFromState), otherwise DoUpdateWithID
+// addresses it at its new ID.
+func canFollowParentRename(adapter *dresources.Adapter) bool {
+	return adapter.HasDoUpdateWithID() && adapter.HasIDFromState()
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
