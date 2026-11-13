@@ -121,12 +121,12 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
+	out.Profile = profileName
 	// The binding is checked before the profile's host is contacted, as add and serve check it.
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err
 	}
-	out.Profile = profileName
 	entry, err := mcp.CheckBinding(ctx, state, service, profileName, configFile)
 	if err != nil {
 		return err
@@ -171,9 +171,14 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 	if err != nil {
 		return describeRequestError(out.Profile, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
-	out.URL = mcp.SignInURL(out.Host, svc.FullName, workspaceID)
-	state, err := signIn(ctx, errOut, w, out.Profile, pinnedFile, out.URL, svc)
+	url := mcp.SignInURL(out.Host, svc.FullName, workspaceID)
+	state, alreadySignedIn, err := signIn(ctx, errOut, w, out.Profile, pinnedFile, url, svc)
 	out.State = state
+	// The URL is named only when a page was opened for the sign-in, or when the sign-in failed and the URL is the way to
+	// finish it.
+	if !alreadySignedIn {
+		out.URL = url
+	}
 	return err
 }
 
@@ -207,10 +212,10 @@ func mcpLoginHint(service, profileName, pinnedFile string) string {
 	return mcp.ConfigFileCommand(pinnedFile, mcpLoginCommand+" "+shellquote.BashArg(service)+" --profile "+shellquote.BashArg(profileName))
 }
 
-// signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns
-// the sign-in state name and the failure, which is categorized for JSON. `add --login` shares it.
-func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, pinnedFile, url string, svc mcp.Service) (string, error) {
-	err := mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
+// signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns the sign-in state
+// name, whether the caller was already signed in, and the failure, which is categorized for JSON. `add --login` shares it.
+func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, pinnedFile, url string, svc mcp.Service) (state string, alreadySignedIn bool, err error) {
+	alreadySignedIn, err = mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
 		Profile: profileName,
 		Poll:    mcp.SignInPollInterval,
 		Timeout: mcp.SignInWaitTimeout,
@@ -218,20 +223,24 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 	})
 	switch {
 	case errors.Is(err, mcp.ErrSignInTimeout):
-		return signInStateTimeout, failure(categorySignInTimeout, err,
+		return signInStateTimeout, false, failure(categorySignInTimeout, err,
 			"sign-in to %s did not complete in %g minutes. Finish at %s then retry: %s",
 			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case errors.Is(err, mcp.ErrSignInFailed):
-		return signInStateFailed, failure(protos.AitoolsErrorCategoryUncategorized, err,
+		return signInStateFailed, false, failure(protos.AitoolsErrorCategoryUncategorized, err,
 			"sign-in to %s failed on profile %s. Run: %s",
 			svc.FullName, profileName, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case err != nil:
-		return "", describeRequestError(profileName, pinnedFile, err)
+		return "", false, describeRequestError(profileName, pinnedFile, err)
 	}
 
-	fmt.Fprintf(errOut, "Signed in to %s on profile %s.\n", svc.FullName, profileName)
+	if alreadySignedIn {
+		fmt.Fprintf(errOut, "Already signed in to %s on profile %s.\n", svc.FullName, profileName)
+	} else {
+		fmt.Fprintf(errOut, "Signed in to %s on profile %s.\n", svc.FullName, profileName)
+	}
 	if svc.Known != nil && svc.Known.Note != "" {
 		fmt.Fprintln(errOut, svc.Known.Note)
 	}
-	return signInStateActive, nil
+	return signInStateActive, alreadySignedIn, nil
 }

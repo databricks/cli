@@ -52,23 +52,23 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 	return cred.ProvisioningInfo.State, nil
 }
 
-// SignIn signs the caller in to a sign-in-required service, at url from SignInURL. It returns nil at once when the
-// caller is already signed in. Otherwise it deletes a FAILED credential left by an earlier attempt, prints url to out,
-// opens it, and polls until the credential is ACTIVE.
+// SignIn signs the caller in to a sign-in-required service, at url from SignInURL. When the caller is already signed in
+// it returns alreadySignedIn true and nil, and prints nothing and opens no page. Otherwise it deletes a FAILED credential
+// left by an earlier attempt, prints url to out, opens it, and polls until the credential is ACTIVE.
 // The errors are ErrSignInTimeout, ErrSignInFailed, or an API error.
-func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) error {
+func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) (alreadySignedIn bool, err error) {
 	state, err := CredentialState(ctx, w, service)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if state == catalog.ProvisioningInfoStateActive {
-		return nil
+		return true, nil
 	}
 	if state == catalog.ProvisioningInfoStateFailed {
 		// A FAILED credential is left by an earlier attempt. It is deleted, so that a FAILED state seen while waiting is
 		// the result of this attempt, and so that the page starts from no credential.
 		if _, err := SignOut(ctx, w, service); err != nil {
-			return err
+			return false, err
 		}
 	}
 
@@ -97,7 +97,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	for {
 		select {
 		case <-waitCtx.Done():
-			return waitEnded(ctx)
+			return false, waitEnded(ctx)
 		case err := <-opened:
 			opened = nil
 			if err != nil {
@@ -109,16 +109,16 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		state, err := CredentialState(waitCtx, w, service)
 		if err != nil {
 			if waitCtx.Err() != nil {
-				return waitEnded(ctx)
+				return false, waitEnded(ctx)
 			}
-			return err
+			return false, err
 		}
 		// Other states (PROVISIONING, UPDATING, ...) mean the login has not completed yet.
 		if state == catalog.ProvisioningInfoStateActive {
-			return nil
+			return false, nil
 		}
 		if state == catalog.ProvisioningInfoStateFailed {
-			return ErrSignInFailed
+			return false, ErrSignInFailed
 		}
 	}
 }

@@ -25,14 +25,13 @@ Public repositories only until a repository owner installs https://github.com/ap
 === login again when already signed in returns at once
 
 >>> [CLI] aitools mcp login system.ai.github --profile logfood --output json
-Signed in to system.ai.github on profile logfood.
+Already signed in to system.ai.github on profile logfood.
 Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 {
   "service": "system.ai.github",
   "profile": "logfood",
   "host": "[DATABRICKS_URL]",
-  "state": "ACTIVE",
-  "url": "[DATABRICKS_URL]/mcp-service-login?name=system.ai.github\u0026o=[WORKSPACE_ID]"
+  "state": "ACTIVE"
 }
 
 === logout removes the sign-in; a second logout finds nothing and still exits 0

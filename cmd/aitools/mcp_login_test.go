@@ -7,12 +7,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -308,6 +311,29 @@ func TestMcpLoginJSONNamesProfileWhenBindingFails(t *testing.T) {
 	assert.Equal(t, "logfood", out.Profile)
 	assert.Equal(t, "PROFILE_HOST_CHANGED", string(out.ErrorCategory))
 	assert.NotContains(t, stdout.String(), `"state"`)
+}
+
+// TestMcpLoginJSONNamesProfileWhenStateCannotBeRead checks that a failure to read the state, which comes after the profile is
+// resolved, still names the profile in the document.
+func TestMcpLoginJSONNamesProfileWhenStateCannotBeRead(t *testing.T) {
+	withHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".state.json"), []byte("{not json"), 0o600))
+
+	parent := newMCPTestRoot()
+	var stdout bytes.Buffer
+	parent.SetOut(&stdout)
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "login", "system.ai.github", "--profile", "logfood", "--output", "json"})
+	err = parent.ExecuteContext(cmdio.MockDiscard(t.Context()))
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var out mcpSignInOutput
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
+	assert.Equal(t, "logfood", out.Profile)
+	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, out.ErrorCategory)
 }
 
 // TestMcpSignInJSONWriteFailureKeepsRunError checks that a document that cannot be written does not hide why the command

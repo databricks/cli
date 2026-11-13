@@ -858,7 +858,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		if _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service); err != nil {
+		if _, _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service); err != nil {
 			errs = append(errs, err)
 		}
 	}

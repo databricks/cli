@@ -133,7 +133,7 @@ func TestSignInPollsUntilActive(t *testing.T) {
 	// The browser is opened in the background, so the URL it is given arrives on a channel.
 	opened := make(chan string, 1)
 	var out bytes.Buffer
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(_ context.Context, url string) error {
@@ -160,7 +160,7 @@ func TestSignInAlreadyActiveDoesNotOpenBrowser(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	alreadySignedIn, err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: time.Second,
 		Open: func(context.Context, string) error {
@@ -169,6 +169,7 @@ func TestSignInAlreadyActiveDoesNotOpenBrowser(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	assert.True(t, alreadySignedIn)
 	assert.Empty(t, out.String())
 }
 
@@ -178,7 +179,7 @@ func TestSignInBrowserNoneOnlyPrintsURL(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	_, err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
@@ -195,7 +196,7 @@ func TestSignInTimeout(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 30 * time.Millisecond,
@@ -210,7 +211,7 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 
 	// The caller cancels once the sign-in page is open, so the wait is what is cancelled.
 	ctx, cancel := context.WithCancel(t.Context())
-	err := SignIn(browserOpens(ctx), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err := SignIn(browserOpens(ctx), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: time.Minute,
 		Open: func(context.Context, string) error {
@@ -226,7 +227,7 @@ func TestSignInFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"", "FAILED"}}
 	w := loginTestClient(t, s)
 
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
@@ -267,7 +268,7 @@ func TestSignInDeletesFailedCredentialFromEarlierAttempt(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	deletedBeforeOpen := make(chan bool, 1)
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
@@ -286,7 +287,7 @@ func TestSignInFailedCredentialThatFailsAgainIsFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"FAILED"}, signedIn: true}
 	w := loginTestClient(t, s)
 
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 2 * time.Second,
 		Open:    noopOpen,
@@ -300,7 +301,7 @@ func TestSignInFailedAfterProgressIsFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"FAILED", "PROVISIONING", "FAILED"}}
 	w := loginTestClient(t, s)
 
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open:    noopOpen,
@@ -333,7 +334,7 @@ func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	err = SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	_, err = SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 200 * time.Millisecond,
 		Open:    noopOpen,
@@ -414,7 +415,7 @@ func TestSignInDoesNotWaitForTheOpener(t *testing.T) {
 	t.Cleanup(func() { close(release) })
 	done := make(chan error, 1)
 	go func() {
-		done <- SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 			Poll:    time.Millisecond,
 			Timeout: 10 * time.Second,
 			Open: func(context.Context, string) error {
@@ -422,6 +423,7 @@ func TestSignInDoesNotWaitForTheOpener(t *testing.T) {
 				return nil
 			},
 		})
+		done <- err
 	}()
 	select {
 	case err := <-done:
@@ -440,7 +442,7 @@ func TestSignInReportsOpenerFailure(t *testing.T) {
 	s.gate = func() bool { return strings.Contains(out.String(), "Could not open a browser") }
 	w := loginTestClient(t, s)
 
-	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
