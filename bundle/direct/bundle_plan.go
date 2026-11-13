@@ -430,8 +430,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
 		b.RemoteStateCache.Store(resourceKey, remoteState)
 
-		// Validate that resources without DoUpdate don't have update actions
-		if action == deployplan.Update && !adapter.HasDoUpdate() {
+		// Validate that resources without DoUpdate don't have update actions. A state-only update
+		// never calls it.
+		if action == deployplan.Update && !entry.StateOnly && !adapter.HasDoUpdate() {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
 			return false
 		}
