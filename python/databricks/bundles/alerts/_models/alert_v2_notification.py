@@ -32,6 +32,9 @@ class AlertV2Notification:
     """
 
     subscriptions: VariableOrList[AlertV2Subscription] = field(default_factory=list)
+    """
+    Users and notification destinations that receive notifications.
+    """
 
     @classmethod
     def from_dict(cls, value: "AlertV2NotificationDict") -> "Self":
@@ -57,6 +60,9 @@ class AlertV2NotificationDict(TypedDict, total=False):
     """
 
     subscriptions: VariableOrList[AlertV2SubscriptionParam]
+    """
+    Users and notification destinations that receive notifications.
+    """
 
 
 AlertV2NotificationParam = AlertV2NotificationDict | AlertV2Notification

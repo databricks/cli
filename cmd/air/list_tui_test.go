@@ -194,7 +194,7 @@ func TestStaticListTable(t *testing.T) {
 
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "▸", "static table has no selection")
-	for _, want := range []string{"Run ID", "1", "qwen-train", "qwen-run-001", "Accelerators"} {
+	for _, want := range []string{"Run ID", "1", "qwen-train", "1m 14s", "qwen-run-001", "8x H100", "Accelerators"} {
 		assert.Contains(t, out, want)
 	}
 
@@ -336,6 +336,37 @@ func TestListModelDetailLateMsgDropped(t *testing.T) {
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
 	assert.NotContains(t, m.View(), "late result")
+}
+
+func TestTruncateFitsDisplayWidth(t *testing.T) {
+	// A CJK character takes two cells and a combining mark none, so the cut is
+	// by display width and never splits a character.
+	const wide = "/Users/张伟/大模型微调实验第一百二十三次评估"
+	const accented = "xxxxxxxxxxxxxxxxxxxx\u0301yz"
+	tests := []struct {
+		name      string
+		s         string
+		n         int
+		wantEnd   string // truncate
+		wantStart string // truncateStart
+	}{
+		{name: "fits", s: "abc", n: 5, wantEnd: "abc", wantStart: "abc"},
+		{name: "exactly fits", s: "abcde", n: 5, wantEnd: "abcde", wantStart: "abcde"},
+		{name: "one cell over", s: "abcdef", n: 5, wantEnd: "abcd…", wantStart: "…cdef"},
+		{name: "wide characters", s: wide, n: 11, wantEnd: "/Users/张…", wantStart: "…十三次评估"},
+		{name: "cut inside a wide character", s: wide, n: 12, wantEnd: "/Users/张伟…", wantStart: "…十三次评估"},
+		{name: "wide character at width two", s: "评估评估", n: 2, wantEnd: "…", wantStart: "…"},
+		{name: "combining mark stays with its letter", s: accented, n: 4, wantEnd: "xxx…", wantStart: "…x\u0301yz"},
+		{name: "combining mark is dropped with its letter", s: accented, n: 3, wantEnd: "xx…", wantStart: "…yz"},
+		{name: "width of one", s: "abcdef", n: 1, wantEnd: "…", wantStart: "…"},
+		{name: "width of zero", s: "abcdef", n: 0, wantEnd: "", wantStart: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantEnd, truncate(tt.s, tt.n))
+			assert.Equal(t, tt.wantStart, truncateStart(tt.s, tt.n))
+		})
+	}
 }
 
 func TestPadAndTruncate(t *testing.T) {

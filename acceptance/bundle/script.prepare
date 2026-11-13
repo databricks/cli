@@ -1,0 +1,20 @@
+# Creates schema main.$1, exported as SCHEMA_FULL_NAME, holding the lookup tables and UDFs that
+# creating a feature spec resolves in Unity Catalog.
+feature_spec_fixtures() {
+    export SCHEMA_FULL_NAME="main.$1"
+    trace $CLI schemas create "$1" main -o json | jq '{full_name}'
+    trace create_feature_spec_fixtures.py "$SCHEMA_FULL_NAME"
+}
+
+# Dropping the schema also drops any feature spec a failed run leaves.
+feature_spec_cleanup() {
+    $CLI bundle destroy --auto-approve >> LOG.cleanup 2>&1 || true
+    $CLI schemas delete "$SCHEMA_FULL_NAME" --force >> LOG.cleanup 2>&1 || true
+}
+
+# Call from the test's script, so the trap belongs to the shell that runs it.
+feature_spec_setup() {
+    feature_spec_fixtures "fspec_$UNIQUE_NAME"
+    trap feature_spec_cleanup EXIT
+    envsubst < databricks.yml.tmpl > databricks.yml
+}

@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -37,16 +37,20 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID         string  `json:"run_id"`
-	RunName       string  `json:"run_name"`
-	User          string  `json:"user"`
-	Status        string  `json:"status"`
-	DisplayStatus string  `json:"-"`
-	StartedAt     *string `json:"started_at"`
-	IsSweep       bool    `json:"is_sweep"`
+	RunID           string  `json:"run_id"`
+	RunName         string  `json:"run_name"`
+	User            string  `json:"user"`
+	Status          string  `json:"status"`
+	DisplayStatus   string  `json:"-"`
+	StartedAt       *string `json:"started_at"`
+	IsSweep         bool    `json:"is_sweep"`
+	ExperimentName  *string `json:"experiment_name"`
+	DurationSeconds *int64  `json:"duration_seconds"`
+	AcceleratorType *string `json:"accelerator_type"`
+	NumAccelerators *int    `json:"num_accelerators"`
+	DashboardURL    string  `json:"dashboard_url"`
 
-	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
-	// columns, omitted from JSON to match `air list --json`.
+	// The fields below are pre-rendered table cells or text-only enrichment.
 	Experiment string `json:"-"`
 	Duration   string `json:"-"`
 	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
@@ -70,10 +74,12 @@ type listedRun struct {
 
 // listQuery holds the resolved inputs to a runFetcher.
 type listQuery struct {
-	activeOnly  bool
-	allUsers    bool
-	userFilter  string
-	currentUser string
+	activeOnly bool
+	allUsers   bool
+	userFilter string
+	// currentUser resolves the caller's user name for a self-scoped list. It is
+	// nil when an explicit user= filter or --all-users is set.
+	currentUser func() (string, error)
 	filters     listFilters
 	fetchMLflow bool
 	limit       int
@@ -97,11 +103,15 @@ func newListCommand() *cobra.Command {
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or full YAML type. Examples:
+                    A10, H100, GPU_1xA10, GPU_8xH100.
+                    Workspace types: databricks air run -h config.compute.accelerator_type
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
 		Example: `  databricks air list --filter accelerator_type=H100
+
+  databricks air list --filter accelerator_type=GPU_8xH100
 
   databricks air list --all-status \
     --filter 'experiment=qwen*' \
@@ -128,40 +138,34 @@ Filters:
 		if err != nil {
 			return err
 		}
-
-		// An explicit user= filter wins; otherwise default to the current user
-		// unless --all-users is set. runs/list has no creator param, so the
-		// creator is matched while scanning.
-		userFilter := f.User
-		var currentUser string
-		if userFilter == "" && !allUsers {
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-			if err != nil {
-				return fmt.Errorf("failed to resolve current user: %w", err)
-			}
-			currentUser = me.UserName
-			userFilter = currentUser
+		if f.AcceleratorType != "" {
+			configureAcceleratorFilter(&f)
 		}
 
-		// Fetch workspace ID once for dashboard links; proceed with 0 on error.
-		var workspaceID int64
-		wsID, err := w.CurrentWorkspaceID(ctx)
-		if err != nil {
-			log.Debugf(ctx, "air list: could not fetch workspace ID for dashboard links: %v", err)
-		} else {
-			workspaceID = wsID
+		// An explicit user= filter wins; otherwise default to the current user
+		// unless --all-users is set. The user is resolved only if a strategy
+		// needs it: the index is already scoped to the caller, and runs/list has
+		// no creator param, so the scan matches the creator itself.
+		var currentUser func() (string, error)
+		if f.User == "" && !allUsers {
+			currentUser = sync.OnceValues(func() (string, error) { return currentUserEmail(ctx, w) })
 		}
 
 		fetcher := newRunFetcher(ctx, w, listQuery{
 			activeOnly:  !allStatus,
 			allUsers:    allUsers,
-			userFilter:  userFilter,
+			userFilter:  f.User,
 			currentUser: currentUser,
 			filters:     f,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
-			workspaceID: workspaceID,
+			workspaceID: workspaceIDForRunLink(ctx, w),
 		})
+		if f.AcceleratorType != "" {
+			fetcher.validateEmpty = func() error {
+				return validateEmptyAcceleratorFilter(ctx, w, f.AcceleratorType)
+			}
+		}
 
 		// JSON prints the newest `limit` runs once. Text renders the table:
 		// navigable in a terminal (paging in older runs on demand), printed once
@@ -180,6 +184,15 @@ Filters:
 	return cmd
 }
 
+func validateEmptyAcceleratorFilter(ctx context.Context, w *databricks.WorkspaceClient, value string) error {
+	options, err := listWorkspaceComputeOptions(ctx, w)
+	if err != nil {
+		log.Debugf(ctx, "air list: could not validate accelerator filter against workspace compute options: %v", err)
+		return fmt.Errorf("no runs matched --filter accelerator_type=%q\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", value)
+	}
+	return validateAcceleratorFilter(value, options)
+}
+
 // listStrategy is a source of matching runs, pulled in batches. Two implement it:
 // jobsScanStrategy pages runs/list; indexStrategy hydrates the AiTrainingService
 // index. The fetcher wraps whichever is chosen.
@@ -196,13 +209,16 @@ type listStrategy interface {
 // the interactive table's lazy paging. It wraps a listStrategy and adds the
 // shared tail: MLflow enrichment (text only) and row projection.
 type runFetcher struct {
-	ctx         context.Context
-	w           *databricks.WorkspaceClient
-	fetchMLflow bool
-	strategy    listStrategy
-	workspaceID int64
+	ctx           context.Context
+	w             *databricks.WorkspaceClient
+	fetchMLflow   bool
+	strategy      listStrategy
+	workspaceID   int64
+	validateEmpty func() error
 
-	exhausted bool
+	exhausted      bool
+	matchedAny     bool
+	validatedEmpty bool
 }
 
 func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
@@ -221,7 +237,7 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 // the Jobs scan so the command still returns. Everything else — the default
 // active list, --all-users, and --all-status for another user — uses the scan.
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
-	useIndex := !q.activeOnly && !q.allUsers && (q.userFilter == "" || q.userFilter == q.currentUser)
+	useIndex := !q.activeOnly && q.currentUser != nil
 	if !useIndex {
 		return newJobsScanStrategy(ctx, w, q)
 	}
@@ -242,6 +258,15 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 		return nil, err
 	}
 	f.exhausted = f.strategy.done()
+	if len(entries) > 0 {
+		f.matchedAny = true
+	}
+	if len(entries) == 0 && f.exhausted && !f.matchedAny && f.validateEmpty != nil && !f.validatedEmpty {
+		f.validatedEmpty = true
+		if err := f.validateEmpty(); err != nil {
+			return nil, err
+		}
+	}
 
 	// MLflow links appear only in the text table, so the per-run get-output
 	// lookups are skipped for JSON output (which omits the column anyway).
@@ -267,6 +292,7 @@ type jobsScanStrategy struct {
 	w           *databricks.WorkspaceClient
 	iter        listing.Iterator[jobs.BaseRun]
 	userFilter  string
+	currentUser func() (string, error) // resolves userFilter for a self-scoped scan
 	filters     listFilters
 	host        string
 	workspaceID int64
@@ -281,11 +307,17 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 		Limit:       jobsPageLimit,
 		ActiveOnly:  q.activeOnly,
 	}
+	// Resolve the current user while the first runs/list page is fetched; next()
+	// waits for it only when it first needs to match a run's creator.
+	if q.currentUser != nil {
+		go func() { _, _ = q.currentUser() }()
+	}
 	return &jobsScanStrategy{
 		ctx:         ctx,
 		w:           w,
 		iter:        w.Jobs.ListRuns(ctx, req),
 		userFilter:  q.userFilter,
+		currentUser: q.currentUser,
 		filters:     q.filters,
 		host:        w.Config.Host,
 		workspaceID: q.workspaceID,
@@ -304,6 +336,13 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		run := baseRunToRun(base)
 		if !isAirRun(run) {
 			continue
+		}
+		if s.currentUser != nil {
+			user, err := s.currentUser()
+			if err != nil {
+				return nil, err
+			}
+			s.userFilter, s.currentUser = user, nil
 		}
 		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
 			continue
@@ -350,9 +389,9 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			}
 			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
 			name := fetchMLflowRunName(ctx, w, ids.RunID)
-			// Shorten the name, not the retry note, to fit the column.
+			// Shorten the label, not the retry note, to fit the column.
 			note := ids.retryNote()
-			entries[i].row.MLflowLabel = truncate(mlflowRunLabel(name, ids.RunID), mlflowColWidth-len(note)) + note
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID, mlflowColWidth-len(note)) + note
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).

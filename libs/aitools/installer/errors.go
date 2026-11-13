@@ -11,6 +11,15 @@ import (
 // act on" apart from a failure.
 var ErrNothingInstalled = errors.New("no skills or plugins installed")
 
+// ErrNoSkillsResolved reports that no skill in the release can be installed by
+// this run: every one is experimental (without --experimental) or needs a newer
+// CLI. A skills install returns it without changing anything on disk.
+var ErrNoSkillsResolved = errors.New("no skills to install")
+
+// NoSkillsResolvedMessage is the line that explains ErrNoSkillsResolved to the
+// user.
+const NoSkillsResolvedMessage = "No skill in this release can be installed by this CLI."
+
 // ErrUnknownAgent reports a plugin record in the install state for an agent
 // this CLI does not know (e.g. one written by a newer CLI). Update and
 // uninstall leave such a record alone and report it as a failed plugin.
@@ -129,3 +138,14 @@ type StateError struct {
 
 func (e *StateError) Error() string { return e.Err.Error() }
 func (e *StateError) Unwrap() error { return e.Err }
+
+// RefusedError reports an install the installer declines to run in the
+// current state, such as a downgrade or a targeted install over untracked
+// skills. Its message already names what to do instead, so the command layer
+// adds no generic retry step to it.
+type RefusedError struct {
+	Err error
+}
+
+func (e *RefusedError) Error() string { return e.Err.Error() }
+func (e *RefusedError) Unwrap() error { return e.Err }

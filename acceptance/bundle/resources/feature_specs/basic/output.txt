@@ -96,7 +96,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle summary -o json
 {
   "id": "[SPEC1_ID]",
-  "url": "[DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/myspec?w=[WORKSPACE_ID]"
+  "url": "[DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/myspec"
 }
 
 === A second plan on an unchanged bundle must report no changes
@@ -116,8 +116,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following feature specs.
-Grants on them that are not declared in the bundle are lost:
+This action will result in the deletion or recreation of the following FeatureSpecs.
+Feature Serving endpoints and training code that use a deleted FeatureSpec can no longer
+load it, and a recreated one loses the grants the bundle does not declare:
   recreate resources.feature_specs.spec1
 Recreated feature_specs.spec1
 Files: 1 uploaded, 0 deleted
@@ -170,7 +171,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 The following resources will be deleted:
   delete resources.feature_specs.spec1
 
-This action will result in the deletion of the following feature specs.
+This action will result in the deletion of the following FeatureSpecs.
 Feature Serving endpoints and training code that use them can no longer load them:
   delete resources.feature_specs.spec1
 

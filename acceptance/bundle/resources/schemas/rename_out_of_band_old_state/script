@@ -1,0 +1,52 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.test-schema-${UNIQUE_NAME}"
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+STATE=.databricks/bundle/default/resources.json
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # Whatever the state lost track of.
+    errcode $CLI schemas delete "$NEW_SCHEMA" --force > LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+# Drop the remote_state fields that differ between clouds or from the test server.
+plan() {
+    trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+}
+
+recorded_ids() {
+    trace jq '.state | map_values(.state | {schema_id, volume_id} | with_entries(select(.value != null)))' "$STATE"
+}
+
+title "Deploy a schema with a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "$OLD_SCHEMA" | jq -r .schema_id)" SCHEMA_ID
+add_repl "$($CLI volumes read "$OLD_SCHEMA.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Drop schema_id and volume_id from the state, as a CLI from before they were recorded wrote it"
+jq 'del(.state["resources.schemas.schema1"].state.schema_id, .state["resources.volumes.volume1"].state.volume_id)' "$STATE" > tmp.json
+mv tmp.json "$STATE"
+recorded_ids
+
+title "A deploy with nothing else to change records them, with a state-only update"
+plan
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+trace print_requests.py //unity-catalog
+recorded_ids
+
+title "Rename the schema out of band, and the config to match. The plan finds both by their ids"
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+print_requests.py //unity-catalog &> LOG.rename_requests
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+plan
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+trace print_requests.py //unity-catalog
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

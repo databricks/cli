@@ -1,0 +1,36 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+NEW_VOLUME="main.test-schema-renamed-${UNIQUE_NAME}.myvolume"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve --force-lock
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "main.test-schema-${UNIQUE_NAME}.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the schema and change the volume's comment. The CLI is killed on the volume's update, after the schema's rename is saved"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+kill_after.py "PATCH /api/2.1/unity-catalog/volumes/$NEW_VOLUME" 0 1
+# -q: the per-resource lines race the kill signal.
+trace errcode $CLI bundle deploy -q
+trace print_requests.py //unity-catalog
+
+title "The volume is gone from its recorded path, so the plan looks for it at its path in config"
+trace print_state.py | jq '.state["resources.volumes.volume1"] | {__id__, volume_id: .state.volume_id}'
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at
+
+title "The next deploy updates the volume at its new path"
+trace $CLI bundle deploy --force-lock
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$NEW_VOLUME" | jq '{full_name, comment, volume_id}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

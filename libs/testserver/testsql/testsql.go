@@ -16,6 +16,7 @@ package testsql
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -91,6 +92,7 @@ type statement struct {
 type Handler struct {
 	mu         sync.Mutex
 	matchers   []matcher
+	fallbacks  []matcher
 	statements map[string]*statement
 	nextID     int
 }
@@ -123,12 +125,25 @@ func (h *Handler) Handle(statement string, fn func(Request) Result) {
 func (h *Handler) HandlePattern(re *regexp.Regexp, fn func(Request) Result) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.matchers = append(h.matchers, matcher{
+	h.matchers = append(h.matchers, patternMatcher(re, fn))
+}
+
+// HandleFallbackPattern registers a matcher like HandlePattern, but tried only
+// when no Handle or HandlePattern matcher matches, whatever the registration
+// order.
+func (h *Handler) HandleFallbackPattern(re *regexp.Regexp, fn func(Request) Result) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.fallbacks = append(h.fallbacks, patternMatcher(re, fn))
+}
+
+func patternMatcher(re *regexp.Regexp, fn func(Request) Result) matcher {
+	return matcher{
 		match: func(stmt string) []string {
 			return re.FindStringSubmatch(stmt)
 		},
 		fn: fn,
-	})
+	}
 }
 
 // Submit matches the statement, runs the matcher once to capture its plan,
@@ -215,7 +230,7 @@ func (h *Handler) plan(stmt string, params []sql.StatementParameterListItem) *st
 		Code:    sql.ServiceErrorCodeBadRequest,
 		Message: "unsupported statement: " + stmt,
 	}}
-	for _, m := range h.matchers {
+	for _, m := range slices.Concat(h.matchers, h.fallbacks) {
 		groups := m.match(stmt)
 		if groups == nil {
 			continue

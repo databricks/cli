@@ -1,0 +1,18 @@
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering
+
+title "UC lowercases the name, so the id is lowercase"
+trace $CLI bundle summary -o json | jq .resources.features.feature1.id
+
+title "A plan on an unchanged bundle skips the name instead of recreating the feature"
+trace $CLI bundle plan -o json | jq '.plan | map_values({action, changes: (.changes // {} | map_values({action, reason}) | with_entries(select(.key == "full_name")))})'
+trace $CLI bundle plan
+
+title "Renaming the feature still recreates it"
+trace update_file.py databricks.yml "main.myschema.MyFeature" "main.myschema.MyOtherFeature"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //feature-engineering
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //feature-engineering

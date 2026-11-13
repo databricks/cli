@@ -675,7 +675,7 @@ func TestPluginOperationsReportFailures(t *testing.T) {
 		result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
 		require.NoError(t, err)
 		assert.Equal(t, 0, result.PluginsRemoved)
-		assert.Equal(t, 0, result.SkillsRemoved)
+		assert.Equal(t, 0, result.SkillsChanged)
 		require.Len(t, result.PluginFailures, 1)
 		blocked, ok := errors.AsType[*BlockedError](result.PluginFailures[0])
 		require.True(t, ok, "got %v", result.PluginFailures[0])
@@ -857,6 +857,37 @@ func TestRunAgentCmdTimeoutKeepsPartialStderr(t *testing.T) {
 	assert.Equal(t, "timed out after 1ms: Waiting for login...", blocked.Detail)
 }
 
+func TestForgetPluginInstalls(t *testing.T) {
+	setupTestHome(t)
+	t.Chdir(t.TempDir())
+	ctx := t.Context()
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+
+	// No state yet: nothing to forget, and no state file is created.
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameClaudeCode}))
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, st)
+	assert.False(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+		agents.NameCodex:      {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+	}, "v0.2.6"))
+	assert.True(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+	assert.False(t, PluginRecorded(ctx, ScopeProject, agents.NameClaudeCode), "the project scope has its own state")
+
+	// An agent without a record is left alone; a recorded one is dropped.
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameCopilot}))
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameClaudeCode}))
+	st, err = LoadState(dir)
+	require.NoError(t, err)
+	assert.NotContains(t, st.Plugins, agents.NameClaudeCode)
+	assert.Contains(t, st.Plugins, agents.NameCodex)
+	assert.False(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+}
+
 func TestRunAgentCmdReportsTimeout(t *testing.T) {
 	// A slow agent CLI used to be reported as "not on PATH" with whatever the
 	// killed process left on stderr.
@@ -872,6 +903,19 @@ func TestRunAgentCmdReportsTimeout(t *testing.T) {
 	assert.True(t, blocked.TimedOut)
 	assert.Equal(t, ReasonCLINotOnPath, blocked.Reason)
 	assert.Equal(t, "timed out after 1ms", blocked.Detail)
+}
+
+func TestManualPluginInstallCommands(t *testing.T) {
+	assert.Equal(t, []string{
+		"claude plugin marketplace add databricks/databricks-agent-skills",
+		"claude plugin marketplace update databricks-agent-skills",
+		"claude plugin install databricks@databricks-agent-skills --scope user",
+	}, ManualPluginInstallCommands(claudeAgent(), "user"))
+	assert.Equal(t, []string{
+		"codex plugin marketplace add databricks/databricks-agent-skills",
+		"codex plugin add databricks@databricks-agent-skills",
+	}, ManualPluginInstallCommands(codexAgent(), ""))
+	assert.Nil(t, ManualPluginInstallCommands(noPluginAgent(), ""))
 }
 
 // copilotPluginHelp is the commander-style shape of `copilot plugin --help`.

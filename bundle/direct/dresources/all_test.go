@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -154,15 +156,28 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	// The fake accepts a declarative feature alongside lookups and functions, which the real API
+	// rejects.
 	"feature_specs": &resources.FeatureSpec{
 		Name: "main.default.my_feature_spec",
-		Features: []ml.Features{{
-			FeatureLookup: &ml.FeatureLookup{
-				Table:        "main.default.my_table",
-				LookupKeys:   []string{"id"},
-				FeatureNames: []string{"amount"},
-			},
-		}},
+		Features: []ml.Features{
+			{FeatureLookup: &ml.FeatureLookup{
+				Table:               "main.default.my_table",
+				LookupKeys:          []string{"id"},
+				TimestampLookupKeys: []string{"ts"},
+				LookbackWindow:      duration.New(time.Hour),
+				FeatureNames:        []string{"amount", "country"},
+				RenameOutputs:       []ml.RenameOutput{{Feature: "amount", Output: "total_amount"}},
+				DefaultValues:       []ml.DefaultValue{{Feature: "country", DefaultValue: "unknown"}},
+			}},
+			{FeatureFunction: &ml.FeatureFunction{
+				Udf:           "main.default.my_udf",
+				Output:        "score",
+				InputBindings: []ml.FeatureFunctionInputBinding{{Parameter: "x", BoundFeature: "amount"}},
+			}},
+			{DeclarativeFeature: &ml.DeclarativeFeature{Feature: "main.default.my_feature"}},
+		},
+		ExcludeColumns:       []string{"country"},
 		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
 	},
 

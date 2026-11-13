@@ -3,6 +3,9 @@ package agents
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +17,12 @@ import (
 // installed plugins. Claude Code stores it at <configDir>/plugins and keys each
 // entry as "<id>@<marketplace>" (e.g. "databricks@claude-plugins-official").
 const pluginManifestFile = "installed_plugins.json"
+
+// Claude Code's install scopes that apply only inside one project.
+const (
+	claudeScopeProject = "project"
+	claudeScopeLocal   = "local"
+)
 
 // pluginInstall is one install record in an agent's plugin manifest. A plugin
 // installed in more than one scope has several records. Claude Code documents
@@ -38,7 +47,7 @@ type pluginInstall struct {
 // must be resolved (see resolvePath).
 func (p pluginInstall) appliesTo(cwd string) bool {
 	switch p.Scope {
-	case "project", "local":
+	case claudeScopeProject, claudeScopeLocal:
 		if p.ProjectPath == "" || cwd == "" {
 			return false
 		}
@@ -101,8 +110,8 @@ func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
 	if a.pluginInstalls == nil {
 		return "", false
 	}
-	installs, ok := a.pluginInstalls(ctx, a)
-	if !ok {
+	installs, found, err := a.pluginInstalls(ctx, a)
+	if err != nil || !found {
 		return "", false
 	}
 	best := ""
@@ -115,40 +124,87 @@ func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
 	return best, true
 }
 
-// databricksPluginActiveIn reports whether the agent's own manifest has a
+// HasPluginManifestReader reports whether the CLI can read the agent's own
+// plugin manifest (Claude Code), not whether the manifest file exists. For such
+// agents the manifest is authoritative: a plugin removed with the agent's own
+// CLI leaves the CLI's state record behind.
+func (a *Agent) HasPluginManifestReader() bool {
+	return a.pluginInstalls != nil
+}
+
+// DatabricksPluginActiveIn reports whether the agent's own manifest has a
 // databricks plugin record that applies in cwd (see pluginInstall.appliesTo).
 // A plugin disabled in the agent's settings still counts.
-func (a *Agent) databricksPluginActiveIn(ctx context.Context, cwd string) bool {
-	installs, _ := a.pluginInstalls(ctx, a)
+// With cwd "", only machine-wide records (not project or local ones) count.
+// cwd is resolved here, so a working directory reached through a symlink is
+// matched by the directory it points to. A missing manifest reports false; an
+// error means the manifest exists but could not be read, so the answer is
+// unknown.
+func (a *Agent) DatabricksPluginActiveIn(ctx context.Context, cwd string) (bool, error) {
+	if a.pluginInstalls == nil {
+		return false, nil
+	}
+	if cwd != "" {
+		cwd = resolvePath(cwd)
+	}
+	installs, _, err := a.pluginInstalls(ctx, a)
+	if err != nil {
+		return false, err
+	}
 	for _, install := range installs {
 		if install.appliesTo(cwd) {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
+}
+
+// DatabricksProjectPluginIn reports whether the agent's own manifest has a
+// project-scope databricks plugin record for the project that contains cwd:
+// the plugin a project shares through its repository. Machine-wide and local
+// records are personal and do not count. A missing manifest reports false; an
+// error means the manifest exists but could not be read.
+func (a *Agent) DatabricksProjectPluginIn(ctx context.Context, cwd string) (bool, error) {
+	if a.pluginInstalls == nil {
+		return false, nil
+	}
+	cwd = resolvePath(cwd)
+	installs, _, err := a.pluginInstalls(ctx, a)
+	if err != nil {
+		return false, err
+	}
+	for _, install := range installs {
+		if install.Scope == claudeScopeProject && install.appliesTo(cwd) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // claudePluginInstalls reads the databricks plugin's records from Claude Code's
 // installed_plugins.json (<ConfigDir>/plugins/), which keys each entry as
 // "<id>@<marketplace>" (e.g. "databricks@claude-plugins-official") with one
 // record per install scope. The plugin can be installed from more than one
-// marketplace, so the records of every databricks entry are returned. Any
-// read/parse failure reports (nil, false), so an unreadable manifest reads as
-// "not installed".
-func claudePluginInstalls(ctx context.Context, a *Agent) ([]pluginInstall, bool) {
+// marketplace, so the records of every databricks entry are returned, and found
+// reports whether there is any such entry. A missing manifest is not found; a
+// manifest that cannot be read or parsed returns an error.
+func claudePluginInstalls(ctx context.Context, a *Agent) ([]pluginInstall, bool, error) {
 	configDir, err := a.ConfigDir(ctx)
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	data, err := os.ReadFile(filepath.Join(configDir, "plugins", pluginManifestFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false, nil
+	}
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	var manifest struct {
 		Plugins map[string][]pluginInstall `json:"plugins"`
 	}
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return nil, false
+		return nil, false, fmt.Errorf("parse %s: %w", pluginManifestFile, err)
 	}
 	var all []pluginInstall
 	found := false
@@ -159,5 +215,5 @@ func claudePluginInstalls(ctx context.Context, a *Agent) ([]pluginInstall, bool)
 			found = true
 		}
 	}
-	return all, found
+	return all, found, nil
 }

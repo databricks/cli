@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -46,8 +47,15 @@ func escapeMemberKeyPart(part string) string {
 //
 // The server pairs members by the same components, so this encoding is the CLI's own and only the
 // component list has to agree with the service.
+//
+// A feature name holding an unresolved reference keeps its case, because resource keys are
+// case-sensitive.
 func MaterializedFeatureMemberKey(member ml.MaterializedFeature) (string, string) {
-	parts := []string{"feature_name=" + escapeMemberKeyPart(member.FeatureName)}
+	featureName := member.FeatureName
+	if !dynvar.ContainsVariableReference(featureName) {
+		featureName = strings.ToLower(featureName)
+	}
+	parts := []string{"feature_name=" + escapeMemberKeyPart(featureName)}
 	if member.OnlineStoreConfig != nil {
 		parts = append(parts,
 			"online_store_name="+escapeMemberKeyPart(member.OnlineStoreConfig.OnlineStoreName))

@@ -105,6 +105,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
+	// TODO: array: effective_resources
 	// TODO: array: effective_user_api_scopes
 	cmd.Flags().BoolVar(&createReq.App.ForwardUserAccessToken, "forward-user-access-token", createReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository
@@ -1701,6 +1702,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	// TODO: array: effective_resources
 	// TODO: array: effective_user_api_scopes
 	cmd.Flags().BoolVar(&updateReq.App.ForwardUserAccessToken, "forward-user-access-token", updateReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository

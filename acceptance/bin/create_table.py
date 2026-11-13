@@ -5,6 +5,8 @@ import subprocess
 import sys
 import time
 
+from util import run_statements
+
 table_name = sys.argv[1]
 # Extract catalog.schema from table_name
 parts = table_name.split(".")
@@ -24,36 +26,19 @@ def run_cli(*args):
     return result
 
 
-def execute_sql(warehouse_id, sql):
-    """Execute SQL using the API endpoint."""
-    payload = json.dumps({"warehouse_id": warehouse_id, "statement": sql, "wait_timeout": "30s"})
-    return run_cli("api", "post", "/api/2.0/sql/statements/", "--json", payload)
-
-
-# Get warehouse ID from environment variable
-warehouse_id = os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
-
 # Create a simple table
-sql = f"CREATE TABLE IF NOT EXISTS {table_name} (id INT, value STRING, timestamp TIMESTAMP) USING DELTA"
-
-result = execute_sql(warehouse_id, sql)
-if result.returncode != 0:
-    print(f"Failed to create table: {result.stderr}", file=sys.stderr)
-    sys.exit(1)
-
+run_statements([f"CREATE TABLE IF NOT EXISTS {table_name} (id INT, value STRING, timestamp TIMESTAMP) USING DELTA"])
 print(f"Created table {table_name}")
 
 # Insert some sample data so the monitor has something to analyze
-insert_sql = f"""INSERT INTO {table_name} VALUES
+run_statements(
+    [
+        f"""INSERT INTO {table_name} VALUES
 (1, 'test1', current_timestamp()),
 (2, 'test2', current_timestamp()),
 (3, 'test3', current_timestamp())"""
-
-result = execute_sql(warehouse_id, insert_sql)
-if result.returncode != 0:
-    print(f"Failed to insert data: {result.stderr}", file=sys.stderr)
-    sys.exit(1)
-
+    ]
+)
 print(f"Inserted sample data into {table_name}")
 
 # Wait for table to be visible in Unity Catalog

@@ -17,6 +17,8 @@ recreate_on_changes:
     reason: immutable
   - field: materialized_features[*].budget_policy_id
     reason: immutable
+  - field: materialized_features[*].notifications
+    reason: immutable
   - field: notifications
     reason: immutable
 
