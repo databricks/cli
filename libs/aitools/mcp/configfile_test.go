@@ -26,7 +26,7 @@ func TestResolveConfigFileResolvesSymlinkBeforeDotDot(t *testing.T) {
 
 	// filepath.Join would clean the ".." away, so the path is joined by hand.
 	sep := string(filepath.Separator)
-	got, err := resolveConfigFile(t.Context(), link+sep+".."+sep+".databrickscfg")
+	got, err := ResolveConfigFile(t.Context(), link+sep+".."+sep+".databrickscfg")
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -37,11 +37,11 @@ func TestResolveConfigFileWithoutHomeAndAbsoluteName(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), "")
 	name := filepath.Join(t.TempDir(), ".databrickscfg")
 
-	got, err := resolveConfigFile(ctx, name)
+	got, err := ResolveConfigFile(ctx, name)
 	require.NoError(t, err)
 	assert.True(t, filepath.IsAbs(got))
 
-	_, err = resolveConfigFile(ctx, "~/.databrickscfg")
+	_, err = ResolveConfigFile(ctx, "~/.databrickscfg")
 	require.ErrorIs(t, err, env.ErrNoHomeEnv)
 }
 
@@ -54,9 +54,20 @@ func TestResolveConfigFileKeepsPathThroughMissingDir(t *testing.T) {
 	sep := string(filepath.Separator)
 	name := dir + sep + "missing" + sep + ".." + sep + "cfg"
 
-	got, err := resolveConfigFile(t.Context(), name)
+	got, err := ResolveConfigFile(t.Context(), name)
 	require.NoError(t, err)
 	assert.Equal(t, name, got)
+}
+
+// TestResolveConfigFileMissingFileUsesOSSeparators checks that a "~" name of a file that does not exist resolves with
+// the OS separator throughout, as the name of an existing file does.
+func TestResolveConfigFileMissingFileUsesOSSeparators(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	got, err := ResolveConfigFile(ctx, "~/missing/.databrickscfg")
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(home, "missing", ".databrickscfg"), got)
 }
 
 // TestSamePathComparesExistingFilesByIdentity checks that two names of one existing file compare equal,

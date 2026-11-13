@@ -1,0 +1,6 @@
+title "The mcp group is hidden from aitools help"
+trace $CLI aitools --help | contains.py '!mcp' > /dev/null
+echo "aitools help does not list mcp"
+
+title "The hidden group still answers help for its subcommands"
+trace $CLI aitools mcp add --help

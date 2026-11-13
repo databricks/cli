@@ -132,7 +132,7 @@ func TestBindProfileAbsent(t *testing.T) {
 		{
 			name:  "without state entry",
 			state: &mcp.State{},
-			want:  fmt.Sprintf(`MCP server system.ai.github is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: databricks auth login --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path)),
+			want:  fmt.Sprintf(`MCP server system.ai.github needs Databricks profile "gone", which does not exist in %s. Set it up with: databricks auth login --profile gone`, filepath.ToSlash(path)),
 		},
 	}
 	for _, tt := range tests {
@@ -779,4 +779,101 @@ func TestBindRecreateHintQuotesValues(t *testing.T) {
 	want := fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "my profile", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile 'my profile' or remove the server with: databricks aitools mcp remove --profile 'my profile'`,
 		filepath.ToSlash(bindingTestResolved(t, cfgPath)), filepath.ToSlash(bindingTestResolved(t, cfgPath)))
 	assert.Equal(t, want, err.Error())
+}
+
+// TestCheckBindingMatchesBind checks that CheckBinding refuses the same drift as Bind, before any request.
+// bindingTestCheck runs CheckBinding for the test service and profile, with the config file resolved as the caller resolves it.
+func bindingTestCheck(t *testing.T, state *mcp.State) (*mcp.Entry, error) {
+	t.Helper()
+	configFile, err := mcp.ResolveConfigFile(t.Context(), env.Get(t.Context(), "DATABRICKS_CONFIG_FILE"))
+	require.NoError(t, err)
+	return mcp.CheckBinding(t.Context(), state, bindingTestService, bindingTestProfile, configFile)
+}
+
+func TestCheckBindingMatchesBind(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected request to the profile's host: %s %s", r.Method, r.URL)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(server.Close)
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nauth_type = pat\ntoken = %s\n", bindingTestProfile, server.URL, bindingTestToken))
+	state := bindingTestState(cfgPath, bindingTestHost)
+
+	_, err := bindingTestCheck(t, state)
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+	assert.Equal(t, "MCP server github-logfood was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL+". Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+}
+
+func TestCheckBindingPassesWhenEntryMatchesOrIsAbsent(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	entry, err := bindingTestCheck(t, bindingTestState(cfgPath, bindingTestHost))
+	require.NoError(t, err)
+	require.NotNil(t, entry, "a matching entry is returned")
+	assert.Equal(t, "github-logfood", entry.Name)
+
+	entry, err = bindingTestCheck(t, &mcp.State{})
+	require.NoError(t, err)
+	assert.Nil(t, entry)
+}
+
+func TestCheckBindingRefusesWorkspaceChangeOnSameHost(t *testing.T) {
+	cfgPath := bindingTestConfig(t, fmt.Sprintf("[%s]\nhost = %s\nworkspace_id = 222\nauth_type = pat\ntoken = %s\n", bindingTestProfile, bindingTestHost, bindingTestToken))
+	state := bindingTestState(cfgPath, bindingTestHost)
+	state.Servers[0].WorkspaceID = "111"
+
+	_, err := bindingTestCheck(t, state)
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+}
+
+func TestCheckBindingRefusesEntryPinnedToOtherConfigFile(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	other := bindingTestWriteConfig(t, bindingTestProfileContents(bindingTestToken))
+	require.NotEqual(t, cfgPath, other)
+
+	_, err := bindingTestCheck(t, bindingTestState(other, bindingTestHost))
+	requireBindError(t, err, mcp.BindProfileHostChanged)
+}
+
+// TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst checks that CheckBinding returns the entry of the config file in use, even when an
+// entry for the same service and profile in another file comes first in the state.
+func TestCheckBindingMatchesEntryByConfigFileWhenOtherEntryComesFirst(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+	other := bindingTestWriteConfig(t, bindingTestProfileContents(bindingTestToken))
+	state := &mcp.State{Servers: []mcp.Entry{
+		{Name: "github-other", Service: bindingTestService, Profile: bindingTestProfile, Host: bindingTestHost, ConfigFile: other},
+		{Name: "github-default", Service: bindingTestService, Profile: bindingTestProfile, Host: bindingTestHost, ConfigFile: cfgPath},
+	}}
+
+	entry, err := bindingTestCheck(t, state)
+	require.NoError(t, err)
+	require.NotNil(t, entry)
+	assert.Equal(t, "github-default", entry.Name)
+}
+
+// TestCheckBindingChecksProfileWithoutEntry checks that a profile that is missing, or has no host, is refused when no entry
+// exists either, with the error Bind returns for it. An account-level profile has no workspace, so it has no host.
+func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
+	tests := []struct {
+		name     string
+		contents string
+		problem  string
+	}{
+		{name: "missing", contents: "[other]\nhost = https://other.test\n", problem: "which does not exist in "},
+		{name: "account profile without host", contents: "[" + bindingTestProfile + "]\naccount_id = 123\n", problem: "which has no host in "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bindingTestConfig(t, tt.contents)
+
+			_, err := bindingTestCheck(t, &mcp.State{})
+			requireBindError(t, err, mcp.BindProfileNotFound)
+			assert.Contains(t, err.Error(), tt.problem)
+
+			_, _, bindErr := mcp.Bind(t.Context(), mcp.BindOptions{
+				Profile: bindingTestProfile, Service: bindingTestService, State: &mcp.State{}, Stderr: io.Discard,
+			})
+			require.Error(t, bindErr)
+			assert.Equal(t, bindErr.Error(), err.Error())
+		})
+	}
 }

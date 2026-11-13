@@ -63,6 +63,11 @@ type Agent struct {
 	// MCP describes where the agent keeps user-scope MCP server entries, or nil
 	// when this CLI does not write them (Pi, Goose, Kiro).
 	MCP *mcpconfig.Spec
+	// mcpHomeEnv names the variable that moves the MCP config file out of ConfigDir: CODEX_HOME for Codex
+	// (https://learn.chatgpt.com/docs/config-file/config-advanced) and COPILOT_HOME for Copilot CLI
+	// (https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference).
+	// Empty when the file lives in ConfigDir, or when ConfigDir itself follows the variable.
+	mcpHomeEnv string
 	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
@@ -92,6 +97,30 @@ func (a *Agent) Detected(ctx context.Context) bool {
 	}
 	skillsDir, err := a.SkillsDir(ctx)
 	return err == nil && HasDatabricksSkillsIn(skillsDir)
+}
+
+// InstalledForMCP reports whether the agent is installed for MCP servers. When mcpHomeEnv is set, the directory it names
+// is the only signal: the agent's own directory may exist while the MCP home does not, and writing the MCP config would
+// create that home. Otherwise Detected, HasBinary, or the MCP config file counts.
+func (a *Agent) InstalledForMCP(ctx context.Context) (bool, error) {
+	if a.mcpHomeEnv != "" && env.Get(ctx, a.mcpHomeEnv) != "" {
+		path, err := a.MCP.Path(ctx)
+		if err != nil {
+			return false, err
+		}
+		return linkExists(filepath.Dir(path))
+	}
+	if a.Detected(ctx) || a.HasBinary(ctx) {
+		return true, nil
+	}
+	if a.MCP == nil {
+		return false, nil
+	}
+	path, err := a.MCP.Path(ctx)
+	if err != nil {
+		return false, err
+	}
+	return linkExists(path)
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
@@ -235,6 +264,7 @@ var Registry = []*Agent{
 			Root:   "mcp_servers",
 			Entry:  stdioEntry,
 		},
+		mcpHomeEnv: codexHomeEnv,
 	},
 	{
 		Name:        NameOpenCode,
@@ -263,6 +293,7 @@ var Registry = []*Agent{
 			Root:   mcpServersKey,
 			Entry:  copilotMCPEntry,
 		},
+		mcpHomeEnv: copilotHomeEnv,
 	},
 	{
 		Name:         NameAntigravity,
@@ -453,10 +484,16 @@ func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[strin
 	return map[string]any{"type": "stdio", "command": cmd, "args": args, "env": vars}
 }
 
+// codexHomeEnv and copilotHomeEnv move the MCP config files of Codex and Copilot CLI.
+const (
+	codexHomeEnv   = "CODEX_HOME"
+	copilotHomeEnv = "COPILOT_HOME"
+)
+
 // codexMCPPath returns Codex's config.toml, which honors CODEX_HOME.
 // See https://learn.chatgpt.com/docs/config-file/config-advanced.
 func codexMCPPath(ctx context.Context) (string, error) {
-	if home := env.Get(ctx, "CODEX_HOME"); home != "" {
+	if home := env.Get(ctx, codexHomeEnv); home != "" {
 		return filepath.Join(home, "config.toml"), nil
 	}
 	return homeSubdir(".codex", "config.toml")(ctx)
@@ -523,7 +560,7 @@ func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[str
 // copilotMCPPath returns Copilot CLI's user config. COPILOT_HOME replaces ~/.copilot.
 // See https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference.
 func copilotMCPPath(ctx context.Context) (string, error) {
-	if home := env.Get(ctx, "COPILOT_HOME"); home != "" {
+	if home := env.Get(ctx, copilotHomeEnv); home != "" {
 		return filepath.Join(home, "mcp-config.json"), nil
 	}
 	return homeSubdir(".copilot", "mcp-config.json")(ctx)

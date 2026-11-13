@@ -1,0 +1,74 @@
+
+=== Text output: Cursor approval hint, and the sign-in step for github
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code, cursor
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+  cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
+Cursor may ask you to approve genie_one_mcp-logfood. Run: cursor-agent mcp enable genie_one_mcp-logfood (the Cursor docs call the CLI agent), or approve it in Cursor's MCP settings.
+
+github-logfood  system.ai.github
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+  cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
+system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+Cursor may ask you to approve github-logfood. Run: cursor-agent mcp enable github-logfood (the Cursor docs call the CLI agent), or approve it in Cursor's MCP settings.
+
+=== Running it again re-asserts the entries, and nothing is written twice
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code, cursor
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  claude-code  already installed, re-asserted  [TEST_TMP_DIR]/home/.claude.json
+  cursor       already installed, re-asserted  [TEST_TMP_DIR]/home/.cursor/mcp.json
+
+github-logfood  system.ai.github
+  claude-code  already installed, re-asserted  [TEST_TMP_DIR]/home/.claude.json
+  cursor       already installed, re-asserted  [TEST_TMP_DIR]/home/.cursor/mcp.json
+system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+
+=== Cursor config
+
+>>> cat home/.cursor/mcp.json
+{
+  "mcpServers": {
+    "genie_one_mcp-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "cursor"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      }
+    },
+    "github-logfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "logfood",
+        "--service",
+        "system.ai.github",
+        "--agent",
+        "cursor"
+      ],
+      "command": "[CLI]",
+      "env": {
+        "DATABRICKS_CONFIG_FILE": "[TEST_TMP_DIR]/.databrickscfg"
+      }
+    }
+  }
+}

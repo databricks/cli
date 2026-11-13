@@ -106,7 +106,7 @@ func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
 // checkEntry returns the drift of one entry, or nil when its profile still names the recorded host
 // and workspace. The entry's profile is read from the config file the entry is pinned to.
 func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, error) {
-	path, err := resolveConfigFile(ctx, entry.ConfigFile)
+	path, err := ResolveConfigFile(ctx, entry.ConfigFile)
 	if err != nil {
 		return nil, err
 	}

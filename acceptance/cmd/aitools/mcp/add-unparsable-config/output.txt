@@ -1,0 +1,48 @@
+
+=== An unparsable config fails only its agent; the other agent still installs, and the command exits non-zero
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents codex,claude-code --output json
+{
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "scope": "global",
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "sign_in_required": false,
+      "agents": [
+        {
+          "name": "codex",
+          "status": "failed",
+          "error_category": "AGENT_CONFIG_INVALID",
+          "message": "[TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1: expected '.' or ']' to end table name, but got 'x' instead"
+        },
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        }
+      ]
+    }
+  ],
+  "error_category": "TYPE_UNSPECIFIED"
+}
+
+=== The broken file is left as it was
+
+>>> cat home/.codex/config.toml
+[mcp_servers.other x]
+command = "broken"
+
+=== State records only the agent that succeeded
+
+>>> jq .mcp | [.servers[] | {name, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+[
+  {
+    "name": "genie_one_mcp-logfood",
+    "agents": [
+      "claude-code"
+    ]
+  }
+]

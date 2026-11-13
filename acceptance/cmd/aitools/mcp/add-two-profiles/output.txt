@@ -1,0 +1,53 @@
+
+=== The same service for a second profile adds an entry and renames nothing
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+
+>>> [CLI] aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code --output json
+{
+  "profile": "dogfood",
+  "servers": [
+    {
+      "name": "genie_one_mcp-dogfood",
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed"
+        }
+      ]
+    }
+  ]
+}
+
+=== Both entries are in the Claude Code config
+
+>>> jq .mcpServers | keys home/.claude.json
+[
+  "genie_one_mcp-dogfood",
+  "genie_one_mcp-logfood"
+]
+
+=== State holds one entry per profile
+
+>>> jq .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+[
+  {
+    "name": "genie_one_mcp-logfood",
+    "profile": "logfood",
+    "agents": [
+      "claude-code"
+    ]
+  },
+  {
+    "name": "genie_one_mcp-dogfood",
+    "profile": "dogfood",
+    "agents": [
+      "claude-code"
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+
+=== An agent named with --agents that is not installed is refused; the installed agent still gets the server, and the command exits non-zero
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,antigravity --output json
+{
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "scope": "global",
+  "servers": [
+    {
+      "name": "genie_one_mcp-logfood",
+      "service": "system.ai.genie_one_mcp",
+      "sign_in_required": false,
+      "agents": [
+        {
+          "name": "claude-code",
+          "status": "installed",
+          "path": "[TEST_TMP_DIR]/home/.claude.json"
+        },
+        {
+          "name": "antigravity",
+          "status": "failed",
+          "error_category": "UNKNOWN_AGENT",
+          "message": "Antigravity is not installed; install it first or leave it out of --agents"
+        }
+      ]
+    }
+  ],
+  "error_category": "TYPE_UNSPECIFIED"
+}
+
+=== Nothing was created for Antigravity
+
+>>> ls -A home
+.claude
+.claude.json
+.databricks
+
+=== With no installed agent named, the command is refused before any request, and the text output says what to do
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents antigravity
+Error: Antigravity is not installed; install it first or leave it out of --agents
