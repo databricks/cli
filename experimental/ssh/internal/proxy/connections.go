@@ -22,7 +22,7 @@ func NewConnectionsManager(maxClients int, shutdownDelay time.Duration) *Connect
 		maxClients:    maxClients,
 		shutdownDelay: shutdownDelay,
 		connections:   make(map[string]*proxyConnection),
-		TimedOut:      make(chan bool),
+		TimedOut:      make(chan bool, 1),
 	}
 	cm.startShutdownTimer(shutdownDelay)
 	return cm
@@ -86,7 +86,10 @@ func (cm *ConnectionsManager) startShutdownTimer(delay time.Duration) {
 		cm.shutdownTimer.Stop()
 	}
 	cm.shutdownTimer = time.AfterFunc(delay, func() {
-		cm.TimedOut <- true
+		select {
+		case cm.TimedOut <- true:
+		default:
+		}
 	})
 }
 
@@ -96,4 +99,9 @@ func (cm *ConnectionsManager) cancelShutdownTimer() {
 	if cm.shutdownTimer != nil {
 		cm.shutdownTimer.Stop()
 	}
+}
+
+// Close releases the idle timer when the relay owning this manager stops.
+func (cm *ConnectionsManager) Close() {
+	cm.cancelShutdownTimer()
 }
