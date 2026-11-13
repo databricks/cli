@@ -116,6 +116,22 @@ func resolveAiGatewayParent(b *bundle.Bundle, parent string) string {
 	return "schemas/" + resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
 }
 
+// resolveThreePartName applies resolveCatalog and resolveSchema to the catalog and
+// schema of a "catalog.schema.name" UC identifier. A name that is not three parts, or
+// that already contains a reference, is returned unchanged; a mix of references and
+// literals is not supported.
+func resolveThreePartName(b *bundle.Bundle, name string) string {
+	if dynvar.ContainsVariableReference(name) {
+		return name
+	}
+	parts, ok := splitUCName(name, 3)
+	if !ok {
+		return name
+	}
+	catalogName, schemaName := parts[0], parts[1]
+	return resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+}
+
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
@@ -175,32 +191,13 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if idx == nil {
 			continue
 		}
-		// A name that already contains a reference is left as is; a mix of
-		// references and literals is not supported.
-		if dynvar.ContainsVariableReference(idx.Name) {
-			continue
-		}
-		// Name is a three-part "catalog.schema.index" UC identifier.
-		parts, ok := splitUCName(idx.Name, 3)
-		if !ok {
-			continue
-		}
-		catalogName, schemaName := parts[0], parts[1]
-		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		idx.Name = resolveThreePartName(b, idx.Name)
 	}
 	for _, f := range b.Config.Resources.Features {
 		if f == nil {
 			continue
 		}
-		if dynvar.ContainsVariableReference(f.FullName) {
-			continue
-		}
-		parts, ok := splitUCName(f.FullName, 3)
-		if !ok {
-			continue
-		}
-		catalogName, schemaName := parts[0], parts[1]
-		f.FullName = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		f.FullName = resolveThreePartName(b, f.FullName)
 	}
 	for _, set := range b.Config.Resources.MaterializationSets {
 		if set == nil {
@@ -222,15 +219,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if fs == nil {
 			continue
 		}
-		if dynvar.ContainsVariableReference(fs.Name) {
-			continue
-		}
-		parts, ok := splitUCName(fs.Name, 3)
-		if !ok {
-			continue
-		}
-		catalogName, schemaName := parts[0], parts[1]
-		fs.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		fs.Name = resolveThreePartName(b, fs.Name)
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {

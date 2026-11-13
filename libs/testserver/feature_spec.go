@@ -26,12 +26,6 @@ func (s *FakeWorkspace) FeatureSpecsCreate(req Request) Response {
 	// UC normalizes feature spec names to lowercase.
 	featureSpec.Name = strings.ToLower(featureSpec.Name)
 
-	if len(strings.Split(featureSpec.Name, ".")) != 3 {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       fmt.Sprintf("name must be a three-part name, got %q", featureSpec.Name),
-		}
-	}
 	if _, exists := s.FeatureSpecs[featureSpec.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,

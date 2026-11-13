@@ -11,10 +11,12 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/testserver/testsql"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -1177,9 +1179,18 @@ func AddDefaultHandlers(server *Server) {
 	// error, custom status) can register its own handler for the same pattern
 	// before calling AddDefaultHandlers, or stub it via test.toml in acceptance.
 	server.Handle("POST", "/api/2.0/sql/statements", server.sqlExecuteStatement)
+	// The API also accepts a trailing slash, which acceptance scripts send.
+	server.Handle("POST", "/api/2.0/sql/statements/", server.sqlExecuteStatement)
 	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}", server.sqlGetStatement)
 	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", server.sqlGetStatementResultChunk)
 	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
+
+	// The fake keeps no tables or functions, so the statements acceptance scripts
+	// run to set them up succeed without effect.
+	fixtureStatement := regexp.MustCompile(`(?i)^(CREATE\s+(TABLE|FUNCTION)|INSERT\s+INTO)\s`)
+	server.sqlHandler.HandleFallbackPattern(fixtureStatement, func(testsql.Request) testsql.Result {
+		return testsql.Result{}
+	})
 
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
 		return req.Workspace.SqlDataSourcesList(req)

@@ -8,7 +8,7 @@
 
 === Create the feature spec outside the bundle
 
->>> [CLI] api post /api/2.0/feature-engineering/feature-specs --json {
+>>> [CLI] feature-engineering create-feature-spec --json {
   "name": "main.fspec_[UNIQUE_NAME].boundspec",
   "features": [{"feature_lookup": {"table": "main.fspec_[UNIQUE_NAME].user_features", "lookup_keys": ["user_id"], "feature_names": ["age"]}}]
 }
@@ -51,5 +51,4 @@ Resources:
       Name: main.fspec_[UNIQUE_NAME].boundspec
       URL:  (not deployed)
 
->>> [CLI] api delete /api/2.0/feature-engineering/feature-specs/main.fspec_[UNIQUE_NAME].boundspec
-{}
+>>> [CLI] feature-engineering delete-feature-spec main.fspec_[UNIQUE_NAME].boundspec
