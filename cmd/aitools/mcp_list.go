@@ -427,18 +427,23 @@ func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileNam
 }
 
 // withConfigFile runs fn with path as the config file of a profile: in the context that fn receives, and in the process
-// environment, which the token store reads (see mcp.Bind). The environment is restored afterwards, and its error is
-// returned.
-func withConfigFile(ctx context.Context, path string, fn func(ctx context.Context)) error {
+// environment. The token store reads the variable from the process environment, because the SDK configures the
+// credentials with a context of its own (see mcp.Bind). The environment is restored when fn returns, or panics, and a
+// failure to restore it is returned.
+func withConfigFile(ctx context.Context, path string, fn func(ctx context.Context)) (err error) {
 	previous, wasSet := os.LookupEnv(mcpconfig.ConfigFileEnv)
 	if err := os.Setenv(mcpconfig.ConfigFileEnv, path); err != nil {
 		return err
 	}
+	defer func() {
+		if !wasSet {
+			err = errors.Join(err, os.Unsetenv(mcpconfig.ConfigFileEnv))
+			return
+		}
+		err = errors.Join(err, os.Setenv(mcpconfig.ConfigFileEnv, previous))
+	}()
 	fn(env.Set(ctx, mcpconfig.ConfigFileEnv, path))
-	if !wasSet {
-		return os.Unsetenv(mcpconfig.ConfigFileEnv)
-	}
-	return os.Setenv(mcpconfig.ConfigFileEnv, previous)
+	return nil
 }
 
 // binaryStatus reports whether the recorded command is a binary. It resolves the command as binaryPathFor does: an

@@ -1021,6 +1021,18 @@ func TestWithConfigFileSetsTheEnvironmentForTheCallAndRestoresIt(t *testing.T) {
 	assert.False(t, set, "a variable that was unset is unset again")
 }
 
+// TestWithConfigFileRestoresEnvironmentWhenFnPanics checks that the environment is restored even when the call panics, so
+// that a panic does not leave the next profile in another profile's config file.
+func TestWithConfigFileRestoresEnvironmentWhenFnPanics(t *testing.T) {
+	t.Setenv(mcpconfig.ConfigFileEnv, "ambient.cfg")
+	assert.Panics(t, func() {
+		_ = withConfigFile(t.Context(), "pinned.cfg", func(context.Context) {
+			panic("boom")
+		})
+	})
+	assert.Equal(t, "ambient.cfg", os.Getenv(mcpconfig.ConfigFileEnv))
+}
+
 // TestCheckText checks the words that --check adds to a server's line.
 func TestCheckText(t *testing.T) {
 	cases := []struct {
