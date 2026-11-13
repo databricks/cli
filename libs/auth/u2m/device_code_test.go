@@ -176,6 +176,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 		wantErr               string
 		wantTokenRequests     int32
 		wantInvalidDeviceCode bool
+		wantRateLimited       bool
 	}{
 		{
 			name: "device authorization rejected",
@@ -202,6 +203,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 			},
 			wantErr:           "Device grant rate limit exceeded (error code: invalid_request)",
 			wantTokenRequests: 1,
+			wantRateLimited:   true,
 		},
 		{
 			name: "unknown device code",
@@ -224,6 +226,7 @@ func TestDeviceCodeLogin_Errors(t *testing.T) {
 			// code again.
 			assert.NotErrorIs(t, err, ErrInvalidConfirmationCode)
 			assert.Equal(t, tc.wantInvalidDeviceCode, errors.Is(err, ErrInvalidDeviceCode))
+			assert.Equal(t, tc.wantRateLimited, errors.Is(err, ErrDeviceCodeRateLimited))
 		})
 	}
 }
@@ -364,6 +367,6 @@ func TestNormalizeCode(t *testing.T) {
 		{"  FTFA QQKY \n", "FTFAQQKY"},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.want, normalizeCode(tc.in), tc.in)
+		assert.Equal(t, tc.want, NormalizeCode(tc.in), tc.in)
 	}
 }

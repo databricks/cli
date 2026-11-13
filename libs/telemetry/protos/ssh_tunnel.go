@@ -39,6 +39,11 @@ const (
 	// condition rather than a transient failure, so it is distinguished from the rest.
 	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
 
+	// The IDE command override (DATABRICKS_SSH_IDE_COMMAND, set by the VS Code extension) names
+	// a command that can't be run. Distinct from IDE_COMMAND_NOT_ON_PATH because it points at
+	// whatever set the override rather than at the user's PATH.
+	SshTunnelErrorCategoryIDECommandOverrideInvalid SshTunnelErrorCategory = "IDE_COMMAND_OVERRIDE_INVALID"
+
 	// The IDE's installed-extension list could not be read, so whether the Remote SSH
 	// extension was present is unknown. Distinct from the install failures below because it
 	// says nothing about the extension itself, only that the check could not run.
@@ -155,6 +160,11 @@ type SshTunnelEvent struct {
 
 	// Whether the connection was successful.
 	IsSuccess bool `json:"is_success"`
+
+	// Serverless environment version the SSH server job is submitted with: the
+	// --environment-version value or the CLI default. Unset for dedicated clusters and
+	// for a custom base environment, which carries its own version.
+	EnvironmentVersion int `json:"environment_version,omitempty"`
 
 	// Whether a serverless usage policy was set via --usage-policy-id.
 	// Only the presence is recorded, not the policy ID itself.

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"time"
@@ -35,20 +36,30 @@ func (g gitRepo) run(ctx context.Context, args ...string) (string, error) {
 // runBytes is run returning raw stdout bytes, for the dirty-diff capture which needs
 // exact bytes and a size measurement.
 func (g gitRepo) runBytes(ctx context.Context, args ...string) ([]byte, error) {
+	var stdout bytes.Buffer
+	if err := g.runTo(ctx, &stdout, args...); err != nil {
+		return nil, err
+	}
+	return stdout.Bytes(), nil
+}
+
+// runTo is run streaming stdout into w as git produces it, for output too large to
+// buffer such as `git archive`.
+func (g gitRepo) runTo(ctx context.Context, w io.Writer, args ...string) error {
 	full := append([]string{"-C", g.path}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
+	var stderr bytes.Buffer
+	cmd.Stdout = w
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
-			return nil, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+			return fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
 		}
-		return nil, fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, msg)
+		return fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, msg)
 	}
-	return stdout.Bytes(), nil
+	return nil
 }
 
 // isRepository reports whether the path is inside a git work tree. Using
@@ -221,6 +232,30 @@ func (g gitRepo) validateIncludePathsExist(ctx context.Context, commitSHA string
 		return fmt.Errorf("include_paths do not exist at commit %s: %s", shortSHA(commitSHA), strings.Join(missing, ", "))
 	}
 	return nil
+}
+
+// countFilesAtCommit returns how many files `git archive` would package from
+// commitSHA, limited to subtreePrefix and includePaths when set.
+func (g gitRepo) countFilesAtCommit(ctx context.Context, commitSHA, subtreePrefix string, includePaths []string) (int, error) {
+	treeish := commitSHA
+	lsTreeGit := g
+	if subtreePrefix != "" {
+		// ls-tree scopes its listing to the working directory, so listing the
+		// subtree from inside root_path matches nothing. Run from the repo root,
+		// as createGitArchiveSnapshot does.
+		repoRoot, err := g.repositoryRoot(ctx)
+		if err != nil {
+			return 0, err
+		}
+		lsTreeGit = newGitRepo(repoRoot)
+		treeish = commitSHA + ":" + subtreePrefix
+	}
+	args := append([]string{"ls-tree", "-r", "-z", "--name-only", treeish, "--"}, includePaths...)
+	out, err := lsTreeGit.runBytes(ctx, args...)
+	if err != nil {
+		return 0, err
+	}
+	return bytes.Count(out, []byte{0}), nil
 }
 
 // shortSHA abbreviates a commit SHA to 8 chars for log/error messages, tolerating

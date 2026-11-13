@@ -32,7 +32,7 @@ type PostgresRoleState struct {
 
 	// ReplaceExisting takes over an existing role with the same ID on create
 	// instead of returning ALREADY_EXISTS. Input-only: not returned by the GET API.
-	ReplaceExisting bool `json:"replace_existing,omitempty"`
+	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 // PostgresRoleRemote is the return type for DoRead. It embeds RoleRoleSpec so that
@@ -87,8 +87,8 @@ func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRol
 		Parent: remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		RoleRoleSpec: remote.RoleRoleSpec,
 	}
@@ -138,7 +138,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {

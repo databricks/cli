@@ -20,6 +20,10 @@ from databricks.bundles.core._generated.dashboards import (
     _DashboardResources,
     dashboard_mutator,
 )
+from databricks.bundles.core._generated.data_quality_monitors import (
+    _DataQualityMonitorResources,
+    data_quality_monitor_mutator,
+)
 from databricks.bundles.core._generated.database_catalogs import (
     _DatabaseCatalogResources,
     database_catalog_mutator,
@@ -35,6 +39,10 @@ from databricks.bundles.core._generated.experiments import (
 from databricks.bundles.core._generated.external_locations import (
     _ExternalLocationResources,
     external_location_mutator,
+)
+from databricks.bundles.core._generated.feature_specs import (
+    _FeatureSpecResources,
+    feature_spec_mutator,
 )
 from databricks.bundles.core._generated.features import (
     _FeatureResources,
@@ -53,6 +61,10 @@ from databricks.bundles.core._generated.job_runs import (
     job_run_mutator,
 )
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
+from databricks.bundles.core._generated.materialization_sets import (
+    _MaterializationSetResources,
+    materialization_set_mutator,
+)
 from databricks.bundles.core._generated.mcp_services import (
     _McpServiceResources,
     mcp_service_mutator,
@@ -121,14 +133,17 @@ __all__ = [
     "cluster_mutator",
     "cluster_policy_mutator",
     "dashboard_mutator",
+    "data_quality_monitor_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
     "external_location_mutator",
     "feature_mutator",
+    "feature_spec_mutator",
     "genie_space_mutator",
     "instance_pool_mutator",
     "job_mutator",
     "job_run_mutator",
+    "materialization_set_mutator",
     "mcp_service_mutator",
     "mlflow_experiment_mutator",
     "mlflow_model_mutator",
@@ -156,15 +171,18 @@ class _GeneratedResources(
     _ClusterPolicyResources,
     _ClusterResources,
     _DashboardResources,
+    _DataQualityMonitorResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
     _MlflowExperimentResources,
     _ExternalLocationResources,
+    _FeatureSpecResources,
     _FeatureResources,
     _GenieSpaceResources,
     _InstancePoolResources,
     _JobRunResources,
     _JobResources,
+    _MaterializationSetResources,
     _McpServiceResources,
     _ModelProviderServiceResources,
     _ModelServiceResources,
@@ -193,15 +211,18 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies,
         clusters,
         dashboards,
+        data_quality_monitors,
         database_catalogs,
         database_instances,
         experiments,
         external_locations,
+        feature_specs,
         features,
         genie_spaces,
         instance_pools,
         job_runs,
         jobs,
+        materialization_sets,
         mcp_services,
         model_provider_services,
         model_services,
@@ -227,15 +248,18 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         cluster_policies._resource_type(),
         clusters._resource_type(),
         dashboards._resource_type(),
+        data_quality_monitors._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
         experiments._resource_type(),
         external_locations._resource_type(),
+        feature_specs._resource_type(),
         features._resource_type(),
         genie_spaces._resource_type(),
         instance_pools._resource_type(),
         job_runs._resource_type(),
         jobs._resource_type(),
+        materialization_sets._resource_type(),
         mcp_services._resource_type(),
         model_provider_services._resource_type(),
         model_services._resource_type(),

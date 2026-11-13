@@ -22,7 +22,7 @@ func TestApplyChangesToYAML_PreserveFormatting(t *testing.T) {
 	yamlContent := `# Comment at top
 resources:
   jobs:
-    test_job:
+    "test.job":
       name: "Test Job"
 
       # Comment before timeout
@@ -42,7 +42,7 @@ resources:
 	mutator.DefaultMutators(ctx, b)
 
 	changes := Changes{
-		"resources.jobs.test_job": ResourceChanges{
+		"resources.jobs.test.job": ResourceChanges{
 			"timeout_seconds": &ConfigChangeDesc{
 				Operation: OperationReplace,
 				Value:     7200,
@@ -61,6 +61,7 @@ resources:
 	modified := fileChanges[0].ModifiedContent
 
 	assert.Contains(t, modified, "# Comment at top")
+	assert.Contains(t, modified, `"test.job":`)
 	assert.Contains(t, modified, "# Comment before timeout")
 	assert.Contains(t, modified, "timeout_seconds: 7200")
 	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")
@@ -436,4 +437,104 @@ func TestBuildNestedMaps(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expected, result)
+}
+
+func TestApplyChangeScalarParents(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"string", "parent: text\n", "parent.key", ""},
+		{"quoted null", "parent: \"null\"\n", "parent.key", ""},
+		{"empty string", "parent: \"\"\n", "parent.key", ""},
+		{"boolean", "parent: false\n", "parent.key", ""},
+		{"anchored null", "parent: &shared null\nother: *shared\n", "parent.key", ""},
+		{"aliased null", "other: &shared null\nparent: *shared\n", "parent.key", ""},
+		{"anchored container", "parent: &shared {tags: null}\nother: *shared\n", "parent.tags.key", ""},
+		{"nonzero index", "parent: null\n", "parent[1].key", ""},
+		{"append", "parent: null\n", "parent[*]", "parent: [value]"},
+		{"nested sequence", "parent: ~\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			if tc.want == "" {
+				assert.ErrorContains(t, err, "scalar can not be a container")
+				return
+			}
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeNullParentComments(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"root", "# head\nnull # inline\n# foot\n", "key", "key: value"},
+		{"sequence item", "parent:\n  # head\n  - null # inline\n  # foot\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+			for _, comment := range []string{"# head", "# inline", "# foot"} {
+				assert.Equal(t, 1, strings.Count(string(result), comment), "%s in %s", comment, result)
+			}
+		})
+	}
+}
+
+func TestApplyChangeReusesExistingParent(t *testing.T) {
+	for _, parent := range []string{"null", "~", "", "{}"} {
+		t.Run(parent, func(t *testing.T) {
+			content := "resources: " + parent + " # base resources\ntargets:\n  dev:\n    resources:\n      jobs:\n        job:\n          tags:\n            existing: preserved # existing tag\n"
+			result, err := applyChange(t.Context(), []byte(content), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, content+"            added: value\n", string(result))
+			assert.Contains(t, string(result), "# base resources")
+			assert.Contains(t, string(result), "existing: preserved # existing tag")
+		})
+	}
+}
+
+func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		parent string
+	}{
+		{"missing alternative parent", "{}"},
+		{"null alternative parent", "null"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := "targets:\n  dev:\n    resources: " + tc.parent + "\n"
+			result, err := applyChange(t.Context(), []byte("resources: null\n"+target), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, `resources:
+  jobs:
+    job:
+      tags:
+        added: value
+`+target, string(result))
+		})
+	}
 }

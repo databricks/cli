@@ -237,6 +237,16 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 	return newState.ObjectID, nil, nil
 }
 
+// DoUpdateWithID records the new ID when the parent is recreated under a new ID. Otherwise
+// DoRead keeps reading the permissions of the old object and every later plan reports an update.
+func (r *ResourcePermissions) DoUpdateWithID(ctx context.Context, id string, newState *PermissionsState, entry *PlanEntry) (string, *PermissionsState, error) {
+	_, err := r.DoUpdate(ctx, id, newState, entry)
+	if err != nil {
+		return "", nil, err
+	}
+	return newState.ObjectID, nil, nil
+}
+
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)

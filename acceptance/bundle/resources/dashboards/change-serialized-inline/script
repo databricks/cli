@@ -28,7 +28,7 @@ trace $CLI bundle plan -o json > plan_raw.json
 # Generate golden file by applying nostamp for comparison (discard output)
 cat plan_raw.json | nostamp > out.plan.json
 
-title "deploy the change\n"
+title "deploy the change"
 $CLI bundle deploy $(readplanarg plan_raw.json)
 
 print_requests.py //api/2.0/lakeview/dashboards > out.requests.txt

@@ -24,6 +24,7 @@ import (
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
+	compute_migrations "github.com/databricks/cli/cmd/workspace/compute-migrations"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
 	consumer_fulfillments "github.com/databricks/cli/cmd/workspace/consumer-fulfillments"
 	consumer_installations "github.com/databricks/cli/cmd/workspace/consumer-installations"
@@ -51,6 +52,7 @@ import (
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
+	genie_agents "github.com/databricks/cli/cmd/workspace/genie-agents"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -62,6 +64,7 @@ import (
 	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
+	lakewatch "github.com/databricks/cli/cmd/workspace/lakewatch"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -104,11 +107,13 @@ import (
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
+	serverless_compute_service "github.com/databricks/cli/cmd/workspace/serverless-compute-service"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
+	software_artifacts "github.com/databricks/cli/cmd/workspace/software-artifacts"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	supervisor_agents "github.com/databricks/cli/cmd/workspace/supervisor-agents"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -162,6 +167,7 @@ func All() []*cobra.Command {
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
+	out = append(out, compute_migrations.New())
 	out = append(out, connections.New())
 	out = append(out, consumer_fulfillments.New())
 	out = append(out, consumer_installations.New())
@@ -189,6 +195,7 @@ func All() []*cobra.Command {
 	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
+	out = append(out, genie_agents.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
@@ -200,6 +207,7 @@ func All() []*cobra.Command {
 	out = append(out, knowledge_assistants.New())
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
+	out = append(out, lakewatch.New())
 	out = append(out, libraries.New())
 	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
@@ -242,11 +250,13 @@ func All() []*cobra.Command {
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, secrets_uc.New())
+	out = append(out, serverless_compute_service.New())
 	out = append(out, service_principal_secrets_proxy.New())
 	out = append(out, service_principals_v2.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
+	out = append(out, software_artifacts.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, supervisor_agents.New())
 	out = append(out, system_schemas.New())

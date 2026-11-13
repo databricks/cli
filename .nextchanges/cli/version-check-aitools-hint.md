@@ -1,0 +1,1 @@
+* `databricks version --check` now suggests `databricks aitools install` on stderr when a coding agent is detected without the Databricks plugin or skills. ([#7471](https://github.com/databricks/cli/pull/7471))

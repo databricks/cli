@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a comment"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "main.test-schema-${UNIQUE_NAME}" | jq -r .schema_id)" SCHEMA_ID
+
+title "Rename the schema and change its comment in one deploy: both go in one PATCH"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "Both landed, so the redeploy is a no-op"
+trace $CLI schemas get "main.test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, comment, schema_id}'
+trace $CLI bundle plan

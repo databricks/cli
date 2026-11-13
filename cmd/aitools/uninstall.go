@@ -2,18 +2,19 @@ package aitools
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
 // Package-level for testability. Tests override via uninstall_test.go.
-var uninstallSkillsFn = func(ctx context.Context, opts installer.UninstallOptions) error {
-	return installer.UninstallSkillsOpts(ctx, opts)
-}
+var uninstallSkillsFn = installer.UninstallSkillsWithResult
 
 func NewUninstallCmd() *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag string
@@ -24,15 +25,20 @@ func NewUninstallCmd() *cobra.Command {
 		Short: "Uninstall Databricks skills and plugins",
 		Long: `Remove installed Databricks skills and plugins from all coding agents.
 
-By default, removes all skills. Use --skills to remove specific skills only.`,
+By default, removes all skills. Use --skills to remove specific skills only.
+
+The command exits with code 1 when every removal it attempts fails.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, false)
 			if err != nil {
-				return err
+				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
 			}
+			// Record a scope flag before resolving, so a scope error still reports it.
+			funnel := funnelFrom(ctx)
+			funnel.setScope(explicitScope(projectFlag, globalFlag))
 
 			globalDir, err := installer.GlobalSkillsDir(ctx)
 			if err != nil {
@@ -47,6 +53,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 			if err != nil {
 				return err
 			}
+			funnel.setScope(scope)
 
 			opts := installer.UninstallOptions{
 				Scope:           scope,
@@ -58,6 +65,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				if err != nil {
 					return err
 				}
+				funnel.setTargets(targetAgents)
 				opts.Agents = make([]string, 0, len(targetAgents))
 				for _, agent := range targetAgents {
 					opts.Agents = append(opts.Agents, agent.Name)
@@ -66,23 +74,57 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 
 			// Uninstall is destructive, so confirm interactively before doing
 			// anything. Non-interactive runs (no TTY) proceed unprompted so
-			// automation is unaffected, matching how install only prompts on a TTY.
+			// automation is unaffected.
+			dir := globalDir
+			if scope == installer.ScopeProject {
+				dir = projectDir
+			}
+			state, err := installer.LoadState(dir)
+			if err != nil {
+				return fmt.Errorf("failed to load install state: %w", err)
+			}
 			if cmdio.IsPromptSupported(ctx) {
-				dir := globalDir
-				if scope == installer.ScopeProject {
-					dir = projectDir
-				}
-				proceed, err := confirmUninstall(ctx, dir, opts)
+				proceed, err := confirmUninstall(ctx, state, opts)
 				if err != nil {
 					return err
 				}
 				if !proceed {
 					cmdio.LogString(ctx, "Cancelled.")
+					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUnspecified)
 					return nil
 				}
 			}
 
-			return uninstallSkillsFn(ctx, opts)
+			// With something installed the run removes files and runs agent CLIs,
+			// so it waits for the telemetry auth. The flag errors and the declined
+			// confirm above do not, nor does a run that only reports that nothing
+			// (or a legacy install) is there, or that --skills names a skill that
+			// is not installed (the installer returns that error).
+			if state != nil && skillsInstalled(state, opts.Skills) {
+				waitForTelemetryAuth(ctx)
+			}
+			result, err := uninstallSkillsFn(ctx, opts)
+			if err != nil {
+				return err
+			}
+			// A plugin or skill that could not be removed is only a warning, unless
+			// no copy of any skill and no plugin was removed at all. A plugin record
+			// for an agent this CLI does not know is not an attempt: no command can
+			// act on it.
+			failures := slices.Concat(result.PluginFailures, result.SkillFailures)
+			if result.PluginsRemoved == 0 && result.SkillsChanged == 0 {
+				if i := slices.IndexFunc(failures, func(err error) bool { return !errors.Is(err, installer.ErrUnknownAgent) }); i >= 0 {
+					return fmt.Errorf("could not remove any skill or plugin: %w", failures[i])
+				}
+				if len(failures) > 0 {
+					// Only unknown-agent records: warned about above.
+					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(failures[0]))
+					return nil
+				}
+				// E.g. --agents names agents that have none of the skills.
+				funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
+			}
+			return nil
 		},
 	}
 
@@ -93,24 +135,24 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandUninstall)
 }
 
 // confirmUninstall asks the user to confirm a destructive uninstall, summarizing
 // what will be removed. It returns true without prompting when nothing is
-// recorded in the scope, so the installer can surface its own "nothing installed"
-// or legacy guidance instead.
-func confirmUninstall(ctx context.Context, dir string, opts installer.UninstallOptions) (bool, error) {
-	state, err := installer.LoadState(dir)
-	if err != nil {
-		return false, err
-	}
+// recorded in the scope (state is nil), so the installer can surface its own
+// "nothing installed" or legacy guidance instead.
+func confirmUninstall(ctx context.Context, state *installer.InstallState, opts installer.UninstallOptions) (bool, error) {
 	msg, ask := uninstallConfirmMessage(state, opts)
 	if !ask {
 		return true, nil
 	}
 	cmdio.LogString(ctx, msg)
-	return cmdio.AskYesOrNo(ctx, "Proceed?")
+	proceed, err := cmdio.AskYesOrNo(ctx, "Proceed?")
+	if err != nil {
+		return false, promptError(err)
+	}
+	return proceed, nil
 }
 
 // uninstallConfirmMessage builds the human summary of what an uninstall will
@@ -137,6 +179,16 @@ func uninstallConfirmMessage(state *installer.InstallState, opts installer.Unins
 		return "", false
 	}
 	return fmt.Sprintf("This will remove %s from %s (%s scope).", strings.Join(parts, " and "), target, opts.Scope), true
+}
+
+// skillsInstalled reports whether every name is recorded in state.
+func skillsInstalled(state *installer.InstallState, names []string) bool {
+	for _, name := range names {
+		if _, ok := state.Skills[name]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // plural returns noun for n == 1 and noun+"s" otherwise.

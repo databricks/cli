@@ -6,6 +6,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -53,6 +55,26 @@ func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 	if gotAgain.Token.RefreshToken != "def" {
 		t.Fatalf("RefreshToken after lookup mutation: want %q, got %q", "def", gotAgain.Token.RefreshToken)
 	}
+}
+
+func TestMemoryStore_PendingLoginUsesCopies(t *testing.T) {
+	s := NewMemoryStore()
+	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT", Scopes: []string{"sql"}}
+	require.NoError(t, s.Put("key1", Entry{PendingLogin: pending}))
+
+	pending.DeviceCode = "mutated-after-store"
+	pending.Scopes[0] = "mutated-after-store"
+
+	got, err := s.Lookup("key1")
+	require.NoError(t, err)
+	assert.Equal(t, "device-code", got.PendingLogin.DeviceCode)
+	assert.Equal(t, []string{"sql"}, got.PendingLogin.Scopes)
+
+	got.PendingLogin.Scopes[0] = "mutated-after-lookup"
+
+	got, err = s.Lookup("key1")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"sql"}, got.PendingLogin.Scopes)
 }
 
 func TestMemoryStore_Delete(t *testing.T) {

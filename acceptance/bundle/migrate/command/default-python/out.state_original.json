@@ -188,7 +188,7 @@
                     "provider_config": [],
                     "pypi": [],
                     "requirements": "",
-                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
                   }
                 ],
                 "max_retries": 0,
@@ -262,7 +262,7 @@
                     "provider_config": [],
                     "pypi": [],
                     "requirements": "",
-                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
                   }
                 ],
                 "max_retries": 0,

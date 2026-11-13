@@ -39,15 +39,16 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 }
 
 // runLogsSnapshot fetches a one-shot tail of a run's logs into a string, for the
-// list picker's detail pane.
+// list picker's detail pane, followed by the run's MLflow logs link.
 func runLogsSnapshot(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (string, error) {
-	status, err := resolveRunStatus(ctx, w, runID)
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 			return "", fmt.Errorf("run %d not found", runID)
 		}
 		return "", fmt.Errorf("failed to fetch run status: %w", err)
 	}
+	status := projectRunStatus(run)
 
 	req := logRequest{
 		runID:      runID,
@@ -59,6 +60,9 @@ func runLogsSnapshot(ctx context.Context, w *databricks.WorkspaceClient, runID i
 	var buf bytes.Buffer
 	if _, err := fetchLogs(ctx, w, &buf, req, status); err != nil {
 		return "", fmt.Errorf("failed to fetch logs: %w", err)
+	}
+	if ids := mlflowIDs(ctx, w, run); ids != nil {
+		fmt.Fprintf(&buf, "\nMLflow URL%s: %s\n", ids.retryNote(), mlflowLogsURL(w.Config.Host, ids))
 	}
 	return buf.String(), nil
 }

@@ -9,11 +9,11 @@ real_token=$DATABRICKS_TOKEN
 export DATABRICKS_HOST=https://dev.cloud.databricks.test
 export DATABRICKS_TOKEN=dev-token
 
-title "Describe with --profile overrides auth env vars (#5096)\n"
+title "Describe with --profile overrides auth env vars (#5096)"
 trace $CLI auth describe --profile my-workspace
 
 # Host-only profile: the profile wins for the host, but env fills the token it
 # omits (#5096).
 export DATABRICKS_TOKEN=$real_token
-title "Describe with a host-only --profile fills the token from the environment (#5096)\n"
+title "Describe with a host-only --profile fills the token from the environment (#5096)"
 trace $CLI auth describe --profile host-only

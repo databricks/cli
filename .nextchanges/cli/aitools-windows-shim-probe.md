@@ -1,0 +1,1 @@
+* `databricks aitools install` and `databricks aitools update` now report a coding agent CLI shim (`.cmd` or `.bat`) on Windows that prints its plugin help and then exits with an error as `shim-exited-with-error`, with the command to run to see the error, instead of reporting the CLI as not on PATH. ([#7476](https://github.com/databricks/cli/pull/7476))

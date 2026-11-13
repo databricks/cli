@@ -1,0 +1,185 @@
+
+>>> [CLI] schemas create fspec_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.fspec_[UNIQUE_NAME]"
+}
+
+>>> create_feature_spec_fixtures.py main.fspec_[UNIQUE_NAME]
+
+=== Initial summary before deploy
+
+>>> [CLI] bundle summary -o json
+{
+  "extra_pip_requirements": {
+    "requirements": [
+      "numpy==2.1.0"
+    ]
+  },
+  "features": [
+    {
+      "feature_lookup": {
+        "feature_names": [
+          "age",
+          "country"
+        ],
+        "lookup_keys": [
+          "user_id"
+        ],
+        "table": "main.fspec_[UNIQUE_NAME].user_features"
+      }
+    },
+    {
+      "feature_function": {
+        "input_bindings": [
+          {
+            "bound_feature": "age",
+            "parameter": "x"
+          }
+        ],
+        "output": "score",
+        "udf": "main.fspec_[UNIQUE_NAME].score"
+      }
+    }
+  ],
+  "modified_status": "created",
+  "name": "[SPEC1_ID]"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default/files...
+Created feature_specs.spec1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/feature-specs",
+  "body": {
+    "extra_pip_requirements": {
+      "requirements": [
+        "numpy==2.1.0"
+      ]
+    },
+    "features": [
+      {
+        "feature_lookup": {
+          "feature_names": [
+            "age",
+            "country"
+          ],
+          "lookup_keys": [
+            "user_id"
+          ],
+          "table": "main.fspec_[UNIQUE_NAME].user_features"
+        }
+      },
+      {
+        "feature_function": {
+          "input_bindings": [
+            {
+              "bound_feature": "age",
+              "parameter": "x"
+            }
+          ],
+          "output": "score",
+          "udf": "main.fspec_[UNIQUE_NAME].score"
+        }
+      }
+    ],
+    "name": "[SPEC1_ID]"
+  }
+}
+
+=== Summary should show the id and the Catalog Explorer url
+
+>>> [CLI] bundle summary -o json
+{
+  "id": "[SPEC1_ID]",
+  "url": "[DATABRICKS_URL]/explore/data/functions/main/fspec_[UNIQUE_NAME]/myspec?w=[WORKSPACE_ID]"
+}
+
+=== A second plan on an unchanged bundle must report no changes
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Change a field (every field is immutable, so this recreates)
+
+>>> update_file.py databricks.yml [age, country] [age]
+
+>>> [CLI] bundle plan
+recreate feature_specs.spec1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following feature specs.
+Grants on them that are not declared in the bundle are lost:
+  recreate resources.feature_specs.spec1
+Recreated feature_specs.spec1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/feature-specs/[SPEC1_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/feature-engineering/feature-specs",
+  "body": {
+    "extra_pip_requirements": {
+      "requirements": [
+        "numpy==2.1.0"
+      ]
+    },
+    "features": [
+      {
+        "feature_lookup": {
+          "feature_names": [
+            "age"
+          ],
+          "lookup_keys": [
+            "user_id"
+          ],
+          "table": "main.fspec_[UNIQUE_NAME].user_features"
+        }
+      },
+      {
+        "feature_function": {
+          "input_bindings": [
+            {
+              "bound_feature": "age",
+              "parameter": "x"
+            }
+          ],
+          "output": "score",
+          "udf": "main.fspec_[UNIQUE_NAME].score"
+        }
+      }
+    ],
+    "name": "[SPEC1_ID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.feature_specs.spec1
+
+This action will result in the deletion of the following feature specs.
+Feature Serving endpoints and training code that use them can no longer load them:
+  delete resources.feature_specs.spec1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-feature-specs-basic-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //feature-engineering
+{
+  "method": "DELETE",
+  "path": "/api/2.0/feature-engineering/feature-specs/[SPEC1_ID]"
+}

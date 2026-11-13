@@ -1,6 +1,7 @@
 package client
 
 import (
+	"cmp"
 	"context"
 	"crypto/md5"
 	_ "embed"
@@ -62,6 +63,9 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+// DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
+const DefaultEnvironmentVersion = 4
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
@@ -170,7 +174,7 @@ func (o *ClientOptions) Validate() error {
 	if o.IDE != "" && o.IDE != vscode.VSCodeOption && o.IDE != vscode.CursorOption {
 		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, vscode.VSCodeOption, vscode.CursorOption)
 	}
-	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
+	if o.EnvironmentVersion != 0 && o.EnvironmentVersion < minEnvironmentVersion {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	// base_environment and environment_version are mutually exclusive in the SDK,
@@ -180,6 +184,9 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
+	}
+	if o.EnvironmentVersion > 0 && o.ClusterID != "" {
+		return errors.New("--environment-version can only be used with serverless compute")
 	}
 	// A server started with fewer than one client slot rejects every connection with an
 	// opaque websocket handshake failure, so catch it here instead.
@@ -201,17 +208,22 @@ func (o *ClientOptions) Validate() error {
 }
 
 // GenerateDefaultConnectionName creates a deterministic connection name from
-// the workspace host, accelerator type, and base environment. The name includes
+// the workspace host, accelerator type, and environment. The name includes
 // a hash so that different workspaces produce different names (avoiding SSH
 // known_hosts conflicts). The environment is folded into the hash because a
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
-func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) string {
-	// Keep the hash host-only when no base environment is set so existing default
-	// connection names are preserved.
-	hashInput := host
-	if baseEnvironment != "" {
+func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, environmentVersion int) string {
+	// The version is hashed even when it is the default, so bumping
+	// DefaultEnvironmentVersion intentionally moves users to a new server.
+	var hashInput string
+	switch {
+	case baseEnvironment != "":
 		hashInput = host + "\x00" + baseEnvironment
+	default:
+		// The key keeps a version from hashing like a base environment
+		// whose name is that number.
+		hashInput = host + "\x00environment_version=" + strconv.Itoa(environmentVersion)
 	}
 	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
@@ -224,6 +236,16 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string) st
 
 func (o *ClientOptions) IsServerlessMode() bool {
 	return o.ClusterID == "" && o.ConnectionName != ""
+}
+
+// submittedEnvironmentVersion returns the serverless environment version the server job is
+// submitted with, or 0 when it sets none: dedicated clusters have no environment, and a custom
+// base environment carries its own version.
+func (o *ClientOptions) submittedEnvironmentVersion() int {
+	if !o.IsServerlessMode() || o.BaseEnvironment != "" {
+		return 0
+	}
+	return cmp.Or(o.EnvironmentVersion, DefaultEnvironmentVersion)
 }
 
 // SessionIdentifier returns the unique identifier for the session.
@@ -365,8 +387,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
-		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
-			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
+		if err := vscode.CheckIDECommand(ctx, opts.IDE); err != nil {
+			outcome.errorCategory = ideCommandErrorCategory(err)
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
@@ -842,7 +864,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion))
+			spec.EnvironmentVersion = strconv.Itoa(opts.submittedEnvironmentVersion())
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
@@ -1493,6 +1515,15 @@ type connectOutcome struct {
 	ctxErr error
 }
 
+// ideCommandErrorCategory tells a broken IDE command override apart from a command missing on
+// PATH: the first points at whatever set the override, the second at the user's machine.
+func ideCommandErrorCategory(err error) protos.SshTunnelErrorCategory {
+	if errors.Is(err, vscode.ErrIDECommandOverrideInvalid) {
+		return protos.SshTunnelErrorCategoryIDECommandOverrideInvalid
+	}
+	return protos.SshTunnelErrorCategoryIDECommandNotOnPath
+}
+
 // sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
 // caused it. The four are kept apart because they imply different fixes, and because only the
 // first two can occur under --auto-approve, which the IDE button always passes -- so a shift
@@ -1595,6 +1626,7 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		ServerStartTimeMs:  outcome.serverStartTimeMs,
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
+		EnvironmentVersion: opts.submittedEnvironmentVersion(),
 		HasUsagePolicy:     opts.UsagePolicyID != "",
 		// The connect side can only report that the knob was asked for. Whether any detached
 		// process was there to keep is reported by the server, at teardown.

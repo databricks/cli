@@ -11,6 +11,7 @@ Validation OK!
 >>> [CLI] bundle deploy -qq
 
 === Assert the volume is created successfully
+
 >>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
 {
   "catalog_name": "main",
@@ -20,6 +21,7 @@ Validation OK!
 }
 
 === Assert that the grants were successfully applied
+
 >>> [CLI] grants get VOLUME main.schema1-[UNIQUE_NAME].my_volume
 {
   "privilege_assignments": [
@@ -33,6 +35,7 @@ Validation OK!
 }
 
 === Recreation of the volume without --auto-approve should fail since prompting is not possible
+
 >>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
 
@@ -50,6 +53,7 @@ Files: 0 uploaded, 0 deleted
 Exit code: 1
 
 === Successfully recreate the volume with --auto-approve
+
 >>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve -qq
 
 This action will result in the deletion or recreation of the following volumes.

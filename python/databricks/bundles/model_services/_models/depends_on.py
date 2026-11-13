@@ -17,7 +17,7 @@ class DependsOn:
 
     resource: VariableOr[str]
     """
-    Key of the resource to depend on, as `foo` or `jobs.foo`.
+    Key of the resource to depend on, as `foo` or `jobs.foo`, or of its grants or permissions, as `schemas.foo.grants`.
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class DependsOnDict(TypedDict, total=False):
 
     resource: VariableOr[str]
     """
-    Key of the resource to depend on, as `foo` or `jobs.foo`.
+    Key of the resource to depend on, as `foo` or `jobs.foo`, or of its grants or permissions, as `schemas.foo.grants`.
     """
 
 

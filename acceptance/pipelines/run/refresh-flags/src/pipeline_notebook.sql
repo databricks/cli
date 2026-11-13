@@ -1,0 +1,6 @@
+-- Databricks notebook source
+CREATE OR REFRESH MATERIALIZED VIEW table3 AS SELECT 3 AS id;
+
+-- COMMAND ----------
+
+CREATE OR REFRESH MATERIALIZED VIEW table4 AS SELECT 4 AS id;

@@ -1,8 +1,10 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Redeploy with direct default: auto-migration runs after the build, so library refs are resolved
+
 >>> [CLI] bundle deploy
 Warn: unable to get spark version for cluster 0717-132531-5opeqon1, err: Not Found
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
@@ -26,6 +28,7 @@ ID                   Type  Language  Path
 [OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
 
 === Migrated state's library path (should be the resolved remote path, not the local glob)
+
 >>> print_state.py
 [
   {
@@ -34,6 +37,7 @@ ID                   Type  Language  Path
 ]
 
 === Subsequent deploy is a no-op on direct
+
 >>> [CLI] bundle deploy
 Warn: unable to get spark version for cluster 0717-132531-5opeqon1, err: Not Found
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...

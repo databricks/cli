@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "workspace": {
+            "type": "boolean",
+            "description": "Create a workspace",
+            "default": false
+        }
+    }
+}

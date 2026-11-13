@@ -6,10 +6,12 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Re-plan should be a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Plan after changing serialized_space should show update
+
 >>> [CLI] bundle plan
 update genie_spaces.my_space
 

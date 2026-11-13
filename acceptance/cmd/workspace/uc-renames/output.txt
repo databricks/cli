@@ -1,0 +1,110 @@
+
+=== Create a catalog with a schema, and a volume, a registered model and a secret in it
+
+>>> [CLI] catalogs create test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas create myschema test_catalog_[UNIQUE_NAME]
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema"
+}
+
+>>> [CLI] volumes create test_catalog_[UNIQUE_NAME] myschema myvolume MANAGED
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema.myvolume"
+}
+
+>>> [CLI] registered-models create --catalog-name test_catalog_[UNIQUE_NAME] --schema-name myschema --name mymodel
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema.mymodel"
+}
+
+>>> [CLI] secrets-uc create-secret mysecret test_catalog_[UNIQUE_NAME] myschema value
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema.mysecret"
+}
+
+=== Creating a catalog under a taken name fails
+
+>>> musterr [CLI] catalogs create test_catalog_[UNIQUE_NAME]
+Error: Catalog 'test_catalog_[UNIQUE_NAME]' already exists
+
+=== Renaming the volume lowercases the new name
+
+>>> [CLI] volumes update test_catalog_[UNIQUE_NAME].myschema.myvolume --new-name MyVolume2
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema.myvolume2",
+  "name": "myvolume2"
+}
+
+=== Renaming the model keeps its full name in sync
+
+>>> [CLI] registered-models update test_catalog_[UNIQUE_NAME].myschema.mymodel --new-name mymodel2
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema.mymodel2",
+  "name": "mymodel2"
+}
+
+=== Renaming the schema moves the volume, the model and the secret with it
+
+>>> [CLI] schemas update test_catalog_[UNIQUE_NAME].myschema --new-name myschema2
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema2"
+}
+
+>>> [CLI] volumes read test_catalog_[UNIQUE_NAME].myschema2.myvolume2
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema2.myvolume2"
+}
+
+>>> [CLI] registered-models get test_catalog_[UNIQUE_NAME].myschema2.mymodel2
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema2.mymodel2"
+}
+
+>>> [CLI] secrets-uc get-secret test_catalog_[UNIQUE_NAME].myschema2.mysecret
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].myschema2.mysecret"
+}
+
+=== Renaming the catalog moves everything in it
+
+>>> [CLI] catalogs update test_catalog_[UNIQUE_NAME] --new-name test_catalog_renamed_[UNIQUE_NAME]
+{
+  "name": "test_catalog_renamed_[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas get test_catalog_renamed_[UNIQUE_NAME].myschema2
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2"
+}
+
+>>> [CLI] volumes read test_catalog_renamed_[UNIQUE_NAME].myschema2.myvolume2
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2.myvolume2"
+}
+
+>>> [CLI] registered-models get test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel2
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel2"
+}
+
+>>> [CLI] secrets-uc get-secret test_catalog_renamed_[UNIQUE_NAME].myschema2.mysecret
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mysecret"
+}
+
+=== Deleting the schema with force deletes everything in it
+volume: gone
+model: gone
+secret: gone
+
+=== Deleting the catalog with force deletes its schemas
+
+>>> [CLI] schemas create other test_catalog_renamed_[UNIQUE_NAME]
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].other"
+}
+schema: gone

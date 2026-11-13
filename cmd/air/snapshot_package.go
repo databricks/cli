@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,9 +21,11 @@ import (
 // load-bearing — the remote entry_script extracts to /databricks/code_source/<dir> — so
 // both forms prefix every entry with it.
 
-// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball via
-// `git archive`, with every entry prefixed by directoryName/. When subtreePrefix is
-// set, only that repository subtree is archived and includePaths are relative to it.
+// createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball, with every
+// entry prefixed by directoryName/. The tar is streamed from `git archive --format=tar`
+// into a parallel pgzip writer: git's own tar.gz format compresses on one thread, which
+// dominates packaging time on a large repo. When subtreePrefix is set, only that
+// repository subtree is archived and includePaths are relative to it.
 func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string) error {
 	treeish := commitSHA
 	archiveGit := git
@@ -37,16 +40,31 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 
 	args := []string{
 		"archive",
-		"--format=tar.gz",
+		"--format=tar",
 		"--prefix=" + directoryName + "/",
-		"-o", outputTarball,
 		treeish,
 	}
 	args = append(args, includePaths...)
-	if _, err := archiveGit.run(ctx, args...); err != nil {
+
+	out, err := os.Create(outputTarball)
+	if err != nil {
+		return fmt.Errorf("failed to create tarball: %w", err)
+	}
+	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
+	if err != nil {
+		out.Close()
+		return err
+	}
+	if err := archiveGit.runTo(ctx, ctxWriter{ctx, gz}, args...); err != nil {
+		gz.Close()
+		out.Close()
 		return fmt.Errorf("failed to create git archive: %w", err)
 	}
-	return nil
+	if err := gz.Close(); err != nil {
+		out.Close()
+		return fmt.Errorf("failed to finalize gzip: %w", err)
+	}
+	return out.Close()
 }
 
 // createPlainTarball writes a gzipped tar of the given working-tree files to
@@ -79,7 +97,7 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 		out.Close()
 		return err
 	}
-	if err := tarpack.Write(gz, entries); err != nil {
+	if err := tarpack.Write(ctxWriter{ctx, gz}, entries); err != nil {
 		gz.Close()
 		out.Close()
 		return fmt.Errorf("failed to create plain tarball: %w", err)
@@ -89,6 +107,21 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 		return fmt.Errorf("failed to finalize gzip: %w", err)
 	}
 	return out.Close()
+}
+
+// ctxWriter fails writes once ctx is done, so a cancelled submission (for
+// example, one whose config validation failed) stops packaging promptly instead
+// of archiving the whole tree.
+type ctxWriter struct {
+	ctx context.Context
+	w   io.Writer
+}
+
+func (w ctxWriter) Write(p []byte) (int, error) {
+	if err := w.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return w.w.Write(p)
 }
 
 // snapshotFile is a file selected for the snapshot: its repo-relative path (native
@@ -157,5 +190,28 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 			linkTarget: linkTarget,
 		})
 	}
+	if len(files) == 0 {
+		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
+	}
 	return files, nil
+}
+
+// emptySnapshotError explains why no file was selected for the snapshot. An empty
+// tarball is accepted by the upload but fails on the node, after compute was
+// provisioned, so it is rejected here with the most likely cause.
+func emptySnapshotError(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) error {
+	root := filepath.ToSlash(repoPath)
+	prefix := fmt.Sprintf("code_source snapshot of %s contains no files; refusing to upload an empty snapshot", root)
+	if isGitRepo {
+		// check-ignore -v prints "<source>:<line>:<pattern>\t<path>" and exits non-zero
+		// when the path is not ignored.
+		if out, err := newGitRepo(repoPath).run(ctx, "check-ignore", "-v", "."); err == nil {
+			rule, _, _ := strings.Cut(strings.TrimSpace(out), "\t")
+			return fmt.Errorf("%s: root_path is ignored by git (%s), and the snapshot only includes files git does not ignore. Move the project out of the ignored directory, un-ignore it, or change code_source.root_path. Inspect the rule with `git -C %s check-ignore -v .`", prefix, rule, root)
+		}
+	}
+	if len(includePaths) > 0 {
+		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and are not ignored by git (`git check-ignore -v <path>`)", prefix, strings.Join(includePaths, ", "))
+	}
+	return fmt.Errorf("%s: the directory is empty or all of its files are excluded by .gitignore rules (`git check-ignore -v <path>` shows the rule for a file). Check code_source.root_path", prefix)
 }

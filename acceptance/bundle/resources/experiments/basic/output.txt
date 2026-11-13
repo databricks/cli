@@ -1,5 +1,6 @@
 
 === create the experiment
+
 >>> export EXPERIMENT_ARTIFACT_LOCATION=s3://original-[UNIQUE_NAME]
 
 >>> export EXPERIMENT_NAME_PREFIX=original
@@ -46,6 +47,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 }
 
 === update the name
+
 >>> export EXPERIMENT_NAME_PREFIX=new-name
 
 >>> envsubst
@@ -90,6 +92,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 }
 
 === updating the artifact location should cause a recreation
+
 >>> export EXPERIMENT_ARTIFACT_LOCATION=s3://new-[UNIQUE_NAME]
 
 >>> envsubst
@@ -134,6 +137,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 }
 
 === adding a new tag updates the existing experiment
+
 >>> envsubst
 
 >>> [CLI] bundle plan
@@ -177,6 +181,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 }
 
 === removing all configured tags is rejected
+
 >>> envsubst
 
 >>> musterr [CLI] bundle deploy -qq
@@ -184,6 +189,7 @@ Error: cannot update resources.experiments.my_experiment: updating id=[MY_EXPERI
 
 
 === removing a configured tag is rejected
+
 >>> envsubst
 
 >>> musterr [CLI] bundle deploy -qq
