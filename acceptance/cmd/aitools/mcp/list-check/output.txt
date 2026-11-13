@@ -15,7 +15,7 @@ system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.gith
 === list --check: the token mints, and GitHub needs sign-in
 
 >>> [CLI] aitools mcp list --check
-Profile logfood  ([DATABRICKS_URL])  token ok
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)  token ok
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code  sign-in needed
 
@@ -24,7 +24,7 @@ Profile logfood  ([DATABRICKS_URL])  token ok
 >>> [CLI] api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json {}
 
 >>> [CLI] aitools mcp list --check
-Profile logfood  ([DATABRICKS_URL])  token ok
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)  token ok
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
   github-logfood           system.ai.github               Claude Code  signed in
 
@@ -36,17 +36,20 @@ Profile logfood  ([DATABRICKS_URL])  token ok
     {
       "profile": "logfood",
       "host": "[DATABRICKS_URL]",
+      "config_file": "[TEST_TMP_DIR]/.databrickscfg",
       "status": "ok",
       "servers": [
         {
           "name": "genie_one_mcp-logfood",
           "service": "system.ai.genie_one_mcp",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": false,
+          "status": "ok",
           "agents": [
             {
               "name": "claude-code",
               "path": "[TEST_TMP_DIR]/home/.claude.json",
-              "status": "modified"
+              "status": "installed"
             }
           ],
           "check": {
@@ -57,7 +60,9 @@ Profile logfood  ([DATABRICKS_URL])  token ok
         {
           "name": "github-logfood",
           "service": "system.ai.github",
+          "host": "[DATABRICKS_URL]",
           "sign_in_required": true,
+          "status": "ok",
           "agents": [
             {
               "name": "claude-code",
@@ -74,7 +79,8 @@ Profile logfood  ([DATABRICKS_URL])  token ok
       ]
     }
   ],
-  "unmanaged": []
+  "unmanaged": [],
+  "warnings": []
 }
 
 === logout ends the sign-in; list --check shows it needed again
@@ -83,6 +89,6 @@ Profile logfood  ([DATABRICKS_URL])  token ok
 Signed out of system.ai.github on profile logfood.
 
 >>> [CLI] aitools mcp list --check
-Profile logfood  ([DATABRICKS_URL])  token ok
-  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code (modified)  binary missing
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)  token ok
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code  binary missing
   github-logfood           system.ai.github               Claude Code  sign-in needed
