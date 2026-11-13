@@ -1,12 +1,14 @@
 package aircmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -287,13 +289,64 @@ func TestListInvalidLimit(t *testing.T) {
 func TestListInvalidFilter(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newListCommand()
+	cmd := withOutput(newListCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("filter", "bogus=1"))
 
 	err := cmd.RunE(cmd, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported --filter key")
+}
+
+func TestListInvalidFilterJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		filter  string
+		message string
+	}{
+		{
+			name:    "unsupported key",
+			filter:  "bogus=1",
+			message: "unsupported --filter key \"bogus\": supported keys are accelerator_type, experiment, num_accelerators, user",
+		},
+		{
+			name:    "empty value",
+			filter:  "user=",
+			message: "invalid --filter user=\"\": value cannot be empty",
+		},
+		{
+			name:    "invalid accelerator count",
+			filter:  "num_accelerators=lots",
+			message: "invalid --filter num_accelerators=\"lots\": must be a positive integer",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			m := mocks.NewMockWorkspaceClient(t)
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+			cmd := withOutput(newListCommand(), flags.OutputJSON)
+			cmd.SetContext(ctx)
+			require.NoError(t, cmd.Flags().Set("filter", tt.filter))
+
+			err := cmd.RunE(cmd, nil)
+			require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+			var got map[string]any
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+			assert.Len(t, got, 3)
+			assert.InDelta(t, 1, got["v"], 0)
+			assert.NotEmpty(t, got["ts"])
+			assert.Equal(t, map[string]any{
+				"code":      "INVALID_ARGS",
+				"kind":      "PERMANENT",
+				"message":   tt.message,
+				"retryable": false,
+			}, got["error"])
+		})
+	}
 }
 
 func TestListInvalidAcceleratorFilter(t *testing.T) {
@@ -326,6 +379,40 @@ func TestListInvalidAcceleratorFilter(t *testing.T) {
 	assert.True(t, jobsCalled)
 }
 
+func TestListInvalidAcceleratorFilterJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/list":
+			_, _ = w.Write([]byte(runsListBody(t, "")))
+		case computeOptionsPath:
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newListCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.Flags().Set("all-users", "true"))
+	require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=GPU_1xV100"))
+
+	err := cmd.RunE(cmd, nil)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, jsonError{
+		Code:      "INVALID_ARGS",
+		Kind:      "PERMANENT",
+		Message:   `invalid --filter accelerator_type="GPU_1xV100": valid values for this workspace include families (H100), full types (GPU_8xH100)`,
+		Retryable: false,
+	}, got.Error)
+}
+
 func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -350,7 +437,9 @@ func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
 			}))
 			t.Cleanup(srv.Close)
 
-			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+			var buf bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
 			cmd := withOutput(newListCommand(), flags.OutputJSON)
 			cmd.SetContext(ctx)
 			require.NoError(t, cmd.Flags().Set("all-users", "true"))
@@ -358,8 +447,15 @@ func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
 
 			err := cmd.RunE(cmd, nil)
 			if tc.wantErr {
-				require.Error(t, err)
-				assert.Equal(t, "no runs matched --filter accelerator_type=\"A10\"\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", err.Error())
+				require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+				var got errorEnvelope
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+				assert.Equal(t, jsonError{
+					Code:      "INTERNAL_ERROR",
+					Kind:      "TRANSIENT",
+					Message:   "no runs matched --filter accelerator_type=\"A10\"\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types",
+					Retryable: true,
+				}, got.Error)
 				assert.True(t, computeOptionsCalled)
 			} else {
 				require.NoError(t, err)

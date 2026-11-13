@@ -60,3 +60,22 @@
     ]
   }
 }
+
+=== invalid filter (text)
+
+>>> musterr [CLI] air list --filter bogus=1
+Error: unsupported --filter key "bogus": supported keys are accelerator_type, experiment, num_accelerators, user
+
+=== invalid filter (json)
+
+>>> musterr [CLI] air list --filter bogus=1 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "unsupported --filter key \"bogus\": supported keys are accelerator_type, experiment, num_accelerators, user",
+    "retryable": false
+  }
+}

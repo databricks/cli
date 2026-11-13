@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -134,7 +135,7 @@ Filters:
 
 		f, err := parseListFilters(filters)
 		if err != nil {
-			return err
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 		if f.AcceleratorType != "" {
 			configureAcceleratorFilter(&f)
@@ -185,7 +186,7 @@ Filters:
 		if root.OutputType(cmd) == flags.OutputJSON {
 			rows, err := fetcher.next(limit)
 			if err != nil {
-				return err
+				return renderListFilterValidationError(ctx, cmd, err)
 			}
 			warnIfTruncated(ctx, fetcher)
 			return renderEnvelope(ctx, listData{Rows: rows})
@@ -196,13 +197,45 @@ Filters:
 	return cmd
 }
 
+type listFilterValidationError struct {
+	message   string
+	cause     error
+	transient bool
+}
+
+func (e *listFilterValidationError) Error() string {
+	return e.message
+}
+
+func (e *listFilterValidationError) Unwrap() error {
+	return e.cause
+}
+
+func renderListFilterValidationError(ctx context.Context, cmd *cobra.Command, err error) error {
+	validationErr, ok := errors.AsType[*listFilterValidationError](err)
+	if !ok {
+		return err
+	}
+	if validationErr.transient {
+		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true, err)
+	}
+	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+}
+
 func validateEmptyAcceleratorFilter(ctx context.Context, w *databricks.WorkspaceClient, value string) error {
 	options, err := listWorkspaceComputeOptions(ctx, w)
 	if err != nil {
 		log.Debugf(ctx, "air list: could not validate accelerator filter against workspace compute options: %v", err)
-		return fmt.Errorf("no runs matched --filter accelerator_type=%q\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", value)
+		return &listFilterValidationError{
+			message:   fmt.Sprintf("no runs matched --filter accelerator_type=%q\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", value),
+			cause:     err,
+			transient: true,
+		}
 	}
-	return validateAcceleratorFilter(value, options)
+	if err := validateAcceleratorFilter(value, options); err != nil {
+		return &listFilterValidationError{message: err.Error(), cause: err}
+	}
+	return nil
 }
 
 // listStrategy is a source of matching runs, pulled in batches. Two implement it:
