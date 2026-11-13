@@ -1033,3 +1033,34 @@ func TestOnlyTheResponseToTheRequestEndsTheSignInState(t *testing.T) {
 func testChallenge(signIn SignInFunc) *Challenge {
 	return &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}
 }
+
+// TestSuccessEndsAPendingRestart checks that a restart asked for by a challenge after "Already signed in" ends with the
+// next success. The agent may not call authenticate before the service answers again, so a restart left pending would
+// delete a working credential on a much later, unrelated challenge.
+func TestSuccessEndsAPendingRestart(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
+	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 3)
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	p.waitLines(t, 4)
+	challenged.Store(false)
+	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/list"}`)
+	p.waitLines(t, 5)
+	challenged.Store(true)
+	p.send(t, `{"jsonrpc":"2.0","id":8,"method":"tools/list"}`)
+	p.waitLines(t, 6)
+	p.send(t, fmt.Sprintf(authenticate, 9))
+	p.waitLines(t, 8)
+	require.NoError(t, p.finish(t))
+
+	reqs := signIn.requests()
+	require.Len(t, reqs, 2)
+	assert.False(t, reqs[1].Restart, "a success after the challenge ends the restart it asked for")
+}

@@ -179,13 +179,15 @@ func (h *signInHooks) recordChallenge() {
 	}
 }
 
-// succeeded records a successful answer to a request of method. The "Already signed in" state ends: a challenge after
-// this answer is not a challenge to the credential that was reported signed in. A tools/list answer also takes the
-// authenticate tool off the list, since the list is the service's again.
+// succeeded records a successful answer to a request of method. The "Already signed in" state and a pending restart end:
+// a challenge after this answer is not a challenge to the credential that was reported signed in, and the service
+// accepts the credential, so there is nothing to restart. A tools/list answer also takes the authenticate tool off the
+// list, since the list is the service's again.
 func (h *signInHooks) succeeded(method string) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.alreadySignedIn = false
+	h.restart = false
 	if method == methodToolsList {
 		h.exposed = false
 	}
