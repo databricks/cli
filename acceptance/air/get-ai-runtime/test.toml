@@ -12,11 +12,13 @@ Response.Body = ''
 # so the Environment cell instead comes from the run's environments[].spec (keyed
 # by the task's environment_key), which the typed SDK Run drops — `air get` reads
 # it with a raw request, so this route is hit twice (typed GetRun + that request).
+# Like the real runs/get, the task carries no max_retries.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
 {
   "run_id": 123,
+  "run_type": "SUBMIT_RUN",
   "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
   "creator_user_name": "user@example.com",
   "start_time": 1700000000000,
@@ -30,7 +32,6 @@ Response.Body = '''
       "task_key": "train",
       "run_id": 456,
       "attempt_number": 0,
-      "max_retries": 3,
       "environment_key": "default",
       "ai_runtime_task": {
         "experiment": "my-exp",

@@ -52,7 +52,6 @@ type getData struct {
 	UserDisplay         string `json:"-"`
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
-	MaxRetriesDisplay   string `json:"-"`
 	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
 	// set only for a running run with an estimable remaining time.
 	ProgressDisplay string `json:"-"`
@@ -292,6 +291,5 @@ func buildGetData(run *jobs.Run) getData {
 	// version needs a raw GetRun read (the typed SDK Run drops it), so it is not
 	// filled here alongside the fields read straight off the run.
 	data.EnvironmentDisplay = na
-	data.MaxRetriesDisplay = maxRetries(run)
 	return data
 }

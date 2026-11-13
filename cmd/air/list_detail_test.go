@@ -145,3 +145,54 @@ func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testi
 	assert.Equal(t, mlflowColWidth, lipgloss.Width(rows[0].MLflowLabel))
 	assert.Contains(t, info, mlflowRunID+" (retry 0)")
 }
+
+func TestRunDetailTextReadsTheUploadedConfig(t *testing.T) {
+	const configPath = "/Workspace/Users/me@example.com/.air/cli_launch/exp/exp_abc/training_config.yaml"
+	tests := []struct {
+		name    string
+		runType string
+		config  string // "" means the download fails
+		want    string
+	}{
+		{"configured limit", "SUBMIT_RUN", "experiment_name: exp\nmax_retries: 1\n", "Max Retries   1 "},
+		{"unset limit", "SUBMIT_RUN", "experiment_name: exp\n", "Max Retries   3 (CLI default)"},
+		{"config download fails", "SUBMIT_RUN", "", "Max Retries   N/A"},
+		{"job run", "JOB_RUN", "experiment_name: exp\nmax_retries: 1\n", "Max Retries   N/A"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given an ai_runtime run whose runs/get omits max_retries, as the
+			// Jobs API does.
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/api/2.2/jobs/runs/get":
+					_, _ = w.Write([]byte(`{"run_id": 123, "run_type": "` + tt.runType + `",
+						"state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+						"tasks": [{"run_id": 456, "attempt_number": 0, "ai_runtime_task": {"experiment": "/Users/me@example.com/exp",
+							"deployments": [{"command_path": "/Workspace/Users/me@example.com/.air/cli_launch/exp/exp_abc/command.sh",
+								"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]}}]}`))
+				case "/api/2.0/workspace/export":
+					if tt.config != "" && r.URL.Query().Get("path") == configPath {
+						_, _ = w.Write([]byte(tt.config))
+						return
+					}
+					w.WriteHeader(http.StatusNotFound)
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			// When the list's info pane renders it.
+			got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123)
+			require.NoError(t, err)
+
+			// Then it shows the same config box and limit as `air get`.
+			assert.Contains(t, got, tt.want)
+			assert.Contains(t, got, "1x A10")
+			if tt.config != "" {
+				assert.Contains(t, got, "experiment_name: exp")
+			}
+		})
+	}
+}

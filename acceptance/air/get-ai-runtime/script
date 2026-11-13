@@ -9,3 +9,10 @@ trace $CLI air get 123
 
 title "get (json)"
 trace $CLI air get 123 -o json
+
+# The fake runs/get, like the real one, has no max_retries on the task, so the
+# limit comes from the uploaded config: the CLI default above, the set value here.
+$CLI workspace import "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml" --file training_config_max_retries.yaml --format AUTO --overwrite &> LOG.import-max-retries
+
+title "get (text, max_retries set in the config)"
+trace $CLI air get 123
