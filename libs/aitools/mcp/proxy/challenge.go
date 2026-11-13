@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -36,6 +37,8 @@ type SignInRequest struct {
 	Restart bool
 	// Progress is called on each poll of the wait. It is never nil.
 	Progress func()
+	// Stderr receives the progress lines of the sign-in. Writes to it are serialized with the bridge's diagnostics.
+	Stderr io.Writer
 }
 
 // SignInFunc runs the sign-in for the authenticate tool and waits for it. It reports alreadySignedIn when the caller
@@ -62,6 +65,8 @@ type Challenge struct {
 // signInHooks applies the sign-in rules to the bridge. Services without a challenge get no hooks.
 type signInHooks struct {
 	c *Challenge
+	// stderr is the bridge's stderr, which SignIn writes its progress to.
+	stderr io.Writer
 
 	// mu serializes authenticate calls, which may run a sign-in for minutes. pageCancelled is read and written under it.
 	mu sync.Mutex
@@ -270,7 +275,7 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 			notify(progressNotification(progressToken, polls, h.c.Label))
 		}
 	}
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: progress})
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: progress, Stderr: h.stderr})
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn

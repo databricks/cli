@@ -72,7 +72,7 @@ const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks 
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
-	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}}
+	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}, stderr: io.Discard}
 	return b
 }
 
@@ -340,7 +340,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 		return false, true, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
 	}
 	b := bridgeFor(srv.URL)
-	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}}
+	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, stderr: io.Discard}
 	p := startPiped(t, t.Context(), b)
 
 	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
@@ -484,7 +484,7 @@ func TestChallengeMatchesServiceNameWithoutCase(t *testing.T) {
 		`{"mode":"url","url":"` + testURL + `"}]}}}`
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
 	b := bridgeFor(srv.URL)
-	b.Hooks = &signInHooks{c: &Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}}
+	b.Hooks = &signInHooks{c: &Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}, stderr: io.Discard}
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)

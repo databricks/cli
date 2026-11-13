@@ -777,7 +777,7 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "")
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "system.ai.github", challenge.Service)
@@ -786,12 +786,12 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "")
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
@@ -804,7 +804,7 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
@@ -862,7 +862,8 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
 			require.NoError(t, err)
 
-			signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+			signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+			tc.req.Stderr = io.Discard
 			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
 
 			require.NoError(t, err)
@@ -907,7 +908,7 @@ func TestServeChallengeLookupIsBounded(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
 
 	require.Error(t, err)
 	assert.Less(t, time.Since(start), 10*time.Second, "the lookup must not wait for the SDK's retry budget")
@@ -920,7 +921,7 @@ func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
 
 	require.Error(t, err)
 	assert.Equal(t, serveBindStatus, serveStartStatus(err))
@@ -939,7 +940,7 @@ func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
 	var stopped bool
 	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
 
-	_, err := serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err := serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
@@ -954,9 +955,9 @@ func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
 	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
 	var stopped bool
 	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
 
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Stderr: io.Discard})
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
@@ -993,8 +994,8 @@ func TestServeSignInReportsEachPoll(t *testing.T) {
 	require.NoError(t, err)
 
 	polls := 0
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
-	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() { polls++ }})
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() { polls++ }, Stderr: io.Discard})
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, polls)
@@ -1028,8 +1029,8 @@ func TestServeSignInAuthenticatesEveryRequest(t *testing.T) {
 	guard := &refreshGuard{authenticate: func(*http.Request) error { authenticated.Add(1); return nil }, profile: "logfood", cancel: func() {}}
 	w := guardedTestClient(t, server.URL, guard)
 
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() {}})
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() {}, Stderr: io.Discard})
 
 	require.NoError(t, err)
 	assert.Equal(t, reads.Load(), authenticated.Load(), "every request of the sign-in is authenticated by the guard")
@@ -1052,9 +1053,9 @@ func TestServeSignInRestartDeleteRefreshFailureStopsProxy(t *testing.T) {
 		cancel:  func() { stopped = true },
 	}
 	w := guardedTestClient(t, server.URL, guard)
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
 
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Stderr: io.Discard})
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")

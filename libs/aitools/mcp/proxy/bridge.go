@@ -272,11 +272,29 @@ func (c *conn) answerLocally(ctx context.Context, line []byte) bool {
 	if c.b.Hooks == nil {
 		return false
 	}
-	msgs, handled := c.b.Hooks.Local(ctx, line, c.reply)
-	if err := c.writeLines(msgs); err != nil {
-		c.logf("stdout: %v", err)
+	msgs, handled := c.b.Hooks.Local(ctx, line, c.notifyLocal)
+	if handled {
+		c.writeHook(msgs)
 	}
 	return handled
+}
+
+// notifyLocal writes a message that a hook sends before its answer.
+func (c *conn) notifyLocal(msg []byte) {
+	c.writeHook([][]byte{msg})
+}
+
+// writeHook writes the messages a hook produced, as lines and in order. A message that is not JSON is logged, and none is
+// written.
+func (c *conn) writeHook(msgs [][]byte) {
+	lines, err := oneLines(msgs)
+	if err != nil {
+		c.logf("hook: %v", err)
+		return
+	}
+	if err := c.writeLines(lines); err != nil {
+		c.logf("stdout: %v", err)
+	}
 }
 
 // forward waits (see await), then POSTs one client message exactly as received and writes what the upstream
@@ -855,9 +873,15 @@ func (x *exchange) lines(reqCtx context.Context, msg []byte) ([][]byte, error) {
 			return nil, err
 		}
 	}
+	return oneLines(msgs)
+}
+
+// oneLines returns each message as a single line, in order (see oneLine). When one is not JSON, it returns the error and
+// no lines.
+func oneLines(msgs [][]byte) ([][]byte, error) {
 	lines := make([][]byte, 0, len(msgs))
-	for _, out := range msgs {
-		line, err := oneLine(out)
+	for _, msg := range msgs {
+		line, err := oneLine(msg)
 		if err != nil {
 			return nil, err
 		}

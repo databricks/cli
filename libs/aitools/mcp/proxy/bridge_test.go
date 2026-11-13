@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -2199,14 +2200,14 @@ func TestRunClosesStaleResponseBeforeReplay(t *testing.T) {
 	assert.Nil(t, parseReply(t, out[1]).Error)
 }
 
-// localHooks answers a request whose body names "local" with msgs, and forwards the others.
-type localHooks struct{ msgs [][]byte }
+// answerHooks answers a request whose body names "local" with msgs, and forwards the others.
+type answerHooks struct{ msgs [][]byte }
 
-func (localHooks) Result(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+func (answerHooks) Result(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
 	return [][]byte{msg}, nil
 }
 
-func (h localHooks) Local(_ context.Context, request []byte, _ func([]byte)) ([][]byte, bool) {
+func (h answerHooks) Local(_ context.Context, request []byte, _ func([]byte)) ([][]byte, bool) {
 	if !bytes.Contains(request, []byte("local")) {
 		return nil, false
 	}
@@ -2217,7 +2218,7 @@ func (h localHooks) Local(_ context.Context, request []byte, _ func([]byte)) ([]
 // line each and in order, and that nothing is written for a request they do not handle.
 func TestAnswerLocallyWritesHookMessagesInOrder(t *testing.T) {
 	var out, errOut syncBuffer
-	c := &conn{b: &Bridge{Out: &out, Err: &errOut, Hooks: localHooks{msgs: [][]byte{[]byte(`{"n":1}`), []byte(`{"n":2}`)}}}}
+	c := &conn{b: &Bridge{Out: &out, Err: &errOut, Hooks: answerHooks{msgs: [][]byte{[]byte(`{"n":1}`), []byte(`{"n":2}`)}}}}
 
 	assert.True(t, c.answerLocally(t.Context(), []byte(`{"jsonrpc":"2.0","id":1,"method":"local"}`)))
 	assert.Equal(t, "{\"n\":1}\n{\"n\":2}\n", out.String())
@@ -2233,4 +2234,110 @@ func TestAnswerLocallyWithoutHooksForwardsEverything(t *testing.T) {
 
 	assert.False(t, c.answerLocally(t.Context(), []byte(`{"jsonrpc":"2.0","id":1,"method":"local"}`)))
 	assert.Empty(t, out.String())
+}
+
+// scriptedHooks answers every request with msgs, after notify has been called with notify, when handled is true. Upstream
+// messages pass through.
+type scriptedHooks struct {
+	notify  []byte
+	msgs    [][]byte
+	handled bool
+}
+
+func (h scriptedHooks) Local(_ context.Context, _ []byte, notify func([]byte)) ([][]byte, bool) {
+	if h.notify != nil {
+		notify(h.notify)
+	}
+	return h.msgs, h.handled
+}
+
+func (scriptedHooks) Result(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+	return [][]byte{msg}, nil
+}
+
+// TestAnswerLocallyCompactsMessages checks that the messages a hook writes itself, its progress and its answer, are one
+// stdout line each, as an upstream answer is.
+func TestAnswerLocallyCompactsMessages(t *testing.T) {
+	b := bridgeFor("http://unused.test")
+	b.Hooks = scriptedHooks{
+		notify:  []byte("{\n\"jsonrpc\": \"2.0\",\n\"method\": \"notifications/progress\"}"),
+		msgs:    [][]byte{[]byte("{\n\"jsonrpc\": \"2.0\",\n\"id\": 3,\n\"result\": {}}")},
+		handled: true,
+	}
+
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":3,"method":"tools/call"}`+"\n")
+
+	assert.Equal(t, []string{
+		`{"jsonrpc":"2.0","method":"notifications/progress"}`,
+		`{"jsonrpc":"2.0","id":3,"result":{}}`,
+	}, out)
+}
+
+// TestAnswerLocallyWritesNothingWhenNotHandled checks that a request a hook does not handle is forwarded, and that the
+// hook's messages for it are not written.
+func TestAnswerLocallyWritesNothingWhenNotHandled(t *testing.T) {
+	srv, fake := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
+	b := bridgeFor(srv.URL)
+	b.Hooks = scriptedHooks{msgs: [][]byte{[]byte(listChangedMsg)}, handled: false}
+
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	assert.Equal(t, []string{listTools}, out)
+	assert.Len(t, fake.requests(), 1, "the request is forwarded")
+}
+
+// TestSignInWritesShareTheBridgeStderr checks that the progress a sign-in writes to its stderr is serialized with the
+// bridge's own diagnostics. The stderr here is a plain buffer, so a write that is not serialized is a data race, which
+// the race detector reports.
+func TestSignInWritesShareTheBridgeStderr(t *testing.T) {
+	const progressLines = 200
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if m, _ := parseMessage(body); m.Method == "tools/list" {
+			answerWith(http.StatusOK, listChallenge)(w, r)
+			return
+		}
+		// A body that is not JSON is logged by the bridge, once per request.
+		answerWith(http.StatusOK, "not json")(w, r)
+	})
+	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
+		for i := range progressLines {
+			fmt.Fprintf(req.Stderr, "sign-in progress %d\n", i)
+		}
+		return false, true, nil
+	}
+	var stderr bytes.Buffer
+	var stdout syncBuffer
+	in, pw := io.Pipe()
+	done := make(chan error, 1)
+	go func() {
+		done <- Run(t.Context(), Options{
+			In:           in,
+			Out:          &stdout,
+			Err:          &stderr,
+			Endpoint:     srv.URL,
+			Config:       &config.Config{Host: testHost},
+			Authenticate: func(*http.Request) error { return nil },
+			Profile:      "logfood",
+			Challenge:    &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn},
+		})
+	}()
+
+	// The session is challenged once the list is answered, so the authenticate call waits for that answer.
+	fmt.Fprintln(pw, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	require.Eventually(t, func() bool { return strings.Contains(stdout.String(), `"authenticate"`) }, 10*time.Second, time.Millisecond)
+	fmt.Fprintln(pw, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	for id := 10; id < 30; id++ {
+		fmt.Fprintf(pw, `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"echo","arguments":{}}}`+"\n", id)
+	}
+	require.NoError(t, pw.Close())
+	require.NoError(t, <-done)
+
+	var progress int
+	for _, line := range strings.Split(stderr.String(), "\n") {
+		if strings.HasPrefix(line, "sign-in progress ") {
+			progress++
+		}
+	}
+	assert.Equal(t, progressLines, progress, "every progress line is written whole")
 }

@@ -125,7 +125,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, 1)
 	}
-	challenge, err := serveChallenge(ctx, w, entry, profileName, f.service, pinnedFile, cmd.ErrOrStderr())
+	challenge, err := serveChallenge(ctx, w, entry, profileName, f.service, pinnedFile)
 	if err != nil {
 		return serveFailure(cmd, err, serveStartStatus(err))
 	}
@@ -174,7 +174,7 @@ func (g guardCredentials) Configure(context.Context, *config.Config) (credential
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
 // a pure passthrough. The state entry decides when there is one; otherwise the service is read once.
 // pinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile). w must be guardedClient's.
-func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *mcp.Entry, profileName, service, pinnedFile string, errOut io.Writer) (*proxy.Challenge, error) {
+func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *mcp.Entry, profileName, service, pinnedFile string) (*proxy.Challenge, error) {
 	signInRequired := entry != nil && entry.SignInRequired
 	if entry == nil {
 		svc, err := lookupAtStart(ctx, w, profileName, pinnedFile, service)
@@ -192,7 +192,7 @@ func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *m
 		Host:         w.Config.Host,
 		Label:        mcp.ProviderLabel(service),
 		LoginCommand: mcpLoginHint(service, profileName, pinnedFile),
-		SignIn:       serveSignIn(w, profileName, service, pinnedFile, errOut),
+		SignIn:       serveSignIn(w, profileName, service, pinnedFile),
 	}, nil
 }
 
@@ -209,10 +209,10 @@ func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, profileNa
 	return svc, nil
 }
 
-// serveSignIn is the authenticate tool's sign-in, the one `login` runs. Progress goes to errOut, which is stderr because
-// stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how often the browser opens.
-// w must be guardedClient's.
-func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile string, errOut io.Writer) proxy.SignInFunc {
+// serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
+// proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
+// often the browser opens. w must be guardedClient's.
+func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile string) proxy.SignInFunc {
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
 	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
@@ -236,7 +236,7 @@ func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile
 			openPage = browser.OpenOutputToStderr
 		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
-		_, alreadySignedIn, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: req.Progress})
+		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: req.Progress})
 		return alreadySignedIn, urlShown, err
 	}
 }
