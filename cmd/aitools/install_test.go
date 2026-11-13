@@ -372,6 +372,122 @@ func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
 	assert.Empty(t, recordRef)
 }
 
+func TestExecutePlanSkillsFailureStillInstallsPlugins(t *testing.T) {
+	setupTestAgents(t) // temp HOME for the real state file below
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	plugins := setupPluginMock(t)
+	recordPluginInstallsFn = installer.RecordPluginInstalls
+	origSkills := installSkillsForAgentsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills; cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	fetchErr := &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: 503, Err: errors.New("failed to fetch manifest: HTTP 503")}
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return fetchErr
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	// Cursor's skills are at v0.2.5 from an earlier install.
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion: 2,
+		Release:       "v0.2.5",
+		Skills:        map[string]string{"databricks": "0.2.5"},
+	}))
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
+	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+
+	// The skills failure is still the command's error, but it no longer stops
+	// Claude Code's plugin install.
+	require.ErrorIs(t, err, fetchErr)
+	require.Len(t, *plugins, 1)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, agents.NameClaudeCode, outcomes[0].agent.Name)
+	assert.Equal(t, outcomeInstalled, outcomes[0].status)
+
+	// The plugin is recorded, but the release stays at the skills' v0.2.5 so
+	// version and update don't report the old skills as up to date.
+	state, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Contains(t, state.Plugins, agents.NameClaudeCode)
+	assert.Equal(t, "v0.2.5", state.Release)
+}
+
+func TestExecutePlanSkillsFailureKeepsUntrackedSkillsVisible(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	plugins := setupPluginMock(t)
+	recordPluginInstallsFn = installer.RecordPluginInstalls
+	origSkills := installSkillsForAgentsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills; cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	fetchErr := &installer.FetchError{Stage: installer.FetchStageManifest, StatusCode: 503, Err: errors.New("failed to fetch manifest: HTTP 503")}
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return fetchErr
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	// Skills from an install that predates state tracking: on disk, no state file.
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "databricks"), 0o755))
+	require.True(t, installer.HasUntrackedSkills(ctx, installer.ScopeGlobal))
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
+	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+
+	require.ErrorIs(t, err, fetchErr)
+	require.Len(t, *plugins, 1)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeInstalled, outcomes[0].status)
+
+	// No plugin-only state file is created, so update still reports the
+	// untracked skills instead of treating the scope as plugin-only.
+	state, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, state)
+	assert.True(t, installer.HasUntrackedSkills(ctx, installer.ScopeGlobal))
+}
+
+func TestExecutePlanSkillsAndStateWriteFailuresAreJoined(t *testing.T) {
+	setupTestAgents(t) // temp HOME: the skills failure path reads the global skills dir
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	setupPluginMock(t)
+	origSkills := installSkillsForAgentsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills; cleanupLegacyFn = origCleanup })
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+	skillsErr := errors.New("failed to write skill files")
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return skillsErr
+	}
+	stateErr := &installer.StateError{Path: ".state.json", Err: errors.New("permission denied")}
+	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error {
+		return stateErr
+	}
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor"}
+	ctx := cmdio.MockDiscard(t.Context())
+	plan := buildPlan([]*agents.Agent{cursor, claude}, installer.ScopeGlobal, false, false)
+	_, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+
+	// Both failures reach the user, the skills one first.
+	require.ErrorIs(t, err, skillsErr)
+	require.ErrorIs(t, err, stateErr)
+	assert.Equal(t, skillsErr.Error()+"\n"+stateErr.Error(), err.Error())
+	// The category is picked by error type, not by order: the typed state
+	// error outranks the untyped skills error.
+	assert.Equal(t, protos.AitoolsErrorCategoryStateInvalid, classifyInstallError(err))
+}
+
 // --- RunE: skills-only path (config-dir detection, no plugin) ---
 
 func TestInstallSkillsOnlyAllAgents(t *testing.T) {
@@ -597,12 +713,13 @@ func TestInstallOutputJSONTopLevelFailure(t *testing.T) {
 	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetOut(&out)
-	// Cursor is skills-only, so this fails in the skills-group path, which returns
-	// before appending any per-agent outcome.
+	// Cursor is skills-only, so this fails in the skills-group path, which records
+	// no per-agent outcome.
 	cmd.SetArgs([]string{"--agents", "cursor", "--scope", "global", "--output", "json"})
 
 	// A top-level failure has no per-agent entry, so it must still be represented
-	// in the JSON (not just a bare non-zero exit with an empty agents array).
+	// in the JSON (not just a bare non-zero exit). With no plugin agent in the
+	// plan, the agents array is empty here.
 	err := cmd.Execute()
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 

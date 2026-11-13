@@ -607,17 +607,18 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	var outcomes []agentOutcome
 	var explicitErrs []error
 
+	// A skills install runs as a group; its failure is the command's top-level
+	// error. Plugin agents don't depend on it, so they are still attempted.
+	var skillsErr error
 	if len(skillsAgents) > 0 {
 		if !quiet {
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
-		// A skills install runs as a group; on failure the whole command fails and
-		// the top-level error category classifies it.
-		if err := installSkillsForAgentsFn(ctx, src, skillsAgents, opts); err != nil {
-			return outcomes, err
-		}
-		for _, a := range skillsAgents {
-			outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+		skillsErr = installSkillsForAgentsFn(ctx, src, skillsAgents, opts)
+		if skillsErr == nil {
+			for _, a := range skillsAgents {
+				outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+			}
 		}
 	}
 
@@ -664,9 +665,22 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
 			}
 		}
-		if len(records) > 0 {
-			if err := recordPluginInstallsFn(ctx, opts.Scope, records, ref); err != nil {
-				return outcomes, err
+		if len(records) > 0 && skillsErr != nil && installer.HasUntrackedSkills(ctx, opts.Scope) {
+			// Skills with no state file are on disk (an install that predates
+			// state tracking, or an interrupted first install). A state file
+			// holding only these plugins would hide those skills from update and
+			// from the install's legacy checks, so leave recording to the next
+			// install whose skills step succeeds.
+			log.Debugf(ctx, "Not recording plugin installs: skills without install state are on disk")
+		} else if len(records) > 0 {
+			// After a skills failure the skills on disk stay at the old release,
+			// so record the plugins without advancing state.Release.
+			releaseRef := ref
+			if skillsErr != nil {
+				releaseRef = ""
+			}
+			if err := recordPluginInstallsFn(ctx, opts.Scope, records, releaseRef); err != nil {
+				return outcomes, errors.Join(skillsErr, err)
 			}
 		}
 	}
@@ -695,6 +709,11 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		cmdio.LogString(ctx, fmt.Sprintf("Installed the plugin for %d %s.", pluginCount, noun))
 	}
 
+	// The skills error has no per-agent entry, so it stays the top-level error;
+	// explicit per-agent failures are already in their outcomes.
+	if skillsErr != nil {
+		return outcomes, skillsErr
+	}
 	if len(explicitErrs) > 0 {
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
 	}
@@ -740,8 +759,9 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 	}
 	// A top-level failure (skills-group install, plugin recording) has no
 	// per-agent entry, so surface it here too; otherwise the consumer sees a
-	// non-zero exit with an empty agents array and no reason. Per-agent failures
-	// stay in the agents entries above and are not repeated here.
+	// non-zero exit with no reason, and the agents array holds at most the
+	// plugin agents that were still installed. Per-agent failures stay in the
+	// agents entries above and are not repeated here.
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()
 		out.ErrorCategory = string(classifyInstallError(e))
