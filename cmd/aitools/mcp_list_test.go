@@ -1096,3 +1096,44 @@ func TestSignInStatus(t *testing.T) {
 		})
 	}
 }
+
+// TestAddChecksUsesTheRequirementTheServiceHasNow checks that --check asks the service whether it needs sign-in, rather
+// than trusting the record: a service that now needs sign-in is checked, and one that no longer needs it is not reported
+// as needing sign-in.
+func TestAddChecksUsesTheRequirementTheServiceHasNow(t *testing.T) {
+	t.Run("now requires sign-in", func(t *testing.T) {
+		home := withHome(t)
+		server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+		writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+		entry := listCheckGitHub(t, "github-logfood", "logfood", server.URL, "")
+		entry.SignInRequired = false
+		saveState(t, entry)
+
+		s, out := checkedListServer(t)
+		require.NotNil(t, s.Check)
+		assert.Equal(t, checkNeeded, s.Check.SignIn)
+		assert.Empty(t, out.Warnings)
+	})
+
+	t.Run("no longer requires sign-in", func(t *testing.T) {
+		home := withHome(t)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/api/2.1/unity-catalog/mcp-services/system.ai.github":
+				// The service has no source connection with an OAuth provider any more.
+				_, _ = w.Write([]byte(`{"name":"mcp-services/system.ai.github"}`))
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		t.Cleanup(server.Close)
+		writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+		saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+		s, out := checkedListServer(t)
+		require.NotNil(t, s.Check)
+		assert.Empty(t, s.Check.SignIn)
+		assert.Empty(t, out.Warnings)
+	})
+}

@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -384,11 +383,11 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 	for j := range p.Servers {
 		s := &p.Servers[j]
 		s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
-		if !s.SignInRequired {
-			continue
-		}
-		s.Check.SignIn = statusUnknown
 		if err != nil {
+			// The sign-in is unknown when the profile cannot authenticate. The record says whether it was required.
+			if s.SignInRequired {
+				s.Check.SignIn = statusUnknown
+			}
 			continue
 		}
 		status, signInErr := signInStatus(ctx, w, p.Profile, s.Service)
@@ -399,16 +398,16 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 	}
 }
 
-// signInStatus reads the caller's sign-in to a service. Only an ACTIVE credential counts as signed in. A service the
-// profile can no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error
-// says why.
+// signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential
+// counts as signed in. A service that does not require sign-in is "", which is not a status. A service the profile can
+// no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error says why.
 func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, service string) (string, error) {
-	_, err := mcp.GetService(ctx, w, service)
-	if errors.Is(err, apierr.ErrNotFound) {
-		return statusUnknown, fmt.Errorf("%s is not an MCP service visible to profile %s", service, profileName)
-	}
+	svc, err := serviceFor(ctx, w, profileName, service)
 	if err != nil {
-		return statusUnknown, describeRequestError(profileName, err)
+		return statusUnknown, err
+	}
+	if !svc.SignInRequired {
+		return "", nil
 	}
 	state, err := mcp.CredentialState(ctx, w, service)
 	if err != nil {
