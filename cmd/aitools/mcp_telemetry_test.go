@@ -3,7 +3,9 @@ package aitools
 import (
 	"encoding/json"
 	"errors"
+	"maps"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
@@ -240,8 +242,7 @@ func TestAddSignInEvent(t *testing.T) {
 	}, addSignInEvent("system.ai.github", signInStateActive, true, nil))
 }
 
-// The event carries enums and counts only. A custom service and the host of its profile must not
-// appear anywhere in the payload.
+// The event carries enums and counts only. A custom service's name must not appear anywhere in the payload.
 func TestMcpEventOmitsUserContent(t *testing.T) {
 	event := protos.AitoolsMcpEvent{
 		CallingAgent:      protos.AitoolsAgentTypeClaudeCode,
@@ -257,17 +258,9 @@ func TestMcpEventOmitsUserContent(t *testing.T) {
 
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(b, &got))
-	assert.ElementsMatch(t, []string{"calling_agent", "operation", "servers", "bound_profile_count"}, keys(got))
+	assert.ElementsMatch(t, []string{"calling_agent", "operation", "servers", "bound_profile_count"}, slices.Collect(maps.Keys(got)))
 	assert.NotContains(t, string(b), "acme_catalog")
 	assert.NotContains(t, string(b), "secret_schema")
 	assert.NotContains(t, string(b), "internal_tool")
 	assert.Contains(t, string(b), `"service":"CUSTOM"`)
-}
-
-func keys(m map[string]any) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	return out
 }
