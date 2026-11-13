@@ -221,6 +221,13 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .IsComputed -}}
 			{{else if .IsOutputOnly -}}
+			{{- /* Immutable (create-only) fields are settable at create but cannot
+			       change on update. They keep their flag on create-type commands
+			       (and any non-update command) and are omitted from update-type
+			       commands. Computed/output-only fields are handled above and stay
+			       flagless everywhere, so a field that is both immutable and
+			       computed (e.g. dashboards parent_path) is unaffected by this. */ -}}
+			{{else if and .IsImmutable $method.IsCrudUpdate -}}
 			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}. {{end}}Supported values: {{template "printArray" .Entity.Enum}}{{if $hasFieldMask}}. Wire name: '{{.Name}}'.{{end}}`)
 			{{else if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}} var {{.CamelName}}Param string
 			cmd.Flags().StringVar(&{{.CamelName}}Param, "{{.KebabName}}", {{.CamelName}}Param, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}{{if $hasFieldMask}} Wire name: '{{.Name}}'.{{end}}`)
@@ -403,7 +410,7 @@ func new{{.PascalName}}() *cobra.Command {
 				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt "ExcludeFromJson" $excludeFromJson)}}
 			{{- end -}}
 			{{- range .AllFields -}}
-			{{- if and (not .Required) (not .IsComputed) (not .IsOutputOnly)}}
+			{{- if and (not .Required) (not .IsComputed) (not .IsOutputOnly) (not (and .IsImmutable $method.IsCrudUpdate))}}
 				{{if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}}
 			        if {{.CamelName}}Param != "" {
 						{{template "parse-well-known-type" (dict "Method" $method "Field" . "SourceValue" (printf "%sParam" .CamelName))}}

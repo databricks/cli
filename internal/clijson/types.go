@@ -117,6 +117,7 @@ type MethodJSON struct {
 	IsJsonOnly                     bool `json:"is_json_only,omitempty"`
 	IsCrudCreate                   bool `json:"is_crud_create,omitempty"`
 	IsCrudRead                     bool `json:"is_crud_read,omitempty"`
+	IsCrudUpdate                   bool `json:"is_crud_update,omitempty"`
 	IsHiddenCLI                    bool `json:"is_hidden_cli,omitempty"`
 	IsResponseByteStream           bool `json:"is_response_byte_stream,omitempty"`
 	HasRequiredPositionalArguments bool `json:"has_required_positional_arguments,omitempty"`
@@ -145,11 +146,15 @@ type FieldJSON struct {
 
 	Description string `json:"description,omitempty"`
 
-	Required           bool `json:"required,omitempty"`
-	IsPath             bool `json:"is_path,omitempty"`
-	IsQuery            bool `json:"is_query,omitempty"`
-	IsComputed         bool `json:"is_computed,omitempty"`
-	IsOutputOnly       bool `json:"is_output_only,omitempty"`
+	Required     bool `json:"required,omitempty"`
+	IsPath       bool `json:"is_path,omitempty"`
+	IsQuery      bool `json:"is_query,omitempty"`
+	IsComputed   bool `json:"is_computed,omitempty"`
+	IsOutputOnly bool `json:"is_output_only,omitempty"`
+	// IsImmutable is the AIP-203 IMMUTABLE behavior: settable at create but not
+	// changeable on update. The CLI keeps the flag on create-type commands and
+	// omits it from update-type commands.
+	IsImmutable        bool `json:"is_immutable,omitempty"`
 	IsRequestBodyField bool `json:"is_request_body_field,omitempty"`
 	IsOptionalObject   bool `json:"is_optional_object,omitempty"`
 
