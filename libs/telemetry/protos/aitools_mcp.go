@@ -64,8 +64,8 @@ const (
 // AitoolsMcpServerResult is the result for one service, for one agent when the
 // operation writes agent config. Unset fields are omitted: an agent is not set
 // for sign-in, and an outcome is not set for proxy events. An error category is
-// set when the target failed or was skipped, when a proxy start failed its
-// checks (PROXY_STARTED), and on SIGN_IN_PROMPTED, where it is SIGN_IN_REQUIRED.
+// set when the target failed or was skipped, and on SIGN_IN_PROMPTED, where it is
+// SIGN_IN_REQUIRED.
 type AitoolsMcpServerResult struct {
 	Service       AitoolsMcpService     `json:"service"`
 	Agent         AitoolsAgentType      `json:"agent,omitempty"`

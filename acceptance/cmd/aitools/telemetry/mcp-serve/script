@@ -14,7 +14,7 @@ title "serve logs PROXY_STARTED after the binding checks; the upload is sent whe
 trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests-list.ndjson > /dev/null
 mcp_events
 
-title "A binding that fails logs PROXY_STARTED with its category, but no upload follows: there is no config to upload with"
+title "A binding that fails logs no PROXY_STARTED, so no upload follows"
 trace musterr $CLI aitools mcp serve --profile gone --service system.ai.genie_one_mcp --agent codex < /dev/null > /dev/null
 mcp_events
 

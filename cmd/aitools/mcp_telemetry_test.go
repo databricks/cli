@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,24 +178,36 @@ func TestSignOutServerResult(t *testing.T) {
 }
 
 func TestProxyStartedEvent(t *testing.T) {
-	ok := proxyStartedEvent(protos.AitoolsAgentTypeClaudeCode, "system.ai.genie_one_mcp", nil)
 	assert.Equal(t, protos.AitoolsMcpEvent{
 		CallingAgent: protos.AitoolsAgentTypeClaudeCode,
 		Operation:    protos.AitoolsMcpOperationProxyStarted,
 		Servers:      []protos.AitoolsMcpServerResult{{Service: protos.AitoolsMcpServiceGenieOne}},
-	}, ok)
+	}, proxyStartedEvent(protos.AitoolsAgentTypeClaudeCode, "system.ai.genie_one_mcp"))
+}
 
-	// Each binding failure has its category; the error text never reaches the event.
-	for category, bind := range map[protos.AitoolsErrorCategory]mcp.BindCategory{
-		protos.AitoolsErrorCategoryProfileNotFound:    mcp.BindProfileNotFound,
-		protos.AitoolsErrorCategoryProfileHostChanged: mcp.BindProfileHostChanged,
-		protos.AitoolsErrorCategoryAuthFailed:         mcp.BindAuthFailed,
-	} {
-		event := proxyStartedEvent(protos.AitoolsAgentTypeUnspecified, "main.tools.custom", &mcp.BindError{Category: bind})
-		require.Len(t, event.Servers, 1)
-		assert.Equal(t, category, event.Servers[0].ErrorCategory)
-		assert.Equal(t, protos.AitoolsMcpServiceCustom, event.Servers[0].Service)
-	}
+// An event that names a rejected credential is not logged: its upload would authenticate with that credential again.
+func TestLogMcpEventDropsRejectedCredential(t *testing.T) {
+	withHome(t)
+	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	logMcpEvent(ctx, protos.AitoolsMcpEvent{
+		Operation: protos.AitoolsMcpOperationSignIn,
+		Servers: []protos.AitoolsMcpServerResult{{
+			Service:       protos.AitoolsMcpServiceGitHub,
+			Outcome:       protos.AitoolsTargetOutcomeFailed,
+			ErrorCategory: protos.AitoolsErrorCategoryAuthFailed,
+		}},
+	})
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+
+	logMcpEvent(ctx, protos.AitoolsMcpEvent{
+		Operation: protos.AitoolsMcpOperationSignIn,
+		Servers: []protos.AitoolsMcpServerResult{{
+			Service:       protos.AitoolsMcpServiceGitHub,
+			Outcome:       protos.AitoolsTargetOutcomeFailed,
+			ErrorCategory: protos.AitoolsErrorCategoryMCPPermissionDenied,
+		}},
+	})
+	assert.Len(t, telemetry.BufferedEvents(ctx), 1)
 }
 
 func TestSignInPromptedEvent(t *testing.T) {

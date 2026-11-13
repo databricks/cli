@@ -114,20 +114,8 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Stderr:  cmd.ErrOrStderr(),
 	})
 	if err != nil {
-		// An AUTH_FAILED binding has passed the host check, so its profile may authenticate the upload. A profile whose
-		// host changed is not used: Bind never contacts a host the record does not name.
-		if errorCategory(err) == protos.AitoolsErrorCategoryAuthFailed {
-			if configFile, _, cerr := addConfigFile(cmd.Context()); cerr == nil {
-				setUploadConfig(cmd, profileName, configFile)
-			}
-		}
-		logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service, err))
 		return serveFailure(cmd, err, serveBindStatus)
 	}
-
-	// The bound profile authenticates the exit-time telemetry upload. The session's own config refreshes its token, which
-	// the upload must not do, so the upload gets a config of its own.
-	setUploadConfig(cmd, profileName, cfg.ConfigFile)
 
 	// A server pinned to a config file names that file in its hints, as add and login do.
 	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
@@ -150,7 +138,6 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
 		// message is the one that names the login.
 		if refreshErr := refresh.failure(); refreshErr != nil {
-			cmd.SetContext(cmdctx.ClearConfigUsed(cmd.Context()))
 			return serveFailure(cmd, refreshErr, serveBindStatus)
 		}
 		if ctx.Err() != nil {
@@ -158,10 +145,12 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 			return nil
 		}
 		// serveChallenge fails only on an auth failure (see lookupAtStart), which exits serveBindStatus.
-		logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service, err))
 		return serveFailure(cmd, err, serveBindStatus)
 	}
-	logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service, nil))
+	// Only a serving start is logged. The upload authenticates with a config of its own that never refreshes a token
+	// (see setUploadConfig), since the session's config refreshes its token.
+	setUploadConfig(cmd, profileName, cfg.ConfigFile)
+	logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service))
 
 	return serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:        cmd.InOrStdin(),

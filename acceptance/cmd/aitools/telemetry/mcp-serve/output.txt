@@ -14,7 +14,7 @@ No install record for system.ai.genie_one_mcp on profile "logfood"; using its cu
   "bound_profile_count": 0
 }
 
-=== A binding that fails logs PROXY_STARTED with its category, but no upload follows: there is no config to upload with
+=== A binding that fails logs no PROXY_STARTED, so no upload follows
 
 >>> musterr [CLI] aitools mcp serve --profile gone --service system.ai.genie_one_mcp --agent codex
 MCP server system.ai.genie_one_mcp needs Databricks profile "gone", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile gone

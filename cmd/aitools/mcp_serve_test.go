@@ -27,6 +27,8 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -335,6 +337,21 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 
 // TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
 // exits 2 like the other binding failures.
+// A start that fails its binding checks logs no PROXY_STARTED, so nothing uploads.
+func TestMcpServeFailedStartLogsNothing(t *testing.T) {
+	withHome(t)
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := env.Set(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+}
+
 func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	withHome(t)
 	dir, err := installer.GlobalSkillsDir(t.Context())

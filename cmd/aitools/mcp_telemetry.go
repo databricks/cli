@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -75,11 +76,18 @@ func proxyAgentType(flag string) protos.AitoolsAgentType {
 }
 
 // logMcpEvent buffers an MCP event; cmd/root uploads it at exit. An event without server results
-// is not logged: a run that stopped before any server was reached has nothing to report. The bound
-// profile count is read from the state file as it is after the operation. A state file that cannot
-// be read drops the event; telemetry never fails a command.
+// is not logged: a run that stopped before any server was reached has nothing to report. An event
+// that names a rejected credential is not logged either: its upload would authenticate with that
+// credential and be rejected the same way. The bound profile count is read from the state file as
+// it is after the operation. A state file that cannot be read drops the event; telemetry never
+// fails a command.
 func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) {
 	if len(event.Servers) == 0 {
+		return
+	}
+	if slices.ContainsFunc(event.Servers, func(r protos.AitoolsMcpServerResult) bool {
+		return r.ErrorCategory == protos.AitoolsErrorCategoryAuthFailed
+	}) {
 		return
 	}
 	state, err := mcp.LoadState(ctx)
@@ -215,18 +223,15 @@ func signOutServerResult(service, state string, err error) protos.AitoolsMcpServ
 	return r
 }
 
-// proxyStartedEvent is the PROXY_STARTED event of serve, logged once the startup checks have run. err is the failure
-// of a check, or nil when the proxy is about to serve. The event uploads only when its profile resolved: a failed
-// binding with no profile to upload with leaves it unsent.
-func proxyStartedEvent(agent protos.AitoolsAgentType, service string, err error) protos.AitoolsMcpEvent {
-	r := protos.AitoolsMcpServerResult{Service: mcpServiceType(service)}
-	if err != nil {
-		r.ErrorCategory = errorCategory(err)
-	}
+// proxyStartedEvent is the PROXY_STARTED event of serve, logged once the startup checks have passed and the proxy serves.
+// A start that fails its checks logs nothing. A binding that failed has no profile the upload may authenticate with
+// (PROFILE_NOT_FOUND and PROFILE_HOST_CHANGED are never sent), and a rejected credential would only repeat its rejected
+// request, so none of them uploads.
+func proxyStartedEvent(agent protos.AitoolsAgentType, service string) protos.AitoolsMcpEvent {
 	return protos.AitoolsMcpEvent{
 		CallingAgent: agent,
 		Operation:    protos.AitoolsMcpOperationProxyStarted,
-		Servers:      []protos.AitoolsMcpServerResult{r},
+		Servers:      []protos.AitoolsMcpServerResult{{Service: mcpServiceType(service)}},
 	}
 }
 

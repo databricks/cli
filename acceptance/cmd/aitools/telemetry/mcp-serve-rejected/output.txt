@@ -1,18 +1,7 @@
 
-=== serve whose startup check is rejected: exit 2, and PROXY_STARTED is uploaded with AUTH_FAILED
+=== serve whose startup check is rejected: exit 2, and nothing is uploaded: a failed start logs no event
 
 >>> musterr [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
 No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
 cannot read MCP service system.ai.genie_one_mcp: Invalid access token.
 Run: databricks auth login --profile logfood
-{
-  "calling_agent": "CLAUDE_CODE",
-  "operation": "PROXY_STARTED",
-  "servers": [
-    {
-      "service": "GENIE_ONE",
-      "error_category": "AUTH_FAILED"
-    }
-  ],
-  "bound_profile_count": 0
-}
