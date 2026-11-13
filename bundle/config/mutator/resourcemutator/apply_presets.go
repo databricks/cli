@@ -281,6 +281,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		genieSpace.Title = prefix + genieSpace.Title
 	}
 
+	// Genie Agents: Prefix
+	for _, genieAgent := range r.GenieAgents {
+		if genieAgent == nil {
+			continue
+		}
+		genieAgent.DisplayName = prefix + genieAgent.DisplayName
+	}
+
 	// Apps: No presets
 
 	// Alerts: Prefix, TriggerPauseStatus

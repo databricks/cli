@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
+Created genie_agents.agent
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "name": "agents/[AGENT_ID]",
+  "display_name": "test_agent_[UNIQUE_NAME]",
+  "description": "Agent grounded in sales tables",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+  "etag": "1"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Update description in place
+
+>>> update_file.py databricks.yml Agent grounded in sales tables Agent grounded in sales tables, updated
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
+Updated genie_agents.agent
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "name": "agents/[AGENT_ID]",
+  "display_name": "test_agent_[UNIQUE_NAME]",
+  "description": "Agent grounded in sales tables, updated",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+  "etag": "1"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_agents.agent
+
+This action will result in the deletion of the following Genie agents.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_agents.agent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

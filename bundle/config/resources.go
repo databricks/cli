@@ -35,6 +35,7 @@ type Resources struct {
 	Clusters                  map[string]*resources.Cluster                  `json:"clusters,omitempty"`
 	Dashboards                map[string]*resources.Dashboard                `json:"dashboards,omitempty"`
 	GenieSpaces               map[string]*resources.GenieSpace               `json:"genie_spaces,omitempty"`
+	GenieAgents               map[string]*resources.GenieAgent               `json:"genie_agents,omitempty"`
 	Apps                      map[string]*resources.App                      `json:"apps,omitempty"`
 	SecretScopes              map[string]*resources.SecretScope              `json:"secret_scopes,omitempty"`
 	Alerts                    map[string]*resources.Alert                    `json:"alerts,omitempty"`
@@ -135,6 +136,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["genie_spaces"], r.GenieSpaces),
+		collectResourceMap(descriptions["genie_agents"], r.GenieAgents),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["alerts"], r.Alerts),
@@ -246,6 +248,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"clusters":                     (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":                   (&resources.Dashboard{}).ResourceDescription(),
 		"genie_spaces":                 (&resources.GenieSpace{}).ResourceDescription(),
+		"genie_agents":                 (&resources.GenieAgent{}).ResourceDescription(),
 		"volumes":                      (&resources.Volume{}).ResourceDescription(),
 		"apps":                         (&resources.App{}).ResourceDescription(),
 		"secret_scopes":                (&resources.SecretScope{}).ResourceDescription(),

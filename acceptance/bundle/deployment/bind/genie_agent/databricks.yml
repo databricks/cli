@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  genie_agents:
+    agent1:
+      genie_agent_id: "01f0a1b2c3d4e5f60718293a4b5c6d7e"
+      display_name: bound-agent
+      warehouse_id: test-warehouse-id
+      definition:
+        config:
+          sample_questions:
+            - id: "01f0a1b2c3d4e5f60718293a4b5c6d7f"
+              question: What were total sales last month?

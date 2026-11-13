@@ -207,6 +207,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				GenieAgents: map[string]*resources.GenieAgent{
+					"genieagent1": {
+						GenieAgentConfig: resources.GenieAgentConfig{
+							DisplayName: "genieagent1",
+						},
+					},
+				},
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
@@ -457,6 +464,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Genie Spaces
 	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
+
+	// Genie Agents
+	assert.Equal(t, "[dev lennart] genieagent1", b.Config.Resources.GenieAgents["genieagent1"].DisplayName)
 
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)

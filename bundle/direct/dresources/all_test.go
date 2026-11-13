@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/genieagents"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -319,6 +320,31 @@ var testConfig map[string]any = map[string]any{
 		WarehouseId:     "test-warehouse-id",
 		ParentPath:      "/Workspace/Users/user@example.com",
 		SerializedSpace: "{}",
+	},
+
+	"genie_agents": &resources.GenieAgent{
+		GenieAgentId: "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+		DisplayName:  "my-genie-agent",
+		Description:  "Test genie agent",
+		WarehouseId:  "test-warehouse-id",
+		ParentPath:   "/Workspace/Users/user@example.com",
+		Definition: &genieagents.GenieAgentDefinition{
+			Config: &genieagents.GenieAgentConfig{
+				SampleQuestions: []genieagents.GenieAgentSampleQuestion{
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What were total sales?"},
+				},
+			},
+			DataSources: &genieagents.GenieAgentDataSources{
+				Tables: []genieagents.GenieAgentTable{
+					{Identifier: "main.sales.orders", Description: "Orders table"},
+				},
+			},
+			Instructions: &genieagents.GenieAgentInstructions{
+				TextInstructions: []genieagents.GenieAgentTextInstruction{
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7f", Content: "Report revenue as the sum of order_amount."},
+				},
+			},
+		},
 	},
 
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
@@ -617,6 +643,33 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/genie/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"genie_agents.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.GenieAgents.CreateGenieAgent(ctx, genieagents.CreateGenieAgentRequest{
+			GenieAgent: genieagents.GenieAgent{
+				DisplayName: "genie-agent-permissions",
+				WarehouseId: "test-warehouse-id",
+				Definition: genieagents.GenieAgentDefinition{
+					Config: &genieagents.GenieAgentConfig{
+						SampleQuestions: []genieagents.GenieAgentSampleQuestion{
+							{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What were total sales?"},
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + strings.TrimPrefix(resp.Name, "agents/"),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

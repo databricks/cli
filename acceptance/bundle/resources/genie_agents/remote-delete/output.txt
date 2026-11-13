@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created genie_agents.agent1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Delete the resource out of band
+
+>>> [CLI] genie-agents delete-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+
+=== Plan should detect the resource is gone and re-create it
+
+>>> [CLI] bundle plan
+create genie_agents.agent1
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted

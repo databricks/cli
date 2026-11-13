@@ -13,6 +13,15 @@ genie_spaces: dashboards.GenieSpace
 
 mcp_services: catalog.McpService
 
+# The heuristic picks CreateGenieAgentRequest because the config's identity
+# field genie_agent_id exists only on the create request, and the field-overlap
+# score weights that rare field name heavily. Pin the resource type: the
+# generated rules describe the read shape, and GenieAgent is what GET returns.
+# If the API carried the create-time genie_agent_id input on the resource
+# message itself, the resource type would win the overlap and this pin could be
+# dropped.
+genie_agents: genieagents.GenieAgent
+
 model_provider_services: catalog.ModelProviderService
 
 model_services: catalog.ModelService

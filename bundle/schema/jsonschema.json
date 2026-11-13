@@ -1231,6 +1231,61 @@
                   }
                 ]
               },
+              "resources.GenieAgent": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "[Private Preview]",
+                    "properties": {
+                      "definition": {
+                        "description": "The definition of the Genie Agent: its sample questions, data sources, instructions, and benchmarks. Must set at least one field. Replaced as a whole on update.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentDefinition"
+                      },
+                      "description": {
+                        "description": "Description of the Genie Agent. The maximum length is 4,096 characters.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "display_name": {
+                        "description": "Display name of the Genie Agent. Must be unique within its folder. The maximum length is 63 characters.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "genie_agent_id": {
+                        "description": "Client-specified ID for the agent: 32 lowercase hexadecimal characters (a UUID without dashes), not all zeros. Assigned by the server if omitted. Immutable: changing this field recreates the resource.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent_path": {
+                        "description": "Workspace folder in which to create the Genie Agent. If omitted, the caller's home folder is used. On update, setting it moves the agent and clearing it does not.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                      },
+                      "warehouse_id": {
+                        "description": "ID of the SQL warehouse used by this Genie Agent.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "display_name",
+                      "warehouse_id",
+                      "definition"
+                    ],
+                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                    "doNotSuggest": true
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.GenieSpace": {
                 "oneOf": [
                   {
@@ -4420,6 +4475,10 @@
                       "description": "The feature definitions for the bundle, where each key is the name of the feature.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Feature",
                       "markdownDescription": "The feature definitions for the bundle, where each key is the name of the feature."
+                    },
+                    "genie_agents": {
+                      "description": "The Genie agent definitions for the bundle, where each key is the name of the agent.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieAgent"
                     },
                     "genie_spaces": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
@@ -9895,6 +9954,955 @@
                   "required": [
                     "granularities",
                     "timestamp_column"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentBenchmarkAnswer": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The expected answer to a benchmark question.",
+                  "properties": {
+                    "content": {
+                      "description": "[Private Preview] The answer.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "format": {
+                      "description": "[Private Preview] The format of the answer.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarkAnswerFormat",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "content",
+                    "format"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentBenchmarkAnswerFormat": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The format of a benchmark answer.",
+                  "enum": [
+                    "GENIE_AGENT_BENCHMARK_ANSWER_FORMAT_SQL"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentBenchmarkQuestion": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A benchmark question with its expected answer.",
+                  "properties": {
+                    "answer": {
+                      "description": "[Private Preview] The expected answer. At most one answer is supported; omit it when the question has no\nexpected answer.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarkAnswer",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "evaluation_note": {
+                      "description": "[Private Preview] Notes on how to evaluate answers to the question.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the question: 32 lowercase hexadecimal characters, unique within the Genie\nAgent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "question": {
+                      "description": "[Private Preview] The question.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "question"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentBenchmarks": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Benchmarks for evaluating a Genie Agent.",
+                  "properties": {
+                    "questions": {
+                      "description": "[Private Preview] The benchmark questions, sorted by `id` in descending order.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarkQuestion",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentColumnConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Settings for one column of a table or metric view.",
+                  "properties": {
+                    "column": {
+                      "description": "[Private Preview] The name of the column. Must exist in the table or metric view.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "description": {
+                      "description": "[Private Preview] Description of the column, overriding its Unity Catalog comment.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "display_name": {
+                      "description": "[Private Preview] Display name of the column in the Genie Agent. Accepted only where column display names are\nenabled for the workspace.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "enable_entity_matching": {
+                      "description": "[Private Preview] Whether the Genie Agent indexes the column's values to match them in questions.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "enable_format_assistance": {
+                      "description": "[Private Preview] Whether the Genie Agent samples example values from the column to learn its format.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "exclude": {
+                      "description": "[Private Preview] Whether the column is hidden from the Genie Agent.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "synonyms": {
+                      "description": "[Private Preview] Synonyms for the column name.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "column"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "General settings of a Genie Agent. The warehouse, display name, and description are separate\nfields of the Genie Agent.",
+                  "properties": {
+                    "sample_questions": {
+                      "description": "[Private Preview] Sample questions shown to users of the Genie Agent, sorted by `id`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSampleQuestion",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentDataSources": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The data a Genie Agent can access.",
+                  "properties": {
+                    "mcp_connections": {
+                      "description": "[Private Preview] Unity Catalog MCP connections, sorted by `mcp_connection`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentMcpConnection",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "tables": {
+                      "description": "[Private Preview] Unity Catalog tables, views, and metric views, in the order they were added.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTable",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "volumes": {
+                      "description": "[Private Preview] Unity Catalog volumes, in the order they were added.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentVolume",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentDefinition": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The definition of a Genie Agent.",
+                  "properties": {
+                    "benchmarks": {
+                      "description": "[Private Preview] Benchmarks for evaluating the quality of the Genie Agent's answers.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarks",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "config": {
+                      "description": "[Private Preview] General settings of the Genie Agent.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentConfig",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "data_sources": {
+                      "description": "[Private Preview] The data the Genie Agent can access.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentDataSources",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "instructions": {
+                      "description": "[Private Preview] Instructions and SQL that guide how the Genie Agent answers questions.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentInstructions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentExampleQuestionSql": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "An example question paired with the SQL that answers it.",
+                  "properties": {
+                    "id": {
+                      "description": "[Private Preview] Identifier of the example: 32 lowercase hexadecimal characters, unique within the Genie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "parameters": {
+                      "description": "[Private Preview] Parameters used in the SQL, in the order given.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlParameter",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "question": {
+                      "description": "[Private Preview] The question.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql": {
+                      "description": "[Private Preview] The SQL that answers the question.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "usage_guidance": {
+                      "description": "[Private Preview] Guidance on when to use this example.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "question",
+                    "sql"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentInstructions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Instructions and SQL that guide how a Genie Agent answers questions.",
+                  "properties": {
+                    "example_question_sqls": {
+                      "description": "[Private Preview] Example questions paired with the SQL that answers them.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentExampleQuestionSql",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "join_specs": {
+                      "description": "[Private Preview] Predefined joins between tables or metric views.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentJoinSpec",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql_functions": {
+                      "description": "[Private Preview] Unity Catalog SQL functions the generated SQL may call.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql_snippets": {
+                      "description": "[Private Preview] Reusable SQL filters, expressions, and measures.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlSnippets",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "text_instructions": {
+                      "description": "[Private Preview] General text instructions. At most one text instruction is supported.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTextInstruction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentJoinRelationshipType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "How the rows of the two sides of a join relate.",
+                  "enum": [
+                    "GENIE_AGENT_JOIN_RELATIONSHIP_TYPE_MANY_TO_ONE",
+                    "GENIE_AGENT_JOIN_RELATIONSHIP_TYPE_ONE_TO_MANY",
+                    "GENIE_AGENT_JOIN_RELATIONSHIP_TYPE_ONE_TO_ONE",
+                    "GENIE_AGENT_JOIN_RELATIONSHIP_TYPE_MANY_TO_MANY"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentJoinSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "One side of a join.",
+                  "properties": {
+                    "alias": {
+                      "description": "[Private Preview] The alias the join condition uses for this side.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "identifier": {
+                      "description": "[Private Preview] The full three-level name of the table or metric view.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "identifier"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentJoinSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A predefined join between two tables or metric views.",
+                  "properties": {
+                    "comment": {
+                      "description": "[Private Preview] Description of the join's purpose.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the join: 32 lowercase hexadecimal characters, unique within the Genie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "instruction": {
+                      "description": "[Private Preview] Guidance on when to use the join.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "left": {
+                      "description": "[Private Preview] The left side of the join.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentJoinSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "relationship_type": {
+                      "description": "[Private Preview] How the rows of the two sides relate.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentJoinRelationshipType",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "right": {
+                      "description": "[Private Preview] The right side of the join.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentJoinSource",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql": {
+                      "description": "[Private Preview] The join condition, for example `orders.customer_id = customers.id`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "left",
+                    "right",
+                    "sql"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentMcpConnection": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Unity Catalog MCP connection the Genie Agent can use.",
+                  "properties": {
+                    "mcp_connection": {
+                      "description": "[Private Preview] The name of the Unity Catalog connection, for example `system.ai.google_calendar`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "mcp_connection"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSampleQuestion": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A sample question shown to users of the Genie Agent.",
+                  "properties": {
+                    "id": {
+                      "description": "[Private Preview] Identifier of the sample question: 32 lowercase hexadecimal characters, unique within the\nGenie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "question": {
+                      "description": "[Private Preview] The text of the question.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "question"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlExpression": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A reusable non-aggregated SQL expression (dimension).",
+                  "properties": {
+                    "alias": {
+                      "description": "[Private Preview] The alias the Genie Agent uses for the expression in generated SQL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "display_name": {
+                      "description": "[Private Preview] Display name of the expression.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the expression: 32 lowercase hexadecimal characters, unique within the Genie\nAgent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "instruction": {
+                      "description": "[Private Preview] Guidance on when to use the expression.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql": {
+                      "description": "[Private Preview] The SQL of the expression.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "synonyms": {
+                      "description": "[Private Preview] Synonyms for the expression.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "sql"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlFilter": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A reusable SQL filter.",
+                  "properties": {
+                    "display_name": {
+                      "description": "[Private Preview] Display name of the filter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the filter: 32 lowercase hexadecimal characters, unique within the Genie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "instruction": {
+                      "description": "[Private Preview] Guidance on when to use the filter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql": {
+                      "description": "[Private Preview] The SQL of the filter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "synonyms": {
+                      "description": "[Private Preview] Synonyms for the filter.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "sql"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlFunction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Unity Catalog SQL function the generated SQL may call.",
+                  "properties": {
+                    "id": {
+                      "description": "[Private Preview] Identifier of the entry: 32 lowercase hexadecimal characters, unique within the Genie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "identifier": {
+                      "description": "[Private Preview] The full three-level name of the function, for example `catalog.schema.function`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "identifier"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlMeasure": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A reusable aggregated SQL measure.",
+                  "properties": {
+                    "alias": {
+                      "description": "[Private Preview] The alias the Genie Agent uses for the measure in generated SQL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "display_name": {
+                      "description": "[Private Preview] Display name of the measure.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the measure: 32 lowercase hexadecimal characters, unique within the Genie Agent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "instruction": {
+                      "description": "[Private Preview] Guidance on when to use the measure.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql": {
+                      "description": "[Private Preview] The SQL of the measure.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "synonyms": {
+                      "description": "[Private Preview] Synonyms for the measure.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "sql"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlParameter": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A parameter of a parameterized SQL example.",
+                  "properties": {
+                    "default_value": {
+                      "description": "[Private Preview] The parameter's default value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlParameterDefaultValue",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "description": {
+                      "description": "[Private Preview] Description of the parameter.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "name": {
+                      "description": "[Private Preview] The name of the parameter in the SQL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "type_hint": {
+                      "description": "[Private Preview] The parameter's data type, for example `STRING` or `INTEGER`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlParameterDefaultRange": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A range of default values for a SQL parameter.",
+                  "properties": {
+                    "max": {
+                      "description": "[Private Preview] The upper end of the range.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "min": {
+                      "description": "[Private Preview] The lower end of the range.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlParameterDefaultValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The default value of a SQL parameter: a list of values or a range.",
+                  "properties": {
+                    "value_range": {
+                      "description": "[Private Preview] The default range.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlParameterDefaultRange",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "values": {
+                      "description": "[Private Preview] The default values. A single default is a one-element list.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentSqlSnippets": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Reusable SQL snippets.",
+                  "properties": {
+                    "expressions": {
+                      "description": "[Private Preview] Non-aggregated expressions (dimensions), such as `price * units`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlExpression",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "filters": {
+                      "description": "[Private Preview] Filters, such as `state = 'CA'`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFilter",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "measures": {
+                      "description": "[Private Preview] Aggregated measures, such as `SUM(price * units)`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlMeasure",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentTable": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Unity Catalog table, view, or metric view the Genie Agent can access.",
+                  "properties": {
+                    "column_configs": {
+                      "description": "[Private Preview] Column settings for the table, sorted by `column`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentColumnConfig",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "description": {
+                      "description": "[Private Preview] Description of the table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "identifier": {
+                      "description": "[Private Preview] The full three-level name, for example `catalog.schema.table`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "identifier"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentTextInstruction": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A general text instruction for the Genie Agent.",
+                  "properties": {
+                    "content": {
+                      "description": "[Private Preview] The text of the instruction.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "id": {
+                      "description": "[Private Preview] Identifier of the instruction: 32 lowercase hexadecimal characters, unique within the Genie\nAgent.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "content",
+                    "id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentVolume": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A Unity Catalog volume the Genie Agent can access.",
+                  "properties": {
+                    "description": {
+                      "description": "[Private Preview] Description of the volume.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "path": {
+                      "description": "[Private Preview] The volume path, for example `/Volumes/catalog/schema/volume`. May name a directory or file\nwithin the volume.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "path"
                   ]
                 },
                 {
@@ -22082,6 +23090,20 @@
                     }
                   ]
                 },
+                "resources.GenieAgent": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieAgent"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.GenieSpace": {
                   "oneOf": [
                     {
@@ -23113,6 +24135,216 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetric"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentBenchmarkAnswer": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarkAnswer"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentBenchmarkQuestion": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentBenchmarkQuestion"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentColumnConfig": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentColumnConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentExampleQuestionSql": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentExampleQuestionSql"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentJoinSpec": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentJoinSpec"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentMcpConnection": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentMcpConnection"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSampleQuestion": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSampleQuestion"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSqlExpression": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlExpression"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSqlFilter": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFilter"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSqlFunction": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFunction"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSqlMeasure": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlMeasure"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentSqlParameter": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlParameter"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentTable": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTable"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentTextInstruction": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTextInstruction"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "genieagents.GenieAgentVolume": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentVolume"
                     }
                   },
                   {

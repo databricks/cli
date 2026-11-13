@@ -1,0 +1,7 @@
+# Genie agents are managed by the direct deployment engine.
+Cloud = true
+
+# Deployment history has no "genie_agents." resource-key prefix, so enabling
+# deployment history warns on every deploy. See dmsResourceTypes in
+# libs/testserver/bundledeployments.go, which mirrors the service's allowlist.
+EnvMatrixExclude.no_genie_agent_dms = ["DMS=true"]

@@ -1,0 +1,8 @@
+# Local only: shows the required-field warning; nothing is deployed.
+Cloud = false
+
+RecordRequests = false
+
+Ignore = [
+    ".databricks",
+]

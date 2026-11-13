@@ -50,6 +50,10 @@ index drops all upserted vectors. Both can be expensive to rebuild:`
 This action will result in the deletion or recreation of the following Genie spaces.
 The conversation history attached to a deleted space is permanently lost:`
 
+	deleteOrRecreateGenieAgentMessage = `
+This action will result in the deletion or recreation of the following Genie agents.
+The conversation history attached to a deleted agent is permanently lost:`
+
 	deleteOrRecreateMaterializationSetMessage = `
 This action will result in the deletion or recreation of the following materialization sets.
 Every materialized feature in a recreated set is dropped and recomputed from scratch, including
@@ -114,6 +118,9 @@ For Delta Sync indexes, the source Delta Table is preserved but the embedding pi
 For Direct Access indexes, all upserted vectors are permanently lost:`
 
 	deleteGenieSpaceMessage = `This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:`
+
+	deleteGenieAgentMessage = `This action will result in the deletion of the following Genie agents.
 The conversation history attached to them is permanently lost:`
 
 	deleteFeatureMessage = `This action will result in the deletion of the following Feature Views.
