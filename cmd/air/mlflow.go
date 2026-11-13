@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -165,13 +164,8 @@ func mlflowRunLabel(name, mlflowRunID string, width int) string {
 	if label == "" {
 		label = mlflowRunID
 	}
-	if width <= 0 || lipgloss.Width(label) <= width {
+	if width <= 0 {
 		return label
 	}
-	// A wide rune takes two cells, so cut by display width, not rune count.
-	runes := []rune(label)
-	for len(runes) > 0 && lipgloss.Width(string(runes)) > width-1 {
-		runes = runes[1:]
-	}
-	return "…" + string(runes)
+	return truncateStart(label, width)
 }
