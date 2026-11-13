@@ -876,7 +876,7 @@ func TestBuildMcpListAndRemoveAgreeAfterConfigMoved(t *testing.T) {
 
 // listCheckServer answers the GitHub service and the caller's sign-in to it, for --check. The service answers with
 // serviceStatus, and the credential with credentialStatus and credentialBody. Other API paths are NOT_FOUND.
-func listCheckServer(t *testing.T, serviceStatus int, credentialStatus int, credentialBody string) *httptest.Server {
+func listCheckServer(t *testing.T, serviceStatus, credentialStatus int, credentialBody string) *httptest.Server {
 	t.Helper()
 	const servicePath = "/api/2.1/unity-catalog/mcp-services/system.ai.github"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
