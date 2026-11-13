@@ -51,7 +51,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	s.Volumes[volume.FullName] = volume
+	s.Volumes[volumeKey(volume.FullName)] = volume
 
 	// Register the volume path as a directory so that fs cp works without
 	// requiring an explicit mkdir.
@@ -64,6 +64,12 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	return Response{
 		Body: volume,
 	}
+}
+
+// volumeKey is the key a volume is stored under. UC looks a full name up case-insensitively
+// (checked on AWS: a volume re-keyed as main.s.MyVolume is still read at that path).
+func volumeKey(fullName string) string {
+	return strings.ToLower(fullName)
 }
 
 func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
@@ -94,14 +100,15 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 
 	if request.NewName != "" {
 		delete(s.Volumes, fullname)
-		existing.Name = request.NewName
-		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + request.NewName
+		// UC lowercases the new name, as on create.
+		existing.Name = strings.ToLower(request.NewName)
+		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + existing.Name
 	}
 
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Volumes[existing.FullName] = existing
+	s.Volumes[volumeKey(existing.FullName)] = existing
 	return Response{
 		Body: existing,
 	}

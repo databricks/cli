@@ -24,8 +24,14 @@ class AlertV2Operand:
     """"""
 
     column: VariableOrOptional[AlertV2OperandColumn] = None
+    """
+    Compare the source against another column of the query result.
+    """
 
     value: VariableOrOptional[AlertV2OperandValue] = None
+    """
+    Compare the source against a fixed value.
+    """
 
     @classmethod
     def from_dict(cls, value: "AlertV2OperandDict") -> "Self":
@@ -39,8 +45,14 @@ class AlertV2OperandDict(TypedDict, total=False):
     """"""
 
     column: VariableOrOptional[AlertV2OperandColumnParam]
+    """
+    Compare the source against another column of the query result.
+    """
 
     value: VariableOrOptional[AlertV2OperandValueParam]
+    """
+    Compare the source against a fixed value.
+    """
 
 
 AlertV2OperandParam = AlertV2OperandDict | AlertV2Operand

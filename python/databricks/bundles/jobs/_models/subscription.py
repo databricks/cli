@@ -25,9 +25,7 @@ class Subscription:
 
     attachment: VariableOrOptional[SubscriptionAttachment] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The configuration for the files attached to the dashboard snapshot notification. It
+    Optional: The configuration for the files attached to the dashboard snapshot notification. It
     controls the underlying data of dashboard widgets that is attached as data files and which
     pages are included in the attached PDF. If not specified, the notification is sent with only
     the default snapshot.
@@ -62,9 +60,7 @@ class SubscriptionDict(TypedDict, total=False):
 
     attachment: VariableOrOptional[SubscriptionAttachmentParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The configuration for the files attached to the dashboard snapshot notification. It
+    Optional: The configuration for the files attached to the dashboard snapshot notification. It
     controls the underlying data of dashboard widgets that is attached as data files and which
     pages are included in the attached PDF. If not specified, the notification is sent with only
     the default snapshot.

@@ -39,6 +39,13 @@ type Variable struct {
 	// Documentation for this input variable
 	Description string `json:"description,omitempty"`
 
+	// Marks the variable as holding a secret. Set automatically for a variable used as the
+	// value of a sensitive resource field (e.g. the value of a UC secret). Its value is
+	// redacted in the output of `bundle validate -o json` and `bundle summary -o json`, and
+	// it may only be referenced from sensitive resource fields or from other sensitive
+	// variables, so that the secret never ends up in plain text.
+	Sensitive *bool `json:"sensitive,omitempty"`
+
 	// This field stores the resolved value for the variable. The variable are
 	// resolved in the following priority order (from highest to lowest)
 	//

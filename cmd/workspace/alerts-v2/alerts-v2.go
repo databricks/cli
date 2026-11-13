@@ -64,27 +64,29 @@ func newCreateAlert() *cobra.Command {
 
 	cmd.Flags().Var(&createAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert, used as the notification body.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert, used as the notification subject.`)
 	cmd.Flags().Var(&createAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
 	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `Deprecated: Use run_as field instead.`)
 
 	cmd.Use = "create-alert DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Create an alert.`
 	cmd.Long = `Create an alert.
 
-  Create Alert
+  Creates an alert that runs query_text on the given schedule and evaluates
+  the result against the configured condition.
 
   Arguments:
     DISPLAY_NAME: The display name of the alert.
     QUERY_TEXT: Text of the query to be run.
     WAREHOUSE_ID: ID of the SQL warehouse attached to the alert.
-    EVALUATION:
-    SCHEDULE: `
+    EVALUATION: Condition evaluated against the query result, and who is notified when it
+      is met.
+    SCHEDULE: Schedule on which the alert runs its query and evaluates the condition.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -181,7 +183,10 @@ func newGetAlert() *cobra.Command {
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
 
-  Gets an alert.`
+  Gets an alert.
+
+  Arguments:
+    ID: ID of the alert to retrieve, as returned in the alert's id field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -200,14 +205,14 @@ func newGetAlert() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the alert to retrieve, as returned in the alert's `id` field")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the alert to retrieve, as returned in the alert's `id` field")
 		}
 		getAlertReq.Id = args[0]
 
@@ -249,7 +254,7 @@ func newListAlerts() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listAlertsLimit int
 
-	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
+	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, `Maximum number of alerts to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listAlertsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -323,7 +328,10 @@ func newTrashAlert() *cobra.Command {
 
   Moves an alert to the trash. Trashed alerts immediately disappear from list
   views, and can no longer trigger. You can restore a trashed alert through the
-  UI. A trashed alert is permanently deleted after 30 days.`
+  UI. A trashed alert is permanently deleted after 30 days.
+
+  Arguments:
+    ID: ID of the alert to move to the trash.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -342,14 +350,14 @@ func newTrashAlert() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the alert to move to the trash")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the alert to move to the trash")
 		}
 		trashAlertReq.Id = args[0]
 
@@ -390,39 +398,34 @@ func newUpdateAlert() *cobra.Command {
 
 	cmd.Flags().Var(&updateAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert, used as the notification body.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert, used as the notification subject.`)
 	cmd.Flags().Var(&updateAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
 	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `Deprecated: Use run_as field instead.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
 
-  Update alert
+  Updates an alert. Only the fields listed in update_mask are changed; all
+  other fields keep their current values.
 
   Arguments:
     ID: The canonical identifier of the alert to retrieve information about.
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.
+    UPDATE_MASK: Comma-separated list of the alert fields to update, for example
+      display_name,query_text or schedule.pause_status. Only the listed
+      fields are changed; all other fields keep their current values.
+      parent_path cannot be updated.
     DISPLAY_NAME: The display name of the alert.
     QUERY_TEXT: Text of the query to be run.
     WAREHOUSE_ID: ID of the SQL warehouse attached to the alert.
-    EVALUATION:
-    SCHEDULE: `
+    EVALUATION: Condition evaluated against the query result, and who is notified when it
+      is met.
+    SCHEDULE: Schedule on which the alert runs its query and evaluates the condition.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

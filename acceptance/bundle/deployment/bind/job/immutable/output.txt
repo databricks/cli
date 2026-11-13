@@ -1,0 +1,57 @@
+
+=== Create a pre-defined job and schema:
+Created job with ID: [JOB_ID]
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "catalog_name": "main"
+}
+
+=== Bind the job while the state holds no snapshot yet:
+
+>>> [CLI] bundle deployment bind foo [JOB_ID] --auto-approve
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle plan
+create internal_immutable_snapshots.immutable
+update jobs.foo
+create schemas.schema1
+
+Plan: 2 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy the job, which deploys the snapshot it depends on:
+
+>>> [CLI] bundle deploy --select jobs.foo
+Created internal_immutable_snapshots.immutable
+Updated jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged, 1 not selected
+
+>>> [CLI] jobs get [JOB_ID]
+"/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files/hello_world.py"
+
+=== Bind the schema now that the state holds a snapshot the config does not declare:
+
+>>> [CLI] bundle deployment bind schema1 main.test-schema-[UNIQUE_NAME] --auto-approve
+Successfully bound schema with an id 'main.test-schema-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle plan
+update schemas.schema1
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+=== Unbind both and destroy the bundle:
+
+>>> [CLI] bundle deployment unbind foo
+
+>>> [CLI] bundle deployment unbind schema1
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+=== Delete the pre-defined job and schema (both must have survived the destroy):
+0
+0

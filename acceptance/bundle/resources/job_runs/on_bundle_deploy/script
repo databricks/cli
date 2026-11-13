@@ -17,7 +17,7 @@ trace $CLI bundle plan
 # The deploys are not traced: readplanarg makes the command line differ per variant.
 $CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
-title "bundle deploy\n"
+title "bundle deploy"
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 read_id.py my_run > /dev/null
 trace $CLI bundle summary
@@ -36,6 +36,6 @@ update_file.py databricks.yml "      lifecycle:
 trace $CLI bundle plan
 $CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
-title "bundle deploy\n"
+title "bundle deploy"
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 trace print_requests.py //jobs/run-now

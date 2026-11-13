@@ -8,6 +8,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === No artifact metrics expected
+
 >>> cat [OUTPUT_DIR]/out.requests.txt
 
 >>> [CLI] bundle deploy -t prod
@@ -19,6 +20,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Artifact metrics expected
+
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "key": "artifacts_reference_used",

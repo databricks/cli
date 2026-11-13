@@ -33,7 +33,7 @@ func TestStaleVersionWarning(t *testing.T) {
 		{
 			name:      "stale with unknown install method",
 			buildTime: stale,
-			want:      header + "See " + installDocsURL + " to upgrade.\n",
+			want:      header + "See " + InstallDocsURL + " to upgrade.\n",
 		},
 	}
 	for _, tc := range tests {

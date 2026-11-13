@@ -1,8 +1,11 @@
 package installer
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -81,6 +84,34 @@ func TestLoadStateCorruptJSON(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, state)
 	assert.Contains(t, err.Error(), "failed to parse state file")
+}
+
+func TestLoadStateCorruptReturnsStateError(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, stateFileName), []byte("{not json"), 0o644))
+
+	_, err := LoadState(dir)
+	serr, ok := errors.AsType[*StateError](err)
+	require.True(t, ok, "want *StateError, got %T", err)
+	assert.Equal(t, filepath.Join(dir, stateFileName), serr.Path)
+}
+
+func TestLoadStateUnreadableIsNotStateError(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permissions and a non-root user")
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, stateFileName)
+	require.NoError(t, os.WriteFile(path, []byte("{}"), 0o644))
+	require.NoError(t, os.Chmod(path, 0o000))
+	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
+
+	// An unreadable file is a permission problem, not invalid content: moving
+	// it aside would not help, so it must not look like a StateError.
+	_, err := LoadState(dir)
+	require.ErrorIs(t, err, fs.ErrPermission)
+	_, isState := errors.AsType[*StateError](err)
+	assert.False(t, isState)
 }
 
 func TestGlobalSkillsDir(t *testing.T) {

@@ -21,7 +21,7 @@ class CronSchedule:
 
     quartz_cron_schedule: VariableOr[str]
     """
-    A cron expression using quartz syntax that specifies the schedule for this pipeline.
+    A cron expression using quartz syntax that specifies the schedule for this alert.
     Should use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
     """
 
@@ -34,7 +34,7 @@ class CronSchedule:
 
     pause_status: VariableOrOptional[SchedulePauseStatus] = None
     """
-    Indicate whether this schedule is paused or not.
+    Indicates whether this schedule is paused. While paused, the alert is not evaluated.
     """
 
     @classmethod
@@ -50,7 +50,7 @@ class CronScheduleDict(TypedDict, total=False):
 
     quartz_cron_schedule: VariableOr[str]
     """
-    A cron expression using quartz syntax that specifies the schedule for this pipeline.
+    A cron expression using quartz syntax that specifies the schedule for this alert.
     Should use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
     """
 
@@ -63,7 +63,7 @@ class CronScheduleDict(TypedDict, total=False):
 
     pause_status: VariableOrOptional[SchedulePauseStatusParam]
     """
-    Indicate whether this schedule is paused or not.
+    Indicates whether this schedule is paused. While paused, the alert is not evaluated.
     """
 
 

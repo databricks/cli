@@ -4,6 +4,7 @@ package ai_functions
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -35,6 +36,10 @@ func New() *cobra.Command {
 	cmd.AddCommand(newAiDecide())
 	cmd.AddCommand(newAiExtract())
 	cmd.AddCommand(newAiParseDocument())
+	cmd.AddCommand(newCancelBatch())
+	cmd.AddCommand(newCreateBatch())
+	cmd.AddCommand(newGetBatch())
+	cmd.AddCommand(newListBatches())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -345,6 +350,303 @@ func newAiParseDocument() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range aiParseDocumentOverrides {
 		fn(cmd, &aiParseDocumentReq)
+	}
+
+	return cmd
+}
+
+// start cancel-batch command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cancelBatchOverrides []func(
+	*cobra.Command,
+	*aifunctions.CancelBatchRequest,
+)
+
+func newCancelBatch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cancelBatchReq aifunctions.CancelBatchRequest
+
+	cmd.Use = "cancel-batch NAME"
+	cmd.Short = `*Beta* Cancel a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Cancel a batch.
+
+  Starts the asynchronous cancellation of a batch. Requests in progress are
+  drained first. Cancellation is best effort, so the batch can still complete.
+
+  Arguments:
+    NAME: Resource name of the batch. Format: batch_<id>.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		cancelBatchReq.Name = args[0]
+
+		response, err := w.AiFunctions.CancelBatch(ctx, cancelBatchReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cancelBatchOverrides {
+		fn(cmd, &cancelBatchReq)
+	}
+
+	return cmd
+}
+
+// start create-batch command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createBatchOverrides []func(
+	*cobra.Command,
+	*aifunctions.CreateBatchRequest,
+)
+
+func newCreateBatch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createBatchReq aifunctions.CreateBatchRequest
+	createBatchReq.Batch = aifunctions.Batch{}
+	var createBatchJson flags.JsonFlag
+
+	cmd.Flags().Var(&createBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: map via StringToStringVar: params
+	// TODO: complex arg: request_counts
+
+	cmd.Use = "create-batch ENDPOINT INPUT_REF OUTPUT_REF"
+	cmd.Short = `*Beta* Create a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a batch.
+
+  Creates a batch that runs an AI function on every request in a JSONL file on a
+  Unity Catalog volume. The batch runs asynchronously. To follow its progress,
+  get the batch.
+
+  Arguments:
+    ENDPOINT: The AI function, for example ai_parse_document.
+    INPUT_REF: Unity Catalog volume path of the JSONL input file. Each line is one
+      request, in the form {"custom_id": ..., "body": ...}. The file can hold
+      up to 50,000 requests and be up to 200 MiB.
+    OUTPUT_REF: Unity Catalog volume path to write the JSONL output file to. If the path
+      is a directory, the file is <path>/<name>_output.jsonl.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint', 'input_ref', 'output_ref' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createBatchJson.Unmarshal(&createBatchReq.Batch)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createBatchReq.Batch.Endpoint = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createBatchReq.Batch.InputRef = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createBatchReq.Batch.OutputRef = args[2]
+		}
+
+		response, err := w.AiFunctions.CreateBatch(ctx, createBatchReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createBatchOverrides {
+		fn(cmd, &createBatchReq)
+	}
+
+	return cmd
+}
+
+// start get-batch command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getBatchOverrides []func(
+	*cobra.Command,
+	*aifunctions.GetBatchRequest,
+)
+
+func newGetBatch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getBatchReq aifunctions.GetBatchRequest
+
+	cmd.Use = "get-batch NAME"
+	cmd.Short = `*Beta* Get a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a batch.
+
+  Gets the latest status and progress of a batch.
+
+  Arguments:
+    NAME: Resource name of the batch. Format: batch_<id>.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getBatchReq.Name = args[0]
+
+		response, err := w.AiFunctions.GetBatch(ctx, getBatchReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getBatchOverrides {
+		fn(cmd, &getBatchReq)
+	}
+
+	return cmd
+}
+
+// start list-batches command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listBatchesOverrides []func(
+	*cobra.Command,
+	*aifunctions.ListBatchesRequest,
+)
+
+func newListBatches() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listBatchesReq aifunctions.ListBatchesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listBatchesLimit int
+
+	cmd.Flags().IntVar(&listBatchesReq.PageSize, "page-size", listBatchesReq.PageSize, `Maximum number of batches to return in one page.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listBatchesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listBatchesReq.PageToken, "page-token", listBatchesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-batches"
+	cmd.Short = `*Beta* List batches.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List batches.
+
+  Lists the batches that the caller created in this workspace.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.AiFunctions.ListBatches(ctx, listBatchesReq)
+		if listBatchesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listBatchesLimit)
+		}
+		if listBatchesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listBatchesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listBatchesOverrides {
+		fn(cmd, &listBatchesReq)
 	}
 
 	return cmd

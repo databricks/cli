@@ -68,6 +68,13 @@ type ResourceLifecycleConfig struct {
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
 
+	// InternalIDField: the state field holding the backend's own ID for the resource, which a rename
+	// keeps (a volume's volume_id). Config never sets it: the framework records it from the remote
+	// state on every save and skips its changes in the plan. When the resource is missing from its
+	// recorded ID, the plan looks for it at the ID IDFromState gives it and takes what it finds only
+	// if this field matches. Requires IDFromState and DoUpdateWithID.
+	InternalIDField string `yaml:"internal_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -138,6 +145,8 @@ type Config struct {
 // hand-written rules and <resource_type>.generated.yml the ones derived from the
 // OpenAPI spec. A resource type without rules has no file. The file name is the
 // resource type, so each file holds the rules directly with no enclosing keys.
+// A file named after a sub-resource (grants.yml) applies to that sub-resource of
+// every parent (catalogs.grants, schemas.grants, ...) that has no file of its own.
 //
 //go:embed configs/*.yml
 var configFS embed.FS
@@ -153,6 +162,7 @@ const (
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
+	InternalIDField:       "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
@@ -191,11 +201,33 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
 
-		dst.Resources[resourceType] = rc
+		_, isResourceType := SupportedResources[resourceType]
+		for _, rt := range configResourceTypes(resourceType) {
+			// A resource type's own file replaces the shared one, whichever is read first.
+			if _, ok := dst.Resources[rt]; ok && !isResourceType {
+				continue
+			}
+			dst.Resources[rt] = rc
+		}
 	}
 
 	return handWritten, generated
 })
+
+// configResourceTypes returns the resource types a config file named name applies to: the
+// resource type itself, or for a sub-resource name like "grants" every "<parent>.grants".
+func configResourceTypes(name string) []string {
+	if _, ok := SupportedResources[name]; ok {
+		return []string{name}
+	}
+	var result []string
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, "."+name) {
+			result = append(result, resourceType)
+		}
+	}
+	return result
+}
 
 // MustLoadConfig returns the configuration parsed from the configs/<resource_type>.yml files.
 func MustLoadConfig() *Config {

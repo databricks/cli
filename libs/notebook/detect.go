@@ -22,8 +22,11 @@ type FileInfoWithWorkspaceObjectInfo interface {
 	WorkspaceObjectInfo() workspace.ObjectInfo
 }
 
-// Maximum length in bytes of the notebook header.
-const headerLength = 32
+// Marker the workspace looks for to import a source file as a notebook.
+const notebookSourceMarker = "Databricks notebook source"
+
+// The workspace reads the first line out of this many leading bytes.
+const headerLength = 200
 
 // file wraps an fs.File and implements a few helper methods such that
 // they don't need to be inlined in the [DetectWithFS] function below.
@@ -127,28 +130,20 @@ func DetectBytes(name string, content []byte) (notebook bool, language workspace
 
 // detectSource reports whether a source file with the given name and first line is a notebook.
 func detectSource(name, fileHeader string) (notebook bool, language workspace.Language) {
-	header := ""
-
-	// Determine which header to expect based on filename extension.
-	ext := strings.ToLower(filepath.Ext(name))
-	switch ext {
+	switch strings.ToLower(filepath.Ext(name)) {
 	case ExtensionPython:
-		header = `# Databricks notebook source`
 		language = workspace.LanguagePython
 	case ExtensionR:
-		header = `# Databricks notebook source`
 		language = workspace.LanguageR
 	case ExtensionScala:
-		header = "// Databricks notebook source"
 		language = workspace.LanguageScala
 	case ExtensionSql:
-		header = "-- Databricks notebook source"
 		language = workspace.LanguageSql
 	default:
 		return false, ""
 	}
 
-	if fileHeader != header {
+	if !strings.Contains(fileHeader, notebookSourceMarker) {
 		return false, ""
 	}
 

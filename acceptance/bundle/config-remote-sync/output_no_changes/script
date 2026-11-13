@@ -11,14 +11,11 @@ touch dummy.whl
 $CLI bundle deploy
 
 title "Check for changes immediately after deployment"
-echo
 $CLI bundle config-remote-sync
 
 title "Text output"
-echo
 $CLI bundle config-remote-sync | contains.py "No changes detected"
 
 title "JSON output"
-echo
 $CLI bundle config-remote-sync -o json > tmp.json
 cat tmp.json

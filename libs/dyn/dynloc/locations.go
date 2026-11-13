@@ -46,6 +46,8 @@ func (l *Locations) gatherLocations(v dyn.Value) (map[string][]diag.Location, er
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),                                      // Resources for all types ("resources.jobs.my_job")
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks")),                 // Job tasks ("resources.jobs.my_job.tasks")
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex()), // Job task items ("resources.jobs.my_job.tasks[2]")
+		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey()),                                                    // Variable definitions ("variables.my_var")
+		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")),                                  // Resolved variable values ("variables.my_var.value")
 	}
 
 	for _, pattern := range patterns {

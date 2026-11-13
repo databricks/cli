@@ -1,0 +1,8 @@
+Badness = "The plan reads the recorded name and takes whatever schema is there, without checking schema_id: one created there by someone else after ours was renamed is updated and then deleted by destroy, and ours is left behind. Same on main."
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

@@ -1,0 +1,43 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_CATALOG="test_catalog_${UNIQUE_NAME}"
+NEW_CATALOG="test_catalog_renamed_${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a catalog with a schema and a volume in it"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+add_repl "$($CLI schemas get "$OLD_CATALOG.myschema" | jq -r .schema_id)" SCHEMA_ID
+add_repl "$($CLI volumes read "$OLD_CATALOG.myschema.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the catalog"
+trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+
+title "UC moves the schema and the volume with the catalog, so the plan re-keys them instead of recreating them"
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+
+title "Deploy renames the catalog. UC moves the schema and the volume with it, so they get no request"
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+trace print_requests.py //unity-catalog
+
+title "The old catalog is gone and the schema and the volume are under the new one, with their original ids"
+# Not traced: the "not found" message differs between UC and the test server.
+$CLI catalogs get "$OLD_CATALOG" &> /dev/null && echo "old catalog still exists" || echo "old catalog is gone"
+trace $CLI schemas get "$NEW_CATALOG.myschema" | jq '{full_name, catalog_name, schema_id}'
+trace $CLI volumes read "$NEW_CATALOG.myschema.myvolume" | jq '{full_name, catalog_name, volume_id}'
+
+title "The state tracks the new paths"
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
