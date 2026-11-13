@@ -45,6 +45,9 @@ type mcpSignInOutput struct {
 	URL           string                      `json:"url,omitempty"`
 	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
 	Error         string                      `json:"error,omitempty"`
+
+	// alreadySignedIn is set by login when the caller was signed in before it ran.
+	alreadySignedIn bool
 }
 
 // mcpSignInAction runs login or logout against the profile's client and records the result in out. pinnedFile is the
@@ -63,7 +66,7 @@ sign-in to complete. Without a browser, open the printed URL yourself.
 <service> is a full name such as system.ai.github. The profile is the one whose user signs in.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMcpSignInCommand(cmd, args[0], mcpLogin)
+			return runMcpSignInCommand(cmd, args[0], mcpLogin, protos.AitoolsMcpOperationSignIn)
 		},
 	}
 }
@@ -79,19 +82,23 @@ stays in place. Running it when you are not signed in is not an error.
 <service> is a full name such as system.ai.github.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMcpSignInCommand(cmd, args[0], mcpLogout)
+			return runMcpSignInCommand(cmd, args[0], mcpLogout, protos.AitoolsMcpOperationSignOut)
 		},
 	}
 }
 
 // runMcpSignInCommand resolves the profile for service and runs action. In JSON mode the document is
 // the only stdout output; progress goes to stderr.
-func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAction) error {
+func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAction, operation protos.AitoolsMcpOperation) error {
 	ctx := cmd.Context()
 	jsonMode := installOutputIsJSON(cmd)
 
 	out := &mcpSignInOutput{Service: service}
 	runErr := runMcpSignIn(ctx, cmd.ErrOrStderr(), profileFlag(cmd), service, action, out)
+	// The host is set once the profile's binding has passed and its client exists, so a run that reached no server logs nothing.
+	if out.Host != "" {
+		logMcpEvent(ctx, signInEvent(operation, out, runErr))
+	}
 	if !jsonMode {
 		return runErr
 	}
@@ -140,6 +147,7 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
+	setUploadConfig(ctx, profileName, configFile)
 	// A server pinned to a config file names that file in the hints, as add does.
 	pinnedFile := mcp.PinnedFile(entry, configFile)
 	w, err := profileClient(ctx, profileName, configFile, pinnedFile)
@@ -150,12 +158,24 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	return action(ctx, errOut, w, out, pinnedFile)
 }
 
+// signInEvent is the SIGN_IN or SIGN_OUT event of one login or logout.
+func signInEvent(operation protos.AitoolsMcpOperation, out *mcpSignInOutput, err error) protos.AitoolsMcpEvent {
+	if operation == protos.AitoolsMcpOperationSignIn {
+		return signInEventOf(out.Service, out.State, out.alreadySignedIn, err)
+	}
+	return protos.AitoolsMcpEvent{
+		CallingAgent: callingAgentType(),
+		Operation:    operation,
+		Servers:      []protos.AitoolsMcpServerResult{signOutServerResult(out.Service, out.State, err)},
+	}
+}
+
 // serviceFor returns the service with its sign-in requirement, as the profile sees it. A service the profile cannot see
 // is an error, so that a misspelled name is reported rather than treated as a service with no sign-in.
 func serviceFor(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string) (mcp.Service, error) {
 	svc, err := mcp.GetService(ctx, w, service)
 	if mcp.IsNotFound(err) {
-		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", service, profileName)
+		return mcp.Service{}, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, err, "%s is not an MCP service visible to profile %s", service, profileName)
 	}
 	if err != nil {
 		return mcp.Service{}, describeRequestError(profileName, pinnedFile, err)
@@ -183,8 +203,9 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 		return describeRequestError(out.Profile, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 	url := mcp.SignInURL(out.Host, svc.FullName, workspaceID)
-	state, _, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, signInOptions{Profile: out.Profile, Open: browser.OpenOutputToStderr})
+	state, alreadySignedIn, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, signInOptions{Profile: out.Profile, Open: browser.OpenOutputToStderr})
 	out.State = state
+	out.alreadySignedIn = alreadySignedIn
 	// The URL is named when it was printed. A sign-in that failed before its page is printed names none.
 	if urlShown {
 		out.URL = url
@@ -264,7 +285,7 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
 	switch {
 	case timedOut:
-		return signInStateTimeout, false, urlShown, failure(categorySignInTimeout, err,
+		return signInStateTimeout, false, urlShown, failure(protos.AitoolsErrorCategorySignInTimeout, err,
 			"sign-in to %s did not complete in %g minutes%s. Finish at %s then retry: %s",
 			svc.FullName, signInWaitTimeout.Minutes(), lastCheckText(timeout), url, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case errors.Is(err, mcp.ErrSignInFailed):

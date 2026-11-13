@@ -100,7 +100,7 @@ func TestRunAdvertisesListChangedOnlyForSignInServices(t *testing.T) {
 	assert.Contains(t, out.String(), `"listChanged":false`)
 
 	opts, out, _ = runOptions(t, srv.URL, cfg, initialize)
-	opts.Challenge = &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub"}
+	opts.Challenge = &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", Recorder: &promptRecorder{}}
 	require.NoError(t, Run(t.Context(), opts))
 	assert.Contains(t, out.String(), `"listChanged":true`)
 }

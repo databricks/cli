@@ -96,7 +96,7 @@ host = https://b.test
 		_, err := resolveProfile(ctx, "")
 		require.Error(t, err)
 		assert.Equal(t, "several workspace profiles exist; pass --profile. Found: a, b", err.Error())
-		assert.Equal(t, categoryProfileRequired, errorCategory(err))
+		assert.Equal(t, protos.AitoolsErrorCategoryProfileRequired, errorCategory(err))
 	})
 
 	t.Run("no workspace profiles is an error naming the file", func(t *testing.T) {
@@ -104,7 +104,7 @@ host = https://b.test
 		_, err := resolveProfile(ctx, "")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no workspace profiles in ")
-		assert.Equal(t, categoryNoProfile, errorCategory(err))
+		assert.Equal(t, protos.AitoolsErrorCategoryNoProfile, errorCategory(err))
 		assert.Contains(t, err.Error(), "databricks auth login --host <url> --profile <name>")
 	})
 }
@@ -114,11 +114,11 @@ func TestErrorCategoryUsesTypedErrorsOnly(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, errorCategory(typed))
 	assert.Equal(t, "unknown agent \"pi\"", typed.Error())
 
-	wrapped := failure(categoryServiceNotFound, errors.New("boom"), "%s", "boom")
-	assert.Equal(t, categoryServiceNotFound, errorCategory(wrapped))
+	wrapped := failure(protos.AitoolsErrorCategoryMCPServiceNotFound, errors.New("boom"), "%s", "boom")
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(wrapped))
 
 	configInvalid := &os.PathError{Op: "parse", Path: "x", Err: agentconfig.ErrConfigInvalid}
-	assert.Equal(t, categoryAgentConfigInvalid, errorCategory(configInvalid))
+	assert.Equal(t, protos.AitoolsErrorCategoryAgentConfigInvalid, errorCategory(configInvalid))
 
 	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, errorCategory(errors.New("some failure")))
 }

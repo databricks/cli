@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
 )
@@ -109,14 +111,50 @@ func BoundConfig(profileName, configFile string) (*config.Config, error) {
 // profile runs on a context of its own, so a context deadline does not reach it, and these budgets are what bound it (see
 // profileMetadata.Load in cmd/auth).
 func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	return resolveBound(withinBudget(profileName, configFile, budget))
+}
+
+// BoundUploadConfig is BoundConfigWithin for a config that only a telemetry upload uses. Its credentials never refresh a
+// token, since the command may exit before a refresh finishes, and a rotated single-use refresh token would be lost (see
+// auth.CredentialsWithoutRefresh). It does not authenticate.
+func BoundUploadConfig(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	cfg := withinBudget(profileName, configFile, budget)
+	cfg.Credentials = auth.CredentialsWithoutRefresh()
+	quietHostMetadata(cfg)
+	return resolveBound(cfg)
+}
+
+// quietHostMetadata makes a failed host metadata lookup of cfg a debug message. The SDK logs that failure as a warning
+// through its global logger, since the resolution runs on a background context, so a command that succeeded would print a
+// warning that only its telemetry upload caused. The SDK falls back to the user config when the lookup fails, and so does
+// this one, with a nil result.
+func quietHostMetadata(cfg *config.Config) {
+	resolve := cfg.DefaultHostMetadataResolver()
+	if factory := config.DefaultHostMetadataResolverFactory; factory != nil {
+		if r := factory(cfg); r != nil {
+			resolve = r
+		}
+	}
+	cfg.HostMetadataResolver = func(ctx context.Context, host string) (*config.HostMetadata, error) {
+		meta, err := resolve(ctx, host)
+		if err != nil {
+			log.Debugf(ctx, "telemetry: cannot resolve host metadata for %s: %s", host, err)
+			return nil, nil
+		}
+		return meta, nil
+	}
+}
+
+// withinBudget is the config of profileName in configFile, with the SDK's request and retry budgets set to budget.
+func withinBudget(profileName, configFile string, budget time.Duration) *config.Config {
 	seconds := int(budget / time.Second)
-	return resolveBound(&config.Config{
+	return &config.Config{
 		Profile:             profileName,
 		ConfigFile:          configFile,
 		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
 		HTTPTimeoutSeconds:  seconds,
 		RetryTimeoutSeconds: seconds,
-	})
+	}
 }
 
 // resolveBound resolves cfg, as BoundConfig does.

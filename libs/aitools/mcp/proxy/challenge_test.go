@@ -68,6 +68,32 @@ func (s *signInStub) requests() []SignInRequest {
 // loginCommand is the hint that the command builds for a pinned config file and a profile name with a space.
 const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'`
 
+// promptRecorder records the SIGN_IN_PROMPTED events: one per sign-in page that authenticate opened. It counts the
+// rejections of the Databricks credential too.
+type promptRecorder struct {
+	mu       sync.Mutex
+	signedIn []bool
+	rejected int
+}
+
+func (r *promptRecorder) SignInPrompted(_ context.Context, signedIn bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.signedIn = append(r.signedIn, signedIn)
+}
+
+func (r *promptRecorder) AuthRejected(_ context.Context) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.rejected++
+}
+
+func (r *promptRecorder) prompts() []bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]bool(nil), r.signedIn...)
+}
+
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
@@ -255,6 +281,109 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
+// TestAuthenticateRecordsPromptWhenPageOpens checks that the prompt is recorded once per page that was shown, after its
+// wait, with whether the credential became ACTIVE. A call that finds the caller already signed in records nothing.
+func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := &signInStub{reply: func(call int) (bool, error) {
+		if call == 1 {
+			return false, errors.New("sign-in did not complete")
+		}
+		return call == 3, nil
+	}}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn.SignIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 1))
+	p.waitLines(t, 2)
+	p.send(t, fmt.Sprintf(authenticate, 2))
+	p.waitLines(t, 4)
+	p.send(t, fmt.Sprintf(authenticate, 3))
+	p.waitLines(t, 6)
+
+	assert.Equal(t, []bool{true, true, true}, signIn.calls(), "every call opens the page")
+	assert.Equal(t, []bool{false, true}, recorder.prompts(), "call 3 was already signed in and records nothing")
+	require.NoError(t, p.finish(t))
+}
+
+// TestAuthenticateRecordsNoPromptWhenNoURLShown checks that a sign-in that fails before its URL is printed, such as a read
+// of the workspace ID, shows no page, so nothing is recorded.
+func TestAuthenticateRecordsNoPromptWhenNoURLShown(t *testing.T) {
+	srv, _ := challengedService(t)
+	var calls int
+	signIn := func(context.Context, SignInRequest) (bool, bool, error) {
+		calls++
+		return false, false, errors.New("cannot read the workspace ID")
+	}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	p.waitLines(t, 2)
+
+	assert.Equal(t, 1, calls, "the sign-in ran")
+	assert.Empty(t, recorder.prompts(), "no page was shown, so no prompt is recorded")
+	require.NoError(t, p.finish(t))
+}
+
+// TestAuthenticateRecordsPromptOfCallThatWaitsOnCancelledPage checks that a call which waits on the page an earlier,
+// cancelled call showed records its own outcome: the page was shown for it too, so a sign-in that completes there is
+// recorded as ACTIVE, not left PENDING from the cancelled call.
+func TestAuthenticateRecordsPromptOfCallThatWaitsOnCancelledPage(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listChallenge))
+	entered, done := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	var opens []bool
+	signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
+		mu.Lock()
+		opens = append(opens, req.Open)
+		first := len(opens) == 1
+		mu.Unlock()
+		if !first {
+			return false, true, nil
+		}
+		close(entered)
+		<-ctx.Done()
+		close(done)
+		return false, true, ctx.Err()
+	}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 1)
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	waitClosed(t, entered, "the first sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+	waitClosed(t, done, "the first sign-in to return")
+	p.send(t, fmt.Sprintf(authenticate, 6))
+	require.Eventually(t, func() bool {
+		return len(recorder.prompts()) == 2
+	}, 10*time.Second, time.Millisecond)
+	require.NoError(t, p.finish(t))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []bool{true, false}, opens, "the second call does not open the page again")
+	assert.Equal(t, []bool{false, true}, recorder.prompts(), "the cancelled call is PENDING, and the second call is ACTIVE")
+}
+
 func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
@@ -343,7 +472,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 		return false, true, errors.New("sign-in to system.ai.github did not complete in 5 minutes. Finish at " + testURL + " then retry: " + loginCommand)
 	}
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn, Recorder: &promptRecorder{}}, io.Discard)
 	p := startPiped(t, t.Context(), b)
 
 	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
@@ -487,7 +616,7 @@ func TestChallengeMatchesServiceNameWithoutCase(t *testing.T) {
 		`{"mode":"url","url":"` + testURL + `"}]}}}`
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, Recorder: &promptRecorder{}}, io.Discard)
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)
@@ -865,6 +994,23 @@ func TestUnauthorizedIsAuthFailureUnlessItAsksForSignIn(t *testing.T) {
 	}
 }
 
+// TestUnauthorizedRecordsRejectedCredential checks that a 401 without a sign-in challenge is recorded as a rejected
+// credential, once per answer, so that the command refuses its telemetry upload.
+func TestUnauthorizedRecordsRejectedCredential(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	})
+	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
+	recorder := &promptRecorder{}
+	challenge := testChallenge(signIn.SignIn)
+	challenge.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(challenge, io.Discard)
+	runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	assert.Equal(t, 1, recorder.rejected)
+}
+
 // TestRejectedCredentialDoesNotAskForLogout checks a rejected Databricks token after "Already signed in": the credential reads
 // as signed in, and the service rejects the token with a 401. The 401 is an auth failure, not a challenge, so the next
 // authenticate runs the sign-in as usual, and the logout answer is not given.
@@ -905,7 +1051,7 @@ func TestAuthFailureNamesPinnedConfigFile(t *testing.T) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	})
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, PinnedFile: "/work/cfg/my file.cfg"}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, PinnedFile: "/work/cfg/my file.cfg", Recorder: &promptRecorder{}}, io.Discard)
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)
@@ -965,6 +1111,7 @@ func testChallenge(signIn SignInFunc) *Challenge {
 		LoginCommand:  "databricks aitools mcp login system.ai.github --profile logfood",
 		LogoutCommand: "databricks aitools mcp logout system.ai.github --profile logfood",
 		SignIn:        signIn,
+		Recorder:      &promptRecorder{},
 	}
 }
 

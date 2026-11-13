@@ -1,0 +1,94 @@
+
+=== A new install for two agents: CHANGED per (service, agent); github needs sign-in, so its sign-in state is PENDING
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    },
+    {
+      "service": "GENIE_ONE",
+      "agent": "CODEX",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    },
+    {
+      "service": "GITHUB",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "PENDING"
+    },
+    {
+      "service": "GITHUB",
+      "agent": "CODEX",
+      "outcome": "CHANGED",
+      "sign_in_state": "PENDING"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== The same servers again are re-asserted: UNCHANGED
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    },
+    {
+      "service": "GENIE_ONE",
+      "agent": "CODEX",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    },
+    {
+      "service": "GITHUB",
+      "agent": "CLAUDE_CODE",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "PENDING"
+    },
+    {
+      "service": "GITHUB",
+      "agent": "CODEX",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "PENDING"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== An agent config that does not parse fails that agent only: FAILED with AGENT_CONFIG_INVALID
+
+>>> musterr [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "UNCHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    },
+    {
+      "service": "GENIE_ONE",
+      "agent": "CODEX",
+      "outcome": "FAILED",
+      "error_category": "AGENT_CONFIG_INVALID",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 1
+}

@@ -20,7 +20,9 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -106,6 +108,32 @@ func TestMcpLoginRejectedTokenIsAuthFailed(t *testing.T) {
 	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
 }
 
+// TestMcpLogoutForbiddenKeepsItsText checks that a 403 from logout is reported as the API said it, with no next steps
+// added: root enriches a command's auth errors only when the command sets its profile's config for the context, and
+// logout's upload config is not that config. The run still uploads with the profile it bound.
+func TestMcpLogoutForbiddenKeepsItsText(t *testing.T) {
+	home := withHome(t)
+	server := loginTestServer(t, http.StatusForbidden, `{"error_code":"PERMISSION_DENIED","message":"no access"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+
+	parent := newMCPTestRoot()
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "logout", "system.ai.github", "--profile", "logfood"})
+	ctx, _ := cmdio.NewTestContextWithStderr(telemetry.WithNewLogger(t.Context()))
+	err := parent.ExecuteContext(ctx)
+	logout, _, findErr := parent.Find([]string{"mcp", "logout"})
+	require.NoError(t, findErr)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no access")
+	assert.NotContains(t, err.Error(), "Next steps")
+	assert.False(t, cmdctx.HasConfigUsed(logout.Context()), "root does not enrich the error")
+	cfg, uploads := telemetry.UploadConfig(logout.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "logfood", cfg.Profile)
+}
+
 // TestMcpLogoutUnknownServiceIsAnError checks that logout of a service the profile cannot see fails, rather than
 // reporting that the caller is not signed in, so that a typo in the name is seen.
 func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
@@ -116,7 +144,7 @@ func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
 	out := mcpSignInOutput{Service: "system.ai.gihtub"}
 	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.gihtub", mcpLogout, &out)
 	require.Error(t, err)
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	assert.Contains(t, err.Error(), "system.ai.gihtub is not an MCP service visible to profile logfood")
 	assert.Empty(t, out.State)
 }
@@ -164,7 +192,7 @@ func TestMcpLogoutEndpointNotFoundIsNotAServiceError(t *testing.T) {
 	out := mcpSignInOutput{Service: "system.ai.github"}
 	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogout, &out)
 	require.Error(t, err)
-	assert.NotEqual(t, categoryServiceNotFound, errorCategory(err))
+	assert.NotEqual(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	assert.NotContains(t, err.Error(), "is not an MCP service visible")
 }
 

@@ -1,0 +1,95 @@
+
+=== Installed for two profiles: the bound profile count is 2 after the second add
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+>>> [CLI] aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "ADD",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED",
+      "sign_in_state": "NOT_REQUIRED"
+    }
+  ],
+  "bound_profile_count": 2
+}
+
+=== remove --profile dogfood: CHANGED for its agent entry, and one profile stays bound
+
+>>> [CLI] aitools mcp remove --profile dogfood --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== An entry changed outside this CLI is left in place: SKIPPED
+
+>>> [CLI] aitools mcp remove --names genie_one_mcp-logfood --profile logfood --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "SKIPPED"
+    }
+  ],
+  "bound_profile_count": 1
+}
+
+=== An entry already gone from the agent config is SKIPPED, and the state record goes
+
+>>> [CLI] aitools mcp remove --names genie_one_mcp-logfood --profile logfood --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "GENIE_ONE",
+      "agent": "CLAUDE_CODE",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== A record with no agent left goes with a REMOVE of its own: CHANGED with no agent, and no profile bound
+
+>>> [CLI] aitools mcp remove --names dbsql-logfood --profile logfood --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "DBSQL",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 0
+}

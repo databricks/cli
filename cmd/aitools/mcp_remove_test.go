@@ -1,9 +1,11 @@
 package aitools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -12,8 +14,15 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,13 +91,13 @@ func TestSelectInstalls(t *testing.T) {
 	_, err = selectInstalls(state, []string{"github-dogfood"}, "logfood")
 	require.Error(t, err)
 	assert.Equal(t, "no installed MCP server named github-dogfood on profile logfood", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 
 	// A profile with no installed server is a typo or an empty profile, not an empty removal.
 	_, err = selectInstalls(state, nil, "typo")
 	require.Error(t, err)
 	assert.Equal(t, "no installed MCP servers on profile typo", err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 
 	none, err := selectInstalls(&mcp.State{}, nil, "")
 	require.NoError(t, err, "--all on an empty state is a no-op")
@@ -178,6 +187,23 @@ func TestMcpRemoveDeletesOwnedEntriesAndPrunesMissing(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, state.Servers, 1)
 	assert.Equal(t, "github-dogfood", state.Servers[0].Name)
+}
+
+// TestMcpRemoveMakesNoRequestWhenTelemetryIsOff checks that remove edits its agent config without a request to the
+// profile's host. Nothing is uploaded when telemetry is off, so no auth is resolved for an upload.
+func TestMcpRemoveMakesNoRequestWhenTelemetryIsOff(t *testing.T) {
+	home := withHome(t)
+	t.Setenv("DATABRICKS_CLI_DISABLE_TELEMETRY", "1")
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = oauth-m2m\nclient_id = id\nclient_secret = secret\n")
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", server.URL)
+	saveState(t, genie)
+
+	_, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood")
 }
 
 func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
@@ -400,13 +426,13 @@ func TestMcpRemoveRefusesProfileAndAgentWithNothingInstalled(t *testing.T) {
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	out := readRemoveOutput(t, stdout.String())
 	assert.Equal(t, "no installed MCP servers on profile typo", out.Error)
-	assert.Equal(t, categoryServiceNotFound, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, out.ErrorCategory)
 
 	stdout, _, err = runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--agents", "cursor", "--output", "json")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	out = readRemoveOutput(t, stdout.String())
 	assert.Equal(t, "no MCP server is installed for Cursor", out.Error)
-	assert.Equal(t, categoryServiceNotFound, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, out.ErrorCategory)
 
 	// Nothing was removed by either refusal.
 	state, err := mcp.LoadState(t.Context())
@@ -696,7 +722,7 @@ func TestMcpRemovePickerRefusesAgentWithNoServer(t *testing.T) {
 	err := runInteractive(t, "mcp", "remove", "--agents", "codex")
 	require.Error(t, err)
 	assert.Equal(t, "no MCP server is installed for "+agents.ByName(agents.NameCodex).DisplayName, err.Error())
-	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	assert.Equal(t, protos.AitoolsErrorCategoryMCPServiceNotFound, errorCategory(err))
 	state, err := mcp.LoadState(t.Context())
 	require.NoError(t, err)
 	assert.Len(t, state.Servers, 1)
@@ -771,4 +797,201 @@ func claudeServerEntry(claudePath, name, service string) mcp.Entry {
 		Name: name, Service: service, Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
 		Agents: map[string]mcp.AgentRecord{agents.NameClaudeCode: {Path: claudePath, Scope: "user"}},
 	}
+}
+
+// runRemoveWithTelemetry runs `mcp remove` with args on a context that buffers telemetry, and returns the remove command,
+// so a test can read the context it left, and its stdout.
+// The logs are those of the command's logger at logLevel.
+func runRemoveWithTelemetry(t *testing.T, stdout, logs *bytes.Buffer, logLevel slog.Level, args ...string) (*cobra.Command, error) {
+	t.Helper()
+	parent := newMCPTestRoot()
+	ctx := telemetry.WithNewLogger(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	ctx = log.NewContext(ctx, slog.New(handler.NewFriendlyHandler(logs, &handler.Options{Level: logLevel})))
+	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
+	parent.SetOut(stdout)
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs(append([]string{"mcp", "remove"}, args...))
+	err := parent.ExecuteContext(ctx)
+	remove, _, findErr := parent.Find([]string{"mcp", "remove"})
+	require.NoError(t, findErr)
+	return remove, err
+}
+
+// unsetConfigFile makes DATABRICKS_CONFIG_FILE unset for the test, as opposed to set to "".
+func unsetConfigFile(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	require.NoError(t, os.Unsetenv("DATABRICKS_CONFIG_FILE"))
+}
+
+// TestMcpRemoveSetsNoUploadWithoutAnEvent checks that a run that removes nothing logs no event, so it sets no config for
+// an upload.
+func TestMcpRemoveSetsNoUploadWithoutAnEvent(t *testing.T) {
+	withHome(t)
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--all", "--output", "json")
+	require.NoError(t, err)
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.False(t, uploads)
+	assert.Empty(t, telemetry.BufferedEvents(remove.Context()))
+}
+
+// TestMcpRemoveUploadSkipsDriftedProfile checks that the upload is not authenticated with a profile that a server recorded
+// for it no longer matches, as its host here is not the one the server was set up against. The removal is done either
+// way.
+func TestMcpRemoveUploadSkipsDriftedProfile(t *testing.T) {
+	home := withHome(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-2.test\nauth_type = pat\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	// Recorded against another host than the profile names now.
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	require.Len(t, telemetry.BufferedEvents(remove.Context()), 1, "the removal is logged")
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.False(t, uploads, "a drifted profile is not used to upload")
+	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood", "the removal is done")
+}
+
+// TestMcpRemoveUploadUsesMatchingProfile checks that a profile whose recorded servers still match is used for the upload,
+// read from the default config file when DATABRICKS_CONFIG_FILE is unset.
+func TestMcpRemoveUploadUsesMatchingProfile(t *testing.T) {
+	home := withHome(t)
+	unsetConfigFile(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
+	saveState(t, entry)
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	cfg, uploads := telemetry.UploadConfig(remove.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "logfood", cfg.Profile)
+	assert.Equal(t, "https://adb-1.test", cfg.Host)
+	assert.Equal(t, "t", cfg.Token)
+}
+
+// TestMcpRemoveUploadIgnoresEnvironmentToken checks that the upload authenticates with the profile's own token, never with
+// a DATABRICKS_TOKEN of another workspace in the environment.
+func TestMcpRemoveUploadIgnoresEnvironmentToken(t *testing.T) {
+	home := withHome(t)
+	unsetConfigFile(t)
+	t.Setenv("DATABRICKS_TOKEN", "token-of-another-workspace")
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	cfg, uploads := telemetry.UploadConfig(remove.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "t", cfg.Token)
+}
+
+// TestMcpRemoveOfflineSetsUploadWithoutWarning checks that a remove that cannot reach the workspace warns nothing: the
+// upload's config is resolved without a request, so there is no failure to report.
+func TestMcpRemoveOfflineSetsUploadWithoutWarning(t *testing.T) {
+	home := withHome(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelWarn, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.True(t, uploads)
+	assert.Empty(t, logs.String())
+	assert.Contains(t, stdout.String(), `"removed"`)
+}
+
+// seedPrunedInstall records an install of genie_one_mcp for logfood in claude-code whose entry the agent config no longer holds.
+func seedPrunedInstall(t *testing.T, claudePath string) {
+	t.Helper()
+	claude := agents.ByName("claude-code")
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+	require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers":{}}`), 0o600))
+}
+
+// TestMcpRemovePrunedEntryReportsChanged checks that an entry the agent config no longer holds is reported CHANGED, since
+// its record is dropped, and FAILED when the state cannot be saved, as a record-only removal is.
+func TestMcpRemovePrunedEntryReportsChanged(t *testing.T) {
+	home := withHome(t)
+	claudePath := filepath.Join(home, ".claude.json")
+
+	seedPrunedInstall(t, claudePath)
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeChanged, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+
+	seedPrunedInstall(t, claudePath)
+	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
+	t.Cleanup(func() { saveMCPState = mcp.SaveState })
+	stdout.Reset()
+	remove, err = runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	events = telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeFailed, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+}
+
+// TestMcpRemoveFailedStateReadAfterAnotherEventLogsNothing checks that a remove that cannot read the state logs nothing
+// of its own, even when the run already buffered another event, and does not read the state it never read.
+func TestMcpRemoveFailedStateReadAfterAnotherEventLogsNothing(t *testing.T) {
+	withHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".state.json"), 0o700))
+
+	parent := newMCPTestRoot()
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "remove", "--all", "--output", "json"})
+	ctx := telemetry.WithNewLogger(t.Context())
+	telemetry.Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
+	require.Error(t, parent.ExecuteContext(ctx))
+	remove, _, findErr := parent.Find([]string{"mcp", "remove"})
+	require.NoError(t, findErr)
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	assert.NotNil(t, events[0].CliTestEvent)
+}
+
+// TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved checks that a removal that only drops state records is reported
+// FAILED when the state cannot be saved, since nothing was removed.
+func TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved(t *testing.T) {
+	withHome(t)
+	retired := mcp.Entry{
+		Name: "dbsql-logfood", Service: "system.ai.dbsql", Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
+		Agents: map[string]mcp.AgentRecord{"retired-agent": {Path: "/x/config.json", Scope: "user"}},
+	}
+	saveState(t, retired)
+	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
+	t.Cleanup(func() { saveMCPState = mcp.SaveState })
+
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "dbsql-logfood", "--output", "json")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeFailed, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, events[0].AitoolsMcpEvent.Servers[0].ErrorCategory)
 }

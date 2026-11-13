@@ -1,0 +1,44 @@
+
+=== serve logs PROXY_STARTED after the binding checks; the upload is sent when stdin closes
+
+>>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
+No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "PROXY_STARTED",
+  "servers": [
+    {
+      "service": "GENIE_ONE"
+    }
+  ],
+  "bound_profile_count": 0
+}
+
+=== A binding that fails logs no PROXY_STARTED, so no upload follows
+
+>>> musterr [CLI] aitools mcp serve --profile gone --service system.ai.genie_one_mcp --agent codex
+MCP server system.ai.genie_one_mcp needs Databricks profile "gone", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile gone
+
+=== authenticate opens the sign-in page: PROXY_STARTED, then SIGN_IN_PROMPTED with the sign-in state after the wait
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "PROXY_STARTED",
+  "servers": [
+    {
+      "service": "GITHUB"
+    }
+  ],
+  "bound_profile_count": 0
+}
+{
+  "calling_agent": "CLAUDE_CODE",
+  "operation": "SIGN_IN_PROMPTED",
+  "servers": [
+    {
+      "service": "GITHUB",
+      "error_category": "SIGN_IN_REQUIRED",
+      "sign_in_state": "ACTIVE"
+    }
+  ],
+  "bound_profile_count": 0
+}

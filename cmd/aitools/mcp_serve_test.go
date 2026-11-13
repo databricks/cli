@@ -26,6 +26,8 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -332,6 +334,43 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	}
 }
 
+// TestMcpServeFailedStartLogsNothing checks that a start that fails its binding checks logs no PROXY_STARTED, so nothing
+// uploads.
+func TestMcpServeFailedStartLogsNothing(t *testing.T) {
+	withHome(t)
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := env.Set(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+}
+
+// TestMcpServeRejectedStartLogsNothing checks that a start whose startup read is rejected by the profile's credential logs
+// no PROXY_STARTED, so the run uploads nothing: the rejected token is not sent again.
+func TestMcpServeRejectedStartLogsNothing(t *testing.T) {
+	home := withHome(t)
+	server := serviceServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-expired\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+	_, uploads := telemetry.UploadConfig(serve.Context())
+	assert.False(t, uploads)
+}
+
 // TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
 // exits 2 like the other binding failures.
 func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
@@ -384,11 +423,16 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
 	cmd := NewMcpServeCmd()
+	cmd.SetContext(telemetry.WithNewLogger(t.Context()))
+	telemetry.SetUploadConfig(cmd.Context(), &config.Config{Host: "https://adb-1.test"})
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
 
 	err := proxyResult(cmd, g, errors.New("read stdin: input/output error"))
 
+	// The exit-time upload would ask the rejected token's endpoint again, so the run uploads nothing.
+	_, uploads := telemetry.UploadConfig(cmd.Context())
+	assert.False(t, uploads)
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
 	assert.ErrorIs(t, err, cause)

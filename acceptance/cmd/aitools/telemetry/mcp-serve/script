@@ -1,0 +1,32 @@
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# No browser: the proxy prints the sign-in URL and does not open anything.
+export BROWSER=none
+export RETRY_MAX_ATTEMPTS=60
+# Seeding the fake is not an MCP command, so its uploads (if any) are dropped here.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
+rm -f "$OUT_REQUESTS"
+
+title "serve logs PROXY_STARTED after the binding checks; the upload is sent when stdin closes"
+trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests-list.ndjson > /dev/null
+mcp_events
+
+title "A binding that fails logs no PROXY_STARTED, so no upload follows"
+trace musterr $CLI aitools mcp serve --profile gone --service system.ai.genie_one_mcp --agent codex < /dev/null > /dev/null
+mcp_events
+
+title "authenticate opens the sign-in page: PROXY_STARTED, then SIGN_IN_PROMPTED with the sign-in state after the wait"
+{
+  cat requests-list.ndjson
+  retry --until '"id":2' cat serve.stdout.txt > /dev/null
+  cat requests-authenticate.ndjson
+  retry --until "Waiting for sign-in" cat serve.stderr.txt > /dev/null
+  MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+  retry --until '"id":3' cat serve.stdout.txt > /dev/null
+  cat requests-after.ndjson
+} | $CLI aitools mcp serve --profile logfood --service system.ai.github --agent claude-code > serve.stdout.txt 2> serve.stderr.txt
+mcp_events
+rm serve.stdout.txt serve.stderr.txt
