@@ -30,7 +30,7 @@ var urlPattern = regexp.MustCompile("https?://[^\\s<>()\\[\\]\"'*`]+")
 // queueProgressInterval is how often a call that waits for the sign-in ahead of it reports progress. Tests shorten it.
 var queueProgressInterval = 2 * time.Second
 
-var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
+var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"` + methodListChanged + `"}`)
 
 // SignInRequest says how one sign-in runs.
 type SignInRequest struct {
@@ -63,7 +63,8 @@ type Challenge struct {
 	Label string
 	// LoginCommand is the command that signs the profile in to the service, as the hints print it.
 	LoginCommand string
-	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself.
+	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
+	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
 }
 
@@ -133,14 +134,14 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	if err != nil {
 		return nil, err
 	}
-	if req.Method != "tools/list" && req.Method != methodToolsCall {
+	if req.Method != methodToolsList && req.Method != methodToolsCall {
 		return [][]byte{message}, nil
 	}
 	if !h.isChallenge(status, message) {
 		h.succeeded(req.Method, status)
 		return [][]byte{message}, nil
 	}
-	if req.Method == "tools/list" {
+	if req.Method == methodToolsList {
 		return [][]byte{h.authenticateList(req.ID)}, nil
 	}
 	return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
@@ -171,7 +172,7 @@ func (h *signInHooks) succeeded(method string, status int) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.alreadySignedIn = false
-	if method == "tools/list" {
+	if method == methodToolsList {
 		h.exposed = false
 	}
 }
@@ -282,9 +283,8 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 	return toolResult(id, text, true)
 }
 
-// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call waits for the first. The
-// page opens unless the last attempt was cancelled while its page was showing (see pageCancelled). With a progressToken,
-// each poll of the wait, and each poll while the call is queued, is reported to the client through notify.
+// authenticate runs the sign-in and answers the tool call. The page opens unless the last attempt was cancelled while its
+// page was showing (see pageCancelled). With a progressToken, each poll is reported through notify.
 func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.RawMessage, notify func([]byte)) [][]byte {
 	var polls int
 	report := func(pageURL string) {
@@ -309,22 +309,20 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
 	if restart && !urlShown && err != nil {
-		// A restart that failed before its page was shown may not have deleted the credential, so the next sign-in restarts
-		// again. Once the page was shown the credential is deleted, and a sign-in the user may still finish is kept.
+		// A restart that failed before its page was shown may not have deleted the credential, so it is asked for again.
 		h.restart = true
 	}
 	h.stateMu.Unlock()
 	if ctx.Err() != nil {
-		// The client cancelled the request or shutdown began. Nothing is answered for a cancelled request.
+		// A cancelled request is not answered.
 		return nil
 	}
 	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
 
 	switch {
 	case err == nil && alreadySignedIn:
-		// The credential was already there, for example from `mcp login` in a terminal, while the agent's tool list
-		// still shows only authenticate, so the agent is still asked to list again. If the service challenges again
-		// after this answer, the next authenticate starts a new sign-in instead.
+		// The credential was there already, for example from `mcp login` in a terminal, while the agent's list still
+		// shows only authenticate, so the agent lists again.
 		return [][]byte{
 			toolResult(id, fmt.Sprintf("Already signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
 			listChangedNotification,
@@ -343,7 +341,7 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 			"Sign-in to %s did not complete in %g minutes%s. Finish at %s then retry, or run: %s",
 			h.c.Service, timeout.Wait.Minutes(), lastCheck, timeout.URL, h.c.LoginCommand), true)}
 	default:
-		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
+		return [][]byte{toolResult(id, err.Error(), true)}
 	}
 }
 
@@ -385,7 +383,7 @@ func progressNotification(token json.RawMessage, n int, label, pageURL string) [
 	// Cannot fail: the token came from a parsed request and the rest holds plain values.
 	b, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
-		"method":  "notifications/progress",
+		"method":  methodProgress,
 		"params": map[string]any{
 			"progressToken": token,
 			"progress":      n,

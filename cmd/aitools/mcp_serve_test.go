@@ -34,6 +34,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// testService and testProfile are the service and the profile of the serve tests.
+const (
+	testService = "system.ai.github"
+	testProfile = "logfood"
+)
+
 func TestMcpServeIsHidden(t *testing.T) {
 	assert.True(t, NewMcpServeCmd().Hidden)
 }
@@ -44,7 +50,7 @@ func TestServeParsesArgvThatAddWrites(t *testing.T) {
 	parent := newMCPTestRoot()
 	serve, _, err := parent.Find([]string{"mcp", "serve"})
 	require.NoError(t, err)
-	argv := []string{mcpconfig.ProfileFlag, "logfood", mcpconfig.ServiceFlag, "system.ai.github", mcpconfig.AgentFlag, "claude-code"}
+	argv := []string{mcpconfig.ProfileFlag, testProfile, mcpconfig.ServiceFlag, testService, mcpconfig.AgentFlag, "claude-code"}
 	require.NoError(t, serve.ParseFlags(argv))
 
 	profile, err := serve.Flags().GetString("profile")
@@ -53,14 +59,14 @@ func TestServeParsesArgvThatAddWrites(t *testing.T) {
 	require.NoError(t, err)
 	agent, err := serve.Flags().GetString("agent")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"logfood", "system.ai.github", "claude-code"}, []string{profile, service, agent})
+	assert.Equal(t, []string{testProfile, testService, "claude-code"}, []string{profile, service, agent})
 }
 
 func TestRefreshGuardPassesThroughWhileTokensRefresh(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return nil },
-		profile:      "logfood",
+		profile:      testProfile,
 		cancel:       func() { cancelled = true },
 	}
 
@@ -78,7 +84,7 @@ func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 			calls++
 			return cause
 		},
-		profile: "logfood",
+		profile: testProfile,
 		cancel:  cancel,
 	}
 
@@ -100,7 +106,7 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 			calls++
 			return cause
 		},
-		profile: "logfood",
+		profile: testProfile,
 		cancel:  func() {},
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
@@ -117,7 +123,7 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 func TestRefreshGuardNamesPinnedConfigFile(t *testing.T) {
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return refreshRejected },
-		profile:      "logfood",
+		profile:      testProfile,
 		pinnedFile:   "/work/cfg/logfood.cfg",
 		cancel:       func() {},
 	}
@@ -214,7 +220,7 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
-	cause := mcp.AuthError("logfood", "", errors.New(refreshTokenExpired))
+	cause := mcp.AuthError(testProfile, "", errors.New(refreshTokenExpired))
 
 	err := serveFailure(cmd, cause, serveBindStatus)
 
@@ -265,7 +271,7 @@ func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
 		authenticate: func(r *http.Request) error { return r.Context().Err() },
-		profile:      "logfood",
+		profile:      testProfile,
 		cancel:       func() { cancelled = true },
 	}
 	ctx, cancel := context.WithCancel(t.Context())
@@ -284,7 +290,7 @@ func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return refreshRejected },
-		profile:      "logfood",
+		profile:      testProfile,
 		cancel:       func() { cancelled = true },
 	}
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, "https://workspace.test/mcp", nil)
@@ -318,7 +324,7 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d", "system.ai.git#hub", "system.ai.git?hub", "system.ai.git/hub"} {
 		t.Run(service, func(t *testing.T) {
 			parent := newMCPTestRoot()
-			parent.SetArgs([]string{"mcp", "serve", "--profile", "logfood", "--service", service})
+			parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", service})
 			err := parent.ExecuteContext(cmdio.MockDiscard(t.Context()))
 			require.ErrorContains(t, err, "--service needs a full service name such as system.ai.github")
 			assert.Equal(t, 1, root.ExitStatus(err))
@@ -337,7 +343,7 @@ func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	parent := newMCPTestRoot()
 	var stderr bytes.Buffer
 	parent.SetErr(&stderr)
-	parent.SetArgs([]string{"mcp", "serve", "--profile", "logfood", "--service", "system.ai.github"})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
 	err = parent.ExecuteContext(cmdio.MockDiscard(t.Context()))
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
@@ -354,7 +360,7 @@ func TestRefreshGuardSkipsSessionDeleteAfterFailure(t *testing.T) {
 			asked++
 			return refreshRejected
 		},
-		profile: "logfood",
+		profile: testProfile,
 		cancel:  func() {},
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
@@ -373,7 +379,7 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 	cause := refreshRejected
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return cause },
-		profile:      "logfood",
+		profile:      testProfile,
 		cancel:       func() {},
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
@@ -392,7 +398,7 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 // TestProxyResultReportsStdinErrorWithoutRefreshFailure checks that without a refresh failure, a stdin error is printed
 // and exits 1.
 func TestProxyResultReportsStdinErrorWithoutRefreshFailure(t *testing.T) {
-	g := &refreshGuard{profile: "logfood"}
+	g := &refreshGuard{profile: testProfile}
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
@@ -597,15 +603,15 @@ func runRefreshFailureSession(t *testing.T, end error) (string, bool, error) {
 	cmd.SetErr(&stderr)
 	ctx, stop := context.WithCancel(t.Context())
 	defer stop()
-	refresh := &refreshGuard{authenticate: expiresOnToolsList, profile: "logfood", cancel: stop}
+	refresh := &refreshGuard{authenticate: expiresOnToolsList, profile: testProfile, cancel: stop}
 	err := serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:           in,
 		Out:          &stdout,
 		Err:          &stderr,
-		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
+		Endpoint:     mcp.ServiceURL(server.URL, testService),
 		Config:       &config.Config{Host: server.URL},
 		Authenticate: refresh.authenticateRequest,
-		Profile:      "logfood",
+		Profile:      testProfile,
 	})
 	return stderr.String(), deleted.Load(), err
 }
@@ -777,21 +783,21 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "")
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true}, profile: testProfile, service: testService})
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
-	assert.Equal(t, "system.ai.github", challenge.Service)
-	assert.Equal(t, "logfood", challenge.Profile)
+	assert.Equal(t, testService, challenge.Service)
+	assert.Equal(t, testProfile, challenge.Profile)
 	assert.Equal(t, server.URL, challenge.Host)
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "")
+	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: false}, profile: testProfile, service: testService})
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
+	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
@@ -804,7 +810,7 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned)
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, profile: "my profile", service: testService, pinnedFile: pinned})
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
@@ -862,7 +868,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
 			require.NoError(t, err)
 
-			signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+			signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 			tc.req.Stderr, tc.req.Progress = io.Discard, func(string) {}
 			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
 
@@ -879,7 +885,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 func failingGuard(stopped *bool) *refreshGuard {
 	return &refreshGuard{
 		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
-		profile:      "logfood",
+		profile:      testProfile,
 		cancel:       func() { *stopped = true },
 	}
 }
@@ -908,20 +914,20 @@ func TestServeChallengeLookupIsBounded(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
+	_, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
 
 	require.Error(t, err)
 	assert.Less(t, time.Since(start), 10*time.Second, "the lookup must not wait for the SDK's retry budget")
 }
 
-// TestServeChallengeLookupAuthFailureExitsTwo checks that a startup read the profile's credential does not pass names the
+// TestServeChallengeLookupAuthFailureExitsTwo checks that a startup read that the profile's credential fails names the
 // profile and its login command, and exits 2 like the other failures of a credential.
 func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
 	server := serviceServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
+	_, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
 
 	require.Error(t, err)
 	assert.Equal(t, serveBindStatus, serveStartStatus(err))
@@ -940,7 +946,7 @@ func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
 	var stopped bool
 	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
 
-	_, err := serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "")
+	_, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
@@ -955,7 +961,7 @@ func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
 	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
 	var stopped bool
 	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 
 	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Stderr: io.Discard})
 
@@ -994,7 +1000,7 @@ func TestServeSignInReportsEachPoll(t *testing.T) {
 	require.NoError(t, err)
 
 	polls := 0
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func(string) { polls++ }, Stderr: io.Discard})
 
 	require.NoError(t, err)
@@ -1026,10 +1032,10 @@ func TestServeSignInAuthenticatesEveryRequest(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 	var authenticated atomic.Int32
-	guard := &refreshGuard{authenticate: func(*http.Request) error { authenticated.Add(1); return nil }, profile: "logfood", cancel: func() {}}
+	guard := &refreshGuard{authenticate: func(*http.Request) error { authenticated.Add(1); return nil }, profile: testProfile, cancel: func() {}}
 	w := guardedTestClient(t, server.URL, guard)
 
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func(string) {}, Stderr: io.Discard})
 
 	require.NoError(t, err)
@@ -1049,11 +1055,11 @@ func TestServeSignInRestartDeleteRefreshFailureStopsProxy(t *testing.T) {
 			}
 			return nil
 		},
-		profile: "logfood",
+		profile: testProfile,
 		cancel:  func() { stopped = true },
 	}
 	w := guardedTestClient(t, server.URL, guard)
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 
 	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Stderr: io.Discard})
 
@@ -1115,10 +1121,10 @@ func TestServeSignInRestartWaitsForDeletedCredential(t *testing.T) {
 		}
 	}))
 	t.Cleanup(server.Close)
-	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
 
 	polls := 0
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func(string) { polls++ }, Stderr: io.Discard})
 
 	require.NoError(t, err)
@@ -1150,9 +1156,9 @@ func TestServeSignInRestartGivesUpOnStaleCredential(t *testing.T) {
 		_, _ = io.WriteString(rw, active)
 	}))
 	t.Cleanup(server.Close)
-	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
 
-	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Stderr: io.Discard})
 
 	require.Error(t, err)
@@ -1192,9 +1198,9 @@ func TestServeSignInProgressNamesPageWhenNotOpened(t *testing.T) {
 				_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
 			}))
 			t.Cleanup(server.Close)
-			w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+			w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
 			var pageURLs []string
-			signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+			signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 
 			_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: tc.open, Stderr: io.Discard, Progress: func(pageURL string) {
 				pageURLs = append(pageURLs, pageURL)
@@ -1204,7 +1210,7 @@ func TestServeSignInProgressNamesPageWhenNotOpened(t *testing.T) {
 			// The fixture is read twice before the caller signs in: the check before the sign-in, then two polls.
 			want := ""
 			if !tc.open {
-				want = mcp.SignInURL(server.URL, "system.ai.github", "1")
+				want = mcp.SignInURL(server.URL, testService, "1")
 			}
 			assert.Equal(t, []string{want, want}, pageURLs)
 		})

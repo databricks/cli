@@ -15,7 +15,10 @@ const (
 	methodInitialize  = "initialize"
 	methodInitialized = "notifications/initialized"
 	methodCancelled   = "notifications/cancelled"
+	methodProgress    = "notifications/progress"
+	methodListChanged = "notifications/tools/list_changed"
 	methodPing        = "ping"
+	methodToolsList   = "tools/list"
 	methodToolsCall   = "tools/call"
 
 	keyResult       = "result"

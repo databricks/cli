@@ -235,7 +235,8 @@ var (
 
 // signIn runs the provider sign-in of svc for the profile named in opts and reports progress on errOut. It returns the
 // sign-in state name, whether the caller was already signed in, whether url was printed, and the failure, which is
-// categorized for JSON. opts sets the page opener and the poll callback; `add --login` shares this.
+// categorized for JSON. opts sets the page opener and the poll callback; `add --login` shares this. signIn sets opts.Poll
+// and opts.Timeout to the sign-in settings, so the values a caller sets for them are replaced.
 func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, pinnedFile, url string, svc mcp.Service, opts mcp.SignInOptions) (state string, alreadySignedIn, urlShown bool, err error) {
 	profileName := opts.Profile
 	opts.Poll = signInPollInterval

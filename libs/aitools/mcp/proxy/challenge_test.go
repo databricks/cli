@@ -286,7 +286,10 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 
 func TestAuthenticateReportsFailureWithoutListChanged(t *testing.T) {
 	srv, _ := challengedService(t)
-	signIn := &signInStub{reply: func(int) (bool, error) { return false, errors.New("sign-in failed for the test") }}
+	// The error names the service and the profile itself, as the sign-in's errors do, so the answer does not repeat them.
+	signIn := &signInStub{reply: func(int) (bool, error) {
+		return false, errors.New("sign-in to system.ai.github failed on profile logfood. Run: databricks aitools mcp login system.ai.github")
+	}}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
 	challenge(t, p)
 	p.send(t, `{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
@@ -295,7 +298,7 @@ func TestAuthenticateReportsFailureWithoutListChanged(t *testing.T) {
 
 	require.Len(t, lines, 2, "the failure is the only answer to authenticate, and no list_changed follows it")
 	assert.Equal(t, true, parseReply(t, lines[1]).Result["isError"])
-	assert.Contains(t, lines[1], "Sign-in to system.ai.github on profile logfood failed: sign-in failed for the test")
+	assert.Equal(t, "sign-in to system.ai.github failed on profile logfood. Run: databricks aitools mcp login system.ai.github", resultText(t, lines[1]))
 }
 
 // TestChallengeTurnsOnAfterSignIn runs the flow an agent sees: a challenged list, authenticate, then the

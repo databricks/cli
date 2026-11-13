@@ -126,7 +126,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, 1)
 	}
-	challenge, err := serveChallenge(ctx, w, entry, profileName, f.service, pinnedFile)
+	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile})
 	if err != nil {
 		return serveFailure(cmd, err, serveStartStatus(err))
 	}
@@ -172,13 +172,22 @@ func (g guardCredentials) Configure(context.Context, *config.Config) (credential
 	return credentials.CredentialsProviderFn(g.refresh.authenticateCall), nil
 }
 
+// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, and the
+// config file it is pinned to. w is the profile's client, which must be guardedClient's.
+type serveTarget struct {
+	w          *databricks.WorkspaceClient
+	entry      *mcp.Entry
+	profile    string
+	service    string
+	pinnedFile string
+}
+
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
 // a pure passthrough. The state entry decides when there is one; otherwise the service is read once.
-// pinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile). w must be guardedClient's.
-func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *mcp.Entry, profileName, service, pinnedFile string) (*proxy.Challenge, error) {
-	signInRequired := entry != nil && entry.SignInRequired
-	if entry == nil {
-		svc, err := lookupAtStart(ctx, w, profileName, pinnedFile, service)
+func serveChallenge(ctx context.Context, t serveTarget) (*proxy.Challenge, error) {
+	signInRequired := t.entry != nil && t.entry.SignInRequired
+	if t.entry == nil {
+		svc, err := lookupAtStart(ctx, t.w, t.profile, t.pinnedFile, t.service)
 		if err != nil {
 			return nil, err
 		}
@@ -188,12 +197,12 @@ func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *m
 		return nil, nil
 	}
 	return &proxy.Challenge{
-		Service:      service,
-		Profile:      profileName,
-		Host:         w.Config.Host,
-		Label:        mcp.ProviderLabel(service),
-		LoginCommand: mcpLoginHint(service, profileName, pinnedFile),
-		SignIn:       serveSignIn(w, profileName, service, pinnedFile),
+		Service:      t.service,
+		Profile:      t.profile,
+		Host:         t.w.Config.Host,
+		Label:        mcp.ProviderLabel(t.service),
+		LoginCommand: mcpLoginHint(t.service, t.profile, t.pinnedFile),
+		SignIn:       serveSignIn(t),
 	}, nil
 }
 
@@ -240,7 +249,8 @@ func waitDeleted(ctx context.Context, w *databricks.WorkspaceClient, service str
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
 // proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
 // often the browser opens. w must be guardedClient's.
-func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile string) proxy.SignInFunc {
+func serveSignIn(t serveTarget) proxy.SignInFunc {
+	w, profileName, service, pinnedFile := t.w, t.profile, t.service, t.pinnedFile
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
 	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
