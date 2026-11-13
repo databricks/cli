@@ -34,11 +34,6 @@ class DeltaTableSource:
     """
 
     transformation_sql: VariableOrOptional[str] = None
-    """
-    A single SQL SELECT expression applied after filter_condition.
-    The expression must contain all required columns (e.g., "*, col_a + col_b AS col_c").
-    If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
-    """
 
     @classmethod
     def from_dict(cls, value: "DeltaTableSourceDict") -> "Self":
@@ -70,11 +65,6 @@ class DeltaTableSourceDict(TypedDict, total=False):
     """
 
     transformation_sql: VariableOrOptional[str]
-    """
-    A single SQL SELECT expression applied after filter_condition.
-    The expression must contain all required columns (e.g., "*, col_a + col_b AS col_c").
-    If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
-    """
 
 
 DeltaTableSourceParam = DeltaTableSourceDict | DeltaTableSource
