@@ -219,20 +219,36 @@ func mcpLoginHint(service, profileName, pinnedFile string) string {
 	return mcp.ConfigFileCommand(pinnedFile, mcpLoginCommand+" "+shellquote.BashArg(service)+" --profile "+shellquote.BashArg(profileName))
 }
 
+// lastCheckText names the failure of the last poll of a sign-in that timed out, for the timeout message. It is empty
+// when the last poll read the credential.
+func lastCheckText(timeout *mcp.SignInTimeoutError) string {
+	if timeout.LastCheck == nil {
+		return ""
+	}
+	return " (the last check failed: " + timeout.LastCheck.Error() + ")"
+}
+
+// signInPollInterval and signInWaitTimeout are the polling settings of a sign-in. Tests shorten them.
+var (
+	signInPollInterval = mcp.SignInPollInterval
+	signInWaitTimeout  = mcp.SignInWaitTimeout
+)
+
 // signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns the sign-in state
 // name, whether the caller was already signed in, and the failure, which is categorized for JSON. `add --login` shares it.
 func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, pinnedFile, url string, svc mcp.Service) (state string, alreadySignedIn bool, err error) {
 	alreadySignedIn, err = mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
 		Profile: profileName,
-		Poll:    mcp.SignInPollInterval,
-		Timeout: mcp.SignInWaitTimeout,
+		Poll:    signInPollInterval,
+		Timeout: signInWaitTimeout,
 		Open:    browser.OpenOutputToStderr,
 	})
+	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
 	switch {
-	case errors.Is(err, mcp.ErrSignInTimeout):
+	case timedOut:
 		return signInStateTimeout, false, failure(categorySignInTimeout, err,
-			"sign-in to %s did not complete in %g minutes. Finish at %s then retry: %s",
-			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, mcpLoginHint(svc.FullName, profileName, pinnedFile))
+			"sign-in to %s did not complete in %g minutes%s. Finish at %s then retry: %s",
+			svc.FullName, signInWaitTimeout.Minutes(), lastCheckText(timeout), url, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case errors.Is(err, mcp.ErrSignInFailed):
 		return signInStateFailed, false, failure(protos.AitoolsErrorCategoryUncategorized, err,
 			"sign-in to %s failed on profile %s. Run: %s",

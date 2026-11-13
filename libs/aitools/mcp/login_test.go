@@ -41,6 +41,10 @@ type loginTestServer struct {
 	signedIn bool
 	// gate, when set, holds the credential at NOT_FOUND until it returns true. The script does not advance meanwhile.
 	gate func() bool
+	// gets counts the credential GETs, and fail, when set, answers GET number get (from 1) with the status it returns,
+	// or 0 to answer from the script.
+	gets int
+	fail func(get int) int
 }
 
 func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -51,6 +55,13 @@ func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == loginTestServicePath && r.Method == http.MethodGet:
 		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","config":{"source_connection":{"options":{"oauth_provider":"OAUTH_PROVIDER_GITHUB_MCP"}}}}`)
 	case r.URL.Path == loginTestCredPath && r.Method == http.MethodGet:
+		s.gets++
+		if s.fail != nil {
+			if status := s.fail(s.gets); status != 0 {
+				http.Error(rw, `{"error_code":"TEMPORARILY_UNAVAILABLE","message":"try again"}`, status)
+				return
+			}
+		}
 		state := ""
 		if s.gate == nil || s.gate() {
 			state = s.states[min(s.reads, len(s.states)-1)]
@@ -108,6 +119,12 @@ func noopOpen(context.Context, string) error {
 // runner's BROWSER=none would otherwise skip it.
 func browserOpens(ctx context.Context) context.Context {
 	return env.Set(ctx, "BROWSER", "test-opener")
+}
+
+func (s *loginTestServer) credentialGets() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.gets
 }
 
 func (s *loginTestServer) isDeleted() bool {
@@ -201,7 +218,8 @@ func TestSignInTimeout(t *testing.T) {
 		Poll:    time.Millisecond,
 		Timeout: 30 * time.Millisecond,
 	})
-	require.ErrorIs(t, err, ErrSignInTimeout)
+	timeout := requireSignInTimeout(t, err)
+	assert.Nil(t, timeout.LastCheck)
 	assert.Contains(t, out.String(), "/mcp-service-login?name=system.ai.github&o=123")
 }
 
@@ -220,7 +238,8 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 		},
 	})
 	require.ErrorIs(t, err, context.Canceled)
-	assert.NotErrorIs(t, err, ErrSignInTimeout)
+	_, timedOut := errors.AsType[*SignInTimeoutError](err)
+	assert.False(t, timedOut)
 }
 
 func TestSignInFailed(t *testing.T) {
@@ -233,6 +252,98 @@ func TestSignInFailed(t *testing.T) {
 		Timeout: 10 * time.Second,
 	})
 	require.ErrorIs(t, err, ErrSignInFailed)
+}
+
+// requireSignInTimeout checks that err is the timeout of a sign-in, and returns it.
+func requireSignInTimeout(t *testing.T, err error) *SignInTimeoutError {
+	t.Helper()
+	timeout, ok := errors.AsType[*SignInTimeoutError](err)
+	require.True(t, ok, "got %v", err)
+	return timeout
+}
+
+// TestSignInTimeoutReportsLastFailedCheck checks that a timeout after failed polls reports the last of them, so that the
+// user can see why the sign-in did not complete.
+func TestSignInTimeoutReportsLastFailedCheck(t *testing.T) {
+	s := &loginTestServer{states: []string{""}, fail: func(get int) int {
+		if get > 1 {
+			return http.StatusInternalServerError
+		}
+		return 0
+	}}
+	w := loginTestClient(t, s)
+
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open:    noopOpen,
+		Poll:    time.Millisecond,
+		Timeout: 50 * time.Millisecond,
+	})
+	timeout := requireSignInTimeout(t, err)
+	apiErr, ok := errors.AsType[*apierr.APIError](timeout.LastCheck)
+	require.True(t, ok, "got %v", timeout.LastCheck)
+	assert.Equal(t, http.StatusInternalServerError, apiErr.StatusCode)
+}
+
+// TestSignInTimeoutDoesNotReportAFailedCheckThatWasRecovered checks that a poll which reads the credential after a failed
+// one clears the failure, so that a later timeout does not report a check that no longer applies.
+func TestSignInTimeoutDoesNotReportAFailedCheckThatWasRecovered(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "PROVISIONING"}, fail: func(get int) int {
+		if get == 2 {
+			return http.StatusInternalServerError
+		}
+		return 0
+	}}
+	w := loginTestClient(t, s)
+
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open:    noopOpen,
+		Poll:    time.Millisecond,
+		Timeout: 50 * time.Millisecond,
+	})
+	assert.Nil(t, requireSignInTimeout(t, err).LastCheck)
+}
+
+// TestSignInKeepsPollingThroughServerErrors checks that a poll which fails with a server error does not end the sign-in:
+// the user may still be on the provider's page, and the next poll reads the credential.
+func TestSignInKeepsPollingThroughServerErrors(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "ACTIVE"}, fail: func(get int) int {
+		if get == 2 || get == 3 {
+			return http.StatusInternalServerError
+		}
+		return 0
+	}}
+	w := loginTestClient(t, s)
+
+	alreadySignedIn, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open:    noopOpen,
+		Poll:    time.Millisecond,
+		Timeout: 10 * time.Second,
+	})
+	require.NoError(t, err)
+	assert.False(t, alreadySignedIn)
+	assert.Equal(t, 4, s.credentialGets(), "the read before the page, two failed polls, and the poll that is ACTIVE")
+}
+
+// TestSignInAuthenticationErrorEndsAtOnce checks that a poll which is refused for the caller's credential ends the sign-in
+// at once, with that error, rather than polling until the timeout.
+func TestSignInAuthenticationErrorEndsAtOnce(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "ACTIVE"}, fail: func(get int) int {
+		if get == 2 {
+			return http.StatusUnauthorized
+		}
+		return 0
+	}}
+	w := loginTestClient(t, s)
+
+	_, err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Open:    noopOpen,
+		Poll:    time.Millisecond,
+		Timeout: 10 * time.Second,
+	})
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	require.True(t, ok, "got %v", err)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+	assert.Equal(t, 2, s.credentialGets(), "the sign-in ends at the first poll that is refused")
 }
 
 func TestCredentialStateNotSignedIn(t *testing.T) {
@@ -339,7 +450,7 @@ func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
 		Timeout: 200 * time.Millisecond,
 		Open:    noopOpen,
 	})
-	require.ErrorIs(t, err, ErrSignInTimeout)
+	requireSignInTimeout(t, err)
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
 

@@ -3,6 +3,7 @@ package aitools
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -248,6 +250,49 @@ func signInInstalledOne(t *testing.T, status int, body string) (string, error) {
 	var errOut bytes.Buffer
 	err = signInInstalled(ctx, &errOut, w, req, plans, servers)
 	return errOut.String() + stderr.String(), err
+}
+
+// TestSignInTimeoutNamesTheLastFailedCheck checks that a sign-in that times out after failed polls names the last failure in
+// its error, so that the user can see why the credential did not become ACTIVE, and that its state is TIMEOUT.
+func TestSignInTimeoutNamesTheLastFailedCheck(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 100*time.Millisecond
+
+	const githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	var mu sync.Mutex
+	gets := 0
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != githubPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		mu.Lock()
+		gets++
+		first := gets == 1
+		mu.Unlock()
+		rw.Header().Set("Content-Type", "application/json")
+		if first {
+			rw.WriteHeader(http.StatusNotFound)
+			_, _ = rw.Write([]byte(`{"error_code":"NOT_FOUND","message":"Credential is not found"}`))
+			return
+		}
+		rw.WriteHeader(http.StatusInternalServerError)
+		_, _ = rw.Write([]byte(`{"error_code":"INTERNAL_ERROR","message":"try later"}`))
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	state, _, err := signIn(ctx, io.Discard, w, "logfood", "", "https://example.test/login", mcp.Service{FullName: "system.ai.github", SignInRequired: true})
+	require.Error(t, err)
+	assert.Equal(t, signInStateTimeout, state)
+	_, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
+	assert.True(t, timedOut)
+	assert.Contains(t, err.Error(), "(the last check failed: ")
+	assert.Contains(t, err.Error(), "try later")
 }
 
 // TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand checks that a sign-in that failed does not print the

@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -18,8 +21,19 @@ const (
 	SignInWaitTimeout  = 5 * time.Minute
 )
 
-// ErrSignInTimeout means the caller's credential did not become ACTIVE before the wait ended.
-var ErrSignInTimeout = errors.New("sign-in did not complete before the timeout")
+// SignInTimeoutError means the caller's credential did not become ACTIVE before the wait ended. LastCheck is the
+// failure of the last poll, when that poll failed; a poll that reads the credential clears it.
+type SignInTimeoutError struct {
+	LastCheck error
+}
+
+func (e *SignInTimeoutError) Error() string {
+	return "sign-in did not complete before the timeout"
+}
+
+func (e *SignInTimeoutError) Unwrap() error {
+	return e.LastCheck
+}
 
 // ErrSignInFailed means the credential reached the FAILED provisioning state.
 var ErrSignInFailed = errors.New("sign-in failed")
@@ -54,8 +68,9 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 
 // SignIn signs the caller in to a sign-in-required service, at url from SignInURL. When the caller is already signed in
 // it returns alreadySignedIn true and nil, and prints nothing and opens no page. Otherwise it deletes a FAILED credential
-// left by an earlier attempt, prints url to out, opens it, and polls until the credential is ACTIVE.
-// The errors are ErrSignInTimeout, ErrSignInFailed, or an API error.
+// left by an earlier attempt, prints url to out, opens it, and polls until the credential is ACTIVE. A poll that fails
+// with a server error or a network error is polled again until the wait ends; any other failed poll ends the sign-in.
+// The errors are a *SignInTimeoutError, ErrSignInFailed, or an API error.
 func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) (alreadySignedIn bool, err error) {
 	state, err := CredentialState(ctx, w, service)
 	if err != nil {
@@ -99,10 +114,12 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	ticker := time.NewTicker(opts.Poll)
 	defer ticker.Stop()
 
+	// lastCheck is the failure of the last poll, if that poll failed. The timeout reports it.
+	var lastCheck error
 	for {
 		select {
 		case <-waitCtx.Done():
-			return false, waitEnded(ctx)
+			return false, waitEnded(ctx, lastCheck)
 		case err := <-opened:
 			opened = nil
 			if err != nil {
@@ -114,10 +131,15 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		state, err := CredentialState(waitCtx, w, service)
 		if err != nil {
 			if waitCtx.Err() != nil {
-				return false, waitEnded(ctx)
+				return false, waitEnded(ctx, lastCheck)
 			}
-			return false, err
+			if !transientPollError(err) {
+				return false, err
+			}
+			lastCheck = err
+			continue
 		}
+		lastCheck = nil
 		// Other states (PROVISIONING, UPDATING, ...) mean the login has not completed yet.
 		switch state {
 		case catalog.ProvisioningInfoStateActive:
@@ -131,12 +153,23 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	}
 }
 
-// waitEnded returns why the sign-in wait ended: the caller's cancellation, or else the timeout.
-func waitEnded(ctx context.Context) error {
+// transientPollError reports whether a failed poll is worth polling again: a server error, or a network failure. Any
+// other error, such as a refused credential, ends the sign-in.
+func transientPollError(err error) bool {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		return apiErr.StatusCode >= http.StatusInternalServerError
+	}
+	_, ok := errors.AsType[*url.Error](err)
+	return ok
+}
+
+// waitEnded returns why the sign-in wait ended: the caller's cancellation, or else the timeout, with the failure of the
+// last poll.
+func waitEnded(ctx context.Context, lastCheck error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return ErrSignInTimeout
+	return &SignInTimeoutError{LastCheck: lastCheck}
 }
 
 // SignOut deletes the caller's sign-in to a service. It reports false when the caller was not
