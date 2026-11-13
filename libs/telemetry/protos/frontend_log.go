@@ -9,8 +9,10 @@ type FrontendLog struct {
 	Entry FrontendLogEntry `json:"entry,omitempty"`
 }
 
+// FrontendLogEntry mirrors a oneof in the proto, so exactly one field must be set.
 type FrontendLogEntry struct {
-	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log,omitempty"`
+	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log,omitzero"`
+	FastFeedbackLog  *FastFeedbackLog `json:"fast_feedback_log,omitempty"`
 }
 
 type DatabricksCliLog struct {

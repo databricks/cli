@@ -1,0 +1,129 @@
+
+=== Feedback about a product command is routed to its team
+
+>>> [CLI] feedback --command air run --run-id 123 --can-be-contacted   logs omitted the failure reason  
+Thank you! Your feedback was sent. Reference: [UUID][0]
+{
+  "frontend_log_event_id": "[UUID][0]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][1]",
+      "parent_ui": "ModelTraining.AIRuntime",
+      "origin": "air_run",
+      "can_be_contacted": true,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback run-id/123",
+      "text": "logs omitted the failure reason"
+    }
+  }
+}
+
+=== A command group, with a JSON receipt
+
+>>> [CLI] feedback --command bundle deploy should print which resources changed -o json
+{
+  "received": true,
+  "feedback_id": "[UUID][2]"
+}
+{
+  "frontend_log_event_id": "[UUID][2]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][3]",
+      "parent_ui": "DeveloperEcosystem.CoreDabs",
+      "origin": "bundle",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "deploy should print which resources changed"
+    }
+  }
+}
+
+=== Top-level feedback can name any command
+
+>>> [CLI] feedback --command bundle  deploy deploy is slow
+Thank you! Your feedback was sent. Reference: [UUID][4]
+{
+  "frontend_log_event_id": "[UUID][4]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][5]",
+      "parent_ui": "DeveloperEcosystem.CoreDabs",
+      "origin": "bundle_deploy",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "deploy is slow"
+    }
+  }
+}
+
+=== General CLI feedback
+
+>>> [CLI] feedback the CLI should support ...
+Thank you! Your feedback was sent. Reference: [UUID][6]
+{
+  "frontend_log_event_id": "[UUID][6]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][7]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "the CLI should support ..."
+    }
+  }
+}
+
+=== An AI agent needs the user's confirmation
+
+>>> env AGENT=test-agent [CLI] feedback hello
+Error: feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message
+
+Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it.
+
+Exit code: 1
+
+=== An AI agent with --yes
+
+>>> env AGENT=test-agent [CLI] feedback --yes hello
+Thank you! Your feedback was sent. Reference: [UUID][8]
+{
+  "frontend_log_event_id": "[UUID][8]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][9]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback agent/test-agent",
+      "text": "hello"
+    }
+  }
+}
+
+=== Validation errors
+
+>>> [CLI] feedback    
+Error: feedback message must contain 1 to 10000 characters
+
+Exit code: 1
+
+>>> [CLI] feedback --command no-such-command hello
+Error: unknown command "no-such-command"
+
+Exit code: 1
+
+>>> [CLI] feedback --command bundle no-such-command hello
+Error: unknown command "bundle no-such-command"
+
+Exit code: 1
+
+>>> [CLI] feedback --run-id abc hello
+Error: --run-id must be a positive job run ID
+
+Exit code: 1

@@ -183,6 +183,7 @@ Domains
 Developer Tools
   air                                    Run and manage AI Runtime workloads on serverless GPU compute
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  feedback                               Send feedback about the Databricks CLI to Databricks
   sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
