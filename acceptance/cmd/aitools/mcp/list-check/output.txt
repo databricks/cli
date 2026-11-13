@@ -74,7 +74,7 @@ Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)  
           "check": {
             "token": "ok",
             "sign_in": "ok",
-            "binary": "ok"
+            "binary": "failed"
           }
         }
       ]
@@ -92,5 +92,5 @@ Signed out of system.ai.github on profile logfood.
 >>> [CLI] aitools mcp list --check
 Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)  token ok
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code  binary missing
-  github-logfood           system.ai.github               Claude Code  sign-in needed
+  github-logfood           system.ai.github               Claude Code  sign-in needed, binary missing
   to sign in: run `DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp login system.ai.github --profile logfood`

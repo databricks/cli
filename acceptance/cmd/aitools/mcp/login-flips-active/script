@@ -7,8 +7,8 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 export BROWSER=none
 
 # The services of system.ai, created in the fake workspace. The fake serves what the scripts create, as in add-text.
-MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' > /dev/null
-MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' &> LOG.create-github-logfood
 
 title "A service that needs no sign-in exits 0 and says so"
 trace $CLI aitools mcp login system.ai.genie_one_mcp --profile logfood
