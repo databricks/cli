@@ -1,5 +1,7 @@
 package mcp
 
+import "strings"
+
 // SystemAILocation is the schema that ships the Databricks managed MCP services.
 const SystemAILocation = "system.ai"
 
@@ -59,9 +61,10 @@ var knownSystemAI = map[string]KnownService{
 	},
 }
 
-// KnownOf returns the CLI's description of a service, or nil when it is not a system.ai service in the table.
+// KnownOf returns the CLI's description of a service, or nil when it is not a system.ai service in the table. The leaf
+// is compared without case, as Unity Catalog names are.
 func KnownOf(fullName string) *KnownService {
-	known, ok := knownSystemAI[LeafOf(fullName)]
+	known, ok := knownSystemAI[strings.ToLower(LeafOf(fullName))]
 	if !ok || !inSystemAI(fullName) {
 		return nil
 	}

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -468,4 +469,43 @@ func TestAuthenticateIsForwardedBeforeAChallenge(t *testing.T) {
 	assert.Empty(t, signIn.calls(), "no sign-in runs for a tool the service answers")
 	assert.Len(t, fake.requests(), 1)
 	assert.Equal(t, []string{upstream}, out)
+}
+
+// TestChallengeMatchesServiceNameWithoutCase checks that a service named in another case is challenged by its sign-in
+// URL. Binding and Unity Catalog names are compared without case, so `--service SYSTEM.AI.GITHUB` is a service too.
+func TestChallengeMatchesServiceNameWithoutCase(t *testing.T) {
+	const body = `{"jsonrpc":"2.0","id":2,"error":{"code":-32042,"message":"x","data":{"elicitations":[` +
+		`{"mode":"url","url":"` + testURL + `"}]}}}`
+	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
+	b := bridgeFor(srv.URL)
+	b.Hooks = &signInHooks{c: &Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}}
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	require.Len(t, out, 1)
+	assert.Equal(t, []string{"authenticate"}, toolNames(t, out[0]))
+}
+
+// TestChallengeTextAroundSignInURL checks that a sign-in URL in the text of an error result is recognized whatever
+// punctuation surrounds it, as a sentence or a list puts it around the URL.
+func TestChallengeTextAroundSignInURL(t *testing.T) {
+	for _, around := range []struct{ before, after string }{
+		{"Sign in first: ", "."},
+		{"Sign in (", ")"},
+		{"Sign in [", "]"},
+		{`Sign in "`, `".`},
+		{"Sign in '", "';"},
+	} {
+		t.Run(around.before+"URL"+around.after, func(t *testing.T) {
+			text, err := json.Marshal(around.before + testURL + around.after)
+			require.NoError(t, err)
+			body := `{"jsonrpc":"2.0","id":3,"result":{"isError":true,"content":[{"type":"text","text":` + string(text) + `}]}}`
+			srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
+			out, _ := runAll(t, challengedBridge(srv.URL, nil),
+				`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`+"\n")
+
+			require.Len(t, out, 2)
+			assert.Equal(t, listChangedMsg, out[1])
+			assert.Contains(t, out[0], "needs a one-time sign-in")
+		})
+	}
 }

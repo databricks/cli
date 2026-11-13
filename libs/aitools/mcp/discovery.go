@@ -196,8 +196,6 @@ func newService(svc *catalog.McpService) Service {
 		SignInRequired: provider != "",
 		OAuthProvider:  provider,
 	}
-	if known, ok := knownSystemAI[leaf]; ok && inSystemAI(fullName) {
-		s.Known = &known
-	}
+	s.Known = KnownOf(fullName)
 	return s
 }

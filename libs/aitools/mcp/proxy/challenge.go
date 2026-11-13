@@ -191,7 +191,7 @@ func (h *signInHooks) urlElicitation(data json.RawMessage) bool {
 func (h *signInHooks) textHasSignInURL(content []textContent) bool {
 	for _, c := range content {
 		for word := range strings.FieldsSeq(c.Text) {
-			if h.isSignInURL(strings.TrimRight(word, ".,;:)\"'")) {
+			if h.isSignInURL(strings.Trim(word, "([\"'.,;:)]")) {
 				return true
 			}
 		}
@@ -210,7 +210,7 @@ func (h *signInHooks) isSignInURL(raw string) bool {
 		return false
 	}
 	return u.Scheme == base.Scheme && strings.EqualFold(u.Host, base.Host) &&
-		u.Path == signInPath && u.Query().Get("name") == h.c.Service
+		u.Path == signInPath && strings.EqualFold(u.Query().Get("name"), h.c.Service)
 }
 
 // authenticateList is the one-tool list a challenged service answers with.
