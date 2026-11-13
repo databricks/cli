@@ -10,7 +10,7 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 
 github-logfood  system.ai.github
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
-system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+system.ai.github needs sign-in. Run: DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp login system.ai.github --profile logfood
 
 === list --check: the token mints, and GitHub needs sign-in
 

@@ -13,7 +13,7 @@ Cursor may ask you to approve genie_one_mcp-logfood. Run: cursor-agent mcp enabl
 github-logfood  system.ai.github
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
   cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
-system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+system.ai.github needs sign-in. Run: DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp login system.ai.github --profile logfood
 Cursor may ask you to approve github-logfood. Run: cursor-agent mcp enable github-logfood (the Cursor docs call the CLI agent), or approve it in Cursor's MCP settings.
 
 === Running it again re-asserts the entries, and nothing is written twice
@@ -29,7 +29,7 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 github-logfood  system.ai.github
   claude-code  already installed, re-asserted  [TEST_TMP_DIR]/home/.claude.json
   cursor       already installed, re-asserted  [TEST_TMP_DIR]/home/.cursor/mcp.json
-system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+system.ai.github needs sign-in. Run: DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp login system.ai.github --profile logfood
 
 === Cursor config
 
