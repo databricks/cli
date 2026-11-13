@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -162,7 +163,7 @@ func TestMcpLogoutEndpointNotFoundIsNotAServiceError(t *testing.T) {
 }
 
 // TestSignInInstalledSignsInToEveryServer checks that add --login attempts every installed sign-in server after one of
-// them fails. The failed server gets the login hint, and the failure is returned, so the others are still signed in.
+// them fails. The failure is returned, and the other servers are still signed in.
 func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 	const (
 		githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
@@ -206,14 +207,16 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 	err = signInInstalled(ctx, &errOut, w, req, plans, servers)
 	require.Error(t, err)
 	assert.Equal(t, []string{githubPath, geniePath}, reads)
-	assert.Contains(t, stderr.String(), "system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood\n")
-	assert.NotContains(t, stderr.String(), "system.ai.genie_one_mcp needs sign-in")
+	// The workspace refused the sign-in with PERMISSION_DENIED, which a login does not fix, so no login hint is printed.
+	assert.NotContains(t, stderr.String(), "needs sign-in")
 }
 
 // signInInstalledOne signs in to one installed sign-in server of the test's workspace and returns the error and what the
 // command wrote to stderr, on either stream. The server answers with status and body for the credential.
 func signInInstalledOne(t *testing.T, status int, body string) (string, error) {
 	t.Helper()
+	// BROWSER=none keeps the test from opening a browser; the page is only printed.
+	t.Setenv("BROWSER", "none")
 	const githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, "/api/") {
@@ -250,6 +253,14 @@ func TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand(t *testing.
 	output, err := signInInstalledOne(t, http.StatusOK, `{"provisioning_info":{"state":"FAILED"}}`)
 	require.ErrorIs(t, err, mcp.ErrSignInFailed)
 	assert.Contains(t, err.Error(), "Run: databricks aitools mcp login system.ai.github --profile logfood")
+	assert.NotContains(t, output, "needs sign-in")
+}
+
+// TestSignInInstalledNoLoginHintForFailureLoginDoesNotFix checks that a sign-in the workspace refuses gets no login hint:
+// logging in again would not fix a refusal, and the hint would be printed in JSON mode too.
+func TestSignInInstalledNoLoginHintForFailureLoginDoesNotFix(t *testing.T) {
+	output, err := signInInstalledOne(t, http.StatusForbidden, `{"error_code":"PERMISSION_DENIED","message":"no access"}`)
+	require.ErrorIs(t, err, apierr.ErrPermissionDenied)
 	assert.NotContains(t, output, "needs sign-in")
 }
 

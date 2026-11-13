@@ -848,8 +848,9 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 }
 
 // signInInstalled signs in to each sign-in-required server that reached an agent, in order. A failure does not stop the
-// others, and the failures are joined. The servers are installed either way. A failed server gets the login hint, on the
-// same stream as the hints of the results, unless its error already names the command to run.
+// others, and the failures are joined. The servers are installed either way. A failure names the command to run next
+// when a sign-in can fix it, as the timeout and failed errors do. Other failures get no hint, since logging in again
+// would not fix them.
 func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
 	var errs []error
 	for i, server := range servers {
@@ -858,19 +859,10 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		if _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service); err != nil {
-			if !namesSignInCommand(err) {
-				cmdio.LogString(ctx, signInHint(server.Service, req.profile, req.pinned))
-			}
 			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)
-}
-
-// namesSignInCommand reports whether a sign-in failure already names the command to run next: a sign-in that timed out
-// or failed names the login command, and a credential the workspace rejected names the auth command.
-func namesSignInCommand(err error) bool {
-	return errors.Is(err, mcp.ErrSignInTimeout) || errors.Is(err, mcp.ErrSignInFailed) || errors.Is(err, apierr.ErrUnauthenticated)
 }
 
 // signInHint is the command that signs the profile in to a sign-in-required service.
