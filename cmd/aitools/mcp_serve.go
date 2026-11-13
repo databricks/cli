@@ -113,40 +113,45 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
 
+	// A server pinned to a config file names that file in its hints, as add and login do.
+	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
+	ctx, stop := serveSignalContext(cmd.Context())
+	defer stop()
+	// The sign-in client and the bridge authenticate through the same guard, so a refresh failure in either stops the proxy.
+	refresh := &refreshGuard{authenticate: cfg.Authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
+
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return serveFailure(cmd, err, 1)
 	}
-	// A server pinned to a config file names that file in its hints, as add and login do.
-	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
-	challenge, err := serveChallenge(cmd.Context(), w, entry, profileName, f.service, pinnedFile, cmd.ErrOrStderr())
+	challenge, err := serveChallenge(ctx, w, refresh, entry, profileName, f.service, pinnedFile, cmd.ErrOrStderr())
 	if err != nil {
-		return serveFailure(cmd, err, 1)
+		return serveFailure(cmd, err, serveStartStatus(err))
 	}
 
-	return serveProxy(cmd, proxy.Options{
+	return serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:           cmd.InOrStdin(),
 		Out:          cmd.OutOrStdout(),
 		Err:          cmd.ErrOrStderr(),
 		Endpoint:     mcp.ServiceURL(cfg.Host, f.service),
 		Config:       cfg,
-		Authenticate: cfg.Authenticate,
+		Authenticate: refresh.authenticateRequest,
 		Profile:      profileName,
 		Agent:        serveAgent(f.agent, cmd.ErrOrStderr()),
 		Transport:    serveTransport(cfg),
 		Challenge:    challenge,
-	}, pinnedFile)
+	})
 }
 
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
 // a pure passthrough. The state entry decides when there is one; otherwise the service is read once.
 // pinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile).
-func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *mcp.Entry, profileName, service, pinnedFile string, errOut io.Writer) (*proxy.Challenge, error) {
+func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, refresh *refreshGuard, entry *mcp.Entry, profileName, service, pinnedFile string, errOut io.Writer) (*proxy.Challenge, error) {
 	signInRequired := entry != nil && entry.SignInRequired
 	if entry == nil {
-		svc, err := mcp.GetService(ctx, w, service)
+		svc, err := lookupAtStart(ctx, w, refresh, profileName, pinnedFile, service)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read MCP service %s: %w", service, err)
+			return nil, err
 		}
 		signInRequired = svc.SignInRequired
 	}
@@ -159,26 +164,39 @@ func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *m
 		Host:         w.Config.Host,
 		Label:        mcp.ProviderLabel(service),
 		LoginCommand: mcpLoginHint(service, profileName, pinnedFile),
-		SignIn:       serveSignIn(w, profileName, service, pinnedFile, errOut),
+		SignIn:       serveSignIn(w, refresh, profileName, service, pinnedFile, errOut),
 	}, nil
+}
+
+// lookupAtStart reads a service for a server with no install record. The read is bounded by profileCheckTimeout, as the
+// checks of list --check are, so that a host that does not answer does not hold up the start for the SDK's retry budget.
+func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, refresh *refreshGuard, profileName, pinnedFile, service string) (mcp.Service, error) {
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	svc, err := mcp.GetService(ctx, w, service)
+	if err != nil {
+		err = describeRequestError(profileName, pinnedFile, refresh.callFailed(ctx, err))
+		return mcp.Service{}, fmt.Errorf("cannot read MCP service %s: %w", service, err)
+	}
+	return svc, nil
 }
 
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Progress goes to errOut, which is stderr because
 // stdout carries the protocol. The page opens only when open is set, so the proxy decides how often the browser opens.
-func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile string, errOut io.Writer) proxy.SignInFunc {
+func serveSignIn(w *databricks.WorkspaceClient, refresh *refreshGuard, profileName, service, pinnedFile string, errOut io.Writer) proxy.SignInFunc {
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
 	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
 		if req.Restart {
 			// The credential is deleted first, so that the sign-in below starts from no credential.
 			if _, err := mcp.SignOut(ctx, w, service); err != nil {
-				return false, false, err
+				return false, false, refresh.callFailed(ctx, err)
 			}
 		}
 		if workspaceID == "" {
 			id, err := auth.ResolveWorkspaceID(ctx, w)
 			if err != nil {
-				return false, false, err
+				return false, false, refresh.callFailed(ctx, err)
 			}
 			workspaceID = id
 		}
@@ -193,18 +211,13 @@ func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile
 		if timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err); timedOut {
 			return false, urlShown, &proxy.SignInTimeout{URL: url, Wait: signInWaitTimeout, LastCheck: timeout.LastCheck}
 		}
-		return alreadySignedIn, urlShown, err
+		return alreadySignedIn, urlShown, refresh.callFailed(ctx, err)
 	}
 }
 
-// serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
-// refreshGuard, so a rejected token stops the proxy; see proxyResult. pinnedFile is the config file the server is
-// pinned to, or "" (see mcp.PinnedFile).
-func serveProxy(cmd *cobra.Command, opts proxy.Options, pinnedFile string) error {
-	ctx, stop := serveSignalContext(cmd.Context())
-	defer stop()
-	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, pinnedFile: pinnedFile, cancel: stop}
-	opts.Authenticate = refresh.authenticateRequest
+// serveProxy bridges opts to the service until stdin closes or ctx is done. opts.Authenticate must be refresh's, so that a
+// refresh failure stops the proxy; see proxyResult.
+func serveProxy(ctx context.Context, cmd *cobra.Command, refresh *refreshGuard, opts proxy.Options) error {
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
 
@@ -254,6 +267,15 @@ func serveAgent(name string, stderr io.Writer) string {
 // serveBindStatus is the exit status of a binding or auth failure. It is not 1, so an agent can tell a failed
 // binding or sign-in from the other failures, which exit 1.
 const serveBindStatus = 2
+
+// serveStartStatus is the exit status of a failure while serve starts. A credential the profile cannot provide exits
+// with serveBindStatus, as the other binding and auth failures do; any other failure exits 1.
+func serveStartStatus(err error) int {
+	if be, ok := errors.AsType[*mcp.BindError](err); ok && be.Category == mcp.BindAuthFailed {
+		return serveBindStatus
+	}
+	return 1
+}
 
 // serveFailure prints err to stderr and returns it with the exit status. Execute does not print it again,
 // so the message is written exactly once.
@@ -317,6 +339,21 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	}
 	g.cancel()
 	return authErr
+}
+
+// callFailed returns the failure of a call that the sign-in client made. The sign-in client authenticates inside the SDK,
+// where the guard does not see its requests, so after a failed call the guard authenticates once, as it does for a bridge
+// request. A token that cannot be refreshed is then the failure that stops the proxy. Otherwise the call's failure is
+// returned.
+func (g *refreshGuard) callFailed(ctx context.Context, err error) error {
+	if err == nil || ctx.Err() != nil {
+		return err
+	}
+	probe := (&http.Request{Method: http.MethodGet, Header: http.Header{}}).WithContext(ctx)
+	if authErr := g.authenticateRequest(probe); authErr != nil {
+		return authErr
+	}
+	return err
 }
 
 // stoppedError is the error for a request that arrives after the refresh failure. It does not repeat the login hint.

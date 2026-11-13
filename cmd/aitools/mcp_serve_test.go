@@ -595,15 +595,18 @@ func runRefreshFailureSession(t *testing.T, end error) (string, bool, error) {
 	cmd := NewMcpServeCmd()
 	cmd.SetContext(t.Context())
 	cmd.SetErr(&stderr)
-	err := serveProxy(cmd, proxy.Options{
+	ctx, stop := context.WithCancel(t.Context())
+	defer stop()
+	refresh := &refreshGuard{authenticate: expiresOnToolsList, profile: "logfood", cancel: stop}
+	err := serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:           in,
 		Out:          &stdout,
 		Err:          &stderr,
 		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
 		Config:       &config.Config{Host: server.URL},
-		Authenticate: expiresOnToolsList,
+		Authenticate: refresh.authenticateRequest,
 		Profile:      "logfood",
-	}, "")
+	})
 	return stderr.String(), deleted.Load(), err
 }
 
@@ -774,7 +777,7 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "system.ai.github", challenge.Service)
@@ -783,12 +786,12 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
@@ -801,7 +804,7 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
@@ -859,7 +862,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
 			require.NoError(t, err)
 
-			signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+			signIn := serveSignIn(w, passingGuard(), "logfood", "system.ai.github", "", io.Discard)
 			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
 
 			require.NoError(t, err)
@@ -869,4 +872,101 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			assert.Equal(t, tc.wantDeleted, deleted)
 		})
 	}
+}
+
+// passingGuard returns a refresh guard whose tokens always refresh, for tests that do not exercise a refresh failure.
+func passingGuard() *refreshGuard {
+	return &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}}
+}
+
+// failingGuard returns a refresh guard whose token cannot be refreshed, and records whether the proxy was stopped.
+func failingGuard(stopped *bool) *refreshGuard {
+	return &refreshGuard{
+		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		profile:      "logfood",
+		cancel:       func() { *stopped = true },
+	}
+}
+
+// serviceServer answers the service read of the startup lookup and the credential read of the sign-in with status.
+// Its body is the JSON of the answer.
+func serviceServer(t *testing.T, status int, body string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(status)
+		_, _ = io.WriteString(rw, body)
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// TestServeChallengeLookupIsBounded checks that the startup read of a service with no install record ends after the
+// profile check timeout, as the checks of list --check do, even when the host keeps answering with a retriable error.
+func TestServeChallengeLookupIsBounded(t *testing.T) {
+	prev := profileCheckTimeout
+	t.Cleanup(func() { profileCheckTimeout = prev })
+	profileCheckTimeout = 100 * time.Millisecond
+	server := serviceServer(t, http.StatusServiceUnavailable, `{"error_code":"TEMPORARILY_UNAVAILABLE","message":"try later"}`)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	start := time.Now()
+	_, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
+
+	require.Error(t, err)
+	assert.Less(t, time.Since(start), 10*time.Second, "the lookup must not wait for the SDK's retry budget")
+}
+
+// TestServeChallengeLookupAuthFailureExitsTwo checks that a startup read the profile's credential does not pass names the
+// profile and its login command, and exits 2 like the other failures of a credential.
+func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
+	server := serviceServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	_, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
+
+	require.Error(t, err)
+	assert.Equal(t, serveBindStatus, serveStartStatus(err))
+	assert.Contains(t, err.Error(), "databricks auth login --profile logfood")
+}
+
+// TestServeStartStatusIsOneForOtherFailures checks that a startup failure that is not a credential's exits 1.
+func TestServeStartStatusIsOneForOtherFailures(t *testing.T) {
+	assert.Equal(t, 1, serveStartStatus(errors.New("cannot read MCP service system.ai.github: not found")))
+}
+
+// TestServeChallengeLookupRefreshFailureStopsProxy checks that a token that cannot be refreshed during the startup read
+// stops the proxy with the login hint, as a refresh failure of a bridge request does.
+func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
+	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	var stopped bool
+
+	_, err = serveChallenge(t.Context(), w, failingGuard(&stopped), nil, "logfood", "system.ai.github", "", io.Discard)
+
+	require.Error(t, err)
+	assert.True(t, stopped, "the proxy is stopped")
+	assert.Equal(t, serveBindStatus, serveStartStatus(err))
+	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
+}
+
+// TestServeSignInRefreshFailureStopsProxy checks that a token that cannot be refreshed during the sign-in stops the proxy
+// with the login hint, as a refresh failure of a bridge request does, instead of an error without the hint.
+func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
+	require.NoError(t, err)
+	var stopped bool
+	signIn := serveSignIn(w, failingGuard(&stopped), "logfood", "system.ai.github", "", io.Discard)
+
+	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true})
+
+	require.Error(t, err)
+	assert.True(t, stopped, "the proxy is stopped")
+	assert.Equal(t, serveBindStatus, serveStartStatus(err))
+	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
 }
