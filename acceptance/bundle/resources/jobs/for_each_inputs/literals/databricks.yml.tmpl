@@ -17,7 +17,7 @@ resources:
           for_each_task:
             inputs: [root_first, root_second]
             task:
-              task_key: inner
+              task_key: array_inner
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE
@@ -31,7 +31,7 @@ resources:
                 count: 0
                 enabled: false
             task:
-              task_key: inner
+              task_key: objects_inner
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE
@@ -39,7 +39,7 @@ resources:
           for_each_task:
             inputs: ${var.inputs}
             task:
-              task_key: inner
+              task_key: string_inner
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE

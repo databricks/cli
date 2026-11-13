@@ -14,7 +14,7 @@ resources:
           for_each_task:
             inputs: [first, second]
             task:
-              task_key: inner
+              task_key: array_inner
               notebook_task:
                 notebook_path: /notebook
         - task_key: objects
@@ -24,28 +24,28 @@ resources:
                 count: 3
                 enabled: true
             task:
-              task_key: inner
+              task_key: objects_inner
               notebook_task:
                 notebook_path: /notebook
         - task_key: empty
           for_each_task:
             inputs: []
             task:
-              task_key: inner
+              task_key: empty_inner
               notebook_task:
                 notebook_path: /notebook
         - task_key: string
           for_each_task:
             inputs: '["first", "second"]'
             task:
-              task_key: inner
+              task_key: string_inner
               notebook_task:
                 notebook_path: /notebook
         - task_key: variable
           for_each_task:
             inputs: ${var.inputs}
             task:
-              task_key: inner
+              task_key: variable_inner
               notebook_task:
                 notebook_path: /notebook
 
@@ -59,6 +59,6 @@ targets:
               for_each_task:
                 inputs: [overridden]
                 task:
-                  task_key: inner
+                  task_key: array_inner
                   notebook_task:
                     notebook_path: /notebook
