@@ -1,0 +1,77 @@
+
+=== Help
+>>> [CLI] sandbox fs cp --help
+Copy files and directories between your local filesystem and sandboxes.
+
+  Use SANDBOX:/absolute/path for sandbox paths.
+
+  Recursively copying a directory will copy all files inside directory
+  at SOURCE_PATH to the directory at TARGET_PATH.
+
+  When copying a file, if TARGET_PATH is a directory, the file will be created
+  inside the directory, otherwise the file is created at TARGET_PATH.
+
+  Files that already exist at the target are skipped unless --overwrite is set.
+
+Usage:
+  databricks sandbox fs cp SOURCE_PATH TARGET_PATH [flags]
+
+Examples:
+  databricks sandbox fs cp ./file my-sandbox:/tmp/file
+  databricks sandbox fs cp --overwrite ./file my-sandbox:/tmp/file
+  databricks sandbox fs cp -r my-sandbox:/tmp/dir ./local/dir
+
+Flags:
+      --concurrency int   number of parallel copy operations (default 8)
+  -h, --help              help for cp
+      --overwrite         overwrite existing files
+  -r, --recursive         recursively copy files from directory
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== Upload a file
+>>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+local.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+hello world!
+
+=== Writing over an existing file needs --overwrite
+>>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+local.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt (skipped; already exists)
+
+>>> [CLI] sandbox fs cp --overwrite updated.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+updated.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+
+>>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/file.txt
+hello again!
+
+=== Copying a file to a directory puts it inside
+>>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/target
+local.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/target/local.txt
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/target
+local.txt
+
+=== Writing into a directory that does not exist fails
+>>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing/file.txt
+Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
+
+Exit code: 1
+
+=== Copy a directory recursively, and back
+>>> [CLI] sandbox fs cp -r localdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
+localdir/file1.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir/file1.txt
+localdir/file2.txt -> [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir/file2.txt
+
+>>> [CLI] sandbox fs cp -r [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir downloaded
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir/file1.txt -> downloaded/file1.txt
+[TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir/file2.txt -> downloaded/file2.txt
+
+>>> cat downloaded/file1.txt downloaded/file2.txt
+file1 content
+file2 content

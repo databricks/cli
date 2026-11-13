@@ -39,10 +39,7 @@ Example:
 				return fmt.Errorf("failed to list sandboxes: %w", err)
 			}
 
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
+			profile := cacheProfile(w)
 
 			// `list` returns the full set (the API client loops through every
 			// page), so it's the cheapest place to keep local state coherent:

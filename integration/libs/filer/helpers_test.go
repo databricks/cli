@@ -1,6 +1,7 @@
 package filer_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/stretchr/testify/require"
 )
 
@@ -69,4 +71,37 @@ func setupUcVolumesFiler(t testutil.TestingT) (filer.Filer, string) {
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpdir)
+}
+
+func setupSandboxFiler(t testutil.TestingT) (filer.Filer, string) {
+	ctx, wt := acc.WorkspaceTest(t)
+
+	sandboxID := os.Getenv("TEST_SANDBOX_ID")
+	if sandboxID == "" {
+		t.Skip("Skipping tests that require a sandbox when TEST_SANDBOX_ID is not set.")
+	}
+
+	parent := "sandboxes/" + sandboxID
+	tmpdir := "/tmp/" + testutil.RandomName("filer-it-")
+	_, err := wt.W.Sandbox.CreateDirectory(ctx, sandbox.CreateDirectoryRequest{
+		Parent:  parent,
+		Path:    tmpdir,
+		Parents: true,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, err := wt.W.Sandbox.DeletePath(context.WithoutCancel(ctx), sandbox.DeletePathRequest{
+			Parent:    parent,
+			Path:      tmpdir,
+			Recursive: true,
+		})
+		if err != nil {
+			t.Logf("Unable to remove temporary sandbox directory %s: %#v", tmpdir, err)
+		}
+	})
+
+	f, err := filer.NewSandboxClient(wt.W, sandboxID, tmpdir)
+	require.NoError(t, err)
+	return f, tmpdir
 }

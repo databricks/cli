@@ -1,0 +1,37 @@
+
+=== Help
+>>> [CLI] sandbox fs mkdir --help
+Make directories. Use SANDBOX:/absolute/path for sandbox paths.
+
+Usage:
+  databricks sandbox fs mkdir DIR_PATH [flags]
+
+Aliases:
+  mkdir, mkdirs
+
+Examples:
+  databricks sandbox fs mkdir my-sandbox:/tmp/a/b
+
+Flags:
+  -h, --help   help for mkdir
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== Create nested directories
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b/c
+
+>>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b
+c
+
+=== Creating an existing directory succeeds
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/a/b/c
+
+=== Creating a directory over a file fails
+>>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+Error: file already exists: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
+
+Exit code: 1
