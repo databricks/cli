@@ -556,7 +556,7 @@ func TestMcpListJSONReportsStateError(t *testing.T) {
 	var out mcpListOutput
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
 	assert.NotEmpty(t, out.Error)
-	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryStateInvalid, out.ErrorCategory)
 	assert.Empty(t, out.Profiles)
 }
 
