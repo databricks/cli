@@ -1,0 +1,25 @@
+
+>>> [CLI] sandbox ssh-setup test --name my-sandbox --profile sandbox-test --releases-dir [TEST_TMP_DIR]/releases
+Created SSH configuration at [TEST_TMP_DIR]/.databricks/ssh-tunnel-configs/my-sandbox. Connect with 'ssh my-sandbox' or 'scp ./file my-sandbox:/tmp/file'.
+
+>>> [CLI] sandbox ssh-setup test --name my-sandbox --profile sandbox-test --releases-dir [TEST_TMP_DIR]/releases
+Created SSH configuration at [TEST_TMP_DIR]/.databricks/ssh-tunnel-configs/my-sandbox. Connect with 'ssh my-sandbox' or 'scp ./file my-sandbox:/tmp/file'.
+
+>>> cat [TEST_TMP_DIR]/.ssh/config
+Include "[TEST_TMP_DIR]/.databricks/ssh-tunnel-configs/*"
+
+>>> cat [TEST_TMP_DIR]/.databricks/ssh-tunnel-configs/my-sandbox
+
+Host my-sandbox
+    User sandbox-agent
+    ConnectTimeout 900
+    ServerAliveInterval 30
+    StrictHostKeyChecking yes
+    UserKnownHostsFile "[TEST_TMP_DIR]/.databricks/ssh-tunnel-known-hosts/[SSH_IDENTITY]"
+    HostKeyAlias [SSH_IDENTITY]
+    IdentitiesOnly yes
+    IdentityFile "[TEST_TMP_DIR]/.databricks/ssh-tunnel-keys/[SSH_IDENTITY]/id_ed25519"
+    ProxyCommand [CLI] sandbox ssh sandboxes/test --proxy --profile sandbox-test --releases-dir [TEST_TMP_DIR]/releases --ssh-identity [SSH_IDENTITY] --ssh-config-file [TEST_TMP_DIR]/databrickscfg
+
+>>> musterr [CLI] sandbox ssh-setup test --name ../escape
+Error: SSH host alias must contain only letters, numbers, dots, underscores or hyphens

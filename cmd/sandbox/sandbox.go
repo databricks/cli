@@ -36,6 +36,7 @@ Common workflows:
 	cmd.AddCommand(newSSHKeyCommand())
 	cmd.AddCommand(newSetDefaultCommand())
 	cmd.AddCommand(newSSHCommand())
+	cmd.AddCommand(newSSHSetupCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
