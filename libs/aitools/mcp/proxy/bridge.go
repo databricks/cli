@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -28,12 +27,11 @@ const (
 	jsonMIME          = "application/json"
 	eventStreamMIME   = "text/event-stream"
 
-	maxLineBytes   = 64 << 20
-	maxErrorBytes  = 1 << 20 // a non-2xx body is read up to this many bytes; its error message is an excerpt
-	connectTimeout = 10 * time.Second
-	deleteTimeout  = 5 * time.Second
-	excerptRunes   = 200
-	excerptBytes   = 4 * excerptRunes // a character takes at most four bytes
+	maxLineBytes  = 64 << 20
+	maxErrorBytes = 1 << 20 // a non-2xx body is read up to this many bytes; its error message is an excerpt
+	deleteTimeout = 5 * time.Second
+	excerptRunes  = 200
+	excerptBytes  = 4 * excerptRunes // a character takes at most four bytes
 
 	codeParseError     = -32700
 	codeInvalidRequest = -32600
@@ -51,6 +49,8 @@ var (
 	notificationWait = 2 * time.Second
 	errIdleTimeout   = errors.New("upstream idle")
 	errNoResponse    = errors.New("upstream sent no response")
+	// errUpstreamTooLarge is the error for an upstream message over maxLineBytes, whether it is a body or an event.
+	errUpstreamTooLarge = fmt.Errorf("an upstream message exceeds the %d MiB limit", maxLineBytes>>20)
 )
 
 // Hooks intercepts upstream messages before they are written to stdout.
@@ -78,7 +78,8 @@ type Bridge struct {
 	ForceListChanged bool
 	// Hooks, when set, sees every upstream message before it is written.
 	Hooks Hooks
-	// Transport performs the upstream requests. Nil uses the default transport with a 10 s connect timeout.
+	// Transport performs the upstream requests. Nil means http.DefaultTransport, which has a 30 s dial timeout. A caller
+	// that needs the profile's TLS settings or a shorter connect timeout sets it.
 	Transport http.RoundTripper
 }
 
@@ -191,14 +192,9 @@ type conn struct {
 	initialized clientMsg // the client's notifications/initialized, for replay
 }
 
-// newClient returns the upstream HTTP client over rt, or over the default transport when rt is nil. A redirect is
-// not followed: a 3xx response is a failed response with its status.
+// newClient returns the upstream HTTP client over rt. A redirect is not followed: a 3xx response is a failed response
+// with its status.
 func newClient(rt http.RoundTripper) *http.Client {
-	if rt == nil {
-		t := http.DefaultTransport.(*http.Transport).Clone()
-		t.DialContext = (&net.Dialer{Timeout: connectTimeout}).DialContext
-		rt = t
-	}
 	return &http.Client{
 		Transport:     rt,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
@@ -233,20 +229,18 @@ func (c *conn) handle(base context.Context, gate <-chan struct{}, line []byte) <
 		c.wg.Go(func() {
 			defer cancel()
 			defer c.untrack(key)
-			c.forward(ctx, gate, line, m)
+			c.forward(ctx, gate, line, m, nil)
 		})
 		return gate
 	}
-	// The gate closes when the POST finishes or after notificationWait, whichever is first, so a stalled notification
-	// holds later messages for at most that long.
+	// The gate closes when the POST finishes or notificationWait after it starts, whichever is first, so a stalled
+	// notification holds later messages for at most that long.
 	done := make(chan struct{})
 	release := sync.OnceFunc(func() { close(done) })
 	c.wg.Go(func() {
-		timer := time.AfterFunc(notificationWait, release)
-		defer timer.Stop()
 		defer release()
 		defer cancel()
-		c.forward(ctx, gate, line, m)
+		c.forward(ctx, gate, line, m, release)
 	})
 	return done
 }
@@ -264,9 +258,14 @@ func await(ctx context.Context, gate <-chan struct{}) {
 
 // forward waits (see await), then POSTs one client message exactly as received and writes what the upstream
 // answers. The idle watchdog covers every response, plain JSON included. It starts before the POST, so it also
-// bounds the wait for response headers, and the run time of a hook counts toward it.
-func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m message) {
+// bounds the wait for response headers, and the run time of a hook counts toward it. For a notification, release
+// opens its gate notificationWait after the POST starts.
+func (c *conn) forward(ctx context.Context, gate <-chan struct{}, line []byte, m message, release func()) {
 	await(ctx, gate)
+	if release != nil {
+		timer := time.AfterFunc(notificationWait, release)
+		defer timer.Stop()
+	}
 	idleCtx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 	idle := time.AfterFunc(idleTimeout, func() { cancel(errIdleTimeout) })
@@ -359,28 +358,37 @@ func (c *conn) newRequest(ctx context.Context, method string, body []byte, sent 
 	return req, nil
 }
 
-// write sends one message to stdout as a single line. Upstream bodies and hook output may be
-// pretty-printed, so a message with line breaks is compacted first.
-func (c *conn) write(msg []byte) error {
-	if bytes.ContainsAny(msg, "\r\n") {
-		var compact bytes.Buffer
-		if err := json.Compact(&compact, msg); err != nil {
-			return err
-		}
-		msg = compact.Bytes()
+// oneLine returns msg as a single line. Upstream bodies and hook output may be pretty-printed, so a message with line
+// breaks is compacted, which also checks that it is JSON.
+func oneLine(msg []byte) ([]byte, error) {
+	if !bytes.ContainsAny(msg, "\r\n") {
+		return msg, nil
 	}
+	var compact bytes.Buffer
+	if err := json.Compact(&compact, msg); err != nil {
+		return nil, err
+	}
+	return compact.Bytes(), nil
+}
+
+// writeLines writes each line to stdout, each followed by a newline, without interleaving with other writes.
+func (c *conn) writeLines(lines [][]byte) error {
 	c.ioMu.Lock()
 	defer c.ioMu.Unlock()
-	if _, err := c.b.Out.Write(msg); err != nil {
-		return err
+	for _, line := range lines {
+		if _, err := c.b.Out.Write(line); err != nil {
+			return err
+		}
+		if _, err := c.b.Out.Write(newline); err != nil {
+			return err
+		}
 	}
-	_, err := c.b.Out.Write(newline)
-	return err
+	return nil
 }
 
 // reply writes msg to stdout, logging a failed write since there is no caller to return it to.
 func (c *conn) reply(msg []byte) {
-	if err := c.write(msg); err != nil {
+	if err := c.writeLines([][]byte{msg}); err != nil {
 		c.logf("stdout: %v", err)
 	}
 }
@@ -400,25 +408,13 @@ func (c *conn) current() upstreamState {
 	return c.state
 }
 
-// setSession records the Mcp-Session-Id to send on later requests.
-func (c *conn) setSession(id string) {
+// publish replaces the session and protocol version with s, and returns the ones it replaces.
+func (c *conn) publish(s upstreamState) upstreamState {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.state.id = id
-}
-
-// setProtocol records the protocol version from the initialize result, to send on later requests.
-func (c *conn) setProtocol(version string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.state.protocol = version
-}
-
-// publish replaces the session and protocol version with those of a replay that has finished.
-func (c *conn) publish(s upstreamState) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	old := c.state
 	c.state = s
+	return old
 }
 
 // remember keeps the client's initialize or notifications/initialized so it can be replayed if the server
@@ -488,14 +484,14 @@ func isEventStream(contentType string) bool {
 	return err == nil && mt == eventStreamMIME
 }
 
-// readBody reads a 2xx body of at most limit bytes. A longer body is an error, as an oversized stdin message is.
-func readBody(r io.Reader, limit int) ([]byte, error) {
-	body, err := io.ReadAll(io.LimitReader(r, int64(limit)+1))
+// readBody reads a 2xx body of at most maxLineBytes. A longer body is an error, as an oversized stdin message is.
+func readBody(r io.Reader) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r, maxLineBytes+1))
 	if err != nil {
 		return nil, err
 	}
-	if len(body) > limit {
-		return nil, fmt.Errorf("an upstream message exceeds the %d MiB limit", limit>>20)
+	if len(body) > maxLineBytes {
+		return nil, errUpstreamTooLarge
 	}
 	return body, nil
 }
@@ -521,7 +517,8 @@ type exchange struct {
 	idle *time.Timer // reset by every read of the response
 
 	status   int
-	answered bool // the upstream sent the response to m
+	answered bool   // the upstream sent the response to m
+	session  string // the Mcp-Session-Id of an initialize response, taken only when its answer has a result
 }
 
 // sending returns the session and protocol version to send with x. An initialize request starts a session,
@@ -531,17 +528,6 @@ func (x *exchange) sending() upstreamState {
 		return upstreamState{}
 	}
 	return x.c.current()
-}
-
-// recordProtocol keeps the protocol version from an initialize result, before the result is written.
-// The version the server chose governs the requests that follow.
-func (x *exchange) recordProtocol(data []byte) error {
-	v, ok, err := initializeProtocol(data)
-	if err != nil || !ok {
-		return err
-	}
-	x.c.setProtocol(v)
-	return nil
 }
 
 // send posts the message and writes its answer. ctx is cancelled by the idle timeout; reqCtx is the request's
@@ -559,8 +545,8 @@ func (x *exchange) send(ctx, reqCtx context.Context, retry bool) error {
 	if resp.StatusCode/100 != 2 {
 		return x.httpFailure(ctx, reqCtx, resp, sent.id, retry)
 	}
-	if id := resp.Header.Get(sessionHeader); id != "" && x.m.Method == methodInitialize {
-		x.c.setSession(id)
+	if x.m.Method == methodInitialize {
+		x.session = resp.Header.Get(sessionHeader)
 	}
 	if err := x.read(reqCtx, resp); err != nil {
 		return err
@@ -581,11 +567,14 @@ func (x *exchange) httpFailure(ctx, reqCtx context.Context, resp *http.Response,
 	}
 	e := decodeErrorBody(body)
 	// A 404 ends the session, unless its body is the result for the request. An error under 404 is the server's
-	// session-not-found answer, even when it carries the request's id.
-	if e != nil && e.isResponseTo(x.m) && (resp.StatusCode != http.StatusNotFound || e.Result != nil) {
+	// session-not-found answer when the request carried a session id. Without one, a 404 cannot mean the session
+	// ended, so the error is the server's answer to the request.
+	if e != nil && e.isResponseTo(x.m) && (resp.StatusCode != http.StatusNotFound || e.Result != nil || sent == "") {
 		return x.deliverMessage(reqCtx, body, e.message)
 	}
 	if resp.StatusCode == http.StatusNotFound && sent != "" && retry {
+		// The stale response is closed before the replay, so its connection is not held open through it.
+		resp.Body.Close()
 		if err := x.rejoin(ctx, sent); err != nil {
 			return err
 		}
@@ -663,15 +652,19 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 			if err != nil {
 				return false, err
 			}
-			if m.isResponseTo(msg.m) {
+			switch {
+			case m.isResponseTo(msg.m):
 				answer = data
 				return false, nil
+			case m.Method == methodPing && m.isRequest():
+				// The server waits for this answer before it sends the response to initialize.
+				return true, c.answerPing(ctx, m.ID, *next)
 			}
 			return true, nil
 		})
 	} else {
 		var body []byte
-		body, err = readBody(resp.Body, maxLineBytes)
+		body, err = readBody(resp.Body)
 		if err == nil && len(bytes.TrimSpace(body)) > 0 && msg.m.isRequest() {
 			if _, err = responseBody(body, msg.m); err == nil {
 				answer = body
@@ -689,6 +682,19 @@ func (c *conn) replayOne(ctx context.Context, idle *time.Timer, msg clientMsg, n
 	}
 	if msg.m.Method == methodInitialize {
 		return recordInitialize(answer, next)
+	}
+	return nil
+}
+
+// answerPing answers a ping the server sent during a replay, on the session being started.
+func (c *conn) answerPing(ctx context.Context, id json.RawMessage, next upstreamState) error {
+	resp, err := c.post(ctx, fmt.Appendf(nil, `{"jsonrpc":"2.0","id":%s,"result":{}}`, id), next)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return statusError(resp)
 	}
 	return nil
 }
@@ -720,21 +726,24 @@ func rejectedInitialize(answer []byte) error {
 
 // read delivers the messages in a 2xx response: an event stream, or one JSON body.
 func (x *exchange) read(reqCtx context.Context, resp *http.Response) error {
+	if !x.m.isRequest() {
+		// A notification or client response is answered with 202 and no body. A body is not forwarded, and it is
+		// closed unread.
+		if resp.ContentLength != 0 {
+			x.c.logf("upstream sent a body for a notification or client response; it is not forwarded")
+		}
+		return nil
+	}
 	if isEventStream(resp.Header.Get(contentTypeHeader)) {
 		return readEvents(resp.Body, func(data []byte) (bool, error) {
 			return x.deliverEvent(reqCtx, data)
 		})
 	}
-	body, err := readBody(resp.Body, maxLineBytes)
+	body, err := readBody(resp.Body)
 	if err != nil {
 		return err
 	}
 	if len(bytes.TrimSpace(body)) == 0 {
-		return nil
-	}
-	if !x.m.isRequest() {
-		// A notification or client response is answered with 202 and no body.
-		x.c.logf("upstream sent a JSON body for a notification or client response; it is not forwarded")
 		return nil
 	}
 	msg, err := responseBody(body, x.m)
@@ -758,15 +767,24 @@ func (x *exchange) deliverEvent(reqCtx context.Context, data []byte) (bool, erro
 }
 
 // deliverMessage writes one upstream message, whose parsed envelope is msg. The response to the request marks it
-// answered once written.
+// answered once written. When a hook fails on any other message, that message is logged and dropped, since the
+// response is still coming.
 func (x *exchange) deliverMessage(reqCtx context.Context, data []byte, msg message) error {
 	answer := msg.isResponseTo(x.m)
 	if answer && x.m.Method == methodInitialize {
-		if err := x.recordProtocol(data); err != nil {
+		if err := x.startSession(reqCtx, data); err != nil {
 			return err
 		}
 	}
-	if err := x.deliver(reqCtx, data); err != nil {
+	lines, err := x.lines(reqCtx, data)
+	if err != nil {
+		if answer {
+			return err
+		}
+		x.c.logUpstream(err)
+		return nil
+	}
+	if err := x.c.writeLines(lines); err != nil {
 		return err
 	}
 	if answer {
@@ -775,26 +793,57 @@ func (x *exchange) deliverMessage(reqCtx context.Context, data []byte, msg messa
 	return nil
 }
 
-// deliver applies the initialize edit and the hooks, then writes the resulting messages.
-func (x *exchange) deliver(reqCtx context.Context, msg []byte) error {
+// startSession makes the session of an initialize answer that has a result the one that requests use, and ends the
+// session it replaces. The protocol version the server chose governs the requests that follow. An answer that is not
+// 2xx, or has no result, starts no session.
+func (x *exchange) startSession(reqCtx context.Context, data []byte) error {
+	if x.status/100 != 2 {
+		return nil
+	}
+	v, ok, err := initializeProtocol(data)
+	if err != nil || !ok {
+		return err
+	}
+	old := x.c.publish(upstreamState{id: x.session, protocol: v})
+	if old.id != "" && old.id != x.session {
+		x.c.deleteSession(reqCtx, old)
+	}
+	return nil
+}
+
+// lines returns the lines to write for an upstream message: the initialize edit, then the hooks. Every line is ready
+// before any is written, so an error writes nothing.
+func (x *exchange) lines(reqCtx context.Context, msg []byte) ([][]byte, error) {
 	var err error
 	if x.m.Method == methodInitialize && (x.c.b.Instructions != "" || x.c.b.ForceListChanged) {
 		if msg, err = editInitialize(msg, x.c.b.Instructions, x.c.b.ForceListChanged); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	msgs := [][]byte{msg}
 	if x.c.b.Hooks != nil {
 		if msgs, err = x.c.b.Hooks.Result(reqCtx, x.line, x.status, msg); err != nil {
-			return err
+			return nil, err
 		}
 	}
+	lines := make([][]byte, 0, len(msgs))
 	for _, out := range msgs {
-		if err := x.c.write(out); err != nil {
-			return err
+		line, err := oneLine(out)
+		if err != nil {
+			return nil, err
 		}
+		lines = append(lines, line)
 	}
-	return nil
+	return lines, nil
+}
+
+// deliver writes the lines for msg, a message the bridge builds itself.
+func (x *exchange) deliver(reqCtx context.Context, msg []byte) error {
+	lines, err := x.lines(reqCtx, msg)
+	if err != nil {
+		return err
+	}
+	return x.c.writeLines(lines)
 }
 
 // fail logs err and, for a request the client still waits on, answers it with a JSON-RPC error. A request

@@ -455,8 +455,9 @@ func TestRunAnswersStreamsThatEndWithoutResponse(t *testing.T) {
 			finish:  func(http.ResponseWriter, *http.Request) {},
 		},
 		{
-			name:    "stream goes idle",
-			idle:    100 * time.Millisecond,
+			name: "stream goes idle",
+			// The progress event must arrive before the idle timeout, so the timeout is long enough for a slow runner.
+			idle:    time.Second,
 			wantMsg: "no data from upstream",
 			finish: func(w http.ResponseWriter, r *http.Request) {
 				w.(http.Flusher).Flush()
@@ -1790,4 +1791,380 @@ func TestRunAnswersOversizedUpstreamBody(t *testing.T) {
 	reply := parseReply(t, out[0])
 	require.NotNil(t, reply.Error)
 	assert.Contains(t, reply.Error.Message, "64 MiB limit")
+}
+
+// TestRunAnswersPingDuringReplay: a server may ping the client before it answers the replayed initialize, and it waits
+// for the ping answer before it sends that answer. The answer is posted on the session being started.
+func TestRunAnswersPingDuringReplay(t *testing.T) {
+	const pingID = `"ping-1"`
+	pingAnswered := make(chan struct{})
+	markAnswered := sync.OnceFunc(func() { close(pingAnswered) })
+	var mu sync.Mutex
+	starts := 0
+	srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		switch {
+		case m.Method == "" && string(m.ID) == pingID:
+			markAnswered()
+			w.WriteHeader(http.StatusAccepted)
+		case m.Method == methodInitialize:
+			mu.Lock()
+			starts++
+			n := starts
+			mu.Unlock()
+			if n == 1 {
+				writeInit(w, m, "s1")
+				return
+			}
+			w.Header().Set(contentTypeHeader, eventStreamMIME)
+			w.Header().Set(sessionHeader, "s2")
+			_, _ = io.WriteString(w, "data: "+`{"jsonrpc":"2.0","id":`+pingID+`,"method":"ping"}`+"\n\n")
+			w.(http.Flusher).Flush()
+			select {
+			case <-pingAnswered:
+			case <-time.After(5 * time.Second):
+			}
+			fmt.Fprintf(w, "data: "+`{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18"}}`+"\n\n", m.ID)
+		case !m.isRequest():
+			w.WriteHeader(http.StatusAccepted)
+		case r.Header.Get(sessionHeader) == "s1":
+			http.Error(w, "session not found", http.StatusNotFound)
+		default:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
+		}
+	})
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, initializeLine)
+	p.waitLines(t, 1)
+	p.send(t, initializedLine)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	out := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
+
+	require.Len(t, out, 2)
+	assert.Nil(t, parseReply(t, out[1]).Error)
+	assert.Equal(t, []string{"s2"}, sessionsSent(fake, pingID), "the ping was answered on the session being started")
+}
+
+// TestRunPassesThroughErrorOf404WithoutSession: without a session id a 404 cannot mean the session ended, so a JSON-RPC
+// error for the request is passed through as the server sent it.
+func TestRunPassesThroughErrorOf404WithoutSession(t *testing.T) {
+	const errFormat = `{"jsonrpc":"2.0","id":%s,"error":{"code":-32002,"message":"Resource not found","data":{"uri":"x"}}}`
+	cases := []struct {
+		name string
+		// initOK makes initialize succeed without a session id; otherwise every request gets the 404.
+		initOK bool
+		input  string
+		marker string // the request whose POST count is checked
+		want   []string
+	}{
+		{
+			name:   "initialize",
+			input:  initializeLine + "\n",
+			marker: `"method":"initialize"`,
+			want:   []string{`{"jsonrpc":"2.0","id":1,"error":{"code":-32002,"message":"Resource not found","data":{"uri":"x"}}}`},
+		},
+		{
+			name:   "request after an initialize that set no session",
+			initOK: true,
+			input:  initializeLine + "\n" + `{"jsonrpc":"2.0","id":2,"method":"tools/list"}` + "\n",
+			marker: `"method":"tools/list"`,
+			want: []string{
+				`{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18"}}`,
+				`{"jsonrpc":"2.0","id":2,"error":{"code":-32002,"message":"Resource not found","data":{"uri":"x"}}}`,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				m, _ := parseMessage(body)
+				w.Header().Set(contentTypeHeader, jsonMIME)
+				if m.Method == methodInitialize && tc.initOK {
+					fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18"}}`, m.ID)
+					return
+				}
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprintf(w, errFormat, m.ID)
+			})
+
+			out, errOut := runAll(t, bridgeFor(srv.URL), tc.input)
+
+			assert.ElementsMatch(t, tc.want, out, "requests run concurrently, so the order of answers is not fixed")
+			assert.Empty(t, errOut)
+			assert.Len(t, sessionsSent(fake, tc.marker), 1, "a request without a session id is not posted again")
+		})
+	}
+}
+
+// TestRunRecordsSessionOnlyFromInitializeResult: an initialize answer without a result starts no session, so the
+// session header it carries is not sent with later requests.
+func TestRunRecordsSessionOnlyFromInitializeResult(t *testing.T) {
+	srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set(contentTypeHeader, jsonMIME)
+		if m.Method == methodInitialize {
+			w.Header().Set(sessionHeader, "s1")
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32600,"message":"not now"}}`, m.ID)
+			return
+		}
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
+	})
+
+	out, _ := runAll(t, bridgeFor(srv.URL), initializeLine+"\n"+`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	require.Len(t, out, 2)
+	assert.Equal(t, []string{""}, sessionsSent(fake, `"id":2,`))
+	assert.Empty(t, deletedSessions(fake), "no session was started, so none is deleted")
+}
+
+// deletedSessions returns the Mcp-Session-Id of each DELETE the fake endpoint received, in order.
+func deletedSessions(fake *fakeEndpoint) []string {
+	var sessions []string
+	for _, r := range fake.requests() {
+		if r.Method == http.MethodDelete {
+			sessions = append(sessions, r.Header.Get(sessionHeader))
+		}
+	}
+	return sessions
+}
+
+// TestRunDeletesSessionReplacedByInitialize: a second initialize whose answer has a new session ends the session it
+// replaces. An answer with the same session keeps it.
+func TestRunDeletesSessionReplacedByInitialize(t *testing.T) {
+	cases := []struct {
+		name   string
+		second string // the session of the second initialize's answer
+		status int    // the status of the second answer; 0 is 200
+		// wantSent is the session the request after the second initialize is sent with.
+		wantSent    string
+		wantDeleted []string // the replaced session, then the one shutdown ends
+	}{
+		{name: "new session", second: "s2", wantSent: "s2", wantDeleted: []string{"s1", "s2"}},
+		{name: "same session", second: "s1", wantSent: "s1", wantDeleted: []string{"s1"}},
+		// A failed answer with a result starts no session, so the current one stays and is not deleted.
+		{name: "failed answer keeps session", second: "s2", status: http.StatusInternalServerError, wantSent: "s1", wantDeleted: []string{"s1"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			starts := 0
+			srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodDelete {
+					return
+				}
+				body, _ := io.ReadAll(r.Body)
+				m, _ := parseMessage(body)
+				if m.Method == methodInitialize {
+					mu.Lock()
+					starts++
+					n := starts
+					mu.Unlock()
+					if n == 1 {
+						writeInit(w, m, "s1")
+						return
+					}
+					w.Header().Set(contentTypeHeader, jsonMIME)
+					w.Header().Set(sessionHeader, tc.second)
+					if tc.status != 0 {
+						w.WriteHeader(tc.status)
+					}
+					fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18"}}`, m.ID)
+					return
+				}
+				if !m.isRequest() {
+					w.WriteHeader(http.StatusAccepted)
+					return
+				}
+				w.Header().Set(contentTypeHeader, jsonMIME)
+				fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
+			})
+			p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+			p.send(t, initializeLine)
+			p.waitLines(t, 1)
+			p.send(t, `{"jsonrpc":"2.0","id":2,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}`)
+			p.waitLines(t, 2)
+			p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/list"}`)
+			p.waitLines(t, 3)
+			require.NoError(t, p.finish(t))
+
+			assert.Equal(t, []string{tc.wantSent}, sessionsSent(fake, `"id":3,`))
+			assert.Equal(t, tc.wantDeleted, deletedSessions(fake))
+		})
+	}
+}
+
+// TestRunHoldsRequestUntilNotificationWaitFromItsPost: a notification's gate opens notificationWait after its own POST
+// starts, not after the message is read. The second notification waits for a stalled first one, and the request
+// waits for the second one's gate, so the request is posted about one wait after the second notification.
+func TestRunHoldsRequestUntilNotificationWaitFromItsPost(t *testing.T) {
+	const wait = 400 * time.Millisecond
+	setNotificationWait(t, wait)
+	setShutdownGrace(t, 100*time.Millisecond)
+	firstPosted := make(chan struct{})
+	secondPosted := make(chan time.Time, 1)
+	requested := make(chan time.Time, 1)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		switch m.Method {
+		case "notifications/first":
+			close(firstPosted)
+			<-r.Context().Done()
+		case "notifications/second":
+			secondPosted <- time.Now()
+			<-r.Context().Done()
+		case "tools/list":
+			requested <- time.Now()
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
+		default:
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/first"}`)
+	waitClosed(t, firstPosted, "the first notification to be posted")
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/second"}`)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	out := p.waitLines(t, 1)
+	require.NoError(t, p.finish(t))
+
+	require.Len(t, out, 1)
+	assert.Nil(t, parseReply(t, out[0]).Error)
+	secondAt := <-secondPosted
+	requestedAt := <-requested
+	assert.GreaterOrEqual(t, requestedAt.Sub(secondAt), wait/2, "the request did not wait for the second notification's gate")
+}
+
+// TestRunWritesNothingWhenHookOutputIsInvalid: when a hook returns a message that is not JSON after a valid one, nothing
+// is written for the response, and the request gets one error.
+func TestRunWritesNothingWhenHookOutputIsInvalid(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answer)
+	b := bridgeFor(srv.URL)
+	b.Hooks = hookFunc(func(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+		if bytes.Contains(msg, []byte(`"result"`)) {
+			return [][]byte{msg, []byte("{\n\"jsonrpc\":")}, nil
+		}
+		return [][]byte{msg}, nil
+	})
+
+	out, errOut := runAll(t, b, `{"jsonrpc":"2.0","id":3,"method":"tools/list"}`+"\n")
+
+	require.Len(t, out, 1)
+	reply := parseReply(t, out[0])
+	assert.JSONEq(t, `3`, string(reply.ID))
+	require.NotNil(t, reply.Error)
+	assert.Equal(t, codeUpstream, reply.Error.Code)
+	assert.Contains(t, errOut, "upstream:")
+}
+
+// TestRunKeepsReadingWhenHookFailsOnProgress: a hook error on a message other than the response is logged and that
+// message is dropped. The response still comes.
+func TestRunKeepsReadingWhenHookFailsOnProgress(t *testing.T) {
+	const response = `{"jsonrpc":"2.0","id":1,"result":{}}`
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(contentTypeHeader, eventStreamMIME)
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\ndata: "+response+"\n\n")
+	})
+	b := bridgeFor(srv.URL)
+	b.Hooks = hookFunc(func(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+		if bytes.Contains(msg, []byte("notifications/progress")) {
+			return nil, errors.New("progress hook failed")
+		}
+		return [][]byte{msg}, nil
+	})
+
+	out, errOut := runAll(t, b, `{"jsonrpc":"2.0","id":1,"method":"tools/call"}`+"\n")
+
+	assert.Equal(t, []string{response}, out)
+	assert.Contains(t, errOut, "progress hook failed")
+}
+
+// TestRunDoesNotReadStreamOfNotification: the answer to a notification has no body. An event stream on it is closed
+// unread, so nothing is forwarded and the connection is not held open.
+func TestRunDoesNotReadStreamOfNotification(t *testing.T) {
+	closed := make(chan struct{})
+	markClosed := sync.OnceFunc(func() { close(closed) })
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(contentTypeHeader, eventStreamMIME)
+		_, _ = io.WriteString(w, "data: "+progressEvent+"\n\n")
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+		markClosed()
+	})
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, initializedLine)
+	waitClosed(t, closed, "the bridge to close the stream")
+	require.NoError(t, p.finish(t))
+
+	assert.Empty(t, outLines(p.out.String()))
+}
+
+// TestRunClosesStaleResponseBeforeReplay: the 404 that ended a session is closed before the replay starts, so its
+// connection does not wait for the replay. The body is longer than the 1 MiB the bridge reads, so it stays open until
+// the bridge closes it.
+func TestRunClosesStaleResponseBeforeReplay(t *testing.T) {
+	staleClosed := make(chan struct{})
+	markStaleClosed := sync.OnceFunc(func() { close(staleClosed) })
+	var sawClosed atomic.Bool
+	var mu sync.Mutex
+	starts := 0
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		switch {
+		case m.Method == methodInitialize:
+			mu.Lock()
+			starts++
+			n := starts
+			mu.Unlock()
+			if n == 2 {
+				select {
+				case <-staleClosed:
+					sawClosed.Store(true)
+				case <-time.After(5 * time.Second):
+				}
+			}
+			writeInit(w, m, fmt.Sprintf("s%d", n))
+		case !m.isRequest():
+			w.WriteHeader(http.StatusAccepted)
+		case r.Header.Get(sessionHeader) == "s1":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(w, strings.Repeat("x", maxErrorBytes+1))
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+			markStaleClosed()
+		default:
+			w.Header().Set(contentTypeHeader, jsonMIME)
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{}}`, m.ID)
+		}
+	})
+	p := startPiped(t, t.Context(), bridgeFor(srv.URL))
+
+	p.send(t, initializeLine)
+	p.waitLines(t, 1)
+	p.send(t, initializedLine)
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	out := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
+
+	assert.True(t, sawClosed.Load(), "the stale response was closed before the replay")
+	require.Len(t, out, 2)
+	assert.Nil(t, parseReply(t, out[1]).Error)
 }
