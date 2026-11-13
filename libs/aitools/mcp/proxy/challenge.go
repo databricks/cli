@@ -53,8 +53,9 @@ type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, u
 // Recorder receives the proxy's telemetry events. The command implements it, so the proxy does not
 // build telemetry events itself.
 type Recorder interface {
-	// SignInPrompted runs after the wait of an authenticate call that opened the sign-in page.
-	// signedIn reports whether the credential became ACTIVE.
+	// SignInPrompted runs after the wait of an authenticate call that showed the sign-in page: one it opened, or one an
+	// earlier cancelled call opened, which the user may still have open. signedIn reports whether the credential became
+	// ACTIVE. A retry after a cancelled call reports its own outcome.
 	SignInPrompted(ctx context.Context, signedIn bool)
 }
 
@@ -459,7 +460,7 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: open, Progress: report, Stderr: h.stderr})
 	// A prompt is a page the user was shown. A caller that was already signed in, or a sign-in that failed before its
 	// URL was printed, prompted nobody.
-	if open && !alreadySignedIn && urlShown {
+	if !alreadySignedIn && urlShown {
 		h.c.Recorder.SignInPrompted(ctx, err == nil)
 	}
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil

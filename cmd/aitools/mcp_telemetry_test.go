@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -185,30 +186,36 @@ func TestProxyStartedEvent(t *testing.T) {
 	}, proxyStartedEvent(protos.AitoolsAgentTypeClaudeCode, "system.ai.genie_one_mcp"))
 }
 
-// TestLogMcpEventDropsRejectedCredential checks that an event that names a rejected credential is not logged: its upload
-// would authenticate with that credential again.
+// TestLogMcpEventDropsRejectedCredential checks that an event that names a rejected credential is not logged, and that the
+// run then uploads nothing: its upload would authenticate with that credential again. The events of the run that were
+// logged before stay buffered, and a later event of the run is logged, but not uploaded.
 func TestLogMcpEventDropsRejectedCredential(t *testing.T) {
 	withHome(t)
 	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
-	logMcpEvent(ctx, protos.AitoolsMcpEvent{
+	telemetry.SetUploadConfig(ctx, &config.Config{Profile: "logfood", Host: "https://adb-1.test"})
+	assert.False(t, logMcpEvent(ctx, protos.AitoolsMcpEvent{
 		Operation: protos.AitoolsMcpOperationSignIn,
 		Servers: []protos.AitoolsMcpServerResult{{
 			Service:       protos.AitoolsMcpServiceGitHub,
 			Outcome:       protos.AitoolsTargetOutcomeFailed,
 			ErrorCategory: protos.AitoolsErrorCategoryAuthFailed,
 		}},
-	})
+	}))
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	_, uploads := telemetry.UploadConfig(ctx)
+	assert.False(t, uploads)
 
-	logMcpEvent(ctx, protos.AitoolsMcpEvent{
-		Operation: protos.AitoolsMcpOperationSignIn,
+	assert.True(t, logMcpEvent(ctx, protos.AitoolsMcpEvent{
+		Operation: protos.AitoolsMcpOperationAdd,
 		Servers: []protos.AitoolsMcpServerResult{{
-			Service:       protos.AitoolsMcpServiceGitHub,
-			Outcome:       protos.AitoolsTargetOutcomeFailed,
-			ErrorCategory: protos.AitoolsErrorCategoryMCPPermissionDenied,
+			Service:     protos.AitoolsMcpServiceGitHub,
+			Outcome:     protos.AitoolsTargetOutcomeChanged,
+			SignInState: protos.AitoolsMcpSignInStatePending,
 		}},
-	})
+	}))
 	assert.Len(t, telemetry.BufferedEvents(ctx), 1)
+	_, uploads = telemetry.UploadConfig(ctx)
+	assert.False(t, uploads, "the add event is logged, and it is not uploaded with the rejected run")
 }
 
 func TestSignInPromptedEvent(t *testing.T) {

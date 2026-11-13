@@ -9,11 +9,13 @@ package protos
 type AitoolsMcpOperation string
 
 const (
-	AitoolsMcpOperationAdd            AitoolsMcpOperation = "ADD"
-	AitoolsMcpOperationRemove         AitoolsMcpOperation = "REMOVE"
-	AitoolsMcpOperationSignIn         AitoolsMcpOperation = "SIGN_IN"
-	AitoolsMcpOperationSignOut        AitoolsMcpOperation = "SIGN_OUT"
-	AitoolsMcpOperationProxyStarted   AitoolsMcpOperation = "PROXY_STARTED"
+	AitoolsMcpOperationAdd          AitoolsMcpOperation = "ADD"
+	AitoolsMcpOperationRemove       AitoolsMcpOperation = "REMOVE"
+	AitoolsMcpOperationSignIn       AitoolsMcpOperation = "SIGN_IN"
+	AitoolsMcpOperationSignOut      AitoolsMcpOperation = "SIGN_OUT"
+	AitoolsMcpOperationProxyStarted AitoolsMcpOperation = "PROXY_STARTED"
+	// AitoolsMcpOperationSignInPrompted is logged for each authenticate call that showed the sign-in page, with the
+	// state of the sign-in when that call's wait ended. A retry after a cancelled call logs its own event.
 	AitoolsMcpOperationSignInPrompted AitoolsMcpOperation = "SIGN_IN_PROMPTED"
 )
 

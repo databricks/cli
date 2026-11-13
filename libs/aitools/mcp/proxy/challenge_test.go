@@ -273,9 +273,8 @@ func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
-// TestAuthenticateRecordsPromptWhenPageOpens checks that the prompt is recorded once per page that was opened, after its
-// wait, with whether the credential became ACTIVE. A call that opens no page, or finds the caller already signed in,
-// records nothing.
+// TestAuthenticateRecordsPromptWhenPageOpens checks that the prompt is recorded once per page that was shown, after its
+// wait, with whether the credential became ACTIVE. A call that finds the caller already signed in records nothing.
 func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
@@ -328,6 +327,53 @@ func TestAuthenticateRecordsNoPromptWhenNoURLShown(t *testing.T) {
 	assert.Equal(t, 1, calls, "the sign-in ran")
 	assert.Empty(t, recorder.prompts(), "no page was shown, so no prompt is recorded")
 	require.NoError(t, p.finish(t))
+}
+
+// TestAuthenticateRecordsPromptOfCallThatWaitsOnCancelledPage checks that a call which waits on the page an earlier,
+// cancelled call showed records its own outcome: the page was shown for it too, so a sign-in that completes there is
+// recorded as ACTIVE, not left PENDING from the cancelled call.
+func TestAuthenticateRecordsPromptOfCallThatWaitsOnCancelledPage(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listChallenge))
+	entered, done := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	var opens []bool
+	signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
+		mu.Lock()
+		opens = append(opens, req.Open)
+		first := len(opens) == 1
+		mu.Unlock()
+		if !first {
+			return false, true, nil
+		}
+		close(entered)
+		<-ctx.Done()
+		close(done)
+		return false, true, ctx.Err()
+	}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 1)
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	waitClosed(t, entered, "the first sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+	waitClosed(t, done, "the first sign-in to return")
+	p.send(t, fmt.Sprintf(authenticate, 6))
+	require.Eventually(t, func() bool {
+		return len(recorder.prompts()) == 2
+	}, 10*time.Second, time.Millisecond)
+	require.NoError(t, p.finish(t))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []bool{true, false}, opens, "the second call does not open the page again")
+	assert.Equal(t, []bool{false, true}, recorder.prompts(), "the cancelled call is PENDING, and the second call is ACTIVE")
 }
 
 func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {

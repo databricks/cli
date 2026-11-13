@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -909,6 +910,63 @@ func TestMcpRemoveOfflineSetsUploadWithoutWarning(t *testing.T) {
 	assert.True(t, uploads)
 	assert.Empty(t, logs.String())
 	assert.Contains(t, stdout.String(), `"removed"`)
+}
+
+// TestMcpRemovePrunedEntryReportsChanged checks that an entry the agent config no longer holds is reported CHANGED, since
+// its record is dropped, and FAILED when the state cannot be saved, as a record-only removal is.
+func TestMcpRemovePrunedEntryReportsChanged(t *testing.T) {
+	home := withHome(t)
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	seedPruned := func() {
+		saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+		require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers":{}}`), 0o600))
+	}
+
+	seedPruned()
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeChanged, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+
+	seedPruned()
+	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
+	t.Cleanup(func() { saveMCPState = mcp.SaveState })
+	stdout.Reset()
+	remove, err = runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	events = telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
+	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
+	assert.Equal(t, protos.AitoolsTargetOutcomeFailed, events[0].AitoolsMcpEvent.Servers[0].Outcome)
+}
+
+// TestMcpRemoveFailedStateReadAfterAnotherEventLogsNothing checks that a remove that cannot read the state logs nothing
+// of its own, even when the run already buffered another event, and does not read the state it never read.
+func TestMcpRemoveFailedStateReadAfterAnotherEventLogsNothing(t *testing.T) {
+	withHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".state.json"), 0o700))
+
+	parent := newMCPTestRoot()
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "remove", "--all", "--output", "json"})
+	ctx := telemetry.WithNewLogger(t.Context())
+	telemetry.Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
+	require.Error(t, parent.ExecuteContext(ctx))
+	remove, _, findErr := parent.Find([]string{"mcp", "remove"})
+	require.NoError(t, findErr)
+	events := telemetry.BufferedEvents(remove.Context())
+	require.Len(t, events, 1)
+	assert.NotNil(t, events[0].CliTestEvent)
 }
 
 // TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved checks that a removal that only drops state records is reported
