@@ -496,7 +496,7 @@ func TestMcpLoginJSONNamesProfileWhenStateCannotBeRead(t *testing.T) {
 	var out mcpSignInOutput
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
 	assert.Equal(t, "logfood", out.Profile)
-	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, out.ErrorCategory)
+	assert.Equal(t, protos.AitoolsErrorCategoryStateInvalid, out.ErrorCategory)
 }
 
 // TestMcpSignInJSONWriteFailureKeepsRunError checks that a document that cannot be written does not hide why the command
