@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -97,11 +98,29 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 // from the environment, and a token meant for another workspace must not reach this one. It does not authenticate; see
 // AuthenticateBound.
 func BoundConfig(profileName, configFile string) (*config.Config, error) {
-	cfg := &config.Config{
+	return resolveBound(&config.Config{
 		Profile:    profileName,
 		ConfigFile: configFile,
 		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
-	}
+	})
+}
+
+// BoundConfigWithin is BoundConfig with the SDK's request and retry budgets set to budget, in whole seconds. Resolving the
+// profile runs on a context of its own, so a context deadline does not reach it, and these budgets are what bound it (see
+// profileMetadata.Load in cmd/auth).
+func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	seconds := int(budget / time.Second)
+	return resolveBound(&config.Config{
+		Profile:             profileName,
+		ConfigFile:          configFile,
+		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+		HTTPTimeoutSeconds:  seconds,
+		RetryTimeoutSeconds: seconds,
+	})
+}
+
+// resolveBound resolves cfg, as BoundConfig does.
+func resolveBound(cfg *config.Config) (*config.Config, error) {
 	if err := cfg.EnsureResolved(); err != nil {
 		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
 		return nil, uncategorizedError(err)

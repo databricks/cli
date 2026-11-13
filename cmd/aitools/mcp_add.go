@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -375,6 +376,11 @@ func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*d
 	if err != nil {
 		return nil, err
 	}
+	return boundClient(ctx, cfg, name, pinnedFile)
+}
+
+// boundClient returns a workspace client for cfg, a bound config of the named profile, once cfg has a credential.
+func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return nil, err

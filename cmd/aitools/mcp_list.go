@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -354,6 +355,9 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 	return agentStatusInstalled, loc.path, "", nil
 }
 
+// profileCheckTimeout bounds the --check tests of one profile. Tests shorten it.
+var profileCheckTimeout = 5 * time.Second
+
 // addChecks runs the --check tests for each profile that did not drift: a token mint, the sign-in state of each
 // sign-in-required server, and whether the recorded binary exists. Each profile is checked with the config file of its
 // group. A check that cannot run is a warning, and its result is unknown.
@@ -376,20 +380,21 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 	}
 }
 
-// addProfileChecks runs the checks of one profile, whose config file is in ctx. login is the config file that the
-// profile's login hints name, or "" (see loginFile). A profile whose token cannot be minted has no sign-in checks: its
-// warning says why.
+// addProfileChecks runs the checks of one profile, whose config file is in ctx. The checks end after profileCheckTimeout.
+// login is the config file that the profile's login hints name, or "" (see loginFile). A profile whose token cannot be
+// checked has no sign-in checks: its warning says why.
 func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out *mcpListOutput) {
-	w, err := profileClient(ctx, p.Profile, p.configPath, login)
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	w, err := profileCheckClient(ctx, p, login)
 	if err == nil {
 		// A personal access token is sent only with a request, so the token is checked with one.
 		if _, err = w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
 			err = describeRequestError(p.Profile, login, err)
 		}
 	}
-	p.token = statusOK
+	p.token = tokenStatus(err)
 	if err != nil {
-		p.token = statusFailed
 		out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
 	}
 	for j := range p.Servers {
@@ -408,6 +413,28 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
 		}
 	}
+}
+
+// profileCheckClient returns the client of a profile for its --check tests. Resolving the profile's config is bounded too,
+// by profileCheckTimeout, so that a host that never answers ends the checks of the profile.
+func profileCheckClient(ctx context.Context, p *mcpListProfile, login string) (*databricks.WorkspaceClient, error) {
+	cfg, err := mcp.BoundConfigWithin(p.Profile, p.configPath, profileCheckTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return boundClient(ctx, cfg, p.Profile, login)
+}
+
+// tokenStatus is the --check result of a profile's token. A credential that the workspace or the profile refuses is
+// failed. Any other failure, such as a host that cannot be reached, says nothing about the credential, so it is unknown.
+func tokenStatus(err error) string {
+	if err == nil {
+		return statusOK
+	}
+	if be, ok := errors.AsType[*mcp.BindError](err); ok && be.Category == mcp.BindAuthFailed {
+		return statusFailed
+	}
+	return statusUnknown
 }
 
 // signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential

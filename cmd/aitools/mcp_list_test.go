@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -1024,6 +1025,59 @@ func TestAddChecksWarnsWhenProfileCannotAuthenticate(t *testing.T) {
 	assert.Equal(t, statusUnknown, s.Check.SignIn)
 	require.Len(t, out.Warnings, 1)
 	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
+}
+
+// shortProfileCheck makes each profile's --check tests give up after one second, for the test.
+func shortProfileCheck(t *testing.T) {
+	t.Helper()
+	prev := profileCheckTimeout
+	t.Cleanup(func() { profileCheckTimeout = prev })
+	profileCheckTimeout = time.Second
+}
+
+// TestAddChecksUnreachableProfileIsUnknownNotFailed checks that a profile whose host cannot be reached, as on an offline
+// laptop, is unknown and not failed: the failed token says the login is refused, which the check did not learn.
+func TestAddChecksUnreachableProfileIsUnknownNotFailed(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	// A closed server refuses every connection.
+	closed := httptest.NewServer(http.NotFoundHandler())
+	host := closed.URL
+	closed.Close()
+	writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", host, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusUnknown, s.Check.Token)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
+}
+
+// TestAddChecksBoundsAProfileThatNeverAnswers checks that a profile whose workspace never answers does not hold the
+// listing: its checks end within the profile's bound, and the profile is unknown with a warning.
+func TestAddChecksBoundsAProfileThatNeverAnswers(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	start := time.Now()
+	s, out := checkedListServer(t)
+	assert.Less(t, time.Since(start), 30*time.Second, "the checks of the profile were not bounded")
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusUnknown, s.Check.Token)
+	require.NotEmpty(t, out.Warnings)
 }
 
 // TestAddChecksReadsEachProfileFromItsOwnConfigFile checks that two groups of one profile name, in two config files, are
