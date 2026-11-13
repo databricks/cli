@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "job": "each",
+    "inputs": "[\"from_each\"]"
+  },
+  {
+    "job": "job",
+    "inputs": "[\"from_job\"]"
+  },
+  {
+    "job": "task",
+    "inputs": "[\"from_task\"]"
+  },
+  {
+    "job": "tasks",
+    "inputs": "[\"from_tasks\"]"
+  }
+]

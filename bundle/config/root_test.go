@@ -125,6 +125,97 @@ targets:
 	assert.Equal(t, `["input_1","input_2"]`, root.Resources.Jobs["fan"].Tasks[1].ForEachTask.Inputs)
 }
 
+func TestLoadForEachTaskInputsPreservesVariableContainers(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		config string
+	}{
+		{
+			name: "for-each task reference",
+			config: `bundle:
+  name: foreach
+variables:
+  each:
+    type: complex
+    default:
+      inputs: '["item"]'
+      task:
+        task_key: inner
+resources:
+  jobs:
+    fan:
+      tasks:
+        - task_key: fan
+          for_each_task: ${var.each}
+`,
+		},
+		{
+			name: "task reference",
+			config: `bundle:
+  name: foreach
+variables:
+  task:
+    type: complex
+    default:
+      task_key: fan
+      for_each_task:
+        inputs: '["item"]'
+        task:
+          task_key: inner
+resources:
+  jobs:
+    fan:
+      tasks:
+        - ${var.task}
+`,
+		},
+		{
+			name: "task list reference",
+			config: `bundle:
+  name: foreach
+variables:
+  tasks:
+    type: complex
+    default:
+      - task_key: fan
+        for_each_task:
+          inputs: '["item"]'
+          task:
+            task_key: inner
+resources:
+  jobs:
+    fan:
+      tasks: ${var.tasks}
+`,
+		},
+		{
+			name: "job reference",
+			config: `bundle:
+  name: foreach
+variables:
+  job:
+    type: complex
+    default:
+      tasks:
+        - task_key: fan
+          for_each_task:
+            inputs: '["item"]'
+            task:
+              task_key: inner
+resources:
+  jobs:
+    fan: ${var.job}
+`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, diags := LoadFromBytes("databricks.yml", []byte(tc.config))
+			require.NoError(t, diags.Error())
+			require.NotNil(t, root)
+		})
+	}
+}
+
 func TestInitializeVariables(t *testing.T) {
 	fooDefault := "abc"
 	root := &Root{

@@ -565,40 +565,42 @@ func rewriteForEachTaskInputs(v dyn.Value) (dyn.Value, error) {
 		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
 		dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("for_each_task"), dyn.Key("inputs"),
 	)
+	paths := &dyn.TrieNode{}
 	for _, prefix := range []dyn.Pattern{
 		nil,
 		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()),
 		dyn.NewPattern(dyn.Key("environments"), dyn.AnyKey()),
 	} {
-		var err error
-		v, err = dyn.MapByPattern(v, prefix.Append(inputs...), func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
-			if input.Kind() != dyn.KindSequence {
-				return input, nil
-			}
+		if err := paths.Insert(prefix.Append(inputs...)); err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to match for_each_task.inputs: %w", err)
+		}
+	}
+	return dyn.Walk(v, func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
+		if input.Kind() != dyn.KindSequence {
+			return input, nil
+		}
+		if _, ok := paths.SearchPath(p); !ok {
+			return input, nil
+		}
 
-			array, err := dyn.Walk(input, func(_ dyn.Path, value dyn.Value) (dyn.Value, error) {
-				if value.Kind() == dyn.KindTime {
-					return dyn.NewValue(value.MustTime().String(), value.Locations()), nil
-				}
-				return value, nil
-			})
-			if err != nil {
-				return dyn.InvalidValue, err
+		array, err := dyn.Walk(input, func(_ dyn.Path, value dyn.Value) (dyn.Value, error) {
+			if value.Kind() == dyn.KindTime {
+				return dyn.NewValue(value.MustTime().String(), value.Locations()), nil
 			}
-			data, err := json.Marshal(array.AsAny())
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
-			}
-			if ref, ok := dynvar.NewRef(dyn.V(string(data))); ok {
-				return dyn.InvalidValue, fmt.Errorf("%s at %s contains variable reference ${%s} in a YAML array; use a JSON string for interpolated inputs", p, input.Location(), ref.References()[0])
-			}
-			return dyn.NewValue(string(data), input.Locations()), nil
+			return value, nil
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
-	}
-	return v, nil
+		data, err := json.Marshal(array.AsAny())
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
+		}
+		if ref, ok := dynvar.NewRef(dyn.V(string(data))); ok {
+			return dyn.InvalidValue, fmt.Errorf("%s at %s contains variable reference ${%s} in a YAML array; use a JSON string for interpolated inputs", p, input.Location(), ref.References()[0])
+		}
+		return dyn.NewValue(string(data), input.Locations()), nil
+	})
 }
 
 // validateVariableOverrides checks that all variables specified
