@@ -9,14 +9,14 @@ variables:
     default:
       - task_key: Task_One
         spark_python_task:
-          python_file: ./main_dummy.py
+          python_file: ./databricks.yml
         job_cluster_key: Small
       - task_key: Task_Two
         depends_on:
           - task_key: Task_One
         run_if: "ALL_SUCCESS"
         spark_python_task:
-          python_file: ./main_dummy.py
+          python_file: ./databricks.yml
         job_cluster_key: Small
 
 resources:
@@ -30,8 +30,6 @@ targets:
   dev:
     mode: development
     default: true
-    workspace:
-      host: https://...
     resources:
       jobs:
         job_one:
