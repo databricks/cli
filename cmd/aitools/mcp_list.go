@@ -75,6 +75,8 @@ type mcpListProfile struct {
 	// token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
 	// so it is text only.
 	token string
+	// checkSkipped is set by --check for a profile that drifted, which is not checked. The text says so.
+	checkSkipped bool
 }
 
 type mcpListServer struct {
@@ -359,6 +361,7 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 	for i := range out.Profiles {
 		p := &out.Profiles[i]
 		if p.Status != statusOK {
+			p.checkSkipped = true
 			continue
 		}
 		// The login hints name the file that login writes, which the shell's environment decides. It is derived before
@@ -399,7 +402,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 			}
 			continue
 		}
-		status, signInErr := signInStatus(ctx, w, p.Profile, login, s.Service)
+		status, signInErr := signInStatus(ctx, w, p.Profile, login, s.Service, s.SignInRequired)
 		s.Check.SignIn = status
 		if signInErr != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
@@ -409,10 +412,15 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 
 // signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential
 // counts as signed in. A service that does not require sign-in is "", which is not a status. A service the profile can
-// no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error says why.
-func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string) (string, error) {
+// no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error says why. A
+// service that cannot be read is unknown only when the record says the server needed sign-in (recorded); otherwise there
+// is no sign-in to report, and the error is the warning.
+func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string, recorded bool) (string, error) {
 	svc, err := serviceFor(ctx, w, profileName, pinnedFile, service)
 	if err != nil {
+		if !recorded {
+			return "", err
+		}
 		return statusUnknown, err
 	}
 	if !svc.SignInRequired {
@@ -517,6 +525,8 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 			line := fmt.Sprintf("  %-24s %-30s %s", s.Name, s.Service, listAgentsText(s.Agents))
 			if text := checkText(s.Check); text != "" {
 				line += "  " + text
+			} else if p.checkSkipped {
+				line += "  check skipped: the profile no longer matches this server"
 			}
 			cmdio.LogString(ctx, line)
 			if hint := serverHint(ctx, p, s); hint != "" {

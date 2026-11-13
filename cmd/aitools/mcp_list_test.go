@@ -629,6 +629,26 @@ func TestRenderMcpListLoginHintNamesCheckedFile(t *testing.T) {
 	}
 }
 
+// TestRenderMcpListSaysWhyCheckIsSkipped checks that a server whose profile drifted says in the text that its check was
+// skipped, and that a listing without --check does not say so.
+func TestRenderMcpListSaysWhyCheckIsSkipped(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", "https://adb-1.test", ""))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.NotContains(t, stderr.String(), "check skipped")
+
+	addChecks(t.Context(), &out)
+	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "check skipped: the profile no longer matches this server")
+}
+
 // TestRenderMcpListPrintsWarningsWhenEmpty checks that a listing with no server and no unmanaged entry still prints its
 // warnings in text, as JSON does, for a profile with no server and for no profile.
 func TestRenderMcpListPrintsWarningsWhenEmpty(t *testing.T) {
@@ -939,6 +959,23 @@ func TestAddChecksWarnsWhenTheSignInCannotBeRead(t *testing.T) {
 	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
 }
 
+// TestAddChecksServiceGoneWithoutSignInIsAWarningOnly checks that a server that never needed sign-in, whose service the
+// profile can no longer see, gets a warning and no sign-in value. Its sign-in is not what is unknown.
+func TestAddChecksServiceGoneWithoutSignInIsAWarningOnly(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusNotFound, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	entry := listCheckGitHub(t, "github-logfood", "logfood", server.URL, "")
+	entry.SignInRequired = false
+	saveState(t, entry)
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Empty(t, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.Equal(t, "MCP server github-logfood: system.ai.github is not an MCP service visible to profile logfood", out.Warnings[0])
+}
+
 // TestAddChecksServiceGoneIsAWarningNotSignInNeeded checks that a service the profile no longer sees is a warning, and that
 // its sign-in is unknown rather than needed, since the sign-in is not what is missing.
 func TestAddChecksServiceGoneIsAWarningNotSignInNeeded(t *testing.T) {
@@ -1084,14 +1121,17 @@ func TestSignInStatus(t *testing.T) {
 		serviceOK  bool
 		credential int
 		body       string
+		recorded   bool
 		want       string
 		warns      bool
 	}{
-		{name: "active", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"ACTIVE"}}`, want: statusOK},
-		{name: "provisioning", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"PROVISIONING"}}`, want: checkNeeded},
-		{name: "not signed in", serviceOK: true, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, want: checkNeeded},
-		{name: "rejected token", serviceOK: true, credential: http.StatusUnauthorized, body: `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`, want: statusUnknown, warns: true},
-		{name: "service gone", serviceOK: false, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, want: statusUnknown, warns: true},
+		{name: "active", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"ACTIVE"}}`, recorded: true, want: statusOK},
+		{name: "provisioning", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"PROVISIONING"}}`, recorded: true, want: checkNeeded},
+		{name: "not signed in", serviceOK: true, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, recorded: true, want: checkNeeded},
+		{name: "rejected token", serviceOK: true, credential: http.StatusUnauthorized, body: `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`, recorded: true, want: statusUnknown, warns: true},
+		{name: "service gone", serviceOK: false, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, recorded: true, want: statusUnknown, warns: true},
+		// The record says the server never needed sign-in, so an unreadable service has no sign-in to report.
+		{name: "service gone, never needed sign-in", serviceOK: false, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, want: "", warns: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1103,7 +1143,7 @@ func TestSignInStatus(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 			require.NoError(t, err)
 
-			status, err := signInStatus(t.Context(), w, "logfood", "", "system.ai.github")
+			status, err := signInStatus(t.Context(), w, "logfood", "", "system.ai.github", tc.recorded)
 			assert.Equal(t, tc.want, status)
 			if tc.warns {
 				require.Error(t, err)
