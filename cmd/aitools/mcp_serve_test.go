@@ -777,7 +777,7 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "system.ai.github", challenge.Service)
@@ -786,12 +786,12 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
@@ -804,7 +804,7 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 
-	challenge, err := serveChallenge(t.Context(), w, passingGuard(), &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
@@ -862,7 +862,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
 			require.NoError(t, err)
 
-			signIn := serveSignIn(w, passingGuard(), "logfood", "system.ai.github", "", io.Discard)
+			signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
 			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
 
 			require.NoError(t, err)
@@ -872,11 +872,6 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			assert.Equal(t, tc.wantDeleted, deleted)
 		})
 	}
-}
-
-// passingGuard returns a refresh guard whose tokens always refresh, for tests that do not exercise a refresh failure.
-func passingGuard() *refreshGuard {
-	return &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}}
 }
 
 // failingGuard returns a refresh guard whose token cannot be refreshed, and records whether the proxy was stopped.
@@ -912,7 +907,7 @@ func TestServeChallengeLookupIsBounded(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	_, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
 
 	require.Error(t, err)
 	assert.Less(t, time.Since(start), 10*time.Second, "the lookup must not wait for the SDK's retry budget")
@@ -925,7 +920,7 @@ func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	_, err = serveChallenge(t.Context(), w, passingGuard(), nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
 
 	require.Error(t, err)
 	assert.Equal(t, serveBindStatus, serveStartStatus(err))
@@ -941,11 +936,10 @@ func TestServeStartStatusIsOneForOtherFailures(t *testing.T) {
 // stops the proxy with the login hint, as a refresh failure of a bridge request does.
 func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
 	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
-	require.NoError(t, err)
 	var stopped bool
+	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
 
-	_, err = serveChallenge(t.Context(), w, failingGuard(&stopped), nil, "logfood", "system.ai.github", "", io.Discard)
+	_, err := serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
@@ -958,12 +952,11 @@ func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
 func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
 	t.Setenv("BROWSER", "none")
 	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
-	require.NoError(t, err)
 	var stopped bool
-	signIn := serveSignIn(w, failingGuard(&stopped), "logfood", "system.ai.github", "", io.Discard)
+	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
 
-	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true})
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
@@ -1000,9 +993,78 @@ func TestServeSignInReportsEachPoll(t *testing.T) {
 	require.NoError(t, err)
 
 	polls := 0
-	signIn := serveSignIn(w, passingGuard(), "logfood", "system.ai.github", "", io.Discard)
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
 	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() { polls++ }})
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, polls)
+}
+
+// TestServeSignInAuthenticatesEveryRequest checks that each request the sign-in client makes is authenticated by the
+// refresh guard, so a token that cannot be refreshed during a sign-in stops the proxy, whichever call hits it.
+func TestServeSignInAuthenticatesEveryRequest(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	var reads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		if reads.Add(1) < 3 {
+			rw.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+			return
+		}
+		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
+	}))
+	t.Cleanup(server.Close)
+	var authenticated atomic.Int32
+	guard := &refreshGuard{authenticate: func(*http.Request) error { authenticated.Add(1); return nil }, profile: "logfood", cancel: func() {}}
+	w := guardedTestClient(t, server.URL, guard)
+
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() {}})
+
+	require.NoError(t, err)
+	assert.Equal(t, reads.Load(), authenticated.Load(), "every request of the sign-in is authenticated by the guard")
+}
+
+// TestServeSignInRestartDeleteRefreshFailureStopsProxy checks that the DELETE of a restart is authenticated by the guard
+// too, so a token that cannot be refreshed for it stops the proxy with the login hint.
+func TestServeSignInRestartDeleteRefreshFailureStopsProxy(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	server := serviceServer(t, http.StatusOK, `{}`)
+	var stopped bool
+	guard := &refreshGuard{
+		authenticate: func(r *http.Request) error {
+			if r.Method == http.MethodDelete {
+				return errors.New(refreshTokenExpired)
+			}
+			return nil
+		},
+		profile: "logfood",
+		cancel:  func() { stopped = true },
+	}
+	w := guardedTestClient(t, server.URL, guard)
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "", io.Discard)
+
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true})
+
+	require.Error(t, err)
+	assert.True(t, stopped, "the proxy is stopped")
+	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
+}
+
+// guardedTestClient returns a client for host whose requests the guard authenticates, as the sign-in client of serve is.
+func guardedTestClient(t *testing.T, host string, guard *refreshGuard) *databricks.WorkspaceClient {
+	t.Helper()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: host, Credentials: guardCredentials{refresh: guard}, WorkspaceID: "1"})
+	require.NoError(t, err)
+	return w
 }
