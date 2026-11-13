@@ -197,10 +197,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 		return
 	}
 
-	var historyVersion string
+	var history *bindingHistory
 	var historyErr error
 	defer func() {
-		completeBindingHistory(ctx, b, historyVersion, historyErr == nil && !logdiag.HasError(ctx))
+		completeBindingHistory(ctx, b, history, historyErr == nil && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
@@ -219,7 +219,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 		return
 	}
 
-	historyVersion, historyErr = recordUnbindHistory(ctx, b, metadata)
+	history, historyErr = recordUnbindHistory(ctx, b, metadata)
 	if historyErr != nil {
 		log.Warnf(ctx, "Failed to record unbind history: %s", historyErr)
 	}
@@ -249,26 +249,25 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 }
 
 // recordUnbindHistory publishes committed removals when DMS metadata was requested.
-func recordUnbindHistory(ctx context.Context, b *bundle.Bundle, metadata *direct.DMSUnbindMetadata) (string, error) {
+func recordUnbindHistory(ctx context.Context, b *bundle.Bundle, metadata *direct.DMSUnbindMetadata) (*bindingHistory, error) {
 	if metadata == nil || len(metadata.ResourceKeys) == 0 {
-		return "", nil
+		return nil, nil
 	}
 	staged := make([]bundledeployments.StagedOperation, 0, len(metadata.ResourceKeys))
 	for _, key := range metadata.ResourceKeys {
 		staged = append(staged, bundledeployments.StagedOperation{
 			ResourceKey: strings.TrimPrefix(key, dms.StatePrefix),
-			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUnbind,
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
 		})
 	}
-	versionName, err := createBindingVersion(ctx, b, metadata.Serial, staged)
+	history, err := createBindingVersion(ctx, b, metadata.Serial, staged)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var recordErr error
 	for _, key := range metadata.ResourceKeys {
-		recordErr = errors.Join(recordErr, recordBindingOperation(ctx, b, versionName, key, nil))
+		history.buffer.RecordOperation(ctx, key, false, "", nil)
 	}
-	return versionName, recordErr
+	return history, history.buffer.Drain(ctx)
 }
 
 // createBindingVersion claims a history version for the staged binding operations.

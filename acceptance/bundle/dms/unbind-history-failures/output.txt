@@ -1,23 +1,27 @@
 
 === A version creation failure does not prevent unbinding
+
 >>> fault.py POST /api/2.0/bundle/deployments/*/versions 400 0 1
 
 >>> [CLI] bundle deployment unbind create_failed
 Warn: Failed to record unbind history: failed to create deployment version: Fault injected by test.
 
 === An operation recording failure does not prevent unbinding
+
 >>> fault.py PATCH /api/2.0/bundle/** 400 0 1
 
 >>> [CLI] bundle deployment unbind record_failed
-Warn: Failed to record unbind history: Fault injected by test.
+Warn: Failed to record unbind history: recording operation for resources.jobs.record_failed: Fault injected by test.
 
 === A version completion failure does not prevent unbinding
+
 >>> fault.py POST /api/2.0/bundle/deployments/*/versions/*/complete 400 0 1
 
 >>> [CLI] bundle deployment unbind complete_failed
 Warn: Failed to complete deployment history version: Fault injected by test.
 
 === Successful unbindings survived the remote state round trips and the job still exists
+
 >>> jq .state .databricks/bundle/default/resources.json
 {
   "resources.jobs.upload_failed": {
@@ -45,15 +49,16 @@ Warn: Failed to complete deployment history version: Fault injected by test.
 }
 
 >>> print_requests.py --dms //versions --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "10"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.create_failed"}], "previous_version_id": "9", "version_type": "VERSION_TYPE_DEPLOY"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "11"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.record_failed"}], "previous_version_id": "9", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "10"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.create_failed"}], "previous_version_id": "9", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "11"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.record_failed"}], "previous_version_id": "9", "version_type": "VERSION_TYPE_DEPLOY"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/11/operations/jobs.record_failed", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/11/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "12"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.complete_failed"}], "previous_version_id": "11", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "12"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.complete_failed"}], "previous_version_id": "11", "version_type": "VERSION_TYPE_DEPLOY"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/12/operations/jobs.complete_failed", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/12/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 === A remote state upload failure fails the unbind version
+
 >>> fault.py POST /api/2.0/workspace-files/import-file/**resources.json 400 0 1
 
 >>> musterr [CLI] bundle deployment unbind upload_failed
@@ -66,11 +71,12 @@ API message: Fault injected by test.
 
 
 >>> print_requests.py --dms //versions --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "13"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UNBIND", "resource_key": "jobs.upload_failed"}], "previous_version_id": "12", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "13"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.upload_failed"}], "previous_version_id": "12", "version_type": "VERSION_TYPE_DEPLOY"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/13/operations/jobs.upload_failed", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/13/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
 
 === Remote state still contains the binding whose upload failed
+
 >>> [CLI] bundle summary -o json
 {
   "complete_failed": null,
