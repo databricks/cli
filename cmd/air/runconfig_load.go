@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/internal/build"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -98,6 +99,9 @@ func readRunConfigDocument(path string) (*yaml.Node, []byte, error) {
 }
 
 func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte) (*runConfig, error) {
+	if err := checkUnknownConfigFields(path, document); err != nil {
+		return nil, err
+	}
 	// Validate before stripping comments so YAML errors retain source line numbers.
 	cfg, err := decodeRunConfigReader(bytes.NewReader(validationYAML), path)
 	if err != nil {
@@ -123,6 +127,117 @@ func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte
 	}
 	cfg.artifactYAML = artifactYAML
 	return cfg, nil
+}
+
+// unknownConfigKey is a YAML key absent from the run config schema.
+type unknownConfigKey struct {
+	line   int
+	key    string
+	parent configField
+}
+
+// checkUnknownConfigFields reports every YAML key missing from the run config
+// schema by its YAML path, so users see the field they wrote rather than the
+// strict decoder's Go type names.
+func checkUnknownConfigFields(path string, document *yaml.Node) error {
+	msg := describeUnknownConfigKeys(collectUnknownConfigKeys(document.Content[0], configSchema(), nil), true)
+	if msg == "" {
+		return nil
+	}
+	return fmt.Errorf("invalid config %s: %s", path, msg)
+}
+
+// describeUnknownConfigKeys renders unknown keys for an error message, or ""
+// if there are none. withLines is false for --override values, whose line
+// numbers point into the flag rather than the config file.
+func describeUnknownConfigKeys(unknown []unknownConfigKey, withLines bool) string {
+	if len(unknown) == 0 {
+		return ""
+	}
+
+	blocks := make([]string, 0, len(unknown))
+	suggestUpdate := false
+	for _, u := range unknown {
+		names := visibleConfigChildNames(u.parent)
+		fieldPath := strings.TrimPrefix(u.parent.path+"."+u.key, configHelpRoot+".")
+		block := fmt.Sprintf("unknown field %q", fieldPath)
+		if withLines {
+			block = fmt.Sprintf("line %d: %s", u.line, block)
+		}
+		if suggestion, ok := closestConfigField(u.key, names); ok {
+			block += fmt.Sprintf("; did you mean %q?", suggestion)
+		} else {
+			suggestUpdate = true
+		}
+		block += fmt.Sprintf("\nfields under %q are: %s", u.parent.path, strings.Join(names, ", "))
+		// `-h` rejects hidden legacy paths, so only point at documented ones.
+		if !u.parent.hidden {
+			block += fmt.Sprintf("\nrun \"databricks air run -h %s\" for details", u.parent.path)
+		}
+		blocks = append(blocks, block)
+	}
+
+	msg := strings.Join(blocks, "\n\n")
+	if len(blocks) > 1 {
+		msg = fmt.Sprintf("%d unknown fields\n\n%s", len(blocks), msg)
+	}
+	// Some unknown keys are deliberately unsupported (e.g. priority, _bases_),
+	// so the newer-CLI explanation is only a possibility.
+	if suggestUpdate {
+		msg += fmt.Sprintf("\n\nif a field comes from newer documentation, it may need a newer CLI than version %s; run 'databricks version --check'", build.GetInfo().Version)
+	}
+	return msg
+}
+
+// collectUnknownConfigKeys walks node against schema and returns unknown with
+// every unknown key appended. Non-object and free-form fields, and values whose
+// shape doesn't match the schema, are left to the decoder's type errors.
+func collectUnknownConfigKeys(node *yaml.Node, schema configField, unknown []unknownConfigKey) []unknownConfigKey {
+	if node.Kind == yaml.AliasNode {
+		node = node.Alias
+	}
+	if len(schema.children) == 0 || schema.freeForm {
+		return unknown
+	}
+	switch node.Kind {
+	case yaml.SequenceNode:
+		if !schema.isList {
+			return unknown
+		}
+		item := schema
+		item.isList = false
+		for _, n := range node.Content {
+			unknown = collectUnknownConfigKeys(n, item, unknown)
+		}
+	case yaml.MappingNode:
+		if schema.isList {
+			return unknown
+		}
+		for i := 0; i < len(node.Content); i += 2 {
+			key, value := node.Content[i], node.Content[i+1]
+			// The decoder folds "<<: *anchor" (or a list of anchors) into this
+			// mapping, so the merged keys belong to schema.
+			if key.ShortTag() == "!!merge" {
+				sources := []*yaml.Node{value}
+				if value.Kind == yaml.SequenceNode {
+					sources = value.Content
+				}
+				for _, source := range sources {
+					unknown = collectUnknownConfigKeys(source, schema, unknown)
+				}
+				continue
+			}
+			child, ok := findConfigChild(schema.children, key.Value)
+			if !ok {
+				unknown = append(unknown, unknownConfigKey{line: key.Line, key: key.Value, parent: schema})
+				continue
+			}
+			unknown = collectUnknownConfigKeys(value, child, unknown)
+		}
+	default:
+		// A scalar where an object is expected is a type error the decoder reports.
+	}
+	return unknown
 }
 
 func codeSourceFieldPresent(document *yaml.Node, field string) bool {

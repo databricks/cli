@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -65,16 +64,8 @@ func checkOverridePath(parts []string, node configField, fullPath string) error 
 	name := parts[0]
 	child, ok := findConfigChild(node.children, name)
 	if !ok {
-		names := make([]string, 0, len(node.children))
-		for _, c := range node.children {
-			if c.hidden {
-				continue
-			}
-			names = append(names, configLeafName(c.path))
-		}
-		slices.Sort(names)
 		return fmt.Errorf("invalid --override %q: %q is not a known field; available fields are: %s",
-			fullPath, name, strings.Join(names, ", "))
+			fullPath, name, strings.Join(visibleConfigChildNames(node), ", "))
 	}
 	if len(parts) == 1 {
 		return nil
@@ -103,10 +94,17 @@ func applyOverrides(ctx context.Context, document *yaml.Node, entries []override
 		return errors.New("run config must be a YAML mapping")
 	}
 
+	schema := configSchema()
+
 	for _, e := range entries {
 		value, err := parseOverrideNode(e.raw)
 		if err != nil {
 			return fmt.Errorf("invalid --override %q: cannot parse value %q: %w", e.path, e.raw, err)
+		}
+		// Check the value here: once spliced into the file's tree, its keys carry
+		// line numbers from the override string, not the config file.
+		if msg := describeUnknownConfigKeys(collectUnknownConfigKeys(value, overrideTargetField(schema, e.path), nil), false); msg != "" {
+			return fmt.Errorf("invalid --override %q: %s", e.path, msg)
 		}
 
 		parts := strings.Split(e.path, ".")
@@ -142,6 +140,19 @@ func applyOverrides(ctx context.Context, document *yaml.Node, entries []override
 		}
 	}
 	return nil
+}
+
+// overrideTargetField resolves a path already accepted by checkOverridePath.
+// Paths into a free-form map resolve to the map, which has no schema below it.
+func overrideTargetField(schema configField, path string) configField {
+	field := schema
+	for part := range strings.SplitSeq(path, ".") {
+		if field.freeForm {
+			break
+		}
+		field, _ = findConfigChild(field.children, part)
+	}
+	return field
 }
 
 func parseOverrideNode(raw string) (*yaml.Node, error) {

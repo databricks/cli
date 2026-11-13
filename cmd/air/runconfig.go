@@ -648,6 +648,8 @@ type configField struct {
 	// freeForm marks a user-keyed map (parameters/secrets/env_variables): no
 	// children, yet any sub-path into it is valid.
 	freeForm bool
+	// isList marks a list field, whose YAML items each match children.
+	isList   bool
 	children []configField // nil for a leaf
 }
 
@@ -730,20 +732,24 @@ func cutLast(s, sep string) (before, after string, found bool) {
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
 // siblings and, when one is close enough, a suggestion.
 func unknownConfigFieldError(parent configField, part string, matched []string) error {
-	names := make([]string, 0, len(parent.children))
-	for _, c := range parent.children {
-		if c.hidden {
-			continue
-		}
-		names = append(names, configLeafName(c.path))
-	}
-	slices.Sort(names)
-
+	names := visibleConfigChildNames(parent)
 	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
 	if suggestion, ok := closestConfigField(part, names); ok {
 		msg += fmt.Sprintf("; did you mean %q?", suggestion)
 	}
 	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
+}
+
+// visibleConfigChildNames returns the sorted YAML names of parent's documented children.
+func visibleConfigChildNames(parent configField) []string {
+	names := make([]string, 0, len(parent.children))
+	for _, c := range parent.children {
+		if !c.hidden {
+			names = append(names, configLeafName(c.path))
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // closestConfigField returns the nearest candidate by edit distance, if one is
@@ -803,6 +809,10 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			continue
 		}
 
+		elem := f.Type
+		for elem.Kind() == reflect.Pointer {
+			elem = elem.Elem()
+		}
 		field := configField{
 			path:     prefix + "." + name,
 			typeName: configTypeName(f.Type),
@@ -812,6 +822,7 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			docs:     f.Tag.Get("docs"),
 			hidden:   f.Tag.Get("hidden") == "yes",
 			freeForm: freeFormConfigFields[name],
+			isList:   elem.Kind() == reflect.Slice,
 		}
 		if nested := underlyingConfigStruct(f.Type); nested != nil && !field.freeForm {
 			field.children = describeStruct(nested, field.path)
