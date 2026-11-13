@@ -116,6 +116,26 @@ func TestWritesToStdout(t *testing.T) {
 	}
 }
 
+// When stdout and stderr are one file, as on a terminal, a log file that is that file is not refused: the protocol
+// already shares it with the diagnostics. A second handle to it is that file, so it is not refused either.
+func TestWritesToStdoutAllowsStderrFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "terminal.txt")
+	shared, err := os.Create(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { shared.Close() })
+	second, err := os.OpenFile(path, os.O_WRONLY, 0)
+	require.NoError(t, err)
+	t.Cleanup(func() { second.Close() })
+
+	ok, err := writesToStdout(second, shared, shared)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	ok, err = writesToStdout(shared, shared, shared)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
 // newPipe returns the write end of a pipe that the test closes.
 func newPipe(t *testing.T) *os.File {
 	t.Helper()

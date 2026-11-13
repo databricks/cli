@@ -21,23 +21,38 @@ func carriesProtocol(cmd *cobra.Command) bool {
 
 // writesToStdout reports whether w is stdout, given the process's stdout and stderr. It compares the open file, not a
 // path: on macOS, os.Stat of /dev/stdout does not match stdout when stdout is a pipe, but the opened /dev/stdout does.
-// stderr is never stdout here, even when both share a terminal. The streams are parameters because under
-// `go test -json` the testing package sets os.Stderr to os.Stdout.
+// The streams are parameters because under `go test -json` the testing package sets os.Stderr to os.Stdout.
+//
+// A file that is also stderr is not stdout. When stdout and stderr are one file, as on a terminal, the protocol
+// already shares it with the diagnostics, so the check cannot help and the log file is allowed.
 func writesToStdout(w io.Writer, stdout, stderr *os.File) (bool, error) {
 	f, ok := w.(*os.File)
-	if !ok || f == stderr {
+	if !ok {
 		return false, nil
 	}
-	if f == stdout {
+	toStdout, err := sameFile(f, stdout)
+	if err != nil || !toStdout {
+		return false, err
+	}
+	toStderr, err := sameFile(f, stderr)
+	if err != nil {
+		return false, err
+	}
+	return !toStderr, nil
+}
+
+// sameFile reports whether a and b are the same open file.
+func sameFile(a, b *os.File) (bool, error) {
+	if a == b {
 		return true, nil
 	}
-	out, err := stdout.Stat()
+	ai, err := a.Stat()
 	if err != nil {
 		return false, err
 	}
-	fi, err := f.Stat()
+	bi, err := b.Stat()
 	if err != nil {
 		return false, err
 	}
-	return sameFileInfo(fi, out), nil
+	return sameFileInfo(ai, bi), nil
 }
