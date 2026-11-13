@@ -19,9 +19,12 @@ const (
 	testService = "system.ai.github"
 	testHost    = "https://workspace.test"
 	testURL     = testHost + "/mcp-service-login?name=system.ai.github&o=1"
-	// Each message is one line, so an upstream body that passes through is byte-equal on stdout.
+	// Each message is one line, so an upstream body that passes through is byte-equal on stdout. An upstream answer
+	// carries the id of its request, so each request id has its own fixtures.
 	listChallenge  = `{"jsonrpc":"2.0","id":2,"error":{"code":-32006,"message":"rejected","data":null}}`
+	callChallenge  = `{"jsonrpc":"2.0","id":3,"error":{"code":-32006,"message":"rejected","data":null}}`
 	listTools      = `{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`
+	listToolsLater = `{"jsonrpc":"2.0","id":4,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`
 	listChangedMsg = `{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`
 )
 
@@ -137,7 +140,7 @@ func TestChallengeIgnoresOtherErrors(t *testing.T) {
 }
 
 func TestChallengeToolsCallAnswersWithoutBrowser(t *testing.T) {
-	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listChallenge))
+	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, callChallenge))
 	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
 	out, _ := runAll(t, challengedBridge(srv.URL, signIn.SignIn),
 		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`+"\n")
@@ -251,7 +254,7 @@ func TestChallengeTurnsOnAfterSignIn(t *testing.T) {
 	var signedIn atomic.Bool
 	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
 		if signedIn.Load() {
-			answerWith(http.StatusOK, listTools)(w, r)
+			answerWith(http.StatusOK, listToolsLater)(w, r)
 			return
 		}
 		answerWith(http.StatusOK, listChallenge)(w, r)
