@@ -27,14 +27,6 @@
             }
           }
         ],
-        "grants": [
-          {
-            "principal": "account users",
-            "privileges": [
-              "EXECUTE"
-            ]
-          }
-        ],
         "name": "main.default.my_feature_spec_1_updated"
       },
       "my_feature_spec_2": {

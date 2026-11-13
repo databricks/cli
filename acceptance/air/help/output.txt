@@ -25,7 +25,7 @@ Package and deploy:
   images          Push container images for custom environments
 
 Provisioned capacity:
-  pools           View GPU pools provisioned for your workspace
+  pools           View provisioned GPU pools, if any (not required to run)
 
 Flags:
   -h, --help   help for air
@@ -52,7 +52,9 @@ List active runs for the current user.
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or full YAML type. Examples:
+                    A10, H100, GPU_1xA10, GPU_8xH100.
+                    Workspace types: databricks air run -h config.compute.accelerator_type
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.
@@ -62,6 +64,8 @@ Usage:
 
 Examples:
   databricks air list --filter accelerator_type=H100
+
+  databricks air list --filter accelerator_type=GPU_8xH100
 
   databricks air list --all-status \
     --filter 'experiment=qwen*' \

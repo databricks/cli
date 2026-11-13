@@ -1,0 +1,8 @@
+Badness = "Destroy does not look for a resource renamed outside the bundle: it reads the recorded name, finds nothing and drops the state entry, so the renamed schema and its volume are left behind. Same on main."
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

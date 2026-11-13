@@ -1,0 +1,93 @@
+
+=== Deploy a schema with a lowercase name
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change only the case of the name. UC lowercases names, so it is the same name
+
+>>> update_file.py databricks.yml test_schema_ Test_Schema_
+
+>>> [CLI] bundle plan --output json
+{
+  "resources.schemas.schema1": {
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "Test_Schema_[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_at": [UNIX_TIME_MILLIS],
+      "created_by": "[USERNAME]",
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test_schema_[UNIQUE_NAME]",
+      "metastore_id": "[UUID]",
+      "name": "test_schema_[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[SCHEMA_ID]"
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test_schema_[UNIQUE_NAME]",
+        "new": "Test_Schema_[UNIQUE_NAME]",
+        "remote": "test_schema_[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[SCHEMA_ID]"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test_schema_[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "Test_Schema_[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] schemas get main.test_schema_[UNIQUE_NAME]
+{
+  "full_name": "main.test_schema_[UNIQUE_NAME]",
+  "name": "test_schema_[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+=== Redeploy
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

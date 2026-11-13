@@ -13,7 +13,14 @@ Response.Body = '''
   "start_time": 1700000000000,
   "end_time": 1700000012000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
-  "tasks": [{"task_key": "train", "run_id": 456, "attempt_number": 0}]
+  "tasks": [{
+    "task_key": "train",
+    "run_id": 456,
+    "attempt_number": 0,
+    "ai_runtime_task": {
+      "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+    }
+  }]
 }
 '''
 

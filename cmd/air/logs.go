@@ -152,7 +152,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 		return authError(ctx, cmd, err)
 	}
 
-	status, err := resolveRunStatus(ctx, w, req.runID)
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
@@ -160,6 +160,15 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 		}
 		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 			fmt.Errorf("failed to get status for run %d: %w", req.runID, err))
+	}
+	status := projectRunStatus(run)
+
+	if req.nodeSet {
+		if numNodes, err := resolveNodeCount(run); err == nil {
+			if err := validateNodeIndex(req.node, numNodes); err != nil {
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+			}
+		}
 	}
 
 	// -1 (default) means latest; reject an attempt past the newest.
@@ -170,10 +179,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	// --download-to writes each node's logs to disk instead of streaming.
 	if req.downloadTo != "" {
-		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status)
-		if errors.Is(err, errNodeOutOfRange) {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
-		}
+		success, err := downloadLogs(ctx, w, cmd.OutOrStdout(), req, status, run)
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to download logs for run %d: %w", req.runID, err))

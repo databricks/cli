@@ -254,7 +254,8 @@ func roundMillisToSeconds(ms int64) int64 {
 
 // dashboardURL builds {host}/jobs/runs/{id}?o={workspace_id}, matching Python
 // (cli_entrypoint.py:1911). The ?o= workspace id deep-links to the right
-// workspace on multi-workspace accounts. An unknown (zero) workspace ID omits it.
+// workspace on multi-workspace accounts; an unknown (zero) workspace id omits
+// it rather than linking to ?o=0.
 func dashboardURL(host string, runID, workspaceID int64) string {
 	url := fmt.Sprintf("%s/jobs/runs/%d", strings.TrimRight(host, "/"), runID)
 	if workspaceID == 0 {

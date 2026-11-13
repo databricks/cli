@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+VOLUME="main.test_schema_${UNIQUE_NAME}.myvolume"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a volume with a lowercase name"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "$VOLUME" | jq -r .volume_id)" VOLUME_ID
+
+title "Change only the case of the name. UC lowercases names, so it is the same name"
+trace update_file.py databricks.yml "name: myvolume" "name: MyVolume"
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$VOLUME" | jq '{full_name, name, volume_id}'
+
+title "Redeploy"
+trace $CLI bundle plan
+
+title "Rename the schema. The volume is re-keyed without a request. Its recorded ID keeps the config's casing, which UC reads case-insensitively"
+trace update_file.py databricks.yml test_schema_ test_schema_renamed_
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI bundle summary --output json | jq '.resources.volumes.volume1.id'
+trace $CLI bundle plan

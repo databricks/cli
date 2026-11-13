@@ -61,8 +61,9 @@ type Agent struct {
 	// set per agent (only for formats we have verified); when nil,
 	// DatabricksPluginVersion reports no version and DatabricksTooling falls
 	// back to the CLI install state. New agents extend support by providing
-	// their own reader here.
-	pluginInstalls func(ctx context.Context, a *Agent) ([]pluginInstall, bool)
+	// their own reader here. found is false when the manifest has no databricks
+	// entry or does not exist; an error means it exists but could not be read.
+	pluginInstalls func(ctx context.Context, a *Agent) (installs []pluginInstall, found bool, err error)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,

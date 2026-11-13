@@ -1,0 +1,178 @@
+
+=== Deploy a schema with a managed volume in it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Created volumes.volume1
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the schema and change the volume's type in one deploy. The type change recreates the volume
+
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+>>> update_file.py databricks.yml volume_type: MANAGED volume_type: EXTERNAL
+
+>>> [CLI] bundle plan --output json
+{
+  "resources.schemas.schema1": {
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "test-schema-renamed-[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "browse_only": false,
+      "catalog_name": "main",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_by": "[USERNAME]",
+      "effective_predictive_optimization_flag": {
+        "inherited_from_name": "[METASTORE_NAME]",
+        "inherited_from_type": "METASTORE",
+        "value": "ENABLE"
+      },
+      "enable_predictive_optimization": "INHERIT",
+      "full_name": "main.test-schema-[UNIQUE_NAME]",
+      "metastore_id": "[UUID][0]",
+      "name": "test-schema-[UNIQUE_NAME]",
+      "owner": "[USERNAME]",
+      "schema_id": "[UUID][1]",
+      "updated_by": "[USERNAME]"
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID][1]",
+        "remote": "[UUID][1]"
+      }
+    }
+  },
+  "resources.volumes.volume1": {
+    "id": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
+    "depends_on": [
+      {
+        "node": "resources.schemas.schema1",
+        "label": "${resources.schemas.schema1.name}"
+      }
+    ],
+    "action": "recreate",
+    "new_state": {
+      "value": {
+        "catalog_name": "main",
+        "name": "myvolume",
+        "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+        "volume_type": "EXTERNAL"
+      }
+    },
+    "remote_state": {
+      "catalog_name": "main",
+      "created_by": "[USERNAME]",
+      "full_name": "main.test-schema-[UNIQUE_NAME].myvolume",
+      "name": "myvolume",
+      "owner": "[USERNAME]",
+      "schema_name": "test-schema-[UNIQUE_NAME]",
+      "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][2]",
+      "volume_id": "[UUID][2]",
+      "volume_type": "MANAGED"
+    },
+    "changes": {
+      "schema_name": {
+        "action": "update_id",
+        "reason": "parent_renamed",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-[UNIQUE_NAME]"
+      },
+      "storage_location": {
+        "action": "skip",
+        "reason": "immutable_backend_value",
+        "remote": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][2]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID][2]",
+        "remote": "[UUID][2]"
+      },
+      "volume_type": {
+        "action": "recreate",
+        "reason": "immutable",
+        "old": "MANAGED",
+        "new": "EXTERNAL",
+        "remote": "MANAGED"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  recreate resources.volumes.volume1
+Recreated volumes.volume1
+Updated schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "test-schema-renamed-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-renamed-[UNIQUE_NAME].myvolume"
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "myvolume",
+    "schema_name": "test-schema-renamed-[UNIQUE_NAME]",
+    "volume_type": "EXTERNAL"
+  }
+}
+
+=== Redeploy is a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+  delete resources.volumes.volume1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete resources.volumes.volume1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

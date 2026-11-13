@@ -123,6 +123,11 @@ func (a *syncTest) waitForCompletionMarker() {
 	}
 }
 
+// Reads of remote state go through the SDK, which retries throttled (429)
+// requests for up to 5 minutes. A shorter wait fails while one read is still
+// retrying, even though sync already uploaded the expected state.
+const remoteStateTimeout = 6 * time.Minute
+
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
@@ -131,7 +136,7 @@ func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, exp
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
-	}, 30*time.Second, 5*time.Second)
+	}, remoteStateTimeout, 5*time.Second)
 	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: remoteDir,
 	})
@@ -163,7 +168,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expected
 		require.NoError(a.t, err)
 		actualContent := string(res)
 		return actualContent == expectedContent
-	}, 30*time.Second, 5*time.Second)
+	}, remoteStateTimeout, 5*time.Second)
 }
 
 func (a *syncTest) remoteNotExist(ctx context.Context, relativePath string) {
@@ -190,7 +195,7 @@ func (a *syncTest) objectType(ctx context.Context, relativePath, expected string
 			return false
 		}
 		return metadata.ObjectType.String() == expected
-	}, 30*time.Second, 5*time.Second)
+	}, remoteStateTimeout, 5*time.Second)
 }
 
 func (a *syncTest) language(ctx context.Context, relativePath, expected string) {
@@ -202,7 +207,7 @@ func (a *syncTest) language(ctx context.Context, relativePath, expected string) 
 			return false
 		}
 		return metadata.Language.String() == expected
-	}, 30*time.Second, 5*time.Second)
+	}, remoteStateTimeout, 5*time.Second)
 }
 
 func (a *syncTest) snapshotContains(files []string) {

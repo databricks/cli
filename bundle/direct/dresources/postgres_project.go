@@ -70,9 +70,9 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 }
 
 // makePostgresProjectRemote converts the SDK Project into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_projects.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_projects.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote {
 	var spec postgres.ProjectSpec
 	if project.Spec != nil {
@@ -121,11 +121,14 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		},
 	})
 	if err != nil {
-		return "", nil, err
+		// The project is keyed by the caller-chosen project_id, so repeating the request cannot
+		// create a duplicate: if the failed request did create the project, the retry fails with
+		// ALREADY_EXISTS, just as the next deploy would have.
+		return "", nil, retrySafe(err)
 	}
 
 	// Wait for the project to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}

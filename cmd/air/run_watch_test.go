@@ -113,7 +113,9 @@ func runWatchCmdWithConfig(t *testing.T, out flags.Output, buf *bytes.Buffer, sr
 	require.NoError(t, cmd.Flags().Set("watch", "true"))
 
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, nil, buf, buf, "", ""))
-	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
+	client := newTestWorkspaceClient(t, srvURL)
+	client.Config.WorkspaceID = "42"
+	ctx = cmdctx.SetWorkspaceClient(ctx, client)
 	cmd.SetContext(ctx)
 	cmd.SetOut(buf)
 	return cmd.RunE(cmd, nil)
@@ -140,7 +142,7 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 
 	out := buf.String()
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
-	assert.Contains(t, out, "View job run at: ")
+	assert.Equal(t, 2, strings.Count(out, "View job run at: "+srv.URL+"/jobs/runs/777?o=42\n"))
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
 	// Retries are announced only when one happens, so a healthy run doesn't look like it failed.
 	assert.NotContains(t, out, "retried")
@@ -150,7 +152,7 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "───")
 	// The submitted run's logs stream through, oldest-first.
 	assert.Contains(t, out, "step 1\nstep 2")
-	assert.True(t, strings.HasSuffix(out, "\n\nView job run at: "+srv.URL+"/jobs/runs/777\n"), out)
+	assert.True(t, strings.HasSuffix(out, "\n\nView job run at: "+srv.URL+"/jobs/runs/777?o=42\n"), out)
 }
 
 func TestRunWatchMultinodeIdentifiesStreamedNode(t *testing.T) {
@@ -201,7 +203,7 @@ func TestRunWatchFailedRunExitsNonZero(t *testing.T) {
 	err := runWatchCmd(t, flags.OutputText, &buf, srv.URL)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "step 1\nstep 2")
-	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+srv.URL+"/jobs/runs/777\n"), buf.String())
+	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+srv.URL+"/jobs/runs/777?o=42\n"), buf.String())
 }
 
 func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
