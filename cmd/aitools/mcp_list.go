@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -375,6 +376,12 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 // has no sign-in checks: its warning says why.
 func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput) {
 	w, err := profileClient(ctx, p.Profile, p.configPath)
+	if err == nil {
+		// A personal access token is sent only with a request, so the token is checked with one.
+		if _, err = w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+			err = describeRequestError(p.Profile, err)
+		}
+	}
 	p.token = statusOK
 	if err != nil {
 		p.token = checkFailed
