@@ -56,11 +56,15 @@ func Discover(ctx context.Context, w *databricks.WorkspaceClient, location strin
 }
 
 // GetService returns one MCP service by full name, with its sign-in requirement. The API
-// answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see.
+// answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see, and so does a
+// service whose source connection was deleted, which Discover drops.
 func GetService(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (Service, error) {
 	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServicePrefix + fullName})
 	if err != nil {
 		return Service{}, err
+	}
+	if isDeletedSource(svc) {
+		return Service{}, fmt.Errorf("%s has no source connection: %w", fullName, apierr.ErrNotFound)
 	}
 	return newService(svc), nil
 }

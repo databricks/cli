@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
@@ -122,7 +121,12 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
-	if err := requireProfile(ctx, profileName); err != nil {
+	// The binding is checked before the profile's host is contacted, as add and serve check it.
+	state, err := mcp.LoadState(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := mcp.CheckBinding(ctx, state, service, profileName, configFile); err != nil {
 		return err
 	}
 	w, err := profileClient(ctx, profileName, configFile)
@@ -135,11 +139,21 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	return action(ctx, errOut, w, out)
 }
 
-func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
+// signInService returns the service of a sign-in command. A service the profile cannot see is an error, so that a
+// misspelled name is reported rather than treated as a service with no sign-in.
+func signInService(ctx context.Context, w *databricks.WorkspaceClient, out *mcpSignInOutput) (mcp.Service, error) {
 	svc, err := mcp.GetService(ctx, w, out.Service)
 	if errors.Is(err, apierr.ErrNotFound) {
-		return failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", out.Service, out.Profile)
+		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", out.Service, out.Profile)
 	}
+	if err != nil {
+		return mcp.Service{}, describeRequestError(out.Profile, err)
+	}
+	return svc, nil
+}
+
+func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
+	svc, err := signInService(ctx, w, out)
 	if err != nil {
 		return err
 	}
@@ -149,9 +163,11 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 		return nil
 	}
 
-	workspaceID, err := signInWorkspaceID(ctx, w, out.configFile, out.Profile, svc.FullName)
+	// The sign-in URL names the workspace the profile is in now, as add does. The binding check above has already
+	// refused a profile whose workspace changed since the server was installed.
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return err
+		return describeRequestError(out.Profile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 	out.URL = mcp.SignInURL(out.Host, svc.FullName, workspaceID)
 	state, err := signIn(ctx, errOut, w, out.Profile, out.URL, svc)
@@ -160,9 +176,12 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 }
 
 func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
+	if _, err := signInService(ctx, w, out); err != nil {
+		return err
+	}
 	deleted, err := mcp.SignOut(ctx, w, out.Service)
 	if err != nil {
-		return err
+		return describeRequestError(out.Profile, err)
 	}
 	if !deleted {
 		out.State = signOutStateNotSignedIn
@@ -193,7 +212,7 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 			"Sign-in to %s failed on profile %s. Run: databricks aitools mcp login %s --profile %s",
 			svc.FullName, profileName, svc.FullName, profileName)
 	case err != nil:
-		return "", err
+		return "", describeRequestError(profileName, err)
 	}
 
 	fmt.Fprintf(errOut, "Signed in to %s on profile %s.\n", svc.FullName, profileName)
@@ -201,42 +220,4 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 		fmt.Fprintln(errOut, svc.Known.Note)
 	}
 	return signInStateActive, nil
-}
-
-// signInWorkspaceID returns the workspace ID for the sign-in URL: the one recorded when the service
-// was installed for the profile in configFile, else the profile's own.
-func signInWorkspaceID(ctx context.Context, w *databricks.WorkspaceClient, configFile, profileName, service string) (string, error) {
-	state, err := mcp.LoadState(ctx)
-	if err != nil {
-		return "", err
-	}
-	entry, err := mcp.FindEntry(ctx, state, service, profileName, configFile)
-	if err != nil {
-		return "", err
-	}
-	if entry != nil {
-		return entry.WorkspaceID, nil
-	}
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
-	if err != nil {
-		return "", describeRequestError(profileName, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
-	}
-	return workspaceID, nil
-}
-
-// requireProfile fails when the named profile is not in the Databricks config file.
-func requireProfile(ctx context.Context, name string) error {
-	profiler := profile.GetProfiler(ctx)
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(name))
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return err
-	}
-	if len(profiles) > 0 {
-		return nil
-	}
-	path, err := profiler.GetPath(ctx)
-	if err != nil {
-		return err
-	}
-	return failure(protos.AitoolsErrorCategory(mcp.BindProfileNotFound), nil, "Profile %s not found in %s", name, path)
 }

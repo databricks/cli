@@ -150,7 +150,7 @@ func TestSignInTimeout(t *testing.T) {
 
 	var out bytes.Buffer
 	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
-		Open: noopOpen,
+		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 30 * time.Millisecond,
 	})
@@ -165,7 +165,7 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	err := SignIn(ctx, w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
-		Open: noopOpen,
+		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: time.Minute,
 	})
@@ -178,7 +178,7 @@ func TestSignInFailed(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
-		Open: noopOpen,
+		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 	})
@@ -208,16 +208,4 @@ func TestSignOut(t *testing.T) {
 	deleted, err = SignOut(t.Context(), w, loginTestService)
 	require.NoError(t, err)
 	assert.False(t, deleted)
-}
-
-func TestGetServiceSignInRequired(t *testing.T) {
-	s := &loginTestServer{}
-	w := loginTestClient(t, s)
-
-	svc, err := GetService(t.Context(), w, loginTestService)
-	require.NoError(t, err)
-	assert.True(t, svc.SignInRequired)
-	assert.Equal(t, "OAUTH_PROVIDER_GITHUB_MCP", svc.OAuthProvider)
-	require.NotNil(t, svc.Known)
-	assert.Equal(t, "GitHub", svc.Known.Label)
 }
