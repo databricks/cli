@@ -55,7 +55,10 @@ func closeLogFile(ctx context.Context) {
 	}
 }
 
-func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
+// initializeContext opens the log file and installs the default logger. For a command whose stdout carries a protocol,
+// it refuses a log file that is stdout. That check runs before the logger is installed, so nothing reaches stdout,
+// not even the telemetry upload that follows a refused command.
+func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	if f.debug {
 		err := f.level.Set("debug")
 		if err != nil {
@@ -77,12 +80,27 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 		return nil, err
 	}
 
+	if carriesProtocol(cmd) {
+		toStdout, stdoutErr := writesToStdout(f.file.Writer())
+		if stdoutErr != nil || toStdout {
+			_ = f.file.Close()
+		}
+		if stdoutErr != nil {
+			return nil, stdoutErr
+		}
+		if toStdout {
+			return nil, fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
+		}
+	}
+
 	handler, err := f.makeLogHandler(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	slog.SetDefault(slog.New(handler).With(slog.Int("pid", os.Getpid())))
+	// The log file is closed when Execute returns, after the last log line.
+	ctx = context.WithValue(ctx, logFileKey{}, &f.file)
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
