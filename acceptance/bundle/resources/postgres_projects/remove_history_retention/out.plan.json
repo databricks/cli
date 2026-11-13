@@ -1,15 +1,10 @@
 {
   "action": "update",
   "changes": {
-    "display_name": {
-      "action": "update",
-      "old": "Test Project for History Retention Update",
-      "new": "Test Project for History Retention Update"
-    },
     "history_retention_duration": {
-      "action": "skip",
-      "reason": "remote_already_set",
-      "old": "604800s"
+      "action": "update",
+      "old": "604800s",
+      "remote": "604800s"
     },
     "pg_version": {
       "action": "skip",
