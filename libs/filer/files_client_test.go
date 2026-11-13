@@ -312,14 +312,36 @@ func TestFilesClientRetriesThrottledUploadFromStartOffset(t *testing.T) {
 	assert.Equal(t, []string{"abc", "abc", "abc"}, uploads)
 }
 
-func TestFilesClientDoesNotRetryNonSeekableUpload(t *testing.T) {
+func TestFilesClientRetriesSmallNonSeekableUpload(t *testing.T) {
 	ctx := t.Context()
 	server := testserver.New(t)
-	server.Handle("PUT", "/api/2.0/fs/files/{path...}", throttled(1, ok))
+	var uploads []string
+	put := throttled(2, ok)
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		uploads = append(uploads, string(req.Body))
+		return put(req)
+	})
 	f := newFilesClientWithFastRetries(t, server)
 
-	err := f.Write(ctx, "hello", onlyReader{strings.NewReader("abc")}, CreateParentDirectories)
+	require.NoError(t, f.Write(ctx, "hello", onlyReader{strings.NewReader("abc")}, CreateParentDirectories))
+	assert.Equal(t, []string{"abc", "abc", "abc"}, uploads)
+}
+
+func TestFilesClientDoesNotRetryLargeNonSeekableUpload(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	var sizes []int
+	put := throttled(1, ok)
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		sizes = append(sizes, len(req.Body))
+		return put(req)
+	})
+	f := newFilesClientWithFastRetries(t, server)
+
+	content := strings.Repeat("x", filesReplayBufferSize+1)
+	err := f.Write(ctx, "hello", onlyReader{strings.NewReader(content)}, CreateParentDirectories)
 	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
+	assert.Equal(t, []int{len(content)}, sizes)
 }
 
 func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {

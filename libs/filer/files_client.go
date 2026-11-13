@@ -1,6 +1,7 @@
 package filer
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
@@ -312,18 +313,35 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	return err
 }
 
+// filesReplayBufferSize is the largest non-seekable upload that is buffered in
+// memory so it can be retried. fs cp between remote paths (Volumes or DBFS to
+// Volumes) streams the source download into the upload, so without the buffer
+// a single 503 fails the copy; larger streams are not buffered to keep memory
+// bounded and get one attempt.
+const filesReplayBufferSize = 8 << 20
+
 // uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
 // call because it cannot replay a streamed body, so a seekable reader is rewound
-// to its starting offset and retried here. Other readers get one attempt; that
-// includes pipes, which are *os.File and so implement io.Seeker but fail Seek.
+// to its starting offset and retried here. A non-seekable reader (including a
+// pipe, which is an *os.File whose Seek fails) is buffered if it is at most
+// filesReplayBufferSize bytes; a longer one gets one attempt.
 func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
 	seeker, ok := reader.(io.Seeker)
-	if !ok {
-		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+	var start int64
+	var err error
+	if ok {
+		start, err = seeker.Seek(0, io.SeekCurrent)
 	}
-	start, err := seeker.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+	if !ok || err != nil {
+		head, err := io.ReadAll(io.LimitReader(reader, filesReplayBufferSize+1))
+		if err != nil {
+			return err
+		}
+		if len(head) > filesReplayBufferSize {
+			return w.putFile(ctx, absPath, io.NopCloser(io.MultiReader(bytes.NewReader(head), reader)), overwrite)
+		}
+		buffered := bytes.NewReader(head)
+		reader, seeker, start = buffered, buffered, 0
 	}
 	return ops.Execute(ctx, func(ctx context.Context) error {
 		if _, err := seeker.Seek(start, io.SeekStart); err != nil {
