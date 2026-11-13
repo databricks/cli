@@ -1,0 +1,1 @@
+* Report malformed timestamp and duration values in bundle configuration with their path and location instead of a bare protobuf error, and fix a crash when the value comes from a variable. ([#6945](https://github.com/databricks/cli/pull/6945))

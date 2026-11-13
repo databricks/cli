@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle validate
+Error: cannot parse "2030-01-01" as an RFC 3339 timestamp (e.g. "[TIMESTAMP]")
+  at resources.postgres_branches.bad_expire_time.expire_time
+  in databricks.yml:15:20
+
+Error: cannot parse "1h" as a duration in seconds (e.g. "300s")
+  at resources.postgres_branches.bad_ttl.ttl
+  in databricks.yml:19:12
+
+
+Found 2 errors
+
+Exit code: 1
+
+>>> [CLI] bundle validate
+Error: cannot parse "2030-01-01" as an RFC 3339 timestamp (e.g. "[TIMESTAMP]")
+  at resources.postgres_branches.dev.expire_time
+  in databricks.yml:19:20
+
+Name: sdk-native-types-var-ref
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/sdk-native-types-var-ref/default
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle validate --var expire_time=[TIMESTAMP] -o json
+"[TIMESTAMP]"
