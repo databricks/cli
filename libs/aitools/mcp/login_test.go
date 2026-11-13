@@ -39,6 +39,8 @@ type loginTestServer struct {
 	deleted bool
 	// signedIn is what DELETE answers: true for 200, false for 404.
 	signedIn bool
+	// gate, when set, holds the credential at NOT_FOUND until it returns true. The script does not advance meanwhile.
+	gate func() bool
 }
 
 func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -49,8 +51,11 @@ func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == loginTestServicePath && r.Method == http.MethodGet:
 		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","config":{"source_connection":{"options":{"oauth_provider":"OAUTH_PROVIDER_GITHUB_MCP"}}}}`)
 	case r.URL.Path == loginTestCredPath && r.Method == http.MethodGet:
-		state := s.states[min(s.reads, len(s.states)-1)]
-		s.reads++
+		state := ""
+		if s.gate == nil || s.gate() {
+			state = s.states[min(s.reads, len(s.states)-1)]
+			s.reads++
+		}
 		if state == "" {
 			http.Error(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`, http.StatusNotFound)
 			return
@@ -75,6 +80,24 @@ func (s *loginTestServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 // loginTestSignInURL is the sign-in URL that SignIn is given for the fake's workspace, with workspace ID 123.
 func loginTestSignInURL(w *databricks.WorkspaceClient) string {
 	return SignInURL(w.Config.Host, loginTestService, "123")
+}
+
+// syncBuffer is a bytes.Buffer that the sign-in writes and a fake server reads, from different goroutines.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
 
 func noopOpen(context.Context, string) error {
@@ -107,20 +130,26 @@ func TestSignInPollsUntilActive(t *testing.T) {
 	s := &loginTestServer{states: []string{"", "PROVISIONING", "ACTIVE"}}
 	w := loginTestClient(t, s)
 
-	var opened []string
+	// The browser is opened in the background, so the URL it is given arrives on a channel.
+	opened := make(chan string, 1)
 	var out bytes.Buffer
 	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(_ context.Context, url string) error {
-			opened = append(opened, url)
+			opened <- url
 			return nil
 		},
 	})
 	require.NoError(t, err)
 
 	wantURL := w.Config.Host + "/mcp-service-login?name=system.ai.github&o=123"
-	assert.Equal(t, []string{wantURL}, opened)
+	select {
+	case got := <-opened:
+		assert.Equal(t, wantURL, got)
+	case <-time.After(10 * time.Second):
+		t.Fatal("the browser was not opened")
+	}
 	// The URL is printed before the browser is opened, and polling starts after that.
 	assert.Contains(t, out.String(), "Open this URL to sign in to system.ai.github:\n"+wantURL+"\n")
 	assert.Equal(t, 3, s.reads)
@@ -405,12 +434,14 @@ func TestSignInDoesNotWaitForTheOpener(t *testing.T) {
 // TestSignInReportsOpenerFailure checks that an opener that fails is reported while the wait goes on. The URL is printed
 // before the page opens, so the user can still finish the sign-in by hand.
 func TestSignInReportsOpenerFailure(t *testing.T) {
-	s := &loginTestServer{states: []string{"", "ACTIVE"}}
+	var out syncBuffer
+	s := &loginTestServer{states: []string{"ACTIVE"}}
+	// The credential becomes ACTIVE only after the failure is printed, so the wait cannot end before the message.
+	s.gate = func() bool { return strings.Contains(out.String(), "Could not open a browser") }
 	w := loginTestClient(t, s)
 
-	var out bytes.Buffer
 	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
-		Poll:    50 * time.Millisecond,
+		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
 			return errors.New("no browser here")
