@@ -1,5 +1,8 @@
 
 === serve logs PROXY_STARTED after the binding checks; the upload is sent when stdin closes
+
+>>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
+No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]
 {
   "calling_agent": "CLAUDE_CODE",
   "operation": "PROXY_STARTED",

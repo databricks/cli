@@ -15,3 +15,11 @@ print_telemetry() {
               + (del(.execution_context))'
     fi
 }
+
+# Prints the aitools_mcp_event payloads uploaded since the last call, then forgets the recorded uploads. The uploads are
+# filtered by path with print_requests.py; jq reads only the body.
+mcp_events() {
+  if [ -f "$OUT_REQUESTS" ]; then
+    print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.aitools_mcp_event | select(. != null)'
+  fi
+}

@@ -1,5 +1,7 @@
 
 === login to a service that needs no sign-in: UNCHANGED, sign-in state NOT_REQUIRED
+
+>>> [CLI] aitools mcp login system.ai.genie_one_mcp --profile logfood
 system.ai.genie_one_mcp does not need sign-in.
 {
   "calling_agent": "TYPE_UNSPECIFIED",
@@ -29,6 +31,8 @@ system.ai.genie_one_mcp does not need sign-in.
 }
 
 === login while already signed in: UNCHANGED
+
+>>> [CLI] aitools mcp login system.ai.github --profile logfood
 Already signed in to system.ai.github on profile logfood.
 Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 {
@@ -45,6 +49,8 @@ Public repositories only until a repository owner installs https://github.com/ap
 }
 
 === logout removes the sign-in: CHANGED; a second logout finds nothing: UNCHANGED
+
+>>> [CLI] aitools mcp logout system.ai.github --profile logfood
 Signed out of system.ai.github on profile logfood.
 {
   "calling_agent": "TYPE_UNSPECIFIED",
@@ -57,6 +63,8 @@ Signed out of system.ai.github on profile logfood.
   ],
   "bound_profile_count": 0
 }
+
+>>> [CLI] aitools mcp logout system.ai.github --profile logfood
 Not signed in to system.ai.github on profile logfood.
 {
   "calling_agent": "TYPE_UNSPECIFIED",

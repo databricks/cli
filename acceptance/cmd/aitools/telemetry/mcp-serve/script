@@ -5,21 +5,13 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 # No browser: the proxy prints the sign-in URL and does not open anything.
 export BROWSER=none
 export RETRY_MAX_ATTEMPTS=60
-# Prints the aitools_mcp_event payloads uploaded since the last call, then forgets the recorded uploads.
-mcp_events() {
-  if [ -f "$OUT_REQUESTS" ]; then
-    jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.aitools_mcp_event | select(. != null)' "$OUT_REQUESTS"
-    rm -f "$OUT_REQUESTS"
-  fi
-}
-
 # Seeding the fake is not an MCP command, so its uploads (if any) are dropped here.
-$CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
-$CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
 rm -f "$OUT_REQUESTS"
 
 title "serve logs PROXY_STARTED after the binding checks; the upload is sent when stdin closes"
-$CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests-list.ndjson > /dev/null 2> /dev/null
+trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests-list.ndjson > /dev/null
 mcp_events
 
 title "A binding that fails logs PROXY_STARTED with its category, but no upload follows: there is no config to upload with"
@@ -32,7 +24,7 @@ title "authenticate opens the sign-in page: PROXY_STARTED, then SIGN_IN_PROMPTED
   retry --until '"id":2' cat serve.stdout.txt > /dev/null
   cat requests-authenticate.ndjson
   retry --until "Waiting for sign-in" cat serve.stderr.txt > /dev/null
-  $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+  MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
   retry --until '"id":3' cat serve.stdout.txt > /dev/null
   cat requests-after.ndjson
 } | $CLI aitools mcp serve --profile logfood --service system.ai.github --agent claude-code > serve.stdout.txt 2> serve.stderr.txt

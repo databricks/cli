@@ -6,47 +6,39 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 # No browser: the CLI prints the sign-in URL and polls.
 export BROWSER=none
 export RETRY_MAX_ATTEMPTS=60
-# Prints the aitools_mcp_event payloads uploaded since the last call, then forgets the recorded uploads.
-mcp_events() {
-  if [ -f "$OUT_REQUESTS" ]; then
-    jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.aitools_mcp_event | select(. != null)' "$OUT_REQUESTS"
-    rm -f "$OUT_REQUESTS"
-  fi
-}
-
 # Seeding the fake is not an MCP command, so its uploads (if any) are dropped here.
-$CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
-$CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
 rm -f "$OUT_REQUESTS"
 
 title "login to a service that needs no sign-in: UNCHANGED, sign-in state NOT_REQUIRED"
-$CLI aitools mcp login system.ai.genie_one_mcp --profile logfood > /dev/null
+trace $CLI aitools mcp login system.ai.genie_one_mcp --profile logfood > /dev/null
 mcp_events
 
 title "login completes once the credential is ACTIVE: CHANGED, sign-in state ACTIVE"
 $CLI aitools mcp login system.ai.github --profile logfood > login.txt 2>&1 &
 PID=$!
 retry --until "Waiting for sign-in" cat login.txt > /dev/null
-$CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 wait $PID
 mcp_events
 rm login.txt
 
 title "login while already signed in: UNCHANGED"
-$CLI aitools mcp login system.ai.github --profile logfood > /dev/null
+trace $CLI aitools mcp login system.ai.github --profile logfood > /dev/null
 mcp_events
 
 title "logout removes the sign-in: CHANGED; a second logout finds nothing: UNCHANGED"
-$CLI aitools mcp logout system.ai.github --profile logfood > /dev/null
+trace $CLI aitools mcp logout system.ai.github --profile logfood > /dev/null
 mcp_events
-$CLI aitools mcp logout system.ai.github --profile logfood > /dev/null
+trace $CLI aitools mcp logout system.ai.github --profile logfood > /dev/null
 mcp_events
 
 title "add --login signs in during the same run: SIGN_IN first, then ADD with sign-in state ACTIVE"
 $CLI aitools mcp add --profile logfood --names system.ai.github --agents claude-code --login > add.txt 2>&1 &
 PID=$!
 retry --until "Waiting for sign-in" cat add.txt > /dev/null
-$CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 wait $PID
 mcp_events
 rm add.txt
