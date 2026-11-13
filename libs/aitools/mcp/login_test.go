@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -372,4 +373,49 @@ func TestEndpointNotFoundIsNotTheAnswerAboutTheCredential(t *testing.T) {
 	deleted, err := SignOut(t.Context(), w, loginTestService)
 	require.Error(t, err)
 	assert.False(t, deleted)
+}
+
+// TestSignInDoesNotWaitForTheOpener checks that a browser command still running does not hold up the wait for the
+// sign-in. The command can stay open as long as the browser is.
+func TestSignInDoesNotWaitForTheOpener(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "ACTIVE"}}
+	w := loginTestClient(t, s)
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	done := make(chan error, 1)
+	go func() {
+		done <- SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+			Poll:    time.Millisecond,
+			Timeout: 10 * time.Second,
+			Open: func(context.Context, string) error {
+				<-release
+				return nil
+			},
+		})
+	}()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("the sign-in waited for the browser command to return")
+	}
+}
+
+// TestSignInReportsOpenerFailure checks that an opener that fails is reported while the wait goes on. The URL is printed
+// before the page opens, so the user can still finish the sign-in by hand.
+func TestSignInReportsOpenerFailure(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "ACTIVE"}}
+	w := loginTestClient(t, s)
+
+	var out bytes.Buffer
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+		Poll:    50 * time.Millisecond,
+		Timeout: 10 * time.Second,
+		Open: func(context.Context, string) error {
+			return errors.New("no browser here")
+		},
+	})
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "Could not open a browser (no browser here). Open the URL above.\n")
 }

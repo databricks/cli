@@ -74,10 +74,13 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 
 	fmt.Fprintf(out, "Sign in with the same account you use for Databricks profile %s.\n", opts.Profile)
 	fmt.Fprintf(out, "Open this URL to sign in to %s:\n%s\n", service, url)
+	// The page opens in the background. A browser command can run for as long as the browser is open, and the wait does
+	// not depend on it. Its failure is reported when it returns, if that is before the sign-in completes.
+	var opened <-chan error
 	if !browser.IsDisabled(ctx) {
-		if err := opts.Open(ctx, url); err != nil {
-			fmt.Fprintf(out, "Could not open a browser (%v). Open the URL above.\n", err)
-		}
+		done := make(chan error, 1)
+		go func() { done <- opts.Open(ctx, url) }()
+		opened = done
 	}
 	fmt.Fprintln(out, "Waiting for sign-in...")
 
@@ -95,6 +98,11 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		select {
 		case <-waitCtx.Done():
 			return waitEnded(ctx)
+		case err := <-opened:
+			opened = nil
+			if err != nil {
+				fmt.Fprintf(out, "Could not open a browser (%v). Open the URL above.\n", err)
+			}
 		case <-ticker.C:
 		}
 
