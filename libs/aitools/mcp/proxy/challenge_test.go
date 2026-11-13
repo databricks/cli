@@ -616,7 +616,7 @@ func TestChallengeMatchesServiceNameWithoutCase(t *testing.T) {
 		`{"mode":"url","url":"` + testURL + `"}]}}}`
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, body))
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: "SYSTEM.AI.GITHUB", Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, Recorder: &promptRecorder{}}, io.Discard)
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)
@@ -1051,7 +1051,7 @@ func TestAuthFailureNamesPinnedConfigFile(t *testing.T) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	})
 	b := bridgeFor(srv.URL)
-	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, PinnedFile: "/work/cfg/my file.cfg"}, io.Discard)
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, PinnedFile: "/work/cfg/my file.cfg", Recorder: &promptRecorder{}}, io.Discard)
 	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
 
 	require.Len(t, out, 1)

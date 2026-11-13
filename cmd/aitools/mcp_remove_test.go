@@ -912,18 +912,21 @@ func TestMcpRemoveOfflineSetsUploadWithoutWarning(t *testing.T) {
 	assert.Contains(t, stdout.String(), `"removed"`)
 }
 
+// seedPrunedInstall records an install of genie_one_mcp for logfood in claude-code whose entry the agent config no longer holds.
+func seedPrunedInstall(t *testing.T, claudePath string) {
+	t.Helper()
+	claude := agents.ByName("claude-code")
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+	require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers":{}}`), 0o600))
+}
+
 // TestMcpRemovePrunedEntryReportsChanged checks that an entry the agent config no longer holds is reported CHANGED, since
 // its record is dropped, and FAILED when the state cannot be saved, as a record-only removal is.
 func TestMcpRemovePrunedEntryReportsChanged(t *testing.T) {
 	home := withHome(t)
-	claude := agents.ByName("claude-code")
 	claudePath := filepath.Join(home, ".claude.json")
-	seedPruned := func() {
-		saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
-		require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers":{}}`), 0o600))
-	}
 
-	seedPruned()
+	seedPrunedInstall(t, claudePath)
 	var stdout, logs bytes.Buffer
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
 	require.NoError(t, err)
@@ -933,7 +936,7 @@ func TestMcpRemovePrunedEntryReportsChanged(t *testing.T) {
 	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
 	assert.Equal(t, protos.AitoolsTargetOutcomeChanged, events[0].AitoolsMcpEvent.Servers[0].Outcome)
 
-	seedPruned()
+	seedPrunedInstall(t, claudePath)
 	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
 	t.Cleanup(func() { saveMCPState = mcp.SaveState })
 	stdout.Reset()

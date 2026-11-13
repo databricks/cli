@@ -100,16 +100,13 @@ func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) bool {
 	return true
 }
 
-// boundProfileCount returns the number of distinct profiles that have servers installed. A profile is its name in its
-// config file, as list groups them, so DEFAULT in two config files counts twice.
+// boundProfileCount returns the number of distinct profiles that have servers installed, grouped as list groups them
+// (profileGroup), so DEFAULT in two config files counts twice.
 func boundProfileCount(ctx context.Context, state *mcp.State) int64 {
 	profiles := map[profileKey]bool{}
-	for _, e := range state.Servers {
-		path, err := mcp.ResolveConfigFile(ctx, e.ConfigFile)
-		if err != nil {
-			path = e.ConfigFile
-		}
-		profiles[profileKey{profile: e.Profile, path: path}] = true
+	checks := mcp.CheckEntries(ctx, state)
+	for i, e := range state.Servers {
+		profiles[profileGroup(e, checks[i])] = true
 	}
 	return int64(len(profiles))
 }

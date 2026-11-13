@@ -66,6 +66,8 @@ var knownSystemAI = map[string]KnownService{
 }
 
 // KnownLeaves returns the leaf names of the system.ai services in the CLI's table, sorted.
+//
+//deadcode:allow used by the service-mapping tests
 func KnownLeaves() []string {
 	return slices.Sorted(maps.Keys(knownSystemAI))
 }

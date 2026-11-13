@@ -56,7 +56,7 @@ type mcpSignInAction func(ctx context.Context, errOut io.Writer, w *databricks.W
 
 // NewMcpLoginCmd returns `aitools mcp login`.
 func NewMcpLoginCmd() *cobra.Command {
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "login <service>",
 		Short: "Sign in to a Databricks managed MCP service with your account",
 		Long: `Sign in to a Databricks managed MCP service that uses your account with an external provider, such
@@ -69,12 +69,11 @@ sign-in to complete. Without a browser, open the printed URL yourself.
 			return runMcpSignInCommand(cmd, args[0], mcpLogin, protos.AitoolsMcpOperationSignIn)
 		},
 	}
-	return cmd
 }
 
 // NewMcpLogoutCmd returns `aitools mcp logout`.
 func NewMcpLogoutCmd() *cobra.Command {
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "logout <service>",
 		Short: "Remove your sign-in to a Databricks managed MCP service",
 		Long: `Remove your sign-in to a Databricks managed MCP service on a profile. The install of the server
@@ -86,7 +85,6 @@ stays in place. Running it when you are not signed in is not an error.
 			return runMcpSignInCommand(cmd, args[0], mcpLogout, protos.AitoolsMcpOperationSignOut)
 		},
 	}
-	return cmd
 }
 
 // runMcpSignInCommand resolves the profile for service and runs action. In JSON mode the document is
