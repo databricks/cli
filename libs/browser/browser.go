@@ -67,6 +67,8 @@ var defaultOpenMu sync.Mutex
 // openDefaultURL is the launcher of the default opener. Tests replace it, so that no browser opens on any OS.
 var openDefaultURL = browserpkg.OpenURL
 
+// openDefault opens url with pkg/browser. stdoutToStderr sends the output of the launcher to stderr, as
+// OpenOutputToStderr does. The launcher's error output is discarded.
 func openDefault(url string, stdoutToStderr bool) error {
 	// github.com/pkg/browser writes xdg-open's output to os.Stdout and its error output to os.Stderr, even when the
 	// open succeeds, producing spurious noise on Linux desktops. The error output is discarded. The streams are the
@@ -95,6 +97,8 @@ func openDefault(url string, stdoutToStderr bool) error {
 	return openDefaultURL(url)
 }
 
+// openWithCommand runs browserCmd with url as its argument, through libs/exec, and waits for it to exit. Its output goes
+// to stdout, or to stderr when stdoutToStderr is set.
 func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr bool) error {
 	e, err := exec.NewCommandExecutor(".")
 	if err != nil {

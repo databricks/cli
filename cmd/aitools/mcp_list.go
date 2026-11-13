@@ -468,11 +468,10 @@ func skipUncheckable(p *mcpListProfile) {
 	}
 }
 
-// signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential
-// counts as signed in. A service that does not require sign-in is "", which is not a status. A service the profile can
-// no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error says why. A
-// service that cannot be read is unknown only when the record says the server needed sign-in (recorded); otherwise there
-// is no sign-in to report, and the error is the warning.
+// signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential counts
+// as signed in, and a service that does not require sign-in gives "", which is not a status. A failed read of the
+// credential is unknown. A service the profile can no longer see is unknown only when the record says the server needed
+// sign-in (recorded); otherwise there is no sign-in to report, and the error is the warning.
 func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string, recorded bool) (string, error) {
 	svc, err := serviceFor(ctx, w, profileName, pinnedFile, service)
 	if err != nil {

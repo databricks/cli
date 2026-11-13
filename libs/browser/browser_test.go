@@ -146,22 +146,30 @@ func waitForSleeper(t *testing.T, sleepFile string) {
 	})
 }
 
-// TestOpenOutputToStderrSendsCommandStdoutToStderr checks that the output of a custom browser command goes to stderr, so
-// that it does not land before a JSON document on stdout.
-func TestOpenOutputToStderrSendsCommandStdoutToStderr(t *testing.T) {
-	stdout, stderr, err := runOpener(t, OpenOutputToStderr)
-	require.NoError(t, err)
-	assert.Empty(t, stdout)
-	assert.Contains(t, stderr, "opener stdout")
-}
-
-// TestOpenKeepsCommandStdoutOnStdout checks that Open, which other commands use, still sends the command's stdout to
-// stdout.
-func TestOpenKeepsCommandStdoutOnStdout(t *testing.T) {
-	stdout, stderr, err := runOpener(t, Open)
-	require.NoError(t, err)
-	assert.Contains(t, stdout, "opener stdout")
-	assert.NotContains(t, stderr, "opener stdout")
+// TestOpenCommandOutput checks where the output of a custom browser command goes. OpenOutputToStderr sends it to stderr,
+// so that it does not land before a JSON document on stdout. Open, which other commands use, keeps it on stdout.
+func TestOpenCommandOutput(t *testing.T) {
+	tests := []struct {
+		name       string
+		open       func(context.Context, string) error
+		wantStdout bool
+	}{
+		{name: "OpenOutputToStderr sends the output to stderr", open: OpenOutputToStderr, wantStdout: false},
+		{name: "Open keeps the output on stdout", open: Open, wantStdout: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout, stderr, err := runOpener(t, tt.open)
+			require.NoError(t, err)
+			if tt.wantStdout {
+				assert.Contains(t, stdout, "opener stdout")
+				assert.NotContains(t, stderr, "opener stdout")
+				return
+			}
+			assert.Empty(t, stdout)
+			assert.Contains(t, stderr, "opener stdout")
+		})
+	}
 }
 
 // TestOpenDoesNotWaitForLauncherChild checks that the default opener returns when its launcher returns, although the

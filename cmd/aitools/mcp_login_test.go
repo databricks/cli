@@ -380,17 +380,34 @@ func TestSignInInstalledAuthFailureNamesTheAuthCommand(t *testing.T) {
 	assert.NotContains(t, output, "needs sign-in")
 }
 
-// TestMcpLoginHintQuotesItsArguments checks that the login command a hint prints can be pasted into a shell as written.
-func TestMcpLoginHintQuotesItsArguments(t *testing.T) {
-	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile logfood", mcpLoginHint("system.ai.github", "logfood", ""))
-	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile 'my profile'", mcpLoginHint("system.ai.github", "my profile", ""))
-}
-
-// TestMcpLoginHintNamesPinnedConfigFile checks that the hint for a server pinned to a config file sets DATABRICKS_CONFIG_FILE,
-// so that the login reads the file the profile is in.
-func TestMcpLoginHintNamesPinnedConfigFile(t *testing.T) {
-	assert.Equal(t, "DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks aitools mcp login system.ai.github --profile logfood",
-		mcpLoginHint("system.ai.github", "logfood", "/work/cfg/logfood.cfg"))
+// TestMcpLoginHint checks the login command that a hint prints: it can be pasted into a shell as written, and a server
+// pinned to a config file sets DATABRICKS_CONFIG_FILE, so that the login reads the file the profile is in.
+func TestMcpLoginHint(t *testing.T) {
+	tests := []struct {
+		name, profile, pinnedFile, want string
+	}{
+		{
+			name:    "plain profile",
+			profile: "logfood",
+			want:    "databricks aitools mcp login system.ai.github --profile logfood",
+		},
+		{
+			name:    "profile name that needs quoting",
+			profile: "my profile",
+			want:    "databricks aitools mcp login system.ai.github --profile 'my profile'",
+		},
+		{
+			name:       "pinned to a config file",
+			profile:    "logfood",
+			pinnedFile: "/work/cfg/logfood.cfg",
+			want:       "DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks aitools mcp login system.ai.github --profile logfood",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, mcpLoginHint("system.ai.github", tt.profile, tt.pinnedFile))
+		})
+	}
 }
 
 // TestMcpLoginJSONURLIsNamedOnlyWhenThePageIsShown checks that the document names the sign-in URL when a page was shown,

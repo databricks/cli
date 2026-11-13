@@ -890,7 +890,8 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 	return errors.Join(errs...)
 }
 
-// signInHint is the command that signs the profile in to a sign-in-required service.
+// signInHint returns the sentence that says a sign-in-required service needs sign-in, with the command that signs the
+// profile in.
 func signInHint(service, profileName, pinnedFile string) string {
 	return fmt.Sprintf("%s needs sign-in. Run: %s", service, mcpLoginHint(service, profileName, pinnedFile))
 }

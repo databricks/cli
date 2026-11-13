@@ -103,11 +103,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	}
 	fmt.Fprintln(out, "Waiting for sign-in...")
 
-	// The timeout cancels the wait from a timer, not with a context deadline: the SDK's rate limiter refuses a request
-	// whose wait would exceed a deadline, which would hide the timeout (see
-	// https://github.com/databricks/databricks-sdk-go/blob/v0.197.0/httpclient/api_client.go and
-	// https://github.com/golang/time/blob/v0.14.0/rate/rate.go). A poll still in flight is cut off too, so the SDK's
-	// retries of a slow poll cannot hold the command past the timeout.
+	// The timeout cancels the wait from a timer, not a context deadline: the SDK's rate limiter refuses a request whose
+	// wait would exceed the deadline, which would hide the timeout (https://github.com/golang/time/blob/v0.14.0/rate/rate.go).
+	// A poll still in flight is cut off too.
 	waitCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	timer := time.AfterFunc(opts.Timeout, cancel)
