@@ -85,11 +85,11 @@ type signInHooks struct {
 	// completed. The user may still be on that page, so the next attempt does not open it again.
 	pageCancelled bool
 
-	// stateMu guards the three fields below. It is held only briefly, so an answer to a request is not held up by a
-	// sign-in.
+	// stateMu guards the fields below. It is held only briefly, so an answer to a request is not held up by a sign-in.
 	stateMu sync.Mutex
 	// exposed means the agent's list shows the authenticate tool: a challenge sets it, and a tools/list that passes through
-	// unchallenged clears it. The tool is the proxy's only while it is exposed.
+	// unchallenged clears it, unless a call challenge is pending (see callChallenged). The tool is the proxy's only while it
+	// is exposed.
 	exposed bool
 	// alreadySignedIn means the last authenticate answered "Already signed in".
 	alreadySignedIn bool
