@@ -194,7 +194,7 @@ func TestStaticListTable(t *testing.T) {
 
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "▸", "static table has no selection")
-	for _, want := range []string{"Run ID", "1", "qwen-train", "qwen-run-001", "Accelerators"} {
+	for _, want := range []string{"Run ID", "1", "qwen-train", "1m 14s", "qwen-run-001", "8x H100", "Accelerators"} {
 		assert.Contains(t, out, want)
 	}
 
