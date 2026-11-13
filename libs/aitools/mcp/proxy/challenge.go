@@ -32,7 +32,7 @@ var urlPattern = sync.OnceValue(func() *regexp.Regexp {
 // queueProgressInterval is how often a call that waits for the sign-in ahead of it reports progress. Tests shorten it.
 var queueProgressInterval = 2 * time.Second
 
-var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"` + methodListChanged + `"}`)
+var listChangedNotification = []byte(`{"jsonrpc":"` + jsonrpcVersion + `","method":"` + methodListChanged + `"}`)
 
 // SignInRequest says how one sign-in runs.
 type SignInRequest struct {
@@ -442,7 +442,7 @@ func progressNotification(token json.RawMessage, n int, label, pageURL string) [
 	}
 	// Cannot fail: the token came from a parsed request and the rest holds plain values.
 	b, _ := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
+		"jsonrpc": jsonrpcVersion,
 		"method":  methodProgress,
 		"params": map[string]any{
 			"progressToken": token,
@@ -450,17 +450,6 @@ func progressNotification(token json.RawMessage, n int, label, pageURL string) [
 			"message":       message,
 		},
 	})
-	return b
-}
-
-// resultResponse builds a JSON-RPC success response.
-func resultResponse(id json.RawMessage, result any) []byte {
-	// Cannot fail: the id came from a parsed request and result holds only plain values.
-	b, _ := json.Marshal(struct {
-		JSONRPC string          `json:"jsonrpc"`
-		ID      json.RawMessage `json:"id"`
-		Result  any             `json:"result"`
-	}{JSONRPC: "2.0", ID: id, Result: result})
 	return b
 }
 
