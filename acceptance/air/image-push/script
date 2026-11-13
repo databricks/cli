@@ -61,3 +61,22 @@ cmp "$DOCKER_LOG" "$HOME/docker.before-length.log"
 
 title "all docker commands"
 cat "$DOCKER_LOG"
+
+title "in a Claude Code session the auth docker configure child adds no install hint"
+# As in a Claude Code tool call, with no session id, so the session throttle
+# can't be what keeps the child quiet. The CI variables would drop the native
+# line in CI only.
+unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID CLAUDE_CODE_SESSION_ID
+# A host CLAUDE_CONFIG_DIR would move the plugin lookup away from the isolated HOME.
+unset CLAUDE_CONFIG_DIR
+export CLAUDECODE=1 CLAUDE_CODE_CHILD_SESSION=1
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+[pat-test]
+host = $DATABRICKS_HOST_ORIG
+token = dapi-test
+auth_type = pat
+ENDCFG
+# The failing child's output is embedded mid-line in the error, where Claude
+# Code can't strip a native line.
+trace musterr databricks air images push -p pat-test -s example/image:v1 --catalog main --schema training

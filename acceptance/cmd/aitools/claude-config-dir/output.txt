@@ -7,6 +7,7 @@ Databricks CLI v[CLI_VERSION]
 === Custom directory takes precedence over the default installation
 
 >>> CLAUDE_CONFIG_DIR=missing [CLI] version
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 Databricks CLI v[CLI_VERSION]
 
@@ -16,6 +17,22 @@ Databricks CLI v[CLI_VERSION]
 Databricks CLI v[CLI_VERSION]
 
 === Unset override uses the default installation
+
+>>> [CLI] version
+Databricks CLI v[CLI_VERSION]
+
+=== Outside a Claude Code subprocess only the text hint prints
+
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] version
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
+
+=== Within one session both lines print once, so 2>&1 pipelines see them only on the first command
+
+>>> [CLI] version
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
 
 >>> [CLI] version
 Databricks CLI v[CLI_VERSION]
