@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -144,4 +145,29 @@ func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testi
 	assert.Equal(t, "…56789abcdef (retry 0)", rows[0].MLflowLabel)
 	assert.Equal(t, mlflowColWidth, lipgloss.Width(rows[0].MLflowLabel))
 	assert.Contains(t, info, mlflowRunID+" (retry 0)")
+}
+
+func TestInfoPaneShowsExperimentAndAcceleratorsLikeAirGet(t *testing.T) {
+	// Given a finished run whose ai_runtime_task names its experiment and compute.
+	run := indexRun(7, 1000_000)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
+			_ = json.NewEncoder(w).Encode(run)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	// When the info pane renders the run.
+	info, err := runDetailText(ctx, w, 7)
+	require.NoError(t, err)
+
+	// Then it shows the experiment and accelerators that `air get` shows for the
+	// same run, instead of their "N/A" fallbacks.
+	plain := ansi.Strip(info)
+	assert.Contains(t, plain, "Experiment    exp ")
+	assert.Contains(t, plain, "Accelerators  1x H100 ")
 }

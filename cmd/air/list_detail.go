@@ -32,6 +32,11 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		url := mlflowLogsURL(w.Config.Host, ids)
 		data.MLflowURL = &url
 	}
+	// Same as `air get`: the experiment and accelerators come from the run's
+	// ai_runtime_task; a sweep or GenAI compute run has none.
+	if findForEachTask(run) == nil && genAIComputeTask(run) == nil {
+		enrichFromAiRuntimeTask(run, &data)
+	}
 
 	var buf bytes.Buffer
 	renderRunText(ctx, &buf, w, run, &data, ids)
