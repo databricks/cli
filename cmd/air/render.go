@@ -376,8 +376,13 @@ func renderBox(p palette, title, body string) string {
 
 // renderFields draws the two-column summary: muted labels right-padded to the
 // longest one, neutral values, a status-colored Status, and blue Run ID / MLflow
-// Run hyperlinks.
+// Run hyperlinks. The experiment, MLflow run and user values are server-supplied
+// names, so they are stripped of control characters before they reach the
+// terminal.
 func renderFields(p palette, colorOn bool, v runView) string {
+	v.experiment = stripControl(v.experiment)
+	v.mlflowLabel = stripControl(v.mlflowLabel)
+	v.user = stripControl(v.user)
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),

@@ -184,11 +184,12 @@ func listRowStatus(r listRow) string {
 	return r.Status
 }
 
-// cell renders one padded, colored cell. The text is truncated to width, then
-// padded with (background-only) spaces so columns align even when the text is
-// styled or hyperlinked.
+// cell renders one padded, colored cell. The text is stripped of control
+// characters (it may come from the server, or from a cache written before this
+// stripping existed), truncated to width, then padded with (background-only)
+// spaces so columns align even when the text is styled or hyperlinked.
 func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipgloss.Color, right, underline bool, link string) string {
-	text = truncate(text, width)
+	text = truncate(stripControl(text), width)
 	style := base.Foreground(fg)
 	if underline {
 		style = style.Underline(true)
