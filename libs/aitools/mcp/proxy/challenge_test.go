@@ -130,8 +130,8 @@ func toolNames(t *testing.T, line string) []string {
 
 func TestChallengeReplacesListWithAuthenticateTool(t *testing.T) {
 	cases := map[string]http.HandlerFunc{
-		"rpc -32006": answerWith(http.StatusOK, listChallenge),
-		"http 401":   unauthorized,
+		"rpc -32006":                   answerWith(http.StatusOK, listChallenge),
+		"http 401 with a sign-in body": answerWith(http.StatusUnauthorized, listChallenge),
 		"url elicitation": answerWith(http.StatusOK, `{"jsonrpc":"2.0","id":2,"error":{"code":-32042,"message":"x","data":{"elicitations":[`+
 			`{"mode":"url","url":"`+testURL+`"}]}}}`),
 	}
@@ -910,4 +910,78 @@ func TestAuthenticateProgressNamesThePageWhenItIsNotOpened(t *testing.T) {
 
 	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1,"message":"Waiting for the sign-in to GitHub to complete."}}`, lines[1])
 	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1,"message":"Waiting for the sign-in to GitHub to complete. Finish at `+testURL+`"}}`, lines[4])
+}
+
+// TestUnauthorizedIsAuthFailureUnlessItAsksForSignIn checks that a 401 is a provider sign-in challenge only when its body
+// asks for one. A 401 that is bare, or whose body is a Databricks authentication error, rejects the Databricks credential,
+// which a provider sign-in does not fix. It is answered with the login hint, and offers no authenticate tool.
+func TestUnauthorizedIsAuthFailureUnlessItAsksForSignIn(t *testing.T) {
+	cases := map[string]string{
+		"bare":             "unauthorized",
+		"databricks error": `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`,
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, _ *http.Request) {
+				http.Error(w, body, http.StatusUnauthorized)
+			})
+			signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
+			out, _ := runAll(t, challengedBridge(srv.URL, signIn.SignIn), `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+			require.Len(t, out, 1)
+			reply := parseReply(t, out[0])
+			require.NotNil(t, reply.Error)
+			assert.Equal(t, codeUpstream, reply.Error.Code)
+			assert.Contains(t, reply.Error.Message, "Run: databricks auth login --profile logfood, then restart the MCP server in your agent")
+			assert.Empty(t, signIn.calls(), "a rejected credential starts no sign-in")
+		})
+	}
+}
+
+// TestRejectedCredentialDoesNotRestartSignIn checks the loop that a rejected Databricks token made: the credential reads as
+// signed in, the service rejects the token with a 401, and a later authenticate used to delete the provider credential.
+// The 401 is an auth failure, so no sign-in is restarted.
+func TestRejectedCredentialDoesNotRestartSignIn(t *testing.T) {
+	var rejected atomic.Bool
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if rejected.Load() {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		listAnswer(&challenged)(w, r)
+	})
+	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 3)
+
+	// The credential reads as signed in, and the service now rejects the token on the re-list.
+	rejected.Store(true)
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	p.waitLines(t, 4)
+	p.send(t, fmt.Sprintf(authenticate, 7))
+	p.waitLines(t, 6)
+	require.NoError(t, p.finish(t))
+
+	reqs := signIn.requests()
+	require.Len(t, reqs, 2)
+	assert.False(t, reqs[1].Restart, "the rejected token does not restart the provider sign-in")
+}
+
+// TestAuthFailureNamesPinnedConfigFile checks that the auth hint names the config file a server is pinned to, as the
+// other hints do, and quotes it for a shell.
+func TestAuthFailureNamesPinnedConfigFile(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	})
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, PinnedFile: "/work/cfg/my file.cfg"}, io.Discard)
+	out, _ := runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	require.Len(t, out, 1)
+	assert.Contains(t, parseReply(t, out[0]).Error.Message, "Run: DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks auth login --profile logfood, then restart")
 }

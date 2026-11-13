@@ -202,6 +202,7 @@ func serveChallenge(ctx context.Context, t serveTarget) (*proxy.Challenge, error
 		Host:         t.w.Config.Host,
 		Label:        mcp.ProviderLabel(t.service),
 		LoginCommand: mcpLoginHint(t.service, t.profile, t.pinnedFile),
+		PinnedFile:   t.pinnedFile,
 		SignIn:       serveSignIn(t),
 	}, nil
 }

@@ -63,6 +63,8 @@ type Challenge struct {
 	Label string
 	// LoginCommand is the command that signs the profile in to the service, as the hints print it.
 	LoginCommand string
+	// PinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile). The auth hint names it.
+	PinnedFile string
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
 	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
@@ -128,16 +130,20 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 }
 
 // Result replaces a challenged tools/list answer with the authenticate tool. A challenged tools/call
-// answer becomes a sign-in message, followed by tools/list_changed so an agent that cached its list re-lists.
+// answer becomes a sign-in message, followed by tools/list_changed so an agent that cached its list re-lists. A 401 that
+// is not a challenge becomes the auth failure (see authFailure).
 func (h *signInHooks) Result(_ context.Context, request []byte, status int, message []byte) ([][]byte, error) {
 	req, err := parseMessage(request)
 	if err != nil {
 		return nil, err
 	}
+	if status == http.StatusUnauthorized && !h.challenged(message) {
+		return [][]byte{errorResponse(req.ID, codeUpstream, h.authFailure())}, nil
+	}
 	if req.Method != methodToolsList && req.Method != methodToolsCall {
 		return [][]byte{message}, nil
 	}
-	if !h.isChallenge(status, message) {
+	if !h.isChallenge(message) {
 		h.succeeded(req.Method, status)
 		return [][]byte{message}, nil
 	}
@@ -148,8 +154,8 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 }
 
 // isChallenge reports whether an upstream answer is a challenge, and records that the session has been challenged.
-func (h *signInHooks) isChallenge(status int, message []byte) bool {
-	if !h.challenged(status, message) {
+func (h *signInHooks) isChallenge(message []byte) bool {
+	if !h.challenged(message) {
 		return false
 	}
 	h.stateMu.Lock()
@@ -193,12 +199,9 @@ type textContent struct {
 	Text string `json:"text"`
 }
 
-// challenged reports whether an upstream answer says the caller must sign in: HTTP 401, JSON-RPC
-// -32006, a -32042 whose elicitations are all sign-in URLs, or an isError result whose text has one.
-func (h *signInHooks) challenged(status int, message []byte) bool {
-	if status == http.StatusUnauthorized {
-		return true
-	}
+// challenged reports whether an upstream answer says the caller must sign in: JSON-RPC -32006, a -32042 whose elicitations
+// are all sign-in URLs, or an isError result whose text has one. An HTTP 401 is a challenge only with one of these bodies.
+func (h *signInHooks) challenged(message []byte) bool {
 	var reply upstreamReply
 	if err := json.Unmarshal(message, &reply); err != nil {
 		return false
@@ -260,6 +263,13 @@ func (h *signInHooks) isSignInURL(raw string) bool {
 	}
 	return u.Scheme == base.Scheme && strings.EqualFold(u.Host, base.Host) &&
 		u.Path == mcp.SignInPath && strings.EqualFold(u.Query().Get("name"), h.c.Service)
+}
+
+// authFailure is the answer to a 401 that does not ask for a sign-in: the Databricks credential was rejected, and the
+// profile's login fixes that. The text is the refresh guard's, so the two read alike.
+func (h *signInHooks) authFailure() string {
+	cause := errors.New("the MCP service rejected the credential of the profile (HTTP 401)")
+	return fmt.Sprintf("%v, then restart the MCP server in your agent", mcp.AuthError(h.c.Profile, h.c.PinnedFile, cause))
 }
 
 // authenticateList is the one-tool list a challenged service answers with.
