@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Root arrays serialize to JSON strings and string variables retain their formatting"
+trace $CLI bundle validate -o json | jq '.resources.jobs.fan.tasks | map({task_key, inputs: .for_each_task.inputs})'
+
+trace $CLI bundle deploy
+trace print_requests.py //jobs --nostamp
+
+title "A target array replaces the root array for the same task key"
+trace $CLI bundle validate -o json -t override | jq '.resources.jobs.fan.tasks | map({task_key, inputs: .for_each_task.inputs})'
+
+trace $CLI bundle deploy -t override
+trace print_requests.py //jobs --nostamp
+
+trace $CLI bundle destroy --auto-approve -t override
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

@@ -1,0 +1,57 @@
+bundle:
+  name: for_each_inputs
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME/${bundle.target}
+
+variables:
+  inputs:
+    default: '[ "from_variable", "unchanged_spacing" ]'
+
+resources:
+  jobs:
+    fan:
+      name: for-each-inputs-$UNIQUE_NAME-${bundle.target}
+      tasks:
+        - task_key: array
+          for_each_task:
+            inputs: [root_first, root_second]
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: ./notebook.py
+                source: WORKSPACE
+        - task_key: objects
+          for_each_task:
+            inputs:
+              - name: 'quoted "name" with \backslash'
+                count: 3
+                enabled: true
+              - name: second
+                count: 0
+                enabled: false
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: ./notebook.py
+                source: WORKSPACE
+        - task_key: string_variable
+          for_each_task:
+            inputs: ${var.inputs}
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: ./notebook.py
+                source: WORKSPACE
+
+targets:
+  default:
+    default: true
+  override:
+    resources:
+      jobs:
+        fan:
+          tasks:
+            - task_key: array
+              for_each_task:
+                inputs: [target_only]

@@ -40,6 +40,9 @@ func TestLoadForEachTaskInputs(t *testing.T) {
 		{name: "YAML array", inputs: "[input_1, input_2]", want: `["input_1","input_2"]`},
 		{name: "YAML object array", inputs: "[{name: input_1, enabled: true}]", want: `[{"enabled":true,"name":"input_1"}]`},
 		{name: "empty YAML array", inputs: "[]", want: `[]`},
+		{name: "YAML dates", inputs: "[2024-01-01, 2024-01-02]", want: `["2024-01-01","2024-01-02"]`},
+		{name: "quoted YAML elements", inputs: `["a\"b", "line\nbreak"]`, want: `["a\"b","line\nbreak"]`},
+		{name: "escaped reference in YAML array", inputs: `["$${var.item}"]`, want: `["$${var.item}"]`},
 		{name: "JSON string", inputs: `'[ "input_1", "input_2" ]'`, want: `[ "input_1", "input_2" ]`},
 		{name: "variable reference string", inputs: `${var.items}`, want: `${var.items}`},
 	} {
@@ -61,9 +64,45 @@ func TestLoadForEachTaskInputs(t *testing.T) {
 	}
 }
 
+func TestLoadForEachTaskInputsRejectsArrayReferences(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		inputs string
+		prefix string
+		target bool
+	}{
+		{name: "root element", inputs: `["${var.item}_x", y]`, prefix: "resources.jobs.fan"},
+		{name: "nested object value", inputs: `[{name: "${var.item}"}]`, prefix: "resources.jobs.fan"},
+		{name: "target override", inputs: `["${var.item}"]`, prefix: "targets.dev.resources.jobs.fan", target: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var config string
+			if tc.target {
+				config = "bundle:\n  name: foreach\nvariables:\n  item:\n    default: input_1\ntargets:\n  dev:\n    resources:\n      jobs:\n        fan:\n          tasks:\n            - task_key: fan\n              for_each_task:\n                inputs: " + tc.inputs + "\n                task:\n                  task_key: inner\n"
+			} else {
+				config = "bundle:\n  name: foreach\nvariables:\n  item:\n    default: input_1\nresources:\n  jobs:\n    fan:\n      tasks:\n        - task_key: fan\n          for_each_task:\n            inputs: " + tc.inputs + "\n            task:\n              task_key: inner\n"
+			}
+			root, diags := LoadFromBytes("databricks.yml", []byte(config))
+			require.Nil(t, root)
+			require.ErrorContains(t, diags.Error(), "variable reference ${var.item} in a YAML array")
+			assert.ErrorContains(t, diags.Error(), tc.prefix+".tasks[0].for_each_task.inputs")
+			assert.ErrorContains(t, diags.Error(), "databricks.yml:")
+		})
+	}
+}
+
 func TestLoadForEachTaskInputsInTarget(t *testing.T) {
 	config := `bundle:
   name: foreach
+resources:
+  jobs:
+    fan:
+      tasks:
+        - task_key: fan
+          for_each_task:
+            inputs: [root_1]
+            task:
+              task_key: inner
 targets:
   dev:
     resources:
@@ -78,9 +117,12 @@ targets:
 `
 	root, diags := LoadFromBytes("databricks.yml", []byte(config))
 	require.NoError(t, diags.Error())
+	require.Equal(t, `["root_1"]`, root.Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
 	require.Equal(t, `["input_1","input_2"]`, root.Targets["dev"].Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
 	require.NoError(t, root.MergeTargetOverrides("dev"))
-	assert.Equal(t, `["input_1","input_2"]`, root.Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
+	require.Len(t, root.Resources.Jobs["fan"].Tasks, 2)
+	assert.Equal(t, `["root_1"]`, root.Resources.Jobs["fan"].Tasks[0].ForEachTask.Inputs)
+	assert.Equal(t, `["input_1","input_2"]`, root.Resources.Jobs["fan"].Tasks[1].ForEachTask.Inputs)
 }
 
 func TestInitializeVariables(t *testing.T) {

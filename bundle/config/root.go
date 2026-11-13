@@ -558,34 +558,47 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	}))
 }
 
+// rewriteForEachTaskInputs encodes literal arrays before SDK string normalization.
+// References in arrays require the string form; other kinds normalize unchanged.
 func rewriteForEachTaskInputs(v dyn.Value) (dyn.Value, error) {
-	return dyn.Walk(v, func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
-		if !isForEachTaskInputsPath(p) || input.Kind() != dyn.KindSequence {
-			return input, nil
-		}
+	inputs := dyn.NewPattern(
+		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+		dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("for_each_task"), dyn.Key("inputs"),
+	)
+	for _, prefix := range []dyn.Pattern{
+		nil,
+		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()),
+		dyn.NewPattern(dyn.Key("environments"), dyn.AnyKey()),
+	} {
+		var err error
+		v, err = dyn.MapByPattern(v, prefix.Append(inputs...), func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
+			if input.Kind() != dyn.KindSequence {
+				return input, nil
+			}
 
-		data, err := json.Marshal(input.AsAny())
+			array, err := dyn.Walk(input, func(_ dyn.Path, value dyn.Value) (dyn.Value, error) {
+				if value.Kind() == dyn.KindTime {
+					return dyn.NewValue(value.MustTime().String(), value.Locations()), nil
+				}
+				return value, nil
+			})
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+			data, err := json.Marshal(array.AsAny())
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
+			}
+			if ref, ok := dynvar.NewRef(dyn.V(string(data))); ok {
+				return dyn.InvalidValue, fmt.Errorf("%s at %s contains variable reference ${%s} in a YAML array; use a JSON string for interpolated inputs", p, input.Location(), ref.References()[0])
+			}
+			return dyn.NewValue(string(data), input.Locations()), nil
+		})
 		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
+			return dyn.InvalidValue, err
 		}
-		// Leave unresolved references for normal validation instead of interpolating into JSON text.
-		if dynvar.ContainsVariableReference(string(data)) {
-			return input, nil
-		}
-		return dyn.NewValue(string(data), input.Locations()), nil
-	})
-}
-
-func isForEachTaskInputsPath(p dyn.Path) bool {
-	if len(p) == 9 && (p[0] == dyn.Key("targets") || p[0] == dyn.Key("environments")) && p[1].Key() != "" {
-		p = p[2:]
 	}
-	return len(p) == 7 &&
-		p.HasPrefix(dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))) &&
-		p[2].Key() != "" &&
-		p[3] == dyn.Key("tasks") &&
-		p[4].Key() == "" &&
-		p.HasSuffix(dyn.NewPath(dyn.Key("for_each_task"), dyn.Key("inputs")))
+	return v, nil
 }
 
 // validateVariableOverrides checks that all variables specified

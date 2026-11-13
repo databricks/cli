@@ -10031,9 +10031,16 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "inputs": {
-                      "description": "Array for task to iterate on. This can be a JSON string or a reference to\nan array parameter.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "GA"
+                      "description": "Inputs for each task, as a literal YAML array or a string containing JSON or a reference.",
+                      "x-databricks-launch-stage": "GA",
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/string"
+                        },
+                        {
+                          "type": "array"
+                        }
+                      ]
                     },
                     "task": {
                       "description": "Configuration for the task that will be run for each element in the array",
