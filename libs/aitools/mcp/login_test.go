@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -162,12 +163,15 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 	s := &loginTestServer{states: []string{""}}
 	w := loginTestClient(t, s)
 
+	// The caller cancels once the sign-in page is open, so the wait is what is cancelled.
 	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
 	err := SignIn(ctx, w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
-		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: time.Minute,
+		Open: func(context.Context, string) error {
+			cancel()
+			return nil
+		},
 	})
 	require.ErrorIs(t, err, context.Canceled)
 	assert.NotErrorIs(t, err, ErrSignInTimeout)
@@ -208,4 +212,66 @@ func TestSignOut(t *testing.T) {
 	deleted, err = SignOut(t.Context(), w, loginTestService)
 	require.NoError(t, err)
 	assert.False(t, deleted)
+}
+
+// TestSignInFailedFromEarlierAttemptIsNotTheResult checks that a FAILED credential left by an earlier attempt is not the
+// result of this one. The state only counts as failed once it changes, so the new sign-in can still complete.
+func TestSignInFailedFromEarlierAttemptIsNotTheResult(t *testing.T) {
+	s := &loginTestServer{states: []string{"FAILED", "FAILED", "ACTIVE"}}
+	w := loginTestClient(t, s)
+
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Poll:    time.Millisecond,
+		Timeout: 10 * time.Second,
+		Open:    noopOpen,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 3, s.reads)
+}
+
+// TestSignInFailedAfterProgressIsFailed checks that a FAILED state that follows a change of state fails the sign-in.
+func TestSignInFailedAfterProgressIsFailed(t *testing.T) {
+	s := &loginTestServer{states: []string{"FAILED", "PROVISIONING", "FAILED"}}
+	w := loginTestClient(t, s)
+
+	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Poll:    time.Millisecond,
+		Timeout: 10 * time.Second,
+		Open:    noopOpen,
+	})
+	require.ErrorIs(t, err, ErrSignInFailed)
+}
+
+// TestSignInTimeoutCutsOffPendingRequest checks that a poll still in flight when the wait ends is cut off, and that the
+// end of the wait is ErrSignInTimeout, not the API error of the cut request.
+func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
+	var reads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if reads.Add(1) == 1 {
+			// The first read, before the wait, finds no credential.
+			http.Error(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`, http.StatusNotFound)
+			return
+		}
+		// A later poll hangs, as a slow workspace does, until the client gives up.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(10 * time.Second):
+		}
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	start := time.Now()
+	err = SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Poll:    time.Millisecond,
+		Timeout: 200 * time.Millisecond,
+		Open:    noopOpen,
+	})
+	require.ErrorIs(t, err, ErrSignInTimeout)
+	assert.Less(t, time.Since(start), 5*time.Second)
 }

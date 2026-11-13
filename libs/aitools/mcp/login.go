@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-// SignInPollInterval and SignInWaitTimeout are the polling settings of provider sign-in (SPEC 12).
+// SignInPollInterval and SignInWaitTimeout are the polling settings of provider sign-in.
 const (
 	SignInPollInterval = 2 * time.Second
 	SignInWaitTimeout  = 5 * time.Minute
@@ -71,34 +71,50 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	}
 	fmt.Fprintln(out, "Waiting for sign-in...")
 
-	deadline := time.NewTimer(opts.Timeout)
-	defer deadline.Stop()
+	// The timeout cancels the wait from a timer, not with a context deadline: the SDK rate limiter refuses a request
+	// whose wait would exceed a deadline, which would hide the timeout. A poll still in flight is cut off too, so the
+	// SDK's retries of a slow poll cannot hold the command past the timeout.
+	waitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	timer := time.AfterFunc(opts.Timeout, cancel)
+	defer timer.Stop()
 	ticker := time.NewTicker(opts.Poll)
 	defer ticker.Stop()
 
-	// The deadline is a timer, not a context deadline: the SDK rate limiter refuses a request
-	// whose context would expire before it may run, which would hide the timeout.
+	// A FAILED state left by an earlier attempt is still there when this one starts. FAILED counts only once the
+	// state has changed since the previous read, so it is the result of this attempt.
+	previous := state
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-deadline.C:
-			return ErrSignInTimeout
+		case <-waitCtx.Done():
+			return waitEnded(ctx)
 		case <-ticker.C:
 		}
 
-		state, err := CredentialState(ctx, w, service)
+		state, err := CredentialState(waitCtx, w, service)
 		if err != nil {
+			if waitCtx.Err() != nil {
+				return waitEnded(ctx)
+			}
 			return err
 		}
 		// Other states (PROVISIONING, UPDATING, ...) mean the login has not completed yet.
 		if state == catalog.ProvisioningInfoStateActive {
 			return nil
 		}
-		if state == catalog.ProvisioningInfoStateFailed {
+		if state == catalog.ProvisioningInfoStateFailed && state != previous {
 			return ErrSignInFailed
 		}
+		previous = state
 	}
+}
+
+// waitEnded returns why the sign-in wait ended: the caller's cancellation, or else the timeout.
+func waitEnded(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return ErrSignInTimeout
 }
 
 // SignOut deletes the caller's sign-in to a service. It reports false when the caller was not
