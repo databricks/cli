@@ -880,6 +880,46 @@ func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
 	}
 }
 
+// TestCheckProfileWithoutServer checks the profile check of a run that has no service yet. A missing profile and a
+// profile with no host name the profile and no server, and an unreadable config file is uncategorized.
+func TestCheckProfileWithoutServer(t *testing.T) {
+	login := "databricks auth login --profile " + bindingTestProfile
+	tests := []struct {
+		name     string
+		contents string
+		want     string
+		category mcp.BindCategory
+	}{
+		{
+			name:     "missing",
+			contents: "[other]\nhost = https://other.test\n",
+			want:     "Databricks profile \"logfood\", which does not exist in %s. Set it up with: " + login,
+			category: mcp.BindProfileNotFound,
+		},
+		{
+			name:     "no host",
+			contents: "[" + bindingTestProfile + "]\naccount_id = 123\n",
+			want:     "Databricks profile \"logfood\", which has no host in %s. Set it up with: " + login,
+			category: mcp.BindProfileNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := bindingTestResolved(t, bindingTestWriteConfig(t, tt.contents))
+
+			err := mcp.CheckProfile(bindingTestProfile, path)
+			requireBindError(t, err, tt.category)
+			assert.Equal(t, fmt.Sprintf(tt.want, filepath.ToSlash(path)), err.Error())
+		})
+	}
+
+	t.Run("unreadable", func(t *testing.T) {
+		// A directory cannot be read as a config file.
+		err := mcp.CheckProfile(bindingTestProfile, bindingTestResolved(t, t.TempDir()))
+		requireBindError(t, err, mcp.BindUncategorized)
+	})
+}
+
 func TestAuthErrorNamesPinnedConfigFile(t *testing.T) {
 	cause := errors.New("Invalid access token.")
 	assert.EqualError(t, mcp.AuthError("logfood", "/work/cfg/logfood.cfg", cause),

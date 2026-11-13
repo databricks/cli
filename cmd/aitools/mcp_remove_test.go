@@ -36,7 +36,7 @@ func TestValidateMCPRemoveFlags(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateMCPRemoveFlags(tc.all, tc.names, tc.profile)
+			err := validateMCPRemoveFlags(tc.all, tc.names, tc.profile, false)
 			if tc.want == "" {
 				assert.NoError(t, err)
 				return
@@ -46,7 +46,10 @@ func TestValidateMCPRemoveFlags(t *testing.T) {
 		})
 	}
 
-	err := validateMCPRemoveFlags(false, nil, "")
+	// In a terminal, no choice opens the picker instead of failing.
+	assert.NoError(t, validateMCPRemoveFlags(false, nil, "", true))
+
+	err := validateMCPRemoveFlags(false, nil, "", false)
 	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
 }
 
@@ -402,7 +405,7 @@ func TestMcpRemoveRefusesProfileAndAgentWithNothingInstalled(t *testing.T) {
 	stdout, _, err = runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--agents", "cursor", "--output", "json")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	out = readRemoveOutput(t, stdout.String())
-	assert.Equal(t, "no selected MCP server is installed for Cursor", out.Error)
+	assert.Equal(t, "no MCP server is installed for Cursor", out.Error)
 	assert.Equal(t, categoryServiceNotFound, out.ErrorCategory)
 
 	// Nothing was removed by either refusal.
@@ -622,9 +625,9 @@ func TestMcpRemoveWithAgentsSkipsRecordWithoutAgents(t *testing.T) {
 	require.Len(t, state.Servers, 1)
 	assert.Equal(t, "dangling", state.Servers[0].Name)
 
-	// Named explicitly, the same entry is a refusal: no selected server is installed for the agent.
+	// Named explicitly, the same entry is a refusal: no server is installed for the agent.
 	_, _, err = runMcpCmd(t, "remove", "--names", "dangling", "--agents", "claude-code")
-	require.ErrorContains(t, err, "no selected MCP server is installed for Claude Code")
+	require.ErrorContains(t, err, "no MCP server is installed for Claude Code")
 }
 
 // TestMcpRemoveKeptReasonForDatabricksEntryOmitsForce checks that an entry this CLI wrote, but that serves another
@@ -646,4 +649,126 @@ func TestMcpRemoveKeptReasonForDatabricksEntryOmitsForce(t *testing.T) {
 		"To remove it, delete the entry from "+filepath.ToSlash(claudePath)+" by hand and run `databricks aitools mcp remove --names genie_one_mcp-logfood` again",
 		out.Skipped[0].Reason)
 	assert.NotContains(t, out.Skipped[0].Reason, "--force")
+}
+
+// TestMcpRemovePickerRemovesTheChosenServers checks that the remove picker, shown in a terminal with no choice given,
+// removes the servers that are checked and keeps the others.
+func TestMcpRemovePickerRemovesTheChosenServers(t *testing.T) {
+	home := withHome(t)
+	claudePath := filepath.Join(home, ".claude.json")
+	require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers": {`+
+		`"github-logfood": `+claudeEntry("system.ai.github", "logfood", "")+`, `+
+		`"dbsql-logfood": `+claudeEntry("system.ai.dbsql", "logfood", "")+`}}`), 0o600))
+	saveState(t, claudeServerEntry(claudePath, "github-logfood", "system.ai.github"), claudeServerEntry(claudePath, "dbsql-logfood", "system.ai.dbsql"))
+
+	origRemove, origProceed := promptRemoveSelection, promptProceed
+	t.Cleanup(func() { promptRemoveSelection, promptProceed = origRemove, origProceed })
+	promptRemoveSelection = func(entries []mcp.Entry, _ []*agents.Agent) ([]mcp.Entry, error) {
+		require.Len(t, entries, 2)
+		return entries[1:], nil
+	}
+	promptProceed = func() (bool, error) { return true, nil }
+
+	require.NoError(t, runInteractive(t, "mcp", "remove"))
+	servers := readJSONFile(t, claudePath)["mcpServers"].(map[string]any)
+	assert.Contains(t, servers, "github-logfood")
+	assert.NotContains(t, servers, "dbsql-logfood")
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	require.Len(t, state.Servers, 1)
+	assert.Equal(t, "github-logfood", state.Servers[0].Name)
+}
+
+// TestMcpRemovePickerRefusesAgentWithNoServer checks that --agents naming an agent with no installed server is refused
+// before the picker runs, as a run without a terminal refuses it.
+func TestMcpRemovePickerRefusesAgentWithNoServer(t *testing.T) {
+	withHome(t)
+	saveState(t, claudeServerEntry("", "github-logfood", "system.ai.github"))
+
+	origRemove := promptRemoveSelection
+	t.Cleanup(func() { promptRemoveSelection = origRemove })
+	promptRemoveSelection = func([]mcp.Entry, []*agents.Agent) ([]mcp.Entry, error) {
+		t.Error("the picker ran for an agent with no installed server")
+		return nil, nil
+	}
+
+	err := runInteractive(t, "mcp", "remove", "--agents", "codex")
+	require.Error(t, err)
+	assert.Equal(t, "no MCP server is installed for "+agents.ByName(agents.NameCodex).DisplayName, err.Error())
+	assert.Equal(t, categoryServiceNotFound, errorCategory(err))
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, state.Servers, 1)
+}
+
+// TestMcpRemovePickerWithTwoAgentsNeedsOnePickPerServer checks that --agents with two agents accepts a pick installed for
+// only one of them: the pick is removed from that agent, and the server installed for the other agent, which is not
+// picked, stays.
+func TestMcpRemovePickerWithTwoAgentsNeedsOnePickPerServer(t *testing.T) {
+	home := withHome(t)
+	claudePath := filepath.Join(home, ".claude.json")
+	require.NoError(t, os.WriteFile(claudePath, []byte(`{"mcpServers": {`+
+		`"github-logfood": `+claudeEntry("system.ai.github", "logfood", "")+`, `+
+		`"dbsql-logfood": `+claudeEntry("system.ai.dbsql", "logfood", "")+`}}`), 0o600))
+	dbsql := claudeServerEntry(claudePath, "dbsql-logfood", "system.ai.dbsql")
+	dbsql.Agents[agents.NameCodex] = mcp.AgentRecord{Path: filepath.Join(home, ".codex", "config.toml"), Scope: "user"}
+	saveState(t, claudeServerEntry(claudePath, "github-logfood", "system.ai.github"), dbsql)
+
+	origRemove, origProceed := promptRemoveSelection, promptProceed
+	t.Cleanup(func() { promptRemoveSelection, promptProceed = origRemove, origProceed })
+	promptRemoveSelection = func(entries []mcp.Entry, targets []*agents.Agent) ([]mcp.Entry, error) {
+		require.Len(t, targets, 2)
+		require.Len(t, entries, 2)
+		return entries[:1], nil
+	}
+	promptProceed = func() (bool, error) { return true, nil }
+
+	require.NoError(t, runInteractive(t, "mcp", "remove", "--agents", "claude-code,codex"))
+	servers := readJSONFile(t, claudePath)["mcpServers"].(map[string]any)
+	assert.NotContains(t, servers, "github-logfood")
+	assert.Contains(t, servers, "dbsql-logfood")
+}
+
+// TestMcpRemovePickerDeclinedRemovesNothing checks that a picked removal the user declines at Proceed? removes nothing.
+func TestMcpRemovePickerDeclinedRemovesNothing(t *testing.T) {
+	withHome(t)
+	saveState(t, claudeServerEntry("", "github-logfood", "system.ai.github"))
+
+	origRemove, origProceed := promptRemoveSelection, promptProceed
+	t.Cleanup(func() { promptRemoveSelection, promptProceed = origRemove, origProceed })
+	promptRemoveSelection = func(entries []mcp.Entry, _ []*agents.Agent) ([]mcp.Entry, error) {
+		return entries, nil
+	}
+	promptProceed = func() (bool, error) { return false, nil }
+
+	require.NoError(t, runInteractive(t, "mcp", "remove"))
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, state.Servers, 1)
+}
+
+// TestMcpRemovePickerEmptyPickRemovesNothing checks that a picker closed with nothing checked removes nothing.
+func TestMcpRemovePickerEmptyPickRemovesNothing(t *testing.T) {
+	withHome(t)
+	saveState(t, claudeServerEntry("", "github-logfood", "system.ai.github"))
+
+	origRemove := promptRemoveSelection
+	t.Cleanup(func() { promptRemoveSelection = origRemove })
+	promptRemoveSelection = func([]mcp.Entry, []*agents.Agent) ([]mcp.Entry, error) {
+		return nil, nil
+	}
+
+	require.NoError(t, runInteractive(t, "mcp", "remove"))
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, state.Servers, 1)
+}
+
+// claudeServerEntry is the state entry of a server installed for Claude Code, in the config file at claudePath.
+func claudeServerEntry(claudePath, name, service string) mcp.Entry {
+	return mcp.Entry{
+		Name: name, Service: service, Profile: "logfood", Host: "https://adb-1.test", Command: testDatabricksCommand,
+		Agents: map[string]mcp.AgentRecord{agents.NameClaudeCode: {Path: claudePath, Scope: "user"}},
+	}
 }

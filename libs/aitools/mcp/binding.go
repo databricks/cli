@@ -154,6 +154,14 @@ func PinnedFile(entry *Entry, configFile string) string {
 	return ""
 }
 
+// CheckProfile returns the PROFILE_NOT_FOUND error for a profile that configFile does not name with a host, or nil when
+// it does. It is CheckBinding for a caller that has no service yet, so its message names the profile and no server. It
+// reads the config files only and makes no request.
+func CheckProfile(profileName, configFile string) error {
+	_, err := profileFor("", profileName, configFile, nil)
+	return err
+}
+
 // CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
 // resolved with ResolveConfigFile, or nil when there is none. It returns the error Bind returns when the profile does not
 // match: the profile is gone or has no host, or with an entry, its host or workspace changed. The profile is checked
@@ -179,7 +187,8 @@ func CheckBinding(ctx context.Context, state *State, service, profileName, confi
 }
 
 // profileFor returns the profile profileName in configFile, or the PROFILE_NOT_FOUND error that says it
-// is gone. name and entry describe the state entry the profile serves; entry is nil without one.
+// is gone. name and entry describe the state entry the profile serves; entry is nil without one, and name is
+// "" when no server is chosen yet.
 func profileFor(name, profileName, configFile string, entry *Entry) (profile.Profile, error) {
 	p, err := configFiles{}.profile(configFile, profileName)
 	switch {
@@ -227,12 +236,16 @@ func ConfigFileCommand(configFile, command string) string {
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
 // name with a host, either because it is absent or because its section has no host. problem completes
 // the sentence "which ... in <path>". Without a state entry nothing was set up for the profile, so the
-// message only says how to set the profile up, without a host. An entry pinned to a config file puts that
-// file in the recreate hint.
+// message only says how to set the profile up, without a host, and it names the server only when name is set. An entry
+// pinned to a config file puts that file in the recreate hint.
 func profileGoneError(name, profileName, path string, entry *Entry, problem string) error {
 	if entry == nil {
 		login := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
-		message := fmt.Sprintf("MCP server %s needs Databricks profile \"%s\", which %s in %s. Set it up with: %s", name, profileName, problem, path, login)
+		subject := "Databricks profile \"" + profileName + "\""
+		if name != "" {
+			subject = "MCP server " + name + " needs " + subject
+		}
+		message := fmt.Sprintf("%s, which %s in %s. Set it up with: %s", subject, problem, path, login)
 		return &BindError{Category: BindProfileNotFound, message: message}
 	}
 	pinnedPath := ""

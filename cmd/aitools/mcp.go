@@ -111,7 +111,7 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	return "", failure(categoryProfileRequired, nil, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
+	return "", failure(categoryProfileRequired, &profileChoice{profiles: profiles}, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
 }
 
 // profileFlag returns the root --profile value, or "" when it is not set.

@@ -54,4 +54,4 @@ Error: no installed MCP server named orphan
 Error: no installed MCP servers on profile typo
 
 >>> musterr [CLI] aitools mcp remove --names genie_one_mcp-logfood --agents cursor
-Error: no selected MCP server is installed for Cursor
+Error: no MCP server is installed for Cursor

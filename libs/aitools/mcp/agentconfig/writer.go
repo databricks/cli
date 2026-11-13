@@ -429,6 +429,28 @@ func envTable(v any) (map[string]any, error) {
 	return table, nil
 }
 
+// Unchanged reports whether Upsert would leave the entry current as it is: current is a Databricks entry whose launch
+// keys already match the entry Upsert writes for cmd, args and env. Upsert uses the same comparison.
+func Unchanged(a *agents.Agent, cmd string, args []string, env map[string]string, current map[string]any) (bool, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return false, err
+	}
+	ours, err := normalize(spec.Entry(cmd, args, env))
+	if err != nil {
+		return false, err
+	}
+	if !mcpconfig.IsDatabricksEntry(current) {
+		return false, nil
+	}
+	keys := ownedKeys(spec)
+	merged, err := keepUserKeys(current, ours, keys)
+	if err != nil {
+		return false, err
+	}
+	return sameEntry(launchOf(current, keys), launchOf(merged, keys))
+}
+
 // sameEntry compares two entries as JSON values, so the in-memory Go types of a
 // freshly built entry and one decoded from a file compare equal.
 func sameEntry(a, b map[string]any) (bool, error) {

@@ -275,6 +275,12 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 		return "", false, urlShown, describeRequestError(profileName, pinnedFile, err)
 	}
 
+	reportSignedIn(errOut, svc, profileName, alreadySignedIn)
+	return signInStateActive, alreadySignedIn, urlShown, nil
+}
+
+// reportSignedIn prints that the profile is signed in to svc, and the note that the service has for its users.
+func reportSignedIn(errOut io.Writer, svc mcp.Service, profileName string, alreadySignedIn bool) {
 	if alreadySignedIn {
 		fmt.Fprintf(errOut, "Already signed in to %s on profile %s.\n", svc.FullName, profileName)
 	} else {
@@ -283,5 +289,4 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 	if svc.Known != nil && svc.Known.Note != "" {
 		fmt.Fprintln(errOut, svc.Known.Note)
 	}
-	return signInStateActive, alreadySignedIn, urlShown, nil
 }

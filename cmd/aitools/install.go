@@ -20,10 +20,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Prompt text shared by install, uninstall and the mcp commands.
+const (
+	// multiSelectHelp is the description of the multi-select prompts of install and mcp add and remove.
+	multiSelectHelp = "space to toggle, enter to confirm"
+	// cancelledMessage is printed when the user declines at a prompt, and the command ends without a change.
+	cancelledMessage = "Cancelled."
+)
+
 // Package-level seams for testability. Tests override these via helpers in
 // install_test.go.
 var (
 	promptAgentSelection     = defaultPromptAgentSelection
+	promptProceed            = defaultPromptProceed
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 	installPluginForAgentFn  = installer.InstallPluginForAgent
 	recordPluginInstallsFn   = installer.RecordPluginInstalls
@@ -507,6 +516,18 @@ func agentStateLabel(s agents.DisplayState) string {
 	default:
 		return "not found"
 	}
+}
+
+func defaultPromptProceed() (bool, error) {
+	proceed := true
+	err := huh.NewConfirm().
+		Title("Proceed?").
+		Value(&proceed).
+		Run()
+	if err != nil {
+		return false, err
+	}
+	return proceed, nil
 }
 
 func defaultPromptAgentSelection(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
