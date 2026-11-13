@@ -1,1 +1,4 @@
 musterr $CLI bundle deploy
+
+# Three attempts: the first one and two retries.
+print_requests.py //api/2.0/workspace-files/import-file | jq -r .path | grep 'file_to_upload.txt'

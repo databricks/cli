@@ -41,6 +41,12 @@
           "action": "skip",
           "reason": "immutable_backend_value",
           "remote": "s3://[METASTORE_NAME]/metastore/[UUID][1]/volumes/[UUID][2]"
+        },
+        "volume_id": {
+          "action": "skip",
+          "reason": "internal_id",
+          "old": "[UUID][2]",
+          "remote": "[UUID][2]"
         }
       }
     }

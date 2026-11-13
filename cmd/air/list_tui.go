@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -122,7 +123,12 @@ type listModel struct {
 	detailContent string         // rendered detail content
 }
 
+// detailHorizontalStep is how many columns ←/→ pan the detail pane.
+const detailHorizontalStep = 8
+
 func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
+	vp := viewport.New(0, 0)
+	vp.SetHorizontalStep(detailHorizontalStep)
 	return listModel{
 		rows:     rows,
 		styles:   newListStyles(r),
@@ -130,7 +136,7 @@ func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links boo
 		links:    links,
 		fetcher:  f,
 		mode:     modeList,
-		viewport: viewport.New(0, 0),
+		viewport: vp,
 	}
 }
 
@@ -184,6 +190,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
 
@@ -217,8 +224,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailContent = msg.body
 		}
 		m.detailTitle = msg.title
-		m.viewport.SetContent(m.detailContent)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.viewport.GotoTop()
+		m.viewport.SetXOffset(0)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -292,6 +300,22 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// wrappedDetail is the detail text with long lines wrapped to the pane width,
+// since the viewport clips them at the pane edge. Box rows and URLs stay on one
+// row, because wrapping would break the box borders or the link; ←/→ pans to
+// their clipped ends.
+func (m listModel) wrappedDetail() string {
+	lines := strings.Split(m.detailContent, "\n")
+	for i, line := range lines {
+		plain := strings.TrimSpace(ansi.Strip(line))
+		if strings.IndexAny(plain, "╭│╰") == 0 || strings.Contains(plain, "://") {
+			continue
+		}
+		lines[i] = ansi.Wrap(line, m.viewport.Width, "")
+	}
+	return strings.Join(lines, "\n")
+}
+
 // clampedOffset returns the scroll offset that keeps the cursor visible.
 func (m listModel) clampedOffset() int {
 	visible := m.visibleCount()
@@ -311,7 +335,7 @@ func (m listModel) View() string {
 		} else {
 			lines = append(lines, m.viewport.View())
 		}
-		footer := faint.Render("↑/↓ scroll · esc back · q quit")
+		footer := faint.Render("↑/↓ scroll · ←/→ pan · esc back · q quit")
 		lines = append(lines, footer)
 		return strings.Join(lines, "\n")
 	}

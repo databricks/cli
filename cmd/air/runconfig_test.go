@@ -377,7 +377,7 @@ func TestLoadRunConfig_Errors(t *testing.T) {
 		{
 			"bad gpu type",
 			"experiment_name: r\ncommand: x\ncompute:\n  accelerator_type: a100\n  num_accelerators: 1\n",
-			"invalid GPU type",
+			`compute.accelerator_type: "a100" is not a recognized accelerator type. Run 'databricks air run -h config.compute'`,
 		},
 		{
 			"num_accelerators not a multiple",
@@ -651,8 +651,9 @@ func TestResolveConfigField(t *testing.T) {
 		wantType     string
 		wantRequired string
 	}{
-		{"leaf", "config.compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
-		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
+		{"leaf", "config.compute.accelerator_type", "config.compute.accelerator_type", "string", "yes"},
+		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", "yes"},
+		{"conditionally required", "config.command", "config.command", "string", "unless containers is set"},
 		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
 		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
 		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
@@ -777,7 +778,11 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	require.NoError(t, writeConfigFieldHelp(&leaf, "config.compute.num_accelerators"))
 	assert.Contains(t, leaf.String(), "config.compute.num_accelerators")
 	assert.Contains(t, leaf.String(), "Type:     int")
-	assert.Contains(t, leaf.String(), "Required: no")
+	assert.Contains(t, leaf.String(), "Required: yes")
+
+	var optional strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&optional, "config.timeout_minutes"))
+	assert.Contains(t, optional.String(), "Required: no")
 
 	var container strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&container, "config.compute"))
@@ -785,30 +790,52 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, container.String(), "num_accelerators")
 	// A container lists its fields rather than printing a type/required pair.
 	assert.NotContains(t, container.String(), "Required:")
-	assert.Contains(t, container.String(), `Use "-h config.compute.<field>" for details`)
+	assert.Contains(t, container.String(), `For details on a field, run "databricks air run -h config.compute.<field>".`)
 
 	var environment strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environment, "config.environment"))
-	assert.Contains(t, environment.String(), "version              Client image version to pin (default: 6).")
+	assert.Contains(t, environment.String(), "version              Managed environment to start from, e.g. 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6).")
 
 	var environmentVersion strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environmentVersion, "config.environment.version"))
-	assert.Contains(t, environmentVersion.String(), "Client image version to pin (default: 6).")
-	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/")
+	assert.Contains(t, environmentVersion.String(), "The Databricks AI environment adds PyTorch, Transformers, and other ML libraries.")
+	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment")
 
-	// Required top-level fields are flagged in a listing.
+	// Top-level fields are listed under headings, most commonly needed first.
 	var root strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&root, "config"))
-	assert.Contains(t, root.String(), "(required) Which accelerators to run on")
+	rootHelp := root.String()
+	// Required fields lead their group even when declared later in the struct.
+	assert.Contains(t, rootHelp, "  Workload:\n    experiment_name              (required) Name of the experiment.\n    compute                      (required) Which accelerators to run on and how many.\n    command                      (required unless containers is set) Shell command that starts the workload.\n    environment  ")
+	headings := []string{"  Workload:", "  Execution:", "  MLflow tracking:", "  Access and cost attribution:"}
+	last := -1
+	for _, h := range headings {
+		i := strings.Index(rootHelp, h)
+		require.Greater(t, i, last, "heading %q is missing or out of order", h)
+		last = i
+	}
+	assert.NotContains(t, rootHelp, "  Fields:", "every top-level field belongs to a group")
+	assert.Contains(t, rootHelp, "    databricks air run -h config.compute.accelerator_type\n", "the example must be a runnable command")
+	// The agent skill pointer follows the fields, so it doesn't push them down.
+	assert.Greater(t, strings.Index(rootHelp, "databricks-ai-runtime skill"), strings.Index(rootHelp, "usage_policy_id"))
+	assert.Contains(t, rootHelp, "databricks aitools install --skills-only --skills databricks-ai-runtime")
+
+	// Pool fields are set apart from the fields every run needs.
+	var compute strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&compute, "config.compute"))
+	fields, capacity, found := strings.Cut(compute.String(), "  Provisioned capacity (optional):\n")
+	require.True(t, found)
+	assert.Contains(t, fields, "  Fields:\n    num_accelerators  (required) ")
+	assert.Contains(t, fields, "    accelerator_type  (required) ")
+	assert.NotContains(t, fields, "pool_id")
+	assert.Contains(t, capacity, "    pool_id ")
+	assert.Contains(t, capacity, "    priority_class ")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
 }
 
 func TestRunCommandHelpComputeOptions(t *testing.T) {
-	builtInOptions := `    GPU_1xA10 - 1 accelerator per node
-    GPU_1xH100 - 1 accelerator per node
-    GPU_8xH100 - 8 accelerators per node
-    GPU_8xB300 - 8 accelerators per node`
+	// An empty wantOptions means the help must omit the list entirely.
 	tests := []struct {
 		name        string
 		statusCode  int
@@ -832,16 +859,15 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			wantOptions: "    No accelerator types are currently available for AI Runtime in this workspace.",
 		},
 		{
-			name:        "endpoint unavailable falls back",
+			name:        "endpoint unavailable warns and omits the list",
 			statusCode:  http.StatusNotFound,
 			response:    `{"error_code":"NOT_FOUND","message":"ListComputeOptions is not yet enabled."}`,
-			wantOptions: builtInOptions,
+			wantWarning: true,
 		},
 		{
-			name:        "unexpected API error warns and falls back",
+			name:        "unexpected API error warns and omits the list",
 			statusCode:  http.StatusInternalServerError,
 			response:    `{"error_code":"INTERNAL_ERROR","message":"Internal error."}`,
-			wantOptions: builtInOptions,
 			wantWarning: true,
 		},
 	}
@@ -864,13 +890,17 @@ func TestRunCommandHelpComputeOptions(t *testing.T) {
 			cmd.SetArgs([]string{"-h", "config.compute"})
 			require.NoError(t, cmd.Execute())
 
-			options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
-			require.True(t, found)
-			options, _, found = strings.Cut(options, "\n\n  Fields:")
-			require.True(t, found)
-			assert.Equal(t, tt.wantOptions, options)
+			if tt.wantOptions == "" {
+				assert.NotContains(t, out.String(), "Supported accelerator types")
+			} else {
+				options, found := strings.CutPrefix(out.String(), "config.compute\n  Which accelerators to run on and how many.\n\n  Supported accelerator types:\n")
+				require.True(t, found)
+				options, _, found = strings.Cut(options, "\n\n  Fields:")
+				require.True(t, found)
+				assert.Equal(t, tt.wantOptions, options)
+			}
 			if tt.wantWarning {
-				assert.Contains(t, errOut.String(), "showing the built-in list")
+				assert.Equal(t, "Warning: couldn't fetch the accelerator types available in this workspace.\n", errOut.String())
 			} else {
 				assert.Empty(t, errOut.String())
 			}
@@ -1048,4 +1078,60 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}))
 	_, err := resolveConfigField("compute.bogus")
 	require.Error(t, err)
+}
+
+func TestRequiredMarker(t *testing.T) {
+	tests := []struct {
+		required string
+		want     string
+	}{
+		{"yes", "(required)"},
+		{"when code_source is set", "(required when code_source is set)"},
+		{"unless containers is set", "(required unless containers is set)"},
+		// A choice between siblings is explained in the field's own help.
+		{"one of branch or commit", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, requiredMarker(configField{required: tt.required}), tt.required)
+	}
+}
+
+func TestGroupFieldsRequiredFirst(t *testing.T) {
+	fields := []configField{
+		{path: "config.a", group: "G"},
+		{path: "config.b", group: "G", required: "yes"},
+		{path: "config.c", group: "Other", required: "yes"},
+		{path: "config.d", group: "G", required: "unless a is set"},
+		{path: "config.e", group: "G", hidden: true, required: "yes"},
+		{path: "config.f", group: "G"},
+	}
+	var got []string
+	for _, f := range groupFieldsRequiredFirst(fields, "G") {
+		got = append(got, configLeafName(f.path))
+	}
+	assert.Equal(t, []string{"b", "d", "a", "f"}, got)
+}
+
+func TestConfigFieldHelpListsDocsForEveryCloud(t *testing.T) {
+	var out strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&out, "config.environment.version"))
+	help := out.String()
+	assert.Contains(t, help, "  Docs:\n"+
+		"    AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/develop-workloads/environment\n"+
+		"    Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/develop-workloads/environment\n")
+	assert.Less(t, strings.Index(help, "  Docs:"), strings.Index(help, "  Type:"))
+
+	// Inline links would only cover one cloud, so docs links live in the Docs section.
+	for _, f := range configSchema().children {
+		assertNoInlineDocsLinks(t, f)
+	}
+}
+
+func assertNoInlineDocsLinks(t *testing.T, f configField) {
+	t.Helper()
+	assert.NotContains(t, f.help, "docs.databricks.com", "%s: use the docs tag instead of an inline link", f.path)
+	for _, c := range f.children {
+		assertNoInlineDocsLinks(t, c)
+	}
 }

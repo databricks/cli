@@ -124,7 +124,8 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	if ids != nil {
-		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID)
+		// The box grows to fit its fields, so the label is shown whole.
+		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID, 0) + ids.retryNote()
 		view.mlflowURL = mlflowRunURL(w.Config.Host, ids)
 	}
 

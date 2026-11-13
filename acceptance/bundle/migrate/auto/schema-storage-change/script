@@ -2,7 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 # Testserver-only: an explicit storage_root needs a registered external location on a real
 # workspace, so this is not Cloud-enabled. The recreate/refusal class it covers is verified
-# on cloud by schema-rename and pipeline-storage-change.
+# on cloud by schema-catalog-change and pipeline-storage-change.
 
 title "Replay the prior terraform deployment (captured from a real terraform run)"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate

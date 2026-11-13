@@ -108,10 +108,10 @@ func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show status, configuration, and timing details for a specified run",
-		Long: `Show status, configuration, and timing details for a specified run.
+		Short: "Show a run's status, configuration, and timing",
+		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},
@@ -167,8 +167,8 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
-		ids := mlflowIDsFromOutput(taskOutput)
+		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
+		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url

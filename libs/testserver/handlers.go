@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -609,10 +608,20 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
-	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
+	server.Handle("POST", "/telemetry-ext", func(req Request) any {
+		var request struct {
+			ProtoLogs []string `json:"protoLogs"`
+		}
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return Response{
+				Body:       fmt.Sprintf("invalid request body: %s", err),
+				StatusCode: http.StatusBadRequest,
+			}
+		}
+		// Accept every log in the request, as the real endpoint does.
 		return map[string]any{
 			"errors":          []string{},
-			"numProtoSuccess": 1,
+			"numProtoSuccess": len(request.ProtoLogs),
 		}
 	})
 
@@ -674,7 +683,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req Request) any {
-		return req.Workspace.PipelineStartUpdate(req.Vars["pipeline_id"])
+		return req.Workspace.PipelineStartUpdate(req, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req Request) any {
@@ -986,10 +995,10 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ModelProviderServices, req.Vars["name"])
 	})
 
-	// Volumes:
+	// Volumes: looked up case-insensitively, see volumeKey.
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGetUC(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"], "Volume")
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]), "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
@@ -997,11 +1006,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+		return req.Workspace.VolumesUpdate(req, volumeKey(req.Vars["full_name"]))
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+		return MapDelete(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]))
 	})
 
 	// Repos:
@@ -1178,21 +1187,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Alerts v2:
 	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
-
-		id := req.Vars["id"]
-
-		value, ok := req.Workspace.Alerts[id]
-		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
-			return Response{
-				StatusCode: 404,
-				Body:       map[string]string{"message": "Alert with ID '" + id + "' does not exist."},
-			}
-		}
-
-		return Response{
-			Body: value,
-		}
+		return req.Workspace.AlertsGet(req.Vars["id"])
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
