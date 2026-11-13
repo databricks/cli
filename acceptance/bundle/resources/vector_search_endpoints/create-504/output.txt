@@ -46,6 +46,7 @@ Destroy: 1 deleted
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-[UNIQUE_NAME]/default/files...
 Warn: deploying resources.vector_search_endpoints.my_endpoint: retrying after 504 Gateway Timeout from POST /api/2.0/vector-search/endpoints
+Warn: deploying resources.vector_search_endpoints.my_endpoint: vector search endpoint "vs-endpoint-[UNIQUE_NAME]" was created by an earlier attempt that failed with a transient error, using it
 Created vector_search_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
