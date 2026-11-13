@@ -138,6 +138,10 @@ Output:
   --output json          Emit a structured result instead of text. Requires --scope
                          and --agents so the command runs without interactive prompts.
 
+The command exits with code 1 when it sets up nothing: no agent is detected,
+every agent is skipped or fails to install, or no skill in the release can be
+installed (also with --path).
+
 Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -182,15 +186,11 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			// --path is a dumb dump: no agents, no scope, no state.
 			if pathFlag != "" {
 				funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
-				written, err := installer.DumpSkillsToPath(ctx, src, pathFlag, opts)
-				if err != nil {
+				// When every skill is filtered out (e.g. all experimental without
+				// --experimental) this fails with ErrNoSkillsResolved, so a caller
+				// does not take the empty directory for skills.
+				if _, err := installer.DumpSkillsToPath(ctx, src, pathFlag, opts); err != nil {
 					return withRecovery(ctx, installInvocation{path: pathFlag, skills: skillsFlag, experimental: includeExperimental}, err)
-				}
-				if written == 0 {
-					// Every skill was filtered out (e.g. all experimental without
-					// --experimental): there was nothing to write.
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
-					return nil
 				}
 				funnel.step(ctx, protos.AitoolsCommandStepSkillsDumped)
 				return nil
@@ -286,8 +286,10 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 				if len(targetAgents) == 0 {
 					printNoAgentsMessage(ctx, rerun)
+					// Nothing to act on, like an empty --path dump, but the run
+					// still fails, so a caller does not take it for a setup.
 					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
-					return nil
+					return errNoAgentSetUp
 				}
 				if interactive {
 					rerun.agents = joinAgentNames(targetAgents)
@@ -326,12 +328,10 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 			switch {
 			case runErr == nil:
-				if category, ok := nothingInstalledCategory(outcomes); ok {
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, category)
-				}
+				// The deferred funnel.finish records SUCCESS.
 			case topLevelFailure(runErr) == nil:
-				// Named agents failed or were skipped. A skip has no error type of
-				// its own, so take the category from the outcomes, not runErr.
+				// Named agents failed, or no agent was set up. A skip has no error
+				// type of its own, so take the category from the outcomes, not runErr.
 				funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, firstFailureCategory(outcomes))
 			default:
 				// Finish on the real failure here: JSON mode returns the
@@ -586,8 +586,14 @@ const (
 	outcomeFailed    outcomeStatus = "failed"
 )
 
-// agentErrors wraps the failures of explicitly named agents, which are already
-// reported in their per-agent outcomes. Wrapping lets the JSON and telemetry
+// errNoAgentSetUp is returned when no agent was set up: none was detected, or
+// every agent in the plan was skipped or failed. The reason and recovery step
+// are printed above it, so the message only has to make the exit code non-zero.
+var errNoAgentSetUp = errors.New("nothing was installed; follow the steps above")
+
+// agentErrors wraps failures that are already reported in the per-agent
+// outcomes: those of agents named via --agents, and errNoAgentSetUp when no
+// detected agent was set up. Wrapping lets the JSON and telemetry
 // layers tell a per-agent failure apart from a top-level failure that has no
 // per-agent entry, so each is surfaced exactly once.
 type agentErrors struct{ err error }
@@ -607,16 +613,19 @@ func topLevelFailure(runErr error) error {
 
 // executePlan carries out the plan and returns each agent's outcome. Skills
 // installs go through the existing skills path. Plugin installs are reported but
-// never silently fall back to skills: a blocked install is a warning (exit 0),
-// unless the agent was explicitly named via --agents, which is an error. The
+// never silently fall back to skills: a blocked install is a warning, unless the
+// agent was explicitly named via --agents, which is an error. A run that sets up
+// no agent at all is an error too, so callers never mistake it for success. The
 // per-agent recovery steps repeat rerun for the agent at hand.
 func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
 	var pluginItems, skipItems []agentPlanItem
+	skillsExplicit := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
 			skillsAgents = append(skillsAgents, it.agent)
+			skillsExplicit = skillsExplicit || it.explicit
 		case deliveryPlugin:
 			pluginItems = append(pluginItems, it)
 		case deliverySkip:
@@ -643,6 +652,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	}
 
 	pluginCount := 0
+	pluginsRecorded := false
 	if len(pluginItems) > 0 {
 		// Plugins install from the agent's marketplace, so the skills ref only
 		// labels the recorded version. Record it as unknown when unresolved.
@@ -703,8 +713,14 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				releaseRef = ""
 			}
 			if err := recordPluginInstallsFn(ctx, opts.Scope, records, releaseRef); err != nil {
+				// No skill to install is no failure of its own; report only the
+				// record failure.
+				if errors.Is(skillsErr, installer.ErrNoSkillsResolved) {
+					return outcomes, err
+				}
 				return outcomes, errors.Join(skillsErr, err)
 			}
+			pluginsRecorded = true
 		}
 	}
 
@@ -735,6 +751,28 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		cmdio.LogString(ctx, fmt.Sprintf("Installed the plugin for %d %s.", pluginCount, noun))
 	}
 
+	// A release with no skill this CLI can install skips the skills agents when
+	// the plan had plugin agents, so the plugin outcomes decide the run. A
+	// --skills-only run with nothing else attempted keeps the error. So does a
+	// run whose installed plugins were not recorded (skills without install
+	// state are on disk): update and uninstall could not manage them.
+	if errors.Is(skillsErr, installer.ErrNoSkillsResolved) && len(pluginItems) > 0 && (pluginCount == 0 || pluginsRecorded) {
+		recovery := installRecovery(ctx, rerun, skillsErr)
+		names := make([]string, len(skillsAgents))
+		for i, a := range skillsAgents {
+			names[i] = a.DisplayName
+			outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeSkipped, errorCategory: classifyInstallError(skillsErr), message: skillsErr.Error(), recovery: recovery})
+		}
+		if !quiet {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+strings.Join(names, ", ")+": "+skillsErr.Error()))
+			cmdio.LogString(ctx, "  "+recovery)
+		}
+		if skillsExplicit {
+			explicitErrs = append(explicitErrs, &displayError{msg: strings.Join(names, ", ") + ": " + skillsErr.Error(), err: skillsErr})
+		}
+		skillsErr = nil
+	}
+
 	// The skills error has no per-agent entry, so it stays the top-level error;
 	// explicit per-agent failures are already in their outcomes.
 	if skillsErr != nil {
@@ -742,6 +780,9 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	}
 	if len(explicitErrs) > 0 {
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
+	}
+	if !anyInstalled(outcomes) {
+		return outcomes, &agentErrors{err: errNoAgentSetUp}
 	}
 	return outcomes, nil
 }
@@ -845,7 +886,12 @@ func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error)
 // printNoAgentsMessage prints the "no agents detected" message. Its commands
 // repeat rerun, so a named agent is set up in the scope and mode this run used.
 func printNoAgentsMessage(ctx context.Context, rerun installInvocation) {
-	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents found on PATH."))
+	// --skills-only detects an agent by its config dir only, not by its CLI.
+	found := "No supported coding agents found on PATH."
+	if rerun.skillsOnly {
+		found = "No supported coding agent config directories found."
+	}
+	cmdio.LogString(ctx, cmdio.Yellow(ctx, found))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
 	named, _ := commandText(runtime.GOOS, rerun, nil, "--agents=<name>")

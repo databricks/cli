@@ -675,7 +675,7 @@ func TestPluginOperationsReportFailures(t *testing.T) {
 		result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
 		require.NoError(t, err)
 		assert.Equal(t, 0, result.PluginsRemoved)
-		assert.Equal(t, 0, result.SkillsRemoved)
+		assert.Equal(t, 0, result.SkillsChanged)
 		require.Len(t, result.PluginFailures, 1)
 		blocked, ok := errors.AsType[*BlockedError](result.PluginFailures[0])
 		require.True(t, ok, "got %v", result.PluginFailures[0])

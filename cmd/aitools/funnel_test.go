@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -187,7 +188,7 @@ func TestInstallFunnelNoAgentsDetected(t *testing.T) {
 	forbidSkillsInstall(t)
 
 	ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()))
-	require.NoError(t, err)
+	require.ErrorIs(t, err, errNoAgentSetUp)
 	assert.Equal(t, []string{
 		"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "FINISHED:NOTHING_TO_DO:",
 	}, funnelShape(funnelEvents(ctx)))
@@ -458,8 +459,10 @@ func TestInstallFunnelPathDumpWithNoSkillToWrite(t *testing.T) {
 		`{"version": "2", "skills": {"databricks-preview": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "experimental"}}}`,
 		nil))
 
+	// Nothing was written, so the run exits 1, but the funnel records it as
+	// NOTHING_TO_DO: no skill in the release could be written.
 	ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--path", t.TempDir())
-	require.NoError(t, err)
+	require.ErrorIs(t, err, installer.ErrNoSkillsResolved)
 	assert.Equal(t, []string{"STARTED", "FLAGS_VALIDATED", "FINISHED:NOTHING_TO_DO:"}, funnelShape(funnelEvents(ctx)))
 }
 
@@ -567,8 +570,8 @@ func TestListFunnelFailure(t *testing.T) {
 	}
 }
 
-// A plugin failure for an auto-detected agent is only a warning (exit 0), but
-// when nothing got installed the funnel must not report SUCCESS.
+// A plugin failure for an auto-detected agent is only a warning, but when
+// nothing got installed the run fails and the funnel must not report SUCCESS.
 func TestInstallFunnelDetectedPluginFailureIsNotSuccess(t *testing.T) {
 	isolateAgents(t)
 	tmp := t.TempDir()
@@ -583,28 +586,27 @@ func TestInstallFunnelDetectedPluginFailureIsNotSuccess(t *testing.T) {
 		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
 	}
 
+	// The run installed nothing, so it exits non-zero; the FINISHED event takes
+	// the category from the agent's outcome.
 	ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--scope", "global")
-	require.NoError(t, err)
+	require.ErrorIs(t, err, errNoAgentSetUp)
 	assert.Equal(t, []string{
 		"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
 		"FINISHED:FAILURE:PLUGIN_INSTALL_FAILED",
 	}, funnelShape(funnelEvents(ctx)))
 }
 
-func TestNothingInstalledCategory(t *testing.T) {
+func TestAnyInstalledAndFirstFailureCategory(t *testing.T) {
 	codex := &agents.Agent{Name: agents.NameCodex}
 	cursor := &agents.Agent{Name: agents.NameCursor}
 	failed := agentOutcome{agent: codex, delivery: deliveryPlugin, status: outcomeFailed, errorCategory: protos.AitoolsErrorCategoryPluginInstallFailed}
 	skipped := agentOutcome{agent: cursor, delivery: deliverySkip, status: outcomeSkipped, errorCategory: protos.AitoolsErrorCategoryUnsupportedScope}
 	installed := agentOutcome{agent: cursor, delivery: deliverySkills, status: outcomeInstalled}
 
-	_, ok := nothingInstalledCategory(nil)
-	assert.False(t, ok)
-	_, ok = nothingInstalledCategory([]agentOutcome{failed, installed})
-	assert.False(t, ok, "one installed agent makes the run a success")
-	got, ok := nothingInstalledCategory([]agentOutcome{failed, skipped})
-	assert.True(t, ok)
-	assert.Equal(t, protos.AitoolsErrorCategoryPluginInstallFailed, got)
+	assert.False(t, anyInstalled(nil))
+	assert.True(t, anyInstalled([]agentOutcome{failed, installed}), "one installed agent makes the run a success")
+	assert.False(t, anyInstalled([]agentOutcome{failed, skipped}))
+	assert.Equal(t, protos.AitoolsErrorCategoryPluginInstallFailed, firstFailureCategory([]agentOutcome{failed, skipped}))
 
 	uncategorized := agentOutcome{agent: codex, delivery: deliveryPlugin, status: outcomeFailed}
 	assert.Equal(t, protos.AitoolsErrorCategoryUnsupportedScope, firstFailureCategory([]agentOutcome{installed, uncategorized, skipped}))
@@ -785,8 +787,8 @@ func saveGlobalState(t *testing.T, skills map[string]string) string {
 	return dir
 }
 
-// Plugin failures are warnings (exit 0), but an update in which no plugin got
-// updated and nothing else ran did nothing and must not report SUCCESS.
+// Plugin failures are warnings, but an update in which no plugin got updated
+// and nothing else ran did nothing: it exits 1 and reports FAILURE.
 func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
 	codexFailed := installer.PluginUpdate{Agent: "Codex CLI", Err: errCodexNotOnPath}
 	cases := []struct {
@@ -799,7 +801,12 @@ func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
 		refErr    error
 		checkErr  error
 		want      string
+		// exit0 marks a FAILURE that still exits 0.
+		exit0 bool
 	}{
+		{name: "only an unknown agent's record", results: []installer.PluginUpdate{{Agent: "x", Err: fmt.Errorf("%w %q in state", installer.ErrUnknownAgent, "x")}}, want: "FINISHED:FAILURE:UNKNOWN_AGENT", exit0: true},
+		// The unknown agent sorts first, but the failed attempt decides the run.
+		{name: "unknown agent's record and a failed plugin", results: []installer.PluginUpdate{{Agent: "aider", Err: fmt.Errorf("%w %q in state", installer.ErrUnknownAgent, "aider")}, codexFailed}, want: "FINISHED:FAILURE:CLI_NOT_ON_PATH"},
 		{name: "all plugins failed", results: []installer.PluginUpdate{codexFailed}, want: "FINISHED:FAILURE:CLI_NOT_ON_PATH"},
 		{name: "one of two plugins failed", results: []installer.PluginUpdate{{Agent: "Claude Code", Version: "0.2.7"}, codexFailed}, want: "FINISHED:SUCCESS:"},
 		{name: "plugin failed, file skills reconciled", skills: map[string]string{"databricks": "0.2.6"}, results: []installer.PluginUpdate{codexFailed}, want: "FINISHED:SUCCESS:"},
@@ -851,12 +858,25 @@ func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
 			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 			cmd := NewUpdateCmd()
 			cmd.SetContext(ctx)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
 			args := []string{"--scope=global"}
 			if tc.check {
 				args = append(args, "--check")
 			}
 			cmd.SetArgs(args)
-			require.NoError(t, cmd.Execute())
+			err := cmd.Execute()
+			// A run where every attempt failed exits 1.
+			if strings.HasPrefix(tc.want, "FINISHED:FAILURE:") && !tc.exit0 {
+				require.Error(t, err)
+				prefix := "nothing was updated: "
+				if tc.check {
+					prefix = "nothing was checked: "
+				}
+				assert.True(t, strings.HasPrefix(err.Error(), prefix), err.Error())
+			} else {
+				require.NoError(t, err)
+			}
 			events := funnelEvents(ctx)
 			assert.Equal(t, []string{"STARTED", tc.want}, funnelShape(events))
 			assert.Equal(t, protos.AitoolsInstallScopeGlobal, events[len(events)-1].Scope)
@@ -867,8 +887,8 @@ func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
 	}
 }
 
-// Plugin and skill removal failures are warnings (exit 0), but an uninstall
-// that removed nothing because every removal failed must not report SUCCESS.
+// Plugin and skill removal failures are warnings, but an uninstall that removed
+// nothing because every removal failed exits 1 and reports FAILURE.
 func TestUninstallFunnelWhenRemovalsFail(t *testing.T) {
 	skillFailed := fmt.Errorf("remove skill: %w", fs.ErrPermission)
 	cases := []struct {
@@ -877,12 +897,16 @@ func TestUninstallFunnelWhenRemovalsFail(t *testing.T) {
 		result     installer.UninstallResult
 		want       string
 		wantAgents []protos.AitoolsAgentType
+		// exit0 marks a FAILURE that still exits 0.
+		exit0 bool
 	}{
+		{name: "only an unknown agent's record", result: installer.UninstallResult{PluginFailures: []error{fmt.Errorf("%w %q in state", installer.ErrUnknownAgent, "x")}}, want: "FINISHED:FAILURE:UNKNOWN_AGENT", exit0: true},
 		{name: "all plugins failed", result: installer.UninstallResult{PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:FAILURE:CLI_NOT_ON_PATH"},
 		{name: "nothing to remove for the targeted agent", args: []string{"--agents=cursor"}, want: "FINISHED:NOTHING_TO_DO:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeCursor}},
-		{name: "skill removed for the targeted agent", args: []string{"--agents=cursor"}, result: installer.UninstallResult{SkillsRemoved: 1}, want: "FINISHED:SUCCESS:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeCursor}},
+		{name: "skill removed for the targeted agent", args: []string{"--agents=cursor"}, result: installer.UninstallResult{SkillsChanged: 1}, want: "FINISHED:SUCCESS:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeCursor}},
 		{name: "one of two plugins failed", result: installer.UninstallResult{PluginsRemoved: 1, PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:SUCCESS:"},
-		{name: "plugin failed, skills removed", result: installer.UninstallResult{SkillsRemoved: 1, PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:SUCCESS:"},
+		{name: "plugin failed, skills removed", result: installer.UninstallResult{SkillsChanged: 1, PluginFailures: []error{errCodexNotOnPath}}, want: "FINISHED:SUCCESS:"},
+		{name: "a targeted agent kept its entry, another's copy removed", args: []string{"--agents=claude-code,cursor"}, result: installer.UninstallResult{SkillsChanged: 1, SkillFailures: []error{skillFailed}}, want: "FINISHED:SUCCESS:", wantAgents: []protos.AitoolsAgentType{protos.AitoolsAgentTypeClaudeCode, protos.AitoolsAgentTypeCursor}},
 		{name: "all skill removals failed", result: installer.UninstallResult{SkillFailures: []error{skillFailed}}, want: "FINISHED:FAILURE:PERMISSION_DENIED"},
 		{name: "skill removal failed, plugin removed", result: installer.UninstallResult{PluginsRemoved: 1, SkillFailures: []error{skillFailed}}, want: "FINISHED:SUCCESS:"},
 	}
@@ -899,8 +923,17 @@ func TestUninstallFunnelWhenRemovalsFail(t *testing.T) {
 			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 			cmd := NewUninstallCmd()
 			cmd.SetContext(ctx)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
 			cmd.SetArgs(append([]string{"--scope=global"}, tc.args...))
-			require.NoError(t, cmd.Execute())
+			err := cmd.Execute()
+			// A run where every attempted removal failed exits 1.
+			if strings.HasPrefix(tc.want, "FINISHED:FAILURE:") && !tc.exit0 {
+				require.Error(t, err)
+				assert.True(t, strings.HasPrefix(err.Error(), "could not remove any skill or plugin: "), err.Error())
+			} else {
+				require.NoError(t, err)
+			}
 			events := funnelEvents(ctx)
 			assert.Equal(t, []string{"STARTED", tc.want}, funnelShape(events))
 			finished := events[len(events)-1]
@@ -928,4 +961,23 @@ func TestUninstallConfirmPromptFailure(t *testing.T) {
 
 	assert.Empty(t, *calls)
 	assert.Equal(t, []string{"STARTED", "FINISHED:FAILURE:PROMPT_FAILED"}, funnelShape(funnelEvents(ctx)))
+}
+
+func TestInstallFunnelNothingInstalledKeepsTheAgentCategory(t *testing.T) {
+	// Only Cursor is detected and it has no project-scoped skills, so the run
+	// sets up nothing. The FINISHED event must name why, not UNCATEGORIZED.
+	isolateAgents(t)
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+	setupInstallMock(t)
+
+	ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--skills-only", "--scope", "project")
+	require.ErrorIs(t, err, errNoAgentSetUp)
+	assert.Equal(t, []string{
+		"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
+		"FINISHED:FAILURE:UNSUPPORTED_SCOPE",
+	}, funnelShape(funnelEvents(ctx)))
 }

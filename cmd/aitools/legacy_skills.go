@@ -44,6 +44,10 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			installCmd := NewInstallCmd()
 			installCmd.SetContext(cmd.Context())
+			// Root prints the returned error; the detached command must not print
+			// it, or its usage, a second time.
+			installCmd.SilenceErrors = true
+			installCmd.SilenceUsage = true
 
 			// This legacy alias predates the plugin-first default, so it stays on
 			// raw skill files to preserve its behavior.
