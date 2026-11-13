@@ -1,8 +1,11 @@
 package aitools
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -216,6 +219,29 @@ func TestLogMcpEventDropsRejectedCredential(t *testing.T) {
 	assert.Len(t, telemetry.BufferedEvents(ctx), 1)
 	_, uploads = telemetry.UploadConfig(ctx)
 	assert.False(t, uploads, "the add event is logged, and it is not uploaded with the rejected run")
+}
+
+// TestSetUploadConfigLogsNoWarningForFailedHostMetadata checks that an upload whose host metadata lookup fails warns
+// nothing through the global logger, since the SDK would log that failure there. The command has succeeded, and the
+// upload is best-effort.
+func TestSetUploadConfigLogsNoWarningForFailedHostMetadata(t *testing.T) {
+	home := withHome(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	factory := config.DefaultHostMetadataResolverFactory
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(context.Context, string) (*config.HostMetadata, error) { return nil, errors.New("no such host") }
+	}
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = factory })
+	var warnings bytes.Buffer
+	defaultLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&warnings, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	t.Cleanup(func() { slog.SetDefault(defaultLogger) })
+
+	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"))
+	_, uploads := telemetry.UploadConfig(ctx)
+	assert.True(t, uploads)
+	assert.Empty(t, warnings.String())
 }
 
 // TestMcpProxyAuthRejectedRefusesUpload checks that a 401 the proxy answers refuses the run's upload, even though the
