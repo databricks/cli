@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -102,6 +103,18 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 		fmt.Errorf("failed to verify authentication: %w", err))
 }
 
+// credentialError tells a bad credential apart from missing access after a call
+// fails with 401/403. MustWorkspaceClient only attaches credentials (it does not
+// check a PAT server-side), so the Me() probe runs here, only on failure. It
+// returns the probe's error when the credentials themselves fail, or nil.
+func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err error) error {
+	if !errors.Is(err, apierr.ErrUnauthenticated) && !errors.Is(err, apierr.ErrPermissionDenied) {
+		return nil
+	}
+	_, meErr := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	return meErr
+}
+
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
@@ -139,17 +152,11 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// Validate authentication against the workspace before fetching or
-		// rendering anything. MustWorkspaceClient's Config.Authenticate only
-		// attaches credentials (e.g. it does not check a PAT server-side), so
-		// without this a bad credential would surface as a confusing failure
-		// mid-render instead of a clear "not authenticated" error here.
-		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			return authError(ctx, cmd, err)
-		}
-
 		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 		if err != nil {
+			if credErr := credentialError(ctx, w, err); credErr != nil {
+				return authError(ctx, cmd, credErr)
+			}
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,

@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// watchServer serves submit, the auth probe, a terminal runs/get, and a single
+// watchServer serves submit, the user lookup, a terminal runs/get, and a single
 // page of Bricklens logs — everything `air run --watch` touches after submit.
 // resultState is the terminal result the run reports (e.g. SUCCESS, FAILED).
 func watchServer(t *testing.T, resultState string) *httptest.Server {
@@ -42,7 +42,7 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 				{"time_unix_nano": 1700000001000000000, "body": "step 1", "node_index": 0}
 			]}`))
 		default:
-			// Me() probe, workspace-id, SDK config discovery.
+			// Me() user lookup, workspace-id, SDK config discovery.
 			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
 		}
 	}))

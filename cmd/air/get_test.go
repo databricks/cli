@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -57,9 +58,9 @@ func TestGetRunInvalidID(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid JOB_RUN_ID")
 }
 
-// notFoundGetServer serves the auth probe plus a runs/get that reports the run
-// as missing (400 INVALID_PARAMETER_VALUE, which the SDK maps to
-// ErrResourceDoesNotExist for this path).
+// notFoundGetServer serves a runs/get that reports the run as missing (400
+// INVALID_PARAMETER_VALUE, which the SDK maps to ErrResourceDoesNotExist for
+// this path).
 func notFoundGetServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +69,7 @@ func notFoundGetServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"error_code":"INVALID_PARAMETER_VALUE","message":"Run 5 does not exist."}`))
 			return
 		}
-		// Me() probe and any other config discovery.
+		// SDK config discovery.
 		_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
 	}))
 	t.Cleanup(srv.Close)
@@ -88,8 +89,9 @@ func TestGetRunNotFound(t *testing.T) {
 
 func TestGetRunAuthFailed(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	// A genuine auth failure (permission denied) is validated before the run is
-	// fetched, so GetRun is never reached and nothing is rendered.
+	// GetRun's 403 is confirmed as a credential failure by the Me() probe, so
+	// nothing is rendered.
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
@@ -104,6 +106,7 @@ func TestGetRunAuthTransient(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	// A transient failure at the auth probe must not be misreported as an auth
 	// error; it surfaces as a retryable internal error instead.
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrUnauthenticated)
 	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("connection reset"))
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
@@ -112,6 +115,22 @@ func TestGetRunAuthTransient(t *testing.T) {
 	err := cmd.RunE(cmd, []string{"5"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to verify authentication")
+	assert.NotContains(t, err.Error(), "authentication was not successful")
+}
+
+func TestGetRunDeniedWithValidCredentials(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	// A 403 on the run with credentials the Me() probe accepts is missing access
+	// to the run, not a failed login.
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u@example.com"}, nil)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, []string{"5"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get status for run 5")
 	assert.NotContains(t, err.Error(), "authentication was not successful")
 }
 

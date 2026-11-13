@@ -215,8 +215,9 @@ func TestLogsSkipsNodeValidationWhenNodeCountCannotBeResolved(t *testing.T) {
 	}
 }
 
-// completedRunLogsServer serves the auth probe, a terminal runs/get, and a
-// single page of Bricklens logs (newest-first, as the tail fetch requests).
+// completedRunLogsServer serves a terminal runs/get and a single page of
+// Bricklens logs (newest-first, as the tail fetch requests). A successful fetch
+// never needs the Me() credential probe, so the server fails the test on one.
 func completedRunLogsServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -235,9 +236,12 @@ func completedRunLogsServer(t *testing.T) *httptest.Server {
 				{"time_unix_nano": 2000000000, "body": "line two", "node_index": 0},
 				{"time_unix_nano": 1000000000, "body": "line one", "node_index": 0}
 			]}`))
+		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
+			t.Errorf("unexpected Me() probe on a successful logs fetch")
+			w.WriteHeader(http.StatusInternalServerError)
 		default:
-			// Me() probe and SDK config discovery.
-			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+			// SDK config discovery.
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	t.Cleanup(srv.Close)
