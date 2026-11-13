@@ -37,3 +37,14 @@ trace $CLI bundle deploy -qq
 experiment_id=$(read_id.py my_experiment)
 test "$experiment_id" = "$existing_experiment_id"
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags: (.tags | sort_by(.key))}'
+
+title "removing all configured tags is rejected"
+trace envsubst < templates/no_tag.tmpl > databricks.yml
+trace musterr $CLI bundle deploy -qq
+test "$(read_id.py my_experiment)" = "$existing_experiment_id"
+
+title "removing a configured tag is rejected"
+trace envsubst < templates/one_tag.tmpl > databricks.yml
+trace musterr $CLI bundle deploy -qq
+test "$(read_id.py my_experiment)" = "$existing_experiment_id"
+trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags: (.tags | sort_by(.key))}'

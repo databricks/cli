@@ -176,6 +176,56 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
   ]
 }
 
+=== removing all configured tags is rejected
+>>> envsubst
+
+>>> musterr [CLI] bundle deploy -qq
+Error: cannot update resources.experiments.my_experiment: updating id=[MY_EXPERIMENT_ID_3]: cannot remove experiment tag "k1": the MLflow API does not support deleting experiment tags
+
+
+=== removing a configured tag is rejected
+>>> envsubst
+
+>>> musterr [CLI] bundle deploy -qq
+Error: cannot update resources.experiments.my_experiment: updating id=[MY_EXPERIMENT_ID_3]: cannot remove experiment tag "k2": the MLflow API does not support deleting experiment tags
+
+
+>>> [CLI] experiments get-experiment [MY_EXPERIMENT_ID_3]
+{
+  "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
+  "artifact_location": "s3://new-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "k2",
+      "value": "v2"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    }
+  ]
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.experiments.my_experiment

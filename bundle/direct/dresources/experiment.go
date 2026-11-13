@@ -2,7 +2,9 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -43,6 +45,12 @@ func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExper
 	}
 }
 
+func (*ResourceExperiment) KeyedSlices() map[string]any {
+	return map[string]any{
+		"tags": func(tag ml.ExperimentTag) (string, string) { return "key", tag.Key },
+	}
+}
+
 func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experiment, error) {
 	result, err := r.client.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
 		ExperimentId: id,
@@ -62,6 +70,22 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 }
 
 func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, entry *PlanEntry) (*ml.Experiment, error) {
+	tagChanges := entry.Changes.HasChange(structpath.MustParsePath("tags"))
+	var remoteTags map[string]string
+	if tagChanges {
+		remoteTags = make(map[string]string)
+		for _, tag := range entry.RemoteState.(*ml.Experiment).Tags {
+			remoteTags[tag.Key] = tag.Value
+		}
+		removedKey, err := removedExperimentTag(entry.Changes, config.Tags, remoteTags)
+		if err != nil {
+			return nil, err
+		}
+		if removedKey != "" {
+			return nil, fmt.Errorf("cannot remove experiment tag %q: the MLflow API does not support deleting experiment tags", removedKey)
+		}
+	}
+
 	if entry.Changes.HasChange(structpath.MustParsePath("name")) {
 		updateReq := ml.UpdateExperiment{
 			ExperimentId:    id,
@@ -73,11 +97,7 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 		}
 	}
 
-	if entry.Changes.HasChange(structpath.MustParsePath("tags")) {
-		remoteTags := make(map[string]string)
-		for _, tag := range entry.RemoteState.(*ml.Experiment).Tags {
-			remoteTags[tag.Key] = tag.Value
-		}
+	if tagChanges {
 		for _, tag := range config.Tags {
 			if remoteValue, exists := remoteTags[tag.Key]; exists && remoteValue == tag.Value {
 				continue
@@ -93,6 +113,53 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 	}
 
 	return nil, nil
+}
+
+func removedExperimentTag(changes Changes, desired []ml.ExperimentTag, remote map[string]string) (string, error) {
+	desiredKeys := make(map[string]bool, len(desired))
+	for _, tag := range desired {
+		desiredKeys[tag.Key] = true
+	}
+
+	var removedKeys []string
+	for field, change := range changes {
+		if change.Action == deployplan.Skip || change.Old == nil {
+			continue
+		}
+		path, err := structpath.ParsePath(field)
+		if err != nil || !path.HasPrefix(structpath.MustParsePath("tags")) {
+			continue
+		}
+		if field == "tags" {
+			// A loaded plan stores change values as untyped JSON.
+			data, err := json.Marshal(change.Old)
+			if err != nil {
+				return "", fmt.Errorf("encoding previously configured experiment tags: %w", err)
+			}
+			var oldTags []ml.ExperimentTag
+			if err := json.Unmarshal(data, &oldTags); err != nil {
+				return "", fmt.Errorf("decoding previously configured experiment tags: %w", err)
+			}
+			for _, tag := range oldTags {
+				removedKeys = append(removedKeys, tag.Key)
+			}
+		} else if change.New == nil {
+			keyField, key, ok := path.KeyValue()
+			if ok && keyField == "key" && path.Parent().String() == "tags" {
+				removedKeys = append(removedKeys, key)
+			}
+		}
+	}
+
+	slices.Sort(removedKeys)
+	for _, key := range removedKeys {
+		if !desiredKeys[key] {
+			if _, exists := remote[key]; exists {
+				return key, nil
+			}
+		}
+	}
+	return "", nil
 }
 
 func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.CreateExperiment) error {
