@@ -118,18 +118,25 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 }
 
 // serveProxy bridges opts to the service until stdin closes or a signal arrives. opts.Authenticate is wrapped by a
-// refreshGuard. A token that cannot be refreshed mid-session stops the proxy with serveBindStatus. The bridge has
-// already logged that error on the request that needed the token, so it is returned without being printed again.
+// refreshGuard. A token that cannot be refreshed mid-session stops the proxy with serveBindStatus; see proxyResult.
 func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
 	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, cancel: stop}
 	opts.Authenticate = refresh.authenticateRequest
-	if err := proxy.Run(ctx, opts); err != nil {
-		return serveFailure(cmd, err, 1)
-	}
+	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
+}
+
+// proxyResult is the outcome of serve once the bridge has returned with runErr. A refresh failure wins over runErr: the
+// stdin error that can follow a stopped session is a consequence of it. The bridge logs the failing request's error,
+// but not when the client cancelled that request first, so the final line always says why the proxy stopped.
+func proxyResult(cmd *cobra.Command, refresh *refreshGuard, runErr error) error {
 	if refreshErr := refresh.failure(); refreshErr != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "stopped after a token refresh failure for profile %s\n", refresh.profile)
 		return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: serveBindStatus, Err: refreshErr})
+	}
+	if runErr != nil {
+		return serveFailure(cmd, runErr, 1)
 	}
 	return nil
 }
@@ -175,12 +182,11 @@ func serveFailure(cmd *cobra.Command, err error, status int) error {
 	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
 }
 
-// refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed
-// mid-session fails that request with an error naming the profile, then stops the proxy, so the
-// command exits 2 and the next spawn re-runs the binding checks. A request whose own context ended,
-// which the client cancelled or shutdown ended, does not stop it. Nor does the session DELETE at
-// shutdown, which is best effort: after a refresh failure it is sent without a credential, as the
-// session is already over.
+// refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed mid-session fails
+// that request with an error that names the profile and its login command, then stops the proxy, so the command exits
+// 2 and the next spawn re-runs the binding checks. Later requests fail at once, without asking for a token again. A
+// request whose own context ended, which the client cancelled or shutdown ended, does not stop it. Nor does the
+// session DELETE at shutdown, which is best effort: after a refresh failure it is skipped, as the session is over.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
@@ -192,8 +198,11 @@ type refreshGuard struct {
 
 // authenticateRequest is the bridge's Authenticate. It is safe for concurrent use.
 func (g *refreshGuard) authenticateRequest(r *http.Request) error {
-	if g.failure() != nil && r.Method == http.MethodDelete {
-		return nil
+	if g.failure() != nil {
+		if r.Method == http.MethodDelete {
+			return proxy.ErrSkipRequest
+		}
+		return g.stoppedError()
 	}
 	err := g.authenticate(r)
 	if err == nil {
@@ -202,14 +211,24 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	if r.Context().Err() != nil || r.Method == http.MethodDelete {
 		return err
 	}
-	authErr := mcp.AuthError(g.profile, err)
+	// The hint says to restart the server, since the next spawn is what picks up the new login.
+	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, err))
 	g.mu.Lock()
-	if g.err == nil {
+	first := g.err == nil
+	if first {
 		g.err = authErr
 	}
 	g.mu.Unlock()
+	if !first {
+		return g.stoppedError()
+	}
 	g.cancel()
 	return authErr
+}
+
+// stoppedError is the error for a request that arrives after the refresh failure. It does not repeat the login hint.
+func (g *refreshGuard) stoppedError() error {
+	return fmt.Errorf("the session is stopping after a token refresh failure for profile %s", g.profile)
 }
 
 // failure returns the first refresh error, or nil when every token was refreshed.

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -61,12 +62,30 @@ func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 	err := g.authenticateRequest(&http.Request{Header: http.Header{}})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cause)
-	assert.Contains(t, err.Error(), "databricks auth login --profile logfood")
+	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
 	assert.Equal(t, context.Canceled, ctx.Err())
+	assert.ErrorIs(t, g.failure(), cause)
+}
 
-	// A second failure keeps the first error for the exit status.
-	_ = g.authenticateRequest(&http.Request{Header: http.Header{}})
-	assert.Equal(t, 2, calls)
+// After the first failure no request asks for a token again. Each later request fails at once with a short error that
+// does not repeat the login hint.
+func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
+	calls := 0
+	cause := errors.New("refresh token expired")
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error {
+			calls++
+			return cause
+		},
+		profile: "logfood",
+		cancel:  func() {},
+	}
+	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
+
+	err := g.authenticateRequest(&http.Request{Header: http.Header{}})
+
+	assert.Equal(t, 1, calls)
+	assert.EqualError(t, err, "the session is stopping after a token refresh failure for profile logfood")
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
@@ -223,9 +242,9 @@ func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	assert.Contains(t, stderr.String(), ".state.json")
 }
 
-// After a refresh failure the session DELETE is sent without a credential: the session is over, and a failed DELETE
-// would log the refresh error a second time. Authenticate is not asked.
-func TestRefreshGuardSendsDeleteWithoutCredentialAfterFailure(t *testing.T) {
+// After a refresh failure the session DELETE is skipped: the session is over, and a DELETE without a credential would
+// fail and log the refresh error a second time. Authenticate is not asked.
+func TestRefreshGuardSkipsSessionDeleteAfterFailure(t *testing.T) {
 	asked := 0
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error {
@@ -240,8 +259,43 @@ func TestRefreshGuardSendsDeleteWithoutCredentialAfterFailure(t *testing.T) {
 
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, "https://workspace.test/mcp", nil)
 	require.NoError(t, err)
-	assert.NoError(t, g.authenticateRequest(req))
+	assert.ErrorIs(t, g.authenticateRequest(req), proxy.ErrSkipRequest)
 	assert.Equal(t, 0, asked)
+}
+
+// Once the bridge has returned, a refresh failure is the exit status and the final line, whatever Run returned. A
+// stdin error that follows the failure is a consequence of it and is not reported.
+func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
+	cause := errors.New("refresh token expired")
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error { return cause },
+		profile:      "logfood",
+		cancel:       func() {},
+	}
+	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
+	cmd := NewMcpServeCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
+	err := proxyResult(cmd, g, errors.New("read stdin: input/output error"))
+
+	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	assert.ErrorIs(t, err, cause)
+	assert.Equal(t, "stopped after a token refresh failure for profile logfood\n", stderr.String())
+}
+
+// Without a refresh failure, a stdin error is printed and exits 1.
+func TestProxyResultReportsStdinErrorWithoutRefreshFailure(t *testing.T) {
+	g := &refreshGuard{profile: "logfood"}
+	cmd := NewMcpServeCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
+	err := proxyResult(cmd, g, errors.New("read stdin: input/output error"))
+
+	assert.Equal(t, 1, root.ExitStatus(err))
+	assert.Equal(t, "read stdin: input/output error\n", stderr.String())
 }
 
 // A token that expires mid-session fails the request that needs it. The bridge logs that failure once, with the
@@ -288,14 +342,18 @@ func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
 		return nil
 	}
 
-	stdin := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}` + "\n" +
-		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}` + "\n"
 	var stderr bytes.Buffer
+	var stdout lockedBuffer
+	in := feedAfterAnswers(t, &stdout, []string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
+	}, nil)
 	cmd := NewMcpServeCmd()
 	cmd.SetContext(t.Context())
+	cmd.SetErr(&stderr)
 	err := serveProxy(cmd, proxy.Options{
-		In:           strings.NewReader(stdin),
-		Out:          io.Discard,
+		In:           in,
+		Out:          &stdout,
 		Err:          &stderr,
 		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
 		Config:       &config.Config{Host: server.URL},
@@ -305,8 +363,110 @@ func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
-	assert.Equal(t, "databricks aitools mcp serve: upstream: refresh token expired\nRun: databricks auth login --profile logfood\n", stderr.String())
-	assert.True(t, deleted.Load(), "the session DELETE is still sent")
+	assert.Equal(t, "databricks aitools mcp serve: upstream: refresh token expired\n"+
+		"Run: databricks auth login --profile logfood, then restart the MCP server in your agent\n"+
+		"stopped after a token refresh failure for profile logfood\n", stderr.String())
+	assert.False(t, deleted.Load(), "no session DELETE is sent after a refresh failure")
+}
+
+// lockedBuffer collects what serve writes to stdout. The bridge writes from several goroutines.
+type lockedBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *lockedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+// feedAfterAnswers returns stdin for serve. It sends each line once the answer to the line before it is on out, as an
+// MCP client does: the bridge runs requests concurrently, so a later request could otherwise overtake the initialize.
+// The input then ends with end, or closes when end is nil. The answers are the ones the test expects from the fake
+// endpoint, so the feeder waits for the ids of the lines it has sent.
+func feedAfterAnswers(t *testing.T, out *lockedBuffer, lines []string, end error) io.Reader {
+	t.Helper()
+	pr, pw := io.Pipe()
+	t.Cleanup(func() { pw.Close() })
+	go func() {
+		for i, line := range lines {
+			if i > 0 {
+				want := fmt.Sprintf(`"id":%d,`, i)
+				deadline := time.Now().Add(10 * time.Second)
+				for !strings.Contains(out.String(), want) && time.Now().Before(deadline) {
+					time.Sleep(time.Millisecond)
+				}
+			}
+			if _, err := io.WriteString(pw, line+"\n"); err != nil {
+				return
+			}
+		}
+		if end != nil {
+			pw.CloseWithError(end)
+			return
+		}
+		pw.Close()
+	}()
+	return pr
+}
+
+// A stdin error after the refresh failure does not change the exit status or the final line.
+func TestServeProxyRefreshFailureWinsOverStdinError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Mcp-Session-Id", "session-1")
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{},"serverInfo":{"name":"fake","version":"1"}}}`)
+	}))
+	defer server.Close()
+
+	authenticate := func(r *http.Request) error {
+		if r.Method != http.MethodPost {
+			return nil
+		}
+		body, err := r.GetBody()
+		if err != nil {
+			return err
+		}
+		data, err := io.ReadAll(body)
+		body.Close()
+		if err != nil {
+			return err
+		}
+		if strings.Contains(string(data), `"tools/list"`) {
+			return errors.New("refresh token expired")
+		}
+		return nil
+	}
+	var stderr bytes.Buffer
+	var stdout lockedBuffer
+	in := feedAfterAnswers(t, &stdout, []string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
+	}, errors.New("input/output error"))
+	cmd := NewMcpServeCmd()
+	cmd.SetContext(t.Context())
+	cmd.SetErr(&stderr)
+	err := serveProxy(cmd, proxy.Options{
+		In:           in,
+		Out:          &stdout,
+		Err:          &stderr,
+		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
+		Config:       &config.Config{Host: server.URL},
+		Authenticate: authenticate,
+		Profile:      "logfood",
+	})
+
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, 2, root.ExitStatus(err))
+	assert.NotContains(t, stderr.String(), "input/output error")
+	assert.True(t, strings.HasSuffix(stderr.String(), "stopped after a token refresh failure for profile logfood\n"), stderr.String())
 }
 
 // signalHelperEnv marks the child process that TestServeSecondSignalEndsProcess starts.
