@@ -82,8 +82,8 @@ func noopOpen(context.Context, string) error {
 
 // browserOpens returns a context in which the browser is not disabled, so that SignIn calls the test's Open. The
 // runner's BROWSER=none would otherwise skip it.
-func browserOpens(t *testing.T) context.Context {
-	return env.Set(t.Context(), "BROWSER", "test-opener")
+func browserOpens(ctx context.Context) context.Context {
+	return env.Set(ctx, "BROWSER", "test-opener")
 }
 
 func (s *loginTestServer) isDeleted() bool {
@@ -108,7 +108,7 @@ func TestSignInPollsUntilActive(t *testing.T) {
 
 	var opened []string
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(_ context.Context, url string) error {
@@ -165,7 +165,7 @@ func TestSignInTimeout(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	var out bytes.Buffer
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
 		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 30 * time.Millisecond,
@@ -180,7 +180,7 @@ func TestSignInCancelledIsNotATimeout(t *testing.T) {
 
 	// The caller cancels once the sign-in page is open, so the wait is what is cancelled.
 	ctx, cancel := context.WithCancel(t.Context())
-	err := SignIn(ctx, w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err := SignIn(browserOpens(ctx), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: time.Minute,
 		Open: func(context.Context, string) error {
@@ -196,7 +196,7 @@ func TestSignInFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"", "FAILED"}}
 	w := loginTestClient(t, s)
 
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Open:    noopOpen,
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
@@ -237,7 +237,7 @@ func TestSignInDeletesFailedCredentialFromEarlierAttempt(t *testing.T) {
 	w := loginTestClient(t, s)
 
 	deletedBeforeOpen := make(chan bool, 1)
-	err := SignIn(browserOpens(t), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open: func(context.Context, string) error {
@@ -256,7 +256,7 @@ func TestSignInFailedCredentialThatFailsAgainIsFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"FAILED"}, signedIn: true}
 	w := loginTestClient(t, s)
 
-	err := SignIn(browserOpens(t), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 2 * time.Second,
 		Open:    noopOpen,
@@ -270,7 +270,7 @@ func TestSignInFailedAfterProgressIsFailed(t *testing.T) {
 	s := &loginTestServer{states: []string{"FAILED", "PROVISIONING", "FAILED"}}
 	w := loginTestClient(t, s)
 
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err := SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
 		Open:    noopOpen,
@@ -303,7 +303,7 @@ func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	err = SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	err = SignIn(browserOpens(t.Context()), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 200 * time.Millisecond,
 		Open:    noopOpen,
