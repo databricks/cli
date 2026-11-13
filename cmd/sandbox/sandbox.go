@@ -29,6 +29,7 @@ Common workflows:
   databricks sandbox create                  # create a new sandbox
   databricks sandbox delete my-project       # delete a sandbox
   databricks sandbox status my-project       # show sandbox status
+  databricks sandbox forward -L 8080:10080  # open sandbox port 10080 at localhost:8080
 `,
 	}
 
@@ -36,6 +37,7 @@ Common workflows:
 	cmd.AddCommand(newSSHKeyCommand())
 	cmd.AddCommand(newSetDefaultCommand())
 	cmd.AddCommand(newSSHCommand())
+	cmd.AddCommand(newForwardCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
