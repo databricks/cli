@@ -1099,7 +1099,7 @@ func TestServeSignInTransientFailureKeepsServing(t *testing.T) {
 	w := guardedTestClient(t, server.URL, guard)
 	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
 
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Stderr: io.Discard})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func(string) {}, Stderr: io.Discard})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "the next request tries again")

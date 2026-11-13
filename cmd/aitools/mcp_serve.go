@@ -265,8 +265,8 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 			workspaceID = id
 		}
 		url := mcp.SignInURL(w.Config.Host, service, workspaceID)
-		// The opener is called even when the page must not open, so a call that must not open it passes one that does nothing.
-		openPage := func(context.Context, string) error { return nil }
+		// The page opens only when req.Open is set. Otherwise the sign-in only waits, and the proxy's progress names the page.
+		var openPage func(context.Context, string) error
 		if req.Open {
 			// The browser command must outlive the request: the request's context would kill it when the call is cancelled, and
 			// with it the page the user is on.

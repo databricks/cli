@@ -880,8 +880,8 @@ func (x *exchange) lines(reqCtx context.Context, msg []byte) ([][]byte, error) {
 // no lines.
 func oneLines(msgs [][]byte) ([][]byte, error) {
 	lines := make([][]byte, 0, len(msgs))
-	for _, msg := range msgs {
-		line, err := oneLine(msg)
+	for _, out := range msgs {
+		line, err := oneLine(out)
 		if err != nil {
 			return nil, err
 		}

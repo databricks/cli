@@ -21,8 +21,8 @@ const (
 	SignInWaitTimeout  = 5 * time.Minute
 )
 
-// SignInTimeoutError means the caller's credential did not become ACTIVE before the wait ended. LastCheck is the failure
-// of the last poll, when that poll failed; a poll that reads the credential clears it.
+// SignInTimeoutError means the caller's credential did not become ACTIVE before the wait ended. LastCheck is the
+// failure of the last poll, when that poll failed; a poll that reads the credential clears it.
 type SignInTimeoutError struct {
 	LastCheck error
 }
@@ -41,8 +41,8 @@ func (e *SignInTimeoutError) Unwrap() error {
 var ErrSignInFailed = errors.New("sign-in failed")
 
 // SignInOptions controls how SignIn waits. Poll and Timeout are required. Profile names the profile in the notice
-// before the page. Open opens the page in the background, and is not called when BROWSER=none, because the URL is
-// already printed. OnPoll, when set, is called on each poll of the wait.
+// before the page. Open, when set, opens the page in the background; it is not called when BROWSER=none, because the URL
+// is already printed. OnPoll, when set, is called on each poll of the wait.
 type SignInOptions struct {
 	Profile string
 	Poll    time.Duration
@@ -99,7 +99,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	// The page opens in the background. A browser command can run for as long as the browser is open, and the wait does
 	// not depend on it. Its failure is reported when it returns, if that is before the sign-in completes.
 	var opened <-chan error
-	if !browser.IsDisabled(ctx) {
+	if !browser.IsDisabled(ctx) && opts.Open != nil {
 		done := make(chan error, 1)
 		go func() { done <- opts.Open(ctx, url) }()
 		opened = done

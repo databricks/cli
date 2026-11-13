@@ -580,3 +580,18 @@ func TestSignInCallsOnPollOnEachPoll(t *testing.T) {
 	assert.Equal(t, 2, polls)
 	assert.Equal(t, 3, s.reads)
 }
+
+// TestSignInWithoutOpenerOnlyPrintsAndWaits checks that a sign-in with no Open prints the URL and waits for the sign-in, with no
+// page opened.
+func TestSignInWithoutOpenerOnlyPrintsAndWaits(t *testing.T) {
+	s := &loginTestServer{states: []string{"", "ACTIVE"}}
+	w := loginTestClient(t, s)
+	var out bytes.Buffer
+	_, urlShown, err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, &out, SignInOptions{
+		Poll:    time.Millisecond,
+		Timeout: 10 * time.Second,
+	})
+	require.NoError(t, err)
+	assert.True(t, urlShown)
+	assert.Contains(t, out.String(), "Open this URL to sign in to "+loginTestService)
+}

@@ -67,7 +67,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 		})
 	case "tools/list":
 		if challenged {
-			return s.signInRequired(msg.ID)
+			return signInRequired(msg.ID)
 		}
 		return rpcResult(msg.ID, map[string]any{"tools": []any{
 			map[string]any{
@@ -81,7 +81,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 		}})
 	case "tools/call":
 		if challenged {
-			return s.signInRequired(msg.ID)
+			return signInRequired(msg.ID)
 		}
 		if msg.Params.Name != fakeMcpEchoTool {
 			return Response{Body: rpcError(msg.ID, rpcCodeInvalidParams, "Unknown tool: "+msg.Params.Name)}
@@ -137,8 +137,8 @@ func rpcError(id json.RawMessage, code int, message string) map[string]any {
 	}
 }
 
-// signInRequired answers with the gateway's -32006 challenge.
-func (s *FakeWorkspace) signInRequired(id json.RawMessage) Response {
+// signInRequired is the answer to a request for an external service, which the gateway gives before sign-in.
+func signInRequired(id json.RawMessage) Response {
 	return Response{Body: rpcError(id, rpcCodeSignInRequired,
 		"The MCP service request was rejected (HTTP 401). Sign-in is required.")}
 }
