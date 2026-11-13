@@ -32,18 +32,13 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	return msg + "See " + InstallDocsURL + " to upgrade.\n"
 }
 
-func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
-	if info.IsDevelopment() {
+// staleVersionSkipped reports whether cmd gets no stale-version warning. A command whose stdout carries a protocol never
+// gets one, nor does a development build, nor a CLI on DBR, which installs the latest version by default.
+func staleVersionSkipped(ctx context.Context, cmd *cobra.Command, info build.Info) bool {
+	if carriesProtocol(cmd) || info.IsDevelopment() {
 		return true
 	}
-	// DBR installs the latest CLI by default, so skip the warning there.
 	return dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
-}
-
-// staleVersionSkipped reports whether cmd gets no stale-version warning: a command whose stdout carries a protocol
-// never does, and neither does a build that skipStaleVersionWarning skips.
-func staleVersionSkipped(ctx context.Context, cmd *cobra.Command, info build.Info) bool {
-	return carriesProtocol(cmd) || skipStaleVersionWarning(ctx, info)
 }
 
 func warnIfStaleVersion(ctx context.Context, cmd *cobra.Command) {

@@ -156,9 +156,8 @@ Stack Trace:
 
 	startTime := time.Now()
 
-	// initializeContext puts the log file it opens in this slot. When Execute returns, whether the command returned or
-	// panicked, the file is closed after the last log line, and the default logger that was in place is restored, so
-	// nothing writes to the closed file.
+	// initializeContext puts the log file it opens in this slot. It is closed when Execute returns, even on a panic, and
+	// the loggers are restored, so nothing writes to the closed file.
 	var logFile logFileSlot
 	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
 	// slog.SetDefault also redirects the standard log package, so both are restored.

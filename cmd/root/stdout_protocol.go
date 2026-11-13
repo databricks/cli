@@ -8,9 +8,8 @@ import (
 )
 
 // StdoutCarriesProtocol is the cobra annotation of a command whose stdout carries a protocol, such as MCP JSON-RPC
-// messages, so nothing else may be written there. Root refuses a log file on stdout for such a command, and it skips
-// the stale-version warning. That warning goes to stderr, but an agent shows the server's stderr each time it starts
-// the server, so the warning would repeat in every session.
+// messages. Root refuses a log file on stdout for such a command and skips the stale-version warning, which an agent
+// would show in every session.
 const StdoutCarriesProtocol = "stdout-carries-protocol"
 
 // carriesProtocol reports whether cmd is annotated with StdoutCarriesProtocol.
@@ -19,12 +18,11 @@ func carriesProtocol(cmd *cobra.Command) bool {
 	return ok
 }
 
-// writesToStdout reports whether w is stdout, given the process's stdout and stderr. It compares the open file, not a
-// path: on macOS, os.Stat of /dev/stdout does not match stdout when stdout is a pipe, but the opened /dev/stdout does.
-// The streams are parameters because under `go test -json` the testing package sets os.Stderr to os.Stdout.
+// writesToStdout reports whether w is the open stdout file. It compares files, not paths: on macOS a stat of
+// /dev/stdout does not match a stdout pipe, but the opened /dev/stdout does. The streams are parameters so tests can
+// pass their own, since under `go test -json` os.Stderr is os.Stdout.
 //
-// A file that is also stderr is not stdout. When stdout and stderr are one file, as on a terminal, the protocol
-// already shares it with the diagnostics, so the check cannot help and the log file is allowed.
+// A file that is also stderr is not stdout, because one terminal file carries both diagnostics and protocol.
 func writesToStdout(w io.Writer, stdout, stderr *os.File) bool {
 	f, ok := w.(*os.File)
 	if !ok || f == stderr {

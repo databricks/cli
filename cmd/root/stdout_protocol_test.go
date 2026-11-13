@@ -115,8 +115,8 @@ func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
 	assert.True(t, ran)
 }
 
-// writesToStdout compares the log file with the stdout and stderr it is given, so a path that is stdout under
-// another name is refused. stderr is never refused. The streams are pipes of the test's own, not the process's.
+// TestWritesToStdout checks that a path that is stdout under another name is refused. stderr is never refused. The
+// streams are pipes of the test's own, not the process's.
 func TestWritesToStdout(t *testing.T) {
 	stdout := newPipe(t)
 	stderr := newPipe(t)
@@ -148,8 +148,8 @@ func TestWritesToStdout(t *testing.T) {
 	}
 }
 
-// When stdout and stderr are one file, as on a terminal, a log file that is that file is not refused: the protocol
-// already shares it with the diagnostics. A second handle to it is that file, so it is not refused either.
+// TestWritesToStdoutAllowsStderrFile checks that when stdout and stderr are one file, as on a terminal, a log file that
+// is that file is not refused: the protocol already shares it with the diagnostics. A second handle to it is that file.
 func TestWritesToStdoutAllowsStderrFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "terminal.txt")
 	shared, err := os.Create(path)

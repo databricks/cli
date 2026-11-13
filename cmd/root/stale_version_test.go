@@ -44,7 +44,7 @@ func TestStaleVersionWarning(t *testing.T) {
 	}
 }
 
-func TestSkipStaleVersionWarning(t *testing.T) {
+func TestStaleVersionSkipped(t *testing.T) {
 	release := build.Info{Version: "1.18.0"}
 	notDBR := dbr.Environment{}
 
@@ -62,13 +62,14 @@ func TestSkipStaleVersionWarning(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := dbr.MockRuntime(t.Context(), tc.runtime)
-			assert.Equal(t, tc.want, skipStaleVersionWarning(ctx, tc.info))
+			assert.Equal(t, tc.want, staleVersionSkipped(ctx, &cobra.Command{Use: "list"}, tc.info))
 		})
 	}
 }
 
-// A command whose stdout carries a protocol gets no stale-version warning, even on a stale build. The warning goes to
-// stderr, but an agent shows the server's stderr every time it starts the server.
+// TestStaleVersionSkippedForProtocolCommand checks that a command whose stdout carries a protocol gets no stale-version
+// warning, even on a stale build. The warning goes to stderr, but an agent shows the server's stderr every time it starts
+// the server.
 func TestStaleVersionSkippedForProtocolCommand(t *testing.T) {
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
 	release := build.Info{Version: "1.18.0"}

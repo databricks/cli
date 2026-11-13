@@ -60,8 +60,7 @@ func (s *logFileSlot) close() {
 }
 
 // initializeContext opens the log file and installs the default logger. For a command whose stdout carries a protocol,
-// it refuses a log file that is stdout. That check runs before the logger is installed, so nothing reaches stdout,
-// not even the telemetry upload that follows a refused command.
+// it refuses a log file on stdout before the logger is installed, so not even a refused command's telemetry reaches stdout.
 func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	if f.debug {
 		err := f.level.Set("debug")

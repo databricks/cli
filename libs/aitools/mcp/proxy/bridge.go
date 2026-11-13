@@ -51,9 +51,8 @@ var (
 	errNoResponse    = errors.New("upstream sent no response")
 	// errUpstreamTooLarge is the error for an upstream message over maxLineBytes, whether it is a body or an event.
 	errUpstreamTooLarge = fmt.Errorf("an upstream message exceeds the %d MiB limit", maxLineBytes>>20)
-	// ErrSkipRequest is returned by Authenticate to leave the session DELETE unsent: the bridge neither sends nor logs
-	// it. The DELETE is the only request that needs no answer. Any other request that returns it is an error like any
-	// other.
+	// ErrSkipRequest is returned by Authenticate to leave the session DELETE unsent, which needs no answer. Any other
+	// request that returns it fails like any other.
 	ErrSkipRequest = errors.New("request skipped")
 )
 

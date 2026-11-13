@@ -36,7 +36,8 @@ func TestMcpEndpointAnswersInternalService(t *testing.T) {
 	assert.Equal(t, "hi", content[0].(map[string]any)["text"])
 }
 
-// Unity Catalog names are case-insensitive, so the endpoint matches a service name whatever its case, as the listing does.
+// TestMcpEndpointMatchesServiceNameWithoutCase checks that the endpoint matches a service name whatever its case, as
+// Unity Catalog names are case-insensitive and the listing already matches them that way.
 func TestMcpEndpointMatchesServiceNameWithoutCase(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
@@ -57,7 +58,8 @@ func TestMcpEndpointRejectsExternalServiceWithoutCredential(t *testing.T) {
 	assert.Nil(t, reply["result"])
 }
 
-// A service the fake does not have is 404, as the gateway answers a name that no service has, whatever the message.
+// TestMcpEndpointUnknownServiceIsNotFound checks that a name no service has is 404, whatever the message. The name is
+// one letter short of the seeded service, so it also shows that the endpoint matches whole names, not prefixes.
 func TestMcpEndpointUnknownServiceIsNotFound(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
@@ -72,19 +74,23 @@ func TestMcpEndpointUnknownServiceIsNotFound(t *testing.T) {
 	}
 }
 
-func TestMcpEndpointNotificationGetsNoBody(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
-	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","method":"notifications/initialized"}`)}, "system.ai.genie_one_mcp")
-	assert.Equal(t, 202, response.StatusCode)
-	assert.Nil(t, response.Body)
-}
-
-// A client's answer to a request from the server has an id and no method. It is not a request, so it gets 202 with no body.
-func TestMcpEndpointClientResponseGetsNoBody(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
-	response := workspace.McpEndpoint(Request{Body: []byte(`{"jsonrpc":"2.0","id":7,"result":{}}`)}, "system.ai.genie_one_mcp")
-	assert.Equal(t, 202, response.StatusCode)
-	assert.Nil(t, response.Body)
+// TestMcpEndpointNoBodyForNotificationsAndResponses checks that a notification, and a client's answer to a request from
+// the server (an id and no method), get 202 with no body.
+func TestMcpEndpointNoBodyForNotificationsAndResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "notification", body: `{"jsonrpc":"2.0","method":"notifications/initialized"}`},
+		{name: "client response", body: `{"jsonrpc":"2.0","id":7,"result":{}}`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			workspace := NewFakeWorkspace("http://test", "dbapi123")
+			mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
+			response := workspace.McpEndpoint(Request{Body: []byte(tc.body)}, "system.ai.genie_one_mcp")
+			assert.Equal(t, 202, response.StatusCode)
+			assert.Nil(t, response.Body)
+		})
+	}
 }

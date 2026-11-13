@@ -126,6 +126,7 @@ func rpcError(id json.RawMessage, code int, message string) map[string]any {
 	}
 }
 
+// signInRequired is the answer to a request for an external service, which the gateway gives before sign-in.
 func signInRequired(id json.RawMessage) Response {
 	return Response{Body: rpcError(id, rpcCodeSignInRequired,
 		"The MCP service request was rejected (HTTP 401). Sign-in is required.")}

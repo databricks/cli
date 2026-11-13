@@ -115,8 +115,8 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	})
 }
 
-// serveProxy bridges opts to the service until stdin closes or a signal arrives. opts.Authenticate is wrapped by a
-// refreshGuard. A token that cannot be refreshed mid-session stops the proxy with serveBindStatus; see proxyResult.
+// serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
+// refreshGuard, so a refresh failure stops the proxy; see proxyResult.
 func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
@@ -125,13 +125,12 @@ func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
 
-// proxyResult is the outcome of serve once the bridge has returned with runErr. A refresh failure wins over runErr: the
-// stdin error that can follow a stopped session is a consequence of it. The bridge logs the failing request's error,
-// but not when the client cancelled that request first, so the final line always says why the proxy stopped.
+// proxyResult returns the outcome of serve once the bridge has returned with runErr. A refresh failure wins, since a
+// stdin error after it is a consequence. The final line always names the failure, as the bridge may not have logged it.
 func proxyResult(cmd *cobra.Command, refresh *refreshGuard, runErr error) error {
 	if refreshErr := refresh.failure(); refreshErr != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "stopped after a token refresh failure for profile %s\n", refresh.profile)
-		return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: serveBindStatus, Err: refreshErr})
+		return exitAlreadyPrinted(refreshErr, serveBindStatus)
 	}
 	if runErr != nil {
 		return serveFailure(cmd, runErr, 1)
@@ -177,14 +176,18 @@ const serveBindStatus = 2
 // so the message is written exactly once.
 func serveFailure(cmd *cobra.Command, err error, status int) error {
 	fmt.Fprintln(cmd.ErrOrStderr(), err)
+	return exitAlreadyPrinted(err, status)
+}
+
+// exitAlreadyPrinted returns err as an error that exits with status and that Execute does not print again.
+func exitAlreadyPrinted(err error, status int) error {
 	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
 }
 
 // refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed mid-session fails
-// that request with an error that names the profile and its login command, then stops the proxy, so the command exits
-// 2 and the next spawn re-runs the binding checks. Later requests fail at once, without asking for a token again. A
-// request whose own context ended, which the client cancelled or shutdown ended, does not stop it. Nor does the
-// session DELETE at shutdown, which is best effort: after a refresh failure it is skipped, as the session is over.
+// that request with an error that names the profile and its login command, then stops the proxy, which exits 2. Later
+// requests fail at once, without asking for a token again. A request whose own context ended does not stop it, nor
+// does the session DELETE at shutdown, which is skipped after a refresh failure.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string

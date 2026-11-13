@@ -34,7 +34,8 @@ func TestMcpServeIsHidden(t *testing.T) {
 	assert.True(t, NewMcpServeCmd().Hidden)
 }
 
-// The argv that `aitools mcp add` writes into an agent config parses with serve's flags.
+// TestServeParsesArgvThatAddWrites checks that the argv that `aitools mcp add` writes into an agent config parses with
+// serve's flags.
 func TestServeParsesArgvThatAddWrites(t *testing.T) {
 	parent := newMCPTestRoot()
 	serve, _, err := parent.Find([]string{"mcp", "serve"})
@@ -67,7 +68,7 @@ func TestRefreshGuardPassesThroughWhileTokensRefresh(t *testing.T) {
 func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	calls := 0
-	cause := errors.New("refresh token expired")
+	cause := errors.New(refreshTokenExpired)
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error {
 			calls++
@@ -80,16 +81,16 @@ func TestRefreshGuardStopsProxyOnFirstFailure(t *testing.T) {
 	err := g.authenticateRequest(&http.Request{Header: http.Header{}})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cause)
-	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
+	assert.Contains(t, err.Error(), refreshLoginHint)
 	assert.Equal(t, context.Canceled, ctx.Err())
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
-// After the first failure no request asks for a token again. Each later request fails at once with a short error that
-// does not repeat the login hint.
+// TestRefreshGuardStopsLaterRequestsWithoutAskingAgain checks that after the first failure no request asks for a token
+// again. Each later request fails at once with a short error that does not repeat the login hint.
 func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 	calls := 0
-	cause := errors.New("refresh token expired")
+	cause := errors.New(refreshTokenExpired)
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error {
 			calls++
@@ -107,10 +108,10 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
-// The refresh failure reaches the user as the AUTH_FAILED error, which names the profile and its login command
-// and exits 2.
+// TestRefreshGuardStoresAuthError checks that the refresh failure reaches the user as the AUTH_FAILED error, which names
+// the profile and its login command.
 func TestRefreshGuardStoresAuthError(t *testing.T) {
-	cause := errors.New("refresh token expired")
+	cause := errors.New(refreshTokenExpired)
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return cause },
 		profile:      "my profile",
@@ -130,7 +131,7 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
-	cause := mcp.AuthError("logfood", errors.New("refresh token expired"))
+	cause := mcp.AuthError("logfood", errors.New(refreshTokenExpired))
 
 	err := serveFailure(cmd, cause, serveBindStatus)
 
@@ -140,7 +141,8 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	assert.ErrorIs(t, err, cause)
 }
 
-// The profile's insecure_skip_verify reaches the transport, and HTTP/2 is kept with it.
+// TestServeTransportTLSVerification checks that the profile's insecure_skip_verify reaches the transport, and that
+// HTTP/2 is kept with it.
 func TestServeTransportTLSVerification(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -174,8 +176,8 @@ func TestServeTransportKeepsHTTP2WhenSkippingVerification(t *testing.T) {
 	assert.Equal(t, 2, resp.ProtoMajor)
 }
 
-// A request whose own context ended (the client cancelled it, or shutdown began) fails that request only: the
-// token was not shown to be unusable.
+// TestRefreshGuardIgnoresRequestThatEnded checks that a request whose own context ended (the client cancelled it, or
+// shutdown began) fails that request only: the token was not shown to be unusable.
 func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
@@ -193,12 +195,12 @@ func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
 	assert.False(t, cancelled)
 }
 
-// The session DELETE at shutdown is best effort. Its auth failure is logged by the bridge, and a normal shutdown
-// exits 0.
+// TestRefreshGuardIgnoresSessionDelete checks that the session DELETE at shutdown is best effort. Its auth failure is
+// logged by the bridge, and a normal shutdown exits 0.
 func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
-		authenticate: func(*http.Request) error { return errors.New("refresh token expired") },
+		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
 		profile:      "logfood",
 		cancel:       func() { cancelled = true },
 	}
@@ -211,7 +213,8 @@ func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
 	assert.False(t, cancelled)
 }
 
-// An unknown agent is left out of the User-Agent and reported once on stderr, so the server still serves.
+// TestServeAgentKeepsOnlyKnownAgents checks that an unknown agent is left out of the User-Agent and reported once on
+// stderr, so the server still serves.
 func TestServeAgentKeepsOnlyKnownAgents(t *testing.T) {
 	var stderr bytes.Buffer
 	assert.Equal(t, "claude-code", serveAgent("claude-code", &stderr))
@@ -225,7 +228,8 @@ func TestServeAgentKeepsOnlyKnownAgents(t *testing.T) {
 	assert.Empty(t, stderr.String())
 }
 
-// A service that is not a full three-part name is refused before any binding check, with the flag named.
+// TestMcpServeRejectsServiceWithoutThreeParts checks that a service that is not a full three-part name is refused before
+// any binding check, with the flag named.
 func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	withHome(t)
 	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d"} {
@@ -239,7 +243,8 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	}
 }
 
-// A state file that cannot be read stops the binding checks, so it exits 2 like the other binding failures.
+// TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
+// exits 2 like the other binding failures.
 func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	withHome(t)
 	dir, err := installer.GlobalSkillsDir(t.Context())
@@ -256,14 +261,15 @@ func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	assert.Contains(t, stderr.String(), ".state.json")
 }
 
-// After a refresh failure the session DELETE is skipped: the session is over, and a DELETE without a credential would
-// fail and log the refresh error a second time. Authenticate is not asked.
+// TestRefreshGuardSkipsSessionDeleteAfterFailure checks that after a refresh failure the session DELETE is skipped: the
+// session is over, and a DELETE without a credential would fail and log the refresh error a second time. Authenticate is
+// not asked.
 func TestRefreshGuardSkipsSessionDeleteAfterFailure(t *testing.T) {
 	asked := 0
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error {
 			asked++
-			return errors.New("refresh token expired")
+			return errors.New(refreshTokenExpired)
 		},
 		profile: "logfood",
 		cancel:  func() {},
@@ -277,10 +283,11 @@ func TestRefreshGuardSkipsSessionDeleteAfterFailure(t *testing.T) {
 	assert.Equal(t, 0, asked)
 }
 
-// Once the bridge has returned, a refresh failure is the exit status and the final line, whatever Run returned. A
-// stdin error that follows the failure is a consequence of it and is not reported.
+// TestProxyResultRefreshFailureWinsOverStdinError checks that once the bridge has returned, a refresh failure is the exit
+// status and the final line, whatever Run returned. A stdin error that follows the failure is a consequence of it and is
+// not reported.
 func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
-	cause := errors.New("refresh token expired")
+	cause := errors.New(refreshTokenExpired)
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return cause },
 		profile:      "logfood",
@@ -296,10 +303,11 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
 	assert.ErrorIs(t, err, cause)
-	assert.Equal(t, "stopped after a token refresh failure for profile logfood\n", stderr.String())
+	assert.Equal(t, refreshStoppedLine, stderr.String())
 }
 
-// Without a refresh failure, a stdin error is printed and exits 1.
+// TestProxyResultReportsStdinErrorWithoutRefreshFailure checks that without a refresh failure, a stdin error is printed
+// and exits 1.
 func TestProxyResultReportsStdinErrorWithoutRefreshFailure(t *testing.T) {
 	g := &refreshGuard{profile: "logfood"}
 	cmd := NewMcpServeCmd()
@@ -312,11 +320,38 @@ func TestProxyResultReportsStdinErrorWithoutRefreshFailure(t *testing.T) {
 	assert.Equal(t, "read stdin: input/output error\n", stderr.String())
 }
 
-// A token that expires mid-session fails the request that needs it. The bridge logs that failure once, with the
-// profile and the login command; the proxy then exits 2 without printing it again, and the session DELETE at
-// shutdown is still sent.
-func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
-	var deleted atomic.Bool
+// The refresh failure fixtures: the cause that the fake token gives, the login hint that serve prints with it, and the
+// final line that serve prints once the proxy has stopped.
+const (
+	refreshTokenExpired = "refresh token expired"
+	refreshLoginHint    = "databricks auth login --profile logfood, then restart the MCP server in your agent"
+	refreshStoppedLine  = "stopped after a token refresh failure for profile logfood\n"
+)
+
+// expiresOnToolsList is an Authenticate whose token expires with the tools/list request, as a refresh token can
+// mid-session. It reads the request body, so it answers POST requests only.
+func expiresOnToolsList(r *http.Request) error {
+	if r.Method != http.MethodPost {
+		return nil
+	}
+	body, err := r.GetBody()
+	if err != nil {
+		return err
+	}
+	data, err := io.ReadAll(body)
+	body.Close()
+	if err != nil {
+		return err
+	}
+	if strings.Contains(string(data), `"tools/list"`) {
+		return errors.New(refreshTokenExpired)
+	}
+	return nil
+}
+
+// newRefreshFailureServer is a fake endpoint that answers initialize. It sets deleted when it gets a session DELETE.
+func newRefreshFailureServer(t *testing.T, deleted *atomic.Bool) *httptest.Server {
+	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodDelete {
 			deleted.Store(true)
@@ -327,41 +362,23 @@ func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
 		w.Header().Set("Mcp-Session-Id", "session-1")
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{},"serverInfo":{"name":"fake","version":"1"}}}`)
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
+	return server
+}
 
-	// The token expires with the tools/list request. From then on the session DELETE fails too, as an expired
-	// token would.
-	const refreshErr = "refresh token expired"
-	var expired atomic.Bool
-	authenticate := func(r *http.Request) error {
-		if r.Method != http.MethodPost {
-			if expired.Load() {
-				return errors.New(refreshErr)
-			}
-			return nil
-		}
-		body, err := r.GetBody()
-		if err != nil {
-			return err
-		}
-		data, err := io.ReadAll(body)
-		body.Close()
-		if err != nil {
-			return err
-		}
-		if strings.Contains(string(data), `"tools/list"`) {
-			expired.Store(true)
-			return errors.New(refreshErr)
-		}
-		return nil
-	}
-
+// runRefreshFailureSession serves an initialize and a tools/list whose token expires. Stdin ends with end, or closes
+// cleanly when end is nil. It returns what serve printed to stderr, whether the endpoint got a session DELETE, and
+// serve's error.
+func runRefreshFailureSession(t *testing.T, end error) (string, bool, error) {
+	t.Helper()
+	var deleted atomic.Bool
+	server := newRefreshFailureServer(t, &deleted)
 	var stderr bytes.Buffer
 	var stdout lockedBuffer
 	in := feedAfterAnswers(t, &stdout, []string{
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
 		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
-	}, nil)
+	}, end)
 	cmd := NewMcpServeCmd()
 	cmd.SetContext(t.Context())
 	cmd.SetErr(&stderr)
@@ -371,16 +388,24 @@ func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
 		Err:          &stderr,
 		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
 		Config:       &config.Config{Host: server.URL},
-		Authenticate: authenticate,
+		Authenticate: expiresOnToolsList,
 		Profile:      "logfood",
 	})
+	return stderr.String(), deleted.Load(), err
+}
+
+// TestServeProxyRefreshFailurePrintsOnceAndExitsTwo checks that a token that expires mid-session fails the request that
+// needs it. The bridge logs that failure once, with the profile and the login command. The proxy then exits 2 without
+// printing it again, and sends no session DELETE at shutdown.
+func TestServeProxyRefreshFailurePrintsOnceAndExitsTwo(t *testing.T) {
+	stderr, deleted, err := runRefreshFailureSession(t, nil)
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
-	assert.Equal(t, "databricks aitools mcp serve: upstream: refresh token expired\n"+
-		"Run: databricks auth login --profile logfood, then restart the MCP server in your agent\n"+
-		"stopped after a token refresh failure for profile logfood\n", stderr.String())
-	assert.False(t, deleted.Load(), "no session DELETE is sent after a refresh failure")
+	assert.Equal(t, "databricks aitools mcp serve: upstream: "+refreshTokenExpired+"\n"+
+		"Run: "+refreshLoginHint+"\n"+
+		refreshStoppedLine, stderr)
+	assert.False(t, deleted, "no session DELETE is sent after a refresh failure")
 }
 
 // lockedBuffer collects what serve writes to stdout. The bridge writes from several goroutines.
@@ -431,56 +456,15 @@ func feedAfterAnswers(t *testing.T, out *lockedBuffer, lines []string, end error
 	return pr
 }
 
-// A stdin error after the refresh failure does not change the exit status or the final line.
+// TestServeProxyRefreshFailureWinsOverStdinError checks that a stdin error after the refresh failure does not change the
+// exit status or the final line.
 func TestServeProxyRefreshFailureWinsOverStdinError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Mcp-Session-Id", "session-1")
-		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{},"serverInfo":{"name":"fake","version":"1"}}}`)
-	}))
-	defer server.Close()
-
-	authenticate := func(r *http.Request) error {
-		if r.Method != http.MethodPost {
-			return nil
-		}
-		body, err := r.GetBody()
-		if err != nil {
-			return err
-		}
-		data, err := io.ReadAll(body)
-		body.Close()
-		if err != nil {
-			return err
-		}
-		if strings.Contains(string(data), `"tools/list"`) {
-			return errors.New("refresh token expired")
-		}
-		return nil
-	}
-	var stderr bytes.Buffer
-	var stdout lockedBuffer
-	in := feedAfterAnswers(t, &stdout, []string{
-		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
-		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
-	}, errors.New("input/output error"))
-	cmd := NewMcpServeCmd()
-	cmd.SetContext(t.Context())
-	cmd.SetErr(&stderr)
-	err := serveProxy(cmd, proxy.Options{
-		In:           in,
-		Out:          &stdout,
-		Err:          &stderr,
-		Endpoint:     mcp.ServiceURL(server.URL, "system.ai.github"),
-		Config:       &config.Config{Host: server.URL},
-		Authenticate: authenticate,
-		Profile:      "logfood",
-	})
+	stderr, _, err := runRefreshFailureSession(t, errors.New("input/output error"))
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
-	assert.NotContains(t, stderr.String(), "input/output error")
-	assert.True(t, strings.HasSuffix(stderr.String(), "stopped after a token refresh failure for profile logfood\n"), stderr.String())
+	assert.NotContains(t, stderr, "input/output error")
+	assert.True(t, strings.HasSuffix(stderr, refreshStoppedLine), stderr)
 }
 
 // signalHelperEnv marks the child process that TestServeSecondSignalEndsProcess starts.
@@ -500,8 +484,8 @@ func TestServeSignalHelper(t *testing.T) {
 	time.Sleep(time.Minute)
 }
 
-// The first signal cancels the context and the second one ends the process. A second signal that the handler
-// swallowed during shutdown would leave the child running until the timeout.
+// TestServeSecondSignalEndsProcess checks that the first signal cancels the context and the second one ends the
+// process. A second signal that the handler swallowed during shutdown would leave the child running until the timeout.
 func TestServeSecondSignalEndsProcess(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Process.Signal cannot send SIGINT on Windows")
