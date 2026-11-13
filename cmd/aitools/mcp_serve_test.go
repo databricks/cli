@@ -863,7 +863,7 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 			require.NoError(t, err)
 
 			signIn := serveSignIn(w, "logfood", "system.ai.github", "")
-			tc.req.Stderr = io.Discard
+			tc.req.Stderr, tc.req.Progress = io.Discard, func(string) {}
 			alreadySignedIn, _, err := signIn(t.Context(), tc.req)
 
 			require.NoError(t, err)
@@ -995,7 +995,7 @@ func TestServeSignInReportsEachPoll(t *testing.T) {
 
 	polls := 0
 	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
-	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() { polls++ }, Stderr: io.Discard})
+	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func(string) { polls++ }, Stderr: io.Discard})
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, polls)
@@ -1030,7 +1030,7 @@ func TestServeSignInAuthenticatesEveryRequest(t *testing.T) {
 	w := guardedTestClient(t, server.URL, guard)
 
 	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() {}, Stderr: io.Discard})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func(string) {}, Stderr: io.Discard})
 
 	require.NoError(t, err)
 	assert.Equal(t, reads.Load(), authenticated.Load(), "every request of the sign-in is authenticated by the guard")
@@ -1119,7 +1119,7 @@ func TestServeSignInRestartWaitsForDeletedCredential(t *testing.T) {
 
 	polls := 0
 	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
-	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func() { polls++ }, Stderr: io.Discard})
+	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func(string) { polls++ }, Stderr: io.Discard})
 
 	require.NoError(t, err)
 	assert.False(t, alreadySignedIn, "a deleted credential is not reported as signed in")
@@ -1158,4 +1158,55 @@ func TestServeSignInRestartGivesUpOnStaleCredential(t *testing.T) {
 	require.Error(t, err)
 	assert.False(t, alreadySignedIn)
 	assert.False(t, urlShown, "no page is shown while the credential still reads as signed in")
+}
+
+// TestServeSignInProgressNamesPageWhenNotOpened checks that the progress of a sign-in names its page when this attempt
+// does not open it, and names none when it does.
+func TestServeSignInProgressNamesPageWhenNotOpened(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	for _, tc := range []struct {
+		name string
+		open bool
+	}{
+		{name: "page opened", open: true},
+		{name: "page not opened", open: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var reads atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != credentialPath {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				rw.Header().Set("Content-Type", "application/json")
+				if reads.Add(1) < 3 {
+					rw.WriteHeader(http.StatusNotFound)
+					_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+					return
+				}
+				_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
+			}))
+			t.Cleanup(server.Close)
+			w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+			var pageURLs []string
+			signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+
+			_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: tc.open, Stderr: io.Discard, Progress: func(pageURL string) {
+				pageURLs = append(pageURLs, pageURL)
+			}})
+
+			require.NoError(t, err)
+			// The fixture is read twice before the caller signs in: the check before the sign-in, then two polls.
+			want := ""
+			if !tc.open {
+				want = mcp.SignInURL(server.URL, "system.ai.github", "1")
+			}
+			assert.Equal(t, []string{want, want}, pageURLs)
+		})
+	}
 }

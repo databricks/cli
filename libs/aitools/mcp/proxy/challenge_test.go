@@ -576,7 +576,7 @@ func TestAuthenticateSendsProgressOnEachPoll(t *testing.T) {
 	proceed := make(chan struct{})
 	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
 		for range 2 {
-			req.Progress()
+			req.Progress("")
 			<-proceed
 		}
 		return false, true, nil
@@ -603,8 +603,8 @@ func TestAuthenticateSendsProgressOnEachPoll(t *testing.T) {
 func TestAuthenticateSendsNoProgressWithoutToken(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
-		req.Progress()
-		req.Progress()
+		req.Progress("")
+		req.Progress("")
 		return false, true, nil
 	}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
@@ -622,7 +622,7 @@ func TestAuthenticateSendsNoProgressWithoutToken(t *testing.T) {
 func TestAuthenticateSendsNoProgressForNullToken(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
-		req.Progress()
+		req.Progress("")
 		return false, true, nil
 	}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
@@ -859,4 +859,52 @@ func TestQueuedAuthenticateReportsProgress(t *testing.T) {
 		}
 	}
 	assert.Positive(t, signedIn, "the queued call's progress comes before the first sign-in answers")
+}
+
+// TestAuthenticateTimeoutNamesTheLastFailedCheck checks that a timeout whose last poll failed says why, so that the agent
+// and the user can tell a failing service from a sign-in nobody finished.
+func TestAuthenticateTimeoutNamesTheLastFailedCheck(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := &signInStub{reply: func(int) (bool, error) {
+		return false, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute, LastCheck: errors.New("HTTP 503: unavailable")}
+	}}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
+
+	assert.Contains(t, resultText(t, lines[1]), "did not complete in 5 minutes (the last check failed: HTTP 503: unavailable). Finish at "+testURL)
+}
+
+// TestAuthenticateProgressNamesThePageWhenItIsNotOpened checks that progress names the sign-in page when the sign-in says
+// the page was not opened, so the client can show the user where to finish, and names no page otherwise.
+func TestAuthenticateProgressNamesThePageWhenItIsNotOpened(t *testing.T) {
+	srv, _ := challengedService(t)
+	var mu sync.Mutex
+	calls := 0
+	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
+		mu.Lock()
+		calls++
+		second := calls == 2
+		mu.Unlock()
+		if second {
+			req.Progress(testURL)
+		} else {
+			req.Progress("")
+		}
+		return false, true, nil
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":"t"}}}`)
+	p.waitLines(t, 3)
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":"t"}}}`)
+	lines := p.waitLines(t, 6)
+	require.NoError(t, p.finish(t))
+
+	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1,"message":"Waiting for the sign-in to GitHub to complete."}}`, lines[1])
+	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1,"message":"Waiting for the sign-in to GitHub to complete. Finish at `+testURL+`"}}`, lines[4])
 }

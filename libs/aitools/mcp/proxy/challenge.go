@@ -39,8 +39,9 @@ type SignInRequest struct {
 	// Restart deletes the caller's sign-in before the sign-in runs, so that it starts from no credential. The proxy asks
 	// for it when the service challenged the session again after an "Already signed in" answer.
 	Restart bool
-	// Progress is called on each poll of the wait. It is never nil.
-	Progress func()
+	// Progress is called on each poll of the wait. Its pageURL is the sign-in page when this attempt did not open the page,
+	// so that the client can show where the user finishes, and "" otherwise. It is never nil.
+	Progress func(pageURL string)
 	// Stderr receives the progress lines of the sign-in. Writes to it are serialized with the bridge's diagnostics.
 	Stderr io.Writer
 }
@@ -286,12 +287,12 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 // each poll of the wait, and each poll while the call is queued, is reported to the client through notify.
 func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.RawMessage, notify func([]byte)) [][]byte {
 	var polls int
-	report := func() {
+	report := func(pageURL string) {
 		if len(progressToken) == 0 {
 			return
 		}
 		polls++
-		notify(progressNotification(progressToken, polls, h.c.Label))
+		notify(progressNotification(progressToken, polls, h.c.Label, pageURL))
 	}
 	if !h.acquire(ctx, report) {
 		return nil
@@ -334,9 +335,13 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 			listChangedNotification,
 		}
 	case timedOut:
+		lastCheck := ""
+		if timeout.LastCheck != nil {
+			lastCheck = fmt.Sprintf(" (the last check failed: %v)", timeout.LastCheck)
+		}
 		return [][]byte{toolResult(id, fmt.Sprintf(
-			"Sign-in to %s did not complete in %g minutes. Finish at %s then retry, or run: %s",
-			h.c.Service, timeout.Wait.Minutes(), timeout.URL, h.c.LoginCommand), true)}
+			"Sign-in to %s did not complete in %g minutes%s. Finish at %s then retry, or run: %s",
+			h.c.Service, timeout.Wait.Minutes(), lastCheck, timeout.URL, h.c.LoginCommand), true)}
 	default:
 		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
 	}
@@ -346,7 +351,7 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 // progress every queueProgressInterval, so that a client does not give up on it, and it returns false when ctx is done
 // first. A call whose ctx is done once it has the turn gives the turn back and returns false, so a call the client
 // cancelled before its own attempt starts touches no state.
-func (h *signInHooks) acquire(ctx context.Context, report func()) bool {
+func (h *signInHooks) acquire(ctx context.Context, report func(pageURL string)) bool {
 	ticker := time.NewTicker(queueProgressInterval)
 	defer ticker.Stop()
 	for {
@@ -358,7 +363,7 @@ func (h *signInHooks) acquire(ctx context.Context, report func()) bool {
 			}
 			return true
 		case <-ticker.C:
-			report()
+			report("")
 		case <-ctx.Done():
 			return false
 		}
@@ -371,8 +376,12 @@ func (h *signInHooks) release() {
 }
 
 // progressNotification is the notifications/progress message for the n-th poll of a sign-in that the client asked to
-// hear about through token.
-func progressNotification(token json.RawMessage, n int, label string) []byte {
+// hear about through token. A non-empty pageURL is the page the user finishes at.
+func progressNotification(token json.RawMessage, n int, label, pageURL string) []byte {
+	message := fmt.Sprintf("Waiting for the sign-in to %s to complete.", label)
+	if pageURL != "" {
+		message += " Finish at " + pageURL
+	}
 	// Cannot fail: the token came from a parsed request and the rest holds plain values.
 	b, _ := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
@@ -380,7 +389,7 @@ func progressNotification(token json.RawMessage, n int, label string) []byte {
 		"params": map[string]any{
 			"progressToken": token,
 			"progress":      n,
-			"message":       fmt.Sprintf("Waiting for the sign-in to %s to complete.", label),
+			"message":       message,
 		},
 	})
 	return b
