@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate -o json -t trailing
+{
+  "schema": "[USERNAME]_qc",
+  "model": "[USERNAME]_model",
+  "endpoint": "[USERNAME]_endpoint"
+}
+
+>>> [CLI] bundle validate -o json -t repeated
+{
+  "schema": "team__[USERNAME]__qc",
+  "model": "team__[USERNAME]__model",
+  "endpoint": "team__[USERNAME]__endpoint"
+}
+
+>>> [CLI] bundle validate -o json -t generated
+{
+  "schema": "dev_[USERNAME]_qc",
+  "model": "dev_[USERNAME]_model",
+  "endpoint": "dev_[USERNAME]_endpoint"
+}
