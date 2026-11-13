@@ -26,11 +26,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Results of the `mcp list --check` checks that are not server statuses. statusOK and statusUnknown carry the other two.
-const (
-	checkFailed = "failed"
-	checkNeeded = "needed"
-)
+// checkNeeded is the sign-in result of a server whose sign-in is not complete. The other results of a check are
+// statusOK, statusFailed and statusUnknown.
+const checkNeeded = "needed"
 
 // Agent entry statuses of `mcp list`. Server statuses are the drift kinds of mcp.CheckEntries, plus statusOK and
 // statusUnknown, which is an entry or config that could not be checked.
@@ -384,7 +382,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 	}
 	p.token = statusOK
 	if err != nil {
-		p.token = checkFailed
+		p.token = statusFailed
 		out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
 	}
 	for j := range p.Servers {
@@ -452,11 +450,11 @@ func withConfigFile(ctx context.Context, path string, fn func(ctx context.Contex
 func binaryStatus(command string, lookPath func(string) (string, error)) string {
 	path, absolute := binaryPathFor(command, lookPath)
 	if !absolute {
-		return checkFailed
+		return statusFailed
 	}
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
-		return checkFailed
+		return statusFailed
 	}
 	return statusOK
 }
@@ -572,7 +570,7 @@ func checkText(c *mcpListCheck) string {
 	case statusUnknown:
 		parts = append(parts, "sign-in unknown")
 	}
-	if c.Binary == checkFailed {
+	if c.Binary == statusFailed {
 		parts = append(parts, "binary missing")
 	}
 	return strings.Join(parts, ", ")

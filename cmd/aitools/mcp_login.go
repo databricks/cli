@@ -19,10 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// categorySignInTimeout is the error category of a sign-in that did not finish in time. The
-// telemetry enum does not define it yet.
-const categorySignInTimeout protos.AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
-
 // Sign-in states of `mcp login` and `mcp logout`, reported in JSON.
 const (
 	signInStateActive       = "ACTIVE"

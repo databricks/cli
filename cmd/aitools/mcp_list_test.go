@@ -964,7 +964,7 @@ func TestAddChecksWarnsWhenProfileCannotAuthenticate(t *testing.T) {
 
 	s, out := checkedListServer(t)
 	require.NotNil(t, s.Check)
-	assert.Equal(t, checkFailed, s.Check.Token)
+	assert.Equal(t, statusFailed, s.Check.Token)
 	assert.Equal(t, statusUnknown, s.Check.SignIn)
 	require.Len(t, out.Warnings, 1)
 	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
@@ -1044,8 +1044,8 @@ func TestCheckText(t *testing.T) {
 		{name: "signed in and binary ok", check: &mcpListCheck{SignIn: statusOK, Binary: statusOK}, want: "signed in"},
 		{name: "sign-in needed", check: &mcpListCheck{SignIn: checkNeeded, Binary: statusOK}, want: "sign-in needed"},
 		{name: "sign-in unknown", check: &mcpListCheck{SignIn: statusUnknown, Binary: statusOK}, want: "sign-in unknown"},
-		{name: "binary missing", check: &mcpListCheck{Binary: checkFailed}, want: "binary missing"},
-		{name: "sign-in needed and binary missing", check: &mcpListCheck{SignIn: checkNeeded, Binary: checkFailed}, want: "sign-in needed, binary missing"},
+		{name: "binary missing", check: &mcpListCheck{Binary: statusFailed}, want: "binary missing"},
+		{name: "sign-in needed and binary missing", check: &mcpListCheck{SignIn: checkNeeded, Binary: statusFailed}, want: "sign-in needed, binary missing"},
 		{name: "server without sign-in", check: &mcpListCheck{Binary: statusOK}, want: ""},
 	}
 	for _, tc := range cases {
@@ -1069,12 +1069,12 @@ func TestBinaryStatus(t *testing.T) {
 	notFound := func(string) (string, error) { return "", exec.ErrNotFound }
 
 	assert.Equal(t, statusOK, binaryStatus(present, notFound))
-	assert.Equal(t, checkFailed, binaryStatus(missing, found))
+	assert.Equal(t, statusFailed, binaryStatus(missing, found))
 	assert.Equal(t, statusOK, binaryStatus("databricks", found))
-	assert.Equal(t, checkFailed, binaryStatus("databricks", notFound))
+	assert.Equal(t, statusFailed, binaryStatus("databricks", notFound))
 	// An empty command resolves to the working directory, and a directory is not a binary.
-	assert.Equal(t, checkFailed, binaryStatus("", found))
-	assert.Equal(t, checkFailed, binaryStatus(t.TempDir(), notFound))
+	assert.Equal(t, statusFailed, binaryStatus("", found))
+	assert.Equal(t, statusFailed, binaryStatus(t.TempDir(), notFound))
 }
 
 // TestSignInStatus checks the sign-in state that --check reports for one service.
@@ -1176,7 +1176,7 @@ func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
 
 	s, out := checkedListServer(t)
 	require.NotNil(t, s.Check)
-	assert.Equal(t, checkFailed, s.Check.Token)
+	assert.Equal(t, statusFailed, s.Check.Token)
 	assert.Equal(t, statusUnknown, s.Check.SignIn)
 	require.Len(t, out.Warnings, 1)
 	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
