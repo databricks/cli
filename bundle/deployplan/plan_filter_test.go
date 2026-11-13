@@ -342,7 +342,10 @@ func TestFilterToExcluded_RejectsIDChangesNeededByExcludedResource(t *testing.T)
 			p.Plan["resources.jobs.bar"] = &deployplan.PlanEntry{Action: action}
 			p.Plan["resources.jobs.foo"] = &deployplan.PlanEntry{Action: deployplan.Update}
 			existingDependencies := map[string][]deployplan.DependsOnEntry{
-				"resources.jobs.foo": {{Node: "resources.jobs.bar", Label: "${resources.jobs.bar.id}"}},
+				"resources.jobs.foo": {
+					{Node: "resources.jobs.bar", Label: deployplan.LifecycleDependsOnLabel},
+					{Node: "resources.jobs.bar", Label: "${resources.jobs.bar.id}"},
+				},
 			}
 
 			err := p.FilterToExcluded([]string{"jobs.foo"}, existingDependencies)
@@ -366,6 +369,24 @@ func TestFilterToExcluded_AllowsStableDependencyOfExcludedResource(t *testing.T)
 	require.NoError(t, p.FilterToExcluded([]string{"jobs.foo"}, existingDependencies))
 	assert.NotContains(t, p.Plan, "resources.jobs.foo")
 	assert.Contains(t, p.Plan, "resources.jobs.bar")
+}
+
+func TestFilterToExcluded_AllowsChangingOrderingDependency(t *testing.T) {
+	for _, action := range []deployplan.ActionType{deployplan.Delete, deployplan.Recreate, deployplan.UpdateWithID} {
+		t.Run(string(action), func(t *testing.T) {
+			p := deployplan.NewPlanDirect()
+			p.Plan["resources.jobs.prerequisite"] = &deployplan.PlanEntry{Action: action}
+			p.Plan["resources.genie_spaces.deferred"] = &deployplan.PlanEntry{Action: deployplan.Skip}
+			existingDependencies := map[string][]deployplan.DependsOnEntry{
+				"resources.genie_spaces.deferred": {{Node: "resources.jobs.prerequisite", Label: deployplan.LifecycleDependsOnLabel}},
+			}
+
+			require.NoError(t, p.FilterToExcluded([]string{"genie_spaces.deferred"}, existingDependencies))
+			assert.Contains(t, p.Plan, "resources.jobs.prerequisite")
+			assert.NotContains(t, p.Plan, "resources.genie_spaces.deferred")
+			assert.Equal(t, 1, p.NotSelected)
+		})
+	}
 }
 
 func TestFilterToExcluded_AllowsDeletingDependentOfExcludedResource(t *testing.T) {

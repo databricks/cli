@@ -150,6 +150,9 @@ type DependsOnEntry struct {
 	Label string `json:"label,omitempty"`
 }
 
+// LifecycleDependsOnLabel identifies dependencies that only order deployment.
+const LifecycleDependsOnLabel = "depends_on"
+
 type Changes map[string]*ChangeDesc
 
 type ChangeDesc struct {
@@ -454,6 +457,9 @@ func (p *Plan) FilterToExcluded(excluded []string, existingDependencies map[stri
 			}
 			_, dependencyRemoved := toRemove[dep.Node]
 			if removed == dependencyRemoved {
+				continue
+			}
+			if removed && dep.Label == LifecycleDependsOnLabel {
 				continue
 			}
 			dependent := strings.TrimPrefix(key, "resources.")
