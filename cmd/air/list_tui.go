@@ -350,7 +350,12 @@ func (m listModel) View() string {
 	visible := m.visibleCount()
 	lines := []string{m.styles.renderHeader(m.cols)}
 	for i := m.offset; i < m.offset+visible && i < len(m.rows); i++ {
-		lines = append(lines, m.styles.renderRow(m.cols, m.rows[i], i == m.cursor, m.links))
+		row := m.rows[i]
+		// Experiment names often share a prefix and differ at the end, so a
+		// shrunk cell keeps the end. The one-shot table keeps the start, so its
+		// output stays as scripts already see it.
+		row.Experiment = truncateStart(row.Experiment, m.cols.experiment)
+		lines = append(lines, m.styles.renderRow(m.cols, row, i == m.cursor, m.links))
 	}
 	lines = append(lines, m.renderHint())
 	return strings.Join(lines, "\n") + "\n"

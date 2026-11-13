@@ -449,7 +449,9 @@ func TestListModelFitsTerminalWidth(t *testing.T) {
 	}
 	assert.Contains(t, lines[0], "Accelerators")
 	assert.Contains(t, lines[1], "8x H100")
-	assert.Contains(t, lines[1], "…", "long values truncate")
+	// Experiment keeps its end, User its start.
+	assert.Contains(t, lines[1], "  …tart/qwen-finetune-lora  ")
+	assert.Contains(t, lines[1], "  someone.with.a.long.nam…  ")
 
 	// A lazily loaded page is laid out against the same width.
 	next, _ = m.Update(moreRowsMsg{rows: rows[1:]})
@@ -465,6 +467,8 @@ func TestListModelFitsTerminalWidth(t *testing.T) {
 
 func TestStaticListTableIgnoresTerminalWidth(t *testing.T) {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
-	header, _, _ := strings.Cut(staticListTable(r, wideListRows(), false), "\n")
-	assert.Equal(t, computeListCols(wideListRows()).tableWidth(), ansi.StringWidth(header))
+	lines := strings.Split(staticListTable(r, wideListRows(), false), "\n")
+	assert.Equal(t, computeListCols(wideListRows()).tableWidth(), ansi.StringWidth(lines[0]))
+	// The one-shot table still cuts a long Experiment at its end.
+	assert.Contains(t, lines[1], " /Users/someone.longname@example.com… ")
 }
