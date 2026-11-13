@@ -134,6 +134,7 @@ type submittedContainer struct {
 	CommandPath           string
 	Ranks                 []int
 	UnityCatalogImagePath string
+	EnvironmentVariables  map[string]string
 }
 
 func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
@@ -482,11 +483,16 @@ func workspaceIDForRunLink(ctx context.Context, w *databricks.WorkspaceClient) i
 func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
 	containers := make([]submittedContainer, 0, len(cfg.Containers))
 	for _, container := range cfg.Containers {
+		var environmentVariables map[string]string
+		if container.EnvironmentVariables != nil {
+			environmentVariables = container.EnvironmentVariables.Variables
+		}
 		containers = append(containers, submittedContainer{
 			Name:                  container.Name,
 			CommandPath:           path.Join(funcDir, "containers", container.Name, commandScriptName),
 			Ranks:                 container.Ranks,
 			UnityCatalogImagePath: container.UnityCatalogImage,
+			EnvironmentVariables:  environmentVariables,
 		})
 	}
 	return containers

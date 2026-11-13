@@ -650,7 +650,7 @@ func TestInjectContainers(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &body))
 
 	err = injectContainers(body, []submittedContainer{
-		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.ml.inference:v1"},
+		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.ml.inference:v1", EnvironmentVariables: map[string]string{"MODEL_NAME": "llama"}},
 		{Name: "dataproc", CommandPath: "/Workspace/run/containers/dataproc/command.sh", Ranks: []int{2}, UnityCatalogImagePath: "main.ml.dataproc:v1"},
 	})
 	require.NoError(t, err)
