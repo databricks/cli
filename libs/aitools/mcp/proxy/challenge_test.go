@@ -199,7 +199,7 @@ func TestAuthenticateSignsInAndSendsListChanged(t *testing.T) {
 	assert.Equal(t, listChangedMsg, out[1])
 }
 
-func TestAuthenticateOpensPageOnceAndSaysAlreadySignedIn(t *testing.T) {
+func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
 	signIn := &signInStub{reply: func(call int) (bool, error) { return call > 1, nil }}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
@@ -210,7 +210,7 @@ func TestAuthenticateOpensPageOnceAndSaysAlreadySignedIn(t *testing.T) {
 	p.send(t, fmt.Sprintf(authenticate, 6))
 	lines := p.waitLines(t, 4)
 
-	assert.Equal(t, []bool{true, false}, signIn.calls())
+	assert.Equal(t, []bool{true, true}, signIn.calls(), "a sign-in that completed does not hold the page back")
 	assert.Contains(t, lines[2], "Already signed in to system.ai.github")
 	require.NoError(t, p.finish(t))
 }
@@ -346,4 +346,80 @@ func TestAuthenticateWritesNothingWhenCancelled(t *testing.T) {
 	lines := outLines(p.out.String())
 	require.Len(t, lines, 1, "only the tools/list answer is written")
 	assert.Equal(t, []string{"authenticate"}, toolNames(t, lines[0]))
+}
+
+// attempt is the outcome of one sign-in in a test. A cancelled attempt waits for its context, as a call the client
+// cancelled does, and then returns the context's error.
+type attempt struct {
+	cancel          bool
+	urlShown        bool
+	alreadySignedIn bool
+	err             error
+}
+
+// TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt checks when a later authenticate call opens the sign-in
+// page again. The page is held back only while a cancelled attempt that showed it may still be open in the user's
+// browser. A timeout, a failure, an answer that needs no sign-in, a success that is later revoked, and a cancelled
+// attempt that never showed the page all open it again.
+func TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt(t *testing.T) {
+	cases := map[string]struct {
+		first    attempt
+		wantOpen bool
+	}{
+		"cancelled after the page was shown":  {first: attempt{cancel: true, urlShown: true}, wantOpen: false},
+		"cancelled before the page was shown": {first: attempt{cancel: true}, wantOpen: true},
+		"timed out":                           {first: attempt{urlShown: true, err: &SignInTimeout{URL: testURL, Wait: time.Minute}}, wantOpen: true},
+		"failed":                              {first: attempt{urlShown: true, err: errors.New("sign-in failed")}, wantOpen: true},
+		"error before the page":               {first: attempt{err: errors.New("credential read failed")}, wantOpen: true},
+		"already signed in":                   {first: attempt{alreadySignedIn: true, urlShown: true}, wantOpen: true},
+		"signed in, then revoked":             {first: attempt{urlShown: true}, wantOpen: true},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listChallenge))
+			entered, done := make(chan struct{}), make(chan struct{})
+			var mu sync.Mutex
+			var opens []bool
+			signIn := func(ctx context.Context, open bool) (bool, bool, error) {
+				mu.Lock()
+				opens = append(opens, open)
+				first := len(opens) == 1
+				mu.Unlock()
+				if !first {
+					return false, true, nil
+				}
+				if !tc.first.cancel {
+					return tc.first.alreadySignedIn, tc.first.urlShown, tc.first.err
+				}
+				close(entered)
+				<-ctx.Done()
+				close(done)
+				return false, tc.first.urlShown, ctx.Err()
+			}
+			p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+			authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+
+			p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+			p.waitLines(t, 1)
+			p.send(t, fmt.Sprintf(authenticate, 5))
+			if tc.first.cancel {
+				waitClosed(t, entered, "the first sign-in to start")
+				p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+				waitClosed(t, done, "the first sign-in to return")
+			}
+			p.send(t, fmt.Sprintf(authenticate, 6))
+			require.Eventually(t, func() bool {
+				mu.Lock()
+				defer mu.Unlock()
+				return len(opens) == 2
+			}, 10*time.Second, time.Millisecond)
+			require.NoError(t, p.finish(t))
+
+			mu.Lock()
+			defer mu.Unlock()
+			require.Len(t, opens, 2)
+			assert.True(t, opens[0], "the first attempt opens the page")
+			assert.Equal(t, tc.wantOpen, opens[1])
+		})
+	}
 }

@@ -64,10 +64,11 @@ type Challenge struct {
 type signInHooks struct {
 	c *Challenge
 
-	// mu serializes authenticate calls and guards the two fields below.
-	mu       sync.Mutex
-	opened   bool // the sign-in page was opened in this session
-	timedOut bool // the last attempt timed out, so the page may open again
+	// mu serializes authenticate calls and guards the field below.
+	mu sync.Mutex
+	// pageCancelled means the last attempt showed the sign-in page and the client cancelled it before the sign-in
+	// completed. The user may still be on that page, so the next attempt does not open it again.
+	pageCancelled bool
 }
 
 // Local answers the authenticate tool call. Other requests, and messages that do not decode, are forwarded.
@@ -210,21 +211,19 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 	return toolResult(id, text, true)
 }
 
-// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call
-// waits for the first. The page opens once per session, and again only after an attempt timed out.
+// authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call waits for the first.
+// The page opens unless the last attempt was cancelled while its page was showing (see pageCancelled).
 func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]byte {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	open := !h.opened || h.timedOut
-	h.opened = true
-	alreadySignedIn, _, err := h.c.SignIn(ctx, open)
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, !h.pageCancelled)
+	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	if ctx.Err() != nil {
 		// The client cancelled the request or shutdown began. Nothing is answered for a cancelled request.
 		return nil
 	}
 	timeout, timedOut := errors.AsType[*SignInTimeout](err)
-	h.timedOut = timedOut
 
 	switch {
 	case err == nil && alreadySignedIn:
