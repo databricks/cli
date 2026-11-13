@@ -126,7 +126,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, 1)
 	}
-	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile})
+	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
 	if err != nil {
 		return serveFailure(cmd, err, serveStartStatus(err))
 	}
@@ -183,15 +183,22 @@ type serveTarget struct {
 }
 
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
-// a pure passthrough. The state entry decides when there is one; otherwise the service is read once.
-func serveChallenge(ctx context.Context, t serveTarget) (*proxy.Challenge, error) {
+// a pure passthrough. The state entry decides when there is one; otherwise the service is read once. A read that fails
+// for a reason other than the credential does not stop the serve: the sign-in handling is on then, since it acts only on
+// a challenge that names the service, and the failure is written to errOut.
+func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*proxy.Challenge, error) {
 	signInRequired := t.entry != nil && t.entry.SignInRequired
 	if t.entry == nil {
 		svc, err := lookupAtStart(ctx, t.w, t.profile, t.pinnedFile, t.service)
-		if err != nil {
+		switch {
+		case err == nil:
+			signInRequired = svc.SignInRequired
+		case serveStartStatus(err) == serveBindStatus:
 			return nil, err
+		default:
+			fmt.Fprintf(errOut, "%v; serving it with sign-in handling on\n", err)
+			signInRequired = true
 		}
-		signInRequired = svc.SignInRequired
 	}
 	if !signInRequired {
 		return nil, nil

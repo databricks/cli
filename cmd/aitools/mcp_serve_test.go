@@ -783,7 +783,7 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true}, profile: testProfile, service: testService})
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true}, profile: testProfile, service: testService}, io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, testService, challenge.Service)
@@ -792,12 +792,12 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: false}, profile: testProfile, service: testService})
+	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: false}, profile: testProfile, service: testService}, io.Discard)
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
+	challenge, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
@@ -810,7 +810,7 @@ func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 
-	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, profile: "my profile", service: testService, pinnedFile: pinned})
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, profile: "my profile", service: testService, pinnedFile: pinned}, io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
@@ -904,7 +904,8 @@ func serviceServer(t *testing.T, status int, body string) *httptest.Server {
 }
 
 // TestServeChallengeLookupIsBounded checks that the startup read of a service with no install record ends after the
-// profile check timeout, as the checks of list --check do, even when the host keeps answering with a retriable error.
+// profile check timeout, as the checks of list --check do, even when the host keeps answering with a retriable error. The
+// serve still starts, with the sign-in handling on.
 func TestServeChallengeLookupIsBounded(t *testing.T) {
 	prev := profileCheckTimeout
 	t.Cleanup(func() { profileCheckTimeout = prev })
@@ -914,10 +915,94 @@ func TestServeChallengeLookupIsBounded(t *testing.T) {
 	require.NoError(t, err)
 
 	start := time.Now()
-	_, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
 
-	require.Error(t, err)
+	require.NoError(t, err)
+	assert.NotNil(t, challenge)
 	assert.Less(t, time.Since(start), 10*time.Second, "the lookup must not wait for the SDK's retry budget")
+}
+
+// TestServeChallengeLookupFailureStartsWithSignInHandling checks that a startup read which fails for a reason other than
+// authentication does not stop the serve. The sign-in handling is on, since it acts only on a challenge that names the
+// service, and one line on stderr says that the read failed.
+func TestServeChallengeLookupFailureStartsWithSignInHandling(t *testing.T) {
+	prev := profileCheckTimeout
+	t.Cleanup(func() { profileCheckTimeout = prev })
+	profileCheckTimeout = 100 * time.Millisecond
+	for name, tc := range map[string]struct {
+		status int
+		body   string
+	}{
+		"server error": {http.StatusInternalServerError, `{"error_code":"INTERNAL_ERROR","message":"boom"}`},
+		"not found":    {http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := serviceServer(t, tc.status, tc.body)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+			require.NoError(t, err)
+			var stderr bytes.Buffer
+
+			challenge, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, &stderr)
+
+			require.NoError(t, err)
+			require.NotNil(t, challenge)
+			assert.Equal(t, testService, challenge.Service)
+			assert.Equal(t, testProfile, challenge.Profile)
+			lines := strings.Split(strings.TrimSuffix(stderr.String(), "\n"), "\n")
+			require.Len(t, lines, 1)
+			assert.Contains(t, lines[0], "cannot read MCP service "+testService)
+			assert.Contains(t, lines[0], "serving it with sign-in handling on")
+		})
+	}
+}
+
+// TestServeLookupFailureStillOffersAuthenticate checks that a server started after a failed startup read still offers the
+// authenticate tool when the service challenges the session, so a failed read does not leave a sign-in-required service
+// without its sign-in.
+func TestServeLookupFailureStillOffersAuthenticate(t *testing.T) {
+	prev := profileCheckTimeout
+	t.Cleanup(func() { profileCheckTimeout = prev })
+	profileCheckTimeout = 100 * time.Millisecond
+	const lookupPath = "/api/2.1/unity-catalog/mcp-services/" + testService
+	const endpointPath = "/ai-gateway/mcp-services/" + testService
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case lookupPath:
+			rw.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = io.WriteString(rw, `{"error_code":"TEMPORARILY_UNAVAILABLE","message":"try later"}`)
+		case endpointPath:
+			var msg struct {
+				ID json.RawMessage `json:"id"`
+			}
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &msg)
+			rw.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(rw, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, msg.ID)
+		default:
+			rw.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
+	require.NoError(t, err)
+	require.NotNil(t, challenge)
+
+	var out bytes.Buffer
+	err = proxy.Run(t.Context(), proxy.Options{
+		In:           strings.NewReader(`{"jsonrpc":"2.0","id":2,"method":"tools/list"}` + "\n"),
+		Out:          &out,
+		Err:          io.Discard,
+		Endpoint:     mcp.ServiceURL(server.URL, testService),
+		Config:       &config.Config{Host: server.URL},
+		Authenticate: func(*http.Request) error { return nil },
+		Profile:      testProfile,
+		Challenge:    challenge,
+	})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), `"name":"authenticate"`)
 }
 
 // TestServeChallengeLookupAuthFailureExitsTwo checks that a startup read that the profile's credential fails names the
@@ -927,7 +1012,7 @@ func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	_, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
+	_, err = serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
 
 	require.Error(t, err)
 	assert.Equal(t, serveBindStatus, serveStartStatus(err))
@@ -946,7 +1031,7 @@ func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
 	var stopped bool
 	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
 
-	_, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService})
+	_, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
 
 	require.Error(t, err)
 	assert.True(t, stopped, "the proxy is stopped")
