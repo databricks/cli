@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -104,4 +107,52 @@ func TestMcpLogoutUnknownServiceIsAnError(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategory(categoryServiceNotFound), errorCategory(err))
 	assert.Contains(t, err.Error(), "system.ai.gihtub is not an MCP service visible to profile logfood")
 	assert.Empty(t, out.State)
+}
+
+// TestSignInInstalledSignsInToEveryServer checks that add --login attempts every installed sign-in server after one of
+// them fails. The failed server gets the login hint, and the failure is returned, so the others are still signed in.
+func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
+	const (
+		githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+		geniePath  = "/api/2.1/unity-catalog/mcp-services/system.ai.genie_one_mcp/user-credentials"
+	)
+	var mu sync.Mutex
+	var reads []string
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		mu.Lock()
+		reads = append(reads, r.URL.Path)
+		mu.Unlock()
+		rw.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == githubPath {
+			rw.WriteHeader(http.StatusForbidden)
+			_, _ = rw.Write([]byte(`{"error_code":"PERMISSION_DENIED","message":"no access"}`))
+			return
+		}
+		_, _ = rw.Write([]byte(`{"provisioning_info":{"state":"ACTIVE"}}`))
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	req := addRequest{profile: "logfood", workspaceID: "123", agents: []*agents.Agent{agents.ByName("claude-code")}}
+	plans := []addPlan{
+		{service: mcp.Service{FullName: "system.ai.github", SignInRequired: true}},
+		{service: mcp.Service{FullName: "system.ai.genie_one_mcp", SignInRequired: true}},
+	}
+	installed := []addAgentOutput{{Name: "claude-code", Status: statusInstalled}}
+	servers := []addServerOutput{
+		{Name: "github-logfood", Service: "system.ai.github", SignInRequired: true, Agents: installed},
+		{Name: "genie-logfood", Service: "system.ai.genie_one_mcp", SignInRequired: true, Agents: installed},
+	}
+
+	var errOut bytes.Buffer
+	err = signInInstalled(t.Context(), &errOut, w, req, plans, servers)
+	require.Error(t, err)
+	assert.Equal(t, []string{githubPath, geniePath}, reads)
+	assert.Contains(t, errOut.String(), "system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood\n")
+	assert.NotContains(t, errOut.String(), "system.ai.genie_one_mcp needs sign-in")
 }

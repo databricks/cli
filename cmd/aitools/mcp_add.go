@@ -301,18 +301,15 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	out.Servers = servers
 
-	// The results are printed even when the state cannot be saved: the agent files were written.
+	// The results are printed even when the state cannot be saved: the agent files were written. The sign-in does not
+	// depend on the state, so it still runs, and every failure is returned.
 	recordErr := recordInstalls(ctx, req, plans, servers)
 	printAddResults(ctx, req, servers)
-	if recordErr != nil {
-		return recordErr
-	}
+	var signErr error
 	if req.login {
-		if err := signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers); err != nil {
-			return err
-		}
+		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
-	return agentFailureError(req, servers)
+	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
 }
 
 // validateMCPAddFlags rejects flag combinations that cannot run, before anything is read or written.
@@ -851,19 +848,26 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	return failure(protos.AitoolsErrorCategoryUnknownAgent, nil, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
 }
 
-// signInInstalled signs in to each sign-in-required server that reached an agent, in order. It stops
-// at the first failure; the servers are installed either way.
+// signInInstalled signs in to each sign-in-required server that reached an agent, in order. A failure does not stop the
+// others; each failed server gets the login hint, and the failures are joined. The servers are installed either way.
 func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
+	var errs []error
 	for i, server := range servers {
 		if !server.SignInRequired || !installedAnywhere(server) {
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		if _, err := signIn(ctx, errOut, w, req.profile, url, plans[i].service); err != nil {
-			return err
+			fmt.Fprintln(errOut, signInHint(server.Service, req.profile))
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
+}
+
+// signInHint is the command that signs the profile in to a sign-in-required service.
+func signInHint(service, profileName string) string {
+	return fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", service, shellquote.BashArg(service), shellquote.BashArg(profileName))
 }
 
 // installedAnywhere reports whether the server reached at least one agent.
@@ -997,7 +1001,7 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 			}
 		}
 		if server.SignInRequired && installedAnywhere(server) && !req.login {
-			cmdio.LogString(ctx, fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, shellquote.BashArg(server.Service), shellquote.BashArg(req.profile)))
+			cmdio.LogString(ctx, signInHint(server.Service, req.profile))
 		}
 		if cursor {
 			cmdio.LogString(ctx, cursorApprovalHint(server.Name))
