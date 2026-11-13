@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	stdlog "log"
+	stdlog "log" //nolint:depguard // checks the standard log package that slog.SetDefault redirects
 	"os"
 	"path/filepath"
 	"strings"

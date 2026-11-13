@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	stdlog "log"
+	stdlog "log" //nolint:depguard // slog.SetDefault redirects the standard log package, and Execute restores it
 	"log/slog"
 	"os"
 	"runtime"
