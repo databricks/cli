@@ -1168,3 +1168,52 @@ func TestUndecodableResponsePassesThrough(t *testing.T) {
 		})
 	}
 }
+
+// TestAlreadySignedInSurvivesListAfterCallChallenge checks the sequence where a challenged tools/call is answered with "Already
+// signed in" and the list then passes. The list does not end that state, since the call challenge is still pending, so
+// the next challenge to a call starts the sign-in again from no credential.
+func TestAlreadySignedInSurvivesListAfterCallChallenge(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, callAnswer(&challenged))
+	signIn := &signInStub{reply: func(call int) (bool, error) { return call == 1, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+
+	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	p.waitLines(t, 2)
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	lines := p.waitLines(t, 4)
+	assert.Contains(t, resultText(t, lines[2]), "Already signed in to system.ai.github")
+
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	p.waitLines(t, 5)
+	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	p.waitLines(t, 7)
+	p.send(t, fmt.Sprintf(authenticate, 8))
+	p.waitLines(t, 9)
+	require.NoError(t, p.finish(t))
+
+	reqs := signIn.requests()
+	require.Len(t, reqs, 2)
+	assert.True(t, reqs[1].Restart, "the challenge after the answer, with the list passing in between, asks for a restart")
+}
+
+// TestIsErrorResultChangesNoSignInState checks that a tools/call result with isError and no sign-in URL changes no state.
+// It is neither a challenge nor a success, so "Already signed in", a pending restart and a call challenge all stay.
+func TestIsErrorResultChangesNoSignInState(t *testing.T) {
+	result := `{"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"boom"}],"isError":true}}`
+	h := newSignInHooks(testChallenge(nil), io.Discard)
+	h.exposed = true
+	h.alreadySignedIn = true
+	h.restart = true
+	h.callChallenged = true
+	h.callPending = true
+
+	out, err := h.Result(t.Context(), []byte(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`), http.StatusOK, []byte(result))
+	require.NoError(t, err)
+	assert.Equal(t, [][]byte{[]byte(result)}, out)
+	assert.Equal(t, signInHooks{exposed: true, alreadySignedIn: true, restart: true, callChallenged: true, callPending: true}, signInHooks{
+		exposed: h.exposed, alreadySignedIn: h.alreadySignedIn, restart: h.restart, callChallenged: h.callChallenged, callPending: h.callPending,
+	})
+}

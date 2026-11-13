@@ -99,6 +99,9 @@ type signInHooks struct {
 	// callChallenged means the last challenge came from a tools/call, and no sign-in has ended and no call has passed
 	// since. The agent was told to call authenticate, so a tools/list that passes still lists it.
 	callChallenged bool
+	// callPending means the last challenge came from a tools/call, and no tools/call has succeeded since. A sign-in that
+	// ends does not clear it, so a tools/list that passes does not end the "Already signed in" state of that challenge.
+	callPending bool
 }
 
 // newSignInHooks returns the sign-in hooks of c. Progress lines of a sign-in are written to stderr.
@@ -168,9 +171,10 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 		}
 		return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
 	}
-	// A result with no error means the service accepts the caller's credential. An error answer, such as a JSON-RPC
-	// error on HTTP 200 or a failure the bridge wrote for the request, says nothing about it.
-	if status/100 == 2 && reply.Error == nil && reply.Result != nil {
+	// A result with no error and no isError means the service accepts the caller's credential. An error answer, such as a
+	// JSON-RPC error on HTTP 200, a failure the bridge wrote for the request, or an isError result without a sign-in URL,
+	// says nothing about it.
+	if status/100 == 2 && reply.Error == nil && reply.Result != nil && !reply.Result.IsError {
 		msg, err := h.succeeded(req.Method, message)
 		if err != nil {
 			return nil, err
@@ -187,25 +191,31 @@ func (h *signInHooks) recordChallenge(method string) {
 	defer h.stateMu.Unlock()
 	h.exposed = true
 	h.callChallenged = method == methodToolsCall
+	h.callPending = h.callChallenged
 	if h.alreadySignedIn {
 		h.restart = true
 		h.alreadySignedIn = false
 	}
 }
 
-// succeeded records a successful answer to a request of method, and returns the message to write. The "Already signed in"
-// state and a pending restart end: a challenge after this answer is not a challenge to the credential that was reported
-// signed in, and the service accepts the credential, so there is nothing to restart. A successful tools/call ends a call
-// challenge. A tools/list answer takes the authenticate tool off the list, since the list is the service's again, unless
-// a call challenge is still pending; then the tool stays on it.
+// succeeded records a successful answer to a request of method, and returns the message to write. A successful tools/call
+// ends the "Already signed in" state, a pending restart, a call challenge. A tools/list answer ends the same state unless
+// the pending challenge came from a tools/call, which only a successful tools/call ends. It also takes the authenticate
+// tool off the list, since the list is the service's again, unless a call challenge is still pending; then the tool
+// stays on it.
 func (h *signInHooks) succeeded(method string, message []byte) ([]byte, error) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
-	h.alreadySignedIn = false
-	h.restart = false
 	if method == methodToolsCall {
+		h.alreadySignedIn = false
+		h.restart = false
+		h.callPending = false
 		h.callChallenged = false
 		return message, nil
+	}
+	if !h.callPending {
+		h.alreadySignedIn = false
+		h.restart = false
 	}
 	if !h.callChallenged {
 		h.exposed = false
