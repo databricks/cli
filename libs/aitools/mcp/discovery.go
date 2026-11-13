@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -16,6 +18,20 @@ import (
 
 // mcpServicePrefix is the resource-name prefix of an MCP service.
 const mcpServicePrefix = "mcp-services/"
+
+// PathSafeName reports whether fullName is free of the characters that change a request path: "/", "?", "#", "%" and
+// control characters. A service name never contains them, so the commands refuse a name that has one, before any
+// request. Names read from the state are escaped by the library instead.
+func PathSafeName(fullName string) bool {
+	return !strings.ContainsAny(fullName, "/?#%") && !strings.ContainsFunc(fullName, unicode.IsControl)
+}
+
+// serviceResourceName returns the resource name of the service fullName for a request. The SDK puts the name into the
+// request path as it is, so the name is escaped here: an unescaped "#" or "?" would cut the path short, and "/" or "%"
+// would name another resource.
+func serviceResourceName(fullName string) string {
+	return mcpServicePrefix + url.PathEscape(fullName)
+}
 
 // oauthProviderOption is the source connection option that marks a service as needing sign-in.
 const oauthProviderOption = "oauth_provider"
@@ -53,6 +69,20 @@ func Discover(ctx context.Context, w *databricks.WorkspaceClient, location strin
 		services = append(services, newService(&list[i]))
 	}
 	return services, nil
+}
+
+// GetService returns one MCP service by full name, with its sign-in requirement. The API
+// answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see, and so does a
+// service whose source connection was deleted, which Discover drops.
+func GetService(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (Service, error) {
+	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: serviceResourceName(fullName)})
+	if err != nil {
+		return Service{}, err
+	}
+	if isDeletedSource(svc) {
+		return Service{}, fmt.Errorf("%s has no source connection: %w", fullName, apierr.ErrNotFound)
+	}
+	return newService(svc), nil
 }
 
 // ListErrorKind names a listing failure.
@@ -106,13 +136,23 @@ func listServices(ctx context.Context, w *databricks.WorkspaceClient, location s
 // blocked the request. They keep the server's message and get no location or grants hint.
 var unrelatedErrorCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "PRIVATE_LINK_VALIDATION_ERROR"}
 
+// isUnrelatedError reports whether err is one of the unrelatedErrorCodes.
+func isUnrelatedError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode)
+}
+
+// IsNotFound reports whether err is the API's answer that the resource does not exist. An unrelated 404, such as
+// ENDPOINT_NOT_FOUND, is not: the API did not answer about the resource.
+func IsNotFound(err error) bool {
+	return errors.Is(err, apierr.ErrNotFound) && !isUnrelatedError(err)
+}
+
 // mapListError classifies a listing failure. Other errors are returned with context only.
 func mapListError(location string, err error) error {
-	apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
-
 	var kind ListErrorKind
 	switch {
-	case isAPIErr && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode):
+	case isUnrelatedError(err):
 		// Not about the schema or grants: leave it unclassified.
 	case errors.Is(err, apierr.ErrNotFound):
 		kind = ListErrLocationNotFound

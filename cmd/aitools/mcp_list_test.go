@@ -2,11 +2,16 @@ package aitools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -15,8 +20,10 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -623,6 +630,45 @@ func TestRenderMcpListLoginHintNamesCheckedFile(t *testing.T) {
 	}
 }
 
+// TestRenderMcpListSignInNeededNamesTheLoginCommand checks that a server whose sign-in is needed says how to sign in: the
+// login command, which add prints for the same state.
+func TestRenderMcpListSignInNeededNamesTheLoginCommand(t *testing.T) {
+	home := withHome(t)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, _ := checkedListServer(t)
+	require.Equal(t, checkNeeded, s.Check.SignIn)
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "  to sign in: run `databricks aitools mcp login system.ai.github --profile logfood`")
+}
+
+// TestRenderMcpListSaysWhyCheckIsSkipped checks that a server whose profile drifted says in the text that its check was
+// skipped, and that a listing without --check does not say so.
+func TestRenderMcpListSaysWhyCheckIsSkipped(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", "https://adb-1.test", ""))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.NotContains(t, stderr.String(), "check skipped")
+
+	addChecks(t.Context(), &out)
+	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "check skipped: the profile no longer matches this server")
+}
+
 // TestRenderMcpListPrintsWarningsWhenEmpty checks that a listing with no server and no unmanaged entry still prints its
 // warnings in text, as JSON does, for a profile with no server and for no profile.
 func TestRenderMcpListPrintsWarningsWhenEmpty(t *testing.T) {
@@ -866,4 +912,506 @@ func TestBuildMcpListAndRemoveAgreeAfterConfigMoved(t *testing.T) {
 			}
 		})
 	}
+}
+
+// listCheckServer answers the GitHub service and the caller's sign-in to it, for --check. The service answers with
+// serviceStatus, and the credential with credentialStatus and credentialBody. Other API paths are NOT_FOUND.
+func listCheckServer(t *testing.T, serviceStatus, credentialStatus int, credentialBody string) *httptest.Server {
+	t.Helper()
+	const servicePath = "/api/2.1/unity-catalog/mcp-services/system.ai.github"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/2.0/preview/scim/v2/Me":
+			_, _ = w.Write([]byte(`{"userName":"user@example.test"}`))
+		case servicePath:
+			if serviceStatus != http.StatusOK {
+				w.WriteHeader(serviceStatus)
+				_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not found"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"name":"mcp-services/system.ai.github","config":{"source_connection":{"options":{"oauth_provider":"OAUTH_PROVIDER_GITHUB_MCP"}}}}`))
+		case servicePath + "/user-credentials":
+			w.WriteHeader(credentialStatus)
+			_, _ = w.Write([]byte(credentialBody))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// listCheckGitHub returns the state record of a sign-in-required GitHub server for the profile at host, pinned to
+// configFile when it is set.
+func listCheckGitHub(t *testing.T, name, profileName, host, configFile string) mcp.Entry {
+	t.Helper()
+	entry := seedInstallEntry(t, agents.ByName("claude-code"), seed{name, "system.ai.github", profileName, host, testDatabricksCommand, configFile})
+	entry.SignInRequired = true
+	return entry
+}
+
+// checkedListServer runs buildMcpList and the --check tests, and returns the one server listed for the profile.
+func checkedListServer(t *testing.T) (mcpListServer, mcpListOutput) {
+	t.Helper()
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 1)
+	require.Len(t, out.Profiles[0].Servers, 1)
+	return out.Profiles[0].Servers[0], out
+}
+
+// TestAddChecksWarnsWhenTheSignInCannotBeRead checks that a sign-in whose state cannot be read is unknown, and that the
+// failure is a warning with the login command, not silently dropped.
+func TestAddChecksWarnsWhenTheSignInCannotBeRead(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusOK, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusOK, s.Check.Token)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.Contains(t, out.Warnings[0], "MCP server github-logfood: ")
+	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
+}
+
+// TestAddChecksServiceGoneWithoutSignInIsAWarningOnly checks that a server that never needed sign-in, whose service the
+// profile can no longer see, gets a warning and no sign-in value. Its sign-in is not what is unknown.
+func TestAddChecksServiceGoneWithoutSignInIsAWarningOnly(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusNotFound, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	entry := listCheckGitHub(t, "github-logfood", "logfood", server.URL, "")
+	entry.SignInRequired = false
+	saveState(t, entry)
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Empty(t, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.Equal(t, "MCP server github-logfood: system.ai.github is not an MCP service visible to profile logfood", out.Warnings[0])
+}
+
+// TestAddChecksServiceGoneIsAWarningNotSignInNeeded checks that a service the profile no longer sees is a warning, and that
+// its sign-in is unknown rather than needed, since the sign-in is not what is missing.
+func TestAddChecksServiceGoneIsAWarningNotSignInNeeded(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusNotFound, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.Equal(t, "MCP server github-logfood: system.ai.github is not an MCP service visible to profile logfood", out.Warnings[0])
+}
+
+// TestAddChecksWarnsWhenProfileCannotAuthenticate checks that a profile whose credential cannot be read is a warning
+// naming the profile, and that its servers' sign-ins are not checked.
+func TestAddChecksWarnsWhenProfileCannotAuthenticate(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusOK, http.StatusOK, `{}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusFailed, s.Check.Token)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
+}
+
+// shortProfileCheck makes each profile's --check tests give up after one second, for the test.
+func shortProfileCheck(t *testing.T) {
+	t.Helper()
+	prev := profileCheckTimeout
+	t.Cleanup(func() { profileCheckTimeout = prev })
+	profileCheckTimeout = time.Second
+}
+
+// TestAddChecksUnreachableProfileIsUnknownNotFailed checks that a profile whose host cannot be reached, as on an offline
+// laptop, is unknown and not failed: the failed token says the login is refused, which the check did not learn.
+func TestAddChecksUnreachableProfileIsUnknownNotFailed(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	// A closed server refuses every connection.
+	closed := httptest.NewServer(http.NotFoundHandler())
+	host := closed.URL
+	closed.Close()
+	writeHomeConfig(t, home, "[logfood]\nhost = "+host+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", host, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusUnknown, s.Check.Token)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
+}
+
+// TestAddChecksBoundsAProfileThatNeverAnswers checks that a profile whose workspace never answers does not hold the
+// listing: its checks end within the profile's bound, and the profile is unknown with a warning.
+func TestAddChecksBoundsAProfileThatNeverAnswers(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	start := time.Now()
+	s, out := checkedListServer(t)
+	assert.Less(t, time.Since(start), 30*time.Second, "the checks of the profile were not bounded")
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusUnknown, s.Check.Token)
+	require.NotEmpty(t, out.Warnings)
+}
+
+// TestAddChecksBoundsEachRequestNotTheProfile checks that the time limit applies to each --check request: a profile whose
+// requests each answer within the limit gets every answer, even when together they take longer than the limit.
+func TestAddChecksBoundsEachRequestNotTheProfile(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	signedIn := listCheckServer(t, http.StatusOK, http.StatusOK, `{"provisioning_info":{"state":"ACTIVE"}}`)
+	// Three requests of 400 ms each: the token, the service and the sign-in, 1.2 s together against a 1 s limit.
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(400 * time.Millisecond)
+		signedIn.Config.Handler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(slow.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+slow.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", slow.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusOK, s.Check.Token)
+	assert.Equal(t, statusOK, s.Check.SignIn)
+	assert.Empty(t, out.Warnings)
+}
+
+// TestAddChecksChecksAServerThatMatchesADriftedProfile checks that a server which still matches its profile is checked
+// when another server of the same profile has drifted: the drift is the other server's, not the profile's.
+func TestAddChecksChecksAServerThatMatchesADriftedProfile(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	// github-old was set up for another host. github-new was set up for the profile's host now.
+	saveState(t, listCheckGitHub(t, "github-old", "logfood", "https://adb-old.test", ""), listCheckGitHub(t, "github-new", "logfood", server.URL, ""))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 1)
+	servers := map[string]mcpListServer{}
+	for _, s := range out.Profiles[0].Servers {
+		servers[s.Name] = s
+	}
+
+	require.NotNil(t, servers["github-old"].Check)
+	assert.Equal(t, checkSkippedDrifted, servers["github-old"].Check.Skipped)
+	assert.Empty(t, servers["github-old"].Check.Token)
+	require.NotNil(t, servers["github-new"].Check)
+	assert.Equal(t, statusOK, servers["github-new"].Check.Token)
+	assert.Equal(t, checkNeeded, servers["github-new"].Check.SignIn)
+	assert.Empty(t, out.Warnings)
+}
+
+// TestAddChecksSkipsAServerThatCannotBeReadAndSaysWhy checks that a server whose config file cannot be read is skipped
+// with its own reason, in the JSON check and in the text. It did not drift, so the text does not say the profile changed.
+func TestAddChecksSkipsAServerThatCannotBeReadAndSaysWhy(t *testing.T) {
+	withHome(t)
+	// A directory is not a config file, so the profile cannot be read from it.
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", "https://adb-1.test", t.TempDir()))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 1)
+	require.Len(t, out.Profiles[0].Servers, 1)
+	s := out.Profiles[0].Servers[0]
+	require.NotNil(t, s.Check)
+	assert.Equal(t, checkSkippedUnknown, s.Check.Skipped)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "check skipped: this server could not be checked")
+	assert.NotContains(t, stderr.String(), "no longer matches")
+}
+
+// TestAddChecksReadsEachProfileFromItsOwnConfigFile checks that two groups of one profile name, in two config files, are
+// checked with their own file's credentials, and that the config file environment is the caller's again afterwards.
+func TestAddChecksReadsEachProfileFromItsOwnConfigFile(t *testing.T) {
+	withHome(t)
+	signedIn := listCheckServer(t, http.StatusOK, http.StatusOK, `{"provisioning_info":{"state":"ACTIVE"}}`)
+	notSignedIn := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	dir := t.TempDir()
+	first := filepath.Join(dir, "first.cfg")
+	second := filepath.Join(dir, "second.cfg")
+	require.NoError(t, os.WriteFile(first, []byte("[logfood]\nhost = "+signedIn.URL+"\nauth_type = pat\ntoken = dapi-first\n"), 0o600))
+	require.NoError(t, os.WriteFile(second, []byte("[logfood]\nhost = "+notSignedIn.URL+"\nauth_type = pat\ntoken = dapi-second\n"), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", first)
+	saveState(t, listCheckGitHub(t, "github-first", "logfood", signedIn.URL, first), listCheckGitHub(t, "github-second", "logfood", notSignedIn.URL, second))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 2)
+	for _, p := range out.Profiles {
+		require.Len(t, p.Servers, 1)
+		assert.Equal(t, statusOK, p.Servers[0].Check.Token)
+	}
+	signInByServer := map[string]string{}
+	for _, p := range out.Profiles {
+		signInByServer[p.Servers[0].Name] = p.Servers[0].Check.SignIn
+	}
+	assert.Equal(t, map[string]string{"github-first": statusOK, "github-second": checkNeeded}, signInByServer)
+	assert.Equal(t, first, os.Getenv("DATABRICKS_CONFIG_FILE"))
+	assert.Empty(t, out.Warnings)
+}
+
+// TestWithConfigFileSetsTheEnvironmentForTheCallAndRestoresIt checks that the config file of a profile is set in the
+// context and in the process environment while a check runs, and that the caller's environment is restored after.
+func TestWithConfigFileSetsTheEnvironmentForTheCallAndRestoresIt(t *testing.T) {
+	t.Setenv(mcpconfig.ConfigFileEnv, "ambient.cfg")
+	var inContext, inProcess string
+	err := withConfigFile(t.Context(), "pinned.cfg", func(ctx context.Context) {
+		inContext = env.Get(ctx, mcpconfig.ConfigFileEnv)
+		inProcess = os.Getenv(mcpconfig.ConfigFileEnv)
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "pinned.cfg", inContext)
+	assert.Equal(t, "pinned.cfg", inProcess)
+	assert.Equal(t, "ambient.cfg", os.Getenv(mcpconfig.ConfigFileEnv))
+
+	require.NoError(t, os.Unsetenv(mcpconfig.ConfigFileEnv))
+	require.NoError(t, withConfigFile(t.Context(), "pinned.cfg", func(context.Context) {}))
+	_, set := os.LookupEnv(mcpconfig.ConfigFileEnv)
+	assert.False(t, set, "a variable that was unset is unset again")
+}
+
+// TestWithConfigFileRestoresEnvironmentWhenFnPanics checks that the environment is restored even when the call panics, so
+// that a panic does not leave the next profile in another profile's config file.
+func TestWithConfigFileRestoresEnvironmentWhenFnPanics(t *testing.T) {
+	t.Setenv(mcpconfig.ConfigFileEnv, "ambient.cfg")
+	assert.Panics(t, func() {
+		_ = withConfigFile(t.Context(), "pinned.cfg", func(context.Context) {
+			panic("boom")
+		})
+	})
+	assert.Equal(t, "ambient.cfg", os.Getenv(mcpconfig.ConfigFileEnv))
+}
+
+// TestCheckText checks the words that --check adds to a server's line.
+func TestCheckText(t *testing.T) {
+	cases := []struct {
+		name  string
+		check *mcpListCheck
+		want  string
+	}{
+		{name: "no check", check: nil, want: ""},
+		{name: "signed in and binary ok", check: &mcpListCheck{SignIn: statusOK, Binary: statusOK}, want: "signed in"},
+		{name: "sign-in needed", check: &mcpListCheck{SignIn: checkNeeded, Binary: statusOK}, want: "sign-in needed"},
+		{name: "sign-in unknown", check: &mcpListCheck{SignIn: statusUnknown, Binary: statusOK}, want: "sign-in unknown"},
+		{name: "binary missing", check: &mcpListCheck{Binary: statusFailed}, want: "binary missing"},
+		{name: "sign-in needed and binary missing", check: &mcpListCheck{SignIn: checkNeeded, Binary: statusFailed}, want: "sign-in needed, binary missing"},
+		{name: "server without sign-in", check: &mcpListCheck{Binary: statusOK}, want: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, checkText(tc.check))
+		})
+	}
+}
+
+// TestBinaryStatus checks that a recorded absolute path must be on disk, and that a bare name is looked up on PATH.
+func TestBinaryStatus(t *testing.T) {
+	present := filepath.Join(t.TempDir(), "databricks")
+	require.NoError(t, os.WriteFile(present, []byte("binary"), 0o700))
+	missing := filepath.Join(t.TempDir(), "databricks")
+	found := func(name string) (string, error) {
+		if name == "databricks" {
+			return present, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	notFound := func(string) (string, error) { return "", exec.ErrNotFound }
+
+	assert.Equal(t, statusOK, binaryStatus(present, notFound))
+	assert.Equal(t, statusFailed, binaryStatus(missing, found))
+	assert.Equal(t, statusOK, binaryStatus("databricks", found))
+	assert.Equal(t, statusFailed, binaryStatus("databricks", notFound))
+	// An empty command resolves to the working directory, and a directory is not a binary.
+	assert.Equal(t, statusFailed, binaryStatus("", found))
+	assert.Equal(t, statusFailed, binaryStatus(t.TempDir(), notFound))
+}
+
+// TestSignInStatus checks the sign-in state that --check reports for one service.
+func TestSignInStatus(t *testing.T) {
+	cases := []struct {
+		name       string
+		serviceOK  bool
+		credential int
+		body       string
+		recorded   bool
+		want       string
+		warns      bool
+	}{
+		{name: "active", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"ACTIVE"}}`, recorded: true, want: statusOK},
+		{name: "provisioning", serviceOK: true, credential: http.StatusOK, body: `{"provisioning_info":{"state":"PROVISIONING"}}`, recorded: true, want: checkNeeded},
+		{name: "not signed in", serviceOK: true, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, recorded: true, want: checkNeeded},
+		{name: "rejected token", serviceOK: true, credential: http.StatusUnauthorized, body: `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`, recorded: true, want: statusUnknown, warns: true},
+		{name: "service gone", serviceOK: false, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, recorded: true, want: statusUnknown, warns: true},
+		// The record says the server never needed sign-in, so an unreadable service has no sign-in to report.
+		{name: "service gone, never needed sign-in", serviceOK: false, credential: http.StatusNotFound, body: `{"error_code":"NOT_FOUND","message":"not found"}`, want: "", warns: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			serviceStatus := http.StatusOK
+			if !tc.serviceOK {
+				serviceStatus = http.StatusNotFound
+			}
+			server := listCheckServer(t, serviceStatus, tc.credential, tc.body)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+			require.NoError(t, err)
+
+			status, err := signInStatus(t.Context(), w, "logfood", "", "system.ai.github", tc.recorded)
+			assert.Equal(t, tc.want, status)
+			if tc.warns {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestAddChecksUsesTheRequirementTheServiceHasNow checks that --check asks the service whether it needs sign-in, rather
+// than trusting the record: a service that now needs sign-in is checked, and one that no longer needs it is not reported
+// as needing sign-in.
+func TestAddChecksUsesTheRequirementTheServiceHasNow(t *testing.T) {
+	t.Run("now requires sign-in", func(t *testing.T) {
+		home := withHome(t)
+		server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+		writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+		entry := listCheckGitHub(t, "github-logfood", "logfood", server.URL, "")
+		entry.SignInRequired = false
+		saveState(t, entry)
+
+		s, out := checkedListServer(t)
+		require.NotNil(t, s.Check)
+		assert.Equal(t, checkNeeded, s.Check.SignIn)
+		assert.Empty(t, out.Warnings)
+	})
+
+	t.Run("no longer requires sign-in", func(t *testing.T) {
+		home := withHome(t)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/api/2.0/preview/scim/v2/Me":
+				_, _ = w.Write([]byte(`{"userName":"user@example.test"}`))
+			case "/api/2.1/unity-catalog/mcp-services/system.ai.github":
+				// The service has no source connection with an OAuth provider any more.
+				_, _ = w.Write([]byte(`{"name":"mcp-services/system.ai.github"}`))
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		t.Cleanup(server.Close)
+		writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+		saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+		s, out := checkedListServer(t)
+		require.NotNil(t, s.Check)
+		assert.Empty(t, s.Check.SignIn)
+		assert.Empty(t, out.Warnings)
+	})
+}
+
+// TestAddChecksRejectedTokenFailsTheTokenCheck checks that --check asks the workspace whether the profile's token is
+// accepted. A personal access token is sent only with a request, so a revoked token would otherwise be reported as ok.
+func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
+	home := withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusFailed, s.Check.Token)
+	assert.Equal(t, statusUnknown, s.Check.SignIn)
+	require.Len(t, out.Warnings, 1)
+	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
+	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
+}
+
+// TestAddChecksAuthWarningNamesPinnedConfigFile checks that the login command in the warning for a rejected token sets
+// DATABRICKS_CONFIG_FILE for a group pinned to a config file, so that the login reads the file the profile is in.
+func TestAddChecksAuthWarningNamesPinnedConfigFile(t *testing.T) {
+	withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
+	}))
+	t.Cleanup(server.Close)
+	configFile := filepath.Join(t.TempDir(), "logfood.cfg")
+	require.NoError(t, os.WriteFile(configFile, []byte("[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n"), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, configFile))
+	// The warning names the file as it resolves, with forward slashes. A temporary directory is a symlink on macOS.
+	resolved, err := mcp.ResolveConfigFile(t.Context(), configFile)
+	require.NoError(t, err)
+
+	_, out := checkedListServer(t)
+	require.Len(t, out.Warnings, 1)
+	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(resolved))+" databricks auth login --profile logfood")
+}
+
+// TestAddChecksAuthWarningNamesFileTheShellNames checks the login command in the warning for a rejected token of an
+// unpinned server. The profile is checked in ~/.databrickscfg, and login writes the file DATABRICKS_CONFIG_FILE names, so
+// the command names the checked file when the shell names another one.
+func TestAddChecksAuthWarningNamesFileTheShellNames(t *testing.T) {
+	home := withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "other.cfg"))
+	checked, err := mcp.ResolveConfigFile(t.Context(), "")
+	require.NoError(t, err)
+
+	_, out := checkedListServer(t)
+	require.Len(t, out.Warnings, 1)
+	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(checked))+" databricks auth login --profile logfood")
 }

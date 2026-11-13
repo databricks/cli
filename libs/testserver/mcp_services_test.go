@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -96,4 +97,18 @@ func mcpServicesTestSeed(s *FakeWorkspace, fullName, comment, oauthProvider stri
 		}
 	}
 	s.McpServices[fullName] = ms
+}
+
+// TestMcpUserCredentialCreateNeedsTheService checks that a sign-in to a service that does not exist is NOT_FOUND, as
+// the API answers, and that nothing is recorded for it.
+func TestMcpUserCredentialCreateNeedsTheService(t *testing.T) {
+	workspace := mcpServicesTestWorkspace(t)
+
+	response := workspace.McpUserCredentialCreate("system.ai.gihtub")
+	assert.Equal(t, http.StatusNotFound, response.StatusCode)
+	assert.Empty(t, workspace.McpUserCredentials)
+
+	response = workspace.McpUserCredentialCreate("system.ai.github")
+	assert.Equal(t, 0, response.StatusCode)
+	assert.Contains(t, workspace.McpUserCredentials, "system.ai.github")
 }

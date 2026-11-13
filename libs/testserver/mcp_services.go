@@ -106,3 +106,24 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 		Body: catalog.ListMcpServicesResponse{McpServices: services},
 	}
 }
+
+// McpUserCredentialCreate fakes POST .../mcp-services/{name}/user-credentials, which completes a
+// caller's provider sign-in. Tests use it to flip a credential from absent to ACTIVE while the CLI
+// polls. The login body is not checked. A service that does not exist is NOT_FOUND, as the API answers.
+func (s *FakeWorkspace) McpUserCredentialCreate(service string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.McpServices[service]; !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       fmt.Sprintf("mcp service %s not found", service),
+		}
+	}
+	cred := catalog.McpServiceUserMappedCredential{
+		ProvisioningInfo: &catalog.ProvisioningInfo{State: catalog.ProvisioningInfoStateActive},
+	}
+	s.McpUserCredentials[service] = cred
+	return Response{
+		Body: cred,
+	}
+}

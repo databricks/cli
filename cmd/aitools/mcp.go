@@ -26,6 +26,7 @@ const (
 	categoryProfileRequired    protos.AitoolsErrorCategory = "PROFILE_REQUIRED"
 	categoryPermissionDenied   protos.AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
 	categoryLocationNotFound   protos.AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
+	categorySignInTimeout      protos.AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
 )
 
 // NewMcpCmd returns the `aitools mcp` group. It stays hidden until the whole MCP
@@ -39,6 +40,8 @@ func NewMcpCmd() *cobra.Command {
 	cmd.AddCommand(NewMcpAddCmd())
 	cmd.AddCommand(NewMcpListCmd())
 	cmd.AddCommand(NewMcpRemoveCmd())
+	cmd.AddCommand(NewMcpLoginCmd())
+	cmd.AddCommand(NewMcpLogoutCmd())
 	cmd.AddCommand(NewMcpServeCmd())
 	return cmd
 }

@@ -297,7 +297,7 @@ func TestBindNeverUsesEnvTokenForProfileWithoutToken(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	assert.Contains(t, err.Error(), "\nRun: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath)))+" databricks auth login --profile logfood")
 	assert.NotContains(t, err.Error(), "dapi-env-token")
 	assert.Error(t, errors.Unwrap(err))
 }
@@ -354,7 +354,9 @@ func TestBindTokenCannotBeMinted(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	// The server is pinned to the file, so the login command names it: the bare command would log in to the file the
+	// shell reads.
+	assert.Contains(t, err.Error(), "\nRun: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath)))+" databricks auth login --profile logfood")
 	assert.Error(t, errors.Unwrap(err))
 }
 
@@ -876,4 +878,20 @@ func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
 			assert.Equal(t, bindErr.Error(), err.Error())
 		})
 	}
+}
+
+func TestAuthErrorNamesPinnedConfigFile(t *testing.T) {
+	cause := errors.New("Invalid access token.")
+	assert.EqualError(t, mcp.AuthError("logfood", "/work/cfg/logfood.cfg", cause),
+		"Invalid access token.\nRun: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
+	assert.EqualError(t, mcp.AuthError("logfood", "", cause), "Invalid access token.\nRun: databricks auth login --profile logfood")
+}
+
+// TestConfigFileCommandUsesForwardSlashes checks that a pinned config file is named with forward slashes, so that the
+// hints read the same on Windows. A path that filepath builds there has backslashes, which the shell command must not
+// carry. On other systems the two forms are the same, so the test guards the Windows run.
+func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
+	path := filepath.Join("work", "cfg", "logfood.cfg")
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+filepath.ToSlash(path)+" databricks auth login --profile logfood",
+		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
 }

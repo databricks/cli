@@ -92,7 +92,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if f.service == "" {
 		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
-	if !isFullName(strings.Split(f.service, ".")) {
+	if !isServiceName(f.service) {
 		return fmt.Errorf("%s needs a full service name such as system.ai.github", mcpconfig.ServiceFlag)
 	}
 
@@ -100,7 +100,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
-	cfg, _, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
+	cfg, entry, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile: profileName,
 		Service: f.service,
 		State:   state,
@@ -120,15 +120,16 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Profile:      profileName,
 		Agent:        serveAgent(f.agent, cmd.ErrOrStderr()),
 		Transport:    serveTransport(cfg),
-	})
+	}, mcp.PinnedFile(entry, cfg.ConfigFile))
 }
 
 // serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
-// refreshGuard, so a rejected token stops the proxy; see proxyResult.
-func serveProxy(cmd *cobra.Command, opts proxy.Options) error {
+// refreshGuard, so a rejected token stops the proxy; see proxyResult. pinnedFile is the config file the server is
+// pinned to, or "" (see mcp.PinnedFile).
+func serveProxy(cmd *cobra.Command, opts proxy.Options, pinnedFile string) error {
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
-	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, cancel: stop}
+	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, pinnedFile: pinnedFile, cancel: stop}
 	opts.Authenticate = refresh.authenticateRequest
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
@@ -200,7 +201,9 @@ func exitAlreadyPrinted(err error, status int) error {
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
-	cancel       context.CancelFunc
+	// pinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile).
+	pinnedFile string
+	cancel     context.CancelFunc
 
 	mu  sync.Mutex
 	err error
@@ -228,7 +231,7 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	}
 	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
 	// new login.
-	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, err))
+	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, g.pinnedFile, err))
 	g.mu.Lock()
 	first := g.err == nil
 	if first {

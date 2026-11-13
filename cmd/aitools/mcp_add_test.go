@@ -69,6 +69,11 @@ func TestValidateMCPAddFlags(t *testing.T) {
 		},
 		{name: "valid name", flags: mcpAddFlags{name: "my_github-1"}, names: []string{"github"}},
 		{
+			name: "login and no-login conflict", flags: mcpAddFlags{login: true, noLogin: true}, names: []string{"github"},
+			want: "--login and --no-login cannot be used together",
+		},
+		{name: "login alone", flags: mcpAddFlags{login: true}, names: []string{"github"}},
+		{
 			name: "name must be lowercase", flags: mcpAddFlags{name: "GitHub"}, names: []string{"github"},
 			want: `--name "GitHub" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
 		},
@@ -782,7 +787,7 @@ func TestErrorCategoryMapsTypedFailures(t *testing.T) {
 		errorCategory(fmt.Errorf("claude-code: server %q: %w", "github", agentconfig.ErrNotOwned)))
 	assert.Equal(t, protos.AitoolsErrorCategoryTimeout, errorCategory(fmt.Errorf("list: %w", context.DeadlineExceeded)))
 	assert.Equal(t, protos.AitoolsErrorCategoryPermissionDenied, errorCategory(&fs.PathError{Op: "open", Path: "x", Err: fs.ErrPermission}))
-	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(mcp.AuthError("logfood", errors.New("no token"))))
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(mcp.AuthError("logfood", "", errors.New("no token"))))
 }
 
 // TestMcpAddRefusesMixedCaseNamesBeforeAnyRequest checks that mixed-case service and location names bind to the same entry as their lowercase forms, so a profile

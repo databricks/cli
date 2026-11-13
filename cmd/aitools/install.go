@@ -758,14 +758,25 @@ func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPl
 	}
 }
 
-// topLevelFailure returns the run error when it has no per-agent entry, or nil
-// when the failure is already reported per agent — so a per-agent failure is not
-// duplicated in the top-level error/errorCategory fields.
+// topLevelFailure returns the errors of runErr that have no per-agent entry, joined, or nil when every
+// error is a per-agent failure. A per-agent failure is reported in its agent entry and is not repeated in the
+// top-level error and errorCategory fields.
 func topLevelFailure(runErr error) error {
-	if _, ok := errors.AsType[*agentErrors](runErr); ok {
+	if _, ok := errors.AsType[*agentErrors](runErr); !ok {
+		return runErr
+	}
+	// A run error that joins per-agent failures with others keeps the others.
+	joined, ok := runErr.(interface{ Unwrap() []error })
+	if !ok {
 		return nil
 	}
-	return runErr
+	var others []error
+	for _, err := range joined.Unwrap() {
+		if _, ok := errors.AsType[*agentErrors](err); !ok {
+			others = append(others, err)
+		}
+	}
+	return errors.Join(others...)
 }
 
 // executePlan carries out the plan and returns each agent's outcome. Skills

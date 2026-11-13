@@ -1,0 +1,89 @@
+
+=== A service that needs no sign-in exits 0 and says so
+
+>>> [CLI] aitools mcp login system.ai.genie_one_mcp --profile logfood
+system.ai.genie_one_mcp does not need sign-in.
+
+=== login prints the sign-in URL and waits; the sign-in completes in the browser
+
+>>> retry --until Waiting for sign-in cat login.txt
+Sign in with the same account you use for Databricks profile logfood.
+Open this URL to sign in to system.ai.github:
+[DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
+Waiting for sign-in...
+
+>>> [CLI] api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json {}
+
+>>> cat login.txt
+Sign in with the same account you use for Databricks profile logfood.
+Open this URL to sign in to system.ai.github:
+[DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
+Waiting for sign-in...
+Signed in to system.ai.github on profile logfood.
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
+
+=== login again when already signed in returns at once
+
+>>> [CLI] aitools mcp login system.ai.github --profile logfood --output json
+Already signed in to system.ai.github on profile logfood.
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
+{
+  "service": "system.ai.github",
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "state": "ACTIVE"
+}
+
+=== logout removes the sign-in; a second logout finds nothing and still exits 0
+
+>>> [CLI] aitools mcp logout system.ai.github --profile logfood
+Signed out of system.ai.github on profile logfood.
+
+>>> [CLI] aitools mcp logout system.ai.github --profile logfood --output json
+Not signed in to system.ai.github on profile logfood.
+{
+  "service": "system.ai.github",
+  "profile": "logfood",
+  "host": "[DATABRICKS_URL]",
+  "state": "NOT_SIGNED_IN"
+}
+
+=== add --login installs the server and signs in during the same run
+
+>>> retry --until Waiting for sign-in cat add.txt
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+github-logfood  system.ai.github
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+Sign in with the same account you use for Databricks profile logfood.
+Open this URL to sign in to system.ai.github:
+[DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
+Waiting for sign-in...
+
+>>> [CLI] api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json {}
+
+>>> cat add.txt
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+github-logfood  system.ai.github
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+Sign in with the same account you use for Databricks profile logfood.
+Open this URL to sign in to system.ai.github:
+[DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
+Waiting for sign-in...
+Signed in to system.ai.github on profile logfood.
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
+
+>>> jq .mcp | [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+[
+  {
+    "name": "github-logfood",
+    "service": "system.ai.github",
+    "profile": "logfood",
+    "agents": [
+      "claude-code"
+    ]
+  }
+]

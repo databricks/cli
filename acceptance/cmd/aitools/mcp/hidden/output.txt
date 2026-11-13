@@ -27,8 +27,10 @@ Flags:
       --force             Overwrite an existing server with the same name that this CLI did not write
   -h, --help              help for add
       --location string   Schema to resolve leaf names in, as <catalog>.<schema> (default: system.ai, or the one schema that the full names in --names share)
+      --login             Sign in to each sign-in-required server that was installed, after the installs
       --name string       Server name to use instead of the generated one; only with exactly one service
       --names string      Services to install: full names (system.ai.github) or leaf names (github), comma-separated
+      --no-login          Do not sign in; print the login commands for sign-in-required servers (default)
 
 Global Flags:
       --debug            enable debug logging

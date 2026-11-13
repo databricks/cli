@@ -1822,3 +1822,15 @@ func TestNoAgentsMessageMatchesTheDetection(t *testing.T) {
 	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeGlobal})
 	assert.Contains(t, stderr.String(), "No supported coding agents found on PATH.")
 }
+
+// TestTopLevelFailureKeepsErrorsOutsideAgents checks that a run error which joins per-agent failures with another failure,
+// such as a sign-in that failed, keeps the other failure as the document's top-level error.
+func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
+	signInErr := errors.New("sign-in failed")
+	agentErr := &agentErrors{err: errors.New("agent failed")}
+
+	assert.NoError(t, topLevelFailure(agentErr))
+	top := topLevelFailure(errors.Join(agentErr, signInErr))
+	require.ErrorIs(t, top, signInErr)
+	assert.Equal(t, signInErr.Error(), top.Error())
+}
