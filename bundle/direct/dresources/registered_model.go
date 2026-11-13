@@ -192,6 +192,11 @@ func (*ResourceRegisteredModel) OverrideChangeDesc(_ context.Context, path *stru
 	return nil
 }
 
+// IDFromState returns the full name, which is the ID.
+func (*ResourceRegisteredModel) IDFromState(state *catalog.CreateRegisteredModelRequest) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
+}
+
 func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) error {
 	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
 		FullName: id,

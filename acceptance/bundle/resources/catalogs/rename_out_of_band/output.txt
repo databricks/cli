@@ -1,0 +1,158 @@
+
+=== Deploy a catalog with a schema and a volume in it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created catalogs.catalog1
+Created schemas.schema1
+Created volumes.volume1
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the catalog out of band. UC moves the schema and the volume with it
+
+>>> [CLI] catalogs update test_catalog_[UNIQUE_NAME] --new-name test_catalog_renamed_[UNIQUE_NAME]
+{
+  "name": "test_catalog_renamed_[UNIQUE_NAME]"
+}
+
+=== Rename the catalog in the config to match
+
+>>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+
+=== The plan finds the schema and the volume at their new names by their ids. A catalog has no such id, so it is created again
+
+>>> [CLI] bundle plan --output json
+{
+  "resources.catalogs.catalog1": {
+    "action": "create",
+    "new_state": {
+      "value": {
+        "name": "test_catalog_renamed_[UNIQUE_NAME]"
+      }
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]"
+      }
+    }
+  },
+  "resources.schemas.schema1": {
+    "id": "test_catalog_renamed_[UNIQUE_NAME].myschema",
+    "depends_on": [
+      {
+        "node": "resources.catalogs.catalog1",
+        "label": "${resources.catalogs.catalog1.name}"
+      }
+    ],
+    "action": "update_id",
+    "state_only": true,
+    "new_state": {
+      "value": {
+        "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+        "name": "myschema"
+      }
+    },
+    "remote_state": {
+      "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_at": [UNIX_TIME_MILLIS][0],
+      "created_by": "[USERNAME]",
+      "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema",
+      "name": "myschema",
+      "owner": "[USERNAME]",
+      "schema_id": "[SCHEMA_ID]"
+    },
+    "changes": {
+      "catalog_name": {
+        "action": "skip",
+        "reason": "remote_already_set",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]",
+        "remote": "test_catalog_renamed_[UNIQUE_NAME]"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[SCHEMA_ID]",
+        "remote": "[SCHEMA_ID]"
+      }
+    }
+  },
+  "resources.volumes.volume1": {
+    "id": "test_catalog_renamed_[UNIQUE_NAME].myschema.myvolume",
+    "depends_on": [
+      {
+        "node": "resources.catalogs.catalog1",
+        "label": "${resources.catalogs.catalog1.name}"
+      },
+      {
+        "node": "resources.schemas.schema1",
+        "label": "${resources.schemas.schema1.name}"
+      }
+    ],
+    "action": "update_id",
+    "state_only": true,
+    "new_state": {
+      "value": {
+        "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+        "name": "myvolume",
+        "schema_name": "myschema",
+        "volume_type": "MANAGED"
+      }
+    },
+    "remote_state": {
+      "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+      "created_at": [UNIX_TIME_MILLIS][1],
+      "created_by": "[USERNAME]",
+      "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema.myvolume",
+      "name": "myvolume",
+      "owner": "[USERNAME]",
+      "schema_name": "myschema",
+      "volume_id": "[VOLUME_ID]",
+      "volume_type": "MANAGED"
+    },
+    "changes": {
+      "catalog_name": {
+        "action": "skip",
+        "reason": "remote_already_set",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]",
+        "remote": "test_catalog_renamed_[UNIQUE_NAME]"
+      },
+      "volume_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[VOLUME_ID]",
+        "remote": "[VOLUME_ID]"
+      }
+    }
+  }
+}
+
+=== The catalog's create fails because the renamed catalog has its name
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.catalogs.catalog1: Catalog 'test_catalog_renamed_[UNIQUE_NAME]' already exists (400 CATALOG_ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.1/unity-catalog/catalogs
+HTTP Status: 400 Bad Request
+API error_code: CATALOG_ALREADY_EXISTS
+API message: Catalog 'test_catalog_renamed_[UNIQUE_NAME]' already exists
+
+Error: cannot update_id resources.schemas.schema1: dependency failed: resources.catalogs.catalog1
+
+Error: cannot update_id resources.volumes.volume1: dependency failed: resources.catalogs.catalog1
+
+Files: 3 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+>>> [CLI] catalogs delete test_catalog_renamed_[UNIQUE_NAME] --force

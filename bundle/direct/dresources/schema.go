@@ -8,8 +8,25 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// SchemaState is the schema's config plus its schema_id. The backend assigns schema_id and a
+// rename keeps it, so recording it lets the plan recognize the schema under a new name (see
+// internal_id_field in schemas.yml).
+type SchemaState struct {
+	catalog.CreateSchema
+	SchemaId string `json:"schema_id,omitempty"`
+}
+
+func (s *SchemaState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s SchemaState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourceSchema struct {
 	client *databricks.WorkspaceClient
@@ -19,12 +36,15 @@ func (*ResourceSchema) New(client *databricks.WorkspaceClient) *ResourceSchema {
 	return &ResourceSchema{client: client}
 }
 
-func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSchema {
-	return &input.CreateSchema
+func (*ResourceSchema) PrepareState(input *resources.Schema) *SchemaState {
+	return &SchemaState{
+		CreateSchema: input.CreateSchema,
+		SchemaId:     "", // Recorded by the framework from the remote state (internal_id_field).
+	}
 }
 
-func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
-	return &catalog.CreateSchema{
+func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *SchemaState {
+	return &SchemaState{
 		CatalogName:             info.CatalogName,
 		Comment:                 info.Comment,
 		CustomMaxRetentionHours: info.CustomMaxRetentionHours,
@@ -32,6 +52,7 @@ func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchem
 		Properties:              info.Properties,
 		StorageRoot:             info.StorageRoot,
 		ForceSendFields:         utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
+		SchemaId:                info.SchemaId,
 	}
 }
 
@@ -39,8 +60,8 @@ func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.Schema
 	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
-	response, err := r.client.Schemas.Create(ctx, *config)
+func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (string, *catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Create(ctx, config.CreateSchema)
 	if err != nil || response == nil {
 		return "", nil, err
 	}
@@ -64,32 +85,63 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 // migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
 var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
-// DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
-	updateRequest := catalog.UpdateSchema{
+func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.UpdateSchema {
+	return catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		FullName:                     id,
-		NewName:                      "", // We recreate schemas on name change intentionally.
+		NewName:                      newName,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
 		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](append(slices.Clone(schemaForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
+}
 
-	response, err := r.client.Schemas.Update(ctx, updateRequest)
-	if err != nil {
+// DoUpdate updates the schema in place and returns remote state.
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *SchemaState, _ *PlanEntry) (*catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(id, "", &config.CreateSchema))
+	if err != nil || response == nil {
 		return nil, err
 	}
 
-	if response != nil && response.FullName != id {
+	if response.FullName != id {
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
 	return response, nil
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
+// DoUpdateWithID renames the schema in place when the name changes; the ID is the full name, so it changes too.
+func (r *ResourceSchema) DoUpdateWithID(ctx context.Context, id string, config *SchemaState, _ *PlanEntry) (string, *catalog.SchemaInfo, error) {
+	nameFromID, err := getNameFromID(id)
+	if err != nil {
+		return "", nil, err
+	}
+
+	newName := ""
+	if config.Name != nameFromID {
+		newName = config.Name
+	}
+
+	// The catalog comes from config: a renamed catalog moves the schema with it, leaving id
+	// stale (see followsParentRename).
+	fullName := config.CatalogName + "." + nameFromID
+
+	response, err := r.client.Schemas.Update(ctx, makeUpdateSchema(fullName, newName, &config.CreateSchema))
+	if err != nil || response == nil {
+		return "", nil, err
+	}
+
+	return response.FullName, response, nil
+}
+
+// IDFromState returns the full name, which is the ID.
+func (*ResourceSchema) IDFromState(state *SchemaState) string {
+	return state.CatalogName + "." + state.Name
+}
+
+func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *SchemaState) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,

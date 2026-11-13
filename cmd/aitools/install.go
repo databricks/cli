@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -22,11 +24,11 @@ import (
 // install_test.go.
 var (
 	promptAgentSelection     = defaultPromptAgentSelection
-	promptProceed            = defaultPromptProceed
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 	installPluginForAgentFn  = installer.InstallPluginForAgent
 	recordPluginInstallsFn   = installer.RecordPluginInstalls
 	cleanupLegacyFn          = installer.RemoveLegacyRawSkills
+	pluginAlreadyInstalledFn = pluginAlreadyInstalled
 )
 
 // errNoAgentsSelected is returned when the picker is confirmed with nothing
@@ -96,6 +98,15 @@ type agentPlanItem struct {
 	reason            string                      // why the agent is skipped (deliverySkip only)
 	skipErrorCategory protos.AitoolsErrorCategory // error category for the skip (deliverySkip only)
 	explicit          bool                        // named via --agents (blocking it is an error)
+	// cliMissing marks a detected plugin agent whose CLI is not on PATH, so the
+	// plugin cannot be installed: it gets skill files instead (deliverySkills),
+	// or keeps the plugin it already has (deliveryPlugin, nothing is installed).
+	cliMissing bool
+	// projectPlugin marks a skills fallback in a directory where the agent
+	// already loads a databricks plugin that does not cover the install scope:
+	// a project or local plugin for a global install, or a personal (user or
+	// local) plugin for a project install. That directory sees both.
+	projectPlugin bool
 }
 
 // agentChoice is one row in the interactive agent picker.
@@ -118,7 +129,13 @@ func NewInstallCmd() *cobra.Command {
 
 By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
-(` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files.
+(` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files, and so does a
+detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
+install) and is not named with --agents, unless it already has the plugin. For
+Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
+only a plugin installed by 'databricks aitools' is known, so one installed
+another way shows every skill twice next to the skill files. A named agent
+whose CLI is not on PATH fails; add --skills-only to give it skill files.
 
 Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin).
@@ -137,6 +154,10 @@ coding agent caller gets a note saying so.
 Output:
   --output json          Emit a structured result instead of text. Requires --scope
                          and --agents so the command runs without interactive prompts.
+
+The command exits with code 1 when it sets up nothing: no agent is detected,
+every agent is skipped or fails to install, or no skill in the release can be
+installed (also with --path).
 
 Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Args: cobra.NoArgs,
@@ -182,15 +203,11 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			// --path is a dumb dump: no agents, no scope, no state.
 			if pathFlag != "" {
 				funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
-				written, err := installer.DumpSkillsToPath(ctx, src, pathFlag, opts)
-				if err != nil {
-					return err
-				}
-				if written == 0 {
-					// Every skill was filtered out (e.g. all experimental without
-					// --experimental): there was nothing to write.
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
-					return nil
+				// When every skill is filtered out (e.g. all experimental without
+				// --experimental) this fails with ErrNoSkillsResolved, so a caller
+				// does not take the empty directory for skills.
+				if _, err := installer.DumpSkillsToPath(ctx, src, pathFlag, opts); err != nil {
+					return withRecovery(ctx, installInvocation{path: pathFlag, skills: skillsFlag, experimental: includeExperimental}, err)
 				}
 				funnel.step(ctx, protos.AitoolsCommandStepSkillsDumped)
 				return nil
@@ -202,7 +219,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 
 			// JSON output must be fully non-interactive: every choice has to come
-			// from flags so no scope prompt, agent picker, or confirm is shown.
+			// from flags so no scope prompt or agent picker is shown.
 			// Require the flags those prompts would otherwise resolve, and fail
 			// fast naming them.
 			if jsonMode {
@@ -227,6 +244,18 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 			}
 
+			// Recovery steps repeat this run with the choices made so far, so a
+			// copied command never widens to every agent or the global scope.
+			// Agents chosen by flag or in the picker are named; without a
+			// choice the re-run detects the same agents again.
+			rerun := installInvocation{
+				scope:        scope,
+				skills:       skillsFlag,
+				skillsOnly:   skillsOnly,
+				experimental: includeExperimental,
+				jsonOutput:   jsonMode,
+			}
+
 			// Validate --agents with the other flags, before the scope prompt.
 			var targetAgents []*agents.Agent
 			explicit := agentsFlag != ""
@@ -236,6 +265,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 					return err
 				}
 				funnel.setTargets(targetAgents)
+				rerun.agents = joinAgentNames(targetAgents)
 			}
 			funnel.step(ctx, protos.AitoolsCommandStepFlagsValidated)
 
@@ -258,8 +288,9 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			if scope == "" {
 				scope, err = resolveScopeWithPrompt(ctx, interactive)
 				if err != nil {
-					return err
+					return withRecovery(ctx, rerun, err)
 				}
+				rerun.scope = scope
 			}
 			opts.Scope = scope
 			funnel.setScope(scope)
@@ -268,33 +299,30 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			if !explicit {
 				targetAgents, err = selectAgents(ctx, scope, skillsOnly, interactive)
 				if err != nil {
-					return err
+					return withRecovery(ctx, rerun, err)
 				}
 				if len(targetAgents) == 0 {
-					printNoAgentsMessage(ctx)
+					printNoAgentsMessage(ctx, rerun)
+					// Nothing to act on, like an empty --path dump, but the run
+					// still fails, so a caller does not take it for a setup.
 					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
-					return nil
+					return errNoAgentSetUp
+				}
+				if interactive {
+					rerun.agents = joinAgentNames(targetAgents)
 				}
 			}
 
-			plan := buildPlan(targetAgents, scope, skillsOnly, explicit)
+			plan := buildPlan(ctx, targetAgents, scope, skillsOnly, explicit)
 			funnel.setAgents(plan)
 			funnel.step(ctx, protos.AitoolsCommandStepAgentsSelected)
-
-			// In the interactive picker path, show a plan summary and confirm.
-			if !explicit && interactive {
-				printPlanSummary(ctx, plan, scope)
-				proceed, err := promptProceed()
-				if err != nil {
-					return err
-				}
-				if !proceed {
-					cmdio.LogString(ctx, "Cancelled.")
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUnspecified)
-					return nil
-				}
-			}
+			// The picker selection confirms the plan; runs without the picker
+			// confirm it implicitly. The picker labels show which agents get
+			// skill files instead of the plugin.
 			funnel.step(ctx, protos.AitoolsCommandStepPlanConfirmed)
+			if !explicit && interactive {
+				printInstallScope(ctx, scope)
+			}
 			// Only a run past this point waits for the telemetry auth. A run that
 			// ended earlier (a flag error, a cancelled prompt, no agent detected,
 			// a --path dump) uploads its events only if auth had already resolved,
@@ -312,18 +340,20 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}, classifyInstallError(topLevelFailure(runErr)), outcomes)
 			}()
 
-			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
+			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}
 			switch {
 			case runErr == nil:
-				if category, ok := nothingInstalledCategory(outcomes); ok {
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, category)
+				// The deferred funnel.finish records SUCCESS; a kept plugin counts
+				// like an installed one, unless nothing else was done.
+				if onlyKeptPlugins(outcomes) {
+					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
 				}
 			case topLevelFailure(runErr) == nil:
-				// Named agents failed or were skipped. A skip has no error type of
-				// its own, so take the category from the outcomes, not runErr.
+				// Named agents failed, or no agent was set up. A skip has no error
+				// type of its own, so take the category from the outcomes, not runErr.
 				funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, firstFailureCategory(outcomes))
 			default:
 				// Finish on the real failure here: JSON mode returns the
@@ -332,7 +362,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 
 			if jsonMode {
-				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes, runErr)); jerr != nil {
+				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(ctx, rerun, opts.Scope, outcomes, runErr)); jerr != nil {
 					// Rendering failed, so the JSON the caller parses is broken.
 					// Report the render error unless the run already failed for
 					// another reason.
@@ -351,7 +381,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 				return nil
 			}
-			return runErr
+			return withRecovery(ctx, rerun, runErr)
 		},
 	}
 
@@ -399,7 +429,7 @@ func selectAgents(ctx context.Context, scope string, skillsOnly, interactive boo
 			// caller prints the no-agents message rather than showing an empty picker.
 			return nil, nil
 		}
-		return promptAgentSelection(ctx, choices)
+		return promptAgentSelection(ctx, scope, choices)
 	}
 
 	var selected []*agents.Agent
@@ -425,27 +455,42 @@ func agentChoices(ctx context.Context, scope string, skillsOnly bool) []agentCho
 	cmdio.LogString(ctx, "Detecting coding agents...")
 	var choices []agentChoice
 	for _, a := range agents.Registry {
-		item := planItemFor(a, scope, skillsOnly, false)
-		label := agentChoiceLabel(ctx, a, item)
+		item := planItemFor(ctx, a, scope, skillsOnly, false)
+		label := agentChoiceLabel(ctx, a, item, skillsOnly)
 		cmdio.LogString(ctx, fmt.Sprintf("  %-16s %s", a.DisplayName, label))
 		if item.delivery == deliverySkip {
 			continue
 		}
 		choices = append(choices, agentChoice{
-			agent:     a,
-			label:     a.DisplayName + "  " + label,
-			preselect: a.IsPreselected(ctx),
+			agent: a,
+			label: a.DisplayName + "  " + label,
+			// Under --skills-only, an agent whose config dir exists also starts
+			// checked, so a plugin agent whose CLI is not on PATH is included
+			// as in the non-interactive run. The usual pre-checks still apply.
+			preselect: a.IsPreselected(ctx) || (skillsOnly && a.Detected(ctx)),
 		})
 	}
 	return choices
 }
 
 // agentChoiceLabel is the picker label: the detection state, plus the skip
-// reason when the agent can't be acted on in the chosen scope.
-func agentChoiceLabel(ctx context.Context, a *agents.Agent, item agentPlanItem) string {
-	label := agentStateLabel(a.DisplayState(ctx))
-	if item.delivery == deliverySkip {
+// reason when the agent can't be acted on in the chosen scope. Under
+// --skills-only every found agent gets raw skills, so it is labeled "skills".
+// An agent whose CLI is missing shows the skill files it gets instead of the
+// plugin, or that it keeps the plugin it already has.
+func agentChoiceLabel(ctx context.Context, a *agents.Agent, item agentPlanItem, skillsOnly bool) string {
+	state := a.DisplayState(ctx)
+	label := agentStateLabel(state)
+	if skillsOnly && state != agents.StateNotFound {
+		label = deliverySkills.String()
+	}
+	switch {
+	case item.delivery == deliverySkip:
 		return label + " · " + item.reason
+	case item.cliMissing && item.delivery == deliverySkills:
+		return "skills · CLI not found"
+	case item.cliMissing && item.delivery == deliveryPlugin:
+		return "plugin installed · CLI not found"
 	}
 	return label
 }
@@ -464,19 +509,7 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-func defaultPromptProceed() (bool, error) {
-	proceed := true
-	err := huh.NewConfirm().
-		Title("Proceed?").
-		Value(&proceed).
-		Run()
-	if err != nil {
-		return false, promptError(err)
-	}
-	return proceed, nil
-}
-
-func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*agents.Agent, error) {
+func defaultPromptAgentSelection(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
 	options := make([]huh.Option[string], 0, len(choices))
 	byName := make(map[string]*agents.Agent, len(choices))
 	for _, c := range choices {
@@ -486,8 +519,8 @@ func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*a
 
 	var selected []string
 	err := huh.NewMultiSelect[string]().
-		Title("Select agents to set up").
-		Description("space to toggle, enter to confirm").
+		Title(agentPickerTitle(scope)).
+		Description("space to toggle, enter to install").
 		Options(options...).
 		Value(&selected).
 		Run()
@@ -508,10 +541,10 @@ func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*a
 // buildPlan resolves the per-agent delivery and scope. Plugin-first: an agent
 // with a headless plugin install gets the plugin; --skills-only forces skills
 // everywhere; agents with no plugin always get skills.
-func buildPlan(targetAgents []*agents.Agent, scope string, skillsOnly, explicit bool) []agentPlanItem {
+func buildPlan(ctx context.Context, targetAgents []*agents.Agent, scope string, skillsOnly, explicit bool) []agentPlanItem {
 	plan := make([]agentPlanItem, 0, len(targetAgents))
 	for _, a := range targetAgents {
-		plan = append(plan, planItemFor(a, scope, skillsOnly, explicit))
+		plan = append(plan, planItemFor(ctx, a, scope, skillsOnly, explicit))
 	}
 	return plan
 }
@@ -519,7 +552,7 @@ func buildPlan(targetAgents []*agents.Agent, scope string, skillsOnly, explicit 
 // planItemFor resolves the delivery and scope for a single agent in the given
 // install scope. It is shared by buildPlan and the interactive picker so the
 // picker and the plan agree on what an agent will (or won't) do.
-func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agentPlanItem {
+func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly, explicit bool) agentPlanItem {
 	item := agentPlanItem{agent: a, explicit: explicit}
 	switch {
 	case skillsOnly || a.Plugin == nil:
@@ -535,11 +568,31 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		}
 	default:
 		nativeScope, ok, reason := mapAgentScope(a, scope)
-		if !ok {
+		switch {
+		case !ok:
 			item.delivery = deliverySkip
 			item.reason = reason
 			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
-		} else {
+		case !explicit && !a.HasBinary(ctx) && a.Detected(ctx):
+			// A desktop or IDE-only install has the config dir but no CLI to
+			// install the plugin with, so it gets the skill files it can use
+			// today. If it already has the plugin, skill files next to it would
+			// show every skill twice, so the plugin is kept. A named agent keeps
+			// failing with the commands to run: --agents never changes delivery.
+			item.cliMissing = true
+			item.delivery = deliverySkills
+			switch {
+			case pluginAlreadyInstalledFn(ctx, a, scope):
+				item.delivery = deliveryPlugin
+				item.scope = nativeScope
+			default:
+				// The skill files still serve every other project (global
+				// scope) or the project's teammates (project scope), but a
+				// plugin that does not cover this scope and applies here shows
+				// every skill twice in this directory.
+				item.projectPlugin = projectPluginActive(ctx, a)
+			}
+		default:
 			item.delivery = deliveryPlugin
 			item.scope = nativeScope
 		}
@@ -547,20 +600,66 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 	return item
 }
 
-// printPlanSummary renders the interactive plan summary before the confirm.
-func printPlanSummary(ctx context.Context, plan []agentPlanItem, scope string) {
-	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Plan ("+scope+" scope):")
-	for _, it := range plan {
-		switch it.delivery {
-		case deliveryPlugin:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install the databricks plugin")
-		case deliverySkills:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install skills")
-		case deliverySkip:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  skip ("+it.reason+")")
+// pluginAlreadyInstalled reports whether the agent already has the databricks
+// plugin for this install scope. When the CLI can read the agent's own plugin
+// manifest, the manifest decides, as in agents.DatabricksTooling: a plugin
+// removed with the agent's own CLI leaves the CLI's record behind. Otherwise,
+// or when the manifest exists but cannot be read, the CLI's install state for
+// the scope does.
+func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) bool {
+	if a.HasPluginManifestReader() {
+		active, err := manifestPluginActive(ctx, a, scope)
+		if err == nil {
+			return active
 		}
+		log.Debugf(ctx, "Could not read the plugin manifest of %s, using the install state: %v", a.DisplayName, err)
 	}
+	return installer.PluginRecorded(ctx, scope, a.Name)
+}
+
+// manifestPluginActive reports whether the agent's own plugin manifest has a
+// databricks plugin that serves this install scope. A global install serves
+// every project, so only a machine-wide plugin covers it. A project install is
+// shared through the repository, so only a project-scope plugin of this project
+// covers it: a machine-wide or local plugin is personal, and teammates would
+// get neither the plugin nor the skill files.
+func manifestPluginActive(ctx context.Context, a *agents.Agent, scope string) (bool, error) {
+	if scope != installer.ScopeProject {
+		return a.DatabricksPluginActiveIn(ctx, "")
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+	return a.DatabricksProjectPluginIn(ctx, cwd)
+}
+
+// projectPluginActive reports whether the agent's own manifest has a databricks
+// plugin record that applies in the current directory. Called after a global
+// install found no machine-wide plugin, so a match is a project or local one:
+// unlike manifestPluginActive for a project install, a local plugin counts,
+// since its user sees both. An unreadable manifest or working directory
+// reports false.
+func projectPluginActive(ctx context.Context, a *agents.Agent) bool {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	active, err := a.DatabricksPluginActiveIn(ctx, cwd)
+	return err == nil && active
+}
+
+// agentPickerTitle names the install scope, so it is visible before anything
+// is installed.
+func agentPickerTitle(scope string) string {
+	return "Select agents to set up (" + scope + " scope)"
+}
+
+// printInstallScope prints the install scope after the agent picker, above the
+// per-agent install lines.
+func printInstallScope(ctx context.Context, scope string) {
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Install scope: "+scope)
 	cmdio.LogString(ctx, "")
 }
 
@@ -574,6 +673,7 @@ type agentOutcome struct {
 	status        outcomeStatus
 	errorCategory protos.AitoolsErrorCategory // Unspecified when status == outcomeInstalled
 	message       string                      // set when skipped or failed
+	recovery      string                      // next step for the user, when skipped or failed
 }
 
 type outcomeStatus string
@@ -582,16 +682,81 @@ const (
 	outcomeInstalled outcomeStatus = "installed"
 	outcomeSkipped   outcomeStatus = "skipped"
 	outcomeFailed    outcomeStatus = "failed"
+	// outcomeKept is an agent whose CLI is missing but which already has the
+	// plugin: it is set up, though nothing was installed.
+	outcomeKept outcomeStatus = "kept"
 )
 
-// agentErrors wraps the failures of explicitly named agents, which are already
-// reported in their per-agent outcomes. Wrapping lets the JSON and telemetry
+// errNoAgentSetUp is returned when no agent was set up: none was detected, or
+// every agent in the plan was skipped or failed. The reason and recovery step
+// are printed above it, so the message only has to make the exit code non-zero.
+var errNoAgentSetUp = errors.New("nothing was installed; follow the steps above")
+
+// agentErrors wraps failures that are already reported in the per-agent
+// outcomes: those of agents named via --agents, and errNoAgentSetUp when no
+// detected agent was set up. Wrapping lets the JSON and telemetry
 // layers tell a per-agent failure apart from a top-level failure that has no
 // per-agent entry, so each is surfaced exactly once.
 type agentErrors struct{ err error }
 
 func (e *agentErrors) Error() string { return e.err.Error() }
 func (e *agentErrors) Unwrap() error { return e.err }
+
+// cliMissingOutcome is the plugin outcome of an agent whose CLI is not on PATH:
+// failed when it got skill files instead, kept when it already has the plugin.
+func cliMissingOutcome(it agentPlanItem, status outcomeStatus) agentOutcome {
+	return agentOutcome{
+		agent:         it.agent,
+		delivery:      deliveryPlugin,
+		status:        status,
+		errorCategory: protos.AitoolsErrorCategoryCLINotOnPath,
+		message:       cliMissingReason(it),
+	}
+}
+
+// skillsBatchRerun reports the invocation that retries the skills batch when
+// it included an agent whose CLI is missing and the run named its agents (the
+// picker selection). Re-running with that agent named would try its plugin,
+// since --agents never changes delivery, so it re-runs the skills agents with
+// --skills-only instead. ok is false when rerun already retries the batch.
+func skillsBatchRerun(rerun installInvocation, skillsAgents []*agents.Agent, fallbackItems []agentPlanItem) (installInvocation, bool) {
+	if rerun.agents == "" || len(fallbackItems) == 0 {
+		return rerun, false
+	}
+	rerun.agents = joinAgentNames(skillsAgents)
+	rerun.skillsOnly = true
+	return rerun, true
+}
+
+// skillsBatchError attaches the skillsBatchRerun recovery step to a failed
+// skills batch. When there is no such step, the error is returned as is, and
+// the caller attaches the step for the whole run.
+func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents []*agents.Agent, fallbackItems []agentPlanItem, err error) error {
+	batchRerun, ok := skillsBatchRerun(rerun, skillsAgents, fallbackItems)
+	if !ok {
+		return err
+	}
+	return withRecovery(ctx, batchRerun, err)
+}
+
+// forgetStalePluginRecords drops the CLI's plugin records of agents that just
+// got skill files instead of the plugin. They have no plugin (see
+// pluginAlreadyInstalled), so a record left by a removal with the agent's own
+// CLI is stale, and list and update would keep treating them as plugin agents
+// and never refresh their skill files. The skills are already installed, so a
+// failure here is only a warning.
+func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPlanItem) {
+	if len(items) == 0 {
+		return
+	}
+	names := make([]string, len(items))
+	for i, it := range items {
+		names[i] = it.agent.Name
+	}
+	if err := installer.ForgetPluginInstalls(ctx, scope, names); err != nil {
+		log.Warnf(ctx, "Could not drop stale plugin records for %s: %v", strings.Join(names, ", "), err)
+	}
+}
 
 // topLevelFailure returns the run error when it has no per-agent entry, or nil
 // when the failure is already reported per agent — so a per-agent failure is not
@@ -604,18 +769,29 @@ func topLevelFailure(runErr error) error {
 }
 
 // executePlan carries out the plan and returns each agent's outcome. Skills
-// installs go through the existing skills path. Plugin installs are reported but
-// never silently fall back to skills: a blocked install is a warning (exit 0),
-// unless the agent was explicitly named via --agents, which is an error.
-func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, quiet bool) ([]agentOutcome, error) {
+// installs, including those of agents whose CLI is missing, go through the
+// existing skills path as one group. A failed plugin install is a warning,
+// unless the agent was explicitly named via --agents, which is an error. A run
+// that sets up no agent at all is an error too, so callers never mistake it for
+// success. The per-agent recovery steps repeat rerun for the agent at hand.
+func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
-	var pluginItems, skipItems []agentPlanItem
+	var fallbackItems, keptItems, pluginItems, skipItems []agentPlanItem
+	skillsExplicit := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
 			skillsAgents = append(skillsAgents, it.agent)
+			skillsExplicit = skillsExplicit || it.explicit
+			if it.cliMissing {
+				fallbackItems = append(fallbackItems, it)
+			}
 		case deliveryPlugin:
-			pluginItems = append(pluginItems, it)
+			if it.cliMissing {
+				keptItems = append(keptItems, it)
+			} else {
+				pluginItems = append(pluginItems, it)
+			}
 		case deliverySkip:
 			skipItems = append(skipItems, it)
 		}
@@ -624,21 +800,57 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	var outcomes []agentOutcome
 	var explicitErrs []error
 
+	// The plugin could not be installed for these agents. Keep that in the
+	// outcomes so telemetry still sees it; the skills outcome records the
+	// fallback.
+	for _, it := range fallbackItems {
+		if !quiet {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, skillsFallbackText(rerun, it)))
+			if it.projectPlugin {
+				cmdio.LogString(ctx, cmdio.Yellow(ctx, projectPluginWarning(opts.Scope, it)))
+			}
+		}
+		outcomes = append(outcomes, cliMissingOutcome(it, outcomeFailed))
+	}
+
+	for _, it := range keptItems {
+		if !quiet {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, pluginKeptText(rerun, it)))
+		}
+		// Raw skills an earlier run gave this agent would show every skill
+		// twice next to the plugin, so remove them as a plugin install does.
+		// This runs before the skills batch: a newer release there replaces the
+		// recorded checksums, and older copies would then look user-modified
+		// and stay. Only the agent's own manifest is proof enough: for Codex and
+		// Copilot the CLI's record is the only evidence, and it outlives a
+		// removal with the agent's own CLI, so removing the skills then would
+		// leave the agent with neither.
+		if active, err := manifestPluginActive(ctx, it.agent, opts.Scope); err == nil && active {
+			if err := cleanupLegacyFn(ctx, it.agent, opts.Scope); err != nil {
+				log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", it.agent.DisplayName, err)
+			}
+		}
+		outcomes = append(outcomes, cliMissingOutcome(it, outcomeKept))
+	}
+
+	// A skills install runs as a group; its failure is the command's top-level
+	// error. Plugin agents don't depend on it, so they are still attempted.
+	var skillsErr error
 	if len(skillsAgents) > 0 {
 		if !quiet {
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
-		// A skills install runs as a group; on failure the whole command fails and
-		// the top-level error category classifies it.
-		if err := installSkillsForAgentsFn(ctx, src, skillsAgents, opts); err != nil {
-			return outcomes, err
-		}
-		for _, a := range skillsAgents {
-			outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+		skillsErr = installSkillsForAgentsFn(ctx, src, skillsAgents, opts)
+		if skillsErr == nil {
+			for _, a := range skillsAgents {
+				outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+			}
+			forgetStalePluginRecords(ctx, opts.Scope, fallbackItems)
 		}
 	}
 
 	pluginCount := 0
+	pluginsRecorded := false
 	if len(pluginItems) > 0 {
 		// Plugins install from the agent's marketplace, so the skills ref only
 		// labels the recorded version. Record it as unknown when unresolved.
@@ -654,8 +866,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
 			if err != nil {
+				reason, recovery := pluginFailureText(ctx, rerun, it, err)
 				if !quiet {
-					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", it.agent.DisplayName, reason)))
+					cmdio.LogString(ctx, "  "+recovery)
 				}
 				outcomes = append(outcomes, agentOutcome{
 					agent:         it.agent,
@@ -663,9 +877,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 					status:        outcomeFailed,
 					errorCategory: classifyInstallError(err),
 					message:       err.Error(),
+					recovery:      recovery,
 				})
 				if it.explicit {
-					explicitErrs = append(explicitErrs, err)
+					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: err})
 				}
 				continue
 			}
@@ -681,16 +896,37 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
 			}
 		}
-		if len(records) > 0 {
-			if err := recordPluginInstallsFn(ctx, opts.Scope, records, ref); err != nil {
-				return outcomes, err
+		if len(records) > 0 && skillsErr != nil && installer.HasUntrackedSkills(ctx, opts.Scope) {
+			// Skills with no state file are on disk (an install that predates
+			// state tracking, or an interrupted first install). A state file
+			// holding only these plugins would hide those skills from update and
+			// from the install's legacy checks, so leave recording to the next
+			// install whose skills step succeeds.
+			log.Debugf(ctx, "Not recording plugin installs: skills without install state are on disk")
+		} else if len(records) > 0 {
+			// After a skills failure the skills on disk stay at the old release,
+			// so record the plugins without advancing state.Release.
+			releaseRef := ref
+			if skillsErr != nil {
+				releaseRef = ""
 			}
+			if err := recordPluginInstallsFn(ctx, opts.Scope, records, releaseRef); err != nil {
+				// No skill to install is no failure of its own; report only the
+				// record failure.
+				if errors.Is(skillsErr, installer.ErrNoSkillsResolved) {
+					return outcomes, err
+				}
+				return outcomes, errors.Join(skillsBatchError(ctx, rerun, skillsAgents, fallbackItems, skillsErr), err)
+			}
+			pluginsRecorded = true
 		}
 	}
 
 	for _, it := range skipItems {
+		recovery := skipRecovery(rerun, it)
 		if !quiet {
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+it.agent.DisplayName+": "+it.reason))
+			cmdio.LogString(ctx, "  "+recovery)
 		}
 		outcomes = append(outcomes, agentOutcome{
 			agent:         it.agent,
@@ -698,6 +934,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			status:        outcomeSkipped,
 			errorCategory: it.skipErrorCategory,
 			message:       it.reason,
+			recovery:      recovery,
 		})
 		if it.explicit {
 			explicitErrs = append(explicitErrs, fmt.Errorf("%s: %s", it.agent.DisplayName, it.reason))
@@ -712,8 +949,40 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		cmdio.LogString(ctx, fmt.Sprintf("Installed the plugin for %d %s.", pluginCount, noun))
 	}
 
+	// A release with no skill this CLI can install skips the skills agents when
+	// the plan had plugin agents, installed or kept, so the plugin outcomes
+	// decide the run. A --skills-only run with nothing else attempted keeps the
+	// error. So does a run whose installed plugins were not recorded (skills
+	// without install state are on disk): update and uninstall could not
+	// manage them.
+	if errors.Is(skillsErr, installer.ErrNoSkillsResolved) && (len(pluginItems) > 0 || len(keptItems) > 0) && (pluginCount == 0 || pluginsRecorded) {
+		batchRerun, _ := skillsBatchRerun(rerun, skillsAgents, fallbackItems)
+		recovery := installRecovery(ctx, batchRerun, skillsErr)
+		names := make([]string, len(skillsAgents))
+		for i, a := range skillsAgents {
+			names[i] = a.DisplayName
+			outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeSkipped, errorCategory: classifyInstallError(skillsErr), message: skillsErr.Error(), recovery: recovery})
+		}
+		if !quiet {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+strings.Join(names, ", ")+": "+skillsErr.Error()))
+			cmdio.LogString(ctx, "  "+recovery)
+		}
+		if skillsExplicit {
+			explicitErrs = append(explicitErrs, &displayError{msg: strings.Join(names, ", ") + ": " + skillsErr.Error(), err: skillsErr})
+		}
+		skillsErr = nil
+	}
+
+	// The skills error has no per-agent entry, so it stays the top-level error;
+	// explicit per-agent failures are already in their outcomes.
+	if skillsErr != nil {
+		return outcomes, skillsBatchError(ctx, rerun, skillsAgents, fallbackItems, skillsErr)
+	}
 	if len(explicitErrs) > 0 {
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
+	}
+	if !anyInstalled(outcomes) {
+		return outcomes, &agentErrors{err: errNoAgentSetUp}
 	}
 	return outcomes, nil
 }
@@ -728,6 +997,8 @@ type installOutput struct {
 	// also records.
 	Error         string `json:"error,omitempty"`
 	ErrorCategory string `json:"error_category,omitempty"`
+	// Recovery is the next step for the top-level failure, local-only like Error.
+	Recovery string `json:"recovery,omitempty"`
 }
 
 type agentResultJSON struct {
@@ -736,9 +1007,12 @@ type agentResultJSON struct {
 	Status        string `json:"status"`
 	ErrorCategory string `json:"error_category,omitempty"`
 	Message       string `json:"message,omitempty"`
+	Recovery      string `json:"recovery,omitempty"`
 }
 
-func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) installOutput {
+// buildInstallOutput builds the --output json result; the recovery steps
+// repeat rerun.
+func buildInstallOutput(ctx context.Context, rerun installInvocation, scope string, outcomes []agentOutcome, runErr error) installOutput {
 	out := installOutput{Scope: scope, Agents: make([]agentResultJSON, 0, len(outcomes))}
 	for _, o := range outcomes {
 		entry := agentResultJSON{
@@ -746,6 +1020,7 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 			Delivery: o.delivery.String(),
 			Status:   string(o.status),
 			Message:  o.message,
+			Recovery: o.recovery,
 		}
 		// Only non-successful outcomes carry a category, keyed on status to match
 		// agentResultsField in telemetry.go so the JSON and telemetry views of the
@@ -757,13 +1032,24 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 	}
 	// A top-level failure (skills-group install, plugin recording) has no
 	// per-agent entry, so surface it here too; otherwise the consumer sees a
-	// non-zero exit with an empty agents array and no reason. Per-agent failures
-	// stay in the agents entries above and are not repeated here.
+	// non-zero exit with no reason, and the agents array holds at most the
+	// plugin agents that were still installed. Per-agent failures stay in the
+	// agents entries above and are not repeated here.
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()
 		out.ErrorCategory = string(classifyInstallError(e))
+		out.Recovery = installRecovery(ctx, rerun, e)
 	}
 	return out
+}
+
+// joinAgentNames is the --agents value that names targetAgents.
+func joinAgentNames(targetAgents []*agents.Agent) string {
+	names := make([]string, len(targetAgents))
+	for i, a := range targetAgents {
+		names[i] = a.Name
+	}
+	return strings.Join(names, ",")
 }
 
 // resolveAgentNames parses a comma-separated list of agent names and validates
@@ -797,10 +1083,17 @@ func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error)
 	return result, nil
 }
 
-// printNoAgentsMessage prints the "no agents detected" message.
-func printNoAgentsMessage(ctx context.Context) {
-	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents found on PATH."))
+// printNoAgentsMessage prints the "no agents detected" message. Its commands
+// repeat rerun, so a named agent is set up in the scope and mode this run used.
+func printNoAgentsMessage(ctx context.Context, rerun installInvocation) {
+	// --skills-only detects an agent by its config dir only, not by its CLI.
+	found := "No supported coding agents found on PATH."
+	if rerun.skillsOnly {
+		found = "No supported coding agent config directories found."
+	}
+	cmdio.LogString(ctx, cmdio.Yellow(ctx, found))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
-	cmdio.LogString(ctx, "Install one, then re-run 'databricks aitools install'.")
+	named, _ := commandText(runtime.GOOS, rerun, nil, "--agents=<name>")
+	cmdio.LogString(ctx, "Install one, then re-run "+rerunPhrase(runtime.GOOS, rerun)+". To set up an agent that was not detected, name it: "+named)
 }

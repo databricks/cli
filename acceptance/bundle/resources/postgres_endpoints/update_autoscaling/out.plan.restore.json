@@ -5,7 +5,7 @@
       "label": "${resources.postgres_branches.main.id}"
     }
   ],
-  "action": "recreate",
+  "action": "update",
   "new_state": {
     "value": {
       "autoscaling_limit_max_cu": 8,
@@ -20,24 +20,8 @@
     "autoscaling_limit_max_cu": {
       "action": "update",
       "old": 4,
-      "new": 8
-    },
-    "autoscaling_limit_min_cu": {
-      "action": "update",
-      "old": 0.5,
-      "new": 0.5
-    },
-    "endpoint_type": {
-      "action": "recreate",
-      "reason": "spec:immutable",
-      "old": "ENDPOINT_TYPE_READ_ONLY",
-      "new": "ENDPOINT_TYPE_READ_ONLY",
-      "remote": ""
-    },
-    "suspend_timeout_duration": {
-      "action": "update",
-      "old": "300s",
-      "new": "300s"
+      "new": 8,
+      "remote": 4
     }
   }
 }

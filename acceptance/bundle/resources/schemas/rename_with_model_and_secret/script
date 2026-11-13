@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+export BUNDLE_VAR_secret_value=secret-value
+
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a registered model and a secret in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the schema. UC moves the model and the secret with it; they cannot follow a rename yet, so they are recreated where they moved"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --sort //unity-catalog
+trace $CLI registered-models get "$NEW_SCHEMA.mymodel" | jq '{full_name}'
+trace $CLI secrets-uc get-secret "$NEW_SCHEMA.mysecret" | jq '{full_name}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

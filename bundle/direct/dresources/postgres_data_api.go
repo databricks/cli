@@ -135,7 +135,7 @@ func (r *ResourcePostgresDataApi) DoCreate(ctx context.Context, config *Postgres
 		return "", nil, err
 	}
 
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}

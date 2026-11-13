@@ -383,9 +383,9 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			}
 			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
 			name := fetchMLflowRunName(ctx, w, ids.RunID)
-			// Shorten the name, not the retry note, to fit the column.
+			// Shorten the label, not the retry note, to fit the column.
 			note := ids.retryNote()
-			entries[i].row.MLflowLabel = truncate(mlflowRunLabel(name, ids.RunID), mlflowColWidth-len(note)) + note
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID, mlflowColWidth-len(note)) + note
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).
