@@ -179,7 +179,7 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 
 // signInInstalledOne signs in to one installed sign-in server of the test's workspace and returns the error and what the
 // command wrote to stderr, on either stream. The server answers with status and body for the credential.
-func signInInstalledOne(t *testing.T, status int, body string) (error, string) {
+func signInInstalledOne(t *testing.T, status int, body string) (string, error) {
 	t.Helper()
 	const githubPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -208,13 +208,13 @@ func signInInstalledOne(t *testing.T, status int, body string) (error, string) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	var errOut bytes.Buffer
 	err = signInInstalled(ctx, &errOut, w, req, plans, servers)
-	return err, errOut.String() + stderr.String()
+	return errOut.String() + stderr.String(), err
 }
 
 // TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand checks that a sign-in that failed does not print the
 // login hint again, since its error already names the command to run.
 func TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand(t *testing.T) {
-	err, output := signInInstalledOne(t, http.StatusOK, `{"provisioning_info":{"state":"FAILED"}}`)
+	output, err := signInInstalledOne(t, http.StatusOK, `{"provisioning_info":{"state":"FAILED"}}`)
 	require.ErrorIs(t, err, mcp.ErrSignInFailed)
 	assert.Contains(t, err.Error(), "Run: databricks aitools mcp login system.ai.github --profile logfood")
 	assert.NotContains(t, output, "needs sign-in")
@@ -223,7 +223,7 @@ func TestSignInInstalledHintIsNotRepeatedWhenTheErrorNamesTheCommand(t *testing.
 // TestSignInInstalledAuthFailureNamesTheAuthCommand checks that a credential the workspace rejects gets the auth command
 // in its error, and no login hint, which would not fix it.
 func TestSignInInstalledAuthFailureNamesTheAuthCommand(t *testing.T) {
-	err, output := signInInstalledOne(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	output, err := signInInstalledOne(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
 	assert.NotContains(t, output, "mcp login")
