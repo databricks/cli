@@ -25,7 +25,7 @@ Package and deploy:
   images          Push container images for custom environments
 
 Provisioned capacity:
-  pools           View GPU pools provisioned for your workspace
+  pools           View provisioned GPU pools, if any (not required to run)
 
 Flags:
   -h, --help   help for air
