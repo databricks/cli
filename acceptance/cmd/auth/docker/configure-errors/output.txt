@@ -45,10 +45,5 @@ Error: profile "m2m" uses client credentials. Docker credential helper requires 
 >>> musterr [CLI] auth docker configure blank-auth
 Error: profile "blank-auth" uses auth_type "". Docker credential helper requires a profile created by databricks auth login
 
-=== Another profile already maps to the workspace
-
->>> musterr [CLI] auth docker configure docker-test
-Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: duplicate and docker-test. Docker credential helper requires exactly one profile per workspace. Remove the duplicate profile with: databricks auth logout --profile <profile-name> --delete
-
 === Nothing changed
 Docker config not created; profiles unchanged

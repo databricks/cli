@@ -10,6 +10,13 @@ import (
 // user explicitly skips workspace selection for SPOG account-level access.
 const WorkspaceIDNone = "none"
 
+const (
+	// DockerCredentialHelperKey marks the profile that the Docker credential helper uses for its workspace.
+	DockerCredentialHelperKey = "docker_credential_helper"
+	// DockerCredentialHelperValue is the value of DockerCredentialHelperKey on the marked profile.
+	DockerCredentialHelperValue = "true"
+)
+
 // Profile holds a subset of the keys in a databrickscfg profile.
 // It should only be used for prompting and filtering.
 // Use its name to construct a config.Config.
@@ -25,6 +32,8 @@ type Profile struct {
 	Scopes               string
 	Resources            string
 	AuthType             string
+
+	DockerCredentialHelper bool
 }
 
 func (p Profile) Cloud() string {

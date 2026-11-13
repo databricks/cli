@@ -11,11 +11,6 @@ cat >> "$HOME/.databrickscfg" <<ENDCFG
 host = https://workspace.example.test
 auth_type = databricks-cli
 
-[duplicate]
-host = $DATABRICKS_HOST_ORIG
-auth_type = databricks-cli
-workspace_id = 900800700600
-
 [pat]
 host = $DATABRICKS_HOST_ORIG
 auth_type = pat
@@ -53,9 +48,6 @@ title "Unsupported authentication profiles"
 trace musterr $CLI auth docker configure pat
 trace musterr $CLI auth docker configure m2m
 trace musterr $CLI auth docker configure blank-auth
-
-title "Another profile already maps to the workspace"
-trace musterr $CLI auth docker configure docker-test
 
 title "Nothing changed"
 assert_not_exists.py "$DOCKER_CONFIG/config.json"

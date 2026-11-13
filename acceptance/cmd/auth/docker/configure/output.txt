@@ -61,9 +61,10 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
 [DEFAULT]
 
 [docker-test]
-host         = [DATABRICKS_URL]
-auth_type    = databricks-cli
-workspace_id = [WORKSPACE_ID]
+host                     = [DATABRICKS_URL]
+auth_type                = databricks-cli
+workspace_id             = [WORKSPACE_ID]
+docker_credential_helper = true
 
 >>> databricks auth docker host --profile docker-test --output json
 {
@@ -153,4 +154,53 @@ Warning: ensure [TEST_TMP_DIR]/home/bin is on PATH before any other docker-crede
   },
   "method": "GET",
   "path": "/api/2.1/unity-catalog/metastore_summary"
+}
+
+=== Profiles sharing the workspace
+
+>>> databricks auth docker configure shared
+Warning: Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost switched from profile docker-test to shared
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> databricks auth docker host --profile docker-test
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: NO
+
+>>> databricks auth docker host --profile shared
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: YES
+
+>>> databricks auth docker configure docker-test
+Warning: Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost switched from profile shared to docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> print_requests.py --get --oneline //api
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+
+>>> cat [TEST_TMP_DIR]/home/.databrickscfg
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[docker-test]
+host                     = [DATABRICKS_URL]
+auth_type                = databricks-cli
+workspace_id             = [WORKSPACE_ID]
+docker_credential_helper = true
+
+[shared]
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [WORKSPACE_ID]
+
+>>> docker-credential-databricks get
+{
+  "Secret": "oauth-token",
+  "Username": "oauthtoken"
 }

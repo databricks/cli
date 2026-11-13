@@ -1,0 +1,1 @@
+* Allow `databricks auth docker configure` when multiple profiles match the same workspace. The command records the selected profile in `.databrickscfg`, and the Docker credential helper uses it; run the command with another profile to switch. ([#7383](https://github.com/databricks/cli/pull/7383))

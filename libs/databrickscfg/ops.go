@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -320,6 +321,30 @@ func SaveResourcesToProfile(ctx context.Context, profileName, configFilePath str
 	return writeConfigFile(ctx, configFile)
 }
 
+// SetDockerCredentialHelperProfile marks profileName as the Docker credential helper profile and unmarks the profiles in previous.
+func SetDockerCredentialHelperProfile(ctx context.Context, profileName, configFilePath string, previous []string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	section, err := configFile.GetSection(profileName)
+	if err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+	for _, name := range previous {
+		previousSection, err := configFile.GetSection(name)
+		if err != nil {
+			return fmt.Errorf("profile %q not found: %w", name, err)
+		}
+		previousSection.DeleteKey(profile.DockerCredentialHelperKey)
+	}
+	// See SaveToProfile for why this is not Section.Key.
+	if _, err := section.NewKey(profile.DockerCredentialHelperKey, profile.DockerCredentialHelperValue); err != nil {
+		return err
+	}
+	return writeConfigFile(ctx, configFile)
+}
+
 // ClearDefaultProfile removes the default_profile key from the [__settings__]
 // section if the current default matches the given profile name.
 func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
@@ -481,6 +506,7 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 	if err != nil {
 		return err
 	}
+	previous := section.KeysHash()
 
 	// zeroval profile name before adding it to a section
 	cfg.Profile = ""
@@ -503,6 +529,14 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		if _, err := section.NewKey(attr.Name, attr.GetString(cfg)); err != nil {
 			return err
 		}
+	}
+
+	// The Docker credential helper mark applies to the profile's workspace, so it must not survive a change of host or workspace.
+	current := section.KeysHash()
+	hostChanged := previous["host"] != "" && (&config.Config{Host: current["host"]}).CanonicalHostName() != (&config.Config{Host: previous["host"]}).CanonicalHostName()
+	workspaceChanged := previous["workspace_id"] != "" && current["workspace_id"] != previous["workspace_id"]
+	if hostChanged || workspaceChanged {
+		section.DeleteKey(profile.DockerCredentialHelperKey)
 	}
 
 	// Auto-set default profile when saving the first profile to the config file.
