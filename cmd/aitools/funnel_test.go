@@ -570,30 +570,99 @@ func TestListFunnelFailure(t *testing.T) {
 	}
 }
 
-// A plugin failure for an auto-detected agent is only a warning, but when
-// nothing got installed the run fails and the funnel must not report SUCCESS.
-func TestInstallFunnelDetectedPluginFailureIsNotSuccess(t *testing.T) {
-	isolateAgents(t)
-	tmp := t.TempDir()
-	t.Setenv("HOME", tmp)
-	t.Setenv("USERPROFILE", tmp)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
-	fakeBinsOnPath(t, "codex")
-	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
-	setupPluginMock(t)
-	forbidSkillsInstall(t)
-	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
-		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+// How the funnel finishes when a detected agent's plugin cannot be installed:
+// its install failed, or its CLI is missing and it got skill files or kept the
+// plugin it already had.
+func TestInstallFunnelDetectedPluginAgents(t *testing.T) {
+	cases := []struct {
+		name            string
+		claudeConfigDir bool // Claude Code detected by ~/.claude; its CLI is never on PATH
+		codexOnPath     bool // Codex detected by its CLI, whose plugin install fails
+		pluginInstalled bool
+		wantErr         error
+		wantShape       []string
+	}{
+		{
+			// A plugin failure for an auto-detected agent is only a warning, but
+			// when nothing got installed the run fails and the funnel takes the
+			// category from the agent's outcome.
+			name:        "the only install failed",
+			codexOnPath: true,
+			wantErr:     errNoAgentSetUp,
+			wantShape: []string{
+				"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
+				"FINISHED:FAILURE:PLUGIN_INSTALL_FAILED",
+			},
+		},
+		{
+			name:            "CLI missing, skill files instead",
+			claudeConfigDir: true,
+			codexOnPath:     true,
+			wantShape: []string{
+				"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
+				"SKILLS_INSTALLED", "FINISHED:SUCCESS:",
+			},
+		},
+		{
+			// The run installed nothing, but exits 0.
+			name:            "CLI missing, plugin kept",
+			claudeConfigDir: true,
+			pluginInstalled: true,
+			wantShape: []string{
+				"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
+				"FINISHED:NOTHING_TO_DO:",
+			},
+		},
+		{
+			// A kept plugin counts like an installed one: the other agent's
+			// failed install is only a warning.
+			name:            "CLI missing, plugin kept, another install failed",
+			claudeConfigDir: true,
+			codexOnPath:     true,
+			pluginInstalled: true,
+			wantShape: []string{
+				"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
+				"FINISHED:SUCCESS:",
+			},
+		},
 	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateAgents(t)
+			tmp := t.TempDir()
+			t.Setenv("HOME", tmp)
+			t.Setenv("USERPROFILE", tmp)
+			t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+			if tc.claudeConfigDir {
+				require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+			}
+			var wantPluginCalls []pluginCall
+			if tc.codexOnPath {
+				fakeBinsOnPath(t, "codex")
+				wantPluginCalls = []pluginCall{{agent: agents.NameCodex}}
+			} else {
+				fakeBinsOnPath(t)
+			}
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			stubPluginAlreadyInstalled(t, tc.pluginInstalled)
+			stubLegacyCleanup(t)
+			setupInstallMock(t)
+			plugins := setupPluginMock(t)
+			installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+				*plugins = append(*plugins, pluginCall{agent: a.Name})
+				return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+			}
 
-	// The run installed nothing, so it exits non-zero; the FINISHED event takes
-	// the category from the agent's outcome.
-	ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--scope", "global")
-	require.ErrorIs(t, err, errNoAgentSetUp)
-	assert.Equal(t, []string{
-		"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "AGENTS_SELECTED", "PLAN_CONFIRMED",
-		"FINISHED:FAILURE:PLUGIN_INSTALL_FAILED",
-	}, funnelShape(funnelEvents(ctx)))
+			ctx, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--scope", "global")
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, wantPluginCalls, *plugins, "only an agent with its CLI on PATH gets a plugin install")
+			assert.Equal(t, tc.wantShape, funnelShape(funnelEvents(ctx)))
+		})
+	}
 }
 
 func TestAnyInstalledAndFirstFailureCategory(t *testing.T) {
@@ -607,6 +676,13 @@ func TestAnyInstalledAndFirstFailureCategory(t *testing.T) {
 	assert.True(t, anyInstalled([]agentOutcome{failed, installed}), "one installed agent makes the run a success")
 	assert.False(t, anyInstalled([]agentOutcome{failed, skipped}))
 	assert.Equal(t, protos.AitoolsErrorCategoryPluginInstallFailed, firstFailureCategory([]agentOutcome{failed, skipped}))
+
+	kept := agentOutcome{agent: codex, delivery: deliveryPlugin, status: outcomeKept, errorCategory: protos.AitoolsErrorCategoryCLINotOnPath}
+	assert.True(t, anyInstalled([]agentOutcome{kept, skipped}), "a kept plugin is set up")
+	assert.True(t, onlyKeptPlugins([]agentOutcome{kept, skipped}))
+	assert.False(t, onlyKeptPlugins([]agentOutcome{kept, failed}), "a kept plugin counts like an installed one next to a failed install")
+	assert.False(t, onlyKeptPlugins([]agentOutcome{kept, installed}))
+	assert.False(t, onlyKeptPlugins([]agentOutcome{skipped}))
 
 	uncategorized := agentOutcome{agent: codex, delivery: deliveryPlugin, status: outcomeFailed}
 	assert.Equal(t, protos.AitoolsErrorCategoryUnsupportedScope, firstFailureCategory([]agentOutcome{installed, uncategorized, skipped}))
@@ -820,6 +896,7 @@ func TestUpdateFunnelWhenPluginsFail(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			isolateCommandEnv(t)
+			fakeBinsOnPath(t, "copilot")
 			dir := saveGlobalState(t, tc.skills)
 			if tc.noPlugins {
 				require.NoError(t, installer.SaveState(dir, &installer.InstallState{SchemaVersion: 2, Release: "v0.2.6", Skills: tc.skills}))

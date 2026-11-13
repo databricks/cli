@@ -178,9 +178,29 @@ func deliverySteps(outcomes []agentOutcome) []protos.AitoolsCommandStep {
 	return steps
 }
 
-// anyInstalled reports whether at least one agent was set up.
+// anyInstalled reports whether at least one agent was set up: installed, or
+// left with the databricks plugin it already had.
 func anyInstalled(outcomes []agentOutcome) bool {
-	return slices.ContainsFunc(outcomes, func(o agentOutcome) bool { return o.status == outcomeInstalled })
+	return slices.ContainsFunc(outcomes, func(o agentOutcome) bool {
+		return o.status == outcomeInstalled || o.status == outcomeKept
+	})
+}
+
+// onlyKeptPlugins reports whether a run installed nothing and failed for no
+// agent, because each agent it set up kept the plugin it already had. The
+// funnel records such a run as NOTHING_TO_DO rather than SUCCESS.
+func onlyKeptPlugins(outcomes []agentOutcome) bool {
+	kept := false
+	for _, o := range outcomes {
+		switch o.status {
+		case outcomeInstalled, outcomeFailed:
+			return false
+		case outcomeKept:
+			kept = true
+		case outcomeSkipped:
+		}
+	}
+	return kept
 }
 
 // firstFailureCategory returns the category of the first agent that failed or
