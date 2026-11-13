@@ -152,7 +152,8 @@ func TestRefreshGuardTransientFailureFailsOnlyThatRequest(t *testing.T) {
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, transient)
-	assert.Contains(t, err.Error(), "databricks auth login --profile logfood")
+	assert.Contains(t, err.Error(), `could not get a token for Databricks profile "logfood"`)
+	assert.NotContains(t, err.Error(), "auth login", "a login does not fix a transient failure")
 	assert.NotContains(t, err.Error(), "restart")
 	assert.NoError(t, g.failure())
 	assert.False(t, cancelled)
@@ -502,7 +503,7 @@ func TestServeProxyTransientRefreshFailureKeepsServing(t *testing.T) {
 	require.NoError(t, err)
 	out := stdout.String()
 	assert.Contains(t, out, `"id":2,"error"`)
-	assert.Contains(t, out, "databricks auth login --profile logfood")
+	assert.Contains(t, out, "the next request tries again")
 	assert.Contains(t, out, `"id":3,"result"`)
 	assert.NotContains(t, stderr.String(), "stopped after")
 }

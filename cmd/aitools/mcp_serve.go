@@ -222,8 +222,9 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 		return err
 	}
 	if !credentialRejected(err) {
-		// Serve keeps running and the next request asks for a token again, so the hint does not say to restart.
-		return mcp.AuthError(g.profile, err)
+		// A failure that is not a rejection, such as a network blip, says nothing about the credential: a login would
+		// not fix it, and the next request asks for a token again, so the message names neither.
+		return fmt.Errorf("could not get a token for Databricks profile \"%s\": %w; the next request tries again", g.profile, err)
 	}
 	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
 	// new login.
