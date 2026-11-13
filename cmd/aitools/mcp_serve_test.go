@@ -3,11 +3,14 @@ package aitools
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,4 +69,27 @@ func TestServeFailureSetsExitStatusWithoutReprinting(t *testing.T) {
 	assert.Equal(t, "MCP server x is bound to Databricks profile\n", stderr.String())
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
+}
+
+func TestServeTransportHasConnectTimeout(t *testing.T) {
+	assert.Equal(t, 10*time.Second, serveDialer().Timeout)
+
+	tr := serveTransport(&config.Config{})
+	assert.NotNil(t, tr.DialContext)
+	require.NotNil(t, tr.TLSClientConfig)
+	assert.False(t, tr.TLSClientConfig.InsecureSkipVerify)
+}
+
+func TestServeTransportSkipsTLSVerifyWhenProfileSetsIt(t *testing.T) {
+	tr := serveTransport(&config.Config{InsecureSkipVerify: true})
+	require.NotNil(t, tr.TLSClientConfig)
+	assert.True(t, tr.TLSClientConfig.InsecureSkipVerify)
+}
+
+func TestServeTransportKeepsProfileHTTPTransportTLS(t *testing.T) {
+	base := &http.Transport{TLSClientConfig: &tls.Config{ServerName: "profile.test"}}
+	tr := serveTransport(&config.Config{HTTPTransport: base})
+	require.NotNil(t, tr.TLSClientConfig)
+	assert.Equal(t, "profile.test", tr.TLSClientConfig.ServerName)
+	assert.NotSame(t, base.TLSClientConfig, tr.TLSClientConfig)
 }

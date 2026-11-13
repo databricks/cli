@@ -35,6 +35,8 @@ type Options struct {
 	Profile string
 	// Agent is the registry name of the calling agent, or "" when --agent was not given.
 	Agent string
+	// Transport performs the upstream requests. Nil means http.DefaultTransport, as in Bridge.
+	Transport http.RoundTripper
 }
 
 // Run bridges opts.In to the service endpoint until In closes or ctx is done. It returns an error
@@ -58,6 +60,7 @@ func Run(ctx context.Context, opts Options) error {
 		Endpoint:     opts.Endpoint,
 		Authenticate: opts.Authenticate,
 		Headers:      headers,
+		Transport:    opts.Transport,
 		Instructions: fmt.Sprintf("This server is bound to Databricks workspace %s (CLI profile \"%s\"). Its tools act on that workspace only.", opts.Config.Host, opts.Profile),
 	}
 	return b.Run(ctx)

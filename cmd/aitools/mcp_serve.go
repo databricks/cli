@@ -2,25 +2,57 @@ package aitools
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
 // serveExitCode is the exit status for binding and auth failures, so agents and `list --check`
 // can tell them from transport errors.
 const serveExitCode = 2
+
+// serveConnectTimeout bounds one upstream connect. http.DefaultTransport waits 30 s.
+const serveConnectTimeout = 10 * time.Second
+
+// serveDialer dials the upstream service with serveConnectTimeout.
+func serveDialer() *net.Dialer {
+	return &net.Dialer{Timeout: serveConnectTimeout}
+}
+
+// serveTransport is the transport of the bridge's upstream requests. It starts from
+// http.DefaultTransport, so proxy use and the other timeouts stay as they are, and replaces the
+// dialer to set the connect timeout. The profile's TLS settings are honored as cmd/apps/logs.go
+// honors them.
+func serveTransport(cfg *config.Config) *http.Transport {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.DialContext = serveDialer().DialContext
+	if base, ok := cfg.HTTPTransport.(*http.Transport); ok && base != nil {
+		tr.Proxy = base.Proxy
+		if base.TLSClientConfig != nil {
+			tr.TLSClientConfig = base.TLSClientConfig.Clone()
+		}
+		return tr
+	}
+	if cfg.InsecureSkipVerify {
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	return tr
+}
 
 type mcpServeFlags struct {
 	service string
@@ -98,6 +130,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Authenticate: refresh.authenticateRequest,
 		Profile:      profileName,
 		Agent:        f.agent,
+		Transport:    serveTransport(cfg),
 	})
 	if err != nil {
 		return serveFailure(cmd, 1, err)
