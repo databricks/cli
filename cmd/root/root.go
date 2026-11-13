@@ -66,6 +66,11 @@ func New(ctx context.Context) *cobra.Command {
 			return err
 		}
 
+		// A protocol on stdout must not share it with logs. Refuse before the log file is opened or anything is written.
+		if carriesProtocol(cmd) && logFlags.writesToStdout() {
+			return fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
+		}
+
 		// Configure default logger.
 		ctx, err = logFlags.initializeContext(ctx)
 		if err != nil {

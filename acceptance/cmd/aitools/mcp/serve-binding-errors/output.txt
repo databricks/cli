@@ -33,6 +33,6 @@ Error: --output does not apply to serve: its stdout carries the MCP protocol
 Exit code: 1
 
 >>> cat out.stderr.txt
-Error: --log-file stdout is not supported by serve: its stdout carries the MCP protocol
+Error: databricks aitools mcp serve writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file
 
 Exit code: 1

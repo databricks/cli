@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -64,6 +65,8 @@ func NewMcpServeCmd() *cobra.Command {
 		Short:  "Serve one Databricks managed MCP server over stdio",
 		Hidden: true,
 		Args:   cobra.NoArgs,
+		// Stdout carries the MCP protocol, so root keeps logs and the stale-version warning off it.
+		Annotations: map[string]string{root.StdoutCarriesProtocol: "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runMcpServe(cmd, f)
 		},
@@ -76,18 +79,15 @@ func NewMcpServeCmd() *cobra.Command {
 // runMcpServe runs the binding checks, then bridges stdio to the service until stdin closes or a
 // signal arrives.
 func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
-	if out := cmd.Flag("output"); out != nil && out.Changed {
+	if cmd.Flag("output").Changed {
 		return errors.New("--output does not apply to serve: its stdout carries the MCP protocol")
-	}
-	if logFile := cmd.Flag("log-file"); logFile != nil && logFile.Value.String() == "stdout" {
-		return errors.New("--log-file stdout is not supported by serve: its stdout carries the MCP protocol")
 	}
 	profileName := profileFlag(cmd)
 	if profileName == "" {
-		return errors.New("--profile is required")
+		return fmt.Errorf("%s is required", mcpconfig.ProfileFlag)
 	}
 	if f.service == "" {
-		return errors.New("--service is required")
+		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
 	if f.agent != "" && agents.ByName(f.agent) == nil {
 		return fmt.Errorf("unknown agent %q", f.agent)

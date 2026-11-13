@@ -43,6 +43,27 @@ func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions)
 	}
 }
 
+// writesToStdout reports whether the log file is the process's stdout: the name "stdout", or a path that is the same
+// file, such as /dev/stdout.
+func (f *logFlags) writesToStdout() bool {
+	name := f.file.String()
+	switch name {
+	case "stdout":
+		return true
+	case "stderr":
+		return false
+	}
+	fi, err := os.Stat(name)
+	if err != nil {
+		return false
+	}
+	out, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return os.SameFile(fi, out)
+}
+
 func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
 	if f.debug {
 		err := f.level.Set("debug")
