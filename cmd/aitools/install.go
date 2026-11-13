@@ -22,7 +22,6 @@ import (
 // install_test.go.
 var (
 	promptAgentSelection     = defaultPromptAgentSelection
-	promptProceed            = defaultPromptProceed
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 	installPluginForAgentFn  = installer.InstallPluginForAgent
 	recordPluginInstallsFn   = installer.RecordPluginInstalls
@@ -202,7 +201,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}
 
 			// JSON output must be fully non-interactive: every choice has to come
-			// from flags so no scope prompt, agent picker, or confirm is shown.
+			// from flags so no scope prompt or agent picker is shown.
 			// Require the flags those prompts would otherwise resolve, and fail
 			// fast naming them.
 			if jsonMode {
@@ -280,21 +279,12 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			plan := buildPlan(targetAgents, scope, skillsOnly, explicit)
 			funnel.setAgents(plan)
 			funnel.step(ctx, protos.AitoolsCommandStepAgentsSelected)
-
-			// In the interactive picker path, show a plan summary and confirm.
-			if !explicit && interactive {
-				printPlanSummary(ctx, plan, scope)
-				proceed, err := promptProceed()
-				if err != nil {
-					return err
-				}
-				if !proceed {
-					cmdio.LogString(ctx, "Cancelled.")
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUnspecified)
-					return nil
-				}
-			}
+			// The picker selection confirms the plan; runs without the picker
+			// confirm it implicitly.
 			funnel.step(ctx, protos.AitoolsCommandStepPlanConfirmed)
+			if !explicit && interactive {
+				printInstallScope(ctx, scope)
+			}
 			// Only a run past this point waits for the telemetry auth. A run that
 			// ended earlier (a flag error, a cancelled prompt, no agent detected,
 			// a --path dump) uploads its events only if auth had already resolved,
@@ -399,7 +389,7 @@ func selectAgents(ctx context.Context, scope string, skillsOnly, interactive boo
 			// caller prints the no-agents message rather than showing an empty picker.
 			return nil, nil
 		}
-		return promptAgentSelection(ctx, choices)
+		return promptAgentSelection(ctx, scope, choices)
 	}
 
 	var selected []*agents.Agent
@@ -426,24 +416,32 @@ func agentChoices(ctx context.Context, scope string, skillsOnly bool) []agentCho
 	var choices []agentChoice
 	for _, a := range agents.Registry {
 		item := planItemFor(a, scope, skillsOnly, false)
-		label := agentChoiceLabel(ctx, a, item)
+		label := agentChoiceLabel(ctx, a, item, skillsOnly)
 		cmdio.LogString(ctx, fmt.Sprintf("  %-16s %s", a.DisplayName, label))
 		if item.delivery == deliverySkip {
 			continue
 		}
 		choices = append(choices, agentChoice{
-			agent:     a,
-			label:     a.DisplayName + "  " + label,
-			preselect: a.IsPreselected(ctx),
+			agent: a,
+			label: a.DisplayName + "  " + label,
+			// Under --skills-only, an agent whose config dir exists also starts
+			// checked, so a plugin agent whose CLI is not on PATH is included
+			// as in the non-interactive run. The usual pre-checks still apply.
+			preselect: a.IsPreselected(ctx) || (skillsOnly && a.Detected(ctx)),
 		})
 	}
 	return choices
 }
 
 // agentChoiceLabel is the picker label: the detection state, plus the skip
-// reason when the agent can't be acted on in the chosen scope.
-func agentChoiceLabel(ctx context.Context, a *agents.Agent, item agentPlanItem) string {
-	label := agentStateLabel(a.DisplayState(ctx))
+// reason when the agent can't be acted on in the chosen scope. Under
+// --skills-only every found agent gets raw skills, so it is labeled "skills".
+func agentChoiceLabel(ctx context.Context, a *agents.Agent, item agentPlanItem, skillsOnly bool) string {
+	state := a.DisplayState(ctx)
+	label := agentStateLabel(state)
+	if skillsOnly && state != agents.StateNotFound {
+		label = deliverySkills.String()
+	}
 	if item.delivery == deliverySkip {
 		return label + " · " + item.reason
 	}
@@ -464,19 +462,7 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-func defaultPromptProceed() (bool, error) {
-	proceed := true
-	err := huh.NewConfirm().
-		Title("Proceed?").
-		Value(&proceed).
-		Run()
-	if err != nil {
-		return false, promptError(err)
-	}
-	return proceed, nil
-}
-
-func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*agents.Agent, error) {
+func defaultPromptAgentSelection(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
 	options := make([]huh.Option[string], 0, len(choices))
 	byName := make(map[string]*agents.Agent, len(choices))
 	for _, c := range choices {
@@ -486,8 +472,8 @@ func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*a
 
 	var selected []string
 	err := huh.NewMultiSelect[string]().
-		Title("Select agents to set up").
-		Description("space to toggle, enter to confirm").
+		Title(agentPickerTitle(scope)).
+		Description("space to toggle, enter to install").
 		Options(options...).
 		Value(&selected).
 		Run()
@@ -547,20 +533,17 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 	return item
 }
 
-// printPlanSummary renders the interactive plan summary before the confirm.
-func printPlanSummary(ctx context.Context, plan []agentPlanItem, scope string) {
+// agentPickerTitle names the install scope, so it is visible before anything
+// is installed.
+func agentPickerTitle(scope string) string {
+	return "Select agents to set up (" + scope + " scope)"
+}
+
+// printInstallScope prints the install scope after the agent picker, above the
+// per-agent install lines.
+func printInstallScope(ctx context.Context, scope string) {
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Plan ("+scope+" scope):")
-	for _, it := range plan {
-		switch it.delivery {
-		case deliveryPlugin:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install the databricks plugin")
-		case deliverySkills:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  install skills")
-		case deliverySkip:
-			cmdio.LogString(ctx, "  "+it.agent.DisplayName+"  skip ("+it.reason+")")
-		}
-	}
+	cmdio.LogString(ctx, "Install scope: "+scope)
 	cmdio.LogString(ctx, "")
 }
 

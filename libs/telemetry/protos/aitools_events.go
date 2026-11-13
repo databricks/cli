@@ -71,7 +71,10 @@ const (
 	AitoolsCommandStepScopeResolved AitoolsCommandStep = "SCOPE_RESOLVED"
 	// The target agents were resolved (from --agents, the picker, or detection).
 	AitoolsCommandStepAgentsSelected AitoolsCommandStep = "AGENTS_SELECTED"
-	// The plan was confirmed, by the user or implicitly when no prompt is shown.
+	// The plan was confirmed. Install has no separate confirm prompt: this step
+	// follows AGENTS_SELECTED right away, because picking agents in the
+	// interactive picker confirms the plan, and runs without the picker
+	// (--agents, non-interactive) confirm it implicitly.
 	AitoolsCommandStepPlanConfirmed AitoolsCommandStep = "PLAN_CONFIRMED"
 	// Raw skill files were installed for the skills-delivery agents.
 	AitoolsCommandStepSkillsInstalled AitoolsCommandStep = "SKILLS_INSTALLED"
