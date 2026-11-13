@@ -28,6 +28,9 @@ func writesToStdout(w io.Writer, stdout, stderr *os.File) (bool, error) {
 	if !ok || f == stderr {
 		return false, nil
 	}
+	if f == stdout {
+		return true, nil
+	}
 	out, err := stdout.Stat()
 	if err != nil {
 		return false, err
@@ -36,5 +39,5 @@ func writesToStdout(w io.Writer, stdout, stderr *os.File) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return os.SameFile(fi, out), nil
+	return sameFileInfo(fi, out), nil
 }

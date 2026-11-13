@@ -91,6 +91,9 @@ func TestWritesToStdout(t *testing.T) {
 	file, err := os.Create(filepath.Join(t.TempDir(), "run.log"))
 	require.NoError(t, err)
 	t.Cleanup(func() { file.Close() })
+	null, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	require.NoError(t, err)
+	t.Cleanup(func() { null.Close() })
 
 	tests := []struct {
 		name string
@@ -101,6 +104,7 @@ func TestWritesToStdout(t *testing.T) {
 		{name: "stderr", w: stderr, want: false},
 		{name: "another pipe", w: other, want: false},
 		{name: "regular file", w: file, want: false},
+		{name: "null device", w: null, want: false},
 		{name: "not a file", w: io.Discard, want: false},
 	}
 	for _, tc := range tests {
