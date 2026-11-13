@@ -1,0 +1,21 @@
+
+=== get of a failed retry with no mlflow output (json)
+
+>>> [CLI] air get 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "status": "FAILED",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 2,
+    "experiment_name": null,
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": null,
+    "termination_reason": "Out of capacity",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null
+  }
+}
