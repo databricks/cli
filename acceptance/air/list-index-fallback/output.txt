@@ -1,0 +1,30 @@
+
+=== list --all-status falls back to a bounded Jobs scan when the index fails (text)
+
+>>> [CLI] air list --all-status
+Warn: air list: the AI Runtime run index is unavailable (failed to list training workflows: index unavailable); falling back to a slower scan of up to 250 recent job runs
+   Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
+   334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
+
+=== list --all-status fallback (json): the warning stays on stderr
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "runs": [
+      {
+        "run_id": "334747067049496",
+        "run_name": "qwen-train",
+        "user": "[USERNAME]",
+        "status": "SUCCESS",
+        "started_at": "[TIMESTAMP]",
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
+      }
+    ]
+  }
+}
