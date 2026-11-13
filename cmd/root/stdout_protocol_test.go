@@ -31,8 +31,23 @@ func keepDefaultLogger(t *testing.T) {
 	t.Cleanup(func() { slog.SetDefault(prev) })
 }
 
+// useSeparateStderr points os.Stderr at a file of its own, as an agent gives the server separate stdout and stderr.
+// Under `go test -json` os.Stderr is os.Stdout, which would make the stdout cases below look like stderr.
+func useSeparateStderr(t *testing.T) {
+	t.Helper()
+	f, err := os.Create(filepath.Join(t.TempDir(), "stderr.txt"))
+	require.NoError(t, err)
+	prev := os.Stderr
+	os.Stderr = f
+	t.Cleanup(func() {
+		os.Stderr = prev
+		f.Close()
+	})
+}
+
 func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
 	keepDefaultLogger(t)
+	useSeparateStderr(t)
 	for _, logFile := range []string{"stdout", "STDOUT", "/dev/stdout"} {
 		t.Run(logFile, func(t *testing.T) {
 			if logFile == "/dev/stdout" {
@@ -55,6 +70,7 @@ func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
 
 func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
 	keepDefaultLogger(t)
+	useSeparateStderr(t)
 	logFile := filepath.Join(t.TempDir(), "serve.log")
 	ran := false
 	cmd := New(t.Context())
@@ -66,35 +82,46 @@ func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
 	assert.True(t, ran)
 }
 
-// writesToStdout compares the open log file with the process's stdout, so a path that is stdout under another name is
-// refused. stderr is never refused: a user who asks for it gets it, even if it shares a terminal with stdout.
+// writesToStdout compares the log file with the stdout and stderr it is given, so a path that is stdout under
+// another name is refused. stderr is never refused. The streams are pipes of the test's own, not the process's.
 func TestWritesToStdout(t *testing.T) {
-	ok, err := writesToStdout(os.Stdout)
-	require.NoError(t, err)
-	assert.True(t, ok)
-
-	ok, err = writesToStdout(os.Stderr)
-	require.NoError(t, err)
-	assert.False(t, ok)
-
+	stdout := newPipe(t)
+	stderr := newPipe(t)
+	other := newPipe(t)
 	file, err := os.Create(filepath.Join(t.TempDir(), "run.log"))
 	require.NoError(t, err)
-	defer file.Close()
-	ok, err = writesToStdout(file)
-	require.NoError(t, err)
-	assert.False(t, ok)
+	t.Cleanup(func() { file.Close() })
 
+	tests := []struct {
+		name string
+		w    io.Writer
+		want bool
+	}{
+		{name: "stdout", w: stdout, want: true},
+		{name: "stderr", w: stderr, want: false},
+		{name: "another pipe", w: other, want: false},
+		{name: "regular file", w: file, want: false},
+		{name: "not a file", w: io.Discard, want: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ok, err := writesToStdout(tc.w, stdout, stderr)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, ok)
+		})
+	}
+}
+
+// newPipe returns the write end of a pipe that the test closes.
+func newPipe(t *testing.T) *os.File {
+	t.Helper()
 	pr, pw, err := os.Pipe()
 	require.NoError(t, err)
-	defer pr.Close()
-	defer pw.Close()
-	ok, err = writesToStdout(pw)
-	require.NoError(t, err)
-	assert.False(t, ok)
-
-	ok, err = writesToStdout(io.Discard)
-	require.NoError(t, err)
-	assert.False(t, ok)
+	t.Cleanup(func() {
+		pr.Close()
+		pw.Close()
+	})
+	return pw
 }
 
 func TestCarriesProtocol(t *testing.T) {

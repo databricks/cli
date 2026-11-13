@@ -19,15 +19,16 @@ func carriesProtocol(cmd *cobra.Command) bool {
 	return ok
 }
 
-// writesToStdout reports whether w is the process's stdout. It compares the open file, not a path: on macOS,
-// os.Stat of /dev/stdout does not match stdout when stdout is a pipe, but the opened /dev/stdout does. stderr is
-// never stdout here, even when both share a terminal.
-func writesToStdout(w io.Writer) (bool, error) {
+// writesToStdout reports whether w is stdout, given the process's stdout and stderr. It compares the open file, not a
+// path: on macOS, os.Stat of /dev/stdout does not match stdout when stdout is a pipe, but the opened /dev/stdout does.
+// stderr is never stdout here, even when both share a terminal. The streams are parameters because under
+// `go test -json` the testing package sets os.Stderr to os.Stdout.
+func writesToStdout(w io.Writer, stdout, stderr *os.File) (bool, error) {
 	f, ok := w.(*os.File)
-	if !ok || f == os.Stderr {
+	if !ok || f == stderr {
 		return false, nil
 	}
-	out, err := os.Stdout.Stat()
+	out, err := stdout.Stat()
 	if err != nil {
 		return false, err
 	}

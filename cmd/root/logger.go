@@ -81,7 +81,7 @@ func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (c
 	}
 
 	if carriesProtocol(cmd) {
-		toStdout, stdoutErr := writesToStdout(f.file.Writer())
+		toStdout, stdoutErr := writesToStdout(f.file.Writer(), os.Stdout, os.Stderr)
 		if stdoutErr != nil || toStdout {
 			_ = f.file.Close()
 		}
