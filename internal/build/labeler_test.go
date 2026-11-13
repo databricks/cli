@@ -15,36 +15,6 @@ import (
 // under a directory that .github/labeler-test-only.yml treats as test-only, since
 // a PR changing that directory would then be labeled test-only-fix.
 func TestLabelerTestOnlyDirsNotInBinary(t *testing.T) {
-	dirs := labelerTestOnlyDirs(t)
-
-	for _, target := range releaseTargets(t) {
-		t.Run(target, func(t *testing.T) {
-			t.Parallel()
-			goos, goarch, _ := strings.Cut(target, "/")
-			// go test does not see the sources go list reads, so a cached local pass can be
-			// stale. CI reruns it because a fresh checkout changes the config file's mtime.
-			cmd := exec.CommandContext(t.Context(), "go", "list", "-deps", "-f", "{{.ImportPath}}", ".")
-			cmd.Dir = "../.."
-			cmd.Env = append(os.Environ(), "GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=0")
-			out, err := cmd.Output()
-			require.NoError(t, err)
-
-			for pkg := range strings.FieldsSeq(string(out)) {
-				rel, ok := strings.CutPrefix(pkg, "github.com/databricks/cli/")
-				if !ok {
-					continue
-				}
-				for _, dir := range dirs {
-					assert.False(t, rel == dir || strings.HasPrefix(rel, dir+"/"),
-						"CLI binary imports %s, but .github/labeler-test-only.yml lists %s/** as test-only", pkg, dir)
-				}
-			}
-		})
-	}
-}
-
-// labelerTestOnlyDirs returns the directory entries of the test-only-fix glob.
-func labelerTestOnlyDirs(t *testing.T) []string {
 	raw, err := os.ReadFile("../../.github/labeler-test-only.yml")
 	require.NoError(t, err)
 
@@ -74,32 +44,25 @@ func labelerTestOnlyDirs(t *testing.T) []string {
 		}
 	}
 	require.NotEmpty(t, dirs)
-	return dirs
-}
 
-// releaseTargets returns the goos/goarch pairs the release build in .goreleaser.yaml
-// produces. Some files build only on some of them.
-func releaseTargets(t *testing.T) []string {
-	raw, err := os.ReadFile("../../.goreleaser.yaml")
+	// go list resolves build constraints for the host platform only. CI runs this test
+	// on Linux, macOS and Windows, which covers the OS-specific files.
+	// go test does not see the sources go list reads, so a cached local pass can be
+	// stale. CI reruns it because a fresh checkout changes the config file's mtime.
+	cmd := exec.CommandContext(t.Context(), "go", "list", "-deps", "-f", "{{.ImportPath}}", ".")
+	cmd.Dir = "../.."
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	out, err := cmd.Output()
 	require.NoError(t, err)
 
-	var config struct {
-		Builds []struct {
-			Goos   []string `yaml:"goos"`
-			Goarch []string `yaml:"goarch"`
-		} `yaml:"builds"`
-	}
-	require.NoError(t, yaml.Unmarshal(raw, &config))
-	require.Len(t, config.Builds, 1)
-	build := config.Builds[0]
-	require.NotEmpty(t, build.Goos)
-	require.NotEmpty(t, build.Goarch)
-
-	var targets []string
-	for _, goos := range build.Goos {
-		for _, goarch := range build.Goarch {
-			targets = append(targets, goos+"/"+goarch)
+	for pkg := range strings.FieldsSeq(string(out)) {
+		rel, ok := strings.CutPrefix(pkg, "github.com/databricks/cli/")
+		if !ok {
+			continue
+		}
+		for _, dir := range dirs {
+			assert.False(t, rel == dir || strings.HasPrefix(rel, dir+"/"),
+				"CLI binary imports %s, but .github/labeler-test-only.yml lists %s/** as test-only", pkg, dir)
 		}
 	}
-	return targets
 }

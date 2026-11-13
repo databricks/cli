@@ -448,7 +448,6 @@ tasks:
       - NOTICE
       - .codegen/_openapi_sha
       - .github/labeler-test-only.yml
-      - .goreleaser.yaml
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
       - bundle/internal/schema/annotations*.yml
     generates:
