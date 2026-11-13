@@ -118,6 +118,7 @@ func testUpdateCheckPrintsPluginState(t *testing.T, version, want string) {
 func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 	noTelemetryAuth(t)
 	setupTestAgents(t)
+	fakeBinsOnPath(t, "claude", "codex", "copilot")
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
 
@@ -193,6 +194,7 @@ func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
 	noTelemetryAuth(t)
 	setupTestAgents(t)
+	fakeBinsOnPath(t, "claude", "codex", "copilot")
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
 
@@ -258,6 +260,7 @@ func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
 func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
 	noTelemetryAuth(t)
 	setupTestAgents(t)
+	fakeBinsOnPath(t, "claude", "codex", "copilot")
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	resetUpdatePluginSeams(t)
 	setupUpdateMock(t)
@@ -462,4 +465,154 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NameGemini)
 	assert.Contains(t, names, agents.NameGoose)
 	assert.Contains(t, names, agents.NameKiro)
+}
+
+func TestHasKnownPluginRecord(t *testing.T) {
+	assert.False(t, hasKnownPluginRecord(&installer.InstallState{}))
+	assert.False(t, hasKnownPluginRecord(&installer.InstallState{Plugins: map[string]installer.PluginRecord{"aider": {}}}))
+	assert.True(t, hasKnownPluginRecord(&installer.InstallState{Plugins: map[string]installer.PluginRecord{"aider": {}, agents.NameCodex: {}}}))
+}
+
+// A plugin agent whose CLI is not on PATH keeps the raw skills install gave it,
+// so update does not try, and fail, to migrate it to the plugin on every run.
+func TestPluginMigrationCandidatesNeedTheCLI(t *testing.T) {
+	setupTestAgents(t)
+	fakeBinsOnPath(t, "codex")
+	resetUpdatePluginSeams(t)
+	hasManagedRawSkillsForAgentFn = func(context.Context, *agents.Agent, string) (bool, error) { return true, nil }
+
+	candidates, err := pluginMigrationCandidatesForScope(t.Context(), installer.ScopeGlobal, nil)
+	require.NoError(t, err)
+	var names []string
+	for _, c := range candidates {
+		names = append(names, c.agent.Name)
+	}
+	assert.Equal(t, []string{agents.NameCodex}, names)
+}
+
+// Install keeps a plugin installed with Claude Code's own CLI without recording
+// it, so update must not write the raw skills back next to it. A project's
+// skill files are shared, so at project scope only a project-scope plugin of
+// this project excludes the agent; a personal (user or local) plugin does not.
+func TestExcludePluginAgentsReadsTheAgentsManifest(t *testing.T) {
+	isolateAgents(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	project, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	t.Chdir(project)
+	claude := agents.ByName(agents.NameClaudeCode)
+	cursor := agents.ByName(agents.NameCursor)
+	all := []*agents.Agent{claude, cursor}
+	fileAgents, manifestPlugins := excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+	assert.Equal(t, all, fileAgents)
+	assert.Empty(t, manifestPlugins)
+
+	cases := []struct {
+		scope, projectPath string
+		wantGlobal         bool
+		wantProject        bool
+	}{
+		{scope: "user", wantGlobal: true},
+		{scope: "local", projectPath: project},
+		{scope: "project", projectPath: project, wantProject: true},
+	}
+	for _, tc := range cases {
+		writeClaudeManifest(t, home, tc.scope, tc.projectPath)
+		for _, c := range []struct {
+			cliScope string
+			want     bool
+		}{{installer.ScopeGlobal, tc.wantGlobal}, {installer.ScopeProject, tc.wantProject}} {
+			fileAgents, manifestPlugins := excludePluginAgents(t.Context(), c.cliScope, all, nil)
+			if c.want {
+				assert.Equal(t, []*agents.Agent{cursor}, fileAgents, "%s plugin, %s update", tc.scope, c.cliScope)
+				assert.Equal(t, []*agents.Agent{claude}, manifestPlugins, "%s plugin, %s update", tc.scope, c.cliScope)
+			} else {
+				assert.Equal(t, all, fileAgents, "%s plugin, %s update", tc.scope, c.cliScope)
+				assert.Empty(t, manifestPlugins, "%s plugin, %s update", tc.scope, c.cliScope)
+			}
+		}
+	}
+
+	// With the CLI on PATH, raw skills next to the plugin are the user's choice
+	// (install --skills-only), so they are refreshed and not removed.
+	writeClaudeManifest(t, home, "user", "")
+	fakeBinsOnPath(t, "claude")
+	fileAgents, manifestPlugins = excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+	assert.Equal(t, all, fileAgents)
+	assert.Empty(t, manifestPlugins)
+
+	// A recorded plugin is excluded too, without a manifest reader.
+	state := &installer.InstallState{Plugins: map[string]installer.PluginRecord{agents.NameCursor: {}}}
+	fileAgents, _ = excludePluginAgents(t.Context(), installer.ScopeGlobal, all, state)
+	assert.Equal(t, []*agents.Agent{claude}, fileAgents)
+}
+
+// A project whose only project-capable agent has a project-scope plugin of its
+// own has no agent to reconcile file skills for. The update used to fail with
+// "no agents support project-scoped skills"; it now skips the reconcile and
+// removes the raw skills an earlier install gave that agent.
+func TestUpdateProjectScopeSkipsWhenOnlyPluginAgentsRemain(t *testing.T) {
+	noTelemetryAuth(t)
+	home := setupTestAgents(t)
+	fakeBinsOnPath(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	resetUpdatePluginSeams(t)
+	project, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	t.Chdir(project)
+	writeClaudeManifest(t, home, "project", project)
+
+	origUpdateSkills := updateSkillsFn
+	t.Cleanup(func() { updateSkillsFn = origUpdateSkills })
+	updateSkillsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.UpdateOptions) (*installer.UpdateResult, error) {
+		require.Fail(t, "no agent is left to reconcile file skills for")
+		return nil, nil
+	}
+	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) { return nil, nil }
+	var cleaned []string
+	updateCleanupLegacyFn = func(_ context.Context, a *agents.Agent, scope string) error {
+		cleaned = append(cleaned, a.Name+" "+scope)
+		return nil
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := installer.ProjectSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion: 2,
+		Release:       "v0.2.5",
+		Skills:        map[string]string{"databricks": "0.2.5"},
+	}))
+
+	cmd := NewUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "project"})
+	require.NoError(t, cmd.Execute())
+	assert.Equal(t, []string{agents.NameClaudeCode + " project"}, cleaned)
+}
+
+// Without install state the reconcile still runs when every detected agent has
+// the plugin and no CLI, so update keeps telling the user to run install
+// instead of exiting 0 having done nothing.
+func TestUpdateWithoutStateKeepsTheInstallGuidance(t *testing.T) {
+	noTelemetryAuth(t)
+	isolateAgents(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	fakeBinsOnPath(t)
+	t.Chdir(t.TempDir())
+	resetUpdatePluginSeams(t)
+	writeClaudeManifest(t, home, "user", "")
+	updateCleanupLegacyFn = func(context.Context, *agents.Agent, string) error { return nil }
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs(nil)
+	err := cmd.Execute()
+	require.ErrorIs(t, err, installer.ErrNothingInstalled)
 }

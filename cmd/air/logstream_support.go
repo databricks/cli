@@ -220,16 +220,22 @@ func emitLogLine(out io.Writer, req logRequest, body string) {
 	printLogEvent(out, "LOG", req.node, body)
 }
 
-// emitNoLogs reports that a run produced no logs. A terminal run gets its
-// termination reason; a still-active run is reported as having no logs yet,
-// since the MLflow fallback is a one-shot that does not follow it to completion.
-// Under --json it is a JSONL ERROR, so a consumer never sees an empty stream.
+// emitNoLogs reports that a run or requested node produced no logs. A terminal
+// run gets its termination reason; a still-active run is reported as having no
+// logs yet, since the MLflow fallback is a one-shot that does not follow it to
+// completion. Under --json it is a JSONL ERROR, so a consumer never sees an empty
+// stream.
 func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
+	subject := fmt.Sprintf("run %d", req.runID)
+	if req.nodeSet {
+		subject = fmt.Sprintf("node %d in run %d", req.node, req.runID)
+	}
+
 	var msg string
 	if status.terminal() {
-		msg = fmt.Sprintf("No logs available for run %d. Run terminated in state %s", req.runID, status.displayState())
+		msg = fmt.Sprintf("No logs available for %s. Run terminated in state %s", subject, status.displayState())
 	} else {
-		msg = fmt.Sprintf("No logs available yet for run %d, which is still in state %s", req.runID, status.displayState())
+		msg = fmt.Sprintf("No logs available yet for %s, which is still in state %s", subject, status.displayState())
 	}
 	if status.stateMessage != "" {
 		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)

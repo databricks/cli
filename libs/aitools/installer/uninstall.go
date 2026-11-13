@@ -34,11 +34,13 @@ var removeAllFn = os.RemoveAll
 // nothing from a success.
 type UninstallResult struct {
 	PluginsRemoved int
-	// SkillsRemoved counts skills whose canonical dir was removed or, when
-	// opts.Agents is set, whose entry was removed from one of those agents. With
-	// opts.Agents set, a skill whose entry could not be removed from one of them
-	// is not counted.
-	SkillsRemoved  int
+	// SkillsChanged counts skills of which this run removed at least one copy an
+	// agent reads: an agent's symlink or entry, or the canonical dir. Without
+	// opts.Agents, a skill counts when its canonical dir is removed or was
+	// already gone. With opts.Agents set, removing only the canonical dir does
+	// not count when a targeted agent's entry could not be removed, since that
+	// agent keeps the skill.
+	SkillsChanged  int
 	PluginFailures []error
 	// SkillFailures holds the errors from removing a skill's canonical dir or
 	// a targeted agent's entry.
@@ -142,23 +144,26 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 		toRemove = slices.Sorted(maps.Keys(state.Skills))
 	}
 
-	// Remove skill directories and symlinks for each skill. skillsRemoved counts
-	// the skills dropped from the state on a full uninstall, and with --agents
-	// those whose canonical dir or a targeted agent's entry was removed.
-	skillsRemoved := 0
+	// Remove skill directories and symlinks for each skill. skillsChanged counts
+	// the skills of which a copy was removed (see UninstallResult.SkillsChanged);
+	// skillsUninstalled also counts skills whose state record is dropped
+	// without a failure though no copy was left to remove, e.g. a stale entry.
+	skillsChanged, skillsUninstalled := 0, 0
 	var skillFailures []error
 	for _, name := range toRemove {
 		canonicalDir := filepath.Join(baseDir, name)
 		removeCanonical := true
-		removed := false
-		var exposureFailures []error
+		changed := false
+		var failures []error
 		if targetedAgents {
-			removed, exposureFailures = removeSkillExposuresFromAgents(ctx, name, canonicalDir, scope, cwd, state, opts.Agents)
-			skillFailures = append(skillFailures, exposureFailures...)
+			changed, failures = removeSkillExposuresFromAgents(ctx, name, canonicalDir, scope, cwd, state, opts.Agents)
 			removeCanonical = !hasRemainingSkillExposure(ctx, name, canonicalDir, scope, cwd, opts.Agents)
 		} else {
-			removeSymlinksFromAgents(ctx, name, canonicalDir, scope, cwd)
+			changed = removeSymlinksFromAgents(ctx, name, canonicalDir, scope, cwd)
 		}
+		// A targeted agent that keeps its entry still has the skill, so removing
+		// the canonical dir alone is no change for it.
+		exposureFailed := len(failures) > 0
 		if removeCanonical {
 			// RemoveAll succeeds on a missing dir. Without --agents the skill's
 			// state record is dropped either way, so it counts; with --agents
@@ -166,14 +171,19 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 			_, statErr := os.Lstat(canonicalDir)
 			if err := removeAllFn(canonicalDir); err != nil {
 				log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
-				skillFailures = append(skillFailures, err)
-			} else if statErr == nil || !targetedAgents {
-				removed = true
+				failures = append(failures, err)
+			} else if (statErr == nil || !targetedAgents) && !exposureFailed {
+				changed = true
 			}
 		}
-		// A targeted agent that keeps its entry still has the skill.
-		if removed && len(exposureFailures) == 0 {
-			skillsRemoved++
+		skillFailures = append(skillFailures, failures...)
+		if changed {
+			skillsChanged++
+		}
+		// A skill with no copy left to remove still counts when its state
+		// record is dropped without a failure (e.g. a stale entry).
+		if changed || (removeCanonical && len(failures) == 0) {
+			skillsUninstalled++
 		}
 		if !removeCanonical {
 			continue
@@ -208,14 +218,14 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled the plugin from %d %s.", pluginCount, noun))
 	}
-	if len(toRemove) > 0 {
+	if skillsUninstalled > 0 {
 		noun := "skills"
-		if len(toRemove) == 1 {
+		if skillsUninstalled == 1 {
 			noun = "skill"
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", len(toRemove), noun))
+		cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", skillsUninstalled, noun))
 	}
-	return &UninstallResult{PluginsRemoved: pluginCount, SkillsRemoved: skillsRemoved, PluginFailures: pluginFailures, SkillFailures: skillFailures}, nil
+	return &UninstallResult{PluginsRemoved: pluginCount, SkillsChanged: skillsChanged, PluginFailures: pluginFailures, SkillFailures: skillFailures}, nil
 }
 
 func stringSet(items []string) map[string]bool {
@@ -333,7 +343,9 @@ func untrackedSkillAgents(ctx context.Context, skillName string, agentNames []st
 // removeSymlinksFromAgents removes a skill's symlink from all agent directories
 // in the registry, but only if the entry is a symlink pointing into canonicalDir.
 // Non-symlink directories are left untouched to avoid deleting user-managed content.
-func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) {
+// It reports whether it removed any symlink.
+func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) bool {
+	removed := false
 	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
 			continue
@@ -382,9 +394,11 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 		if err := os.Remove(destDir); err != nil {
 			log.Warnf(ctx, "Failed to remove symlink %s: %v", destDir, err)
 		} else {
+			removed = true
 			log.Debugf(ctx, "Removed %q from %s", skillName, agent.DisplayName)
 		}
 	}
+	return removed
 }
 
 // cleanOrphanedSymlinks scans all agent skill directories for symlinks pointing

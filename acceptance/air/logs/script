@@ -27,3 +27,6 @@ errcode trace $CLI air logs notanumber
 
 title "negative node"
 errcode trace $CLI air logs 123 --node -1
+
+title "out-of-range node"
+musterr trace $CLI air logs 123 --node 1
