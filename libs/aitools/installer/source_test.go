@@ -1,9 +1,14 @@
 package installer
 
 import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeManifestStampsSourceNameAndRepoDir(t *testing.T) {
@@ -59,4 +64,35 @@ func TestNormalizeManifestOnlyExperimentalSkills(t *testing.T) {
 	assert.True(t, got.IsExperimental())
 	assert.Equal(t, experimentalRepoPath, got.RepoDir)
 	assert.Equal(t, "x", got.SourceName)
+}
+
+func TestFetchManifestSizeCap(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		wantErr bool
+	}{
+		// Whitespace pads a valid manifest to exactly the cap: it still parses.
+		{name: "at the cap", body: strings.Repeat(" ", maxFetchBodySize-2) + "{}"},
+		{name: "one byte over the cap", body: strings.Repeat(" ", maxFetchBodySize-1) + "{}", wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+			_, err := (&GitHubManifestSource{}).FetchManifest(t.Context(), "v1")
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorIs(t, err, ErrManifestTooLarge)
+			_, ok := errors.AsType[*FetchError](err)
+			assert.True(t, ok)
+			assert.Equal(t, "skills manifest is larger than 1 MiB", err.Error())
+		})
+	}
 }

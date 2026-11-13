@@ -108,6 +108,8 @@ parameter names.
 If the specified job does not use job parameters and the job has a Python file
 task or a Python wheel task, the second example applies.
 
+` + run.PipelineRefreshHelp + `
+
 ---------------------------------------------------------
 
 You can also use the bundle run command to execute scripts / commands in the same
@@ -204,6 +206,12 @@ Example usage:
 				err = runner.ParseArgs(runArgs, &runOptions)
 				if err != nil {
 					return err
+				}
+
+				if ref.Description.SingularName == "pipeline" {
+					if err := runOptions.Pipeline.ResolveRefreshSelectors(ctx, b); err != nil {
+						return err
+					}
 				}
 
 				runOptions.NoWait = noWait

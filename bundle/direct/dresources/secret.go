@@ -104,6 +104,11 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	return remapSecretRemote(response), nil
 }
 
+// IDFromState returns the full name, which is the ID.
+func (*ResourceSecret) IDFromState(state *catalog.Secret) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
+}
+
 // DoDelete deletes the secret.
 func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Secret) error {
 	return r.client.SecretsUc.DeleteSecret(ctx, catalog.DeleteSecretRequest{

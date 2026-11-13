@@ -260,48 +260,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "evaluation":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "notification":
-              "$fields":
-                "subscriptions":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "destination_id":
-                      "description": |-
-                        PLACEHOLDER
-                    "user_email":
-                      "description": |-
-                        PLACEHOLDER
-            "source":
-              "$fields":
-                "display":
-                  "description": |-
-                    PLACEHOLDER
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-            "threshold":
-              "$fields":
-                "column":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "bool_value":
-                      "description": |-
-                        PLACEHOLDER
-                    "double_value":
-                      "description": |-
-                        PLACEHOLDER
-                    "string_value":
-                      "description": |-
-                        PLACEHOLDER
         "file_path":
           "description": |-
             PLACEHOLDER
@@ -325,9 +283,6 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
-        "schedule":
-          "description": |-
-            PLACEHOLDER
     "apps":
       "description": |-
         The app resource defines a Databricks app.
@@ -369,54 +324,7 @@ resources:
         "effective_budget_policy_id":
           "description": |-
             PLACEHOLDER
-        "effective_usage_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "git_source":
-          "description": |-
-            Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
-            to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
-            The source_code_path within git_source specifies the relative path to the app code within the repository.
-        "lifecycle":
-          "description": |-
-            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "oauth2_app_client_id":
-          "description": |-
-            PLACEHOLDER
-        "oauth2_app_integration_id":
-          "description": |-
-            PLACEHOLDER
-        "permissions":
-          "description": |-
-            The permissions to apply to this resource.
-          "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
-
-            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
-          "markdown_examples": |-
-            ```yaml
-            permissions:
-              - level: CAN_VIEW
-                group_name: test-group
-              - level: CAN_MANAGE
-                user_name: someone@example.com
-              - level: CAN_RUN
-                service_principal_name: 123456-abcdef
-            ```
-          "$fields":
-            "group_name":
-              "description": |-
-                The name of the group granted the permission level.
-            "level":
-              "description": |-
-                The permission level to apply. The allowed levels depend on the resource type.
-            "service_principal_name":
-              "description": |-
-                The name of the service principal granted the permission level.
-            "user_name":
-              "description": |-
-                The name of the user granted the permission level.
-        "resources":
+        "effective_resources":
           "$fields":
             "app":
               "description": |-
@@ -502,6 +410,53 @@ resources:
                 "securable_type":
                   "description": |-
                     PLACEHOLDER
+        "effective_usage_policy_id":
+          "description": |-
+            PLACEHOLDER
+        "git_source":
+          "description": |-
+            Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+            to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+            The source_code_path within git_source specifies the relative path to the app code within the repository.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "oauth2_app_client_id":
+          "description": |-
+            PLACEHOLDER
+        "oauth2_app_integration_id":
+          "description": |-
+            PLACEHOLDER
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. The allowed levels depend on the resource type.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
         "service_principal_client_id":
           "description": |-
             PLACEHOLDER
@@ -544,6 +499,9 @@ resources:
                 privileges:
                   - ALL_PRIVILEGES
             ```
+        "isolation_mode":
+          "description": |-
+            Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1432,31 +1390,6 @@ resources:
                   value: "data science"
           ```
       "$fields":
-        "config":
-          "$fields":
-            "served_entities":
-              "$fields":
-                "entity_version":
-                  "description": |-
-                    PLACEHOLDER
-            "served_models":
-              "$fields":
-                "model_name":
-                  "description": |-
-                    PLACEHOLDER
-                "model_version":
-                  "description": |-
-                    PLACEHOLDER
-            "traffic_config":
-              "$fields":
-                "routes":
-                  "$fields":
-                    "served_entity_name":
-                      "description": |-
-                        PLACEHOLDER
-        "description":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

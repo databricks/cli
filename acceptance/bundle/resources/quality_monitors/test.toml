@@ -1,7 +1,3 @@
 # Test quality monitor output_schema_name updates
 Cloud = true
 RecordRequests = true
-
-[[Repls]]
-Old = '"dashboard_id":\s*"[0-9a-f]+",'
-New = '"dashboard_id": "(redacted)",'

@@ -192,7 +192,8 @@ func TestPatchWheel(t *testing.T) {
 			runCmd(t, tempDir, "uv", "pip", "install", "-q", "--no-index", "--find-links", vendoredPackages, "pip")
 
 			pippath := filepath.Join(tempDir, ".venv", getPythonScriptsDir(), "pip")
-			runCmd(t, tempDir, pippath, "install", "-q", patchedWheel3)
+			// Stay offline: pip's version check queries the index, and any warning it prints fails runCmd.
+			runCmd(t, tempDir, pippath, "install", "-q", "--no-index", "--disable-pip-version-check", patchedWheel3)
 			verifyVersion(t, tempDir, patchedWheel3)
 		})
 	}

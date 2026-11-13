@@ -61,10 +61,10 @@ func newConvertToDabsCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "convert-to-dabs <yaml_path>",
+		Use:   "convert-to-dabs YAML_PATH",
 		Args:  root.ExactArgs(1),
-		Short: "Convert an AIR run YAML into a Databricks Asset Bundle",
-		Long: `Convert an AIR CLI run YAML config into a Databricks Asset Bundle (DABs).
+		Short: "Convert a workload YAML into a Databricks Asset Bundle",
+		Long: `Convert an AI Runtime workload YAML into a Databricks Asset Bundle (DABs).
 
 The emitted bundle can be deployed with the standard DABs workflow:
 

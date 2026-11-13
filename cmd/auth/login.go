@@ -1054,6 +1054,10 @@ func u2mResourcesFromProfile(p *profile.Profile) []string {
 	return splitScopes(p.Resources)
 }
 
+// workspaceListTimeoutSeconds bounds the optional workspace lookup during login.
+// It is a variable only so tests can shorten it.
+var workspaceListTimeoutSeconds = 5
+
 // promptForWorkspaceSelection lists workspaces for a SPOG account and lets the
 // user pick one. Returns the selected workspace ID or empty string if skipped.
 // This is best-effort: errors are returned to the caller for logging, not shown
@@ -1068,14 +1072,21 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
 		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
+
+		// The workspace list is only a convenience with a manual fallback, so
+		// don't spend the SDK's default 5 minute retry budget on a 503 here.
+		HTTPTimeoutSeconds:  workspaceListTimeoutSeconds,
+		RetryTimeoutSeconds: workspaceListTimeoutSeconds,
 	})
 	if err != nil {
 		return "", err
 	}
 
+	cmdio.LogString(ctx, "Looking up workspaces for your account...")
 	workspaces, err := a.Workspaces.List(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		cmdio.LogString(ctx, "Could not list workspaces for this account. To skip this step, pass a host with the workspace ID, e.g. --host \"<host>?w=<workspace_id>\".")
 		return promptForWorkspaceID(ctx)
 	}
 

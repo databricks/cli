@@ -3,10 +3,6 @@
 # its own schema and deletes it on exit.
 Cloud = false
 
-# Both legs run locally. A cloud run must select the DMS= leg: the bundle deployments API
-# rejects features. and materialization_sets. as resource-type prefixes.
-EnvMatrix.DMS = ["", "true"]
-
 Ignore = [
     ".databricks",
     "databricks.yml",

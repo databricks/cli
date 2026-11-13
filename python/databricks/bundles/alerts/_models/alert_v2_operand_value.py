@@ -16,10 +16,19 @@ class AlertV2OperandValue:
     """"""
 
     bool_value: VariableOrOptional[bool] = None
+    """
+    Boolean threshold, for boolean columns.
+    """
 
     double_value: VariableOrOptional[float] = None
+    """
+    Numeric threshold, for numeric columns.
+    """
 
     string_value: VariableOrOptional[str] = None
+    """
+    String threshold, for string or timestamp columns.
+    """
 
     @classmethod
     def from_dict(cls, value: "AlertV2OperandValueDict") -> "Self":
@@ -33,10 +42,19 @@ class AlertV2OperandValueDict(TypedDict, total=False):
     """"""
 
     bool_value: VariableOrOptional[bool]
+    """
+    Boolean threshold, for boolean columns.
+    """
 
     double_value: VariableOrOptional[float]
+    """
+    Numeric threshold, for numeric columns.
+    """
 
     string_value: VariableOrOptional[str]
+    """
+    String threshold, for string or timestamp columns.
+    """
 
 
 AlertV2OperandValueParam = AlertV2OperandValueDict | AlertV2OperandValue

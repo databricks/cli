@@ -184,8 +184,13 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 func newPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pools",
-		Short: "View provisioned GPU pools",
-		RunE:  root.ReportUnknownSubcommand,
+		Short: "View GPU pools provisioned for your workspace",
+		Long: `View GPU pools provisioned for your workspace.
+
+A GPU pool is dedicated accelerator capacity that your Databricks account team
+provisions. Pools are optional: a run uses one only when its YAML sets
+compute.pool_id.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	cmd.AddCommand(newGetPoolCommand())
@@ -237,7 +242,10 @@ func newGetPoolCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [POOL_ID]",
 		Args:  root.MaximumNArgs(1),
-		Short: "Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)",
+		Short: "Show a GPU pool and its accelerator usage",
+		Long: `Show a GPU pool and its accelerator usage.
+
+POOL_ID may be omitted when the workspace has exactly one pool.`,
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
