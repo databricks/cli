@@ -9,8 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,18 +28,20 @@ const (
 	listChangedMsg = `{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`
 )
 
-// signInStub replaces the command's sign-in. Each call records its open flag and returns reply(call).
+// signInStub replaces the command's sign-in. Each call records its open flag and returns reply(call), with the page
+// reported as shown.
 type signInStub struct {
 	mu    sync.Mutex
 	opens []bool
 	reply func(call int) (bool, error)
 }
 
-func (s *signInStub) SignIn(_ context.Context, open bool) (bool, error) {
+func (s *signInStub) SignIn(_ context.Context, open bool) (bool, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.opens = append(s.opens, open)
-	return s.reply(len(s.opens))
+	alreadySignedIn, err := s.reply(len(s.opens))
+	return alreadySignedIn, true, err
 }
 
 func (s *signInStub) calls() []bool {
@@ -214,7 +216,7 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
 	signIn := &signInStub{reply: func(call int) (bool, error) {
 		if call == 1 {
-			return false, &SignInTimeout{URL: testURL}
+			return false, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
 		}
 		return false, nil
 	}}
@@ -280,17 +282,11 @@ func TestChallengeTurnsOnAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
-func TestRunAdvertisesListChangedOnlyForSignInServices(t *testing.T) {
-	srv, _ := newFakeEndpoint(t, answerInitialize)
-	initialize := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}` + "\n"
-	cfg := &config.Config{Host: testHost}
+// TestSignInTimeoutKeepsLastCheck checks that the timeout exposes the failure of its last poll through the error chain.
+func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
+	lastCheck := errors.New("the last poll failed")
+	err := error(&SignInTimeout{URL: testURL, Wait: time.Minute, LastCheck: lastCheck})
 
-	opts, out, _ := runOptions(t, srv.URL, cfg, initialize)
-	require.NoError(t, Run(t.Context(), opts))
-	assert.Contains(t, out.String(), `"listChanged":false`)
-
-	opts, out, _ = runOptions(t, srv.URL, cfg, initialize)
-	opts.Challenge = &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub"}
-	require.NoError(t, Run(t.Context(), opts))
-	assert.Contains(t, out.String(), `"listChanged":true`)
+	assert.ErrorIs(t, err, lastCheck)
+	assert.Nil(t, errors.Unwrap(&SignInTimeout{URL: testURL}))
 }

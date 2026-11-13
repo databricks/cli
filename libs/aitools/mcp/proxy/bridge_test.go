@@ -2198,3 +2198,39 @@ func TestRunClosesStaleResponseBeforeReplay(t *testing.T) {
 	require.Len(t, out, 2)
 	assert.Nil(t, parseReply(t, out[1]).Error)
 }
+
+// localHooks answers a request whose body names "local" with msgs, and forwards the others.
+type localHooks struct{ msgs [][]byte }
+
+func (localHooks) Result(_ context.Context, _ []byte, _ int, msg []byte) ([][]byte, error) {
+	return [][]byte{msg}, nil
+}
+
+func (h localHooks) Local(_ context.Context, request []byte) ([][]byte, bool) {
+	if !bytes.Contains(request, []byte("local")) {
+		return nil, false
+	}
+	return h.msgs, true
+}
+
+// TestAnswerLocallyWritesHookMessagesInOrder checks that a request the hooks handle is answered with their messages, one
+// line each and in order, and that nothing is written for a request they do not handle.
+func TestAnswerLocallyWritesHookMessagesInOrder(t *testing.T) {
+	var out, errOut syncBuffer
+	c := &conn{b: &Bridge{Out: &out, Err: &errOut, Hooks: localHooks{msgs: [][]byte{[]byte(`{"n":1}`), []byte(`{"n":2}`)}}}}
+
+	assert.True(t, c.answerLocally(t.Context(), []byte(`{"jsonrpc":"2.0","id":1,"method":"local"}`)))
+	assert.Equal(t, "{\"n\":1}\n{\"n\":2}\n", out.String())
+
+	assert.False(t, c.answerLocally(t.Context(), []byte(`{"jsonrpc":"2.0","id":2,"method":"remote"}`)))
+	assert.Equal(t, "{\"n\":1}\n{\"n\":2}\n", out.String())
+}
+
+// TestAnswerLocallyWithoutHooksForwardsEverything checks that a bridge without hooks handles no request.
+func TestAnswerLocallyWithoutHooksForwardsEverything(t *testing.T) {
+	var out syncBuffer
+	c := &conn{b: &Bridge{Out: &out, Err: &syncBuffer{}}}
+
+	assert.False(t, c.answerLocally(t.Context(), []byte(`{"jsonrpc":"2.0","id":1,"method":"local"}`)))
+	assert.Empty(t, out.String())
+}

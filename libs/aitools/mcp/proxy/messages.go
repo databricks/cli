@@ -16,6 +16,7 @@ const (
 	methodInitialized = "notifications/initialized"
 	methodCancelled   = "notifications/cancelled"
 	methodPing        = "ping"
+	methodToolsCall   = "tools/call"
 
 	keyResult       = "result"
 	keyInstructions = "instructions"

@@ -23,6 +23,8 @@ Sign in with the same account you use for Databricks profile logfood.
 Open this URL to sign in to system.ai.github:
 [DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
 Waiting for sign-in...
+Signed in to system.ai.github on profile logfood.
+Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 
 === After the sign-in, tools/list passes through and tools/call reaches the service
 

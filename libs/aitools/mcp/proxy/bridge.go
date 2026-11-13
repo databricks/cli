@@ -272,8 +272,8 @@ func (c *conn) answerLocally(ctx context.Context, line []byte) bool {
 		return false
 	}
 	msgs, handled := c.b.Hooks.Local(ctx, line)
-	for _, msg := range msgs {
-		c.reply(msg)
+	if err := c.writeLines(msgs); err != nil {
+		c.logf("stdout: %v", err)
 	}
 	return handled
 }

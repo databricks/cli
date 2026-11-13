@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -21,20 +22,27 @@ const (
 
 var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
 
-// SignInTimeout means the sign-in page was opened and the credential did not become ACTIVE in time.
-// URL is the page the user can finish at.
+// SignInTimeout means the sign-in page was shown and the credential did not become ACTIVE within Wait. URL is the page
+// the user can finish at. LastCheck is the failure of the last poll, when that poll failed.
 type SignInTimeout struct {
-	URL string
+	URL       string
+	Wait      time.Duration
+	LastCheck error
 }
 
 func (e *SignInTimeout) Error() string {
 	return "sign-in did not complete before the timeout"
 }
 
+func (e *SignInTimeout) Unwrap() error {
+	return e.LastCheck
+}
+
 // SignInFunc runs the sign-in for the authenticate tool and waits for it. open is false when the
 // sign-in page must not be opened again in this session. It reports alreadySignedIn when the caller
-// needed no sign-in, and returns a *SignInTimeout when the wait ended first.
-type SignInFunc func(ctx context.Context, open bool) (alreadySignedIn bool, err error)
+// needed no sign-in, and urlShown when the sign-in page's URL was printed, which is so even when the
+// wait is then cancelled. It returns a *SignInTimeout when the wait ended first.
+type SignInFunc func(ctx context.Context, open bool) (alreadySignedIn, urlShown bool, err error)
 
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
 type Challenge struct {
@@ -68,7 +76,7 @@ func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool
 			Name string `json:"name"`
 		} `json:"params"`
 	}
-	if json.Unmarshal(request, &req) != nil || !req.isRequest() || req.Method != "tools/call" || req.Params.Name != authenticateTool {
+	if json.Unmarshal(request, &req) != nil || !req.isRequest() || req.Method != methodToolsCall || req.Params.Name != authenticateTool {
 		return nil, false
 	}
 	return h.authenticate(ctx, req.ID), true
@@ -86,7 +94,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 		if h.challenged(status, message) {
 			return [][]byte{h.authenticateList(req.ID)}, nil
 		}
-	case "tools/call":
+	case methodToolsCall:
 		if h.challenged(status, message) {
 			return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
 		}
@@ -152,6 +160,8 @@ func (h *signInHooks) urlElicitation(data json.RawMessage) bool {
 	return true
 }
 
+// textHasSignInURL reports whether one of the texts has a word that is a sign-in URL. Punctuation around the word, such as
+// the brackets of a sentence or the period that ends it, is not part of the URL.
 func (h *signInHooks) textHasSignInURL(content []textContent) bool {
 	for _, c := range content {
 		for word := range strings.FieldsSeq(c.Text) {
@@ -206,11 +216,8 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 	defer h.mu.Unlock()
 
 	open := !h.opened || h.timedOut
-	if open {
-		h.opened = true
-		// The telemetry change logs SIGN_IN_PROMPTED here, when the sign-in page opens.
-	}
-	alreadySignedIn, err := h.c.SignIn(ctx, open)
+	h.opened = true
+	alreadySignedIn, _, err := h.c.SignIn(ctx, open)
 	timeout, timedOut := errors.AsType[*SignInTimeout](err)
 	h.timedOut = timedOut
 
@@ -227,8 +234,8 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 		}
 	case timedOut:
 		return [][]byte{toolResult(id, fmt.Sprintf(
-			"Sign-in to %s did not complete in 5 minutes. Finish at %s then retry, or run: databricks aitools mcp login %s --profile %s",
-			h.c.Service, timeout.URL, h.c.Service, h.c.Profile), true)}
+			"Sign-in to %s did not complete in %g minutes. Finish at %s then retry, or run: databricks aitools mcp login %s --profile %s",
+			h.c.Service, timeout.Wait.Minutes(), timeout.URL, h.c.Service, h.c.Profile), true)}
 	default:
 		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
 	}

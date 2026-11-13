@@ -59,10 +59,19 @@ var knownSystemAI = map[string]KnownService{
 	},
 }
 
+// KnownOf returns the CLI's description of a service, or nil when it is not a system.ai service in the table.
+func KnownOf(fullName string) *KnownService {
+	known, ok := knownSystemAI[LeafOf(fullName)]
+	if !ok || !inSystemAI(fullName) {
+		return nil
+	}
+	return &known
+}
+
 // ProviderLabel names the provider of a service in messages: the known label for a system.ai
 // service, else the full name.
 func ProviderLabel(fullName string) string {
-	if known, ok := knownSystemAI[LeafOf(fullName)]; ok && inSystemAI(fullName) {
+	if known := KnownOf(fullName); known != nil {
 		return known.Label
 	}
 	return fullName

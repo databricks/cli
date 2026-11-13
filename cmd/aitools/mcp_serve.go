@@ -27,7 +27,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -160,37 +159,31 @@ func serveChallenge(ctx context.Context, w *databricks.WorkspaceClient, entry *m
 	}, nil
 }
 
-// serveSignIn is the authenticate tool's sign-in. Progress goes to errOut, which is stderr because stdout carries the
-// protocol. The page opens only when open is set, so the proxy decides how often the browser opens.
+// serveSignIn is the authenticate tool's sign-in, the one `login` runs. Progress goes to errOut, which is stderr because
+// stdout carries the protocol. The page opens only when open is set, so the proxy decides how often the browser opens.
 func serveSignIn(w *databricks.WorkspaceClient, profileName, service string, errOut io.Writer) proxy.SignInFunc {
-	return func(ctx context.Context, open bool) (bool, error) {
-		state, err := mcp.CredentialState(ctx, w, service)
-		if err != nil {
-			return false, err
-		}
-		if state == catalog.ProvisioningInfoStateActive {
-			return true, nil
-		}
-		workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
-		if err != nil {
-			return false, err
+	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
+	var workspaceID string
+	return func(ctx context.Context, open bool) (bool, bool, error) {
+		if workspaceID == "" {
+			id, err := auth.ResolveWorkspaceID(ctx, w)
+			if err != nil {
+				return false, false, err
+			}
+			workspaceID = id
 		}
 		url := mcp.SignInURL(w.Config.Host, service, workspaceID)
-		// SignIn always calls Open, so a call that must not open the page passes one that does nothing.
+		// The opener is called even when the page must not open, so a call that must not open it passes one that does nothing.
 		openPage := func(context.Context, string) error { return nil }
 		if open {
 			openPage = browser.OpenOutputToStderr
 		}
-		alreadySignedIn, _, err := mcp.SignIn(ctx, w, url, service, errOut, mcp.SignInOptions{
-			Profile: profileName,
-			Poll:    mcp.SignInPollInterval,
-			Timeout: mcp.SignInWaitTimeout,
-			Open:    openPage,
-		})
-		if _, timedOut := errors.AsType[*mcp.SignInTimeoutError](err); timedOut {
-			return false, &proxy.SignInTimeout{URL: url}
+		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
+		_, alreadySignedIn, urlShown, err := signIn(ctx, errOut, w, profileName, "", url, svc, openPage)
+		if timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err); timedOut {
+			return false, urlShown, &proxy.SignInTimeout{URL: url, Wait: signInWaitTimeout, LastCheck: timeout.LastCheck}
 		}
-		return alreadySignedIn, err
+		return alreadySignedIn, urlShown, err
 	}
 }
 

@@ -1,0 +1,3 @@
+# The script leaves the captured streams of the proxy and the snapshot of its stderr before authenticate in this
+# directory. The output is the trace lines, so the captures are ignored.
+Ignore = ["stderr-before-authenticate.txt", "serve.stdout.txt", "serve.stderr.txt"]

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -879,7 +880,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		state, _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service)
+		state, _, _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service, browser.OpenOutputToStderr)
 		server.SignIn = &addSignInOutput{State: state}
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)
