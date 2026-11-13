@@ -1,0 +1,8 @@
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+export BROWSER=none
+
+title "serve whose startup check is rejected: exit 2, and PROXY_STARTED is uploaded with AUTH_FAILED"
+trace musterr $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < /dev/null > /dev/null
+print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.aitools_mcp_event | select(. != null)'

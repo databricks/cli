@@ -36,6 +36,13 @@ func configureUploadAuth(cmd *cobra.Command) {
 		log.Debugf(ctx, "telemetry: no profile to upload with: %s", err)
 		return
 	}
+	setUploadConfig(cmd, profileName, configFile)
+}
+
+// setUploadConfig sets the config of profileName in configFile for the exit-time upload, resolved within
+// uploadAuthBudget. A profile that does not resolve uploads nothing.
+func setUploadConfig(cmd *cobra.Command, profileName, configFile string) {
+	ctx := cmd.Context()
 	cfg, err := mcp.BoundConfigWithin(profileName, configFile, uploadAuthBudget)
 	if err != nil {
 		log.Debugf(ctx, "telemetry: cannot resolve profile %s to upload with: %s", profileName, err)
@@ -215,9 +222,9 @@ func signOutServerResult(service, state string, err error) protos.AitoolsMcpServ
 	return r
 }
 
-// proxyStartedEvent is the PROXY_STARTED event of serve. err is the binding failure, or nil when the
-// proxy is about to serve. The event only uploads when the bound profile resolved, so a failed
-// binding usually leaves it unsent.
+// proxyStartedEvent is the PROXY_STARTED event of serve, logged once the startup checks have run. err is the failure
+// of a check, or nil when the proxy is about to serve. The event uploads only when its profile resolved: a failed
+// binding with no profile to upload with leaves it unsent.
 func proxyStartedEvent(agent protos.AitoolsAgentType, service string, err error) protos.AitoolsMcpEvent {
 	r := protos.AitoolsMcpServerResult{Service: mcpServiceType(service)}
 	if err != nil {

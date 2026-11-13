@@ -27,6 +27,10 @@ func TestCommandConfigUsed(t *testing.T) {
 	// The config should have the correct configuration.
 	assert.Equal(t, "https://test.test", ConfigUsed(ctx).Host)
 
+	// Clearing the config leaves none, as if it had never been set.
+	assert.False(t, HasConfigUsed(ClearConfigUsed(ctx)))
+	assert.True(t, HasConfigUsed(ctx))
+
 	// Second call should update the config used.
 	cfg2 := &config.Config{
 		Host: "https://test2.test",

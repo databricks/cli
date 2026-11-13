@@ -18,6 +18,12 @@ func ConfigUsed(ctx context.Context) *config.Config {
 	return cfg
 }
 
+// ClearConfigUsed returns a context with no config used, as if SetConfigUsed had not run: the telemetry upload is
+// skipped and auth errors are not enriched.
+func ClearConfigUsed(ctx context.Context) context.Context {
+	return context.WithValue(ctx, configUsedKey, nil)
+}
+
 func HasConfigUsed(ctx context.Context) bool {
 	_, ok := ctx.Value(configUsedKey).(*config.Config)
 	return ok

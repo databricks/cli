@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -384,11 +385,14 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
 	cmd := NewMcpServeCmd()
+	cmd.SetContext(cmdctx.SetConfigUsed(t.Context(), &config.Config{Host: "https://adb-1.test"}))
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
 
 	err := proxyResult(cmd, g, errors.New("read stdin: input/output error"))
 
+	// The exit-time upload would ask the rejected token's endpoint again, so it has no config.
+	assert.False(t, cmdctx.HasConfigUsed(cmd.Context()))
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
 	assert.ErrorIs(t, err, cause)
