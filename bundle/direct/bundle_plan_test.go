@@ -887,12 +887,13 @@ func TestAddParentMoves(t *testing.T) {
 	schema2Dep := deployplan.DependsOnEntry{Node: "resources.schemas.schema2", Label: "${resources.schemas.schema2.name}"}
 
 	tests := []struct {
-		name          string
-		schemaRenamed bool
-		volumeName    string
-		volumeChanges deployplan.Changes
-		wantID        string
-		wantDependsOn []deployplan.DependsOnEntry
+		name           string
+		schemaRenamed  bool
+		volumeName     string
+		nameRefsSchema bool
+		volumeChanges  deployplan.Changes
+		wantID         string
+		wantDependsOn  []deployplan.DependsOnEntry
 	}{
 		{
 			name:          "moved to another schema",
@@ -919,6 +920,20 @@ func TestAddParentMoves(t *testing.T) {
 			volumeChanges: deployplan.Changes{
 				"schema_name": {Action: deployplan.Recreate, Old: "s1", New: "s2"},
 				"name":        {Action: deployplan.UpdateWithID, Old: "s1", New: "vol2"},
+			},
+			wantID:        "main.s1-renamed.s1",
+			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
+		},
+		{
+			// The volume's own name references the schema too; it is its own name and does not follow.
+			name:           "volume named after the renamed schema by reference",
+			schemaRenamed:  true,
+			volumeName:     "s1",
+			nameRefsSchema: true,
+			volumeChanges: deployplan.Changes{
+				"schema_name": {Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed, Old: "s1", New: "s1-renamed"},
+				"name":        {Action: deployplan.UpdateWithID, Old: "s1", New: "s1-renamed"},
+				"volume_type": {Action: deployplan.Recreate, Old: "MANAGED", New: "EXTERNAL"},
 			},
 			wantID:        "main.s1-renamed.s1",
 			wantDependsOn: []deployplan.DependsOnEntry{schema2Dep, schema1Dep},
@@ -956,7 +971,11 @@ func TestAddParentMoves(t *testing.T) {
 				volumeName = "vol"
 			}
 			b := &DeploymentBundle{Adapters: adapters, Plan: plan}
-			b.refTypes.Store(volumeKey, map[string]string{"schema_name": "schemas"})
+			refTypes := map[string]string{"schema_name": "schemas"}
+			if tt.nameRefsSchema {
+				refTypes["name"] = "schemas"
+			}
+			b.refTypes.Store(volumeKey, refTypes)
 			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
 				volumeKey: {
 					ID:        "main.s1." + volumeName,

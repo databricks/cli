@@ -818,7 +818,7 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 			parentType := config.GetResourceTypeFromKey(dep.Node)
 			for pathString, ch := range entry.Changes {
 				// Only a field referencing a resource of the parent's type followed it (schema_name for a
-				// schema); another one that merely had the same value, like the resource's own name, did not.
+				// schema); another one that merely had the same value did not.
 				if types, ok := refTypes.(map[string]string); !ok || types[pathString] != parentType {
 					continue
 				}
@@ -828,6 +828,10 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 				path, err := structpath.ParsePath(pathString)
 				if err != nil {
 					return err
+				}
+				// The resource's own renamable name stays its own, even when it references the parent.
+				if isUpdatableIDField(adapter, path) {
+					continue
 				}
 				if err := structaccess.Set(state, path, rename.New); err != nil {
 					return fmt.Errorf("%s: setting %s: %w", resourceKey, pathString, err)
@@ -854,6 +858,14 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 		}
 	}
 	return nil
+}
+
+// isUpdatableIDField reports whether path is one of the resource's updatable ID fields, its own
+// renamable name.
+func isUpdatableIDField(adapter *dresources.Adapter, path *structpath.PathNode) bool {
+	_, own := findMatchingRule(path, adapter.ResourceConfig().UpdatableIDFields)
+	_, generated := findMatchingRule(path, adapter.GeneratedResourceConfig().UpdatableIDFields)
+	return own || generated
 }
 
 // recordRefTypes records, for each pure-reference field of resourceKey, the type of the resource it
