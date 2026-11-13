@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
+func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -114,11 +114,10 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
-// Execute runs cmd with args, which select the subcommand to run. It is called
-// by main.main() with the arguments after the program name. Unlike
+// execute runs cmd with args, which select the subcommand to run. Unlike
 // [cobra.Command.SetArgs], nil args mean no arguments rather than the process
 // arguments.
-func Execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
+func execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
 	defer func() {
 		r := recover()
 

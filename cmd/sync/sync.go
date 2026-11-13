@@ -167,13 +167,16 @@ func (f *syncFlags) syncOptionsFromArgs(ctx context.Context, output flags.Output
 	return &opts, nil
 }
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "sync [flags] SRC DST",
-		Short:   "Synchronize a local directory to a workspace directory",
-		Args:    root.MaximumNArgs(2),
-		GroupID: "development",
-	}
+// Spec declares the sync command.
+var Spec = root.CommandSpec{
+	Use:     "sync [flags] SRC DST",
+	Short:   "Synchronize a local directory to a workspace directory",
+	GroupID: "development",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Args = root.MaximumNArgs(2)
 
 	var f syncFlags
 	cmd.Flags().DurationVar(&f.interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
@@ -245,6 +248,4 @@ func New() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 	}
-
-	return cmd
 }

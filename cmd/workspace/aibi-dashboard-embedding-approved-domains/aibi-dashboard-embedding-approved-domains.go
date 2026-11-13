@@ -3,6 +3,7 @@
 package aibi_dashboard_embedding_approved_domains
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "aibi-dashboard-embedding-approved-domains",
-		Short: `*Public Preview* Controls the list of domains approved to host the embedded AI/BI dashboards.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "aibi-dashboard-embedding-approved-domains",
+	Short: `*Public Preview* Controls the list of domains approved to host the embedded AI/BI dashboards.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls the list of domains approved to host the embedded AI/BI dashboards.
   The approved domains list can't be mutated when the current access policy is
-  not set to ALLOW_APPROVED_DOMAINS.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  not set to ALLOW_APPROVED_DOMAINS.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -42,8 +47,6 @@ Controls the list of domains approved to host the embedded AI/BI dashboards.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

@@ -3,6 +3,7 @@
 package model_versions
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,24 +18,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "model-versions",
-		Short: `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
-		Long: `Databricks provides a hosted version of MLflow Model Registry in Unity
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "model-versions",
+	Short:   `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Databricks provides a hosted version of MLflow Model Registry in Unity
   Catalog. Models in Unity Catalog provide centralized access control, auditing,
   lineage, and discovery of ML models across Databricks workspaces.
 
   This API reference documents the REST endpoints for managing model versions in
   Unity Catalog. For more details, see the [registered models API
-  docs](/api/workspace/registeredmodels).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  docs](/api/workspace/registeredmodels).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

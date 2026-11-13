@@ -3,6 +3,7 @@
 package grants
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "grants",
-		Short: `In Unity Catalog, data is secure by default.`,
-		Long: `In Unity Catalog, data is secure by default. Initially, users have no access
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "grants",
+	Short:   `In Unity Catalog, data is secure by default.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `In Unity Catalog, data is secure by default. Initially, users have no access
   to data in a metastore. Access can be granted by either a metastore admin, the
   owner of an object, or the owner of the catalog or schema that contains the
   object. Securable objects in Unity Catalog are hierarchical and privileges are
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   This means that granting a privilege on the catalog automatically grants the
   privilege to all current and future objects within the catalog. Similarly,
   privileges granted on a schema are inherited by all current and future objects
-  within that schema.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  within that schema.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

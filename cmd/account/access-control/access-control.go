@@ -3,6 +3,7 @@
 package access_control
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,22 +18,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "access-control",
-		Short: `*Public Preview* These APIs manage access rules on resources in an account.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "access-control",
+	Short:   `*Public Preview* These APIs manage access rules on resources in an account.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 These APIs manage access rules on resources in an account. Currently, only
   grant rules are supported. A grant rule specifies a role assigned to a set of
-  principals. A list of rules attached to a resource is called a rule set.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  principals. A list of rules attached to a resource is called a rule set.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetAssignableRolesForResource())
@@ -43,8 +48,6 @@ These APIs manage access rules on resources in an account. Currently, only
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-assignable-roles-for-resource command

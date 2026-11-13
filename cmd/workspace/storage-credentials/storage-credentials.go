@@ -3,6 +3,7 @@
 package storage_credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "storage-credentials",
-		Short: `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.`,
-		Long: `A storage credential represents an authentication and authorization mechanism
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "storage-credentials",
+	Short:   `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A storage credential represents an authentication and authorization mechanism
   for accessing data stored on your cloud tenant. Each storage credential is
   subject to Unity Catalog access-control policies that control which users and
   groups can access the credential. If a user does not have access to a storage
@@ -34,14 +40,13 @@ func New() *cobra.Command {
 
   To create storage credentials, you must be a Databricks account admin. The
   account admin who creates the storage credential can delegate ownership to
-  another user or group to manage permissions on it.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  another user or group to manage permissions on it.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

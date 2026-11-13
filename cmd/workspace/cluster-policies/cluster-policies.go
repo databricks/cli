@@ -3,6 +3,7 @@
 package cluster_policies
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "cluster-policies",
-		Short: `You can use cluster policies to control users' ability to configure clusters based on a set of rules.`,
-		Long: `You can use cluster policies to control users' ability to configure clusters
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "cluster-policies",
+	Short:   `You can use cluster policies to control users' ability to configure clusters based on a set of rules.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `You can use cluster policies to control users' ability to configure clusters
   based on a set of rules. These rules specify which attributes or attribute
   values can be used during cluster creation. Cluster policies have ACLs that
   limit their use to specific users and groups.
@@ -44,14 +50,13 @@ func New() *cobra.Command {
 
   If no policies exist in the workspace, the Policy drop-down doesn't appear.
   Only admin users can create, edit, and delete policies. Admin users also have
-  access to all policies.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  access to all policies.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -68,8 +73,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

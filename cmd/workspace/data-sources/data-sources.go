@@ -3,6 +3,8 @@
 package data_sources
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,11 +15,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "data-sources",
-		Short: `This API is provided to assist you in making new query objects.`,
-		Long: `This API is provided to assist you in making new query objects. When creating
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "data-sources",
+	Short:   `This API is provided to assist you in making new query objects.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This API is provided to assist you in making new query objects. When creating
   a query object, you may optionally specify a data_source_id for the SQL
   warehouse against which it will run. If you don't already know the
   data_source_id for your desired SQL warehouse, this API will help you find
@@ -31,14 +38,13 @@ func New() *cobra.Command {
   **Warning**: This API is deprecated. Please see the latest version of the
   Databricks SQL API. [Learn more]
 
-  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -47,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start list command

@@ -3,6 +3,7 @@
 package credentials
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,22 +18,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "credentials",
-		Short: `These APIs manage credential configurations for this workspace.`,
-		Long: `These APIs manage credential configurations for this workspace. Databricks
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "credentials",
+	Short:   `These APIs manage credential configurations for this workspace.`,
+	GroupID: "provisioning",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage credential configurations for this workspace. Databricks
   needs access to a cross-account service IAM role in your AWS account so that
   Databricks can deploy clusters in the appropriate VPC for the new workspace. A
   credential configuration encapsulates this role information, and its ID is
-  used when creating a new workspace.`,
-		GroupID: "provisioning",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  used when creating a new workspace.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -44,8 +49,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

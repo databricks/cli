@@ -3,6 +3,8 @@
 package lakeview_embedded
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,18 +16,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "lakeview-embedded",
-		Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
-		Long:    `Token-based Lakeview APIs for embedding dashboards in external applications.`,
-		GroupID: "dashboards",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "lakeview-embedded",
+	Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
+	GroupID: "dashboards",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Token-based Lakeview APIs for embedding dashboards in external applications.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetPublishedDashboardTokenInfo())
@@ -34,8 +40,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-published-dashboard-token-info command

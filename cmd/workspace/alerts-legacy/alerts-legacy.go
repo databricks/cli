@@ -3,6 +3,7 @@
 package alerts_legacy
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "alerts-legacy",
-		Short: `*Public Preview* The alerts API can be used to perform CRUD operations on alerts.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "alerts-legacy",
+	Short:   `*Public Preview* The alerts API can be used to perform CRUD operations on alerts.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The alerts API can be used to perform CRUD operations on alerts. An alert is a
   Databricks SQL object that periodically runs a query, evaluates a condition of
@@ -32,14 +38,13 @@ The alerts API can be used to perform CRUD operations on alerts. An alert is a
   **Warning**: This API is deprecated. Please see the latest version of the
   Databricks SQL API. [Learn more]
 
-  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -52,8 +57,6 @@ The alerts API can be used to perform CRUD operations on alerts. An alert is a
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

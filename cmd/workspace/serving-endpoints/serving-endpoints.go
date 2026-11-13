@@ -3,6 +3,7 @@
 package serving_endpoints
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "serving-endpoints",
-		Short: `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
-		Long: `The Serving Endpoints API allows you to create, update, and delete model
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "serving-endpoints",
+	Short:   `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
+	GroupID: "serving",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Serving Endpoints API allows you to create, update, and delete model
   serving endpoints.
 
   You can use a serving endpoint to serve models from the Databricks Model
@@ -35,14 +41,13 @@ func New() *cobra.Command {
   serving endpoint can have at most ten served entities. You can configure
   traffic settings to define how requests should be routed to your served
   entities behind an endpoint. Additionally, you can configure the scale of
-  resources that should be applied to each served entity.`,
-		GroupID: "serving",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  resources that should be applied to each served entity.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newBuildLogs())
@@ -72,8 +77,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start build-logs command

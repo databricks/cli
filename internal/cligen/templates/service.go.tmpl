@@ -3,6 +3,7 @@
 package {{(.TrimPrefix "account").SnakeName}}
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,34 +65,40 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "{{(.TrimPrefix "account").KebabName}}",
-		{{- if .Description }}
-		Short: `{{with .CLILaunchStageLabel}}{{.}} {{end}}{{.Summary | without "`"}}`,
-		Long: `{{with .CLILaunchStageBanner}}{{.}}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "{{(.TrimPrefix "account").KebabName}}",
+	{{- if .Description }}
+	Short: `{{with .CLILaunchStageLabel}}{{.}} {{end}}{{.Summary | without "`"}}`,
+	{{- end }}
+	{{- if not .HasParent }}
+	{{- if .DocsGroup }}
+	GroupID: "{{ .DocsGroup }}",
+	{{- else }}
+	GroupID: "{{ .Package.Name }}",
+	{{- end }}
+	{{- end }}
+	{{- if $hideService }}
 
-{{end}}{{.Comment  "  " 80 | without "`"}}`,
-		{{- end }}
-		{{- if not .HasParent }}
-		{{- if .DocsGroup }}
-		GroupID: "{{ .DocsGroup }}",
-		{{- else }}
-		GroupID: "{{ .Package.Name }}",
-		{{- end }}
-		{{- end }}
-		{{- if $hideService }}
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	{{- end }}
+	Build: buildCommand,
+}
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		{{- end }}
-		RunE: root.ReportUnknownSubcommand,
-	}
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	{{- if .Description }}
+	cmd.Long = `{{with .CLILaunchStageBanner}}{{.}}
+
+{{end}}{{.Comment  "  " 80 | without "`"}}`
+	{{- end }}
+	cmd.RunE = root.ReportUnknownSubcommand
 	{{- if .LaunchStage }}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "{{.LaunchStage}}"
-	cmd.Annotations["launch_stage_display"] = "{{.CLILaunchStageDisplay}}"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "{{.LaunchStage}}",
+		"launch_stage_display": "{{.CLILaunchStageDisplay}}",
+	}
 	{{- end }}
 
 	{{ if gt (len .Methods) 0 -}}
@@ -107,7 +114,7 @@ func New() *cobra.Command {
 	{{ if .HasSubservices }}
 	// Add subservices
 	{{- range .Subservices}}
-	cmd.AddCommand({{.SnakeName}}.New())
+	cmd.AddCommand(root.NewCommand(ctx, {{.SnakeName}}.Spec))
 	{{- end}}
 	{{- end}}
 
@@ -115,8 +122,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 {{- $serviceName := .KebabName -}}

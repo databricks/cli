@@ -3,6 +3,7 @@
 package clusters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clusters",
-		Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
-		Long: `The Clusters API allows you to create, start, edit, list, terminate, and
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clusters",
+	Short:   `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Clusters API allows you to create, start, edit, list, terminate, and
   delete clusters.
 
   Databricks maps cluster node instance types to compute units known as DBUs.
@@ -48,14 +54,13 @@ func New() *cobra.Command {
   IMPORTANT: Databricks retains cluster configuration information for terminated
   clusters for 30 days. To keep an all-purpose cluster configuration even after
   it has been terminated for more than 30 days, an administrator can pin a
-  cluster to the cluster list.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  cluster to the cluster list.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newChangeOwner())
@@ -84,8 +89,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start change-owner command

@@ -3,6 +3,7 @@
 package workspaces
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspaces",
-		Short: `These APIs manage workspaces for this account.`,
-		Long: `These APIs manage workspaces for this account. A Databricks workspace is an
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspaces",
+	Short:   `These APIs manage workspaces for this account.`,
+	GroupID: "provisioning",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage workspaces for this account. A Databricks workspace is an
   environment for accessing all of your Databricks assets. The workspace
   organizes objects (notebooks, libraries, and experiments) into folders, and
   provides access to data and computational resources such as clusters and jobs.
 
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`,
-		GroupID: "provisioning",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  account.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

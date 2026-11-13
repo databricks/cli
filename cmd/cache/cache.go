@@ -1,19 +1,24 @@
 package cache
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "cache",
-		Short: "Local cache related commands",
-		Long:  "Manage local cache used by the Databricks CLI for improved performance",
-	}
+// Spec declares the cache command.
+var Spec = root.CommandSpec{
+	Use:   "cache",
+	Short: "Local cache related commands",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = "Manage local cache used by the Databricks CLI for improved performance"
 
 	cmd.AddCommand(newClearCommand())
-	return cmd
 }
 
 func newClearCommand() *cobra.Command {

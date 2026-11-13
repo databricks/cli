@@ -3,6 +3,7 @@
 package external_lineage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "external-lineage",
-		Short: `*Public Preview* External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "external-lineage",
+	Short:   `*Public Preview* External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 External Lineage APIs enable defining and managing lineage relationships
   between Databricks objects and external systems. These APIs allow users to
@@ -30,14 +36,13 @@ External Lineage APIs enable defining and managing lineage relationships
   external metadata objects.
 
   With these APIs, users can create, update, delete, and list lineage
-  relationships with support for column-level mappings and custom properties.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  relationships with support for column-level mappings and custom properties.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateExternalLineageRelationship())
@@ -49,8 +54,6 @@ External Lineage APIs enable defining and managing lineage relationships
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-external-lineage-relationship command

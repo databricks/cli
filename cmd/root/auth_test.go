@@ -282,7 +282,7 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err := MustWorkspaceClient(cmd, []string{})
 	require.Error(t, err)
@@ -306,7 +306,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	cmd := New(t.Context())
+	cmd := newRootCommand(t.Context())
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	err = MustAccountClient(cmd, []string{})
@@ -318,7 +318,7 @@ func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *tes
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	t.Setenv("DATABRICKS_ACCOUNT_ID", "1111")
@@ -332,7 +332,7 @@ func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err := MustAccountClient(cmd, []string{})
 	require.ErrorContains(t, err, "no configuration file found at")
@@ -357,7 +357,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	isAccount, err := MustAnyClient(cmd, []string{})
@@ -388,7 +388,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	isAccount, err := MustAnyClient(cmd, []string{})
@@ -414,7 +414,7 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 
@@ -485,7 +485,7 @@ token = flag-token
 
 			ctx := cmdio.MockDiscard(t.Context())
 			ctx = SkipLoadBundle(ctx)
-			cmd := New(ctx)
+			cmd := newRootCommand(ctx)
 
 			if tc.profileFlag != "" {
 				err := cmd.Flag("profile").Value.Set(tc.profileFlag)
@@ -521,7 +521,7 @@ token = tst-token
 
 	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err = cmd.Flag("profile").Value.Set("tst-svc")
 	require.NoError(t, err)
@@ -554,7 +554,7 @@ host = https://tst.cloud.databricks.test
 
 	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err = cmd.Flag("profile").Value.Set("host-only")
 	require.NoError(t, err)
@@ -590,7 +590,7 @@ token = tst-token
 
 	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err = MustWorkspaceClient(cmd, []string{})
 	require.NoError(t, err)
@@ -621,7 +621,7 @@ token = tst-token
 	t.Setenv("DATABRICKS_HOST", "https://accounts.dev.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
-	cmd := New(t.Context())
+	cmd := newRootCommand(t.Context())
 	err = cmd.Flag("profile").Value.Set("acc-tst")
 	require.NoError(t, err)
 
@@ -880,7 +880,7 @@ workspace_id = none
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 	require.NoError(t, cmd.PersistentFlags().Set("profile", "skipws"))
 
 	// Workspace path returns ErrAccountOnlyProfile. MustAnyClient must
@@ -945,7 +945,7 @@ token = named-token
 
 	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err = MustWorkspaceClient(cmd, []string{})
 	require.NoError(t, err)
@@ -982,7 +982,7 @@ password = pass
 
 	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
-	cmd := New(ctx)
+	cmd := newRootCommand(ctx)
 
 	err = MustWorkspaceClient(cmd, []string{})
 	require.NoError(t, err)
@@ -1048,7 +1048,7 @@ func TestMustClientResolvesHostMetadataWithCommandLogger(t *testing.T) {
 			logger := slog.New(slog.DiscardHandler)
 			ctx, cancel := context.WithCancel(log.NewContext(cmdio.MockDiscard(t.Context()), logger))
 			cancel()
-			cmd := New(SkipLoadBundle(ctx))
+			cmd := newRootCommand(SkipLoadBundle(ctx))
 			require.NoError(t, tc.mustAny(cmd, nil))
 			require.NotEmpty(t, *seen)
 			for _, r := range *seen {
@@ -1073,7 +1073,7 @@ func TestBindHostMetadataLoggerDefersFactoryCall(t *testing.T) {
 		return nil
 	}
 
-	cmd := New(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
+	cmd := newRootCommand(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
 	require.Error(t, MustWorkspaceClient(cmd, nil))
 	assert.Zero(t, factoryCalls)
 }
@@ -1100,7 +1100,7 @@ func TestBindHostMetadataLoggerFallsBackToSDKFetch(t *testing.T) {
 		return nil
 	}
 
-	cmd := New(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
+	cmd := newRootCommand(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
 	require.NoError(t, MustWorkspaceClient(cmd, nil))
 	assert.Equal(t, 1, fetches)
 }

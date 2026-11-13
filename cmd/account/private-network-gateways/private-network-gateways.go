@@ -3,6 +3,7 @@
 package private_network_gateways
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,22 +23,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "private-network-gateways",
-		Short: `These APIs manage private network gateways under network connectivity configurations.`,
-		Long: `These APIs manage private network gateways under network connectivity
-  configurations.`,
-		GroupID: "provisioning",
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "private-network-gateways",
+	Short:   `These APIs manage private network gateways under network connectivity configurations.`,
+	GroupID: "provisioning",
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage private network gateways under network connectivity
+  configurations.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreatePrivateNetworkGateway())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-private-network-gateway command

@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
@@ -64,7 +65,7 @@ func TestSyncOptionsFromArgsRequiresSrcAndDst(t *testing.T) {
 // Flags that sync defines with the names or shorthands of the root's
 // --output and --profile flags would shadow them.
 func TestSyncDoesNotShadowRootFlags(t *testing.T) {
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 	for _, name := range []string{"output", "profile"} {
 		assert.Nil(t, cmd.LocalFlags().Lookup(name), name)
 	}

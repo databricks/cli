@@ -3,6 +3,7 @@
 package volumes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "volumes",
-		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.`,
-		Long: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "volumes",
+	Short:   `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
   organizing, and processing files. Use cases include running machine learning
   on unstructured data such as image, audio, video, or PDF files, organizing
   data sets during the data exploration stages in data science, working with
   libraries that require access to the local file system on cluster machines,
   storing library and config files of arbitrary formats such as .whl or .txt
   centrally and providing secure access to those files across workspaces, or
-  transforming and querying non-tabular data files in ETL.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  transforming and querying non-tabular data files in ETL.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

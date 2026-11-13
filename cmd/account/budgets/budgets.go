@@ -3,6 +3,7 @@
 package budgets
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,21 +19,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "budgets",
-		Short: `These APIs manage budget configurations for this account.`,
-		Long: `These APIs manage budget configurations for this account. Budgets enable you
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "budgets",
+	Short:   `These APIs manage budget configurations for this account.`,
+	GroupID: "billing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage budget configurations for this account. Budgets enable you
   to monitor usage across your account. You can set up budgets to either track
   account-wide spending, or apply filters to track the spending of specific
-  teams, projects, or workspaces.`,
-		GroupID: "billing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  teams, projects, or workspaces.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

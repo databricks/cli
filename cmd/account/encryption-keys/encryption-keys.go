@@ -3,6 +3,7 @@
 package encryption_keys
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "encryption-keys",
-		Short: `These APIs manage encryption key configurations for this workspace (optional).`,
-		Long: `These APIs manage encryption key configurations for this workspace (optional).
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "encryption-keys",
+	Short:   `These APIs manage encryption key configurations for this workspace (optional).`,
+	GroupID: "provisioning",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage encryption key configurations for this workspace (optional).
   A key configuration encapsulates the AWS KMS key information and some
   information about how the key configuration can be used. There are two
   possible uses for key configurations:
@@ -36,14 +42,13 @@ func New() *cobra.Command {
   version of the platform. Updating a running workspace with workspace storage
   encryption requires that the workspace is on the E2 version of the platform.
   If you have an older workspace, it might not be on the E2 version of the
-  platform. If you are not sure, contact your Databricks representative.`,
-		GroupID: "provisioning",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  platform. If you are not sure, contact your Databricks representative.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

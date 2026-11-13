@@ -3,6 +3,7 @@
 package workspace_entity_tag_assignments
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,18 +19,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "workspace-entity-tag-assignments",
-		Short:   `Manage tag assignments on workspace-scoped objects.`,
-		Long:    `Manage tag assignments on workspace-scoped objects.`,
-		GroupID: "tags",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-entity-tag-assignments",
+	Short:   `Manage tag assignments on workspace-scoped objects.`,
+	GroupID: "tags",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage tag assignments on workspace-scoped objects.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateTagAssignment())
@@ -42,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-tag-assignment command

@@ -3,6 +3,7 @@
 package workspace_assignment
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,19 +18,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspace-assignment",
-		Short: `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
-		Long: `The Workspace Permission Assignment API allows you to manage workspace
-  permissions for principals in your account.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-assignment",
+	Short:   `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Workspace Permission Assignment API allows you to manage workspace
+  permissions for principals in your account.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -41,8 +46,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

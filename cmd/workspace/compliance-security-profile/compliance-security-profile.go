@@ -3,6 +3,7 @@
 package compliance_security_profile
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,23 +18,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "compliance-security-profile",
-		Short: `*Public Preview* Controls whether to enable the compliance security profile for the current workspace.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "compliance-security-profile",
+	Short: `*Public Preview* Controls whether to enable the compliance security profile for the current workspace.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether to enable the compliance security profile for the current
   workspace. Enabling it on a workspace is permanent. By default, it is turned
   off.
 
-  This settings can NOT be disabled once it is enabled.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  This settings can NOT be disabled once it is enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -43,8 +48,6 @@ Controls whether to enable the compliance security profile for the current
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

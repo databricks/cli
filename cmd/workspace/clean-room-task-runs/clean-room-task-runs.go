@@ -3,6 +3,7 @@
 package clean_room_task_runs
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -16,19 +17,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clean-room-task-runs",
-		Short: `Clean room task runs are the executions of notebooks and JAR analyses in a clean room.`,
-		Long: `Clean room task runs are the executions of notebooks and JAR analyses in a
-  clean room.`,
-		GroupID: "cleanrooms",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clean-room-task-runs",
+	Short:   `Clean room task runs are the executions of notebooks and JAR analyses in a clean room.`,
+	GroupID: "cleanrooms",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Clean room task runs are the executions of notebooks and JAR analyses in a
+  clean room.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -38,8 +43,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start list command

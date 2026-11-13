@@ -3,6 +3,7 @@
 package git_credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,23 +19,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "git-credentials",
-		Short: `Registers personal access token for Databricks to do operations on behalf of the user.`,
-		Long: `Registers personal access token for Databricks to do operations on behalf of
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "git-credentials",
+	Short:   `Registers personal access token for Databricks to do operations on behalf of the user.`,
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Registers personal access token for Databricks to do operations on behalf of
   the user.
 
   See [more info].
 
-  [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
-		GroupID: "workspace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

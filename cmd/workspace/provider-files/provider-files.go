@@ -3,6 +3,7 @@
 package provider_files
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "provider-files",
-		Short: `Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
-		Long: `Marketplace offers a set of file APIs for various purposes such as preview
-  notebooks and provider icons.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-files",
+	Short:   `Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Marketplace offers a set of file APIs for various purposes such as preview
+  notebooks and provider icons.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -42,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

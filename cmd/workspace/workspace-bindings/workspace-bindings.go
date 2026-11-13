@@ -3,6 +3,7 @@
 package workspace_bindings
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspace-bindings",
-		Short: `A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.`,
-		Long: `A securable in Databricks can be configured as __OPEN__ or __ISOLATED__. An
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-bindings",
+	Short:   `A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A securable in Databricks can be configured as __OPEN__ or __ISOLATED__. An
   __OPEN__ securable can be accessed from any workspace, while an __ISOLATED__
   securable can only be accessed from a configured list of workspaces. This API
   allows you to configure (bind) securables to workspaces.
@@ -39,14 +45,13 @@ func New() *cobra.Command {
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
 
   Securable types that support binding: - catalog - storage_credential -
-  credential - external_location`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  credential - external_location`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -58,8 +63,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

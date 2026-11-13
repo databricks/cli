@@ -1,9 +1,11 @@
 package aircmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -23,18 +25,20 @@ Learn more:
   Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
 `
 
-// New returns the root command for the AI Runtime CLI.
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "air",
-		Short:   "Run and manage AI Runtime workloads on serverless GPU compute",
-		GroupID: "development",
-		Long: `Run GPU workloads on Databricks serverless compute.
+// Spec declares the air command.
+var Spec = root.CommandSpec{
+	Use:     "air",
+	Short:   "Run and manage AI Runtime workloads on serverless GPU compute",
+	GroupID: "development",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Run GPU workloads on Databricks serverless compute.
 
 Describe a workload in a YAML file and submit it with "databricks air run".
 Follow a run with "databricks air logs" and "databricks air get", or see your
-active runs with "databricks air list".`,
-	}
+active runs with "databricks air list".`
 
 	cmd.AddGroup(
 		&cobra.Group{ID: runGroupID, Title: "Run workloads:"},
@@ -58,8 +62,6 @@ active runs with "databricks air list".`,
 			fmt.Fprint(c.OutOrStdout(), airHelpFooter)
 		}
 	})
-
-	return cmd
 }
 
 func addToGroup(parent *cobra.Command, groupID string, cmds ...*cobra.Command) {

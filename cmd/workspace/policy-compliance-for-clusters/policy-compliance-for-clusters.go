@@ -3,6 +3,7 @@
 package policy_compliance_for_clusters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "policy-compliance-for-clusters",
-		Short: `The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.`,
-		Long: `The policy compliance APIs allow you to view and manage the policy compliance
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "policy-compliance-for-clusters",
+	Short:   `The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The policy compliance APIs allow you to view and manage the policy compliance
   status of clusters in your workspace.
 
   A cluster is compliant with its policy if its configuration satisfies all its
@@ -31,14 +37,13 @@ func New() *cobra.Command {
 
   The get and list compliance APIs allow you to view the policy compliance
   status of a cluster. The enforce compliance API allows you to update a cluster
-  to be compliant with the current version of its policy.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  to be compliant with the current version of its policy.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelPendingClusterEnforcement())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-pending-cluster-enforcement command

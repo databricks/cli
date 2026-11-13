@@ -3,6 +3,7 @@
 package jobs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "jobs",
-		Short: `The Jobs API allows you to create, edit, and delete jobs.`,
-		Long: `The Jobs API allows you to create, edit, and delete jobs.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "jobs",
+	Short:   `The Jobs API allows you to create, edit, and delete jobs.`,
+	GroupID: "lakeflow",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Jobs API allows you to create, edit, and delete jobs.
 
   You can use a Databricks job to run a data processing or data analysis task in
   a Databricks cluster with scalable resources. Your job can consist of a single
@@ -40,14 +46,13 @@ func New() *cobra.Command {
 
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
-  [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
-		GroupID: "lakeflow",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelAllRuns())
@@ -75,8 +80,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-all-runs command

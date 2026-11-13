@@ -3,6 +3,7 @@
 package genie
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,22 +20,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "genie",
-		Short: `Genie provides a no-code experience for business users, powered by AI/BI.`,
-		Long: `Genie provides a no-code experience for business users, powered by AI/BI.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "genie",
+	Short:   `Genie provides a no-code experience for business users, powered by AI/BI.`,
+	GroupID: "dashboards",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Genie provides a no-code experience for business users, powered by AI/BI.
   Analysts set up spaces that business users can use to ask questions using
   natural language. Genie uses data registered to Unity Catalog and requires at
   least CAN USE permission on a Pro or Serverless SQL warehouse. Also,
-  Databricks Assistant must be enabled.`,
-		GroupID: "dashboards",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  Databricks Assistant must be enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
@@ -72,8 +77,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-message command
