@@ -1,0 +1,12 @@
+title "The create request times out but the branch was created: deploy uses the branch"
+fault.py --after-handler "POST /api/2.0/postgres/projects/*/branches" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //postgres/projects/test-pg-proj/branches | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"
+
+title "The create request times out and the branch was not created: deploy repeats the create"
+fault.py "POST /api/2.0/postgres/projects/*/branches" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //postgres/projects/test-pg-proj/branches | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1

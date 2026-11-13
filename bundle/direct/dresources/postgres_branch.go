@@ -2,10 +2,15 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -125,7 +130,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 		ForceSendFields: nil,
 	})
 	if err != nil {
-		return "", nil, err
+		return r.recoverFailedCreate(ctx, config, err)
 	}
 
 	// Wait for the branch to be ready (long-running operation)
@@ -136,6 +141,50 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 
 	remote := makePostgresBranchRemote(result)
 	return remote.Name, remote, nil
+}
+
+// branchReadyTimeout bounds the wait for a branch that recoverFailedCreate found still initializing.
+const branchReadyTimeout = 10 * time.Minute
+
+// recoverFailedCreate handles a create request that failed with a transient error. The backend
+// answers a slow create with 504 DEADLINE_EXCEEDED ("may still be completing"), so the branch may
+// exist anyway: use it once it is ready instead of failing, or, if it does not exist, let the
+// caller repeat the create.
+func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, config *PostgresBranchState, createErr error) (string, *PostgresBranchRemote, error) {
+	if !retry.IsTransient(ctx, createErr) {
+		return "", nil, createErr
+	}
+	// With replace_existing, a branch found now may predate the request, and repeating the
+	// request is safe.
+	if config.ReplaceExisting != nil && *config.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
+	}
+
+	name := config.Parent + "/branches/" + config.BranchId
+	deadline := time.Now().Add(branchReadyTimeout)
+	for {
+		branch, err := r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+		if apierr.IsMissing(err) {
+			return "", nil, retrySafe(createErr)
+		}
+		if err != nil {
+			log.Warnf(ctx, "checking whether %s was created: %s", name, err)
+			return "", nil, createErr
+		}
+		if branch.Status != nil && branch.Status.CurrentState == postgres.BranchStatusStateReady {
+			log.Warnf(ctx, "the branch was created despite the failed create request: %s", createErr)
+			remote := makePostgresBranchRemote(branch)
+			return remote.Name, remote, nil
+		}
+		if time.Now().After(deadline) {
+			return "", nil, fmt.Errorf("%w; branch %s exists but did not become ready within %s", createErr, name, branchReadyTimeout)
+		}
+		select {
+		case <-ctx.Done():
+			return "", nil, ctx.Err()
+		case <-time.After(5 * time.Second):
+		}
+	}
 }
 
 // expire_time, no_expiry and ttl are three sides of one oneof, and the API accepts them
