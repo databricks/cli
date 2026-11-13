@@ -1,0 +1,20 @@
+# Deploy once so that the state directory exists and the lock create is a single request.
+$CLI bundle deploy > /dev/null 2>&1
+print_requests.py > /dev/null
+
+title "Lock create is applied, but the response is a 504: the retry finds our own lock"
+fault.py --after-handler "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
+trace $CLI bundle deploy
+print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | contains("deploy.lock")) | [.method, .q.overwrite]'
+
+title "Lock create is not applied and fails with a 504: the retry creates the lock"
+fault.py "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
+trace $CLI bundle deploy
+print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | contains("deploy.lock")) | [.method, .q.overwrite]'
+
+title "Lock is held by another deployer: the retry gets a conflict and the error names the holder"
+fault.py "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
+echo '{"ID":"00000000-0000-0000-0000-000000000000","AcquisitionTime":"2026-01-01T00:00:00Z","IsForced":false,"User":"someone-else"}' > other.lock
+$CLI workspace import /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/deploy.lock --file other.lock --format AUTO > /dev/null
+errcode trace $CLI bundle deploy
+rm other.lock

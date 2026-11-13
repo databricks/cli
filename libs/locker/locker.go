@@ -157,7 +157,18 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		modes = append(modes, filer.OverwriteIfExists)
 	}
 
-	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
+	if isForced {
+		// Overwriting writes are already retried by the retrying filer.
+		err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
+	} else {
+		// The retrying filer does not repeat writes that do not overwrite. Repeating this
+		// one is safe because the lock file carries our unique ID: if an attempt that failed
+		// with a transient error (e.g. an inactivity timeout) did create the file, the retry
+		// fails with fs.ErrExist and assertLockHeld below confirms that the lock is ours.
+		_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+			return struct{}{}, locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
+		})
+	}
 	if err != nil {
 		// If the write failed because the lock file already exists, don't return
 		// the error and instead fall through to [assertLockHeld] below.
