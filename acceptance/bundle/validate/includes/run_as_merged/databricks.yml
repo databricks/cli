@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+run_as:
+  user_name: root@example.com
+
+resources:
+  jobs:
+    foo:
+      name: foo

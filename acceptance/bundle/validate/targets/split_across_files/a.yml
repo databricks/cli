@@ -1,0 +1,11 @@
+workspace:
+  root_path: /Workspace/a
+  artifact_path: /Workspace/a/artifacts
+
+targets:
+  dev:
+    workspace:
+      root_path: /Workspace/dev-a
+    sync:
+      include:
+        - a.yml

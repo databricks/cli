@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+targets:
+  dev:
+    experimental:
+      python_wheel_wrapper: true
+    scripts:
+      s:
+        content: echo dev
+    python:
+      venv_path: .venv
+    include:
+      - other.yml

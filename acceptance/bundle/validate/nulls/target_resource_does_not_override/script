@@ -1,0 +1,2 @@
+# Null values in a target resource override, including a null resource, leave the root values in place.
+trace $CLI bundle validate -o json -t dev | jq '.resources.jobs | {foo: (.foo | {name, max_concurrent_runs, queue, tags, email_notifications, tasks}), bar: (.bar | {name})}'
