@@ -2,13 +2,13 @@ export DATABRICKS_CACHE_DIR=$(pwd)/.cache
 
 $CLI cache clear &> /dev/null
 
-title "First call in a session is expected to be a cache miss:\n"
+title "First call in a session is expected to be a cache miss:"
 trace $CLI bundle validate -p dogfood --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
 
-title "Second call in a session is expected to be a cache hit\n"
+title "Second call in a session is expected to be a cache hit"
 trace $CLI bundle validate -p dogfood --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
 
-title "Bundle deploy should send telemetry values\n"
+title "Bundle deploy should send telemetry values"
 trace $CLI bundle deploy -p dogfood
 
 trace print_telemetry_bool_values | grep "local.cache"

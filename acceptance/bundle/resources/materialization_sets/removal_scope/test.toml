@@ -1,20 +1,10 @@
 # Creates its own schema and deletes it on exit. Override MATSET_CATALOG where `main` is absent.
 Cloud = true
 
-# Both legs run locally. A cloud run must select the DMS= leg: the bundle deployments API
-# rejects features. and materialization_sets. as resource-type prefixes.
-EnvMatrix.DMS = ["", "true"]
-
 Ignore = [
     ".databricks",
     "databricks.yml",
 ]
-
-# A real materialization set or member id is 32 undashed hex characters; the harness's built-in
-# replacement only matches the dashed form the fake produces.
-[[Repls]]
-Old = '\b[0-9a-f]{32}\b'
-New = '[UUID]'
 
 # The workspace host, which only a cloud run puts in the output.
 [[Repls]]

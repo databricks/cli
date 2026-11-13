@@ -3,15 +3,28 @@ bundle:
 
 resources:
   jobs:
-    # No references between the jobs: the order comes from lifecycle.depends_on only.
+    # No references between the resources: the order comes from lifecycle.depends_on only.
     a_job:
       name: a_job
       lifecycle:
         depends_on:
           - resource: z_job
           - resource: pipelines.z_pipeline
+          - resource: jobs.z_job.permissions
+          - resource: schemas.z_schema.grants
     z_job:
       name: z_job
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
   pipelines:
     z_pipeline:
       name: z_pipeline
+  schemas:
+    z_schema:
+      catalog_name: main
+      name: z_schema
+      grants:
+        - principal: users
+          privileges:
+            - USE_SCHEMA

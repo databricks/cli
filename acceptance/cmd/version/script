@@ -1,10 +1,31 @@
-title "version stays lightweight\n"
+# Agent detection reads these config-dir overrides besides HOME; unset them so
+# the host's agent dirs can't change the stderr below.
+unset CLAUDE_CONFIG_DIR XDG_CONFIG_HOME GEMINI_CLI_HOME PI_CODING_AGENT_DIR GOOSE_PATH_ROOT APPDATA
+
+title "version stays lightweight"
 trace $CLI version
 
 # The acceptance binary is a development build, so the check short-circuits
 # without contacting GitHub. This exercises command wiring and output rendering.
-title "version --check\n"
+title "version --check"
 trace $CLI version --check
 
-title "version --check --output json\n"
+title "version --check --output json"
 trace $CLI version --check --output json
+
+# The tip is printed on stderr only when a coding agent is detected without
+# Databricks tooling. The committed codex-home/.codex is a Codex CLI config dir
+# without the databricks plugin or skills.
+title "version --check with a coding agent and no Databricks tooling"
+sethome ./codex-home
+trace $CLI version --check
+
+title "version --check --output json with a coding agent prints no tip"
+trace $CLI version --check --output json
+
+# Claude Code callers get only the root hint (agents.MaybeHint), not the tip.
+title "version --check from Claude Code prints only the root hint"
+sethome ./claude-home
+export CLAUDECODE=1
+unset CLAUDE_CODE_SESSION_ID
+trace $CLI version --check

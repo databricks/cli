@@ -38,6 +38,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === assert that permissions are applied
+
 >>> [CLI] permissions get alertsv2 [ALERT_ID]
 {
   "user_name": "deco-test-user@databricks.com",
@@ -50,6 +51,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === assert that no permanent drift happens
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
@@ -61,10 +63,9 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-Error: Alert with ID '[ALERT_ID]' does not exist.
+=== assert that the alert is gone
 
-Exit code: 1
+OK: alert does not exist
 
 >>> [CLI] bundle summary
 Name: alerts-basic-[UNIQUE_NAME]

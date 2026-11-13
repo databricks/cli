@@ -51,6 +51,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Delete foo, keep bar
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy

@@ -390,6 +390,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		FeatureSpecs: map[string]*resources.FeatureSpec{
+			"my_feature_spec": {
+				FeatureSpec: ml.FeatureSpec{
+					Name: "main.myschema.my_feature_spec",
+				},
+			},
+		},
 		PostgresDataApis: map[string]*resources.PostgresDataApi{
 			"my_postgres_data_api": {
 				PostgresDataApiConfig: resources.PostgresDataApiConfig{
@@ -429,6 +436,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeature(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockFeatureEngineeringAPI().EXPECT().GetMaterializationSet(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeatureSpec(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
@@ -558,6 +566,44 @@ func TestResolveKey(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantType, res.ResourceDescription().PluralName)
 			assert.Equal(t, tc.wantKey, key)
+		})
+	}
+}
+
+func TestResolveDependsOn(t *testing.T) {
+	r := &Resources{
+		Jobs:      map[string]*resources.Job{"foo": {}, "thing": {}},
+		Pipelines: map[string]*resources.Pipeline{"thing": {}},
+		Schemas:   map[string]*resources.Schema{"bar": {}},
+	}
+
+	tests := []struct {
+		ref     string
+		want    string
+		wantErr string
+	}{
+		{ref: "foo", want: "resources.jobs.foo"},
+		{ref: "jobs.foo", want: "resources.jobs.foo"},
+		{ref: "schemas.bar.grants", want: "resources.schemas.bar.grants"},
+		{ref: "jobs.foo.permissions", want: "resources.jobs.foo.permissions"},
+		{ref: "missing", wantErr: "no such resource: missing"},
+		{ref: "thing", wantErr: "ambiguous resource: thing (can resolve to jobs.thing, pipelines.thing); use a qualified name to disambiguate"},
+		{ref: "jobs.foo.grants", wantErr: "no such resource: jobs.foo.grants"},
+		{ref: "schemas.missing.grants", wantErr: "no such resource: schemas.missing"},
+		{ref: "bar.grants", wantErr: "no such resource: bar.grants"},
+		{ref: "a.b.c", wantErr: "no such resource: a.b.c"},
+		{ref: "a.b.c.d", wantErr: "no such resource: a.b.c.d"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ref, func(t *testing.T) {
+			got, err := r.ResolveDependsOn(tc.ref)
+			if tc.wantErr != "" {
+				assert.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

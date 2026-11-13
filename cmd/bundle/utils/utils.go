@@ -22,7 +22,7 @@ func SetForceLock(cmd *cobra.Command, b *bundle.Bundle, forceLock bool) {
 		return
 	}
 
-	b.Config.Bundle.Deployment.Lock.Force = forceLock
+	b.Config.Bundle.Deployment.Lock.Force = new(forceLock)
 }
 
 func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) {

@@ -1,5 +1,59 @@
 # Version changelog
 
+## Release v1.26.0 (2026-11-11)
+
+### AI Runtime
+
+ * `air run` reuses its existing workspace connection for config validation instead of opening a second one, which saves a TCP and TLS handshake per submission. ([#7210](https://github.com/databricks/cli/pull/7210))
+ * Speed up `databricks air run` for git-pinned `code_source` snapshots by compressing the archive in parallel, which substantially shortens packaging on large repositories. ([#7402](https://github.com/databricks/cli/pull/7402))
+ * Point the `air run -h config` agent-skill hint at the stable `databricks-ai-runtime` skill. ([#7454](https://github.com/databricks/cli/pull/7454))
+
+### Bundles
+
+ * Add `DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE`, which names a profile whose host the `workspace_host` template helper returns instead of the selected profile's host. The profile must have the selected profile's workspace ID. ([#7410](https://github.com/databricks/cli/pull/7410))
+ * Fixed an explicit `false` on optional boolean fields (`variables.*.sensitive`, `artifacts.*.dynamic_version`, `bundle.deployment.lock.force`, `workspace.azure_use_msi`, `replace_existing` on postgres endpoints, databases and roles, and the `experimental.*` flags) being dropped, which hid it from `bundle validate -o json` and kept a target from overriding `true` with it. ([#7412](https://github.com/databricks/cli/pull/7412))
+ * Stop sending `compute_size` in the app update mask when the bundle does not declare it, so a deploy no longer resets a manually resized app to the default size. ([#7461](https://github.com/databricks/cli/pull/7461))
+ * `lifecycle.depends_on` can now target the grants or permissions of a resource, as `schemas.foo.grants`. ([#7435](https://github.com/databricks/cli/pull/7435))
+ * Add support for the `feature_specs` resource type, including UC grants on a feature spec. ([#7364](https://github.com/databricks/cli/pull/7364))
+
+### Dependency Updates
+
+ * Update the Go SDK to [v0.197.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.197.0). ([#7457](https://github.com/databricks/cli/pull/7457))
+ * Bump Go toolchain to 1.27.4. ([#7458](https://github.com/databricks/cli/pull/7458))
+
+
+## Release v1.25.0 (2026-11-09)
+
+### CLI
+
+ * `databricks aitools install --output json` now reports a more specific `error_category` (`MANIFEST_NOT_FOUND`, `PERMISSION_DENIED`, `FILESYSTEM`) for some failures it reported as `UNCATEGORIZED`. ([#7380](https://github.com/databricks/cli/pull/7380))
+ * Suggest `databricks auth logout --profile <profile-name> --delete` when multiple profiles match the same workspace in `databricks auth docker` commands. ([#7363](https://github.com/databricks/cli/pull/7363))
+ * Fix `%pip` in Jupyter notebooks opened over `databricks ssh connect` on serverless environment versions 5 and 6 and on dedicated clusters running recent Databricks Runtime versions, which fell back to the stock IPython magic instead of the Databricks one. ([#7263](https://github.com/databricks/cli/pull/7263))
+
+### AI Runtime
+
+ * `databricks air run` now validates the config server-side while it uploads the run artifacts, instead of before, which shortens submission. ([#7368](https://github.com/databricks/cli/pull/7368))
+ * Remove `CRITICAL` as a valid `compute.priority_class` value; the AI Runtime API no longer accepts it. ([#7371](https://github.com/databricks/cli/pull/7371))
+
+### Bundles
+
+ * Built-in templates add the workspace ID to `workspace.host` (`?w=<id>`) when the profile or an environment variable sets it, so generated bundles select the right workspace on hosts shared by several workspaces. Welcome messages show the same URL, and `dbt-sql` also adds `?o=<id>` to the HTTP path it suggests for `dbt init`. ([#7350](https://github.com/databricks/cli/pull/7350))
+ * Fix grants of a renamed or recreated catalog, schema, volume or other UC resource staying recorded under the old name, which made the next `bundle plan` propose to apply them again. ([#7345](https://github.com/databricks/cli/pull/7345))
+ * Fix permissions of a recreated pipeline, app, dashboard, model serving endpoint or other resource staying recorded under the old ID, which made every later `bundle plan` propose to apply them again. ([#7361](https://github.com/databricks/cli/pull/7361))
+ * Add the `postgres_data_apis` resource (Private Preview) for enabling and configuring the Data API of a Lakebase Postgres database. ([#7160](https://github.com/databricks/cli/pull/7160))
+ * Fixes [#4012](https://github.com/databricks/cli/issues/4012): registered model `aliases` are now set in Unity Catalog on deploy instead of being silently ignored. A model without an `aliases` section keeps the aliases set outside the bundle (for example by MLflow), and `aliases: []` removes them. ([#7163](https://github.com/databricks/cli/pull/7163))
+ * Include variable declarations and the source of each resolved value in the `--include-locations` output of `bundle validate` and `bundle summary`. ([#7351](https://github.com/databricks/cli/pull/7351))
+ * Add `.workspace.URLID` to bundle templates: the workspace ID that `.workspace.URL` adds, or empty, so templates can use it without failing when the ID is unknown. ([#7388](https://github.com/databricks/cli/pull/7388))
+ * Expose the workspace of the selected profile to bundle templates as `.workspace`, with `Hostname`, `ID`, and `URL`, so templates can address a workspace on a host shared by several workspaces. A template input named `workspace` takes precedence. ([#7349](https://github.com/databricks/cli/pull/7349))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7394](https://github.com/databricks/cli/pull/7394))
+ * Upgrade `github.com/mattn/go-runewidth` to v0.0.31, which removes ~30ms of startup time from every command. ([#7391](https://github.com/databricks/cli/pull/7391))
+ * Update the Go SDK to [v0.194.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.194.0). ([#7371](https://github.com/databricks/cli/pull/7371))
+ * Update the Go SDK to [v0.195.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.195.0). ([#7384](https://github.com/databricks/cli/pull/7384))
+
+
 ## Release v1.24.0 (2026-11-04)
 
 ### Notable Changes

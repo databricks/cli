@@ -2,7 +2,7 @@
   "version": 4,
   "terraform_version": "1.5.5",
   "serial": 3,
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "outputs": {},
   "resources": [
     {
@@ -39,14 +39,14 @@
             "directory_id": null,
             "directory_path": null,
             "experiment_id": null,
-            "id": "/pipelines/[UUID]",
+            "id": "/pipelines/[UUID][1]",
             "instance_pool_id": null,
             "job_id": null,
             "knowledge_assistant_id": null,
             "notebook_id": null,
             "notebook_path": null,
             "object_type": "pipelines",
-            "pipeline_id": "[UUID]",
+            "pipeline_id": "[UUID][1]",
             "provider_config": [
               {
                 "workspace_id": "[WORKSPACE_ID]"
@@ -108,7 +108,7 @@
             "filters": [],
             "gateway_definition": [],
             "health": null,
-            "id": "[UUID]",
+            "id": "[UUID][1]",
             "ingestion_definition": [],
             "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
@@ -139,7 +139,7 @@
             "run_as": [
               {
                 "group_name": "",
-                "service_principal_name": "[UUID]",
+                "service_principal_name": "[UUID][2]",
                 "user_name": ""
               }
             ],
@@ -153,7 +153,7 @@
             "target": "team_eng_deco",
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID][1]",
             "usage_policy_id": null
           },
           "sensitive_attributes": [],

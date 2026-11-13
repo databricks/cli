@@ -74,6 +74,9 @@ class ModelServingEndpoint(Resource):
     """
 
     description: VariableOrOptional[str] = None
+    """
+    The description of the serving endpoint.
+    """
 
     email_notifications: VariableOrOptional[EmailNotifications] = None
     """
@@ -145,6 +148,9 @@ class ModelServingEndpointDict(TypedDict, total=False):
     """
 
     description: VariableOrOptional[str]
+    """
+    The description of the serving endpoint.
+    """
 
     email_notifications: VariableOrOptional[EmailNotificationsParam]
     """

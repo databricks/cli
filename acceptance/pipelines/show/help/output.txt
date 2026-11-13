@@ -1,5 +1,6 @@
 
 === help
+
 >>> [CLI] pipelines show --help
 Preview a table's columns and sample rows on a SQL warehouse.
 

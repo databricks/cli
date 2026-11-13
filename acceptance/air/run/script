@@ -16,8 +16,22 @@ errcode trace $CLI air run -f valid.yaml --dry-run --override compute.num_accele
 title "watch is ignored with dry-run (nothing is submitted)"
 trace $CLI air run -f valid.yaml --dry-run --watch
 
-title "code_source config passes validation"
+title "code_source config passes validation and reports the selected files"
+# The dry run resolves git.branch and include_paths locally, so it needs a repo.
+git init -qb main
+git config user.name "Tester"
+git config user.email "tester@databricks.com"
+git config core.hooksPath no-hooks
+git add src
+git commit -qm 'Add src'
 trace $CLI air run -f with-code-source.yaml --dry-run
+
+title "git-ignored root_path is rejected instead of selecting no files"
+echo '.scratch/' > .gitignore
+mkdir -p .scratch/proj
+echo 'print(1)' > .scratch/proj/main.py
+errcode trace $CLI air run -f ignored-root.yaml --dry-run
+rm -fr .git .gitignore .scratch
 
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run

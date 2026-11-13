@@ -3,10 +3,13 @@ package aircmd
 import (
 	"io"
 	"strconv"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +18,7 @@ import (
 // absent MLflow link, and a still-running (no end) row.
 func testListRows() []listRow {
 	return []listRow{
-		{RunID: "1", Experiment: "qwen-train", User: "me@example.com", Status: "SUCCESS", StartedAt: new("2026-06-05T17:32:39.000000+00:00"), Duration: "1m 14s", MLflowURL: "https://h/ml/experiments/E/runs/04c41514fbb0/artifacts/logs/node_0", MLflowLabel: "qwen-run-001", Accelerators: "8x H100"},
+		{RunID: "1", Experiment: "qwen-train", User: "me@example.com", Status: "SUCCESS", StartedAt: new("2026-06-05T17:32:39.000000+00:00"), Duration: "1m 14s", MLflowURL: "https://h/ml/experiments/E/runs/04c41514fbb0/logs", MLflowLabel: "qwen-run-001", Accelerators: "8x H100"},
 		{RunID: "2", Experiment: "llama-train", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-06-05T18:43:24.000000+00:00"), Duration: "3m 32s", Progress: "81% · ~48m", MLflowURL: "-", MLflowLabel: "-", Accelerators: "1x A10"},
 		{RunID: "3", Experiment: "mixtral", User: "me@example.com", Status: "FAILED", StartedAt: nil, Duration: "-", MLflowURL: "-", MLflowLabel: "-", Accelerators: "-"},
 	}
@@ -152,6 +155,21 @@ func TestListModelQuit(t *testing.T) {
 	assert.Equal(t, tea.QuitMsg{}, cmd())
 }
 
+func TestListModelEnterOpensMLflowLogs(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.Set(ctx, "BROWSER", "none")
+	r, _ := cmdio.NewRenderer(ctx, io.Discard)
+	f := &runFetcher{ctx: ctx, w: newTestWorkspaceClient(t, "https://x.test")}
+	m := newListModel(r, f, testListRows(), false)
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	require.NotNil(t, cmd)
+	cmd()
+
+	assert.Contains(t, stderr.String(), "https://h/ml/experiments/E/runs/04c41514fbb0/logs")
+	assert.NotContains(t, stderr.String(), "/artifacts/logs/node_0")
+}
+
 func TestListModelView(t *testing.T) {
 	next, _ := testListModel(t).Update(tea.WindowSizeMsg{Width: 200, Height: 24})
 	out := next.(listModel).View()
@@ -176,7 +194,7 @@ func TestStaticListTable(t *testing.T) {
 
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "▸", "static table has no selection")
-	for _, want := range []string{"Run ID", "1", "qwen-train", "qwen-run-001", "Accelerators"} {
+	for _, want := range []string{"Run ID", "1", "qwen-train", "1m 14s", "qwen-run-001", "8x H100", "Accelerators"} {
 		assert.Contains(t, out, want)
 	}
 
@@ -269,6 +287,42 @@ func TestListModelDetailPaneAndBack(t *testing.T) {
 	assert.Contains(t, m.View(), "Run ID")
 }
 
+func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
+	m := detailLoadingModel(t)
+	reason := "Failure reason: " + strings.Repeat("the task exited with a long error ", 4) + "ENDOFREASON"
+	require.Greater(t, len(reason), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: reason})
+	m = next.(listModel)
+	assert.Contains(t, m.View(), "ENDOFREASON", "the end of a long line must be visible, not clipped at the pane edge")
+
+	// A narrower terminal re-wraps the same text.
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 24})
+	m = next.(listModel)
+	pane := m.viewport.View()
+	assert.Contains(t, pane, "ENDOFREASON")
+	for line := range strings.SplitSeq(pane, "\n") {
+		assert.LessOrEqual(t, ansi.StringWidth(line), 30, line)
+	}
+}
+
+func TestListModelDetailPaneKeepsBoxRowsAndURLsWhole(t *testing.T) {
+	m := detailLoadingModel(t)
+	boxRow := "│  command: python train.py " + strings.Repeat("--flag ", 12) + "│"
+	url := "MLflow URL: https://example.test/ml/experiments/1/runs/" + strings.Repeat("a", 64)
+	require.Greater(t, len(boxRow), 80)
+	require.Greater(t, len(url), 80)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", body: boxRow + "\n" + url})
+	m = next.(listModel)
+	assert.Equal(t, 2, m.viewport.TotalLineCount(), "box rows and URLs must not wrap")
+
+	// ←/→ pans to the clipped end instead.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = next.(listModel)
+	assert.Positive(t, m.viewport.HorizontalScrollPercent())
+}
+
 func TestListModelDetailLateMsgDropped(t *testing.T) {
 	m := detailLoadingModel(t)
 
@@ -282,6 +336,37 @@ func TestListModelDetailLateMsgDropped(t *testing.T) {
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
 	assert.NotContains(t, m.View(), "late result")
+}
+
+func TestTruncateFitsDisplayWidth(t *testing.T) {
+	// A CJK character takes two cells and a combining mark none, so the cut is
+	// by display width and never splits a character.
+	const wide = "/Users/张伟/大模型微调实验第一百二十三次评估"
+	const accented = "xxxxxxxxxxxxxxxxxxxx\u0301yz"
+	tests := []struct {
+		name      string
+		s         string
+		n         int
+		wantEnd   string // truncate
+		wantStart string // truncateStart
+	}{
+		{name: "fits", s: "abc", n: 5, wantEnd: "abc", wantStart: "abc"},
+		{name: "exactly fits", s: "abcde", n: 5, wantEnd: "abcde", wantStart: "abcde"},
+		{name: "one cell over", s: "abcdef", n: 5, wantEnd: "abcd…", wantStart: "…cdef"},
+		{name: "wide characters", s: wide, n: 11, wantEnd: "/Users/张…", wantStart: "…十三次评估"},
+		{name: "cut inside a wide character", s: wide, n: 12, wantEnd: "/Users/张伟…", wantStart: "…十三次评估"},
+		{name: "wide character at width two", s: "评估评估", n: 2, wantEnd: "…", wantStart: "…"},
+		{name: "combining mark stays with its letter", s: accented, n: 4, wantEnd: "xxx…", wantStart: "…x\u0301yz"},
+		{name: "combining mark is dropped with its letter", s: accented, n: 3, wantEnd: "xx…", wantStart: "…yz"},
+		{name: "width of one", s: "abcdef", n: 1, wantEnd: "…", wantStart: "…"},
+		{name: "width of zero", s: "abcdef", n: 0, wantEnd: "", wantStart: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantEnd, truncate(tt.s, tt.n))
+			assert.Equal(t, tt.wantStart, truncateStart(tt.s, tt.n))
+		})
+	}
 }
 
 func TestPadAndTruncate(t *testing.T) {

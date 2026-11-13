@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 1,
   "plan": {
     "resources.postgres_projects.my_project": {
@@ -20,6 +20,8 @@
       },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
+        "display_name": "Test Project for Adding Default Endpoint Settings",
+        "history_retention_duration": "604800s",
         "name": "projects/test-pg-proj-[UNIQUE_NAME]",
         "project_id": "test-pg-proj-[UNIQUE_NAME]",
         "status": {
@@ -38,7 +40,7 @@
           "project_id": "test-pg-proj-[UNIQUE_NAME]",
           "synthetic_storage_size_bytes": 0
         },
-        "uid": "[UUID]",
+        "uid": "[UUID][1]",
         "update_time": "[TIMESTAMP]"
       },
       "changes": {
@@ -48,18 +50,6 @@
             "autoscaling_limit_max_cu": 4,
             "autoscaling_limit_min_cu": 0.5
           }
-        },
-        "display_name": {
-          "action": "skip",
-          "reason": "spec:input_only",
-          "old": "Test Project for Adding Default Endpoint Settings",
-          "new": "Test Project for Adding Default Endpoint Settings"
-        },
-        "history_retention_duration": {
-          "action": "skip",
-          "reason": "spec:input_only",
-          "old": "604800s",
-          "new": "604800s"
         },
         "pg_version": {
           "action": "skip",

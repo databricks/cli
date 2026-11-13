@@ -15,6 +15,7 @@ import (
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	apps_settings "github.com/databricks/cli/cmd/workspace/apps-settings"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
+	assume_group "github.com/databricks/cli/cmd/workspace/assume-group"
 	bundle_deployments "github.com/databricks/cli/cmd/workspace/bundle-deployments"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_room_asset_revisions "github.com/databricks/cli/cmd/workspace/clean-room-asset-revisions"
@@ -107,11 +108,13 @@ import (
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
+	serverless_compute_service "github.com/databricks/cli/cmd/workspace/serverless-compute-service"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
+	software_artifacts "github.com/databricks/cli/cmd/workspace/software-artifacts"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	supervisor_agents "github.com/databricks/cli/cmd/workspace/supervisor-agents"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -156,6 +159,7 @@ func All() []*cobra.Command {
 	out = append(out, apps.New())
 	out = append(out, apps_settings.New())
 	out = append(out, artifact_allowlists.New())
+	out = append(out, assume_group.New())
 	out = append(out, bundle_deployments.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_room_asset_revisions.New())
@@ -248,11 +252,13 @@ func All() []*cobra.Command {
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, secrets_uc.New())
+	out = append(out, serverless_compute_service.New())
 	out = append(out, service_principal_secrets_proxy.New())
 	out = append(out, service_principals_v2.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
+	out = append(out, software_artifacts.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, supervisor_agents.New())
 	out = append(out, system_schemas.New())

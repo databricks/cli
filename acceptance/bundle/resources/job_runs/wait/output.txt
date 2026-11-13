@@ -1,5 +1,6 @@
 
 === the deploy waits for the run to finish
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.my_job
@@ -14,10 +15,12 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 [MY_RUN_ID]
 
 === the downstream job was created with the run's result_state
+
 >>> [CLI] jobs get [DOWNSTREAM_JOB_ID] -o json
 SUCCESS
 
 === nothing the run resolved is drift, so a redeploy starts no new run
+
 >>> [CLI] bundle plan -o json
 resources.job_runs.my_run skip
 resources.jobs.downstream_job skip

@@ -16,20 +16,22 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "main.myschema.table1"
       ]
     },
-    "object_id": "[UUID]",
+    "object_id": "[UUID][0]",
     "object_type": "schema"
   }
 }
 
 === Summary shows the composite id
+
 >>> [CLI] bundle summary -o json
 {
-  "id": "schema,[UUID]",
+  "id": "schema,[UUID][0]",
   "object_type": "schema"
 }
 
 === Verify deployment
->>> [CLI] data-quality get-monitor schema [UUID]
+
+>>> [CLI] data-quality get-monitor schema [UUID][0]
 {
   "excluded_table_full_names": [
     "main.myschema.table1"
@@ -37,10 +39,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A second plan has no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update the config (should update in place, not recreate)
+
 >>> update_file.py databricks.yml main.myschema.table1 main.myschema.table2
 
 >>> [CLI] bundle deploy
@@ -52,7 +56,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> print_requests.py //data-quality
 {
   "method": "PATCH",
-  "path": "/api/data-quality/v1/monitors/schema/[UUID]",
+  "path": "/api/data-quality/v1/monitors/schema/[UUID][0]",
   "q": {
     "update_mask": "*"
   },
@@ -62,12 +66,12 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "main.myschema.table2"
       ]
     },
-    "object_id": "[UUID]",
+    "object_id": "[UUID][0]",
     "object_type": "schema"
   }
 }
 
->>> [CLI] data-quality get-monitor schema [UUID]
+>>> [CLI] data-quality get-monitor schema [UUID][0]
 {
   "excluded_table_full_names": [
     "main.myschema.table2"
@@ -75,7 +79,8 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Change an identity field (should plan a recreate)
->>> update_file.py databricks.yml ${resources.schemas.myschema.schema_id} [UUID]
+
+>>> update_file.py databricks.yml ${resources.schemas.myschema.schema_id} [UUID][1]
 
 >>> [CLI] bundle plan
 recreate data_quality_monitors.schema_monitor
@@ -97,5 +102,5 @@ Destroy: 2 deleted
 >>> print_requests.py //data-quality
 {
   "method": "DELETE",
-  "path": "/api/data-quality/v1/monitors/schema/[UUID]"
+  "path": "/api/data-quality/v1/monitors/schema/[UUID][0]"
 }

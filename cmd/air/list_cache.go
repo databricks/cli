@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // The AiTrainingService index path caches hydrated terminal runs on disk:
@@ -13,7 +14,7 @@ import (
 // TTL matches AICM's ~60-day retention, after which the run drops out of the
 // index anyway.
 const (
-	listCacheComponent = "air-list-runs"
+	listCacheComponent = "air-list-runs-v2"
 	listCacheTTL       = 60 * 24 * time.Hour
 )
 
@@ -28,40 +29,49 @@ type listCacheKey struct {
 // table-only columns, which listRow tags json:"-" and so wouldn't survive a
 // direct marshal), the filter inputs, and the submit time.
 type cachedRun struct {
-	RunID         string       `json:"run_id"`
-	RunName       string       `json:"run_name"`
-	User          string       `json:"user"`
-	Status        string       `json:"status"`
-	StartedAt     *string      `json:"started_at"`
-	IsSweep       bool         `json:"is_sweep"`
-	Experiment    string       `json:"experiment"`
-	Duration      string       `json:"duration"`
-	MLflowURL     string       `json:"mlflow_url"`
-	MLflowLabel   string       `json:"mlflow_label"`
-	RunURL        string       `json:"run_url"`
-	ExperimentURL string       `json:"experiment_url"`
-	Accelerators  string       `json:"accelerators"`
-	TaskRunID     int64        `json:"task_run_id"`
-	Fields        filterFields `json:"filter_fields"`
-	SubmitTimeMs  int64        `json:"submit_time_ms"`
+	RunID           string       `json:"run_id"`
+	RunName         string       `json:"run_name"`
+	User            string       `json:"user"`
+	Status          string       `json:"status"`
+	StartedAt       *string      `json:"started_at"`
+	IsSweep         bool         `json:"is_sweep"`
+	ExperimentName  *string      `json:"experiment_name"`
+	DurationSeconds *int64       `json:"duration_seconds"`
+	AcceleratorType *string      `json:"accelerator_type"`
+	NumAccelerators *int         `json:"num_accelerators"`
+	DashboardURL    string       `json:"dashboard_url"`
+	Experiment      string       `json:"experiment"`
+	Duration        string       `json:"duration"`
+	MLflowURL       string       `json:"mlflow_url"`
+	MLflowLabel     string       `json:"mlflow_label"`
+	RunURL          string       `json:"run_url"`
+	ExperimentURL   string       `json:"experiment_url"`
+	Accelerators    string       `json:"accelerators"`
+	Fields          filterFields `json:"filter_fields"`
+	SubmitTimeMs    int64        `json:"submit_time_ms"`
+
+	// Tasks are the run's task runs (see retryTasks), which pick its MLflow link.
+	Tasks []jobs.RunTask `json:"tasks"`
 }
 
 func (c cachedRun) toRow() listRow {
 	return listRow{
 		RunID: c.RunID, RunName: c.RunName, User: c.User, Status: c.Status,
-		StartedAt: c.StartedAt, IsSweep: c.IsSweep, Experiment: c.Experiment,
+		StartedAt: c.StartedAt, IsSweep: c.IsSweep, ExperimentName: c.ExperimentName,
+		DurationSeconds: c.DurationSeconds, AcceleratorType: c.AcceleratorType, NumAccelerators: c.NumAccelerators, DashboardURL: c.DashboardURL, Experiment: c.Experiment,
 		Duration: c.Duration, MLflowURL: c.MLflowURL, MLflowLabel: c.MLflowLabel,
 		RunURL: c.RunURL, ExperimentURL: c.ExperimentURL, Accelerators: c.Accelerators,
 	}
 }
 
-func cachedRunFromRow(r listRow, taskRunID int64, fields filterFields, submitTimeMs int64) cachedRun {
+func cachedRunFromRow(r listRow, tasks []jobs.RunTask, fields filterFields, submitTimeMs int64) cachedRun {
 	return cachedRun{
 		RunID: r.RunID, RunName: r.RunName, User: r.User, Status: r.Status,
-		StartedAt: r.StartedAt, IsSweep: r.IsSweep, Experiment: r.Experiment,
+		StartedAt: r.StartedAt, IsSweep: r.IsSweep, ExperimentName: r.ExperimentName,
+		DurationSeconds: r.DurationSeconds, AcceleratorType: r.AcceleratorType, NumAccelerators: r.NumAccelerators, DashboardURL: r.DashboardURL, Experiment: r.Experiment,
 		Duration: r.Duration, MLflowURL: r.MLflowURL, MLflowLabel: r.MLflowLabel,
 		RunURL: r.RunURL, ExperimentURL: r.ExperimentURL, Accelerators: r.Accelerators,
-		TaskRunID: taskRunID, Fields: fields, SubmitTimeMs: submitTimeMs,
+		Tasks: tasks, Fields: fields, SubmitTimeMs: submitTimeMs,
 	}
 }
 
@@ -71,19 +81,19 @@ func newListCache(ctx context.Context) *cache.Cache {
 	return cache.NewCache(ctx, listCacheComponent, listCacheTTL, nil)
 }
 
-// cachedRow returns the cached row, filter fields, and task run id for a run.
-// Entries written before task ids were cached are treated as misses.
-func cachedRow(ctx context.Context, c *cache.Cache, host string, runID int64) (listRow, filterFields, int64, bool) {
+// cachedRow returns the cached row, filter fields, and task runs for a run.
+// Entries written before task runs were cached are treated as misses.
+func cachedRow(ctx context.Context, c *cache.Cache, host string, runID int64) (listRow, filterFields, []jobs.RunTask, bool) {
 	entry, ok := cache.Get[cachedRun](ctx, c, listCacheKey{Host: host, RunID: runID})
-	if !ok || entry.TaskRunID == 0 {
-		return listRow{}, filterFields{}, 0, false
+	if !ok || len(entry.Tasks) == 0 {
+		return listRow{}, filterFields{}, nil, false
 	}
-	return entry.toRow(), entry.Fields, entry.TaskRunID, true
+	return entry.toRow(), entry.Fields, entry.Tasks, true
 }
 
 // putRow caches a terminal run's base row and filter fields under its submit time.
-func putRow(ctx context.Context, c *cache.Cache, host string, runID, taskRunID, submitTimeMs int64, row listRow, fields filterFields) {
-	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRunFromRow(row, taskRunID, fields, submitTimeMs))
+func putRow(ctx context.Context, c *cache.Cache, host string, runID int64, tasks []jobs.RunTask, submitTimeMs int64, row listRow, fields filterFields) {
+	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRunFromRow(row, tasks, fields, submitTimeMs))
 }
 
 // updateCachedRow replaces the display row while preserving cache metadata.
@@ -93,5 +103,5 @@ func updateCachedRow(ctx context.Context, c *cache.Cache, host string, runID int
 	if !ok {
 		return
 	}
-	cache.Put(ctx, c, key, cachedRunFromRow(row, entry.TaskRunID, entry.Fields, entry.SubmitTimeMs))
+	cache.Put(ctx, c, key, cachedRunFromRow(row, entry.Tasks, entry.Fields, entry.SubmitTimeMs))
 }

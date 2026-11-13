@@ -78,7 +78,7 @@ code_source:
 
 func TestConvertToDabsCommandShape(t *testing.T) {
 	cmd := newConvertToDabsCommand()
-	assert.Equal(t, "convert-to-dabs <yaml_path>", cmd.Use)
+	assert.Equal(t, "convert-to-dabs YAML_PATH", cmd.Use)
 	assert.Empty(t, cmd.Commands(), "convert-to-dabs must not register subcommands")
 	// Exactly one positional (the YAML path).
 	assert.NoError(t, cmd.Args(cmd, []string{"run.yaml"}))

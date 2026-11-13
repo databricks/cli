@@ -18,26 +18,15 @@ const (
 	gpuType1xRTX6000 gpuType = "GPU_1xRTX6000"
 )
 
-// gpuTypes lists every accelerator type understood by this CLI.
-// Workspace availability is enforced by the server.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300, gpuType1xRTX6000}
-
-func validGPUTypesHint() string {
-	names := make([]string, len(gpuTypes))
-	for i, g := range gpuTypes {
-		names[i] = string(g)
-	}
-	return "valid types are: " + strings.Join(names, ", ")
-}
-
 // parseGPUType resolves a YAML accelerator_type string to a gpuType. The match is
-// exact: the server's lookup is case-sensitive.
+// exact: the server's lookup is case-sensitive. The error lists no types because
+// which ones a workspace can use comes from the server, not this CLI.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
 	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300, gpuType1xRTX6000:
 		return gpuType(value), nil
 	}
-	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
+	return "", fmt.Errorf("%q is not a recognized accelerator type", value)
 }
 
 // priorityClass is the AI Runtime scheduling priority a run is given within its
@@ -91,17 +80,17 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
-	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
-	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'."`
-	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id."`
+	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"Provisioned capacity (optional)"`
+	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id." group:"Provisioned capacity (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
 func (c *computeConfig) validate() error {
 	g, err := parseGPUType(c.AcceleratorType)
 	if err != nil {
-		return fmt.Errorf("compute.accelerator_type: %w", err)
+		return fmt.Errorf("compute.accelerator_type: %w. Run 'databricks air run -h config.compute' to see the types available in your workspace", err)
 	}
 
 	if c.NumAccelerators <= 0 {

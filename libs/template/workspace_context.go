@@ -35,7 +35,8 @@ var userSetWorkspaceIDSources = []sdkconfig.SourceType{
 // it carries the workspace ID, which is required to address a workspace on a host shared by
 // several workspaces.
 //
-// The fields are strings so that templates which print the root data get stable output.
+// The fields are strings, not pointers, so that templates which print the root data with
+// {{ . }} get the values instead of addresses.
 type workspaceContext struct {
 	// Hostname is the workspace host without scheme, path, or query. It keeps the port if the
 	// host has one.
@@ -44,16 +45,22 @@ type workspaceContext struct {
 	host        string
 	workspaceID string
 
-	// urlWorkspaceID is the workspace ID that URL adds as ?w=. It is empty unless the user set the
-	// ID. Strict profile matching (DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH) compares the ID in the
-	// host with the profile's workspace_id, and a profile without workspace_id matches only a host
-	// without an ID.
-	urlWorkspaceID string
+	// URLID is the workspace ID that URL adds as ?w=. It is set when a workspace_id in the
+	// profile, DATABRICKS_WORKSPACE_ID, or the bundle's workspace_id sets the ID, and empty
+	// otherwise, so templates can check it without failing like ID does. It is empty for an ID
+	// that comes from ?o= in the profile's host or from host metadata. Strict profile matching
+	// (DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH) compares the bundle's workspace ID, which comes
+	// from ?w= in its host, with the profile's workspace_id, and a profile without workspace_id
+	// matches only a bundle without an ID.
+	//
+	// It comes last so that templates which print the root data keep their output.
+	URLID string
 }
 
-// loadWorkspaceContext returns the workspace context of the selected profile, or nil if the
-// schema declares a workspace input. A declared input owns the name even before it has a value.
-// Input values the schema doesn't declare don't claim the name, because bundle init ignores them.
+// loadWorkspaceContext returns the workspace context of the resolved configuration, or nil
+// if the schema declares a workspace input. A declared input owns the name even before it has
+// a value. Input values the schema doesn't declare don't claim the name, because bundle init
+// ignores them.
 func loadWorkspaceContext(ctx context.Context, schema *jsonschema.Schema) (*workspaceContext, error) {
 	if _, ok := schema.Properties[workspaceVariable]; ok {
 		return nil, nil
@@ -67,15 +74,15 @@ func loadWorkspaceContext(ctx context.Context, schema *jsonschema.Schema) (*work
 	if workspaceID == profile.WorkspaceIDNone {
 		workspaceID = ""
 	}
-	var urlWorkspaceID string
+	var urlID string
 	if attr, ok := cfg.GetAuthDetails().Configuration["workspace_id"]; ok && slices.Contains(userSetWorkspaceIDSources, attr.Source.Type) {
-		urlWorkspaceID = workspaceID
+		urlID = workspaceID
 	}
 	return &workspaceContext{
-		Hostname:       host.Host,
-		host:           cfg.Host,
-		workspaceID:    workspaceID,
-		urlWorkspaceID: urlWorkspaceID,
+		Hostname:    host.Host,
+		host:        cfg.Host,
+		workspaceID: workspaceID,
+		URLID:       urlID,
 	}, nil
 }
 
@@ -97,14 +104,13 @@ func templateData(values map[string]any, workspace *workspaceContext) map[string
 // shared by several workspaces. It doesn't make a request to discover the ID.
 func (c workspaceContext) ID() (string, error) {
 	if c.workspaceID == "" {
-		return "", errors.New("cannot determine workspace ID, please set workspace_id in the configuration profile or the DATABRICKS_WORKSPACE_ID environment variable")
+		return "", errors.New("cannot determine workspace ID, please set workspace_id in the configuration profile, the DATABRICKS_WORKSPACE_ID environment variable, or workspace.workspace_id in the bundle")
 	}
 	return c.workspaceID, nil
 }
 
 // URL returns the workspace URL with an optional path relative to the workspace host,
-// for example URL "/jobs". It adds ?w=<id> when the profile, an environment variable, or the
-// bundle sets the workspace ID.
+// for example URL "/jobs". It adds ?w=<id> when URLID is set.
 func (c workspaceContext) URL(path ...string) (string, error) {
 	if len(path) > 1 {
 		return "", fmt.Errorf("URL accepts at most one path, got %d", len(path))
@@ -113,11 +119,11 @@ func (c workspaceContext) URL(path ...string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse workspace host %q: %w", c.host, err)
 	}
-	// Unlike workspaceurls.WorkspaceBaseURL, this adds ?w= also when the hostname has the ID
-	// (adb-<id>), because strict profile matching reads the ID only from the query.
-	if c.urlWorkspaceID != "" {
+	// The workspaceurls package leaves out ?w= when the hostname has the ID (adb-<id>). This
+	// adds it, because strict profile matching doesn't read the ID from the hostname.
+	if c.URLID != "" {
 		query := base.Query()
-		query.Set("w", c.urlWorkspaceID)
+		query.Set("w", c.URLID)
 		base.RawQuery = query.Encode()
 	}
 	if len(path) == 0 {

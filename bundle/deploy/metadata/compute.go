@@ -128,10 +128,9 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	b.Metadata.Config.Resources.Dashboards = dashboardsMetadata
 
 	// Set file upload destination of the bundle in metadata
-	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
+	b.Metadata.Config.Workspace.FilePath = b.RemoteFilePath()
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata
 	if b.IsSourceLinkedDeployment() {
-		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
 		b.Metadata.Config.Presets.SourceLinkedDeployment = true
 	}
 

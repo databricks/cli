@@ -4,6 +4,7 @@ Hostname: {{ .workspace.Hostname }}
 URL: {{ .workspace.URL }}
 URL "/jobs": {{ .workspace.URL "/jobs" }}
 URL "{{ .path }}": {{ $ws.URL .path }}
+URLID: "{{ .workspace.URLID }}"
 jobs_url: {{ .jobs_url }}
 Root keys:{{ range $key, $value := . }} {{ $key }}{{ end }}
 Root data: {{ . }}

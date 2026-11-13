@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -27,49 +29,51 @@ import (
 // REGEX_TASK_KEY_CHARS: ASCII alphanumeric, hyphen, underscore only (no periods).
 // Explicit ASCII class, not \w: \w matches Unicode letters that the ASCII-only
 // Jobs API task_key rejects.
-var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var taskKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_-]+$`) })
 
 // gitRefRe guards the branch name against command injection (it flows into git
 // exec args). Only safe ref characters are allowed.
-var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
+var gitRefRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[\w./-]+$`) })
 
 // Canonical UUID (8-4-4-4-12 hex). Usage policy ids are server-generated UUIDs,
 // so an obviously-wrong value (e.g. a policy name pasted into usage_policy_id)
 // is rejected up front with a hint pointing at usage_policy_name.
-var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+var uuidRe = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+})
 
 // Unity Catalog image paths are submitted as <catalog>.<schema>.<image>:<tag>.
 // Keep validation structural only here: object existence and permissions are
 // workspace checks performed by the backend.
-var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
+var unityCatalogImageRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`) })
 
-var containerNameRe = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`)
+var containerNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z]([-a-z0-9]{0,30}[a-z0-9])?$`) })
 
-var secretTemplateRe = regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`)
+var secretTemplateRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^\{\{secrets/([^/{}]+)/([^/{}]+)\}\}$`) })
 
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
 type runConfig struct {
-	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes"`
-	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes"`
-	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, runtime version, or a Unity Catalog image for a single-command run."`
-	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source."`
-	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command."`
-	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets."`
-	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key."`
-	CodeSource     *codeSourceConfig  `yaml:"code_source" help:"Local code to upload and make available to the run."`
+	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes" group:"Workload"`
+	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes" group:"Workload"`
+	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, runtime version, or a Unity Catalog image for a single-command run." group:"Workload"`
+	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Mutually exclusive with containers. Max 1000 lines; move longer logic into a script under code_source." required:"unless containers is set" group:"Workload"`
+	Containers     []containerConfig  `yaml:"containers" help:"Rank-partitioned containers for heterogeneous workloads. Mutually exclusive with command." group:"Workload"`
+	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets." group:"Workload"`
+	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key." group:"Workload"`
+	CodeSource     *codeSourceConfig  `yaml:"code_source" help:"Local code to upload and make available to the run." group:"Workload"`
 	// MaxRetries defaults to 3 when unset; default-filling is a normalization
 	// concern handled at launch, so a nil pointer is left as-is here.
-	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset."`
-	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1."`
-	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters."`
-	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed."`
-	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only."`
-	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace."`
-	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ."`
-	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
-	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
-	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
+	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset." group:"Execution"`
+	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1." group:"Execution"`
+	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters." group:"Execution"`
+	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed." group:"Workload"`
+	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only." group:"MLflow tracking"`
+	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace." group:"MLflow tracking"`
+	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ." group:"MLflow tracking"`
+	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants." group:"Access and cost attribution"`
+	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to attribute the run's usage to, by name. Max 127 characters. Mutually exclusive with usage_policy_id." group:"Access and cost attribution"`
+	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to attribute the run's usage to, by id. Mutually exclusive with usage_policy_name." group:"Access and cost attribution"`
 
 	// artifactYAML is the source-derived config serialized for upload after overrides.
 	artifactYAML []byte
@@ -159,7 +163,7 @@ func (c *runConfig) validate() error {
 		if len(v) > 100 {
 			return fmt.Errorf("mlflow_run_name must be 100 characters or less (got %d)", len(v))
 		}
-		if !taskKeyRe.MatchString(v) {
+		if !taskKeyRe().MatchString(v) {
 			return fmt.Errorf("invalid mlflow_run_name %q: only alphanumeric characters, hyphens, and underscores are allowed", v)
 		}
 	}
@@ -215,7 +219,7 @@ func (c *runConfig) validate() error {
 		if v == "" {
 			return errors.New("usage_policy_id must not be empty")
 		}
-		if !uuidRe.MatchString(v) {
+		if !uuidRe().MatchString(v) {
 			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
 		}
 	}
@@ -256,7 +260,7 @@ func (c *runConfig) validateContainers() error {
 	for i := range c.Containers {
 		container := &c.Containers[i]
 		prefix := fmt.Sprintf("containers[%d]", i)
-		if !containerNameRe.MatchString(container.Name) {
+		if !containerNameRe().MatchString(container.Name) {
 			return fmt.Errorf("%s.name must start with a lowercase letter, contain only lowercase letters, digits, or '-', end with a letter or digit, and be at most 32 characters, got %q", prefix, container.Name)
 		}
 		if _, exists := names[container.Name]; exists {
@@ -272,7 +276,7 @@ func (c *runConfig) validateContainers() error {
 		if len(container.Ranks) == 0 {
 			return fmt.Errorf("%s.ranks must contain at least one rank", prefix)
 		}
-		if !unityCatalogImageRe.MatchString(container.UnityCatalogImage) {
+		if !unityCatalogImageRe().MatchString(container.UnityCatalogImage) {
 			return fmt.Errorf("%s.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", prefix, container.UnityCatalogImage)
 		}
 		if container.EnvironmentVariables != nil {
@@ -280,7 +284,7 @@ func (c *runConfig) validateContainers() error {
 				return fmt.Errorf("%s.environment_variables.files is not supported while container environment variables use workspace sidecars; use environment_variables.variables", prefix)
 			}
 			for name, value := range container.EnvironmentVariables.Variables {
-				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe.MatchString(value) {
+				if strings.HasPrefix(value, "{{secrets/") && !secretTemplateRe().MatchString(value) {
 					return fmt.Errorf("%s.environment_variables.variables.%s has an invalid secret reference %q; expected {{secrets/<scope>/<key>}}", prefix, name, value)
 				}
 			}
@@ -313,7 +317,7 @@ func validateExperimentName(v string) error {
 	if len(v) > 100 {
 		return fmt.Errorf("experiment_name must be 100 characters or less (got %d); this is the Jobs API task_key length limit", len(v))
 	}
-	if !taskKeyRe.MatchString(v) {
+	if !taskKeyRe().MatchString(v) {
 		return fmt.Errorf("invalid experiment_name %q: only alphanumeric characters, hyphens (-), and underscores (_) are allowed", v)
 	}
 	return nil
@@ -349,13 +353,13 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Client image version to pin (default: 6). See environment version release notes: https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/"`
+	Version           stringOrInt  `yaml:"version" help:"Managed environment to start from, e.g. 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6). Standard includes CUDA but, from version 5, not PyTorch; add it with dependencies. The Databricks AI environment adds PyTorch, Transformers, and other ML libraries. See Docs below for supported versions and package lists." docs:"/machine-learning/ai-runtime/develop-workloads/environment"`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
 func (e *environmentConfig) validate() error {
 	unityCatalogImage := e.UnityCatalogImage
-	if unityCatalogImage != "" && !unityCatalogImageRe.MatchString(unityCatalogImage) {
+	if unityCatalogImage != "" && !unityCatalogImageRe().MatchString(unityCatalogImage) {
 		return fmt.Errorf("environment.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", e.UnityCatalogImage)
 	}
 
@@ -396,7 +400,7 @@ type dependencies struct {
 
 func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.SequenceNode {
-		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported")
+		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#reference). A direct file reference is not supported")
 	}
 	d.set = true
 	return node.Decode(&d.list)
@@ -505,7 +509,7 @@ type gitRef struct {
 }
 
 func (g *gitRef) validate() error {
-	if g.Branch != nil && !gitRefRe.MatchString(*g.Branch) {
+	if g.Branch != nil && !gitRefRe().MatchString(*g.Branch) {
 		return fmt.Errorf("invalid git.branch format %q: only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed", *g.Branch)
 	}
 
@@ -636,7 +640,11 @@ type configField struct {
 	typeName string
 	required string
 	help     string
-	hidden   bool
+	// group is the help heading the field is listed under; empty means "Fields".
+	group string
+	// docs is a docs page path shared by every cloud; see configDocsBases.
+	docs   string
+	hidden bool
 	// freeForm marks a user-keyed map (parameters/secrets/env_variables): no
 	// children, yet any sub-path into it is valid.
 	freeForm bool
@@ -648,18 +656,18 @@ type configField struct {
 func configSchema() configField {
 	return configField{
 		path: configHelpRoot,
-		help: "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + `.compute.accelerator_type.
+		help: `Workload YAML schema. For details on a field, pass its path to -h, for example:
 
-  AI coding agents can use the databricks-ai-runtime skill to write workload
-  YAML, submit runs, and monitor progress.
+    databricks air run -h config.compute.accelerator_type
 
-  Install the skill locally for your coding agent:
-
-    databricks aitools install --skills-only --skills databricks-ai-runtime --experimental
-
-  Follow the prompts to choose your coding agent and installation scope.
-  Use --scope project to install into the current project.
-  See: https://github.com/databricks/databricks-agent-skills/tree/main/experimental/databricks-ai-runtime`,
+  Minimal example:
+    experiment_name: my-run
+    compute:
+      num_accelerators: 1
+      accelerator_type: GPU_1xA10
+    code_source:
+      root_path: .
+    command: python "$CODE_SOURCE_PATH/train.py"`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
@@ -800,6 +808,8 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			typeName: configTypeName(f.Type),
 			required: f.Tag.Get("required"),
 			help:     f.Tag.Get("help"),
+			group:    f.Tag.Get("group"),
+			docs:     f.Tag.Get("docs"),
 			hidden:   f.Tag.Get("hidden") == "yes",
 			freeForm: freeFormConfigFields[name],
 		}
@@ -872,6 +882,13 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 		}
 	}
 
+	if f.docs != "" {
+		fmt.Fprintln(w, "\n  Docs:")
+		for _, d := range configDocsBases {
+			fmt.Fprintf(w, "    %-6s %s%s\n", d.cloud+":", d.base, f.docs)
+		}
+	}
+
 	if len(f.children) == 0 {
 		fmt.Fprintf(w, "\n  Type:     %s\n", f.typeName)
 		required := f.required
@@ -889,33 +906,98 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 		}
 		width = max(width, len(configLeafName(c.path)))
 	}
-	fmt.Fprintf(w, "\n  Fields:\n")
-	for _, c := range f.children {
-		if c.hidden {
-			continue
+	for _, group := range configFieldGroups(f.children) {
+		title := "Fields"
+		if group != "" {
+			title = group
 		}
-		fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
+		fmt.Fprintf(w, "\n  %s:\n", title)
+		for _, c := range groupFieldsRequiredFirst(f.children, group) {
+			fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
+		}
 	}
-	fmt.Fprintf(w, "\nUse \"-h %s.<field>\" for details on a field.\n", f.path)
+	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
+	if f.path == configHelpRoot {
+		fmt.Fprint(w, agentSkillHelp)
+	}
 }
 
-func fallbackComputeOptions() []computeOption {
-	options := make([]computeOption, 0, len(gpuTypes))
-	for _, acceleratorType := range gpuTypes {
-		// RTX6000 availability must be confirmed by the workspace API during rollout.
-		if acceleratorType == gpuType1xRTX6000 {
-			continue
+// agentSkillHelp closes `-h config`: users look up the schema while writing
+// YAML, which is when an agent skill that writes it for them is most useful.
+const agentSkillHelp = `
+Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
+  databricks aitools install --skills-only --skills databricks-ai-runtime
+  (add --scope project to install into the current project)
+  https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
+`
+
+// configDocsBases are the per-cloud docs roots; AI Runtime pages share their
+// path below these. GCP has no separate AI Runtime docs, so AWS covers it.
+var configDocsBases = []struct{ cloud, base string }{
+	{"AWS", "https://docs.databricks.com/aws/en"},
+	{"Azure", "https://learn.microsoft.com/azure/databricks"},
+}
+
+// configFieldGroupOrder lists help headings from most to least commonly needed.
+// Ungrouped fields come first; unlisted groups follow in declaration order.
+var configFieldGroupOrder = []string{"", "Workload", "Execution", "MLflow tracking", "Access and cost attribution", "Provisioned capacity (optional)"}
+
+// groupFieldsRequiredFirst returns the visible fields under one heading, with
+// required fields first so a reader sees what every config must set.
+// Otherwise declaration order is kept.
+func groupFieldsRequiredFirst(fields []configField, group string) []configField {
+	var out []configField
+	for _, c := range fields {
+		if !c.hidden && c.group == group {
+			out = append(out, c)
 		}
-		perNode, err := gpusPerNode(acceleratorType)
-		if err != nil {
-			continue
-		}
-		options = append(options, computeOption{
-			HardwareAccelerator:     string(acceleratorType),
-			PerNodeAcceleratorCount: &perNode,
-		})
 	}
-	return options
+	slices.SortStableFunc(out, func(a, b configField) int {
+		return cmp.Compare(requiredRank(a), requiredRank(b))
+	})
+	return out
+}
+
+func requiredRank(f configField) int {
+	if requiredMarker(f) != "" {
+		return 0
+	}
+	return 1
+}
+
+// requiredMarker labels a field that must be set, either always or under a
+// stated condition ("when ..."/"unless ..."). Other required tags describe a
+// choice between sibling fields and are explained in the field's own help.
+func requiredMarker(f configField) string {
+	switch {
+	case f.required == "yes":
+		return "(required)"
+	case strings.HasPrefix(f.required, "when "), strings.HasPrefix(f.required, "unless "):
+		return "(required " + f.required + ")"
+	}
+	return ""
+}
+
+// configFieldGroups returns the headings used by the visible fields, in display order.
+func configFieldGroups(fields []configField) []string {
+	var used []string
+	for _, c := range fields {
+		if !c.hidden && !slices.Contains(used, c.group) {
+			used = append(used, c.group)
+		}
+	}
+	var out []string
+	for _, g := range configFieldGroupOrder {
+		if slices.Contains(used, g) {
+			out = append(out, g)
+		}
+	}
+	for _, g := range used {
+		if !slices.Contains(out, g) {
+			out = append(out, g)
+		}
+	}
+	return out
 }
 
 func formatPerNodeAcceleratorCount(option computeOption) string {
@@ -954,8 +1036,8 @@ func launchStageBadge(stage string) string {
 // first sentence of the help text, annotated when the field is required.
 func configFieldSummary(f configField) string {
 	summary := firstSentence(f.help)
-	if f.required == "yes" {
-		summary = "(required) " + summary
+	if marker := requiredMarker(f); marker != "" {
+		summary = marker + " " + summary
 	}
 	return summary
 }

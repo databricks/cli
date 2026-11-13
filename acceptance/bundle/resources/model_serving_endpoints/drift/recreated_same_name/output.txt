@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-mse-recreated-same-name-[UNIQUE_NAME]/default/files...
 Created model_serving_endpoints.my_endpoint
@@ -14,6 +15,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Delete and recreate remotely with the same name
+
 >>> [CLI] serving-endpoints delete mse-endpoint-[UNIQUE_NAME]
 
 >>> [CLI] serving-endpoints create mse-endpoint-[UNIQUE_NAME] --no-wait
@@ -31,6 +33,7 @@ Original endpoint id: [ORIGINAL_ENDPOINT_ID]
 Remote recreated endpoint id: [REMOTE_RECREATED_ENDPOINT_ID]
 
 === Plan after out-of-band recreate
+
 >>> [CLI] bundle plan
 update model_serving_endpoints.my_endpoint.permissions
 
@@ -49,6 +52,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === After deploy the permissions are recorded under the new endpoint id, so the plan is clean
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

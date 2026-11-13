@@ -97,8 +97,9 @@ func newCreateDatasource() *cobra.Command {
 	// TODO: complex arg: status
 	// TODO: complex arg: unity_catalog_connection
 	// TODO: complex arg: updated_by
+	cmd.Flags().StringVar(&createDatasourceReq.Datasource.WarehouseId, "warehouse-id", createDatasourceReq.Datasource.WarehouseId, `ID of the SQL warehouse that runs the checks Lakewatch performs to validate a create or update request, such as source and destination access checks.`)
 
-	cmd.Use = "create-datasource CATALOG_NAME SCHEMA_NAME DATASOURCE_NAME SCHEDULE WAREHOUSE_ID"
+	cmd.Use = "create-datasource CATALOG_NAME SCHEMA_NAME DATASOURCE_NAME SCHEDULE"
 	cmd.Short = `*Beta* Create a datasource.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -116,19 +117,13 @@ Create a datasource.
       supplied; the schema's current name is reported in
       effective_schema_name.
     DATASOURCE_NAME: Name of the datasource in Unity Catalog, unique within its schema.
-      Required on create and cannot be changed afterward. Reads return the value
-      as supplied; the datasource's current Unity Catalog name, which reflects
-      renames, is reported in effective_datasource_name.
+      Required on create and can be updated within the same catalog and schema.
+      Get synchronizes this field with the current Unity Catalog name, also
+      reported in effective_datasource_name.
     SCHEDULE: Schedule on which the datasource's ingestion job runs. A datasource cannot
       be paused, so a request that sets schedule.enabled to false is
       rejected. Continuous schedules are not supported for Unity Catalog
-      connection datasources.
-    WAREHOUSE_ID: ID of the SQL warehouse that runs the checks Lakewatch performs to
-      validate a create or update request, such as source and destination access
-      checks. Required and non-blank on every create and update request; there
-      is no default warehouse. The requester must be able to use the warehouse.
-      Used only for those checks: it is not stored, is not returned on reads,
-      and does not affect the compute that runs the ingestion job.`
+      connection datasources.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -138,11 +133,11 @@ Create a datasource.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'datasource_name', 'schedule', 'warehouse_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'datasource_name', 'schedule' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(5)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -178,9 +173,6 @@ Create a datasource.
 				return fmt.Errorf("invalid SCHEDULE: %s", args[3])
 			}
 
-		}
-		if !cmd.Flags().Changed("json") {
-			createDatasourceReq.Datasource.WarehouseId = args[4]
 		}
 
 		response, err := w.Lakewatch.CreateDatasource(ctx, createDatasourceReq)
@@ -258,9 +250,10 @@ Create a rule.
     SCHEMA_NAME: Name of the Unity Catalog schema that contains the rule. Required. Cannot
       be changed after creation. Reads return the value as supplied; the
       schema's current name is reported in effective_schema_name.
-    RULE_NAME: Name of the rule within its Unity Catalog schema. Required. Cannot be
-      changed after creation. Reads return the value as supplied; the current UC
-      name is reported in effective_rule_name.
+    RULE_NAME: Name of the rule within its Unity Catalog schema. Required on create; can
+      be updated within the same catalog and schema. Get synchronizes this field
+      with the current Unity Catalog name, also reported in
+      effective_rule_name.
     SEVERITY: Free-form severity label, such as Informational, Medium, High, or
       Critical.
     FIDELITY: Signal quality for this rule.
@@ -1115,8 +1108,6 @@ func newUpdateCommonConfig() *cobra.Command {
 	cmd.Flags().Var(&updateCommonConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateCommonConfigReq.Etag, "etag", updateCommonConfigReq.Etag, `Optimistic-concurrency precondition: if set and it does not match the resource's current etag, the update is rejected as a conflict (HTTP 409).`)
-	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.CustomContentPackPath, "custom-content-pack-path", updateCommonConfigReq.CommonConfig.CustomContentPackPath, `UC volume path holding user-authored custom content packs, e.g.`)
-	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.CustomPresetsPath, "custom-presets-path", updateCommonConfigReq.CommonConfig.CustomPresetsPath, `UC volume path holding user-authored custom presets, e.g.`)
 	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.Name, "name", updateCommonConfigReq.CommonConfig.Name, ``)
 	cmd.Flags().BoolVar(&updateCommonConfigReq.CommonConfig.PerResourcePermissionsEnabled, "per-resource-permissions-enabled", updateCommonConfigReq.CommonConfig.PerResourcePermissionsEnabled, `Whether users may grant permissions on individual resources rather than only at the Folder level.`)
 	// TODO: complex arg: updated_by
@@ -1227,8 +1218,9 @@ func newUpdateDatasource() *cobra.Command {
 	// TODO: complex arg: status
 	// TODO: complex arg: unity_catalog_connection
 	// TODO: complex arg: updated_by
+	cmd.Flags().StringVar(&updateDatasourceReq.Datasource.WarehouseId, "warehouse-id", updateDatasourceReq.Datasource.WarehouseId, `ID of the SQL warehouse that runs the checks Lakewatch performs to validate a create or update request, such as source and destination access checks.`)
 
-	cmd.Use = "update-datasource NAME UPDATE_MASK CATALOG_NAME SCHEMA_NAME DATASOURCE_NAME SCHEDULE WAREHOUSE_ID"
+	cmd.Use = "update-datasource NAME UPDATE_MASK CATALOG_NAME SCHEMA_NAME DATASOURCE_NAME SCHEDULE"
 	cmd.Short = `*Beta* Update a datasource.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -1262,19 +1254,13 @@ Update a datasource.
       supplied; the schema's current name is reported in
       effective_schema_name.
     DATASOURCE_NAME: Name of the datasource in Unity Catalog, unique within its schema.
-      Required on create and cannot be changed afterward. Reads return the value
-      as supplied; the datasource's current Unity Catalog name, which reflects
-      renames, is reported in effective_datasource_name.
+      Required on create and can be updated within the same catalog and schema.
+      Get synchronizes this field with the current Unity Catalog name, also
+      reported in effective_datasource_name.
     SCHEDULE: Schedule on which the datasource's ingestion job runs. A datasource cannot
       be paused, so a request that sets schedule.enabled to false is
       rejected. Continuous schedules are not supported for Unity Catalog
-      connection datasources.
-    WAREHOUSE_ID: ID of the SQL warehouse that runs the checks Lakewatch performs to
-      validate a create or update request, such as source and destination access
-      checks. Required and non-blank on every create and update request; there
-      is no default warehouse. The requester must be able to use the warehouse.
-      Used only for those checks: it is not stored, is not returned on reads,
-      and does not affect the compute that runs the ingestion job.`
+      connection datasources.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1284,11 +1270,11 @@ Update a datasource.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'catalog_name', 'schema_name', 'datasource_name', 'schedule', 'warehouse_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'catalog_name', 'schema_name', 'datasource_name', 'schedule' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(7)
+		check := root.ExactArgs(6)
 		return check(cmd, args)
 	}
 
@@ -1329,9 +1315,6 @@ Update a datasource.
 				return fmt.Errorf("invalid SCHEDULE: %s", args[5])
 			}
 
-		}
-		if !cmd.Flags().Changed("json") {
-			updateDatasourceReq.Datasource.WarehouseId = args[6]
 		}
 
 		response, err := w.Lakewatch.UpdateDatasource(ctx, updateDatasourceReq)
@@ -1511,9 +1494,10 @@ Update a rule.
     SCHEMA_NAME: Name of the Unity Catalog schema that contains the rule. Required. Cannot
       be changed after creation. Reads return the value as supplied; the
       schema's current name is reported in effective_schema_name.
-    RULE_NAME: Name of the rule within its Unity Catalog schema. Required. Cannot be
-      changed after creation. Reads return the value as supplied; the current UC
-      name is reported in effective_rule_name.
+    RULE_NAME: Name of the rule within its Unity Catalog schema. Required on create; can
+      be updated within the same catalog and schema. Get synchronizes this field
+      with the current Unity Catalog name, also reported in
+      effective_rule_name.
     SEVERITY: Free-form severity label, such as Informational, Medium, High, or
       Critical.
     FIDELITY: Signal quality for this rule.

@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -320,8 +319,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 }
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
-	switch {
-	case b.IsImmutableFolder():
+	if b.IsImmutableFolder() {
 		// Reject an explicit workspace.file_path: immutable bundles set it
 		// automatically to the content-addressed snapshot location. A user-supplied
 		// value would be silently discarded during path translation, so we error early.
@@ -332,12 +330,8 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 				Locations: []diag.Location{loc},
 			}}
 		}
-		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
-	case t.b.IsSourceLinkedDeployment():
-		t.remoteRoot = t.b.SyncRootPath
-	default:
-		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
+	t.remoteRoot = b.RemoteFilePath()
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error

@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for feature specs:
+# - the catalog and schema parts of name should resolve
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  feature_specs:
+    my_feature_spec:
+      name: mycatalog.myschema.myspec
+      features:
+        - feature_lookup:
+            table: mycatalog.myschema.user_features
+            lookup_keys: [user_id]
+            feature_names: [age]
+
+targets:
+  dev:
+    mode: development

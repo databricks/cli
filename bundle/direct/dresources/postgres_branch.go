@@ -55,7 +55,6 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 		ReplaceExisting: input.ReplaceExisting,
 		PurgeOnDelete:   input.PurgeOnDelete,
 		BranchSpec:      input.BranchSpec,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -65,22 +64,21 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 		Parent:   remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 
 		BranchSpec: remote.BranchSpec,
 	}
 }
 
 // makePostgresBranchRemote converts the SDK Branch into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_branches.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_branches.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	var spec postgres.BranchSpec
 	if branch.Spec != nil {
@@ -123,7 +121,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -131,7 +129,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	}
 
 	// Wait for the branch to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}
@@ -203,7 +201,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
 		Name:            id,
-		Purge:           state.PurgeOnDelete,
+		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

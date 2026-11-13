@@ -136,7 +136,7 @@ func containerEnvironmentEntries(cfg *runConfig, container containerConfig) (map
 	for name, value := range container.EnvironmentVariables.Variables {
 		delete(plain, name)
 		delete(secrets, name)
-		match := secretTemplateRe.FindStringSubmatch(value)
+		match := secretTemplateRe().FindStringSubmatch(value)
 		if match != nil {
 			secrets[name] = match[1] + "/" + match[2]
 		} else {
