@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // VisitFunc is invoked for every scalar (int, uint, float, string, bool) field encountered while walking v.
@@ -102,72 +101,32 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 }
 
 func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
-	forced := getForceSendFields(s)
+	info := structaccess.GetStructInfo(s.Type())
+	forced := info.ForceSendFields(s)
 
-	st := s.Type()
-	for i := range st.NumField() {
-		sf := st.Field(i)
-		if sf.PkgPath != "" {
-			continue // unexported
-		}
-		// Skip the ForceSendFields slice itself from traversal.
-		if sf.Name == "ForceSendFields" {
-			continue
-		}
+	for _, f := range info.Fields {
+		// A copy, so a visitor cannot modify the cached field.
+		sf := f.StructField
+		fieldVal := s.Field(f.Index)
 
-		// Directly walk into embedded structs without adding the key to the path. An
-		// anonymous field carrying a json name is not one of these: encoding/json serializes it
-		// as a nested object, so it is walked as a named field below.
-		if structaccess.IsFlattenedEmbed(sf) {
-			walkValue(path, s.Field(i), &sf, visit)
-			continue
-		}
-
-		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		if structaccess.IsSkippedField(sf) {
-			continue // encoding/json omits it entirely
-		}
-
-		// Resolve field name from JSON tag or fall back to Go field name
-		fieldName := jsonTag.Name()
-		if fieldName == "" {
-			fieldName = sf.Name
-		}
-
-		fieldVal := s.Field(i)
-		// Skip zero values with omitempty unless field is explicitly forced.
-		if jsonTag.OmitEmpty() && fieldVal.IsZero() && !slices.Contains(forced, sf.Name) {
-			continue
-		}
-
-		// EmbeddedSlice: walk directly without adding the field name to the path.
-		if sf.Name == structaccess.EmbeddedSliceFieldName {
+		// Directly walk into embedded structs without adding the key to the path.
+		if f.Flattened {
 			walkValue(path, fieldVal, &sf, visit)
 			continue
 		}
 
-		node := structpath.NewDotString(path, fieldName)
+		// Skip zero values with omitempty unless field is explicitly forced.
+		if f.OmitEmpty && fieldVal.IsZero() && !slices.Contains(forced, sf.Name) {
+			continue
+		}
+
+		// EmbeddedSlice: walk directly without adding the field name to the path.
+		if f.EmbeddedSlice {
+			walkValue(path, fieldVal, &sf, visit)
+			continue
+		}
+
+		node := structpath.NewDotString(path, f.Name)
 		walkValue(node, fieldVal, &sf, visit)
 	}
-}
-
-func getForceSendFields(v reflect.Value) []string {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return nil
-	}
-	// Only the struct's own ForceSendFields: one promoted from an embedded struct names that
-	// struct's fields, since the SDK marshaller rejects names its struct does not have.
-	sf, ok := v.Type().FieldByName("ForceSendFields")
-	if !ok || len(sf.Index) != 1 {
-		return nil
-	}
-	fsField := v.Field(sf.Index[0])
-	if fsField.Kind() != reflect.Slice {
-		return nil
-	}
-	result, ok := reflect.TypeAssert[[]string](fsField)
-	if ok {
-		return result
-	}
-	return nil
 }
