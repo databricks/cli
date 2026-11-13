@@ -309,8 +309,9 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
-		} else if db.RecordsHistory() {
-			// When using the deployment metadata service, record the error.
+		} else if db.RecordsHistory() || db.HistorySkipped() {
+			// When using the deployment metadata service, record the error. A run that skips history
+			// after a failed DMS read still fails here, so a DMS outage does not change delete behavior.
 			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
 			db.RecordFailure(d.ResourceKey, oldID, err)
 			return err

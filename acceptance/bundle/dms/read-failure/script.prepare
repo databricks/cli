@@ -1,0 +1,25 @@
+# Each test starts from a recorded deployment (version 1). The setup output is in
+# LOG.setup and its requests are drained, so output.txt shows only the step under test.
+# Sets deployment_id, and <name>_id for each job name passed.
+deploy_recorded() {
+    envsubst < databricks.yml.tmpl > databricks.yml
+    $CLI bundle deploy &> LOG.setup
+    deployment_id=$(deployment_node_id)
+    add_repl "$deployment_id" DEPLOYMENT_ID
+    local name
+    for name in "$@"; do
+        printf -v "${name}_id" '%s' "$(read_id.py "$name")"
+    done
+    rm -f "$OUT_REQUESTS"
+}
+
+# The deployment id is the id of the deployment's workspace node. Extracted with
+# python, not jq: the id exceeds 2^53 and jq 1.6 rounds it.
+deployment_node_id() {
+    MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-read-failure-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])'
+}
+
+# A 403 is a read failure of unknown cause, and it is not retried.
+fail_deployment_read() {
+    trace fault.py "GET /api/2.0/bundle/deployments/*" 403 0 1 PERMISSION_DENIED
+}

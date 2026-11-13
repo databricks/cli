@@ -1,0 +1,18 @@
+
+=== A deployment node without a record (404) is a half-created deployment: the deploy registers it again and records history
+>>> update_file.py databricks.yml name: foo name: renamed
+
+>>> fault.py GET /api/2.0/bundle/deployments/* 404 0 1 NOT_FOUND
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-read-failure-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NEW_DEPLOYMENT_ID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.foo"}], "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NEW_DEPLOYMENT_ID]/versions/2/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FOO_ID]", "sequence_id": 0, "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NEW_DEPLOYMENT_ID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-read-failure-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"2\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"renamed\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NEW_DEPLOYMENT_ID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}

@@ -120,6 +120,11 @@ type DeploymentState struct {
 	// resources.json as Serial to ensure outdated resource state is not read.
 	// Open always takes the authoritative value from the service.
 	VersionID int
+
+	// historySkipped turns off history recording for this run without touching the mode, so the
+	// shadow marker is still written. Kept across reset, like mode, so telemetry reads it after
+	// Finalize.
+	historySkipped bool
 }
 
 // OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
@@ -490,10 +495,29 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	return db.isDeploymentMetadataService()
 }
 
+// SkipHistory stops this run from recording deployment history. Shadow mode calls it when the
+// recorded deployment cannot be read: without its id and version, recording would create a second
+// deployment for the bundle.
+func (db *DeploymentState) SkipHistory() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.historySkipped = true
+}
+
+// HistorySkipped reports whether SkipHistory was called since the state was opened.
+func (db *DeploymentState) HistorySkipped() bool {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.historySkipped
+}
+
 // RecordsHistory reports whether the loaded file state or selected write mode records DMS history.
 func (db *DeploymentState) RecordsHistory() bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	if db.historySkipped {
+		return false
+	}
 	switch db.mode {
 	case ReadingFile:
 		_, history := db.Data.Features[FeatureDeploymentHistoryShadow]
@@ -588,6 +612,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode M
 	db.Path = path
 	db.operationBufferStats = nil
 	db.mode = mode
+	db.historySkipped = false
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID
 
@@ -719,6 +744,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 
 	db.Path = path
 	db.mode = ReadingFile
+	db.historySkipped = false
 	db.Data = data
 	db.stateIDs = make(map[string]string)
 	for key, entry := range data.State {

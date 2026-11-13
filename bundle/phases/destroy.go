@@ -381,6 +381,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 				}
 				log.Warnf(ctx, "Could not record deployment history for this destroy: %s", err)
 			}
+		} else if b.DeploymentBundle.StateDB.HistorySkipped() {
+			log.Warnf(ctx, "Keeping the deployment history record, if any: it could not be read, so this destroy does not delete it")
 		}
 		destroyCore(ctx, b, plan)
 	} else {
