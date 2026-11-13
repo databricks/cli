@@ -178,8 +178,15 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 
 // TestMcpLoginHintQuotesItsArguments checks that the login command a hint prints can be pasted into a shell as written.
 func TestMcpLoginHintQuotesItsArguments(t *testing.T) {
-	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile logfood", mcpLoginHint("system.ai.github", "logfood"))
-	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile 'my profile'", mcpLoginHint("system.ai.github", "my profile"))
+	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile logfood", mcpLoginHint("system.ai.github", "logfood", ""))
+	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile 'my profile'", mcpLoginHint("system.ai.github", "my profile", ""))
+}
+
+// TestMcpLoginHintNamesPinnedConfigFile checks that the hint for a server pinned to a config file sets DATABRICKS_CONFIG_FILE,
+// so that the login reads the file the profile is in.
+func TestMcpLoginHintNamesPinnedConfigFile(t *testing.T) {
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks aitools mcp login system.ai.github --profile logfood",
+		mcpLoginHint("system.ai.github", "logfood", "/work/cfg/logfood.cfg"))
 }
 
 // TestMcpLoginJSONNamesProfileWhenBindingFails checks that a failure after the profile is resolved still names the profile

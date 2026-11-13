@@ -1091,7 +1091,7 @@ func TestSignInStatus(t *testing.T) {
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 			require.NoError(t, err)
 
-			status, err := signInStatus(t.Context(), w, "logfood", "system.ai.github")
+			status, err := signInStatus(t.Context(), w, "logfood", "", "system.ai.github")
 			assert.Equal(t, tc.want, status)
 			if tc.warns {
 				require.Error(t, err)
@@ -1169,4 +1169,24 @@ func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
 	require.Len(t, out.Warnings, 1)
 	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
 	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
+}
+
+// TestAddChecksAuthWarningNamesPinnedConfigFile checks that the login command in the warning for a rejected token sets
+// DATABRICKS_CONFIG_FILE for a group pinned to a config file, so that the login reads the file the profile is in.
+func TestAddChecksAuthWarningNamesPinnedConfigFile(t *testing.T) {
+	withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
+	}))
+	t.Cleanup(server.Close)
+	configFile := filepath.Join(t.TempDir(), "logfood.cfg")
+	require.NoError(t, os.WriteFile(configFile, []byte("[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n"), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, configFile))
+
+	_, out := checkedListServer(t)
+	require.Len(t, out.Warnings, 1)
+	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+configFile+" databricks auth login --profile logfood")
 }

@@ -787,7 +787,7 @@ func TestErrorCategoryMapsTypedFailures(t *testing.T) {
 		errorCategory(fmt.Errorf("claude-code: server %q: %w", "github", agentconfig.ErrNotOwned)))
 	assert.Equal(t, protos.AitoolsErrorCategoryTimeout, errorCategory(fmt.Errorf("list: %w", context.DeadlineExceeded)))
 	assert.Equal(t, protos.AitoolsErrorCategoryPermissionDenied, errorCategory(&fs.PathError{Op: "open", Path: "x", Err: fs.ErrPermission}))
-	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(mcp.AuthError("logfood", errors.New("no token"))))
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(mcp.AuthError("logfood", "", errors.New("no token"))))
 }
 
 // TestMcpAddRefusesMixedCaseNamesBeforeAnyRequest checks that mixed-case service and location names bind to the same entry as their lowercase forms, so a profile

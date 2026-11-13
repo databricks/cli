@@ -228,7 +228,7 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	}
 	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
 	// new login.
-	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, err))
+	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, "", err))
 	g.mu.Lock()
 	first := g.err == nil
 	if first {

@@ -375,11 +375,11 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 // addProfileChecks runs the checks of one profile, whose config file is in ctx. A profile whose token cannot be minted
 // has no sign-in checks: its warning says why.
 func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput) {
-	w, err := profileClient(ctx, p.Profile, p.configPath)
+	w, err := profileClient(ctx, p.Profile, p.configPath, p.ConfigFile)
 	if err == nil {
 		// A personal access token is sent only with a request, so the token is checked with one.
 		if _, err = w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			err = describeRequestError(p.Profile, err)
+			err = describeRequestError(p.Profile, p.ConfigFile, err)
 		}
 	}
 	p.token = statusOK
@@ -397,7 +397,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 			}
 			continue
 		}
-		status, signInErr := signInStatus(ctx, w, p.Profile, s.Service)
+		status, signInErr := signInStatus(ctx, w, p.Profile, p.ConfigFile, s.Service)
 		s.Check.SignIn = status
 		if signInErr != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
@@ -408,8 +408,8 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput
 // signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential
 // counts as signed in. A service that does not require sign-in is "", which is not a status. A service the profile can
 // no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error says why.
-func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, service string) (string, error) {
-	svc, err := serviceFor(ctx, w, profileName, service)
+func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string) (string, error) {
+	svc, err := serviceFor(ctx, w, profileName, pinnedFile, service)
 	if err != nil {
 		return statusUnknown, err
 	}
@@ -418,7 +418,7 @@ func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileNam
 	}
 	state, err := mcp.CredentialState(ctx, w, service)
 	if err != nil {
-		return statusUnknown, describeRequestError(profileName, err)
+		return statusUnknown, describeRequestError(profileName, pinnedFile, err)
 	}
 	if state == catalog.ProvisioningInfoStateActive {
 		return statusOK, nil

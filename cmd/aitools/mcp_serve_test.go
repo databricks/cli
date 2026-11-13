@@ -197,7 +197,7 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
-	cause := mcp.AuthError("logfood", errors.New(refreshTokenExpired))
+	cause := mcp.AuthError("logfood", "", errors.New(refreshTokenExpired))
 
 	err := serveFailure(cmd, cause, serveBindStatus)
 

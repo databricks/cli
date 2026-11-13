@@ -877,3 +877,10 @@ func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthErrorNamesPinnedConfigFile(t *testing.T) {
+	cause := errors.New("Invalid access token.")
+	assert.EqualError(t, mcp.AuthError("logfood", "/work/cfg/logfood.cfg", cause),
+		"Invalid access token.\nRun: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
+	assert.EqualError(t, mcp.AuthError("logfood", "", cause), "Invalid access token.\nRun: databricks auth login --profile logfood")
+}

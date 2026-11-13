@@ -45,8 +45,9 @@ type mcpSignInOutput struct {
 	Error         string                      `json:"error,omitempty"`
 }
 
-// mcpSignInAction runs login or logout against the profile's client and records the result in out.
-type mcpSignInAction func(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error
+// mcpSignInAction runs login or logout against the profile's client and records the result in out. pinnedFile is the
+// config file the server is pinned to, or "" (see mcpLoginHint).
+type mcpSignInAction func(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error
 
 // NewMcpLoginCmd returns `aitools mcp login`.
 func NewMcpLoginCmd() *cobra.Command {
@@ -130,32 +131,38 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 		return err
 	}
 	out.Profile = profileName
-	if _, err := mcp.CheckBinding(ctx, state, service, profileName, configFile); err != nil {
+	entry, err := mcp.CheckBinding(ctx, state, service, profileName, configFile)
+	if err != nil {
 		return err
 	}
-	w, err := profileClient(ctx, profileName, configFile)
+	// A server pinned to a config file names that file in the hints, as add does.
+	pinnedFile := ""
+	if entry != nil && entry.ConfigFile != "" {
+		pinnedFile = configFile
+	}
+	w, err := profileClient(ctx, profileName, configFile, pinnedFile)
 	if err != nil {
 		return err
 	}
 	out.Host = w.Config.Host
-	return action(ctx, errOut, w, out)
+	return action(ctx, errOut, w, out, pinnedFile)
 }
 
 // serviceFor returns the service with its sign-in requirement, as the profile sees it. A service the profile cannot see
 // is an error, so that a misspelled name is reported rather than treated as a service with no sign-in.
-func serviceFor(ctx context.Context, w *databricks.WorkspaceClient, profileName, service string) (mcp.Service, error) {
+func serviceFor(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string) (mcp.Service, error) {
 	svc, err := mcp.GetService(ctx, w, service)
 	if mcp.IsNotFound(err) {
 		return mcp.Service{}, failure(categoryServiceNotFound, err, "%s is not an MCP service visible to profile %s", service, profileName)
 	}
 	if err != nil {
-		return mcp.Service{}, describeRequestError(profileName, err)
+		return mcp.Service{}, describeRequestError(profileName, pinnedFile, err)
 	}
 	return svc, nil
 }
 
-func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
-	svc, err := serviceFor(ctx, w, out.Profile, out.Service)
+func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error {
+	svc, err := serviceFor(ctx, w, out.Profile, pinnedFile, out.Service)
 	if err != nil {
 		return err
 	}
@@ -169,21 +176,21 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 	// refused a profile whose workspace changed since the server was installed.
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return describeRequestError(out.Profile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+		return describeRequestError(out.Profile, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 	out.URL = mcp.SignInURL(out.Host, svc.FullName, workspaceID)
-	state, err := signIn(ctx, errOut, w, out.Profile, out.URL, svc)
+	state, err := signIn(ctx, errOut, w, out.Profile, pinnedFile, out.URL, svc)
 	out.State = state
 	return err
 }
 
-func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput) error {
-	if _, err := serviceFor(ctx, w, out.Profile, out.Service); err != nil {
+func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, out *mcpSignInOutput, pinnedFile string) error {
+	if _, err := serviceFor(ctx, w, out.Profile, pinnedFile, out.Service); err != nil {
 		return err
 	}
 	deleted, err := mcp.SignOut(ctx, w, out.Service)
 	if err != nil {
-		return describeRequestError(out.Profile, err)
+		return describeRequestError(out.Profile, pinnedFile, err)
 	}
 	if !deleted {
 		out.State = signOutStateNotSignedIn
@@ -198,14 +205,15 @@ func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceCli
 // mcpLoginCommand is the command that signs a profile in to a service. The hints name it.
 const mcpLoginCommand = "databricks aitools mcp login"
 
-// mcpLoginHint returns the command that signs profileName in to service.
-func mcpLoginHint(service, profileName string) string {
-	return mcpLoginCommand + " " + shellquote.BashArg(service) + " --profile " + shellquote.BashArg(profileName)
+// mcpLoginHint returns the command that signs profileName in to service. pinnedFile is the config file the server is
+// pinned to, which the command sets, or "" for the file the shell reads.
+func mcpLoginHint(service, profileName, pinnedFile string) string {
+	return mcp.ConfigFileCommand(pinnedFile, mcpLoginCommand+" "+shellquote.BashArg(service)+" --profile "+shellquote.BashArg(profileName))
 }
 
 // signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns
 // the sign-in state name and the failure, which is categorized for JSON. `add --login` shares it.
-func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, url string, svc mcp.Service) (string, error) {
+func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, pinnedFile, url string, svc mcp.Service) (string, error) {
 	err := mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
 		Profile: profileName,
 		Poll:    mcp.SignInPollInterval,
@@ -216,13 +224,13 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 	case errors.Is(err, mcp.ErrSignInTimeout):
 		return signInStateTimeout, failure(categorySignInTimeout, err,
 			"sign-in to %s did not complete in %g minutes. Finish at %s then retry: %s",
-			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, mcpLoginHint(svc.FullName, profileName))
+			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case errors.Is(err, mcp.ErrSignInFailed):
 		return signInStateFailed, failure(protos.AitoolsErrorCategoryUncategorized, err,
 			"sign-in to %s failed on profile %s. Run: %s",
-			svc.FullName, profileName, mcpLoginHint(svc.FullName, profileName))
+			svc.FullName, profileName, mcpLoginHint(svc.FullName, profileName, pinnedFile))
 	case err != nil:
-		return "", describeRequestError(profileName, err)
+		return "", describeRequestError(profileName, pinnedFile, err)
 	}
 
 	fmt.Fprintf(errOut, "Signed in to %s on profile %s.\n", svc.FullName, profileName)

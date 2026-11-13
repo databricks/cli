@@ -250,19 +250,19 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		return err
 	}
 
-	w, err := profileClient(ctx, profileName, configFile)
+	w, err := profileClient(ctx, profileName, configFile, pinned)
 	if err != nil {
 		return err
 	}
 	out.Host = w.Config.Host
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return describeRequestError(profileName, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+		return describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 
 	services, err := mcp.Discover(ctx, w, location)
 	if err != nil {
-		return describeRequestError(profileName, err)
+		return describeRequestError(profileName, pinned, err)
 	}
 	picked, err := pickServices(location, fullNames, services)
 	if err != nil {
@@ -370,7 +370,7 @@ func addConfigFile(ctx context.Context) (path, pinned string, err error) {
 
 // profileClient returns a workspace client bound to exactly the named profile in configFile. Its config is the one
 // Bind builds, so the environment's credentials are never sent to the profile's host.
-func profileClient(ctx context.Context, name, configFile string) (*databricks.WorkspaceClient, error) {
+func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, error) {
 	cfg, err := mcp.BoundConfig(name, configFile)
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func profileClient(ctx context.Context, name, configFile string) (*databricks.Wo
 	if err != nil {
 		return nil, err
 	}
-	if err := mcp.AuthenticateBound(ctx, cfg, name); err != nil {
+	if err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile); err != nil {
 		return nil, err
 	}
 	return w, nil
@@ -388,9 +388,9 @@ func profileClient(ctx context.Context, name, configFile string) (*databricks.Wo
 // describeRequestError classifies a failed request to the profile's workspace. A credential the workspace
 // rejects is AUTH_FAILED, with the login command for the profile. Other failures are described by
 // describeListError.
-func describeRequestError(profileName string, err error) error {
+func describeRequestError(profileName, pinnedFile string, err error) error {
 	if errors.Is(err, apierr.ErrUnauthenticated) {
-		return mcp.AuthError(profileName, err)
+		return mcp.AuthError(profileName, pinnedFile, err)
 	}
 	return describeListError(profileName, err)
 }
@@ -856,8 +856,8 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		if _, err := signIn(ctx, errOut, w, req.profile, url, plans[i].service); err != nil {
-			fmt.Fprintln(errOut, signInHint(server.Service, req.profile))
+		if _, err := signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service); err != nil {
+			fmt.Fprintln(errOut, signInHint(server.Service, req.profile, req.pinned))
 			errs = append(errs, err)
 		}
 	}
@@ -865,8 +865,8 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 }
 
 // signInHint is the command that signs the profile in to a sign-in-required service.
-func signInHint(service, profileName string) string {
-	return fmt.Sprintf("%s needs sign-in. Run: %s", service, mcpLoginHint(service, profileName))
+func signInHint(service, profileName, pinnedFile string) string {
+	return fmt.Sprintf("%s needs sign-in. Run: %s", service, mcpLoginHint(service, profileName, pinnedFile))
 }
 
 // installedAnywhere reports whether the server reached at least one agent.
@@ -1000,7 +1000,7 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 			}
 		}
 		if server.SignInRequired && installedAnywhere(server) && !req.login {
-			cmdio.LogString(ctx, signInHint(server.Service, req.profile))
+			cmdio.LogString(ctx, signInHint(server.Service, req.profile, req.pinned))
 		}
 		if cursor {
 			cmdio.LogString(ctx, cursorApprovalHint(server.Name))

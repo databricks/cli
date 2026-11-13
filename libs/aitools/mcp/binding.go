@@ -86,7 +86,7 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile); err != nil {
+	if err := AuthenticateBound(ctx, cfg, opts.Profile, ""); err != nil {
 		return nil, nil, err
 	}
 	return cfg, entry, nil
@@ -110,8 +110,9 @@ func BoundConfig(profileName, configFile string) (*config.Config, error) {
 }
 
 // AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
-// provide is AUTH_FAILED, with the login command for the profile.
-func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName string) error {
+// provide is AUTH_FAILED, with the login command for the profile. pinnedFile is the config file the server is pinned to,
+// or "" (see AuthError).
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) error {
 	// Authenticate only writes headers onto req, which is never sent. The request takes
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
@@ -119,7 +120,7 @@ func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName stri
 		return uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
-		return AuthError(profileName, err)
+		return AuthError(profileName, pinnedFile, err)
 	}
 	return nil
 }
@@ -241,9 +242,10 @@ func configFileError(name, profileName, recordedPath, currentPath string) error 
 }
 
 // AuthError is the AUTH_FAILED error for a credential that the profile's own settings could not
-// provide. The message points at the login command for the profile.
-func AuthError(profileName string, cause error) error {
-	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, shellquote.BashArg(profileName))
+// provide. The message points at the login command for the profile. pinnedFile is the config file
+// the server is pinned to, which the command names when it is not "".
+func AuthError(profileName, pinnedFile string, cause error) error {
+	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, ConfigFileCommand(pinnedFile, authLoginCommand), shellquote.BashArg(profileName))
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
 }
 
