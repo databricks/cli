@@ -36,6 +36,16 @@ func TestMcpEndpointAnswersInternalService(t *testing.T) {
 	assert.Equal(t, "hi", content[0].(map[string]any)["text"])
 }
 
+// Unity Catalog names are case-insensitive, so the endpoint matches a service name whatever its case, as the listing does.
+func TestMcpEndpointMatchesServiceNameWithoutCase(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	mcpServicesTestSeed(workspace, "system.ai.genie_one_mcp", "Genie", "")
+
+	reply := mcpEndpointTestCall(t, workspace, "SYSTEM.AI.Genie_One_MCP", `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)
+	assert.Nil(t, reply["error"])
+	assert.NotNil(t, reply["result"])
+}
+
 func TestMcpEndpointRejectsExternalServiceWithoutCredential(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 	const name = "system.ai.github"

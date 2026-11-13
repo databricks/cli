@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -42,7 +43,7 @@ type mcpRPC struct {
 func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	service, ok := s.McpServices[name]
+	service, ok := s.mcpServiceNamed(name)
 	if !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
@@ -92,6 +93,17 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	default:
 		return Response{Body: rpcError(msg.ID, rpcCodeMethodNotFound, "Method not found: "+msg.Method)}
 	}
+}
+
+// mcpServiceNamed returns the stored service with the given full name. Unity Catalog names are case-insensitive, so the
+// match ignores case, as McpServicesList does.
+func (s *FakeWorkspace) mcpServiceNamed(name string) (catalog.McpService, bool) {
+	for key, service := range s.McpServices {
+		if strings.EqualFold(key, name) {
+			return service, true
+		}
+	}
+	return catalog.McpService{}, false
 }
 
 // mcpServiceIsExternal reports whether the service takes an OAuth source connection.
