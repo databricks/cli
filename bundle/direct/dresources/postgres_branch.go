@@ -143,7 +143,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return remote.Name, remote, nil
 }
 
-// branchReadyTimeout bounds the wait for a branch that recoverFailedCreate found still initializing.
+// branchReadyTimeout bounds the wait for a branch that recoverFailedCreate found in INIT.
 const branchReadyTimeout = 10 * time.Minute
 
 // recoverFailedCreate handles a create request that failed with a transient error. The backend
@@ -163,7 +163,9 @@ func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, config
 	name := config.Parent + "/branches/" + config.BranchId
 	deadline := time.Now().Add(branchReadyTimeout)
 	for {
-		branch, err := r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+		branch, err := retry.With(ctx, retry.IsTransientRead, func() (*postgres.Branch, error) {
+			return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+		})
 		if apierr.IsMissing(err) {
 			return "", nil, retrySafe(createErr)
 		}
@@ -171,10 +173,19 @@ func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, config
 			log.Warnf(ctx, "checking whether %s was created: %s", name, err)
 			return "", nil, createErr
 		}
-		if branch.Status != nil && branch.Status.CurrentState == postgres.BranchStatusStateReady {
+		var state postgres.BranchStatusState
+		if branch.Status != nil {
+			state = branch.Status.CurrentState
+		}
+		if state == postgres.BranchStatusStateReady {
 			log.Warnf(ctx, "the branch was created despite the failed create request: %s", createErr)
 			remote := makePostgresBranchRemote(branch)
 			return remote.Name, remote, nil
+		}
+		// Only a new branch still initializing is worth waiting for; any other state (e.g. DELETED,
+		// ARCHIVED) will not become READY.
+		if state != postgres.BranchStatusStateInit {
+			return "", nil, fmt.Errorf("%w; branch %s exists in state %q", createErr, name, state)
 		}
 		if time.Now().After(deadline) {
 			return "", nil, fmt.Errorf("%w; branch %s exists but did not become ready within %s", createErr, name, branchReadyTimeout)
