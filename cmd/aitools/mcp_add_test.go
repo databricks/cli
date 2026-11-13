@@ -882,6 +882,28 @@ func TestMcpAddRejectedTokenIsAuthFailed(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
 }
 
+// TestMcpAddBindingFailureExitsOne checks that a binding failure is an ordinary failure of add: it exits 1 in text and
+// in JSON mode. Exit 2 is serve's status for binding failures, which an agent restarts on.
+func TestMcpAddBindingFailureExitsOne(t *testing.T) {
+	home := withHome(t)
+	withDatabricksBinary(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	require.NoError(t, mcp.SaveState(t.Context(), &mcp.State{Servers: []mcp.Entry{{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test",
+	}}}))
+	args := []string{"--profile", "logfood", "--names", "github", "--agents", "claude-code"}
+
+	_, err := newAddTestCmd(t, args...)
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileHostChanged), errorCategory(err))
+	assert.Equal(t, 1, root.ExitStatus(err))
+
+	_, err = newAddTestCmd(t, append(args, "--output", "json")...)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, 1, root.ExitStatus(err))
+}
+
 // TestMcpAddRefusesBinaryNotNamedDatabricks checks that the binary must be databricks: an argv[0] with another name, not on PATH, is refused, not replaced.
 func TestMcpAddRefusesBinaryNotNamedDatabricks(t *testing.T) {
 	home := withHome(t)

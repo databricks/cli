@@ -8,21 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// testStatusError sets its own exit status, as mcp.BindError does.
-type testStatusError struct {
-	status int
-	err    error
-}
+// duckStatusError has an ExitStatus method but is not an ExitStatusError, so it does not set the status.
+type duckStatusError struct{}
 
-func (e *testStatusError) Error() string { return e.err.Error() }
-
-func (e *testStatusError) Unwrap() error { return e.err }
-
-func (e *testStatusError) ExitStatus() int { return e.status }
+func (duckStatusError) Error() string   { return "duck" }
+func (duckStatusError) ExitStatus() int { return 7 }
 
 func TestExitStatus(t *testing.T) {
 	plain := errors.New("plain failure")
-	status := &testStatusError{status: 2, err: errors.New("binding failed")}
+	status := &ExitStatusError{Status: 2, Err: errors.New("binding failed")}
 
 	tests := []struct {
 		name string
@@ -35,6 +29,8 @@ func TestExitStatus(t *testing.T) {
 		{name: "wrapped status error", err: fmt.Errorf("serve: %w", status), want: 2},
 		{name: "joined with already printed", err: errors.Join(ErrAlreadyPrinted, status), want: 2},
 		{name: "joined plain error", err: errors.Join(ErrAlreadyPrinted, plain), want: 1},
+		// Only the named type sets a status: an error with an ExitStatus method of its own does not.
+		{name: "method without the type", err: duckStatusError{}, want: 1},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

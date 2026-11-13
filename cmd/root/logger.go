@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 
@@ -43,25 +44,15 @@ func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions)
 	}
 }
 
-// writesToStdout reports whether the log file is the process's stdout: the name "stdout", or a path that is the same
-// file, such as /dev/stdout.
-func (f *logFlags) writesToStdout() bool {
-	name := f.file.String()
-	switch name {
-	case "stdout":
-		return true
-	case "stderr":
-		return false
+// logFileKey is the context key of the log file that initializeContext opened. Execute closes it when the command
+// returns.
+type logFileKey struct{}
+
+// closeLogFile closes the log file in ctx, if the command opened one.
+func closeLogFile(ctx context.Context) {
+	if f, ok := ctx.Value(logFileKey{}).(io.Closer); ok {
+		_ = f.Close()
 	}
-	fi, err := os.Stat(name)
-	if err != nil {
-		return false
-	}
-	out, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
-	return os.SameFile(fi, out)
 }
 
 func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {

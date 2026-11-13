@@ -2,6 +2,7 @@ package root
 
 import (
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +24,15 @@ func protocolTestCommand(ran *bool) *cobra.Command {
 	}
 }
 
+// keepDefaultLogger restores the slog default that Execute replaces when it opens a log file.
+func keepDefaultLogger(t *testing.T) {
+	t.Helper()
+	prev := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(prev) })
+}
+
 func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
+	keepDefaultLogger(t)
 	for _, logFile := range []string{"stdout", "STDOUT", "/dev/stdout"} {
 		t.Run(logFile, func(t *testing.T) {
 			if logFile == "/dev/stdout" {
@@ -45,6 +54,7 @@ func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
 }
 
 func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
+	keepDefaultLogger(t)
 	logFile := filepath.Join(t.TempDir(), "serve.log")
 	ran := false
 	cmd := New(t.Context())
@@ -54,6 +64,37 @@ func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
 
 	require.NoError(t, Execute(t.Context(), cmd))
 	assert.True(t, ran)
+}
+
+// writesToStdout compares the open log file with the process's stdout, so a path that is stdout under another name is
+// refused. stderr is never refused: a user who asks for it gets it, even if it shares a terminal with stdout.
+func TestWritesToStdout(t *testing.T) {
+	ok, err := writesToStdout(os.Stdout)
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	ok, err = writesToStdout(os.Stderr)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	file, err := os.Create(filepath.Join(t.TempDir(), "run.log"))
+	require.NoError(t, err)
+	defer file.Close()
+	ok, err = writesToStdout(file)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	pr, pw, err := os.Pipe()
+	require.NoError(t, err)
+	defer pr.Close()
+	defer pw.Close()
+	ok, err = writesToStdout(pw)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	ok, err = writesToStdout(io.Discard)
+	require.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func TestCarriesProtocol(t *testing.T) {

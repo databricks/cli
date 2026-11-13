@@ -85,7 +85,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 
 	state, err := mcp.LoadState(cmd.Context())
 	if err != nil {
-		return serveFailure(cmd, err)
+		return serveFailure(cmd, err, 1)
 	}
 	cfg, _, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile: profileName,
@@ -94,7 +94,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Stderr:  cmd.ErrOrStderr(),
 	})
 	if err != nil {
-		return serveFailure(cmd, err)
+		return serveFailure(cmd, err, serveBindStatus)
 	}
 
 	// The bound profile authenticates the exit-time telemetry upload.
@@ -118,10 +118,10 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Transport:    serveTransport(cfg),
 	})
 	if err != nil {
-		return serveFailure(cmd, err)
+		return serveFailure(cmd, err, 1)
 	}
 	if refreshErr := refresh.failure(); refreshErr != nil {
-		return serveFailure(cmd, refreshErr)
+		return serveFailure(cmd, refreshErr, serveBindStatus)
 	}
 	return nil
 }
@@ -155,12 +155,15 @@ func serveAgent(ctx context.Context, name string) string {
 	return ""
 }
 
-// serveFailure prints err to stderr and returns it with the exit status that err carries: a binding
-// or auth failure exits 2 (mcp.BindError), any other error exits 1. Execute does not print it again,
+// serveBindStatus is the exit status of a binding or auth failure. Agents and `list --check` tell it from a
+// transport error, so it is not 1.
+const serveBindStatus = 2
+
+// serveFailure prints err to stderr and returns it with the exit status. Execute does not print it again,
 // so the message is written exactly once.
-func serveFailure(cmd *cobra.Command, err error) error {
+func serveFailure(cmd *cobra.Command, err error, status int) error {
 	fmt.Fprintln(cmd.ErrOrStderr(), err)
-	return errors.Join(root.ErrAlreadyPrinted, err)
+	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
 }
 
 // refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed

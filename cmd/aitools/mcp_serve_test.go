@@ -79,28 +79,20 @@ func TestRefreshGuardStoresAuthError(t *testing.T) {
 	assert.Equal(t, mcp.BindAuthFailed, be.Category)
 	assert.ErrorIs(t, be, cause)
 	assert.Contains(t, be.Error(), "databricks auth login --profile 'my profile'")
-	assert.Equal(t, 2, root.ExitStatus(g.failure()))
 }
 
-func TestServeFailureSetsExitStatusWithoutReprinting(t *testing.T) {
+func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	cmd := NewMcpServeCmd()
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
-	cause := errors.New("MCP server x is bound to Databricks profile")
+	cause := mcp.AuthError("logfood", errors.New("refresh token expired"))
 
-	err := serveFailure(cmd, cause)
+	err := serveFailure(cmd, cause, serveBindStatus)
 
-	assert.Equal(t, "MCP server x is bound to Databricks profile\n", stderr.String())
-	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	assert.Equal(t, 1, root.ExitStatus(err))
-
-	bindErr := mcp.AuthError("logfood", cause)
-	stderr.Reset()
-	err = serveFailure(cmd, bindErr)
-
-	assert.Equal(t, bindErr.Error()+"\n", stderr.String())
+	assert.Equal(t, cause.Error()+"\n", stderr.String())
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
+	assert.ErrorIs(t, err, cause)
 }
 
 func TestServeDialerHasConnectTimeout(t *testing.T) {

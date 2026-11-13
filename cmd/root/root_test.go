@@ -184,12 +184,13 @@ func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 }
 
 func TestExecuteLogsExitStatus(t *testing.T) {
+	keepDefaultLogger(t)
 	logFile := filepath.Join(t.TempDir(), "run.log")
 	cmd := New(t.Context())
 	cmd.AddCommand(&cobra.Command{
 		Use: "fail",
 		RunE: func(*cobra.Command, []string) error {
-			return &testStatusError{status: 2, err: errors.New("binding failed")}
+			return &ExitStatusError{Status: 2, Err: errors.New("binding failed")}
 		},
 	})
 	cmd.SetArgs([]string{"fail", "--log-file", logFile, "--log-level", "info", "--log-format", "json"})
