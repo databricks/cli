@@ -335,7 +335,7 @@ func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
 	err := error(&SignInTimeout{URL: testURL, Wait: time.Minute, LastCheck: lastCheck})
 
 	assert.ErrorIs(t, err, lastCheck)
-	assert.Nil(t, errors.Unwrap(&SignInTimeout{URL: testURL}))
+	assert.NoError(t, errors.Unwrap(&SignInTimeout{URL: testURL}))
 }
 
 // TestChallengeHintsPrintTheLoginCommand checks that the challenge and the timeout print the login command that the
