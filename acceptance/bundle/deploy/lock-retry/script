@@ -20,6 +20,7 @@ print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | 
 title "Lock is held by another deployer: the retry gets a conflict and the error names the holder"
 fault.py "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
 echo '{"ID":"00000000-0000-0000-0000-000000000000","AcquisitionTime":"2026-01-01T00:00:00Z","IsForced":false,"User":"someone-else"}' > other.lock
-$CLI workspace import /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/deploy.lock --file other.lock --format AUTO > /dev/null
-errcode trace $CLI bundle deploy
+# MSYS_NO_PATHCONV stops Git Bash on Windows from turning the workspace path into a local one.
+MSYS_NO_PATHCONV=1 $CLI workspace import /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/deploy.lock --file other.lock --format AUTO > /dev/null
 rm other.lock
+errcode trace $CLI bundle deploy
