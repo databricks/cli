@@ -91,6 +91,22 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 	}
 }
 
+// ResolveVariableReferencesBeforeWorkspacePrefix defers workspace path references until their prefixes are final.
+func ResolveVariableReferencesBeforeWorkspacePrefix() bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:    defaultPrefixes,
+		lookupFn:    lookup,
+		extraRounds: maxResolutionRounds - 1,
+		excludePaths: []string{
+			"workspace.root_path",
+			"workspace.file_path",
+			"workspace.artifact_path",
+			"workspace.state_path",
+			"workspace.resource_path",
+		},
+	}
+}
+
 func ResolveVariableReferencesInLookup() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    defaultPrefixes,

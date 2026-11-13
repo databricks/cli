@@ -45,7 +45,7 @@ func prependWorkspacePrefixTo(path string) string {
 		return path
 	}
 
-	if path == "/Workspace" || path == "/Volumes" {
+	if path == "/Workspace" {
 		return path
 	}
 

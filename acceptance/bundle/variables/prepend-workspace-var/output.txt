@@ -1,12 +1,22 @@
+
+>>> [CLI] bundle validate -t dev -o json
 {
   "target": "dev",
   "root_path": "/Workspace/Users/[USERNAME]/path/to/root",
   "file_path": "/Workspace/Users/[USERNAME]/path/to/root/files",
-  "conf_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
+  "conf_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml",
+  "alias_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
 }
+
+>>> [CLI] bundle validate -t prod -o json
+Warning: the bundle root path /Workspace/Shared/path/to/root is writable by all workspace users
+
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+
 {
   "target": "prod",
   "root_path": "/Workspace/Shared/path/to/root",
   "file_path": "/Workspace/Shared/path/to/root/files",
-  "conf_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml"
+  "conf_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml",
+  "alias_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml"
 }
