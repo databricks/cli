@@ -21,7 +21,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 [SET1_ID]
 
 === A feature contributing one member can have it removed alone: the cascade set is that one
+
 === member, and the feature the request says nothing about is untouched
+
 >>> [CLI] bundle plan -o json
 
 >>> set_action
@@ -44,6 +46,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 ]
 
 === The update returns a long-running operation, and the reconciled set is read back from it
+
 >>> print_requests.py --keep //materialization-sets
 {
   "method": "PATCH",

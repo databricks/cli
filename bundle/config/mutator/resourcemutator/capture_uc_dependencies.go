@@ -218,6 +218,20 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 			}
 		}
 	}
+	for _, fs := range b.Config.Resources.FeatureSpecs {
+		if fs == nil {
+			continue
+		}
+		if dynvar.ContainsVariableReference(fs.Name) {
+			continue
+		}
+		parts, ok := splitUCName(fs.Name, 3)
+		if !ok {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		fs.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {
 			continue

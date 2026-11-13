@@ -6,6 +6,7 @@ auth_type = pat
 token = old-token-123
 
 === Login with conflicting host (should error)
+
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-test
 Error: --profile "custom-test" has host "https://old-host.cloud.databricks.com", which conflicts with --host "[DATABRICKS_URL]". Use --profile only to select a profile
 

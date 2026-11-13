@@ -16,6 +16,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === App should exist after bundle deployment
+
 >>> [CLI] apps get app-[UNIQUE_NAME]
 {
   "app_status": {
@@ -25,6 +26,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Check app config
+
 >>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files/app/app.yml
 command:
   - flask
@@ -40,6 +42,7 @@ env:
 >>> cat LOG.run.txt
 
 === App should be in the running state
+
 >>> [CLI] apps get app-[UNIQUE_NAME]
 {
   "app_status": {
@@ -49,6 +52,7 @@ env:
 }
 
 === Stop the app
+
 >>> [CLI] apps stop app-[UNIQUE_NAME]
 {
   "compute_status": {
@@ -74,6 +78,7 @@ env:
 >>> cat LOG.run.txt
 
 === App should be in the running state
+
 >>> [CLI] apps get app-[UNIQUE_NAME]
 {
   "app_status": {
@@ -83,6 +88,7 @@ env:
 }
 
 === Redeploy it again just to check that it can be redeployed
+
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
 Files: 1 uploaded, 0 deleted

@@ -14,6 +14,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Native YAML definition serializes to compact JSON, preserving numbers and booleans as JSON types (not quoted strings)
+
 >>> print_requests.py //policies/clusters
 {
   "method": "POST",

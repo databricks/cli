@@ -7,6 +7,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change an immutable catalog field: no update API, so the plan recreates it
+
 >>> [CLI] bundle plan
 recreate database_catalogs.my_catalog
 

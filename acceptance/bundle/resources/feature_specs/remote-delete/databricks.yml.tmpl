@@ -1,0 +1,12 @@
+bundle:
+  name: test-feature-specs-remote-delete-$UNIQUE_NAME
+
+resources:
+  feature_specs:
+    spec1:
+      name: $SCHEMA_FULL_NAME.myspec
+      features:
+        - feature_lookup:
+            table: $SCHEMA_FULL_NAME.user_features
+            lookup_keys: [user_id]
+            feature_names: [age]

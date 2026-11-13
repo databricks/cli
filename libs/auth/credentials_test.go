@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
@@ -53,6 +54,53 @@ func TestCredentialChainOrder(t *testing.T) {
 	if !slices.Equal(names, want) {
 		t.Errorf("credential chain order: want %v, got %v", want, names)
 	}
+}
+
+func TestCredentialChainWithoutRefresh(t *testing.T) {
+	chain := credentialChainWithoutRefresh()
+	require.Len(t, chain, len(credentialChain))
+	for i, s := range chain {
+		if s.Name() != "databricks-cli" {
+			assert.Equal(t, credentialChain[i], s)
+			continue
+		}
+		assert.Equal(t, CLICredentials{noRefresh: true}, s)
+	}
+}
+
+func TestCLICredentialsConfigure_NoRefresh(t *testing.T) {
+	hermeticAuthStorage(t)
+
+	var receivedOpts []u2m.PersistentAuthOption
+	c := CLICredentials{
+		noRefresh: true,
+		persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			receivedOpts = opts
+			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+				return &oauth2.Token{AccessToken: "tok"}, nil
+			}), nil
+		},
+	}
+
+	cfg := &config.Config{Host: "https://workspace.test"}
+	_, err := c.Configure(t.Context(), cfg)
+	require.NoError(t, err)
+
+	// The options Configure passes must make an expired cached token fail
+	// rather than refresh. The extra store holds that token; a refresh
+	// attempt would fail with a different error.
+	arg, err := authArgumentsFromConfig(cfg).ToOAuthArgument()
+	require.NoError(t, err)
+	store := storage.NewMemoryStore()
+	require.NoError(t, store.Put(arg.GetCacheKey(), storage.Entry{Token: &oauth2.Token{
+		AccessToken:  "expired",
+		RefreshToken: "refresh",
+		Expiry:       time.Now().Add(-time.Minute),
+	}}))
+	pa, err := u2m.NewPersistentAuth(t.Context(), append(receivedOpts, u2m.WithTokenStore(store))...)
+	require.NoError(t, err)
+	_, err = pa.Token()
+	assert.ErrorIs(t, err, u2m.ErrRefreshDisabled)
 }
 
 func TestCLICredentialsName(t *testing.T) {

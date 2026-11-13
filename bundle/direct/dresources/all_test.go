@@ -47,8 +47,11 @@ var testConfig map[string]any = map[string]any{
 	"catalogs": &resources.Catalog{
 		Name:    "mycatalog",
 		Comment: "Test catalog",
-		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
-		// only during updates. They are not included in the test config.
+		// Note: EnablePredictiveOptimization cannot be set during creation,
+		// only during updates. It is not included in the test config.
+		// IsolationMode has the same restriction but is applied by DoCreate with a
+		// follow-up update, so it is set here to cover that path.
+		IsolationMode: catalog.CatalogIsolationModeIsolated,
 	},
 
 	"external_locations": &resources.ExternalLocation{
@@ -148,6 +151,18 @@ var testConfig map[string]any = map[string]any{
 				},
 			},
 		},
+	},
+
+	"feature_specs": &resources.FeatureSpec{
+		Name: "main.default.my_feature_spec",
+		Features: []ml.Features{{
+			FeatureLookup: &ml.FeatureLookup{
+				Table:        "main.default.my_table",
+				LookupKeys:   []string{"id"},
+				FeatureNames: []string{"amount"},
+			},
+		}},
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
 	},
 
 	"experiments": &resources.MlflowExperiment{
@@ -735,6 +750,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "modelid",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"feature_specs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "function",
+			FullName:      "main.default.my_feature_spec",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "user@example.com",
 			}},
 		}, nil

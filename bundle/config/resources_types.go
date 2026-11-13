@@ -2,14 +2,15 @@ package config
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
-// ResourcesTypes maps the configuration key of each Databricks resource group (for example
-// "jobs" or "pipelines") to the Go type that represents a single resource instance inside
-// that group (for example `resources.Job`).
-var ResourcesTypes = func() map[string]reflect.Type {
+// ResourcesTypes returns a map from the configuration key of each Databricks resource
+// group (for example "jobs" or "pipelines") to the Go type that represents a single
+// resource instance inside that group (for example `resources.Job`).
+var ResourcesTypes = sync.OnceValue(func() map[string]reflect.Type {
 	rt := reflect.TypeFor[Resources]()
 	res := make(map[string]reflect.Type, rt.NumField())
 
@@ -48,4 +49,4 @@ var ResourcesTypes = func() map[string]reflect.Type {
 	}
 
 	return res
-}()
+})

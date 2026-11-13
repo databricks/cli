@@ -7,9 +7,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === upload lock file
+
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
 
 === test deployment without force-lock (should fail)
+
 >>> errcode [CLI] pipelines destroy --auto-approve
 Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
@@ -22,6 +24,7 @@ conflict with the other deployment if it is still active
 Exit code: 1
 
 === test deployment with force-lock (should succeed)
+
 >>> [CLI] pipelines destroy --force-lock --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.foo

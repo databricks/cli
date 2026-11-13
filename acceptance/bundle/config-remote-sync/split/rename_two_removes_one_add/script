@@ -22,12 +22,10 @@ r["tasks"] = new_tasks
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "Neither block is rewritten: the pairing is not forced"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 echo
 title "Both tasks keep their original keys, and no new key was written"

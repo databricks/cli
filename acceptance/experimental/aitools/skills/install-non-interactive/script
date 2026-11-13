@@ -1,0 +1,87 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+# Agent config dirs can also be moved by environment variables. Point them all
+# at the fixture HOME, so the developer's own agents are not detected and
+# nothing is written outside it.
+unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
+export XDG_CONFIG_HOME="${USERPROFILE:-$HOME}/.config"
+export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
+
+# Agents are also detected by their CLI binary on PATH, so drop every PATH entry
+# that holds one; otherwise the developer's own agents would join the run. That
+# can drop /usr/bin (and /bin on a merged-/usr system), so resolve the commands
+# the script runs first. Windows also finds a command under each PATHEXT
+# extension (e.g. claude.cmd), so check those names too.
+mkdir_bin=$(command -v mkdir)
+rm_bin=$(command -v rm)
+cp_bin=$(command -v cp)
+exts=""
+if [ -n "${PATHEXT:-}" ]; then exts=$(printf '%s' "$PATHEXT" | tr ';' ':'); fi
+filtered_path=""
+IFS=:
+for dir in $PATH; do
+  keep=1
+  for bin in claude cursor-agent codex opencode copilot pi gemini goose kiro; do
+    if [ -x "$dir/$bin" ]; then keep=; fi
+    for ext in $exts; do
+      if [ -f "$dir/$bin$ext" ]; then keep=; fi
+    done
+  done
+  if [ -n "$keep" ]; then filtered_path="$filtered_path:$dir"; fi
+done
+unset IFS
+export PATH="${filtered_path#:}"
+
+# Claude Code's config dir exists but its CLI is not on PATH (desktop or IDE
+# install). Cursor has no plugin and gets raw skill files.
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude" "${USERPROFILE:-$HOME}/.cursor"
+
+check_claude_skills() {
+  if [ -e "${USERPROFILE:-$HOME}/.claude/skills/test-stable" ]; then echo "Claude Code has skill files"; else echo "Claude Code has no skill files"; fi
+}
+
+title "no flags, no terminal: no prompts, global scope, every detected agent"
+# Stdin is not a TTY, so the scope select and agent picker are skipped. Cursor
+# gets skills; Claude Code's plugin cannot be installed without its CLI, so it
+# gets skill files too, with a note on how to switch to the plugin later.
+trace $CLI aitools install
+check_claude_skills
+
+title "a plugin installed with Claude Code itself is kept, without skill files next to it"
+# Claude Code records its plugins in installed_plugins.json. The run keeps the
+# plugin and removes the skill files the previous run gave Claude Code, and a
+# later update does not write them back.
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude/plugins"
+"$cp_bin" installed_plugins.json "${USERPROFILE:-$HOME}/.claude/plugins/"
+trace $CLI aitools install
+check_claude_skills
+trace $CLI aitools update --force
+check_claude_skills
+"$rm_bin" -rf "${USERPROFILE:-$HOME}/.claude/plugins"
+
+title "a named agent does not fall back: the failure says what to run"
+trace musterr $CLI aitools install --agents=claude-code
+
+title "the suggested recovery command works"
+trace $CLI aitools install --agents=claude-code --skills-only
+
+title "project scope: a personal plugin does not replace the project's skill files"
+# Project skill files are shared through the repository, so a user-scope plugin
+# installed with Claude Code itself later must not stop the update from
+# refreshing them. Cursor only supports global skills and is skipped.
+testdir=$(pwd)
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/project"
+cd "${USERPROFILE:-$HOME}/project"
+trace $CLI aitools install --scope=project
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude/plugins"
+"$cp_bin" "$testdir/installed_plugins.json" "${USERPROFILE:-$HOME}/.claude/plugins/"
+trace $CLI aitools update --scope=project
+if [ -e .claude/skills/test-stable ]; then echo "The project has Claude Code skill files"; else echo "The project has no Claude Code skill files"; fi
+"$rm_bin" -rf "${USERPROFILE:-$HOME}/.claude/plugins"
+cd "$testdir"
+
+title "nothing can be set up: the run fails instead of exiting 0"
+# Cursor only supports global skills, so a project-scope run has nothing to do.
+"$rm_bin" -rf "${USERPROFILE:-$HOME}/.claude"
+trace musterr $CLI aitools install --scope=project

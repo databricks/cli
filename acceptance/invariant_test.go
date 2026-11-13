@@ -36,8 +36,8 @@ var LackingInvariantTest = map[string]bool{
 func TestInvariantConfigsCoverage(t *testing.T) {
 	present, withPermissions, withGrants := scanInvariantConfigs(t)
 
-	keys := make([]string, 0, len(config.ResourcesTypes))
-	for key := range config.ResourcesTypes {
+	keys := make([]string, 0, len(config.ResourcesTypes()))
+	for key := range config.ResourcesTypes() {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)

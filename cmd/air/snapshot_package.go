@@ -190,5 +190,28 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 			linkTarget: linkTarget,
 		})
 	}
+	if len(files) == 0 {
+		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
+	}
 	return files, nil
+}
+
+// emptySnapshotError explains why no file was selected for the snapshot. An empty
+// tarball is accepted by the upload but fails on the node, after compute was
+// provisioned, so it is rejected here with the most likely cause.
+func emptySnapshotError(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) error {
+	root := filepath.ToSlash(repoPath)
+	prefix := fmt.Sprintf("code_source snapshot of %s contains no files; refusing to upload an empty snapshot", root)
+	if isGitRepo {
+		// check-ignore -v prints "<source>:<line>:<pattern>\t<path>" and exits non-zero
+		// when the path is not ignored.
+		if out, err := newGitRepo(repoPath).run(ctx, "check-ignore", "-v", "."); err == nil {
+			rule, _, _ := strings.Cut(strings.TrimSpace(out), "\t")
+			return fmt.Errorf("%s: root_path is ignored by git (%s), and the snapshot only includes files git does not ignore. Move the project out of the ignored directory, un-ignore it, or change code_source.root_path. Inspect the rule with `git -C %s check-ignore -v .`", prefix, rule, root)
+		}
+	}
+	if len(includePaths) > 0 {
+		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and are not ignored by git (`git check-ignore -v <path>`)", prefix, strings.Join(includePaths, ", "))
+	}
+	return fmt.Errorf("%s: the directory is empty or all of its files are excluded by .gitignore rules (`git check-ignore -v <path>` shows the rule for a file). Check code_source.root_path", prefix)
 }

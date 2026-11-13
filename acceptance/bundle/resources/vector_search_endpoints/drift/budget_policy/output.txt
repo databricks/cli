@@ -1,5 +1,6 @@
 
 === Initial deployment (no budget_policy_id)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
@@ -7,12 +8,14 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Simulate remote drift: set budget_policy_id outside the bundle
+
 >>> [CLI] vector-search-endpoints update-endpoint-budget-policy vs-endpoint-[UNIQUE_NAME] remote-policy
 {
   "effective_budget_policy_id": "remote-policy"
 }
 
 === budget_policy_id drift is ignored (effective vs requested mismatch)
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

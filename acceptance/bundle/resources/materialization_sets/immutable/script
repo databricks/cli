@@ -53,9 +53,26 @@ trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 trace $CLI bundle deploy --auto-approve
 
-title "A member whose feature name changes reads as one member removed and another added, so it"
-title "plans a recreate as well"
-render renamed-member.yml.tmpl
+title "Changing the feature name the set's materialized feature member references, from feata's to"
+title "featb's, reads as one member removed and another added, so it plans a recreate as well"
+render member-references-featb.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "That recreate needs approval too, and with it the set is rebuilt with its member referencing"
+title "featb's feature name"
+trace musterr $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+
+title "Switching the trigger from a manual cron expression to a DERIVED schedule is a recreate as"
+title "well, and the deploy asks for approval before rebuilding the set"
+render derived-trigger.yml.tmpl
+trace $CLI bundle plan -o json > out.plan.json
+trace set_action
+trace musterr $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 

@@ -17,7 +17,7 @@ unset DATABRICKS_TOKEN
 # dbt reads the workspace ID from ?o= in the HTTP path. The template adds it
 # when the profile sets the ID, like ?w= in the bundle host.
 for profile in no_workspace_id custom_host; do
-  title "Profile $profile\n"
+  title "Profile $profile"
   trace $CLI bundle init dbt-sql --config-file ./input.json --profile $profile
   trace grep 'host:' my_dbt_sql/databricks.yml
   trace grep -E "^    default: [^{]" my_dbt_sql/profile_template.yml

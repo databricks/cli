@@ -2,7 +2,9 @@
 >>> [CLI] bundle deploy -qq
 
 === Edit job with spaces remotely
+
 === Sync only job with spaces
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
 Detected changes in 1 resource(s):
 
@@ -29,11 +31,13 @@ Resource: resources.jobs.job with spaces
        name: quoted-job
 
 === Syncing job with spaces again is idempotent
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
 No changes detected.
 
 
 === Add a sibling task in job with spaces
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB WITH SPACES_ID] --save
 Detected changes in 1 resource(s):
 
@@ -55,7 +59,9 @@ Resource: resources.jobs.job with spaces
      "job's\"quotes":
 
 === Edit job's"quotes remotely
+
 === Sync only job's"quotes
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
 Detected changes in 1 resource(s):
 
@@ -82,11 +88,13 @@ Resource: resources.jobs.job's"quotes
  targets:
 
 === Syncing job's"quotes again is idempotent
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
 No changes detected.
 
 
 === Add a sibling task in job's"quotes
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[JOB'S\"QUOTES_ID] --save
 Detected changes in 1 resource(s):
 

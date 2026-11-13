@@ -1,0 +1,72 @@
+
+>>> [CLI] pipelines test --help
+Run the tests of a pipeline in a test-only update.
+
+This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
+
+KEY is the unique name of the pipeline, as defined in its YAML file.
+It is required when test selections are given. If there is only one pipeline
+in the project and no arguments are given, it is selected automatically.
+Outside a project, identify the pipeline with --pipeline-id; all positional
+arguments are then test selections.
+
+TEST_SELECTION is a test directory, file, or pytest test ID, for example
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
+pipeline's root_path. Paths that start with / are workspace paths. Without a
+selection, all of the pipeline's tests run.
+
+Each --pytest-arg passes one argument to pytest, in the order given. Only -k
+and -m are supported, each followed by its value in the next --pytest-arg, for
+example:
+
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
+
+Usage:
+  databricks pipelines test [flags] [KEY] [TEST_SELECTION...]
+
+Pipeline Test Flags:
+      --pipeline-id string       ID of the pipeline to test, instead of a KEY.
+      --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
+
+Flags:
+  -h, --help   help for test
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+
+=== The command is experimental and off by default
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234
+Error: pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it
+
+=== pytest arguments must be passed with --pytest-arg
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -k orders
+Error: -k is a pytest argument: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -- -k orders
+Error: the -- separator is not supported: pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'
+
+=== Invalid --pytest-arg values fail before any request
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=-x
+Error: unsupported pytest argument "-x": only -k and -m are supported
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 --pytest-arg=
+Error: --pytest-arg requires a non-empty value
+
+=== The pipeline ID must be a pipeline ID
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234
+Error: --pipeline-id "1234" is not a pipeline ID
+
+=== JSON output is not supported
+
+>>> musterr [CLI] pipelines test --pipeline-id 1234 -o json
+Error: --output json is not supported by pipelines test

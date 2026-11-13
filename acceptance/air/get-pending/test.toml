@@ -1,0 +1,42 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The Jobs API reports the parent run as RUNNING while its task still waits for
+# compute in the queue.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "state": {"life_cycle_state": "RUNNING"},
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 0,
+      "state": {"life_cycle_state": "QUEUED"},
+      "ai_runtime_task": {
+        "experiment": "my-exp",
+        "deployments": [
+          {
+            "command_path": "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/command.sh",
+            "compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}
+          }
+        ]
+      }
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"status_message": "STATUS:Waiting for GPU compute capacity to become available."}}
+'''

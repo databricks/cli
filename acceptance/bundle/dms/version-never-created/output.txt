@@ -1,5 +1,6 @@
 
 === Version creation fails, but file-backed deployment still succeeds
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
 Warn: Could not enable deployment history for this deploy: failed to create deployment version: Internal error
@@ -36,6 +37,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 []
 
 === The next resource update also succeeds while history version creation fails
+
 >>> update_file.py databricks.yml name: foo name: renamed
 
 >>> [CLI] bundle deploy
