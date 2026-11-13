@@ -202,11 +202,11 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 	if len(state.Skills) == 0 && len(state.Plugins) == 0 {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 		if err := removeState(baseDir); err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		if err := SaveState(baseDir, state); err != nil {
-			return err
+			return nil, err
 		}
 	}
 

@@ -596,7 +596,7 @@ func TestUpdateInstalledPluginsRecordsUnknownVersionWhenRefreshFails(t *testing.
 			dir, err := GlobalSkillsDir(ctx)
 			require.NoError(t, err)
 			require.NoError(t, SaveState(dir, &InstallState{
-				SchemaVersion: schemaVersionV2,
+				SchemaVersion: CurrentSchemaVersion,
 				Release:       "v" + tc.recorded,
 				Plugins: map[string]PluginRecord{
 					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: "user", Version: tc.recorded},
@@ -729,7 +729,7 @@ func saveUnknownAgentPlugin(t *testing.T) (context.Context, string) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			"future-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
@@ -748,7 +748,7 @@ func saveCopilotPlugin(t *testing.T) (context.Context, string) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},

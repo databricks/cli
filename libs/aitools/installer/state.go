@@ -158,7 +158,8 @@ func LoadMCPState(dir string) (*MCPState, error) {
 // readState reads the state file in the given directory, whatever it holds. It returns (nil, nil) when
 // the file does not exist.
 func readState(dir string) (*InstallState, error) {
-	data, err := os.ReadFile(filepath.Join(dir, stateFileName))
+	path := filepath.Join(dir, stateFileName)
+	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
