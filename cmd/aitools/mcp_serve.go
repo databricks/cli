@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -137,10 +138,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 			return serveFailure(cmd, err, 1)
 		}
 	}
-	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
-	if challenge != nil {
-		challenge.Recorder = mcpProxyTelemetry{agent: agent, service: f.service}
-	}
+	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile, agent: agent}, cmd.ErrOrStderr())
 	if err != nil {
 		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
 		// message is the one that names the login.
@@ -196,14 +194,15 @@ func (g guardCredentials) Configure(context.Context, *config.Config) (credential
 	return credentials.CredentialsProviderFn(g.refresh.authenticateCall), nil
 }
 
-// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, and the
-// config file it is pinned to. w is the profile's client, which must be guardedClient's.
+// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, the config
+// file it is pinned to, and the agent that started it. w is the profile's client, which must be guardedClient's.
 type serveTarget struct {
 	w          *databricks.WorkspaceClient
 	entry      *mcp.Entry
 	profile    string
 	service    string
 	pinnedFile string
+	agent      protos.AitoolsAgentType
 }
 
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
@@ -239,6 +238,7 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		LogoutCommand: mcpLogoutHint(t.service, t.profile, t.pinnedFile),
 		PinnedFile:    t.pinnedFile,
 		SignIn:        serveSignIn(t),
+		Recorder:      mcpProxyTelemetry{agent: t.agent, service: t.service},
 	}, nil
 }
 

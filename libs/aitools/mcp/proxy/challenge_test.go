@@ -304,6 +304,30 @@ func TestAuthenticateRecordsPromptWhenPageOpens(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
+// A sign-in that fails before its URL is printed, such as a read of the workspace ID, shows no page: nothing is recorded.
+func TestAuthenticateRecordsNoPromptWhenNoURLShown(t *testing.T) {
+	srv, _ := challengedService(t)
+	var calls int
+	signIn := func(context.Context, SignInRequest) (bool, bool, error) {
+		calls++
+		return false, false, errors.New("cannot read the workspace ID")
+	}
+	recorder := &promptRecorder{}
+	c := testChallenge(signIn)
+	c.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(c, io.Discard)
+	p := startPiped(t, t.Context(), b)
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	p.waitLines(t, 2)
+
+	assert.Equal(t, 1, calls, "the sign-in ran")
+	assert.Empty(t, recorder.prompts(), "no page was shown, so no prompt is recorded")
+	require.NoError(t, p.finish(t))
+}
+
 func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {

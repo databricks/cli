@@ -78,7 +78,7 @@ type Challenge struct {
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
 	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
-	// Recorder logs the sign-in prompt. The command provides it.
+	// Recorder logs the sign-in prompt. The command provides it; it must not be nil.
 	Recorder Recorder
 }
 
@@ -457,8 +457,9 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 
 	open := !h.pageCancelled
 	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: open, Progress: report, Stderr: h.stderr})
-	// A caller that was already signed in opened no page, so there is no prompt to record.
-	if open && !alreadySignedIn {
+	// A prompt is a page the user was shown. A caller that was already signed in, or a sign-in that failed before its
+	// URL was printed, prompted nobody.
+	if open && !alreadySignedIn && urlShown {
 		h.c.Recorder.SignInPrompted(ctx, err == nil)
 	}
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
