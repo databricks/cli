@@ -3,9 +3,15 @@ package browser
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
+
+	browserpkg "github.com/pkg/browser"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -41,12 +47,24 @@ func TestOpenWithBrowserNonePrintsURL(t *testing.T) {
 	assert.Contains(t, stderr.String(), "https://example.com/resource")
 }
 
-// openerChildEnv marks the child process that the tests below start as the browser command.
-const openerChildEnv = "LIBS_BROWSER_TEST_OPENER"
+const (
+	// openerChildEnv marks the child process that the tests below start as the browser command.
+	openerChildEnv = "LIBS_BROWSER_TEST_OPENER"
+	// openerBackgroundEnv, when set in the browser command, makes it start a sleeper and return, as a launcher does when
+	// it backgrounds the browser. Its value is the file the sleeper writes when it ends.
+	openerBackgroundEnv = "LIBS_BROWSER_TEST_BACKGROUND"
+	// openerSleeperEnv marks the child that openerBackgroundEnv starts, and names the file it writes.
+	openerSleeperEnv = "LIBS_BROWSER_TEST_SLEEPER"
+	// openerSleepTime is how long the sleeper runs. It is short, so that the tests end soon even when the wait is wrong.
+	openerSleepTime = 3 * time.Second
+)
 
 // TestMain lets the tests use this test binary as a browser command that writes to stdout, as a launcher can.
 func TestMain(m *testing.M) {
-	if os.Getenv(openerChildEnv) != "" {
+	switch {
+	case os.Getenv(openerSleeperEnv) != "":
+		os.Args = []string{os.Args[0], "-test.run=^TestOpenerSleeper$"}
+	case os.Getenv(openerChildEnv) != "":
 		os.Args = []string{os.Args[0], "-test.run=^TestOpenerChild$"}
 	}
 	m.Run()
@@ -58,6 +76,28 @@ func TestOpenerChild(t *testing.T) {
 		t.Skip("runs only as the browser command of the tests below")
 	}
 	fmt.Print("opener stdout")
+	sleepFile := os.Getenv(openerBackgroundEnv)
+	if sleepFile == "" {
+		return
+	}
+	// The sleeper inherits this process's output, as a browser started in the background does, and outlives the command.
+	sleeper := exec.Command(os.Args[0], "-test.run=^TestOpenerSleeper$")
+	sleeper.Env = append(os.Environ(), openerSleeperEnv+"="+sleepFile)
+	sleeper.Stdout = os.Stdout
+	sleeper.Stderr = os.Stderr
+	if err := sleeper.Start(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestOpenerSleeper is the child that openerBackgroundEnv starts. It runs only in that child process.
+func TestOpenerSleeper(t *testing.T) {
+	file := os.Getenv(openerSleeperEnv)
+	if file == "" {
+		t.Skip("runs only as the child of the browser command")
+	}
+	time.Sleep(openerSleepTime)
+	_ = os.WriteFile(file, nil, 0o600)
 }
 
 // runOpener calls open with this test binary as the browser command, and returns what the command wrote to stdout and
@@ -102,4 +142,39 @@ func TestOpenKeepsCommandStdoutOnStdout(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "opener stdout")
 	assert.NotContains(t, stderr, "opener stdout")
+}
+
+// TestOpenOutputToStderrReturnsWhenCommandBackgroundsChild checks that a browser command that starts a child and returns
+// does not hold up the caller. The child outlives the command, as a launcher that backgrounds the browser does, and writes
+// its file only when it ends. The file must not exist when the call returns.
+func TestOpenOutputToStderrReturnsWhenCommandBackgroundsChild(t *testing.T) {
+	t.Setenv(openerChildEnv, "1")
+	sleepFile := filepath.Join(t.TempDir(), "sleeper-done")
+	t.Setenv(openerBackgroundEnv, sleepFile)
+	ctx := env.Set(t.Context(), "BROWSER", os.Args[0])
+
+	require.NoError(t, OpenOutputToStderr(ctx, "https://example.com/login"))
+	_, err := os.Stat(sleepFile)
+	assert.ErrorIs(t, err, fs.ErrNotExist, "the call waited for the child that the browser command started")
+}
+
+// TestOpenDefaultOverlappingOpensRestoreStreams checks that two default opens that run at once, as sign-in can start
+// one while add --login starts another, leave the streams of pkg/browser as they were. The PATH is empty, so the
+// opener cannot start a browser: the opens fail at once, after they have swapped the streams. The race detector reports
+// the unsynchronized swaps when two opens overlap.
+func TestOpenDefaultOverlappingOpensRestoreStreams(t *testing.T) {
+	t.Setenv("BROWSER", "")
+	t.Setenv("PATH", t.TempDir())
+	stdout, stderr := browserpkg.Stdout, browserpkg.Stderr
+
+	var opens sync.WaitGroup
+	for range 2 {
+		opens.Go(func() {
+			_ = OpenOutputToStderr(t.Context(), "https://example.com/login")
+		})
+	}
+	opens.Wait()
+
+	assert.Equal(t, stdout, browserpkg.Stdout)
+	assert.Equal(t, stderr, browserpkg.Stderr)
 }

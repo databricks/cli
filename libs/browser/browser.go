@@ -61,7 +61,13 @@ func IsDisabled(ctx context.Context) bool {
 	return env.Get(ctx, "BROWSER") == "none"
 }
 
+// defaultOpenMu serializes the default opener, which swaps the streams of pkg/browser for the duration of an open.
+// Sign-in can start an open while another one runs.
+var defaultOpenMu sync.Mutex
+
 func openDefault(url string, stdoutToStderr bool) error {
+	defaultOpenMu.Lock()
+	defer defaultOpenMu.Unlock()
 	// github.com/pkg/browser writes xdg-open's output to os.Stdout and its error output to os.Stderr, even when the
 	// open succeeds, producing spurious noise on Linux desktops. The error output is discarded.
 	originalStdout, originalStderr := browserpkg.Stdout, browserpkg.Stderr
@@ -81,27 +87,14 @@ func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr
 	if err != nil {
 		return err
 	}
-	if !stdoutToStderr {
+	if stdoutToStderr {
+		e.WithInheritOutputToStderr()
+	} else {
 		e.WithInheritOutput()
 	}
 	cmd, err := e.StartCommand(ctx, fmt.Sprintf("%q %q", browserCmd, url))
 	if err != nil {
 		return err
 	}
-	if !stdoutToStderr {
-		return cmd.Wait()
-	}
-	// The command's stdout is a pipe, and Wait closes it, so it is copied to stderr before Wait.
-	var copied sync.WaitGroup
-	copied.Add(2)
-	go func() {
-		defer copied.Done()
-		_, _ = io.Copy(os.Stderr, cmd.Stdout())
-	}()
-	go func() {
-		defer copied.Done()
-		_, _ = io.Copy(os.Stderr, cmd.Stderr())
-	}()
-	copied.Wait()
 	return cmd.Wait()
 }
