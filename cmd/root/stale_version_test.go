@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,4 +65,13 @@ func TestSkipStaleVersionWarning(t *testing.T) {
 			assert.Equal(t, tc.want, skipStaleVersionWarning(ctx, tc.info))
 		})
 	}
+}
+
+// A command whose stdout carries a protocol gets no stale-version warning, even on a stale build. The warning goes to
+// stderr, but an agent shows the server's stderr every time it starts the server.
+func TestStaleVersionSkippedForProtocolCommand(t *testing.T) {
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
+	release := build.Info{Version: "1.18.0"}
+	assert.True(t, staleVersionSkipped(ctx, protocolTestCommand(new(bool)), release))
+	assert.False(t, staleVersionSkipped(ctx, &cobra.Command{Use: "list"}, release))
 }

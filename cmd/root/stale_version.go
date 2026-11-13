@@ -40,9 +40,15 @@ func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
 	return dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 }
 
+// staleVersionSkipped reports whether cmd gets no stale-version warning: a command whose stdout carries a protocol
+// never does, and neither does a build that skipStaleVersionWarning skips.
+func staleVersionSkipped(ctx context.Context, cmd *cobra.Command, info build.Info) bool {
+	return carriesProtocol(cmd) || skipStaleVersionWarning(ctx, info)
+}
+
 func warnIfStaleVersion(ctx context.Context, cmd *cobra.Command) {
 	info := build.GetInfo()
-	if carriesProtocol(cmd) || skipStaleVersionWarning(ctx, info) {
+	if staleVersionSkipped(ctx, cmd, info) {
 		return
 	}
 	_, command := versioncheck.DetectInstallMethod(ctx)

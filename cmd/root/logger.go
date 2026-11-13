@@ -89,12 +89,9 @@ func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (c
 	}
 
 	if carriesProtocol(cmd) {
-		toStdout, stdoutErr := writesToStdout(f.file.Writer(), os.Stdout, os.Stderr)
-		if stdoutErr != nil || toStdout {
-			_ = f.file.Close()
-		}
-		if stdoutErr != nil {
-			return nil, stdoutErr
+		toStdout, err := writesToStdout(f.file.Writer(), os.Stdout, os.Stderr)
+		if err != nil {
+			return nil, err
 		}
 		if toStdout {
 			return nil, fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
