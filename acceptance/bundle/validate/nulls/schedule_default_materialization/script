@@ -1,2 +1,2 @@
-# Defaults are not applied under an explicitly null block (schedule stays null).
+# A null schedule in databricks.yml has nothing to remove: the job has no schedule.
 trace $CLI bundle validate -o json | jq '.resources.jobs.j | {schedule}'

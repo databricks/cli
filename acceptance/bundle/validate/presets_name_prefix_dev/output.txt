@@ -32,9 +32,5 @@ presets: # PRESETS
 
 
 >>> [CLI] bundle validate -o json
-Warning: expected a string value, found null
-  at presets.name_prefix
-  in databricks.yml:25:15
-
 
 === The end
