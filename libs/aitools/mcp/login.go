@@ -70,6 +70,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		if _, err := SignOut(ctx, w, service); err != nil {
 			return false, err
 		}
+	case catalog.ProvisioningInfoStateDegraded, catalog.ProvisioningInfoStateDeleting,
+		catalog.ProvisioningInfoStateProvisioning, catalog.ProvisioningInfoStateUpdating:
+		// Not a state this sign-in starts from; the wait below handles it.
 	}
 
 	fmt.Fprintf(out, "Sign in with the same account you use for Databricks profile %s.\n", opts.Profile)
@@ -121,6 +124,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 			return false, nil
 		case catalog.ProvisioningInfoStateFailed:
 			return false, ErrSignInFailed
+		case catalog.ProvisioningInfoStateDegraded, catalog.ProvisioningInfoStateDeleting,
+			catalog.ProvisioningInfoStateProvisioning, catalog.ProvisioningInfoStateUpdating:
+			// The login has not completed yet.
 		}
 	}
 }
