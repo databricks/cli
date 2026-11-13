@@ -629,6 +629,25 @@ func TestRenderMcpListLoginHintNamesCheckedFile(t *testing.T) {
 	}
 }
 
+// TestRenderMcpListSignInNeededNamesTheLoginCommand checks that a server whose sign-in is needed says how to sign in: the
+// login command, which add prints for the same state.
+func TestRenderMcpListSignInNeededNamesTheLoginCommand(t *testing.T) {
+	home := withHome(t)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, _ := checkedListServer(t)
+	require.Equal(t, checkNeeded, s.Check.SignIn)
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "  to sign in: run `databricks aitools mcp login system.ai.github --profile logfood`")
+}
+
 // TestRenderMcpListSaysWhyCheckIsSkipped checks that a server whose profile drifted says in the text that its check was
 // skipped, and that a listing without --check does not say so.
 func TestRenderMcpListSaysWhyCheckIsSkipped(t *testing.T) {

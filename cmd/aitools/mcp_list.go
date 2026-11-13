@@ -590,11 +590,15 @@ func checkText(c *mcpListCheck) string {
 	return strings.Join(parts, ", ")
 }
 
-// serverHint tells the user how to repair a server whose profile no longer serves it. The remove command names the
-// server, so that the other servers of the profile are kept.
+// serverHint tells the user what to do about a server: how to sign in, when its sign-in is needed, or how to repair it
+// when its profile no longer serves it. The remove command names the server, so that the other servers of the profile
+// are kept.
 func serverHint(ctx context.Context, p mcpListProfile, s mcpListServer) string {
 	if s.Status == statusUnknown {
 		return "unchecked: see the warning below"
+	}
+	if s.Check != nil && s.Check.SignIn == checkNeeded {
+		return fmt.Sprintf("to sign in: run `%s`", mcpLoginHint(s.Service, p.Profile, loginFile(ctx, p, s.entry.ConfigFile != "")))
 	}
 	if s.drift == nil {
 		return ""
