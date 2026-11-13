@@ -109,47 +109,17 @@ resources:
       postgres_role: app_role_v2
 
 >>> [CLI] bundle plan
-update postgres_branches.main
-update postgres_projects.my_project
 recreate postgres_roles.my_role
 
-Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-postgres-role-[UNIQUE_NAME]/default/files...
 Recreated postgres_roles.my_role
-Updated postgres_branches.main
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
+Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
-{
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
-  "q": {
-    "update_mask": "spec.display_name,spec.history_retention_duration"
-  },
-  "body": {
-    "spec": {
-      "display_name": "Test Project for Role",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-  "q": {
-    "update_mask": "spec.expiration"
-  },
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  }
-}
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ROLE_ID]"

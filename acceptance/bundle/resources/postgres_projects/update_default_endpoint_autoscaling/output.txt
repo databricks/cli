@@ -34,9 +34,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 === Plan again: the change must leave no drift behind
 
 >>> [CLI] bundle plan
-update postgres_projects.my_project
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

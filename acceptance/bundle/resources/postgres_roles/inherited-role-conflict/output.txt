@@ -16,18 +16,14 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === Plan after unbind: the bundle wants to (re-)create the role
 
 >>> [CLI] bundle plan
-update postgres_branches.main
-update postgres_projects.my_project
 create postgres_roles.my_role
 
-Plan: 1 to add, 2 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Re-deploy: creating the already-existing role fails
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.main
-Updated postgres_projects.my_project
 Error: cannot create resources.postgres_roles.my_role: role with that name already exists (400 BAD_REQUEST)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles?role_id=test-role

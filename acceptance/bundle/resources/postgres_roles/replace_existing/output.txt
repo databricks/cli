@@ -16,21 +16,17 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === Plan after unbind: the bundle wants to (re-)create the role
 
 >>> [CLI] bundle plan
-update postgres_branches.main
-update postgres_projects.my_project
 create postgres_roles.my_role
 
-Plan: 1 to add, 2 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Re-deploy: replace_existing adopts the already-existing role instead of erroring
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default/files...
 Created postgres_roles.my_role
-Updated postgres_branches.main
-Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 2 changed, 0 deleted, 0 unchanged
+Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
 === Confirm the role is under management again
 
