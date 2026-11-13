@@ -196,7 +196,19 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      another Go version, so run the changed acceptance tests under one
      (`GOTOOLCHAIN=goX.Y.Z` downloads it): a golden whose values change
      across toolchains asserts the standard library, not the CLI, and would
-     fail only on the next `Bump Go toolchain` PR.
+     fail only on the next `Bump Go toolchain` PR. If `gh pr checks` reports
+     no checks for the head, say so in Evidence and run the changed tests
+     locally; missing checks are not a green build. For a change to the
+     acceptance harness or to CI test selection, a green cell shows the
+     suite passed, not that the new path ran: grep the job log for the line
+     the change adds (`gh run view --job <id> --log`).
+   - The eng-dev-ecosystem-bot "Integration test report" comment lists, per
+     cloud, which acceptance tests ran, passed or were skipped; use it when
+     the deco run itself is not readable. In it, flaky means fail-then-pass
+     on rerun and RECOVERED means the test is listed in `known_failures.txt`
+     on the `ciconfig` branch. On a flake-fix PR, read that file (and its
+     commit history) before treating a flaky mark on the changed tests as
+     evidence the fix did not work; the entry often names a different error.
    - Does each new or changed test show the effect it claims? The output
      should include the state after the action (list or print it again after
      a sync, a deploy or a migration) and the exact value the change is
