@@ -76,9 +76,9 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 }
 
 // makePostgresBranchRemote converts the SDK Branch into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_branches.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_branches.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	var spec postgres.BranchSpec
 	if branch.Spec != nil {
