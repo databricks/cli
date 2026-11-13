@@ -248,3 +248,94 @@ func TestWithMissingServicePrincipalHint(t *testing.T) {
 		assert.Contains(t, got.Error(), `delete it with "databricks apps delete myapp"`)
 	}
 }
+
+func TestAppDoDelete_RetriesWhileComputeSettles(t *testing.T) {
+	tests := []struct {
+		name string
+		// computeStates are the states GET returns in order; the last one repeats.
+		computeStates []apps.ComputeState
+		wantDeletes   int
+		wantErr       bool
+	}{
+		{
+			name:          "retries after compute leaves UPDATING",
+			computeStates: []apps.ComputeState{apps.ComputeStateUpdating, apps.ComputeStateActive},
+			wantDeletes:   2,
+		},
+		{
+			name:          "fails at once when compute is not transitional",
+			computeStates: []apps.ComputeState{apps.ComputeStateActive},
+			wantDeletes:   1,
+			wantErr:       true,
+		},
+		{
+			name:          "fails at once when app is already deleting",
+			computeStates: []apps.ComputeState{apps.ComputeStateDeleting},
+			wantDeletes:   1,
+			wantErr:       true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server := testserver.New(t)
+			deletes := 0
+			gets := 0
+
+			server.Handle("DELETE", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+				deletes++
+				if deletes == 1 {
+					return testserver.Response{
+						StatusCode: 400,
+						Body: map[string]string{
+							"error_code": "BAD_REQUEST",
+							"message":    "Cannot delete app test-app as it is not terminal with state UPDATING, and was updated less than 20 minutes ago. Please wait before trying again.",
+						},
+					}
+				}
+				return apps.App{Name: req.Vars["name"]}
+			})
+			server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+				state := tc.computeStates[min(gets, len(tc.computeStates)-1)]
+				gets++
+				return apps.App{Name: req.Vars["name"], ComputeStatus: &apps.ComputeStatus{State: state}}
+			})
+			testserver.AddDefaultHandlers(server)
+
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+			require.NoError(t, err)
+
+			r := (&ResourceApp{}).New(client)
+			err = r.DoDelete(t.Context(), "test-app", nil)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "not terminal with state UPDATING")
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantDeletes, deletes)
+		})
+	}
+}
+
+func TestAppRetryWhileComputeSettles_IgnoresNonBadRequest(t *testing.T) {
+	server := testserver.New(t)
+	gets := 0
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		gets++
+		return apps.App{Name: req.Vars["name"], ComputeStatus: &apps.ComputeStatus{State: apps.ComputeStateUpdating}}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+
+	r := (&ResourceApp{}).New(client)
+	calls := 0
+	err = r.retryWhileComputeSettles(t.Context(), "test-app", func() error {
+		calls++
+		return &apierr.APIError{StatusCode: 500, ErrorCode: "INTERNAL_ERROR", Message: "boom"}
+	})
+	require.ErrorContains(t, err, "boom")
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, 0, gets)
+}
