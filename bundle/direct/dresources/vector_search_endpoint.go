@@ -2,12 +2,16 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
@@ -80,13 +84,34 @@ func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*
 	return newVectorSearchEndpointRemote(info), nil
 }
 
+// DoCreate retries transient errors itself rather than marking them retrySafe: the backend
+// can answer 504 TEMPORARILY_UNAVAILABLE after it has already created the endpoint, and the
+// retry is then rejected as already existing. Endpoint names are chosen by the
+// caller, so after a transient failure that endpoint is the one this deploy asked for.
 func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
-	waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
+	afterTransient := false
+	info, err := retry.With(ctx, retry.IsTransient, func() (*vectorsearch.EndpointInfo, error) {
+		waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
+		if err == nil {
+			return waiter.Response, nil
+		}
+		if afterTransient && isEndpointAlreadyExists(err) {
+			log.Infof(ctx, "Vector search endpoint %q already exists after a transient create error, using it", config.Name)
+			return r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, config.Name)
+		}
+		afterTransient = afterTransient || retry.IsTransient(ctx, err)
+		return nil, err
+	})
 	if err != nil {
 		return "", nil, err
 	}
-	id := config.Name
-	return id, newVectorSearchEndpointRemote(waiter.Response), nil
+	return config.Name, newVectorSearchEndpointRemote(info), nil
+}
+
+// isEndpointAlreadyExists matches both codes: the cloud returns 409 ALREADY_EXISTS (observed on
+// AWS, 2026-11), while RESOURCE_ALREADY_EXISTS is the generic code for the same conflict.
+func isEndpointAlreadyExists(err error) bool {
+	return errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists)
 }
 
 func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
