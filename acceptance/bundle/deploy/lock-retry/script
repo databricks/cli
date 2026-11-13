@@ -12,6 +12,11 @@ fault.py "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
 trace $CLI bundle deploy
 print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | contains("deploy.lock")) | [.method, .q.overwrite]'
 
+title "Every attempt returns a 504, but the first one is applied: reading the lock back finds it is ours"
+fault.py --after-handler "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 3
+trace $CLI bundle deploy
+print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | contains("deploy.lock")) | [.method, .q.overwrite]'
+
 title "Lock is held by another deployer: the retry gets a conflict and the error names the holder"
 fault.py "POST /api/2.0/workspace-files/import-file/**/deploy.lock" 504 0 1
 echo '{"ID":"00000000-0000-0000-0000-000000000000","AcquisitionTime":"2026-01-01T00:00:00Z","IsForced":false,"User":"someone-else"}' > other.lock
