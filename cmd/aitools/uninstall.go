@@ -89,7 +89,7 @@ The command exits with code 1 when every removal it attempts fails.`,
 					return err
 				}
 				if !proceed {
-					cmdio.LogString(ctx, "Cancelled.")
+					cmdio.LogString(ctx, cancelledMessage)
 					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUnspecified)
 					return nil
 				}

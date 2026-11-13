@@ -15,16 +15,21 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -348,10 +353,10 @@ func TestInstallServerRefusesUndetectedExplicitAgent(t *testing.T) {
 	home := withHome(t)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o700))
 	req := addRequest{
-		profile:  "logfood",
-		explicit: true,
-		agents:   []*agents.Agent{agents.ByName("codex"), agents.ByName("claude-code")},
-		binary:   "databricks",
+		profile:     "logfood",
+		agentSource: agentsNamed,
+		agents:      []*agents.Agent{agents.ByName("codex"), agents.ByName("claude-code")},
+		binary:      "databricks",
 	}
 	req.refused = refusedAgents(ctx, req.agents)
 	plan := addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"}
@@ -378,9 +383,15 @@ func defaultBinding(t *testing.T, profile string) addBinding {
 }
 
 // planNames runs planAdds for the services with the agent entries read as the command reads them.
+// readHeld returns the server entries of the targets that readAgentEntries reads, for tests that do not check unreadable configs.
+func readHeld(ctx context.Context, targets []*agents.Agent) agentEntries {
+	held, _ := readAgentEntries(ctx, targets)
+	return held
+}
+
 func planNames(t *testing.T, nameFlag string, b addBinding, state *mcp.State, fullNames []string, targets []*agents.Agent) ([]addPlan, error) {
 	t.Helper()
-	in := planInput{binding: b, nameFlag: nameFlag, targets: targets, held: readAgentEntries(t.Context(), targets)}
+	in := planInput{binding: b, nameFlag: nameFlag, targets: targets, held: readHeld(t.Context(), targets)}
 	return planAdds(t.Context(), in, state, fullNames)
 }
 
@@ -749,7 +760,7 @@ func TestInstallServerReassertsFromAgentFile(t *testing.T) {
 	home := withHome(t)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o700))
 
-	req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName("claude-code")}, binary: "databricks"}
+	req := addRequest{profile: "logfood", agentSource: agentsNamed, agents: []*agents.Agent{agents.ByName("claude-code")}, binary: "databricks"}
 	plan := addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github-logfood"}
 
 	first := installServer(t.Context(), req, plan)
@@ -778,8 +789,8 @@ func TestAgentFailureErrorWhenAServiceReachedNoAgent(t *testing.T) {
 	assert.ErrorContains(t, err, "bad config")
 
 	// Agents named with --agents fail the command on any failure.
-	assert.Error(t, agentFailureError(addRequest{explicit: true}, []addServerOutput{installed, mixed}))
-	assert.NoError(t, agentFailureError(addRequest{explicit: true}, []addServerOutput{installed}))
+	assert.Error(t, agentFailureError(addRequest{agentSource: agentsNamed}, []addServerOutput{installed, mixed}))
+	assert.NoError(t, agentFailureError(addRequest{agentSource: agentsNamed}, []addServerOutput{installed}))
 }
 
 func TestErrorCategoryMapsTypedFailures(t *testing.T) {
@@ -1232,7 +1243,7 @@ func TestAgentFailureErrorKeepsEveryDistinctFailure(t *testing.T) {
 		{Agents: []addAgentOutput{{Name: "claude-code", Status: statusFailed, err: refusal}}},
 	}
 
-	err := agentFailureError(addRequest{explicit: true}, servers)
+	err := agentFailureError(addRequest{agentSource: agentsNamed}, servers)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "write ~/.claude.json")
 	assert.Equal(t, 1, strings.Count(err.Error(), "Claude Code is not installed"), err.Error())
@@ -1262,7 +1273,7 @@ func TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(home, ".claude.json"), []byte(`{"mcpServers":{"github-logfood":`+claudeEntry("system.ai.other", "logfood", "")+`}}`), 0o600))
 	state := &mcp.State{Servers: []mcp.Entry{{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"}}}
 	targets := []*agents.Agent{claude, codex}
-	in := planInput{binding: defaultBinding(t, "logfood"), targets: targets, held: readAgentEntries(ctx, targets)}
+	in := planInput{binding: defaultBinding(t, "logfood"), targets: targets, held: readHeld(ctx, targets)}
 
 	plans, err := planAdds(ctx, in, state, []string{"system.ai.github"})
 	require.NoError(t, err)
@@ -1279,7 +1290,7 @@ func TestPlanAddsDetectedAgentConflictFailsOnlyThatAgent(t *testing.T) {
 	assert.Equal(t, categoryNameConflict, errorCategory(err))
 
 	onlyClaude := []*agents.Agent{claude}
-	in = planInput{binding: defaultBinding(t, "logfood"), targets: onlyClaude, held: readAgentEntries(ctx, onlyClaude)}
+	in = planInput{binding: defaultBinding(t, "logfood"), targets: onlyClaude, held: readHeld(ctx, onlyClaude)}
 	plans, err = planAdds(ctx, in, state, []string{"system.ai.github"})
 	require.NoError(t, err)
 	refusal := planningRefusals(plans, onlyClaude)
@@ -1356,7 +1367,7 @@ func TestInstallServerWritesOnlyAgentsInstalledForMCP(t *testing.T) {
 				writeFakeCLI(t, agents.ByName(tt.agent).Binary)
 			}
 
-			req := addRequest{profile: "logfood", explicit: true, agents: []*agents.Agent{agents.ByName(tt.agent)}, binary: "databricks"}
+			req := addRequest{profile: "logfood", agentSource: agentsNamed, agents: []*agents.Agent{agents.ByName(tt.agent)}, binary: "databricks"}
 			req.refused = refusedAgents(ctx, req.agents)
 			out := installServer(ctx, req, addPlan{service: mcp.Service{FullName: "system.ai.github"}, name: "github"})
 			require.Len(t, out.Agents, 1)
@@ -1387,4 +1398,634 @@ func writeFakeCLI(t *testing.T, binary string) {
 	}
 	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), 0o755))
 	t.Setenv("PATH", dir)
+}
+
+// runInteractiveAdd runs `aitools mcp add` as a terminal does. The prompts are the seams, which the test overrides.
+func runInteractiveAdd(t *testing.T, args ...string) error {
+	t.Helper()
+	return runInteractive(t, append([]string{"mcp", "add"}, args...)...)
+}
+
+// runInteractive runs the aitools command with args as a terminal does, under the mcp group.
+func runInteractive(t *testing.T, args ...string) error {
+	t.Helper()
+	withDatabricksBinary(t)
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(test.Done)
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+	parent := newMCPTestRoot()
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs(args)
+	return parent.ExecuteContext(ctx)
+}
+
+// TestMcpAddNameOnThePickerPathIsRefusedBeforeConnecting checks that --name without --names is refused before the
+// profile is read, so no request reaches the workspace.
+func TestMcpAddNameOnThePickerPathIsRefusedBeforeConnecting(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+
+	err := runInteractiveAdd(t, "--profile", "logfood", "--name", "github")
+	require.Error(t, err)
+	assert.Equal(t, "--name needs exactly one service; leave out --name to pick services in the picker", err.Error())
+	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+}
+
+// TestMcpAddPickerRefusesRepointedHostOfPickedServiceBeforeWriting checks that a run that picks its services lists the
+// workspace, then refuses a picked service whose recorded entry names another host, before anything is written.
+func TestMcpAddPickerRefusesRepointedHostOfPickedServiceBeforeWriting(t *testing.T) {
+	home := withHome(t)
+	server := listingServer(t, "system.ai.github")
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	require.NoError(t, mcp.SaveState(t.Context(), &mcp.State{Servers: []mcp.Entry{{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test",
+	}}}))
+	failOnPrompt(t)
+	promptServiceSelection = func(string, []serviceRow) (servicePick, error) {
+		return servicePick{services: []mcp.Service{{FullName: "system.ai.github", Leaf: "github"}}}, nil
+	}
+
+	err := runInteractiveAdd(t, "--profile", "logfood", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileHostChanged), errorCategory(err))
+	assert.Contains(t, err.Error(), "was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL)
+	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+}
+
+// schemaListingServer returns a workspace whose schemas list the services named for them, by the parent of the listing.
+// Each service is a full name, none sign-in-required.
+func schemaListingServer(t *testing.T, schemas map[string][]string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.URL.Path != "/api/2.1/unity-catalog/mcp-services" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var services []string
+		for _, name := range schemas[strings.TrimPrefix(r.URL.Query().Get("parent"), "schemas/")] {
+			services = append(services, `{"name":"mcp-services/`+name+`"}`)
+		}
+		_, _ = w.Write([]byte(`{"mcp_services":[` + strings.Join(services, ",") + `]}`))
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// TestMcpAddPickerInstallsAcrossSchemas checks that a terminal run with a profile and no --names installs the services it
+// picks in two schemas, reached through "Another schema...": both entries reach the agent file and the state.
+func TestMcpAddPickerInstallsAcrossSchemas(t *testing.T) {
+	home := withHome(t)
+	server := schemaListingServer(t, map[string][]string{
+		"system.ai":  {"system.ai.github"},
+		"main.tools": {"main.tools.slack"},
+	})
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+	promptServiceSelection = func(location string, _ []serviceRow) (servicePick, error) {
+		if location == "system.ai" {
+			return servicePick{services: []mcp.Service{{FullName: "system.ai.github", Leaf: "github"}}, another: true}, nil
+		}
+		return servicePick{services: []mcp.Service{{FullName: "main.tools.slack", Leaf: "slack"}}}, nil
+	}
+	promptLocation = func() (string, error) { return "main.tools", nil }
+	promptAgentSelection = func(_ context.Context, _ string, choices []agentChoice) ([]*agents.Agent, error) {
+		return []*agents.Agent{choices[0].agent}, nil
+	}
+	proceeds := 0
+	promptProceed = func() (bool, error) {
+		proceeds++
+		return true, nil
+	}
+
+	require.NoError(t, runInteractiveAdd(t, "--profile", "logfood"))
+	assert.Equal(t, 1, proceeds, "the picked plan is confirmed once")
+
+	agentFile, err := os.ReadFile(filepath.Join(home, ".claude.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(agentFile), `"github-logfood"`)
+	assert.Contains(t, string(agentFile), `"main-tools-slack-logfood"`)
+
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	var recorded []string
+	for _, e := range state.Servers {
+		recorded = append(recorded, e.Service)
+	}
+	assert.ElementsMatch(t, []string{"system.ai.github", "main.tools.slack"}, recorded)
+}
+
+// TestMcpAddPickerRefusesMissingProfileBeforeAnyRequest checks that a run that picks its services reports a profile the
+// config file does not have, or has with no host, as PROFILE_NOT_FOUND, before any request.
+func TestMcpAddPickerRefusesMissingProfileBeforeAnyRequest(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+
+	err := runInteractiveAdd(t, "--profile", "logfdood", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
+	assert.Contains(t, err.Error(), "Databricks profile \"logfdood\", which does not exist in ")
+	assert.Contains(t, err.Error(), "Set it up with: databricks auth login --profile logfdood")
+
+	writeHomeConfig(t, home, "[logfood]\nhost =\nauth_type = pat\ntoken = dapi-logfood\n")
+	err = runInteractiveAdd(t, "--profile", "logfood", "--agents", "claude-code")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileNotFound), errorCategory(err))
+	assert.Contains(t, err.Error(), "Databricks profile \"logfood\", which has no host in ")
+}
+
+// TestMcpAddPickerWithNoAgentMakesNoRequest checks that a run that picks its services ends when no agent is detected,
+// before the workspace is contacted.
+func TestMcpAddPickerWithNoAgentMakesNoRequest(t *testing.T) {
+	home := withHome(t)
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".claude")))
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+
+	err := runInteractiveAdd(t, "--profile", "logfood")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, errorCategory(err))
+	assert.Contains(t, err.Error(), "no MCP-capable coding agents detected")
+}
+
+// TestMcpAddWithoutTerminalReportsNoAgentBeforeProfile checks that a run without a terminal and with no agent reports
+// that before the profile, which here would be ambiguous with two profiles.
+func TestMcpAddWithoutTerminalReportsNoAgentBeforeProfile(t *testing.T) {
+	home := withHome(t)
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".claude")))
+	writeHomeConfig(t, home, "[logfood]\nhost = https://logfood.test\nauth_type = pat\ntoken = dapi-logfood\n"+
+		"[dogfood]\nhost = https://dogfood.test\nauth_type = pat\ntoken = dapi-dogfood\n")
+
+	err := runAdd(t, "--names", "github")
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, errorCategory(err))
+	assert.Contains(t, err.Error(), "no MCP-capable coding agents detected")
+}
+
+// TestMcpAddInTerminalRefusesWhenAgentCheckFails checks that a terminal with no agent installed for MCP, and an agent
+// whose check fails, is refused in chooseAgents: the failure is named, nothing is picked and the check is not repeated.
+func TestMcpAddInTerminalRefusesWhenAgentCheckFails(t *testing.T) {
+	withHome(t)
+	t.Setenv(env.HomeEnvVar(), "")
+	for _, name := range agentHomeEnv {
+		t.Setenv(name, "")
+	}
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+		t.Error("the run asked for agents with none installed")
+		return nil, nil
+	}
+
+	claude := agents.ByName(agents.NameClaudeCode)
+	_, checkErr := claude.InstalledForMCP(ctx)
+	require.Error(t, checkErr, "the check needs a home directory")
+
+	_, _, err := chooseAgents(ctx, nil, true)
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategoryUnknownAgent, errorCategory(err))
+	assert.Contains(t, err.Error(), "no MCP-capable coding agents detected")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Not found: %s (%s)", claude.DisplayName, checkErr))
+}
+
+// failOnPrompt makes every picker and question of an interactive run fail the test, so a test can show what a
+// run asks. It restores the seams when the test ends.
+func failOnPrompt(t *testing.T) {
+	t.Helper()
+	origProceed, origAgents, origServices, origProfile := promptProceed, promptAgentSelection, promptServiceSelection, selectProfile
+	origSignIn := promptSignInNow
+	t.Cleanup(func() {
+		promptProceed, promptAgentSelection, promptServiceSelection, selectProfile = origProceed, origAgents, origServices, origProfile
+		promptSignInNow = origSignIn
+	})
+	promptProceed = func() (bool, error) { t.Error("the run asked to confirm the plan"); return false, nil }
+	promptAgentSelection = func(context.Context, string, []agentChoice) ([]*agents.Agent, error) {
+		t.Error("the run asked for agents")
+		return nil, nil
+	}
+	promptServiceSelection = func(string, []serviceRow) (servicePick, error) {
+		t.Error("the run asked for services")
+		return servicePick{}, nil
+	}
+	selectProfile = func(context.Context, profile.SelectConfig) (string, error) {
+		t.Error("the run asked for a profile")
+		return "", nil
+	}
+	promptSignInNow = func(string) (bool, error) {
+		t.Error("the run asked to sign in")
+		return false, nil
+	}
+}
+
+// listingServer returns a workspace whose schema lists the MCP services in names, none of them sign-in-required.
+// A run that binds a profile with a workspace_id lists the services and makes no other call.
+func listingServer(t *testing.T, names ...string) *httptest.Server {
+	t.Helper()
+	services := make([]string, 0, len(names))
+	for _, name := range names {
+		services = append(services, `{"name":"mcp-services/`+name+`"}`)
+	}
+	return listingServerJSON(t, services...)
+}
+
+// signInListingServer returns a workspace whose schema lists the sign-in-required service name, whose source connection
+// has an OAuth provider. The service is not signed in, so its credential read answers NOT_FOUND.
+func signInListingServer(t *testing.T, name string) *httptest.Server {
+	t.Helper()
+	return listingServerJSON(t, `{"name":"mcp-services/`+name+`","config":{"source_connection":{"name":"github","options":{"oauth_provider":"github"}}}}`)
+}
+
+// listingServerJSON returns a workspace whose schema lists services, each a JSON MCP service. A credential read answers
+// NOT_FOUND, as for a caller not signed in; any other request is a failure.
+func listingServerJSON(t *testing.T, services ...string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			// The SDK reads host metadata before it calls the API; there is none here.
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/user-credentials") {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not found"}`))
+			return
+		}
+		if r.URL.Path != "/api/2.1/unity-catalog/mcp-services" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write([]byte(`{"mcp_services":[` + strings.Join(services, ",") + `]}`))
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// TestMcpAddFullySpecifiedRunAsksNothing checks that a terminal run with the profile, the services and the agents
+// given asks for nothing and installs.
+func TestMcpAddFullySpecifiedRunAsksNothing(t *testing.T) {
+	home := withHome(t)
+	server := listingServer(t, "system.ai.dbsql")
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+
+	require.NoError(t, runInteractiveAdd(t, "--profile", "logfood", "--names", "dbsql", "--agents", "claude-code"))
+	claude, err := os.ReadFile(filepath.Join(home, ".claude.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(claude), "dbsql-logfood")
+}
+
+// TestMcpAddFullySpecifiedRunAsksOnlyTheSignInQuestion checks that a terminal run with the profile, the services and the
+// agents given asks the sign-in question of a sign-in-required server, and nothing else.
+func TestMcpAddFullySpecifiedRunAsksOnlyTheSignInQuestion(t *testing.T) {
+	home := withHome(t)
+	server := signInListingServer(t, "system.ai.github")
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+	var asked []string
+	promptSignInNow = func(service string) (bool, error) {
+		asked = append(asked, service)
+		return false, nil
+	}
+
+	require.NoError(t, runInteractiveAdd(t, "--profile", "logfood", "--names", "github", "--agents", "claude-code"))
+	assert.Equal(t, []string{"system.ai.github"}, asked)
+	claude, err := os.ReadFile(filepath.Join(home, ".claude.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(claude), "github-logfood")
+}
+
+// TestMcpAddDeclinedPlanWritesNothing checks that declining the confirm of a picked agent leaves the agent's
+// config unwritten.
+func TestMcpAddDeclinedPlanWritesNothing(t *testing.T) {
+	home := withHome(t)
+	server := listingServer(t, "system.ai.dbsql")
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-logfood\n")
+	failOnPrompt(t)
+	origAgents, origProceed := promptAgentSelection, promptProceed
+	t.Cleanup(func() { promptAgentSelection, promptProceed = origAgents, origProceed })
+	promptAgentSelection = func(_ context.Context, _ string, choices []agentChoice) ([]*agents.Agent, error) {
+		return []*agents.Agent{agents.ByName(agents.NameClaudeCode)}, nil
+	}
+	var confirmed bool
+	promptProceed = func() (bool, error) {
+		confirmed = true
+		return false, nil
+	}
+
+	require.NoError(t, runInteractiveAdd(t, "--profile", "logfood", "--names", "dbsql"))
+	assert.True(t, confirmed)
+	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+	state, err := mcp.LoadState(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, state.Servers)
+}
+
+// credentialServer returns a workspace whose credential reads of the services in active answer ACTIVE, and that counts
+// its API reads in reads. The others answer NOT_FOUND, as the API does until the caller signs in.
+func credentialServer(t *testing.T, reads *atomic.Int32, active ...string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		reads.Add(1)
+		for _, service := range active {
+			if r.URL.Path == "/api/2.1/unity-catalog/mcp-services/"+service+"/user-credentials" {
+				_, _ = w.Write([]byte(`{"provisioning_info":{"state":"ACTIVE"}}`))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error_code":"NOT_FOUND","message":"not found"}`))
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// signInRun returns the requests and plans of two sign-in-required servers that reached claude-code, and the workspace
+// they sign in to. The servers are github and genie_one_mcp.
+func signInRun(t *testing.T, reads *atomic.Int32, active ...string) (*databricks.WorkspaceClient, addRequest, []addPlan, []addServerOutput) {
+	t.Helper()
+	server := credentialServer(t, reads, active...)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	req := addRequest{profile: "logfood", workspaceID: "123", agents: []*agents.Agent{agents.ByName(agents.NameClaudeCode)}}
+	plans := []addPlan{
+		{service: mcp.Service{FullName: "system.ai.github", SignInRequired: true}},
+		{service: mcp.Service{FullName: "system.ai.genie_one_mcp", SignInRequired: true}},
+	}
+	installed := []addAgentOutput{{Name: agents.NameClaudeCode, Status: statusInstalled}}
+	servers := []addServerOutput{
+		{Name: "github-logfood", Service: "system.ai.github", SignInRequired: true, Agents: installed},
+		{Name: "genie-logfood", Service: "system.ai.genie_one_mcp", SignInRequired: true, Agents: installed},
+	}
+	return w, req, plans, servers
+}
+
+// askSignIn overrides the sign-in question for a test, and returns the services it was asked about.
+func askSignIn(t *testing.T, answer func(service string) (bool, error)) *[]string {
+	t.Helper()
+	orig := promptSignInNow
+	t.Cleanup(func() { promptSignInNow = orig })
+	var asked []string
+	promptSignInNow = func(service string) (bool, error) {
+		asked = append(asked, service)
+		return answer(service)
+	}
+	return &asked
+}
+
+// TestSignInInstalledAsksEachServer checks that each server not signed in is asked about in order, and that a declined
+// one keeps its server installed and prints the login command.
+func TestSignInInstalledAsksEachServer(t *testing.T) {
+	w, req, plans, servers := signInRun(t, new(atomic.Int32))
+	req.askLogin = true
+	asked := askSignIn(t, func(string) (bool, error) { return false, nil })
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	require.NoError(t, signInInstalled(ctx, io.Discard, w, req, plans, servers))
+	assert.Equal(t, []string{"system.ai.github", "system.ai.genie_one_mcp"}, *asked)
+	assert.Contains(t, stderr.String(), "system.ai.github needs sign-in. Run: ")
+	assert.Contains(t, stderr.String(), "system.ai.genie_one_mcp needs sign-in. Run: ")
+}
+
+// TestSignInInstalledSkipsTheQuestionWhenSignedIn checks that a server already signed in is not asked about, and
+// that its sign-in is recorded as ACTIVE.
+func TestSignInInstalledSkipsTheQuestionWhenSignedIn(t *testing.T) {
+	var reads atomic.Int32
+	w, req, plans, servers := signInRun(t, &reads, "system.ai.github")
+	req.askLogin = true
+	asked := askSignIn(t, func(string) (bool, error) { return false, nil })
+
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	var errOut bytes.Buffer
+	require.NoError(t, signInInstalled(ctx, &errOut, w, req, plans, servers))
+	assert.Equal(t, []string{"system.ai.genie_one_mcp"}, *asked)
+	require.NotNil(t, servers[0].SignIn)
+	assert.Equal(t, signInStateActive, servers[0].SignIn.State)
+	assert.Equal(t, "Already signed in to system.ai.github on profile logfood.\n", errOut.String())
+	// Each server is read once, for its question. The sign-in of the signed-in server is not started, so it is not read again.
+	assert.Equal(t, int32(2), reads.Load())
+}
+
+// TestSignInInstalledAbortPrintsTheRestOfTheHints checks that an abort at the question ends the sign-ins, prints the
+// login hint of each server not signed in, and returns the abort.
+// TestSignedInGivesUpOnAHungCredentialRead checks that a credential read that never answers ends at profileCheckTimeout,
+// so the sign-in question is asked, instead of holding it for the SDK's whole retry budget.
+func TestSignedInGivesUpOnAHungCredentialRead(t *testing.T) {
+	origTimeout := profileCheckTimeout
+	profileCheckTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { profileCheckTimeout = origTimeout })
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only the credential read hangs; the SDK's host metadata read at setup answers at once.
+		if !strings.HasSuffix(r.URL.Path, "/user-credentials") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "dapi-test"})
+	require.NoError(t, err)
+
+	start := time.Now()
+	assert.False(t, signedIn(t.Context(), w, "system.ai.github"))
+	assert.Less(t, time.Since(start), 10*time.Second)
+}
+
+func TestSignInInstalledAbortPrintsTheRestOfTheHints(t *testing.T) {
+	var reads atomic.Int32
+	w, req, plans, servers := signInRun(t, &reads)
+	req.askLogin = true
+	asked := askSignIn(t, func(string) (bool, error) { return false, huh.ErrUserAborted })
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	err := signInInstalled(ctx, io.Discard, w, req, plans, servers)
+	require.ErrorIs(t, err, huh.ErrUserAborted)
+	assert.Equal(t, protos.AitoolsErrorCategoryUserAborted, errorCategory(err))
+	assert.Equal(t, []string{"system.ai.github"}, *asked, "the sign-ins stop at the abort")
+	// The only read is the one that asked about github: the hints of the rest are printed without a request.
+	assert.Equal(t, int32(1), reads.Load())
+	assert.Contains(t, stderr.String(), "system.ai.github needs sign-in. Run: ")
+	assert.Contains(t, stderr.String(), "system.ai.genie_one_mcp needs sign-in. Run: ")
+}
+
+// TestPlanAddsReplacesAForeignEntryAndReassertsOwnEntry checks that a plan names what the write does to an entry the
+// agent already holds: a replace for an entry this CLI did not write, a re-assert for one of this binding.
+func TestPlanAddsReplacesAForeignEntryAndReassertsOwnEntry(t *testing.T) {
+	home := withHome(t)
+	claude := agents.ByName(agents.NameClaudeCode)
+	targets := []*agents.Agent{claude}
+	config := filepath.Join(home, ".claude.json")
+	b := defaultBinding(t, "logfood")
+
+	// A foreign entry under the name, replaced under --force.
+	require.NoError(t, os.WriteFile(config, []byte(`{"mcpServers":{"github-logfood":{"type":"stdio","command":"other"}}}`), 0o600))
+	in := planInput{binding: b, nameFlag: "github-logfood", force: true, targets: targets, held: readHeld(t.Context(), targets)}
+	plans, err := planAdds(t.Context(), in, &mcp.State{}, []string{"system.ai.github"})
+	require.NoError(t, err)
+	require.Len(t, plans, 1)
+	assert.True(t, plans[0].replaced[claude])
+	assert.False(t, plans[0].reasserted[claude])
+	req := addRequest{profile: "logfood", agents: targets}
+	assert.Equal(t, []string{"Plan (profile logfood):", fmt.Sprintf("  %-14s %s", claude.DisplayName, "replace github-logfood")}, addPlanLines(req, plans))
+
+	// An entry of this binding under the name is re-asserted.
+	require.NoError(t, os.WriteFile(config, []byte(`{"mcpServers":{"github-logfood":`+claudeEntry("system.ai.github", "logfood", "")+`}}`), 0o600))
+	in.held = readHeld(t.Context(), targets)
+	in.nameFlag = ""
+	in.force = false
+	in.binary = "databricks"
+	plans, err = planAdds(t.Context(), in, &mcp.State{}, []string{"system.ai.github"})
+	require.NoError(t, err)
+	require.Len(t, plans, 1)
+	assert.True(t, plans[0].reasserted[claude])
+	assert.False(t, plans[0].replaced[claude])
+	assert.False(t, plans[0].updated[claude])
+
+	// The same entry under a binary that moved is updated, not re-asserted: the write changes its command.
+	in.binary = "/opt/databricks/bin/databricks"
+	plans, err = planAdds(t.Context(), in, &mcp.State{}, []string{"system.ai.github"})
+	require.NoError(t, err)
+	require.Len(t, plans, 1)
+	assert.True(t, plans[0].updated[claude])
+	assert.False(t, plans[0].reasserted[claude])
+	req = addRequest{profile: "logfood", agents: targets}
+	assert.Equal(t, []string{"Plan (profile logfood):", fmt.Sprintf("  %-14s %s", claude.DisplayName, "update github-logfood")}, addPlanLines(req, plans))
+}
+
+// TestValidateMCPAddFlagsNameNeedsServicesFromNames checks that --name without --names is refused before the
+// workspace is read, in a terminal too, where the picker would otherwise choose the services.
+func TestValidateMCPAddFlagsNameNeedsServicesFromNames(t *testing.T) {
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	err := validateMCPAddFlags(ctx, mcpAddFlags{name: "github"}, nil, nil, false)
+	require.Error(t, err)
+	assert.Equal(t, "--name needs exactly one service; leave out --name to pick services in the picker", err.Error())
+	assert.NoError(t, validateMCPAddFlags(ctx, mcpAddFlags{name: "github"}, []string{"github"}, nil, false))
+}
+
+func TestChooseAgentsSources(t *testing.T) {
+	withHome(t)
+	writeFakeCLI(t, agents.ByName(agents.NameCodex).Binary)
+	ctx := cmdio.MockDiscard(t.Context())
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+
+	var offered []agentChoice
+	promptAgentSelection = func(_ context.Context, _ string, choices []agentChoice) ([]*agents.Agent, error) {
+		offered = choices
+		return []*agents.Agent{choices[0].agent}, nil
+	}
+
+	named := []*agents.Agent{agents.ByName(agents.NameCodex)}
+	got, source, err := chooseAgents(ctx, named, true)
+	require.NoError(t, err)
+	assert.Equal(t, agentsNamed, source)
+	assert.Equal(t, named, got)
+	assert.Empty(t, offered, "named agents are not asked for")
+
+	got, source, err = chooseAgents(ctx, nil, true)
+	require.NoError(t, err)
+	assert.Equal(t, agentsPicked, source)
+	require.Len(t, got, 1)
+	// The picker offers installed agents only.
+	require.NotEmpty(t, offered)
+	for _, c := range offered {
+		installed, err := c.agent.InstalledForMCP(ctx)
+		require.NoError(t, err)
+		assert.True(t, installed, c.agent.Name)
+	}
+}
+
+// TestChooseAgentsNamesTheAgentsNotFound checks that the picker lists the installed agents and names the others above it.
+func TestChooseAgentsNamesTheAgentsNotFound(t *testing.T) {
+	withHome(t)
+	writeFakeCLI(t, agents.ByName(agents.NameCodex).Binary)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(_ context.Context, _ string, choices []agentChoice) ([]*agents.Agent, error) {
+		return []*agents.Agent{choices[0].agent}, nil
+	}
+
+	_, _, err := chooseAgents(ctx, nil, true)
+	require.NoError(t, err)
+	assert.Contains(t, stderr.String(), "Not found: ")
+	assert.Contains(t, stderr.String(), agents.ByName(agents.NameCursor).DisplayName)
+}
+
+// TestAddPlanLinesSayWhenConfigCannotBeRead checks that an agent whose config cannot be read is shown as such, with the
+// write that will fail, not as an add.
+func TestAddPlanLinesSayWhenConfigCannotBeRead(t *testing.T) {
+	claude := agents.ByName(agents.NameClaudeCode)
+	req := addRequest{
+		profile:    "logfood",
+		agents:     []*agents.Agent{claude},
+		unreadable: map[*agents.Agent]error{claude: errors.New("parse error")},
+	}
+	plans := []addPlan{{service: mcp.Service{FullName: "system.ai.github"}, name: "github-logfood"}}
+	assert.Equal(t, []string{"Plan (profile logfood):", fmt.Sprintf("  %-14s cannot be read: parse error; the write will fail", claude.DisplayName)}, addPlanLines(req, plans))
+}
+
+func TestAddPlanLines(t *testing.T) {
+	claude := agents.ByName(agents.NameClaudeCode)
+	codex := agents.ByName(agents.NameCodex)
+	req := addRequest{profile: "logfood", agents: []*agents.Agent{claude, codex}}
+	plans := []addPlan{
+		{service: mcp.Service{FullName: "system.ai.github"}, name: "github-logfood"},
+		{
+			service:    mcp.Service{FullName: "system.ai.genie_one_mcp"},
+			name:       "genie_one_mcp-logfood",
+			reasserted: map[*agents.Agent]bool{claude: true},
+		},
+	}
+	want := []string{
+		"Plan (profile logfood):",
+		fmt.Sprintf("  %-14s %s", claude.DisplayName, "add github-logfood; re-assert genie_one_mcp-logfood"),
+		fmt.Sprintf("  %-14s %s", codex.DisplayName, "add github-logfood, genie_one_mcp-logfood"),
+	}
+	assert.Equal(t, want, addPlanLines(req, plans))
+
+	// A server that an agent cannot take is skipped for that agent, and a refused agent is not written.
+	req.refused = map[*agents.Agent]error{codex: errNotInstalled}
+	plans[0].failed = map[*agents.Agent]error{claude: errors.New("conflict")}
+	want = []string{
+		"Plan (profile logfood):",
+		fmt.Sprintf("  %-14s %s", claude.DisplayName, "re-assert genie_one_mcp-logfood; skip github-logfood"),
+		fmt.Sprintf("  %-14s %s", codex.DisplayName, "not installed; skipped"),
+	}
+	assert.Equal(t, want, addPlanLines(req, plans))
+
+	// An agent whose check failed is refused with the reason, not as not installed.
+	req.refused = map[*agents.Agent]error{codex: errors.New("no home")}
+	want = []string{
+		"Plan (profile logfood):",
+		fmt.Sprintf("  %-14s %s", claude.DisplayName, "re-assert genie_one_mcp-logfood; skip github-logfood"),
+		fmt.Sprintf("  %-14s %s", codex.DisplayName, "cannot be checked: no home; skipped"),
+	}
+	assert.Equal(t, want, addPlanLines(req, plans))
+}
+
+func TestValidateMCPAddFlagsInTerminalAsksForMissingChoices(t *testing.T) {
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	require.NoError(t, validateMCPAddFlags(ctx, mcpAddFlags{}, nil, nil, false))
 }

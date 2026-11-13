@@ -18,7 +18,7 @@ import (
 )
 
 // removeFlagsHint is the error for a run that names no servers. Tests check it too.
-const removeFlagsHint = "pass --names, --profile or --all; interactive selection is not available yet"
+const removeFlagsHint = "pass --names, --profile or --all so the command runs without interactive prompts"
 
 type mcpRemoveFlags struct {
 	names  string
@@ -83,7 +83,8 @@ func NewMcpRemoveCmd() *cobra.Command {
 Choose servers with --names (server names as listed by 'aitools mcp list', or service names; the
 last part of a service name, such as github, is enough when only one schema has it), --profile, or
 --all. --profile narrows --all or --names to one profile, and --agents narrows them to some agents.
-Interactive selection is not available yet, so one of --names, --profile or --all is required.
+In a terminal, with none of --names, --profile or --all, the command shows the installed servers to
+choose from. Without a terminal, one of them is required.
 
 Only entries this CLI wrote are removed. An entry that was changed outside this CLI is left in place
 and reported. When an agent's config moved, the entry is removed from the file it was written to.
@@ -128,7 +129,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	names := splitAndTrim(f.names)
 	agentNames := splitAndTrim(f.agents)
 	profileName := profileFlag(cmd)
-	if err := validateMCPRemoveFlags(f.all, names, profileName); err != nil {
+	interactive := !jsonMode && cmdio.IsPromptSupported(ctx)
+	if err := validateMCPRemoveFlags(f.all, names, profileName, interactive); err != nil {
 		return err
 	}
 
@@ -146,12 +148,40 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if err != nil {
 		return err
 	}
-	selected, err := selectInstalls(state, names, profileName)
-	if err != nil {
-		return err
-	}
-	if err := checkTargetsInstalled(selected, targets); err != nil {
-		return err
+	var selected []mcp.Entry
+	if interactive && !f.all && len(names) == 0 && profileName == "" {
+		// An agent with no installed server is refused as it is without a terminal, before the picker offers nothing for it.
+		if err := checkTargetsInstalled(state.Servers, targets); err != nil {
+			return err
+		}
+		var offered bool
+		selected, offered, err = chooseRemovals(state, targets)
+		if err != nil {
+			return err
+		}
+		if offered && len(selected) == 0 {
+			cmdio.LogString(ctx, "No servers selected; nothing removed.")
+			return nil
+		}
+		if offered {
+			// The picker chose the servers, so the removal is confirmed, as add confirms its plan and uninstall its removal.
+			proceed, err := promptProceed()
+			if err != nil {
+				return err
+			}
+			if !proceed {
+				cmdio.LogString(ctx, cancelledMessage)
+				return nil
+			}
+		}
+	} else {
+		selected, err = selectInstalls(state, names, profileName)
+		if err != nil {
+			return err
+		}
+		if err := checkTargetsInstalled(selected, targets); err != nil {
+			return err
+		}
 	}
 	if targets != nil {
 		// --agents chooses the servers installed for those agents, so a server with no agent left is not chosen.
@@ -220,11 +250,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 }
 
 // validateMCPRemoveFlags rejects a choice of servers that cannot run, before anything is read or written.
-func validateMCPRemoveFlags(all bool, names []string, profileName string) error {
+// Without a choice, a terminal run shows the picker; any other run needs one.
+func validateMCPRemoveFlags(all bool, names []string, profileName string, interactive bool) error {
 	if all && len(names) > 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "--all cannot be combined with --names")
 	}
-	if !all && len(names) == 0 && profileName == "" {
+	if !all && len(names) == 0 && profileName == "" && !interactive {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, removeFlagsHint)
 	}
 	return nil
@@ -334,7 +365,7 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 			_, ok := e.Agents[a.Name]
 			return ok
 		}) {
-			return failure(categoryServiceNotFound, nil, "no selected MCP server is installed for %s", agentDisplayName(a.Name))
+			return failure(categoryServiceNotFound, nil, "no MCP server is installed for %s", agentDisplayName(a.Name))
 		}
 	}
 	return nil

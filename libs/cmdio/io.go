@@ -11,9 +11,9 @@ import (
 	"github.com/databricks/cli/libs/flags"
 )
 
-// errCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
+// ErrCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
 // "^C" string matches the historical wire format; goldens depend on it.
-var errCtrlC = errors.New("^C")
+var ErrCtrlC = errors.New("^C")
 
 // runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
 // pagers can't fight a prompt for the terminal. Blocks until the model quits.
@@ -21,7 +21,7 @@ func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
 	p := tea.NewProgram(m,
 		tea.WithInput(c.in),
 		tea.WithOutput(c.err),
-		// Ctrl+C is delivered as a key event so the model can return errCtrlC.
+		// Ctrl+C is delivered as a key event so the model can return ErrCtrlC.
 		tea.WithoutSignalHandler(),
 	)
 	c.acquireTeaProgram(p)

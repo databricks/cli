@@ -12,10 +12,12 @@ Each server runs through 'databricks aitools mcp serve' with that profile's cred
 
 Servers come from --names: full names such as system.ai.github, or leaf names such as github. Leaf names
 resolve in --location, which defaults to system.ai, or to the one schema that the full names in --names share.
-Agents come from --agents. Without it, every detected MCP-capable agent is used.
+Agents come from --agents.
 
-Interactive selection is not available yet: in a terminal, pass both --names and --agents.
-With --output json, both are required.
+In a terminal, the command asks for whatever is not given: the profile, the servers and the agents (detected
+agents are pre-checked). It confirms the plan when it asked for any of them, and it asks before each sign-in unless
+--login or --no-login is given. Without a terminal, --names is required and the agents default to every detected
+MCP-capable agent. With --output json, --names and --agents are required.
 
 Supported agents: claude-code, cursor, codex, opencode, copilot, antigravity, gemini
 
@@ -23,14 +25,14 @@ Usage:
   databricks aitools mcp add [flags]
 
 Flags:
-      --agents string     Agents to install for, comma-separated (default: every detected MCP-capable agent)
+      --agents string     Agents to install for, comma-separated (default: a picker in a terminal; otherwise every detected MCP-capable agent)
       --force             Overwrite an existing server with the same name that this CLI did not write
   -h, --help              help for add
       --location string   Schema to resolve leaf names in, as <catalog>.<schema> (default: system.ai, or the one schema that the full names in --names share)
       --login             Sign in to each sign-in-required server that was installed, after the installs
       --name string       Server name to use instead of the generated one; only with exactly one service
       --names string      Services to install: full names (system.ai.github) or leaf names (github), comma-separated
-      --no-login          Do not sign in; print the login commands for sign-in-required servers (default)
+      --no-login          Do not sign in; print the login commands for sign-in-required servers (default without a terminal; in a terminal, the default asks for each one)
 
 Global Flags:
       --debug            enable debug logging
