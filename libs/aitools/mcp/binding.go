@@ -86,7 +86,7 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile, ""); err != nil {
+	if err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile)); err != nil {
 		return nil, nil, err
 	}
 	return cfg, entry, nil
@@ -123,6 +123,16 @@ func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pin
 		return AuthError(profileName, pinnedFile, err)
 	}
 	return nil
+}
+
+// PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file
+// without one. An entry pinned to a config file names configFile, the file the profile is read from. A nil entry has no
+// pin.
+func PinnedFile(entry *Entry, configFile string) string {
+	if entry != nil && entry.ConfigFile != "" {
+		return configFile
+	}
+	return ""
 }
 
 // CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller

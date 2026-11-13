@@ -297,7 +297,7 @@ func TestBindNeverUsesEnvTokenForProfileWithoutToken(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	assert.Contains(t, err.Error(), "\nRun: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath)))+" databricks auth login --profile logfood")
 	assert.NotContains(t, err.Error(), "dapi-env-token")
 	assert.Error(t, errors.Unwrap(err))
 }
@@ -354,7 +354,9 @@ func TestBindTokenCannotBeMinted(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	// The server is pinned to the file, so the login command names it: the bare command would log in to the file the
+	// shell reads.
+	assert.Contains(t, err.Error(), "\nRun: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath)))+" databricks auth login --profile logfood")
 	assert.Error(t, errors.Unwrap(err))
 }
 

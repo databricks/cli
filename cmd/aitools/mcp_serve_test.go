@@ -111,6 +111,22 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
+// TestRefreshGuardNamesPinnedConfigFile checks that a refresh failure of a server pinned to a config file names that file
+// in its login command, so that the command logs in to the file the profile is read from.
+func TestRefreshGuardNamesPinnedConfigFile(t *testing.T) {
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		profile:      "logfood",
+		pinnedFile:   "/work/cfg/logfood.cfg",
+		cancel:       func() {},
+	}
+
+	_ = g.authenticateRequest(&http.Request{Header: http.Header{}})
+
+	require.Error(t, g.failure())
+	assert.Contains(t, g.failure().Error(), "Run: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
+}
+
 // TestRefreshGuardStoresAuthError checks that the refresh failure reaches the user as the AUTH_FAILED error, which names
 // the profile and its login command.
 func TestRefreshGuardStoresAuthError(t *testing.T) {
@@ -586,7 +602,7 @@ func runRefreshFailureSession(t *testing.T, end error) (string, bool, error) {
 		Config:       &config.Config{Host: server.URL},
 		Authenticate: expiresOnToolsList,
 		Profile:      "logfood",
-	})
+	}, "")
 	return stderr.String(), deleted.Load(), err
 }
 
