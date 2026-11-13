@@ -2,7 +2,7 @@
 === The bound profile is not in the config file
 
 >>> cat out.stderr.txt
-MCP server system.ai.genie_one_mcp is bound to Databricks profile "gone", which no longer exists in [TEST_TMP_DIR]/.databrickscfg. Recreate it with: databricks auth login --profile gone or remove the server with: databricks aitools mcp remove --profile gone
+MCP server system.ai.genie_one_mcp needs Databricks profile "gone", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile gone
 
 Exit code: 2
 stdout bytes: 0
@@ -10,7 +10,7 @@ stdout bytes: 0
 === The profile now points at another host than the one recorded
 
 >>> cat out.stderr.txt
-MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --profile logfood and add it again
+MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
 
 Exit code: 2
 stdout bytes: 0
