@@ -32,6 +32,9 @@ EXTRA_REQUIRED_FIELDS: dict[str, list[str]] = {
 DROP_FIELD_DESCRIPTIONS: dict[str, list[str]] = {
     "jobs.DeploymentSpec": ["command_path"],
     "compute.InstancePoolGcpAttributes": ["gcp_availability"],
+    # ml.DeltaTableSource.transformation_sql: the example's leading `*` opens an RST
+    # emphasis span that is never closed, which Sphinx reports as a docs warning.
+    "ml.DeltaTableSource": ["transformation_sql"],
 }
 
 

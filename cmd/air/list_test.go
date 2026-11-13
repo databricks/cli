@@ -2,9 +2,12 @@ package aircmd
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -82,6 +85,41 @@ func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
 	assert.Equal(t, "5", rows[1].RunID)
+}
+
+func TestListAirRunsResolvesCurrentUserOnce(t *testing.T) {
+	runs := []jobs.BaseRun{
+		airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(2, "other@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(3, "me@example.com", "GPU_1xA10", 1, "exp"),
+	}
+	srv := runsServer(t, runsListBody(t, "", runs...))
+
+	var lookups atomic.Int32
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			lookups.Add(1)
+			return "me@example.com", nil
+		}),
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "3", rows[1].RunID)
+	assert.Equal(t, int32(1), lookups.Load())
+}
+
+func TestListAirRunsReportsUserLookupFailure(t *testing.T) {
+	srv := runsServer(t, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")))
+
+	_, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			return "", errors.New("failed to resolve current user: boom")
+		}),
+	}).next(10)
+	require.ErrorContains(t, err, "failed to resolve current user: boom")
 }
 
 func TestListAirRunsExperimentFilter(t *testing.T) {
@@ -172,7 +210,7 @@ func TestBuildListRowFromRun(t *testing.T) {
 	assert.Equal(t, "GPU_1xA10", gpu)
 	assert.Equal(t, 1, count)
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	assert.Equal(t, "842552489592352", row.RunID)
 	assert.Equal(t, "SUCCESS", row.Status)
 	assert.Equal(t, "my-first-air-run", row.Experiment)
@@ -186,7 +224,7 @@ func TestBuildListRow(t *testing.T) {
 	run.EndTime = 1700000012000
 	run.State = &jobs.RunState{ResultState: jobs.RunResultStateSuccess}
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	assert.Equal(t, "123", row.RunID)
 	assert.Equal(t, "me@example.com", row.User)
 	assert.Equal(t, "SUCCESS", row.Status)
@@ -196,6 +234,32 @@ func TestBuildListRow(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.False(t, row.IsSweep)
 	require.NotNil(t, row.StartedAt)
+	assert.Equal(t, "https://example.test/jobs/runs/123?o=456", row.DashboardURL)
+	assert.Equal(t, row.DashboardURL, row.RunURL)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"SUCCESS",
+		"started_at":"2023-11-14T22:13:20+00:00","is_sweep":false,
+		"experiment_name":"exp","duration_seconds":12,
+		"accelerator_type":"GPU_8xH100","num_accelerators":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=456"
+	}`, string(body))
+}
+
+func TestBuildListRowUsesLatestAttemptTiming(t *testing.T) {
+	run := airRun(123, "me@example.com", "GPU_1xA10", 1, "exp")
+	run.Tasks[0].StartTime = 1000
+	run.Tasks[0].EndTime = 2000
+	run.Tasks = append(run.Tasks, jobs.RunTask{StartTime: 10000, EndTime: 22000})
+
+	row := buildListRow(&run, "https://example.test", 456)
+	require.NotNil(t, row.StartedAt)
+	assert.Equal(t, "1970-01-01T00:00:10+00:00", *row.StartedAt)
+	require.NotNil(t, row.DurationSeconds)
+	assert.Equal(t, int64(12), *row.DurationSeconds)
+	assert.Equal(t, "12s", row.Duration)
 }
 
 func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
@@ -203,7 +267,7 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
 	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
 
@@ -211,11 +275,13 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	assert.Equal(t, listRowStatus(row), row.Status)
 	assert.JSONEq(t, `{
 		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"PENDING",
-		"started_at":null,"is_sweep":false
+		"started_at":null,"is_sweep":false,"experiment_name":"exp","duration_seconds":null,
+		"accelerator_type":"GPU_8xH100","num_accelerators":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=456"
 	}`, string(body))
 }
 
-func TestBuildListRowDashFallbacks(t *testing.T) {
+func TestBuildListRowMissingValues(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
 	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
@@ -224,6 +290,16 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.Equal(t, "UNKNOWN", row.Status)
 	assert.Nil(t, row.StartedAt)
+	assert.Equal(t, "https://example.test/jobs/runs/7", row.RunURL)
+	assert.Equal(t, row.RunURL, row.DashboardURL)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"7","run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
+		"experiment_name":null,"duration_seconds":null,"accelerator_type":null,"num_accelerators":null,
+		"dashboard_url":"https://example.test/jobs/runs/7"
+	}`, string(body))
 }
 
 func TestBuildListRowSweep(t *testing.T) {

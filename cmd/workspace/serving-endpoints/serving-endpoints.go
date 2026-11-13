@@ -165,7 +165,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: ai_gateway
 	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the serving endpoint.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
@@ -356,7 +356,10 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
-	cmd.Long = `Delete a serving endpoint.`
+	cmd.Long = `Delete a serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

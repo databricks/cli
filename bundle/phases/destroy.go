@@ -18,12 +18,17 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	w := b.WorkspaceClient(ctx)
-	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	// The read has no side effects, so a transient failure is safe to replay instead of failing destroy.
+	_, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
+		return w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	})
 
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
@@ -93,7 +98,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	// operation) are not destructive, so they are not listed as deletions and need no
 	// approval. In particular this makes prevent_destroy inert for state-only
 	// resources: nothing is destroyed.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
@@ -193,7 +198,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		// a destruction to report.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnly() {
 				deleted++
 			}
 		}

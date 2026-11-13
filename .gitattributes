@@ -58,6 +58,7 @@ cmd/workspace/alerts/alerts.go linguist-generated=true
 cmd/workspace/apps-settings/apps-settings.go linguist-generated=true
 cmd/workspace/apps/apps.go linguist-generated=true
 cmd/workspace/artifact-allowlists/artifact-allowlists.go linguist-generated=true
+cmd/workspace/assume-group/assume-group.go linguist-generated=true
 cmd/workspace/automatic-cluster-update/automatic-cluster-update.go linguist-generated=true
 cmd/workspace/bundle-deployments/bundle-deployments.go linguist-generated=true
 cmd/workspace/catalogs/catalogs.go linguist-generated=true

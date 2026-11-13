@@ -1693,60 +1693,60 @@
       }
     },
     "aifunctions.Batch": {
-      "description": "An asynchronous run of one AI function over a file of requests.",
+      "description": "The AI Functions Asynchronous API lets you process large volumes of requests as a batch in a single call.",
       "fields": {
         "create_time": {
-          "description": "Output only. Time the batch was created.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. The time when the batch was created.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "endpoint": {
-          "description": "The AI function to run for every request, for example `ai_extract`.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "The AI function, for example `ai_parse_document`.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "input_ref": {
-          "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+          "launch_stage": "PUBLIC_BETA"
         },
         "name": {
-          "description": "ID of the batch, in the form `batch_\u003cid\u003e`. The service assigns it.",
-          "launch_stage": "PRIVATE_PREVIEW"
-        },
-        "output_ref": {
-          "description": "Path on a Unity Catalog volume to write the JSONL output to. When it is omitted, the output\nstays on Databricks-managed storage and a finished batch returns a short-lived download URL\nin this field instead.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. Identifier. Resource name of the batch, returned by create. Format: `batch_\u003cid\u003e`.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
-            "OPTIONAL"
+            "OUTPUT_ONLY"
           ]
         },
+        "output_ref": {
+          "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
+          "launch_stage": "PUBLIC_BETA"
+        },
         "params": {
-          "description": "Function options applied to every request in the batch, for example the extraction schema.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Parameters of the function other than its input, applied to every request in the batch, for example\n`schema` for `ai_extract`. Put function options, such as `version`, in a nested `options` object. For\nthe parameters of each function, see [AI Functions](/large-language-models/ai-functions).",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "percent_complete": {
-          "description": "Output only. Percentage of the requests that finished, from 0 to 100. Returned when one batch\nis read, not when batches are listed.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. The percentage of requests that are processed, from 0 to 100. Returned when you get a batch, not when you\nlist batches.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "request_counts": {
-          "description": "Output only. Request counts. Returned when one batch is read, not when batches are listed.",
+          "description": "Output only. The number of requests in the batch, by result. Returned when you get a batch, not when you list\nbatches.",
           "ref": "aifunctions.BatchRequestCounts",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "status": {
-          "description": "Output only. Status of the batch.",
+          "description": "Output only. The status of the batch.",
           "ref": "aifunctions.BatchStatus",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1757,22 +1757,22 @@
       "description": "Counts of the requests in a batch.",
       "fields": {
         "failed": {
-          "description": "Output only. Number of requests that failed and will not be retried.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. The number of requests that failed. The service does not retry them.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "succeeded": {
-          "description": "Output only. Number of requests that finished successfully.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. The number of requests that were processed successfully.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "total": {
-          "description": "Output only. Number of requests in the input file.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "Output only. The number of requests in the batch.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -1786,20 +1786,18 @@
         "IN_PROGRESS",
         "FINALIZING",
         "COMPLETED",
-        "EXPIRED",
         "CANCELLING",
         "CANCELLED",
         "FAILED"
       ],
       "enum_launch_stages": {
-        "CANCELLED": "PRIVATE_PREVIEW",
-        "CANCELLING": "PRIVATE_PREVIEW",
-        "COMPLETED": "PRIVATE_PREVIEW",
-        "EXPIRED": "PRIVATE_PREVIEW",
-        "FAILED": "PRIVATE_PREVIEW",
-        "FINALIZING": "PRIVATE_PREVIEW",
-        "IN_PROGRESS": "PRIVATE_PREVIEW",
-        "PENDING": "PRIVATE_PREVIEW"
+        "CANCELLED": "PUBLIC_BETA",
+        "CANCELLING": "PUBLIC_BETA",
+        "COMPLETED": "PUBLIC_BETA",
+        "FAILED": "PUBLIC_BETA",
+        "FINALIZING": "PUBLIC_BETA",
+        "IN_PROGRESS": "PUBLIC_BETA",
+        "PENDING": "PUBLIC_BETA"
       }
     },
     "aifunctions.CancelBatchRequest": {},
@@ -1809,7 +1807,7 @@
         "batch": {
           "description": "The batch to create.",
           "ref": "aifunctions.Batch",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -1818,14 +1816,14 @@
       "fields": {
         "page_size": {
           "description": "Maximum number of batches to return in one page.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
-          "description": "Page token from an earlier response. Omit it to read the first page.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "description": "A page token from a previous call to list batches. Omit it to get the first page.",
+          "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -1836,11 +1834,11 @@
       "fields": {
         "batches": {
           "description": "The batches in this page.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "next_page_token": {
-          "description": "Token that reads the next page. It is empty on the last page.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "description": "A token to get the next page. It is empty on the last page.",
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -3077,6 +3075,13 @@
         },
         "effective_budget_policy_id": {
           "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "effective_resources": {
+          "description": "Resources added to the app, plus the resources it inherits from its space.\nEmpty for apps that are not in a space.",
+          "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -30109,6 +30114,19 @@
         }
       }
     },
+    "iam.CreateRestrictedSharingGroupRequest": {
+      "fields": {
+        "restricted_sharing_group": {
+          "description": "The restricted sharing group to create. It has no client-set fields; the\ngroup is identified by restricted_sharing_group_id.",
+          "ref": "iam.RestrictedSharingGroup",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "restricted_sharing_group_id": {
+          "description": "The id of the workspace group to restrict: the numeric id of an existing and\nnon-system workspace group.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "iam.CreateServicePrincipalRequest": {
       "fields": {
         "active": {
@@ -30198,6 +30216,7 @@
     "iam.DeleteAccountServicePrincipalRequest": {},
     "iam.DeleteAccountUserRequest": {},
     "iam.DeleteGroupRequest": {},
+    "iam.DeleteRestrictedSharingGroupRequest": {},
     "iam.DeleteServicePrincipalRequest": {},
     "iam.DeleteUserRequest": {},
     "iam.DeleteWorkspaceAssignmentRequest": {},
@@ -30273,6 +30292,7 @@
       }
     },
     "iam.GetPermissionRequest": {},
+    "iam.GetRestrictedSharingGroupRequest": {},
     "iam.GetRuleSetRequest": {
       "fields": {
         "etag": {
@@ -30611,6 +30631,37 @@
       ],
       "enum_launch_stages": {
         "urn:ietf:params:scim:api:messages:2.0:ListResponse": "PUBLIC_PREVIEW"
+      }
+    },
+    "iam.ListRestrictedSharingGroupsRequest": {
+      "fields": {
+        "page_size": {
+          "description": "The maximum number of groups to return. The service may return fewer.\nIf unspecified or 0, at most 100 groups are returned. Values above 100 are\ncoerced to 100. Negative values are rejected.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "page_token": {
+          "description": "A page token from a previous ListRestrictedSharingGroups call. Provide\nthis to retrieve the subsequent page.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "iam.ListRestrictedSharingGroupsResponse": {
+      "description": "A page of restricted sharing groups in the caller's workspace.",
+      "fields": {
+        "next_page_token": {
+          "description": "A token that can be sent as page_token to retrieve the next page. If this\nfield is omitted, there are no subsequent pages.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "restricted_sharing_groups": {
+          "description": "The restricted sharing groups in the workspace.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
       }
     },
     "iam.ListServicePrincipalResponse": {
@@ -31182,6 +31233,29 @@
         "resourceType": {
           "description": "Identifier for group type. Can be local workspace group (`WorkspaceGroup`) or account group (`Group`).",
           "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "iam.RestrictedSharingGroup": {
+      "description": "A RestrictedSharingGroup is a workspace group whose members cannot grant or\nrevoke permissions on workspace assets while they have assumed the group or\none of its child groups. Users acting as themselves are not affected.",
+      "fields": {
+        "group_display_name": {
+          "description": "The display name of the restricted workspace group.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "name": {
+          "description": "The resource name of the restricted sharing group.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`\nExample: `restricted-sharing-groups/123`",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "restricted_sharing_group_id": {
+          "description": "The id of the restricted workspace group: the numeric id of an existing and\nnon-system workspace group.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
         }
       }
     },
@@ -40125,20 +40199,6 @@
     "lakewatch.CommonConfig": {
       "description": "Catch-all per-catalog config — settings that don't belong to any one\nresource family. Singleton. Name format: `catalogs/{catalog}/commonConfig`.",
       "fields": {
-        "custom_content_pack_path": {
-          "description": "UC volume path holding user-authored custom content packs, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom content packs are unavailable (referencing one is\nrejected) and only built-in content packs apply.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "custom_presets_path": {
-          "description": "UC volume path holding user-authored custom presets, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom presets are unavailable and only built-in presets apply.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "etag": {
           "description": "Opaque entity tag for optimistic concurrency. Returned on every read;\npass it back as the Update request's `etag` to make the update\nconditional on the resource being unchanged.",
           "launch_stage": "PUBLIC_BETA",
@@ -40968,7 +41028,7 @@
           ]
         },
         "batch": {
-          "description": "Batch SQL rule input.",
+          "description": "Scheduled detection (also known as batch detection) input.",
           "ref": "lakewatch.RuleInputBatch",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -40990,7 +41050,7 @@
           ]
         },
         "compute_workspace_id": {
-          "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled rule runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
+          "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled detection runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -41146,7 +41206,7 @@
           ]
         },
         "runbook": {
-          "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+          "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -41184,7 +41244,7 @@
           ]
         },
         "timerange": {
-          "description": "Time-range configuration for batch rules. If unset, the execution time range is extended by\na fixed `15m` lookback.",
+          "description": "Time-range configuration for scheduled detections. If unset, the execution time range is\nextended by a fixed `15m` lookback.",
           "ref": "lakewatch.RuleTimeRange",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -41322,7 +41382,7 @@
       }
     },
     "lakewatch.RuleInputBatch": {
-      "description": "Batch input for a detection rule.",
+      "description": "Input for a scheduled detection (also known as batch detection).",
       "fields": {
         "custom": {
           "description": "Custom-notebook user function. The output is used as input data for the\nrule.",
@@ -41341,7 +41401,7 @@
           ]
         },
         "warehouse_id": {
-          "description": "SQL warehouse used to run this batch rule.",
+          "description": "SQL warehouse that runs this scheduled detection.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -41350,7 +41410,7 @@
       }
     },
     "lakewatch.RuleInputBatchSql": {
-      "description": "Batch SQL input for a detection rule.",
+      "description": "SQL query input for a scheduled detection.",
       "fields": {
         "default_catalog_name": {
           "description": "Default catalog used to resolve unqualified identifiers in `query`. If\nunset, the rule's `catalog_name` is used.",
@@ -41373,7 +41433,7 @@
       }
     },
     "lakewatch.RuleInputCustomNotebook": {
-      "description": "Reference to a custom-user-function notebook for stream or batch input.",
+      "description": "Reference to a custom-user-function notebook for scheduled detection input.",
       "fields": {
         "notebook": {
           "description": "Fully-qualified notebook path, or a path relative to the configured base\nnotebook directory.",
@@ -41451,17 +41511,10 @@
       }
     },
     "lakewatch.RuleSchedule": {
-      "description": "Defines when a detection rule executes.\n\nA batch rule sets exactly one of `at_least_every` or `cron_expression`. A streaming rule runs\ncontinuously and sets no timing; it accepts only `enabled`, and an omitted schedule means\nenabled. The server rejects any other combination. `enabled` is orthogonal to the timing.",
+      "description": "Defines when a detection rule executes.\n\nA scheduled detection sets exactly one of `at_least_every` or `cron_expression`. A streaming\nrule runs continuously and sets no timing; it accepts only `enabled`, and an omitted schedule\nmeans enabled. The server rejects any other combination. `enabled` is orthogonal to the timing.",
       "fields": {
         "at_least_every": {
           "description": "Defines the minimum cadence as a duration string. It may contain components\nfor days, hours, minutes, and seconds (e.g. `5d`, `5d3h`, `3d2h5m12s`,\n`12m16s`).",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "continuous": {
-          "description": "Runs the rule continuously. Detection rules do not accept it: batch rules reject it, and\nstreaming rules run continuously without it.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -41484,10 +41537,10 @@
       }
     },
     "lakewatch.RuleTimeRange": {
-      "description": "Time-range configuration for a batch detection rule.",
+      "description": "Time-range configuration for a scheduled detection.",
       "fields": {
         "extend_lookback": {
-          "description": "Extends the start of the execution time range by a compact duration with integer\ndays, hours, minutes, and seconds in that order, such as `1h30m` or `15m`.\nZero duration disables extension. Unset or empty uses a fixed `15m` at execution\ntime. Only the start moves; the end is unchanged. Has no effect on batch SQL\nthat does not use `IN_TIMERANGE`. Values must fit signed 64-bit microseconds.",
+          "description": "Extends the start of the execution time range by a compact duration with integer\ndays, hours, minutes, and seconds in that order, such as `1h30m` or `15m`.\nZero duration disables extension. Unset or empty uses a fixed `15m` at execution\ntime. Only the start moves; the end is unchanged. Has no effect on a detection\nquery that does not use `IN_TIMERANGE`. Values must fit signed 64-bit microseconds.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -44248,7 +44301,7 @@
     "ml.CreateMaterializationSetRequest": {
       "fields": {
         "materialization_set": {
-          "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+          "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
           "ref": "ml.MaterializationSet",
           "launch_stage": "PRIVATE_PREVIEW"
         },
@@ -44866,7 +44919,7 @@
           ]
         },
         "filter_condition": {
-          "description": "Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+          "description": "A single WHERE clause to filter the Delta table before applying transformations.\nThe predicate is evaluated for each row.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -44884,7 +44937,7 @@
           ]
         },
         "transformation_sql": {
-          "description": "A single SQL SELECT expression applied after filter_condition.\nShould contains all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
+          "description": "A single SQL SELECT expression applied after filter_condition.\nThe expression must contain all required columns (e.g., \"*, col_a + col_b AS col_c\").\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -47264,7 +47317,7 @@
       }
     },
     "ml.MaterializationNotifications": {
-      "description": "Notifications for the jobs and pipelines that materialize the features in a set, one field per\ntrigger.",
+      "description": "Notifications for the jobs and pipelines that materialize features, one field per trigger.",
       "fields": {
         "on_failure": {
           "description": "Who to notify when a run fails, and on which attempts.",
@@ -47572,11 +47625,11 @@
           ]
         },
         "notifications": {
-          "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
+          "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
           "ref": "ml.MaterializationNotifications",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "OUTPUT_ONLY"
+            "OPTIONAL"
           ]
         },
         "offline_store_config": {
@@ -55468,7 +55521,6 @@
           "ref": "postgres.BranchSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55525,6 +55577,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55533,6 +55586,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55541,6 +55595,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55985,7 +56040,7 @@
           "launch_stage": "GA"
         },
         "database_id": {
-          "description": "The ID to use for the Database, which will become the final component of\nthe database's resource name.\nThis ID becomes the database name in postgres.\n\nThis value should be 4-63 characters, and only use characters available in DNS names,\nas defined by RFC-1123\n\nIf database_id is not specified in the request, it is generated automatically.",
+          "description": "The ID used to identify and manage the Database resource through the API.\nThe Postgres database name is specified in `spec.postgres_database`.\n\nThis value should be 4-63 characters, and only use characters available in DNS names,\nas defined by RFC-1123\n\nIf database_id is not specified in the request, it is generated automatically.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -56064,7 +56119,7 @@
           "launch_stage": "GA"
         },
         "role_id": {
-          "description": "The ID to use for the Role, which will become the final component of\nthe role's resource name.\nThis ID becomes the role in Postgres.\n\nThis value should be 4-63 characters, and valid characters\nare lowercase letters, numbers, and hyphens, as defined by RFC 1123.\n\nIf role_id is not specified in the request, it is generated automatically.",
+          "description": "The ID used to identify and manage the Role resource through the API.\nThe Postgres role name is specified in `spec.postgres_role`.\n\nThis value should be 4-63 characters, and valid characters\nare lowercase letters, numbers, and hyphens, as defined by RFC 1123.\n\nIf role_id is not specified in the request, it is generated automatically.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -56342,7 +56397,6 @@
           "ref": "postgres.DatabaseDatabaseSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -56385,7 +56439,7 @@
           ]
         },
         "role": {
-          "description": "The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nA database always has an owner.",
+          "description": "The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nRequired when creating the Database.",
           "launch_stage": "GA"
         }
       }
@@ -56591,7 +56645,6 @@
           "ref": "postgres.EndpointSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -57781,7 +57834,6 @@
           "ref": "postgres.ProjectSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -57918,6 +57970,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         }
@@ -58124,7 +58177,6 @@
           "ref": "postgres.RoleRoleSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -58214,32 +58266,35 @@
           ]
         },
         "auth_method": {
-          "description": "Controls how the Postgres role authenticates when a client opens a database\nconnection. Supported values:\n\n* LAKEBASE_OAUTH_V1: the role authenticates by presenting a Databricks\nOAuth access token derived from the backing managed identity (the\nDatabricks user, service principal, or group named by the role's\n`postgres_role`). No static password exists for roles using this method.\n* PG_PASSWORD_SCRAM_SHA_256: the role authenticates with a Postgres\npassword verified server-side using the SCRAM-SHA-256 mechanism.\nLakebase generates a password for the role.\n* NO_LOGIN: the role cannot open a Postgres session at all. Useful for\nroles that exist only to own objects or to aggregate privileges that\nare then granted to other, loginable roles.\n\nIf auth_method is left unspecified, a meaningful authentication method is derived from the identity_type:\n* For the managed identities, OAUTH is used.\n* For the regular postgres roles, authentication based on postgres passwords is used.\n\nNOTE: for the Databricks identity type GROUP, LAKEBASE_OAUTH_V1\nis the default auth method (group can login as well).\n\nThis field is set when the role is created and cannot be changed.\nWhen replacing an existing role with replace_existing=true, omit this\nfield or supply its current value. A differing value returns\nINVALID_PARAMETER_VALUE and rejects the entire request, including changes\nto mutable fields.\nWith `*` or masks containing only mutable fields, supplied values are ignored.\nIncluding this field as an explicit path in update_mask returns\nINVALID_PARAMETER_VALUE.",
+          "description": "Controls how the Postgres role authenticates when a client opens a database\nconnection. Supported values:\n\n* LAKEBASE_OAUTH_V1: the role authenticates by presenting a Databricks\nOAuth access token derived from the backing managed identity (the\nDatabricks user, service principal, or group named by the role's\n`postgres_role`). No static password exists for roles using this method.\n* PG_PASSWORD_SCRAM_SHA_256: the role authenticates with a Postgres\npassword verified server-side using the SCRAM-SHA-256 mechanism.\nLakebase generates a password for the role.\n\nNO_LOGIN is not currently supported for Role creation.\n\nIf auth_method is left unspecified, a meaningful authentication method is derived from the identity_type:\n* For the managed identities, OAUTH is used.\n* For the regular postgres roles, authentication based on postgres passwords is used.\n\nNOTE: for the Databricks identity type GROUP, LAKEBASE_OAUTH_V1\nis the default auth method (group can login as well).\n\nThis value cannot be changed after creation.",
           "ref": "postgres.RoleAuthMethod",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
         "identity_type": {
-          "description": "The type of role.\nWhen specifying a managed-identity, the chosen role_id must be a valid:\n\n* application ID for SERVICE_PRINCIPAL\n* user email for USER\n* group name for GROUP\n\nThis field is set when the role is created and cannot be changed.\nWhen replacing an existing role with replace_existing=true, omit this\nfield or supply its current value. A differing value returns\nINVALID_PARAMETER_VALUE and rejects the entire request, including changes\nto mutable fields.\nWith `*` or masks containing only mutable fields, supplied values are ignored.\nIncluding this field as an explicit path in update_mask returns\nINVALID_PARAMETER_VALUE.",
+          "description": "The type of role.\nWhen specifying a managed-identity, the chosen postgres_role must be a valid:\n\n* application ID for SERVICE_PRINCIPAL\n* user email for USER\n* group name for GROUP\n\nThis value cannot be changed after creation.",
           "ref": "postgres.RoleIdentityType",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
         "membership_roles": {
-          "description": "An enum value for a standard role that this role is a member of.",
+          "description": "An enum value for a standard role that this role is a member of.\nWhen selected in update_mask, this field replaces all existing memberships.\nAn empty or omitted list clears all memberships, including DATABRICKS_SUPERUSER.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "postgres_role": {
-          "description": "The name of the Postgres role.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n\nRequired when creating the Role.\n\nIf you wish to create a Postgres Role backed by a managed Databricks identity, then postgres_role\nmust be one of the following:\n\n1. user email for IdentityType.USER\n2. app ID for IdentityType.SERVICE_PRINCIPAL\n2. group name for IdentityType.GROUP\n\nThis field is set when the role is created and cannot be changed.\nWhen replacing an existing role with replace_existing=true, omit this\nfield or supply its current value. A differing value returns\nINVALID_PARAMETER_VALUE and rejects the entire request, including changes\nto mutable fields.\nWith `*` or masks containing only mutable fields, supplied values are ignored.\nIncluding this field as an explicit path in update_mask returns\nINVALID_PARAMETER_VALUE.",
+          "description": "The name of the Postgres role.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n\nRequired when creating the Role.\n\nIf you wish to create a Postgres Role backed by a managed Databricks identity, then postgres_role\nmust be one of the following:\n\n1. user email for IdentityType.USER\n2. app ID for IdentityType.SERVICE_PRINCIPAL\n2. group name for IdentityType.GROUP\n\nThis value cannot be changed after creation.",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         }
@@ -61167,6 +61222,7 @@
           "launch_stage": "GA"
         },
         "state": {
+          "description": "The state of the inference table.",
           "ref": "serving.AutoCaptureState",
           "launch_stage": "GA"
         },
@@ -61179,6 +61235,7 @@
     "serving.AutoCaptureState": {
       "fields": {
         "payload_table": {
+          "description": "The payload table that stores the logged requests and responses.",
           "ref": "serving.PayloadTable",
           "launch_stage": "GA"
         }
@@ -61253,6 +61310,29 @@
         }
       }
     },
+    "serving.CommitmentTerm": {
+      "description": "The commitment term length for a Provisioned Throughput pool.",
+      "enum": [
+        "COMMITMENT_TERM_1_MONTH",
+        "COMMITMENT_TERM_3_MONTHS",
+        "COMMITMENT_TERM_1_HOUR",
+        "COMMITMENT_TERM_12_HOURS",
+        "COMMITMENT_TERM_1_DAY",
+        "COMMITMENT_TERM_1_WEEK",
+        "COMMITMENT_TERM_6_MONTHS",
+        "COMMITMENT_TERM_1_YEAR"
+      ],
+      "enum_launch_stages": {
+        "COMMITMENT_TERM_12_HOURS": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_DAY": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_HOUR": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_MONTH": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_WEEK": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_YEAR": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_3_MONTHS": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_6_MONTHS": "PRIVATE_PREVIEW"
+      }
+    },
     "serving.CreatePtEndpointRequest": {
       "fields": {
         "ai_gateway": {
@@ -61301,6 +61381,7 @@
           "launch_stage": "GA"
         },
         "description": {
+          "description": "The description of the serving endpoint.",
           "launch_stage": "GA"
         },
         "email_notifications": {
@@ -61521,7 +61602,7 @@
           "launch_stage": "GA"
         },
         "start_time": {
-          "description": "The timestamp when the update to the pending config started.",
+          "description": "The timestamp when the update to the pending config started, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "traffic_config": {
@@ -61584,6 +61665,7 @@
     "serving.EndpointTags": {
       "fields": {
         "tags": {
+          "description": "The tags attached to the serving endpoint after the update.",
           "launch_stage": "GA"
         }
       }
@@ -61760,15 +61842,19 @@
       "description": "All fields are not sensitive as they are hard-coded in the system and made available to customers.",
       "fields": {
         "description": {
+          "description": "A description of the foundation model.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "display_name": {
+          "description": "The human-readable display name of the foundation model.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "docs": {
+          "description": "The URL of the Databricks documentation page for the foundation model.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "name": {
+          "description": "The name of the foundation model.",
           "launch_stage": "PUBLIC_PREVIEW"
         }
       }
@@ -61937,12 +62023,15 @@
     "serving.PayloadTable": {
       "fields": {
         "name": {
+          "description": "The name of the payload table within the configured catalog and schema.",
           "launch_stage": "GA"
         },
         "status": {
+          "description": "The status of the payload table. One of PENDING, READY, FAILED or DISABLED.",
           "launch_stage": "GA"
         },
         "status_message": {
+          "description": "More information about the status of the payload table, if available.",
           "launch_stage": "GA"
         }
       }
@@ -61954,6 +62043,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "traffic_config": {
+          "description": "The traffic configuration associated with the serving endpoint config.",
           "ref": "serving.TrafficConfig",
           "launch_stage": "PUBLIC_PREVIEW"
         }
@@ -61970,6 +62060,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "entity_version": {
+          "description": "The version of the model in Unity Catalog to be served.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "name": {
@@ -61979,6 +62070,11 @@
         "provisioned_model_units": {
           "description": "The number of model units to be provisioned. Dedicated inference requires positive fixed\ncapacity and does not support scale-to-zero.",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "pt_term": {
+          "description": "Commitment term to purchase for this served entity; its presence marks the entity as reserved\n(vs on-demand) PT. Valid on create and on update (purchases a commitment for a scale-up).",
+          "ref": "serving.CommitmentTerm",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -62213,6 +62309,7 @@
     "serving.Route": {
       "fields": {
         "served_entity_name": {
+          "description": "The name of the served entity this route configures traffic for.",
           "launch_stage": "GA"
         },
         "served_model_name": {
@@ -62239,6 +62336,7 @@
           "launch_stage": "GA"
         },
         "entity_version": {
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.",
           "launch_stage": "GA"
         },
         "environment_vars": {
@@ -62303,9 +62401,11 @@
           ]
         },
         "creation_timestamp": {
+          "description": "The timestamp when the served entity was created, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "creator": {
+          "description": "The email of the user who created the served entity.",
           "launch_stage": "GA"
         },
         "entity_name": {
@@ -62313,6 +62413,7 @@
           "launch_stage": "GA"
         },
         "entity_version": {
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.",
           "launch_stage": "GA"
         },
         "environment_vars": {
@@ -62325,6 +62426,7 @@
           "launch_stage": "GA"
         },
         "foundation_model": {
+          "description": "The foundation model that is served. Present for served entities that serve a Databricks-hosted foundation model.",
           "ref": "serving.FoundationModel",
           "launch_stage": "PUBLIC_PREVIEW"
         },
@@ -62361,6 +62463,7 @@
           "launch_stage": "GA"
         },
         "state": {
+          "description": "Information corresponding to the state of the served entity.",
           "ref": "serving.ServedModelState",
           "launch_stage": "GA"
         },
@@ -62378,20 +62481,25 @@
     "serving.ServedEntitySpec": {
       "fields": {
         "entity_name": {
+          "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object is given in the form of **catalog_name.schema_name.model_name**.",
           "launch_stage": "GA"
         },
         "entity_version": {
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.",
           "launch_stage": "GA"
         },
         "external_model": {
+          "description": "The external model that is served. NOTE: Only one of external_model, foundation_model, and (entity_name, entity_version) is returned based on the endpoint type.",
           "ref": "serving.ExternalModel",
           "launch_stage": "GA"
         },
         "foundation_model": {
+          "description": "The foundation model that is served. NOTE: Only one of foundation_model, external_model, and (entity_name, entity_version) is returned based on the endpoint type.",
           "ref": "serving.FoundationModel",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "name": {
+          "description": "The name of the served entity.",
           "launch_stage": "GA"
         }
       }
@@ -62430,9 +62538,11 @@
           "launch_stage": "GA"
         },
         "model_name": {
+          "description": "The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.",
           "launch_stage": "GA"
         },
         "model_version": {
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served.",
           "launch_stage": "GA"
         },
         "name": {
@@ -62493,9 +62603,11 @@
           ]
         },
         "creation_timestamp": {
+          "description": "The timestamp when the served entity was created, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "creator": {
+          "description": "The email of the user who created the served entity.",
           "launch_stage": "GA"
         },
         "environment_vars": {
@@ -62515,9 +62627,11 @@
           "launch_stage": "GA"
         },
         "model_name": {
+          "description": "The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.",
           "launch_stage": "GA"
         },
         "model_version": {
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served.",
           "launch_stage": "GA"
         },
         "name": {
@@ -62533,6 +62647,7 @@
           "launch_stage": "GA"
         },
         "state": {
+          "description": "Information corresponding to the state of the served entity.",
           "ref": "serving.ServedModelState",
           "launch_stage": "GA"
         },
@@ -62550,14 +62665,15 @@
     "serving.ServedModelSpec": {
       "fields": {
         "model_name": {
-          "description": "Only one of model_name and entity_name should be populated",
+          "description": "The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.",
           "launch_stage": "GA"
         },
         "model_version": {
-          "description": "Only one of model_version and entity_version should be populated",
+          "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served.",
           "launch_stage": "GA"
         },
         "name": {
+          "description": "The name of the served entity.",
           "launch_stage": "GA"
         }
       }
@@ -62565,10 +62681,12 @@
     "serving.ServedModelState": {
       "fields": {
         "deployment": {
+          "description": "The state of the deployment of the served entity. DEPLOYMENT_CREATING indicates that the served entity is not ready yet because the deployment is still being created (for example, the container image is building or the model server is starting for the first time). DEPLOYMENT_RECOVERING indicates that the served entity was previously ready but no longer is and is attempting to recover. DEPLOYMENT_READY indicates that the served entity is ready to receive traffic. DEPLOYMENT_FAILED indicates that there was an error bringing up the served entity (for example, the container image build failed or the model server failed to start due to a model loading error). DEPLOYMENT_ABORTED indicates that the deployment was terminated, likely due to a failure in bringing up another served entity under the same endpoint and config version.",
           "ref": "serving.ServedModelStateDeployment",
           "launch_stage": "GA"
         },
         "deployment_state_message": {
+          "description": "More information about the state of the served entity, if available.",
           "launch_stage": "GA"
         }
       }
@@ -62614,7 +62732,7 @@
           "launch_stage": "GA"
         },
         "creation_timestamp": {
-          "description": "The timestamp when the endpoint was created in Unix time.",
+          "description": "The timestamp when the endpoint was created, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "creator": {
@@ -62630,7 +62748,7 @@
           "launch_stage": "GA"
         },
         "last_updated_timestamp": {
-          "description": "The timestamp when the endpoint was last updated by a user in Unix time.",
+          "description": "The timestamp when the endpoint was last updated by a user, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "name": {
@@ -62722,7 +62840,7 @@
           "launch_stage": "GA"
         },
         "creation_timestamp": {
-          "description": "The timestamp when the endpoint was created in Unix time.",
+          "description": "The timestamp when the endpoint was created, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "creator": {
@@ -62735,7 +62853,7 @@
           "launch_stage": "GA"
         },
         "description": {
-          "description": "Description of the serving model",
+          "description": "Description of the serving endpoint.",
           "launch_stage": "GA"
         },
         "email_notifications": {
@@ -62752,7 +62870,7 @@
           "launch_stage": "GA"
         },
         "last_updated_timestamp": {
-          "description": "The timestamp when the endpoint was last updated by a user in Unix time.",
+          "description": "The timestamp when the endpoint was last updated by a user, in milliseconds since the Unix epoch.",
           "launch_stage": "GA"
         },
         "name": {
@@ -62976,10 +63094,12 @@
     "serving.UpdateInferenceEndpointNotificationsResponse": {
       "fields": {
         "email_notifications": {
+          "description": "The email notification settings now in effect for the serving endpoint.",
           "ref": "serving.EmailNotifications",
           "launch_stage": "GA"
         },
         "name": {
+          "description": "The name of the serving endpoint whose notification settings were updated.",
           "launch_stage": "GA"
         }
       }
@@ -62987,6 +63107,7 @@
     "serving.UpdateProvisionedThroughputEndpointConfigRequest": {
       "fields": {
         "config": {
+          "description": "The core config of the serving endpoint.",
           "ref": "serving.PtEndpointCoreConfig",
           "launch_stage": "PUBLIC_PREVIEW"
         }
@@ -70375,6 +70496,7 @@
       }
     },
     "sql.AlertV2": {
+      "description": "A SQL alert. An alert runs a query on a schedule, evaluates the result against a condition,\nand notifies users or notification destinations when the condition is met.",
       "fields": {
         "create_time": {
           "description": "The timestamp indicating when the alert was created.",
@@ -70384,14 +70506,14 @@
           ]
         },
         "custom_description": {
-          "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+          "description": "Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.\nThe available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "custom_summary": {
-          "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+          "description": "Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -70400,7 +70522,7 @@
         "custom_template_format": {
           "description": "The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
           "ref": "sql.CustomTemplateFormat",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -70418,6 +70540,7 @@
           ]
         },
         "evaluation": {
+          "description": "Condition evaluated against the query result, and who is notified when it is met.",
           "ref": "sql.AlertV2Evaluation",
           "launch_stage": "GA"
         },
@@ -70429,7 +70552,7 @@
           ]
         },
         "lifecycle_state": {
-          "description": "Indicates whether the query is trashed.",
+          "description": "Indicates whether the alert is active (`ACTIVE`) or has been moved to the trash (`DELETED`).",
           "ref": "sql.AlertLifecycleState",
           "launch_stage": "GA",
           "behaviors": [
@@ -70471,7 +70594,7 @@
           ]
         },
         "run_as_user_name": {
-          "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+          "description": "Deprecated: Use `run_as` field instead. This field will be removed in a future release.\nThe run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.",
           "deprecated": true,
           "launch_stage": "GA",
           "behaviors": [
@@ -70479,6 +70602,7 @@
           ]
         },
         "schedule": {
+          "description": "Schedule on which the alert runs its query and evaluates the condition.",
           "ref": "sql.CronSchedule",
           "launch_stage": "GA"
         },
@@ -70498,12 +70622,12 @@
     "sql.AlertV2Evaluation": {
       "fields": {
         "comparison_operator": {
-          "description": "Operator used for comparison in alert evaluation.",
+          "description": "Operator used for comparison in alert evaluation. The alert is triggered when the comparison of the source value with the threshold is true. `IS_NULL` and `IS_NOT_NULL` take no threshold.",
           "ref": "sql.ComparisonOperator",
           "launch_stage": "GA"
         },
         "empty_result_state": {
-          "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
+          "description": "Alert state if result is empty. If not set, an empty result sets the state to `ERROR`. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
           "ref": "sql.AlertEvaluationState",
           "launch_stage": "GA",
           "behaviors": [
@@ -70531,7 +70655,7 @@
           "launch_stage": "GA"
         },
         "state": {
-          "description": "Latest state of alert evaluation.",
+          "description": "Latest state of alert evaluation: `TRIGGERED` when the condition was met, `OK` when it was not, and `ERROR` when the evaluation failed.",
           "ref": "sql.AlertEvaluationState",
           "launch_stage": "GA",
           "behaviors": [
@@ -70539,7 +70663,7 @@
           ]
         },
         "threshold": {
-          "description": "Threshold to user for alert evaluation, can be a column or a value.",
+          "description": "Threshold to compare the source column against, either another column or a fixed value. Not needed when `comparison_operator` is `IS_NULL` or `IS_NOT_NULL`.",
           "ref": "sql.AlertV2Operand",
           "launch_stage": "GA",
           "behaviors": [
@@ -70565,6 +70689,7 @@
           ]
         },
         "subscriptions": {
+          "description": "Users and notification destinations that receive notifications.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL",
@@ -70576,6 +70701,7 @@
     "sql.AlertV2Operand": {
       "fields": {
         "column": {
+          "description": "Compare the source against another column of the query result.",
           "ref": "sql.AlertV2OperandColumn",
           "launch_stage": "GA",
           "behaviors": [
@@ -70583,6 +70709,7 @@
           ]
         },
         "value": {
+          "description": "Compare the source against a fixed value.",
           "ref": "sql.AlertV2OperandValue",
           "launch_stage": "GA",
           "behaviors": [
@@ -70594,7 +70721,7 @@
     "sql.AlertV2OperandColumn": {
       "fields": {
         "aggregation": {
-          "description": "If not set, the behavior is equivalent to using `First row` in the UI.",
+          "description": "Aggregation applied to the column across all rows of the query result: `SUM`, `COUNT`, `COUNT_DISTINCT`, `AVG`, `MEDIAN`, `MIN`, `MAX` or `STDDEV`.\nIf not set, the value in the first row is used, which is equivalent to using `First row` in the UI.",
           "ref": "sql.Aggregation",
           "launch_stage": "GA",
           "behaviors": [
@@ -70602,12 +70729,14 @@
           ]
         },
         "display": {
+          "description": "Label for the column in notifications. Defaults to `name`.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "name": {
+          "description": "Name of the column in the query result.",
           "launch_stage": "GA"
         }
       }
@@ -70615,18 +70744,21 @@
     "sql.AlertV2OperandValue": {
       "fields": {
         "bool_value": {
+          "description": "Boolean threshold, for boolean columns.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "double_value": {
+          "description": "Numeric threshold, for numeric columns.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "string_value": {
+          "description": "String threshold, for string or timestamp columns.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -70655,9 +70787,11 @@
     "sql.AlertV2Subscription": {
       "fields": {
         "destination_id": {
+          "description": "ID of the notification destination to notify, as returned by the Notification Destinations API.",
           "launch_stage": "GA"
         },
         "user_email": {
+          "description": "Email address of the workspace user to notify.",
           "launch_stage": "GA"
         }
       }
@@ -71201,7 +71335,7 @@
     "sql.CronSchedule": {
       "fields": {
         "pause_status": {
-          "description": "Indicate whether this schedule is paused or not.",
+          "description": "Indicates whether this schedule is paused. While paused, the alert is not evaluated.",
           "ref": "sql.SchedulePauseStatus",
           "launch_stage": "GA",
           "behaviors": [
@@ -71209,7 +71343,7 @@
           ]
         },
         "quartz_cron_schedule": {
-          "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+          "description": "A cron expression using quartz syntax that specifies the schedule for this alert.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
           "launch_stage": "GA"
         },
         "timezone_id": {
@@ -71225,8 +71359,8 @@
         "MARKDOWN"
       ],
       "enum_launch_stages": {
-        "HTML": "PUBLIC_BETA",
-        "MARKDOWN": "PUBLIC_BETA"
+        "HTML": "PUBLIC_PREVIEW",
+        "MARKDOWN": "PUBLIC_PREVIEW"
       }
     },
     "sql.Dashboard": {
@@ -72559,12 +72693,14 @@
     "sql.ListAlertsV2Request": {
       "fields": {
         "page_size": {
+          "description": "Maximum number of alerts to return per page. Values above 100 are coerced to 100.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
+          "description": "Page token returned as `next_page_token` by a previous call. Omit it to retrieve the first page.",
           "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
@@ -74565,7 +74701,7 @@
           "launch_stage": "GA"
         },
         "update_mask": {
-          "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+          "description": "Comma-separated list of the alert fields to update, for example `display_name,query_text` or `schedule.pause_status`.\nOnly the listed fields are changed; all other fields keep their current values. `parent_path` cannot be updated.",
           "launch_stage": "GA"
         }
       }
@@ -75571,6 +75707,7 @@
           "description": "Timestamp when the tag policy was created",
           "launch_stage": "GA",
           "behaviors": [
+            "IMMUTABLE",
             "OUTPUT_ONLY"
           ]
         },
@@ -75583,6 +75720,7 @@
         "id": {
           "launch_stage": "GA",
           "behaviors": [
+            "IMMUTABLE",
             "OUTPUT_ONLY"
           ]
         },
@@ -84521,20 +84659,21 @@
           },
           {
             "name": "CancelBatch",
-            "description": "Cancel a batch. Cancellation is asynchronous: requests in flight drain first, so read the batch to observe the `CANCELLING` and `CANCELLED` statuses.",
+            "description": "Starts the asynchronous cancellation of a batch. Requests in progress are drained first. Cancellation is best effort, so the batch can still complete.",
             "summary": "Cancel a batch.",
             "path": "/api/2.0/ai-functions/batches/{name}/cancel",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "CancelBatchRequest",
               "is_object": true,
               "required_fields": [
                 {
                   "name": "name",
-                  "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                  "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -84545,7 +84684,7 @@
               "required_in_url_fields": [
                 {
                   "name": "name",
-                  "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                  "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -84561,7 +84700,7 @@
             "all_fields": [
               {
                 "name": "name",
-                "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -84572,7 +84711,7 @@
             "required_positional_arguments": [
               {
                 "name": "name",
-                "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -84583,15 +84722,16 @@
           },
           {
             "name": "CreateBatch",
-            "description": "Run an AI function over every request in a file on a Unity Catalog volume. The batch runs asynchronously; read it to follow its progress.",
+            "description": "Creates a batch that runs an AI function on every request in a JSONL file on a Unity Catalog volume. The batch runs asynchronously. To follow its progress, get the batch.",
             "summary": "Create a batch.",
             "path": "/api/2.0/ai-functions/batches",
             "can_use_json": true,
             "is_crud_create": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "CreateBatchRequest",
               "is_object": true,
@@ -84633,7 +84773,7 @@
                 "required_fields": [
                   {
                     "name": "endpoint",
-                    "description": "The AI function to run for every request, for example `ai_extract`.",
+                    "description": "The AI function, for example `ai_parse_document`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -84642,7 +84782,16 @@
                   },
                   {
                     "name": "input_ref",
-                    "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                    "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                    "required": true,
+                    "is_request_body_field": true,
+                    "entity": {
+                      "is_string": true
+                    }
+                  },
+                  {
+                    "name": "output_ref",
+                    "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -84653,7 +84802,7 @@
                 "required_request_body_fields": [
                   {
                     "name": "endpoint",
-                    "description": "The AI function to run for every request, for example `ai_extract`.",
+                    "description": "The AI function, for example `ai_parse_document`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -84662,7 +84811,16 @@
                   },
                   {
                     "name": "input_ref",
-                    "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                    "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                    "required": true,
+                    "is_request_body_field": true,
+                    "entity": {
+                      "is_string": true
+                    }
+                  },
+                  {
+                    "name": "output_ref",
+                    "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -84679,7 +84837,7 @@
               "required_fields": [
                 {
                   "name": "endpoint",
-                  "description": "The AI function to run for every request, for example `ai_extract`.",
+                  "description": "The AI function, for example `ai_parse_document`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84688,7 +84846,16 @@
                 },
                 {
                   "name": "input_ref",
-                  "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                  "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "output_ref",
+                  "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84699,7 +84866,7 @@
               "required_request_body_fields": [
                 {
                   "name": "endpoint",
-                  "description": "The AI function to run for every request, for example `ai_extract`.",
+                  "description": "The AI function, for example `ai_parse_document`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84708,7 +84875,16 @@
                 },
                 {
                   "name": "input_ref",
-                  "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                  "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "output_ref",
+                  "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84730,7 +84906,7 @@
                   "required_fields": [
                     {
                       "name": "endpoint",
-                      "description": "The AI function to run for every request, for example `ai_extract`.",
+                      "description": "The AI function, for example `ai_parse_document`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -84739,7 +84915,16 @@
                     },
                     {
                       "name": "input_ref",
-                      "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                      "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                      "required": true,
+                      "is_request_body_field": true,
+                      "entity": {
+                        "is_string": true
+                      }
+                    },
+                    {
+                      "name": "output_ref",
+                      "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -84750,7 +84935,7 @@
                   "required_request_body_fields": [
                     {
                       "name": "endpoint",
-                      "description": "The AI function to run for every request, for example `ai_extract`.",
+                      "description": "The AI function, for example `ai_parse_document`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -84759,7 +84944,16 @@
                     },
                     {
                       "name": "input_ref",
-                      "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                      "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                      "required": true,
+                      "is_request_body_field": true,
+                      "entity": {
+                        "is_string": true
+                      }
+                    },
+                    {
+                      "name": "output_ref",
+                      "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -84771,7 +84965,7 @@
               },
               {
                 "name": "create_time",
-                "description": "Output only. Time the batch was created.",
+                "description": "Output only. The time when the batch was created.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "is_optional_object": true,
@@ -84781,7 +84975,7 @@
               },
               {
                 "name": "endpoint",
-                "description": "The AI function to run for every request, for example `ai_extract`.",
+                "description": "The AI function, for example `ai_parse_document`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84790,7 +84984,7 @@
               },
               {
                 "name": "input_ref",
-                "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84799,7 +84993,8 @@
               },
               {
                 "name": "name",
-                "description": "ID of the batch, in the form `batch_\u003cid\u003e`. The service assigns it.",
+                "description": "Output only. Identifier. Resource name of the batch, returned by create. Format: `batch_\u003cid\u003e`.",
+                "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -84807,7 +85002,8 @@
               },
               {
                 "name": "output_ref",
-                "description": "Path on a Unity Catalog volume to write the JSONL output to. When it is omitted, the output\nstays on Databricks-managed storage and a finished batch returns a short-lived download URL\nin this field instead.",
+                "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
+                "required": true,
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -84815,7 +85011,7 @@
               },
               {
                 "name": "params",
-                "description": "Function options applied to every request in the batch, for example the extraction schema.",
+                "description": "Parameters of the function other than its input, applied to every request in the batch, for example\n`schema` for `ai_extract`. Put function options, such as `version`, in a nested `options` object. For\nthe parameters of each function, see [AI Functions](/large-language-models/ai-functions).",
                 "is_request_body_field": true,
                 "entity": {
                   "map_value": {}
@@ -84823,7 +85019,7 @@
               },
               {
                 "name": "percent_complete",
-                "description": "Output only. Percentage of the requests that finished, from 0 to 100. Returned when one batch\nis read, not when batches are listed.",
+                "description": "Output only. The percentage of requests that are processed, from 0 to 100. Returned when you get a batch, not when you\nlist batches.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84832,7 +85028,7 @@
               },
               {
                 "name": "request_counts",
-                "description": "Output only. Request counts. Returned when one batch is read, not when batches are listed.",
+                "description": "Output only. The number of requests in the batch, by result. Returned when you get a batch, not when you list\nbatches.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "is_optional_object": true,
@@ -84843,7 +85039,7 @@
               },
               {
                 "name": "status",
-                "description": "Output only. Status of the batch.",
+                "description": "Output only. The status of the batch.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84857,9 +85053,6 @@
                     },
                     {
                       "content": "COMPLETED"
-                    },
-                    {
-                      "content": "EXPIRED"
                     },
                     {
                       "content": "FAILED"
@@ -84880,7 +85073,7 @@
             "required_positional_arguments": [
               {
                 "name": "endpoint",
-                "description": "The AI function to run for every request, for example `ai_extract`.",
+                "description": "The AI function, for example `ai_parse_document`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84889,7 +85082,16 @@
               },
               {
                 "name": "input_ref",
-                "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "output_ref",
+                "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -84900,21 +85102,22 @@
           },
           {
             "name": "GetBatch",
-            "description": "Read one batch, with its status and progress.",
+            "description": "Gets the latest status and progress of a batch.",
             "summary": "Get a batch.",
             "path": "/api/2.0/ai-functions/batches/{name}",
             "is_crud_read": true,
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "GetBatchRequest",
               "is_object": true,
               "required_fields": [
                 {
                   "name": "name",
-                  "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                  "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -84925,7 +85128,7 @@
               "required_in_url_fields": [
                 {
                   "name": "name",
-                  "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                  "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -84941,7 +85144,7 @@
               "required_fields": [
                 {
                   "name": "endpoint",
-                  "description": "The AI function to run for every request, for example `ai_extract`.",
+                  "description": "The AI function, for example `ai_parse_document`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84950,7 +85153,16 @@
                 },
                 {
                   "name": "input_ref",
-                  "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                  "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "output_ref",
+                  "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84961,7 +85173,7 @@
               "required_request_body_fields": [
                 {
                   "name": "endpoint",
-                  "description": "The AI function to run for every request, for example `ai_extract`.",
+                  "description": "The AI function, for example `ai_parse_document`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84970,7 +85182,16 @@
                 },
                 {
                   "name": "input_ref",
-                  "description": "Path of the JSONL input file on a Unity Catalog volume. Each line is one request.",
+                  "description": "Unity Catalog volume path of the JSONL input file. Each line is one request, in the form `{\"custom_id\": ..., \"body\": ...}`. The file can hold up to 50,000 requests and be up to 200 MiB.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                },
+                {
+                  "name": "output_ref",
+                  "description": "Unity Catalog volume path to write the JSONL output file to. If the path is a directory, the file is `\u003cpath\u003e/\u003cname\u003e_output.jsonl`.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -84982,7 +85203,7 @@
             "all_fields": [
               {
                 "name": "name",
-                "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -84993,7 +85214,7 @@
             "required_positional_arguments": [
               {
                 "name": "name",
-                "description": "ID of the batch, in the form `batch_\u003cid\u003e`.",
+                "description": "Resource name of the batch. Format: `batch_\u003cid\u003e`.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -85004,13 +85225,14 @@
           },
           {
             "name": "ListBatches",
-            "description": "List the batches the caller created in this workspace.",
+            "description": "Lists the batches that the caller created in this workspace.",
             "summary": "List batches.",
             "path": "/api/2.0/ai-functions/batches",
-            "is_hidden_cli": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PRIVATE_PREVIEW",
-            "cli_launch_stage_display": "Private Preview",
+            "launch_stage": "PUBLIC_BETA",
+            "cli_launch_stage_label": "*Beta*",
+            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
+            "cli_launch_stage_display": "Beta",
             "request": {
               "pascal_name": "ListBatchesRequest",
               "is_object": true
@@ -85030,7 +85252,7 @@
               },
               {
                 "name": "page_token",
-                "description": "Page token from an earlier response. Omit it to read the first page.",
+                "description": "A page token from a previous call to list batches. Omit it to get the first page.",
                 "is_query": true,
                 "entity": {
                   "is_string": true
@@ -85041,7 +85263,7 @@
               "token": {
                 "poll_field": {
                   "name": "page_token",
-                  "description": "Page token from an earlier response. Omit it to read the first page.",
+                  "description": "A page token from a previous call to list batches. Omit it to get the first page.",
                   "is_query": true,
                   "entity": {
                     "is_string": true
@@ -91848,7 +92070,7 @@
         "methods": [
           {
             "name": "CreateAlert",
-            "description": "Create Alert",
+            "description": "Creates an alert that runs `query_text` on the given schedule and evaluates the result against the configured condition.",
             "summary": "Create an alert.",
             "path": "/api/2.0/alerts",
             "can_use_json": true,
@@ -91921,6 +92143,7 @@
                   },
                   {
                     "name": "evaluation",
+                    "description": "Condition evaluated against the query result, and who is notified when it is met.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -91930,6 +92153,7 @@
                   },
                   {
                     "name": "schedule",
+                    "description": "Schedule on which the alert runs its query and evaluates the condition.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -91968,6 +92192,7 @@
                   },
                   {
                     "name": "evaluation",
+                    "description": "Condition evaluated against the query result, and who is notified when it is met.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -91977,6 +92202,7 @@
                   },
                   {
                     "name": "schedule",
+                    "description": "Schedule on which the alert runs its query and evaluates the condition.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -92021,6 +92247,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92030,6 +92257,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92068,6 +92296,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92077,6 +92306,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92125,6 +92355,7 @@
                     },
                     {
                       "name": "evaluation",
+                      "description": "Condition evaluated against the query result, and who is notified when it is met.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -92134,6 +92365,7 @@
                     },
                     {
                       "name": "schedule",
+                      "description": "Schedule on which the alert runs its query and evaluates the condition.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -92172,6 +92404,7 @@
                     },
                     {
                       "name": "evaluation",
+                      "description": "Condition evaluated against the query result, and who is notified when it is met.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -92181,6 +92414,7 @@
                     },
                     {
                       "name": "schedule",
+                      "description": "Schedule on which the alert runs its query and evaluates the condition.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -92202,7 +92436,7 @@
               },
               {
                 "name": "custom_description",
-                "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+                "description": "Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.\nThe available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -92210,7 +92444,7 @@
               },
               {
                 "name": "custom_summary",
-                "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+                "description": "Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -92254,6 +92488,7 @@
               },
               {
                 "name": "evaluation",
+                "description": "Condition evaluated against the query result, and who is notified when it is met.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -92272,7 +92507,7 @@
               },
               {
                 "name": "lifecycle_state",
-                "description": "Indicates whether the query is trashed.",
+                "description": "Indicates whether the alert is active (`ACTIVE`) or has been moved to the trash (`DELETED`).",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -92337,7 +92572,7 @@
               },
               {
                 "name": "run_as_user_name",
-                "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                "description": "Deprecated: Use `run_as` field instead. This field will be removed in a future release.\nThe run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -92345,6 +92580,7 @@
               },
               {
                 "name": "schedule",
+                "description": "Schedule on which the alert runs its query and evaluates the condition.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -92401,6 +92637,7 @@
               },
               {
                 "name": "evaluation",
+                "description": "Condition evaluated against the query result, and who is notified when it is met.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -92410,6 +92647,7 @@
               },
               {
                 "name": "schedule",
+                "description": "Schedule on which the alert runs its query and evaluates the condition.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -92434,6 +92672,7 @@
               "required_fields": [
                 {
                   "name": "id",
+                  "description": "ID of the alert to retrieve, as returned in the alert's `id` field.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -92444,6 +92683,7 @@
               "required_in_url_fields": [
                 {
                   "name": "id",
+                  "description": "ID of the alert to retrieve, as returned in the alert's `id` field.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -92486,6 +92726,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92495,6 +92736,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92533,6 +92775,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92542,6 +92785,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92554,6 +92798,7 @@
             "all_fields": [
               {
                 "name": "id",
+                "description": "ID of the alert to retrieve, as returned in the alert's `id` field.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -92564,6 +92809,7 @@
             "required_positional_arguments": [
               {
                 "name": "id",
+                "description": "ID of the alert to retrieve, as returned in the alert's `id` field.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -92591,6 +92837,7 @@
             "all_fields": [
               {
                 "name": "page_size",
+                "description": "Maximum number of alerts to return per page. Values above 100 are coerced to 100.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -92598,6 +92845,7 @@
               },
               {
                 "name": "page_token",
+                "description": "Page token returned as `next_page_token` by a previous call. Omit it to retrieve the first page.",
                 "is_query": true,
                 "entity": {
                   "is_string": true
@@ -92608,6 +92856,7 @@
               "token": {
                 "poll_field": {
                   "name": "page_token",
+                  "description": "Page token returned as `next_page_token` by a previous call. Omit it to retrieve the first page.",
                   "is_query": true,
                   "entity": {
                     "is_string": true
@@ -92630,6 +92879,7 @@
               "required_fields": [
                 {
                   "name": "id",
+                  "description": "ID of the alert to move to the trash.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -92640,6 +92890,7 @@
               "required_in_url_fields": [
                 {
                   "name": "id",
+                  "description": "ID of the alert to move to the trash.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -92656,6 +92907,7 @@
             "all_fields": [
               {
                 "name": "id",
+                "description": "ID of the alert to move to the trash.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -92674,6 +92926,7 @@
             "required_positional_arguments": [
               {
                 "name": "id",
+                "description": "ID of the alert to move to the trash.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -92684,7 +92937,7 @@
           },
           {
             "name": "UpdateAlert",
-            "description": "Update alert",
+            "description": "Updates an alert. Only the fields listed in `update_mask` are changed; all other fields keep their current values.",
             "summary": "Update an alert.",
             "path": "/api/2.0/alerts/{id}",
             "can_use_json": true,
@@ -92717,7 +92970,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+                  "description": "Comma-separated list of the alert fields to update, for example `display_name,query_text` or `schedule.pause_status`.\nOnly the listed fields are changed; all other fields keep their current values. `parent_path` cannot be updated.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -92738,7 +92991,7 @@
                 },
                 {
                   "name": "update_mask",
-                  "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+                  "description": "Comma-separated list of the alert fields to update, for example `display_name,query_text` or `schedule.pause_status`.\nOnly the listed fields are changed; all other fields keep their current values. `parent_path` cannot be updated.",
                   "required": true,
                   "is_query": true,
                   "entity": {
@@ -92796,6 +93049,7 @@
                   },
                   {
                     "name": "evaluation",
+                    "description": "Condition evaluated against the query result, and who is notified when it is met.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -92805,6 +93059,7 @@
                   },
                   {
                     "name": "schedule",
+                    "description": "Schedule on which the alert runs its query and evaluates the condition.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -92843,6 +93098,7 @@
                   },
                   {
                     "name": "evaluation",
+                    "description": "Condition evaluated against the query result, and who is notified when it is met.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -92852,6 +93108,7 @@
                   },
                   {
                     "name": "schedule",
+                    "description": "Schedule on which the alert runs its query and evaluates the condition.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -92896,6 +93153,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92905,6 +93163,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92943,6 +93202,7 @@
                 },
                 {
                   "name": "evaluation",
+                  "description": "Condition evaluated against the query result, and who is notified when it is met.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -92952,6 +93212,7 @@
                 },
                 {
                   "name": "schedule",
+                  "description": "Schedule on which the alert runs its query and evaluates the condition.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -93000,6 +93261,7 @@
                     },
                     {
                       "name": "evaluation",
+                      "description": "Condition evaluated against the query result, and who is notified when it is met.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -93009,6 +93271,7 @@
                     },
                     {
                       "name": "schedule",
+                      "description": "Schedule on which the alert runs its query and evaluates the condition.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -93047,6 +93310,7 @@
                     },
                     {
                       "name": "evaluation",
+                      "description": "Condition evaluated against the query result, and who is notified when it is met.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -93056,6 +93320,7 @@
                     },
                     {
                       "name": "schedule",
+                      "description": "Schedule on which the alert runs its query and evaluates the condition.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -93078,7 +93343,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+                "description": "Comma-separated list of the alert fields to update, for example `display_name,query_text` or `schedule.pause_status`.\nOnly the listed fields are changed; all other fields keep their current values. `parent_path` cannot be updated.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -93096,7 +93361,7 @@
               },
               {
                 "name": "custom_description",
-                "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+                "description": "Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.\nThe available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -93104,7 +93369,7 @@
               },
               {
                 "name": "custom_summary",
-                "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+                "description": "Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -93148,6 +93413,7 @@
               },
               {
                 "name": "evaluation",
+                "description": "Condition evaluated against the query result, and who is notified when it is met.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -93166,7 +93432,7 @@
               },
               {
                 "name": "lifecycle_state",
-                "description": "Indicates whether the query is trashed.",
+                "description": "Indicates whether the alert is active (`ACTIVE`) or has been moved to the trash (`DELETED`).",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -93231,7 +93497,7 @@
               },
               {
                 "name": "run_as_user_name",
-                "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                "description": "Deprecated: Use `run_as` field instead. This field will be removed in a future release.\nThe run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -93239,6 +93505,7 @@
               },
               {
                 "name": "schedule",
+                "description": "Schedule on which the alert runs its query and evaluates the condition.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -93278,7 +93545,7 @@
               },
               {
                 "name": "update_mask",
-                "description": "The field mask must be a single string, with multiple fields separated by commas (no spaces). The field path is relative to the resource object, using a dot (`.`) to navigate sub-fields (e.g., `author.given_name`). Specification of elements in sequence or map fields is not allowed, as only the entire collection field can be specified. Field names must exactly match the resource field names.\n\nA field mask of `*` indicates full replacement. It’s recommended to always explicitly list the fields being updated and avoid using `*` wildcards, as it can lead to unintended results if the API changes in the future.",
+                "description": "Comma-separated list of the alert fields to update, for example `display_name,query_text` or `schedule.pause_status`.\nOnly the listed fields are changed; all other fields keep their current values. `parent_path` cannot be updated.",
                 "required": true,
                 "is_query": true,
                 "entity": {
@@ -93314,6 +93581,7 @@
               },
               {
                 "name": "evaluation",
+                "description": "Condition evaluated against the query result, and who is notified when it is met.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -93323,6 +93591,7 @@
               },
               {
                 "name": "schedule",
+                "description": "Schedule on which the alert runs its query and evaluates the condition.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -93617,6 +93886,20 @@
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "effective_resources",
+                "description": "Resources added to the app, plus the resources it inherits from its space.\nEmpty for apps that are not in a space.",
+                "is_computed": true,
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppResourceList",
+                  "array_value": {
+                    "pascal_name": "AppResource",
+                    "is_object": true
+                  }
                 }
               },
               {
@@ -96113,6 +96396,20 @@
                 }
               },
               {
+                "name": "effective_resources",
+                "description": "Resources added to the app, plus the resources it inherits from its space.\nEmpty for apps that are not in a space.",
+                "is_computed": true,
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "AppResourceList",
+                  "array_value": {
+                    "pascal_name": "AppResource",
+                    "is_object": true
+                  }
+                }
+              },
+              {
                 "name": "effective_usage_policy_id",
                 "is_computed": true,
                 "is_output_only": true,
@@ -98487,6 +98784,323 @@
                 }
               }
             ]
+          }
+        ]
+      },
+      {
+        "id": "iam.AssumeGroup",
+        "name": "AssumeGroup",
+        "description": "Manage the workspace's restricted sharing groups.",
+        "package": {
+          "name": "iam"
+        },
+        "is_hidden_cli": true,
+        "docs_group": "iam",
+        "launch_stage": "PRIVATE_PREVIEW",
+        "cli_launch_stage_display": "Private Preview",
+        "methods": [
+          {
+            "name": "CreateRestrictedSharingGroup",
+            "description": "Adds a group to the workspace's restricted list. The workspace allows at\nmost 100 restricted sharing groups. Requires workspace admin.",
+            "summary": "Create a restricted sharing group.",
+            "path": "/api/2.0/access-control/restricted-sharing-groups",
+            "can_use_json": true,
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "CreateRestrictedSharingGroupRequest",
+              "is_object": true,
+              "has_required_request_body_fields": true,
+              "required_fields": [
+                {
+                  "name": "restricted_sharing_group",
+                  "description": "The restricted sharing group to create. It has no client-set fields; the\ngroup is identified by restricted_sharing_group_id.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "pascal_name": "RestrictedSharingGroup",
+                    "is_object": true
+                  }
+                },
+                {
+                  "name": "restricted_sharing_group_id",
+                  "description": "The id of the workspace group to restrict: the numeric id of an existing and\nnon-system workspace group.",
+                  "required": true,
+                  "is_query": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "restricted_sharing_group_id",
+                  "description": "The id of the workspace group to restrict: the numeric id of an existing and\nnon-system workspace group.",
+                  "required": true,
+                  "is_query": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_request_body_fields": [
+                {
+                  "name": "restricted_sharing_group",
+                  "description": "The restricted sharing group to create. It has no client-set fields; the\ngroup is identified by restricted_sharing_group_id.",
+                  "required": true,
+                  "is_request_body_field": true,
+                  "entity": {
+                    "pascal_name": "RestrictedSharingGroup",
+                    "is_object": true
+                  }
+                }
+              ]
+            },
+            "request_body_field": {
+              "name": "restricted_sharing_group",
+              "description": "The restricted sharing group to create. It has no client-set fields; the\ngroup is identified by restricted_sharing_group_id.",
+              "required": true,
+              "is_request_body_field": true,
+              "entity": {
+                "pascal_name": "RestrictedSharingGroup",
+                "is_object": true
+              }
+            },
+            "response": {
+              "pascal_name": "RestrictedSharingGroup",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "restricted_sharing_group",
+                "description": "The restricted sharing group to create. It has no client-set fields; the\ngroup is identified by restricted_sharing_group_id.",
+                "required": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "RestrictedSharingGroup",
+                  "is_object": true
+                }
+              },
+              {
+                "name": "restricted_sharing_group_id",
+                "description": "The id of the workspace group to restrict: the numeric id of an existing and\nnon-system workspace group.",
+                "required": true,
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "group_display_name",
+                "description": "The display name of the restricted workspace group.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "name",
+                "description": "The resource name of the restricted sharing group.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`\nExample: `restricted-sharing-groups/123`",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              },
+              {
+                "name": "restricted_sharing_group_id",
+                "description": "The id of the restricted workspace group: the numeric id of an existing and\nnon-system workspace group.",
+                "is_output_only": true,
+                "is_request_body_field": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "restricted_sharing_group_id",
+                "description": "The id of the workspace group to restrict: the numeric id of an existing and\nnon-system workspace group.",
+                "required": true,
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
+            "name": "DeleteRestrictedSharingGroup",
+            "description": "Removes a group from the workspace's restricted list. Requires workspace\nadmin.",
+            "summary": "Delete a restricted sharing group.",
+            "path": "/api/2.0/access-control/{name=restricted-sharing-groups/*}",
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "DeleteRestrictedSharingGroupRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the restricted sharing group to delete.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the restricted sharing group to delete.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "is_empty_response": true
+            },
+            "all_fields": [
+              {
+                "name": "name",
+                "description": "The name of the restricted sharing group to delete.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "name",
+                "description": "The name of the restricted sharing group to delete.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
+            "name": "GetRestrictedSharingGroup",
+            "description": "Gets a restricted sharing group in the workspace. Use it to check whether\na group is on the workspace's restricted list. Requires workspace admin.",
+            "summary": "Get a restricted sharing group.",
+            "path": "/api/2.0/access-control/{name=restricted-sharing-groups/*}",
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "GetRestrictedSharingGroupRequest",
+              "is_object": true,
+              "required_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the restricted sharing group to get.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ],
+              "required_in_url_fields": [
+                {
+                  "name": "name",
+                  "description": "The name of the restricted sharing group to get.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                  "required": true,
+                  "is_path": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              ]
+            },
+            "response": {
+              "pascal_name": "RestrictedSharingGroup",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "name",
+                "description": "The name of the restricted sharing group to get.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "required_positional_arguments": [
+              {
+                "name": "name",
+                "description": "The name of the restricted sharing group to get.\nFormat: `restricted-sharing-groups/{restricted_sharing_group_id}`",
+                "required": true,
+                "is_path": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ]
+          },
+          {
+            "name": "ListRestrictedSharingGroups",
+            "description": "Lists the restricted sharing groups in the workspace. Requires workspace\nadmin.",
+            "summary": "List restricted sharing groups.",
+            "path": "/api/2.0/access-control/restricted-sharing-groups",
+            "is_hidden_cli": true,
+            "has_required_positional_arguments": true,
+            "launch_stage": "PRIVATE_PREVIEW",
+            "cli_launch_stage_display": "Private Preview",
+            "request": {
+              "pascal_name": "ListRestrictedSharingGroupsRequest",
+              "is_object": true
+            },
+            "response": {
+              "pascal_name": "ListRestrictedSharingGroupsResponse",
+              "is_object": true
+            },
+            "all_fields": [
+              {
+                "name": "page_size",
+                "description": "The maximum number of groups to return. The service may return fewer.\nIf unspecified or 0, at most 100 groups are returned. Values above 100 are\ncoerced to 100. Negative values are rejected.",
+                "is_query": true,
+                "entity": {
+                  "is_int": true
+                }
+              },
+              {
+                "name": "page_token",
+                "description": "A page token from a previous ListRestrictedSharingGroups call. Provide\nthis to retrieve the subsequent page.",
+                "is_query": true,
+                "entity": {
+                  "is_string": true
+                }
+              }
+            ],
+            "pagination": {
+              "token": {
+                "poll_field": {
+                  "name": "page_token",
+                  "description": "A page token from a previous ListRestrictedSharingGroups call. Provide\nthis to retrieve the subsequent page.",
+                  "is_query": true,
+                  "entity": {
+                    "is_string": true
+                  }
+                }
+              }
+            }
           }
         ]
       },
@@ -144123,7 +144737,7 @@
               "required_fields": [
                 {
                   "name": "materialization_set",
-                  "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                  "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -144135,7 +144749,7 @@
               "required_request_body_fields": [
                 {
                   "name": "materialization_set",
-                  "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                  "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -144147,7 +144761,7 @@
             },
             "request_body_field": {
               "name": "materialization_set",
-              "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+              "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
               "required": true,
               "is_request_body_field": true,
               "entity": {
@@ -144162,7 +144776,7 @@
             "all_fields": [
               {
                 "name": "materialization_set",
-                "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -144452,8 +145066,7 @@
               },
               {
                 "name": "notifications",
-                "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
-                "is_output_only": true,
+                "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -148242,8 +148855,7 @@
               },
               {
                 "name": "notifications",
-                "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
-                "is_output_only": true,
+                "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -178318,7 +178930,7 @@
               },
               {
                 "name": "batch",
-                "description": "Batch SQL rule input.",
+                "description": "Scheduled detection (also known as batch detection) input.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -178345,7 +178957,7 @@
               },
               {
                 "name": "compute_workspace_id",
-                "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled rule runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
+                "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled detection runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -178583,7 +179195,7 @@
               },
               {
                 "name": "runbook",
-                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -178639,7 +179251,7 @@
               },
               {
                 "name": "timerange",
-                "description": "Time-range configuration for batch rules. If unset, the execution time range is extended by\na fixed `15m` lookback.",
+                "description": "Time-range configuration for scheduled detections. If unset, the execution time range is\nextended by a fixed `15m` lookback.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -180093,22 +180705,6 @@
                 "is_query": true,
                 "entity": {
                   "is_field_mask": true
-                }
-              },
-              {
-                "name": "custom_content_pack_path",
-                "description": "UC volume path holding user-authored custom content packs, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom content packs are unavailable (referencing one is\nrejected) and only built-in content packs apply.",
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
-                }
-              },
-              {
-                "name": "custom_presets_path",
-                "description": "UC volume path holding user-authored custom presets, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom presets are unavailable and only built-in presets apply.",
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
                 }
               },
               {
@@ -181724,7 +182320,7 @@
               },
               {
                 "name": "batch",
-                "description": "Batch SQL rule input.",
+                "description": "Scheduled detection (also known as batch detection) input.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -181751,7 +182347,7 @@
               },
               {
                 "name": "compute_workspace_id",
-                "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled rule runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
+                "description": "ID of the workspace whose compute runs this rule's jobs and owns its\nassociated resources, such as the SQL warehouse a scheduled detection runs on.\nServer-assigned; a rule's warehouse can only be changed from this workspace.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -181989,7 +182585,7 @@
               },
               {
                 "name": "runbook",
-                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -182045,7 +182641,7 @@
               },
               {
                 "name": "timerange",
-                "description": "Time-range configuration for batch rules. If unset, the execution time range is extended by\na fixed `15m` lookback.",
+                "description": "Time-range configuration for scheduled detections. If unset, the execution time range is\nextended by a fixed `15m` lookback.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -201559,7 +202155,7 @@
               },
               {
                 "name": "database_id",
-                "description": "The ID to use for the Database, which will become the final component of\nthe database's resource name.\nThis ID becomes the database name in postgres.\n\nThis value should be 4-63 characters, and only use characters available in DNS names,\nas defined by RFC-1123\n\nIf database_id is not specified in the request, it is generated automatically.",
+                "description": "The ID used to identify and manage the Database resource through the API.\nThe Postgres database name is specified in `spec.postgres_database`.\n\nThis value should be 4-63 characters, and only use characters available in DNS names,\nas defined by RFC-1123\n\nIf database_id is not specified in the request, it is generated automatically.",
                 "is_query": true,
                 "entity": {
                   "is_string": true
@@ -202697,7 +203293,7 @@
               },
               {
                 "name": "role_id",
-                "description": "The ID to use for the Role, which will become the final component of\nthe role's resource name.\nThis ID becomes the role in Postgres.\n\nThis value should be 4-63 characters, and valid characters\nare lowercase letters, numbers, and hyphens, as defined by RFC 1123.\n\nIf role_id is not specified in the request, it is generated automatically.",
+                "description": "The ID used to identify and manage the Role resource through the API.\nThe Postgres role name is specified in `spec.postgres_role`.\n\nThis value should be 4-63 characters, and valid characters\nare lowercase letters, numbers, and hyphens, as defined by RFC 1123.\n\nIf role_id is not specified in the request, it is generated automatically.",
                 "is_query": true,
                 "entity": {
                   "is_string": true
@@ -203566,7 +204162,7 @@
               "required_fields": [
                 {
                   "name": "name",
-                  "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+                  "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}\n\nRead-write endpoints currently cannot be deleted directly. Their deletion is managed by the\nparent branch. To avoid compute costs, set `disabled` to `true` on the endpoint.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -203577,7 +204173,7 @@
               "required_in_url_fields": [
                 {
                   "name": "name",
-                  "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+                  "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}\n\nRead-write endpoints currently cannot be deleted directly. Their deletion is managed by the\nparent branch. To avoid compute costs, set `disabled` to `true` on the endpoint.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -203593,7 +204189,7 @@
             "all_fields": [
               {
                 "name": "name",
-                "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+                "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}\n\nRead-write endpoints currently cannot be deleted directly. Their deletion is managed by the\nparent branch. To avoid compute costs, set `disabled` to `true` on the endpoint.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -203604,7 +204200,7 @@
             "required_positional_arguments": [
               {
                 "name": "name",
-                "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}",
+                "description": "The full resource path of the endpoint to delete.\nFormat: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}\n\nRead-write endpoints currently cannot be deleted directly. Their deletion is managed by the\nparent branch. To avoid compute costs, set `disabled` to `true` on the endpoint.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -220863,7 +221459,7 @@
           },
           {
             "name": "UpdateAccessRequestDestinations",
-            "description": "Updates the access request destinations for the given securable.\nThe caller must be a metastore admin, the owner of the securable, or a user that has the **MANAGE** privilege on the securable in order to assign destinations.\nA maximum of 5 emails and 5 external notification destinations (Slack, Microsoft Teams, Generic Webhook, and Databricks App Slack/Teams destinations) can be assigned to a securable.\nIf a URL destination is assigned, no other destinations can be set.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
+            "description": "Updates the access request destinations for the given securable.\nThe caller must be a metastore admin, the owner of the securable, or a user that has the **MANAGE** privilege on the securable in order to assign destinations.\nA maximum of 5 emails and 5 external notification destinations (Slack, Microsoft Teams, Generic Webhook, Databricks App Slack/Teams, Asana, ServiceNow, and EventBridge destinations) can be assigned to a securable.\nIf a URL destination is assigned, no other destinations can be set.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
             "summary": "Update Access Request Destinations.",
             "path": "/api/3.0/rfa/destinations",
             "can_use_json": true,
@@ -228433,6 +229029,7 @@
               },
               {
                 "name": "description",
+                "description": "The description of the serving endpoint.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -228693,6 +229290,7 @@
               "required_fields": [
                 {
                   "name": "name",
+                  "description": "The name of the serving endpoint to delete.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -228703,6 +229301,7 @@
               "required_in_url_fields": [
                 {
                   "name": "name",
+                  "description": "The name of the serving endpoint to delete.",
                   "required": true,
                   "is_path": true,
                   "entity": {
@@ -228717,6 +229316,7 @@
             "all_fields": [
               {
                 "name": "name",
+                "description": "The name of the serving endpoint to delete.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -228727,6 +229327,7 @@
             "required_positional_arguments": [
               {
                 "name": "name",
+                "description": "The name of the serving endpoint to delete.",
                 "required": true,
                 "is_path": true,
                 "entity": {
@@ -230353,6 +230954,7 @@
                 },
                 {
                   "name": "config",
+                  "description": "The core config of the serving endpoint.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -230375,6 +230977,7 @@
               "required_request_body_fields": [
                 {
                   "name": "config",
+                  "description": "The core config of the serving endpoint.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -230391,6 +230994,7 @@
             "all_fields": [
               {
                 "name": "config",
+                "description": "The core config of the serving endpoint.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {

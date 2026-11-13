@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "A 504 before the endpoint is created: the create is retried"
+fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
+trace $CLI bundle deploy
+trace print_requests.py --get //vector-search/endpoints
+trace $CLI bundle plan
+trace $CLI bundle destroy --auto-approve
+rm -f "$OUT_REQUESTS"
+
+title "A 504 after the endpoint is created: the retry finds it and uses it"
+fault.py --after-handler "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
+trace $CLI bundle deploy
+trace print_requests.py --get //vector-search/endpoints
+trace $CLI bundle plan

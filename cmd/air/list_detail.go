@@ -22,16 +22,13 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		return "", fmt.Errorf("failed to fetch run: %w", err)
 	}
 
-	// A missing workspace id only drops the ?o= org hint from the dashboard link.
-	workspaceID, _ := w.CurrentWorkspaceID(ctx)
-
 	data := buildGetData(run)
 	// As in `air get`: an ai_runtime_task run keeps its experiment, accelerators
 	// and config path on the task.
 	if genAIComputeTask(run) == nil {
 		enrichFromAiRuntimeTask(run, &data)
 	}
-	data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
+	data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceIDForRunLink(ctx, w))
 	ids := mlflowIDs(ctx, w, run)
 	if ids != nil {
 		url := mlflowLogsURL(w.Config.Host, ids)
