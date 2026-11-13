@@ -1,0 +1,1 @@
+* `databricks bundle run` on an app now waits for the app compute to settle before it starts or deploys the app. Previously it could fail with "not in RUNNING state" when the compute was UPDATING or went from STARTING back to STOPPED. ([#7460](https://github.com/databricks/cli/pull/7460))

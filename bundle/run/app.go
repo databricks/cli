@@ -11,6 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -52,8 +54,9 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	logProgress(ctx, "Getting the status of the app "+app.Name)
 	w := b.WorkspaceClient(ctx)
 
-	// Check the status of the app first.
-	createdApp, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: app.Name})
+	// Check the status of the app once its compute has settled. Acting on a transient state
+	// (for example UPDATING, or STARTING that goes back to STOPPED) would fail the deployment.
+	createdApp, err := waitForComputeToSettle(ctx, w, app.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -77,14 +80,6 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		}
 	}
 
-	// If the app is starting, we need to wait for it to be active before we can deploy it.
-	if isAppComputeStarting(createdApp) {
-		_, err := w.Apps.WaitGetAppActive(ctx, app.Name, 20*time.Minute, nil)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// Deploy the app.
 	err = a.deploy(ctx)
 	if err != nil {
@@ -95,8 +90,33 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	return nil, nil
 }
 
-func isAppComputeStarting(app *apps.App) bool {
-	return app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateStarting
+// waitForComputeToSettle polls the app until its compute is ACTIVE, STOPPED or ERROR, or the app has no
+// compute status. DELETING fails immediately; every other state is polled through.
+func waitForComputeToSettle(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
+	return retries.Poll(ctx, 20*time.Minute, func() (*apps.App, *retries.Err) {
+		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+
+		// GET always returns compute_status (the SDK waiters dereference it unconditionally, and
+		// a no_compute app reports STOPPED, not nil). Kept as a guard: isAppComputeStopped treats
+		// nil as stopped and starts the app, so waiting here would only burn the timeout.
+		if app.ComputeStatus == nil {
+			return app, nil
+		}
+
+		switch app.ComputeStatus.State {
+		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
+			return app, nil
+		case apps.ComputeStateDeleting:
+			// GET keeps returning the app (not 404) for up to ~20 minutes after DELETE, so polling
+			// through would only burn the timeout. Same treatment as IsGone in bundle/direct/dresources/app.go.
+			return nil, retries.Halt(fmt.Errorf("app %s is being deleted, redeploy the bundle to recreate it", name))
+		default:
+			return nil, retries.Continues("app compute is " + string(app.ComputeStatus.State))
+		}
+	})
 }
 
 func (a *appRunner) start(ctx context.Context) error {
