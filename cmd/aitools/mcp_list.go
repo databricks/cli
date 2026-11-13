@@ -73,9 +73,6 @@ type mcpListProfile struct {
 	configPath string
 	// noHost is set when Status is profile_missing because the profile's section has no host.
 	noHost bool
-	// token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
-	// so it is text only.
-	token string
 }
 
 type mcpListServer struct {
@@ -402,7 +399,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 			err = describeRequestError(p.Profile, login, err)
 		}
 	}
-	p.token = tokenStatus(err)
+	token := tokenStatus(err)
 	if err != nil {
 		out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
 	}
@@ -411,7 +408,7 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 		if skipReason(*s) != "" {
 			continue
 		}
-		s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
+		s.Check = &mcpListCheck{Token: token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
 		if err != nil {
 			// The sign-in is unknown when the profile cannot authenticate. The record says whether it was required.
 			if s.SignInRequired {
@@ -578,8 +575,8 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 			cmdio.LogString(ctx, "")
 		}
 		header := profileHeader(p)
-		if p.token != "" {
-			header += "  token " + p.token
+		if token := profileToken(p); token != "" {
+			header += "  token " + token
 		}
 		cmdio.LogString(ctx, header)
 		for _, s := range p.Servers {
@@ -626,6 +623,17 @@ func profileHeader(p mcpListProfile) string {
 		return fmt.Sprintf("Profile %s  (%s, config file %s)", p.Profile, p.Host, p.ConfigFile)
 	}
 	return fmt.Sprintf("Profile %s  (%s)", p.Profile, p.Host)
+}
+
+// profileToken is the --check result of the token of a profile, which each checked server of the profile carries. It is
+// empty when no server of the profile was checked.
+func profileToken(p mcpListProfile) string {
+	for _, s := range p.Servers {
+		if s.Check != nil && s.Check.Token != "" {
+			return s.Check.Token
+		}
+	}
+	return ""
 }
 
 // checkText is the trailing text of a server line for the --check results that need attention or
