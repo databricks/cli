@@ -1046,36 +1046,34 @@ func TestServeStartStatusIsOneForOtherFailures(t *testing.T) {
 	assert.Equal(t, 1, serveStartStatus(errors.New("cannot read MCP service system.ai.github: not found")))
 }
 
-// TestServeChallengeLookupRefreshFailureStopsProxy checks that a token that cannot be refreshed during the startup read
-// stops the proxy with the login hint, as a refresh failure of a bridge request does.
-func TestServeChallengeLookupRefreshFailureStopsProxy(t *testing.T) {
-	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
-	var stopped bool
-	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
-
-	_, err := serveChallenge(t.Context(), serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
-
-	require.Error(t, err)
-	assert.True(t, stopped, "the proxy is stopped")
-	assert.Equal(t, serveBindStatus, serveStartStatus(err))
-	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
-}
-
-// TestServeSignInRefreshFailureStopsProxy checks that a token that cannot be refreshed during the sign-in stops the proxy
-// with the login hint, as a refresh failure of a bridge request does, instead of an error without the hint.
-func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
+// TestServeRefreshFailureStopsProxy checks that a token that cannot be refreshed during a call the serve makes on its own,
+// the startup read or the sign-in, stops the proxy with the login hint, as a refresh failure of a bridge request does.
+func TestServeRefreshFailureStopsProxy(t *testing.T) {
 	t.Setenv("BROWSER", "none")
-	server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
-	var stopped bool
-	w := guardedTestClient(t, server.URL, failingGuard(&stopped))
-	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+	for name, call := range map[string]func(context.Context, *databricks.WorkspaceClient) error{
+		"startup read": func(ctx context.Context, w *databricks.WorkspaceClient) error {
+			_, err := serveChallenge(ctx, serveTarget{w: w, profile: testProfile, service: testService}, io.Discard)
+			return err
+		},
+		"sign-in": func(ctx context.Context, w *databricks.WorkspaceClient) error {
+			signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+			_, _, err := signIn(ctx, proxy.SignInRequest{Open: true, Progress: func(string) {}, Stderr: io.Discard})
+			return err
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := serviceServer(t, http.StatusBadRequest, `{"error_code":"BAD_REQUEST","message":"bad"}`)
+			var stopped bool
+			w := guardedTestClient(t, server.URL, failingGuard(&stopped))
 
-	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Stderr: io.Discard})
+			err := call(t.Context(), w)
 
-	require.Error(t, err)
-	assert.True(t, stopped, "the proxy is stopped")
-	assert.Equal(t, serveBindStatus, serveStartStatus(err))
-	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
+			require.Error(t, err)
+			assert.True(t, stopped, "the proxy is stopped")
+			assert.Equal(t, serveBindStatus, serveStartStatus(err))
+			assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
+		})
+	}
 }
 
 // TestServeSignInReportsEachPoll checks that the sign-in of the authenticate tool calls the progress of the request on
