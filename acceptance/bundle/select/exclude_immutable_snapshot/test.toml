@@ -1,0 +1,3 @@
+Cloud = false
+Env.MSYS_NO_PATHCONV = "1"
+Ignore = [".databricks", ".gitignore", "databricks.yml"]

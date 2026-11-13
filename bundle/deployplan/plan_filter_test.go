@@ -371,6 +371,19 @@ func TestFilterToExcluded_AllowsStableDependencyOfExcludedResource(t *testing.T)
 	assert.Contains(t, p.Plan, "resources.jobs.bar")
 }
 
+func TestFilterToExcluded_AllowsRecreatedImmutableSnapshot(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.internal_immutable_snapshots.immutable"] = &deployplan.PlanEntry{Action: deployplan.Recreate}
+	p.Plan["resources.jobs.deferred"] = &deployplan.PlanEntry{Action: deployplan.Update}
+	existingDependencies := map[string][]deployplan.DependsOnEntry{
+		"resources.jobs.deferred": {{Node: "resources.internal_immutable_snapshots.immutable", Label: "${resources.internal_immutable_snapshots.immutable.full_path}"}},
+	}
+
+	require.NoError(t, p.FilterToExcluded([]string{"jobs.deferred"}, existingDependencies))
+	assert.Contains(t, p.Plan, "resources.internal_immutable_snapshots.immutable")
+	assert.NotContains(t, p.Plan, "resources.jobs.deferred")
+}
+
 func TestFilterToExcluded_AllowsChangingOrderingDependency(t *testing.T) {
 	for _, action := range []deployplan.ActionType{deployplan.Delete, deployplan.Recreate, deployplan.UpdateWithID} {
 		t.Run(string(action), func(t *testing.T) {

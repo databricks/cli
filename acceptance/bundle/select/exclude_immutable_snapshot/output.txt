@@ -1,0 +1,27 @@
+
+=== Deploy both jobs from the first snapshot
+
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.active
+Created jobs.deferred
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Recreate the snapshot while excluding the deferred job
+
+>>> [CLI] bundle deploy --exclude jobs.deferred
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.active
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged, 1 not selected
+OK: excluded job keeps its existing snapshot; active job uses the new one
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.active
+  delete resources.jobs.deferred
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/exclude-immutable-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

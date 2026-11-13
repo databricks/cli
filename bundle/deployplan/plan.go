@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -506,7 +507,8 @@ func (p *Plan) FilterToExcluded(excluded []string, existingDependencies map[stri
 				}
 				conflicts = append(conflicts, fmt.Sprintf("cannot exclude %s: %s depends on it%s; also exclude %s or remove the dependency", dependency, dependent, reference, dependent))
 			} else {
-				if dependencyEntry.Action.KeepsID() {
+				// Recreating an immutable snapshot leaves its old path available.
+				if dependencyEntry.Action.KeepsID() || (dep.Node == resources.SnapshotKey && dependencyEntry.Action == Recreate) {
 					continue
 				}
 				conflicts = append(conflicts, fmt.Sprintf("cannot exclude %s: deployed %s still depends on %s%s, which is planned for %s; also exclude %s or update %s first", dependent, dependent, dependency, reference, dependencyEntry.Action, dependency, dependent))
