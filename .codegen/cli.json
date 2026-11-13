@@ -40125,20 +40125,6 @@
     "lakewatch.CommonConfig": {
       "description": "Catch-all per-catalog config — settings that don't belong to any one\nresource family. Singleton. Name format: `catalogs/{catalog}/commonConfig`.",
       "fields": {
-        "custom_content_pack_path": {
-          "description": "UC volume path holding user-authored custom content packs, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom content packs are unavailable (referencing one is\nrejected) and only built-in content packs apply.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "custom_presets_path": {
-          "description": "UC volume path holding user-authored custom presets, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom presets are unavailable and only built-in presets apply.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "etag": {
           "description": "Opaque entity tag for optimistic concurrency. Returned on every read;\npass it back as the Update request's `etag` to make the update\nconditional on the resource being unchanged.",
           "launch_stage": "PUBLIC_BETA",
@@ -41146,7 +41132,7 @@
           ]
         },
         "runbook": {
-          "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+          "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -44248,7 +44234,7 @@
     "ml.CreateMaterializationSetRequest": {
       "fields": {
         "materialization_set": {
-          "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+          "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
           "ref": "ml.MaterializationSet",
           "launch_stage": "PRIVATE_PREVIEW"
         },
@@ -47264,7 +47250,7 @@
       }
     },
     "ml.MaterializationNotifications": {
-      "description": "Notifications for the jobs and pipelines that materialize the features in a set, one field per\ntrigger.",
+      "description": "Notifications for the jobs and pipelines that materialize features, one field per trigger.",
       "fields": {
         "on_failure": {
           "description": "Who to notify when a run fails, and on which attempts.",
@@ -47572,11 +47558,11 @@
           ]
         },
         "notifications": {
-          "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
+          "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
           "ref": "ml.MaterializationNotifications",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
-            "OUTPUT_ONLY"
+            "OPTIONAL"
           ]
         },
         "offline_store_config": {
@@ -55468,7 +55454,6 @@
           "ref": "postgres.BranchSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55525,6 +55510,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55533,6 +55519,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -55541,6 +55528,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -56342,7 +56330,6 @@
           "ref": "postgres.DatabaseDatabaseSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -56591,7 +56578,6 @@
           "ref": "postgres.EndpointSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -57781,7 +57767,6 @@
           "ref": "postgres.ProjectSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -57918,6 +57903,7 @@
           "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE",
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         }
@@ -58124,7 +58110,6 @@
           "ref": "postgres.RoleRoleSpec",
           "launch_stage": "GA",
           "behaviors": [
-            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -58218,6 +58203,7 @@
           "ref": "postgres.RoleAuthMethod",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -58226,6 +58212,7 @@
           "ref": "postgres.RoleIdentityType",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         },
@@ -58240,6 +58227,7 @@
           "description": "The name of the Postgres role.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n\nRequired when creating the Role.\n\nIf you wish to create a Postgres Role backed by a managed Databricks identity, then postgres_role\nmust be one of the following:\n\n1. user email for IdentityType.USER\n2. app ID for IdentityType.SERVICE_PRINCIPAL\n2. group name for IdentityType.GROUP\n\nThis field is set when the role is created and cannot be changed.\nWhen replacing an existing role with replace_existing=true, omit this\nfield or supply its current value. A differing value returns\nINVALID_PARAMETER_VALUE and rejects the entire request, including changes\nto mutable fields.\nWith `*` or masks containing only mutable fields, supplied values are ignored.\nIncluding this field as an explicit path in update_mask returns\nINVALID_PARAMETER_VALUE.",
           "launch_stage": "GA",
           "behaviors": [
+            "INPUT_ONLY",
             "OPTIONAL"
           ]
         }
@@ -61253,6 +61241,29 @@
         }
       }
     },
+    "serving.CommitmentTerm": {
+      "description": "The commitment term length for a Provisioned Throughput pool.",
+      "enum": [
+        "COMMITMENT_TERM_1_MONTH",
+        "COMMITMENT_TERM_3_MONTHS",
+        "COMMITMENT_TERM_1_HOUR",
+        "COMMITMENT_TERM_12_HOURS",
+        "COMMITMENT_TERM_1_DAY",
+        "COMMITMENT_TERM_1_WEEK",
+        "COMMITMENT_TERM_6_MONTHS",
+        "COMMITMENT_TERM_1_YEAR"
+      ],
+      "enum_launch_stages": {
+        "COMMITMENT_TERM_12_HOURS": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_DAY": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_HOUR": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_MONTH": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_WEEK": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_1_YEAR": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_3_MONTHS": "PRIVATE_PREVIEW",
+        "COMMITMENT_TERM_6_MONTHS": "PRIVATE_PREVIEW"
+      }
+    },
     "serving.CreatePtEndpointRequest": {
       "fields": {
         "ai_gateway": {
@@ -61979,6 +61990,11 @@
         "provisioned_model_units": {
           "description": "The number of model units to be provisioned. Dedicated inference requires positive fixed\ncapacity and does not support scale-to-zero.",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "pt_term": {
+          "description": "Commitment term to purchase for this served entity; its presence marks the entity as reserved\n(vs on-demand) PT. Valid on create and on update (purchases a commitment for a scale-up).",
+          "ref": "serving.CommitmentTerm",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -70400,7 +70416,7 @@
         "custom_template_format": {
           "description": "The format used to interpret the `custom_summary` and `custom_description` templates.\n\n`HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.\n`MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts\nthem to the format each notification destination expects, so a single template renders\ncorrectly in email, Slack, and Microsoft Teams.\n\nWhen unset, the API applies no default. Responses omit the field unless a format is stored,\nand a template with no format is rendered as HTML.",
           "ref": "sql.CustomTemplateFormat",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -71225,8 +71241,8 @@
         "MARKDOWN"
       ],
       "enum_launch_stages": {
-        "HTML": "PUBLIC_BETA",
-        "MARKDOWN": "PUBLIC_BETA"
+        "HTML": "PUBLIC_PREVIEW",
+        "MARKDOWN": "PUBLIC_PREVIEW"
       }
     },
     "sql.Dashboard": {
@@ -75571,6 +75587,7 @@
           "description": "Timestamp when the tag policy was created",
           "launch_stage": "GA",
           "behaviors": [
+            "IMMUTABLE",
             "OUTPUT_ONLY"
           ]
         },
@@ -75583,6 +75600,7 @@
         "id": {
           "launch_stage": "GA",
           "behaviors": [
+            "IMMUTABLE",
             "OUTPUT_ONLY"
           ]
         },
@@ -144123,7 +144141,7 @@
               "required_fields": [
                 {
                   "name": "materialization_set",
-                  "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                  "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -144135,7 +144153,7 @@
               "required_request_body_fields": [
                 {
                   "name": "materialization_set",
-                  "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                  "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -144147,7 +144165,7 @@
             },
             "request_body_field": {
               "name": "materialization_set",
-              "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+              "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
               "required": true,
               "is_request_body_field": true,
               "entity": {
@@ -144162,7 +144180,7 @@
             "all_fields": [
               {
                 "name": "materialization_set",
-                "description": "The materialization set to create. Supply materialization_set_id to choose the identifier;\nleave it unset to have one assigned.",
+                "description": "The materialization set to create. Set `materialization_set_id` to\nchoose the identifier, or omit it to have one assigned.\n\nMembers with a cron schedule or table trigger must request the same\n`paused` value. An omitted `paused` defaults to `false`.\nA set can be created paused only if all members are batch materializations.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -144452,8 +144470,7 @@
               },
               {
                 "name": "notifications",
-                "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
-                "is_output_only": true,
+                "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -148242,8 +148259,7 @@
               },
               {
                 "name": "notifications",
-                "description": "Notification configuration for the jobs and pipelines that materialize this feature.",
-                "is_output_only": true,
+                "description": "Notification configuration around the lifecycle of the job or pipeline that materializes\nthis feature. Features which are materialized in the same pipeline will share the same\nnotification.",
                 "is_request_body_field": true,
                 "is_optional_object": true,
                 "entity": {
@@ -178583,7 +178599,7 @@
               },
               {
                 "name": "runbook",
-                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -180093,22 +180109,6 @@
                 "is_query": true,
                 "entity": {
                   "is_field_mask": true
-                }
-              },
-              {
-                "name": "custom_content_pack_path",
-                "description": "UC volume path holding user-authored custom content packs, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom content packs are unavailable (referencing one is\nrejected) and only built-in content packs apply.",
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
-                }
-              },
-              {
-                "name": "custom_presets_path",
-                "description": "UC volume path holding user-authored custom presets, e.g.\n`/Volumes/{catalog}/{schema}/{volume}`. User-provided with no default:\nwhen unset, custom presets are unavailable and only built-in presets apply.",
-                "is_request_body_field": true,
-                "entity": {
-                  "is_string": true
                 }
               },
               {
@@ -181989,7 +181989,7 @@
               },
               {
                 "name": "runbook",
-                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected.",
+                "description": "Long-form operational guidance carried from the authored rule metadata. Supports up to 4096\ncharacters. Requests exceeding this limit are rejected. Supports Markdown; analysts and the\ninvestigation agent follow it when triaging this rule's alerts.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -220863,7 +220863,7 @@
           },
           {
             "name": "UpdateAccessRequestDestinations",
-            "description": "Updates the access request destinations for the given securable.\nThe caller must be a metastore admin, the owner of the securable, or a user that has the **MANAGE** privilege on the securable in order to assign destinations.\nA maximum of 5 emails and 5 external notification destinations (Slack, Microsoft Teams, Generic Webhook, and Databricks App Slack/Teams destinations) can be assigned to a securable.\nIf a URL destination is assigned, no other destinations can be set.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
+            "description": "Updates the access request destinations for the given securable.\nThe caller must be a metastore admin, the owner of the securable, or a user that has the **MANAGE** privilege on the securable in order to assign destinations.\nA maximum of 5 emails and 5 external notification destinations (Slack, Microsoft Teams, Generic Webhook, Databricks App Slack/Teams, Asana, ServiceNow, and EventBridge destinations) can be assigned to a securable.\nIf a URL destination is assigned, no other destinations can be set.\n\nThe supported securable types are: \"metastore\", \"catalog\", \"schema\", \"table\",\n\"external_location\", \"connection\", \"credential\", \"function\", \"registered_model\", and \"volume\".",
             "summary": "Update Access Request Destinations.",
             "path": "/api/3.0/rfa/destinations",
             "can_use_json": true,

@@ -1108,8 +1108,6 @@ func newUpdateCommonConfig() *cobra.Command {
 	cmd.Flags().Var(&updateCommonConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateCommonConfigReq.Etag, "etag", updateCommonConfigReq.Etag, `Optimistic-concurrency precondition: if set and it does not match the resource's current etag, the update is rejected as a conflict (HTTP 409).`)
-	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.CustomContentPackPath, "custom-content-pack-path", updateCommonConfigReq.CommonConfig.CustomContentPackPath, `UC volume path holding user-authored custom content packs, e.g.`)
-	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.CustomPresetsPath, "custom-presets-path", updateCommonConfigReq.CommonConfig.CustomPresetsPath, `UC volume path holding user-authored custom presets, e.g.`)
 	cmd.Flags().StringVar(&updateCommonConfigReq.CommonConfig.Name, "name", updateCommonConfigReq.CommonConfig.Name, ``)
 	cmd.Flags().BoolVar(&updateCommonConfigReq.CommonConfig.PerResourcePermissionsEnabled, "per-resource-permissions-enabled", updateCommonConfigReq.CommonConfig.PerResourcePermissionsEnabled, `Whether users may grant permissions on individual resources rather than only at the Folder level.`)
 	// TODO: complex arg: updated_by
