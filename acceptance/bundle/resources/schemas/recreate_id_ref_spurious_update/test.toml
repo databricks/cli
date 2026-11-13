@@ -1,0 +1,4 @@
+# Direct-engine demonstration that the recreate-reference bug is not postgres-specific. UC
+# resources only hit it via output-only references (e.g. .id / full_name); their name references
+# are user-provided inputs that resolve from config. Not Cloud: shown against the testserver.
+Cloud = false
