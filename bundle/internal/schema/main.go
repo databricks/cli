@@ -126,7 +126,6 @@ func allowForEachTaskInputArrays(typ reflect.Type, s jsonschema.Schema) jsonsche
 	}
 
 	inputs := s.Properties["inputs"]
-	inputs.Description = "Inputs for each task, as a literal YAML array or a string containing JSON or a reference."
 	stringRef := inputs.Reference
 	inputs.Reference = nil
 	inputs.OneOf = []jsonschema.Schema{

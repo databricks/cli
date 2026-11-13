@@ -7,6 +7,8 @@ workspace:
 variables:
   inputs:
     default: '[ "from_variable", "unchanged_spacing" ]'
+  item:
+    default: from_reference
 
 resources:
   jobs:
@@ -40,6 +42,14 @@ resources:
             inputs: ${var.inputs}
             task:
               task_key: string_inner
+              notebook_task:
+                notebook_path: ./notebook.py
+                source: WORKSPACE
+        - task_key: string_interpolation
+          for_each_task:
+            inputs: '["${var.item}_x", "y"]'
+            task:
+              task_key: interpolation_inner
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE

@@ -3,6 +3,7 @@ from codegen.jsonschema import (
     Schema,
     SchemaType,
     _parse_schema,
+    _refs_in_raw_schema,
     _unwrap_variable,
     get_schemas,
 )
@@ -77,3 +78,26 @@ def test_parse_schema():
     )
 
     assert _parse_schema(spec) == expected
+
+
+def test_parse_schema_for_each_inputs_array_shorthand():
+    spec = {
+        "type": "object",
+        "properties": {
+            "inputs": {
+                "description": "For-each task inputs",
+                "x-databricks-launch-stage": "GA",
+                "oneOf": [
+                    {"$ref": "#/$defs/string"},
+                    {"type": "array"},
+                ],
+            }
+        },
+    }
+
+    assert _parse_schema(spec).properties["inputs"] == Property(
+        ref="#/$defs/string",
+        description="For-each task inputs",
+        stage="GA",
+    )
+    assert _refs_in_raw_schema(spec) == ["string"]

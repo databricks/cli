@@ -559,7 +559,9 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 }
 
 // rewriteForEachTaskInputs encodes literal arrays before SDK string normalization.
-// References in arrays require the string form; other kinds normalize unchanged.
+// A resource-level any shadow cannot cover this nested SDK field, so this runs
+// before typed normalization, unlike resource mutators after variable resolution.
+// Other kinds use normal validation; array references fail here.
 func rewriteForEachTaskInputs(v dyn.Value) (dyn.Value, error) {
 	inputs := dyn.NewPattern(
 		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),

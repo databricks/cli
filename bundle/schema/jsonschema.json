@@ -10031,7 +10031,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "inputs": {
-                      "description": "Inputs for each task, as a literal YAML array or a string containing JSON or a reference.",
+                      "description": "Array for task to iterate on. This can be a JSON string or a reference to\nan array parameter.",
                       "x-databricks-launch-stage": "GA",
                       "oneOf": [
                         {

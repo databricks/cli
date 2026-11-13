@@ -41,6 +41,7 @@ func TestLoadForEachTaskInputs(t *testing.T) {
 		{name: "YAML object array", inputs: "[{name: input_1, enabled: true}]", want: `[{"enabled":true,"name":"input_1"}]`},
 		{name: "empty YAML array", inputs: "[]", want: `[]`},
 		{name: "YAML dates", inputs: "[2024-01-01, 2024-01-02]", want: `["2024-01-01","2024-01-02"]`},
+		{name: "nested YAML timestamp", inputs: "[{when: 2024-01-01T01:02:03.123+02:00}]", want: `[{"when":"2024-01-01T01:02:03.123+02:00"}]`},
 		{name: "quoted YAML elements", inputs: `["a\"b", "line\nbreak"]`, want: `["a\"b","line\nbreak"]`},
 		{name: "escaped reference in YAML array", inputs: `["$${var.item}"]`, want: `["$${var.item}"]`},
 		{name: "JSON string", inputs: `'[ "input_1", "input_2" ]'`, want: `[ "input_1", "input_2" ]`},

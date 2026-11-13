@@ -11,6 +11,10 @@
     "inputs": "[{\"count\":3,\"enabled\":true,\"name\":\"quoted \\\"name\\\" with \\\\backslash\"},{\"count\":0,\"enabled\":false,\"name\":\"second\"}]"
   },
   {
+    "task_key": "string_interpolation",
+    "inputs": "[\"from_reference_x\", \"y\"]"
+  },
+  {
     "task_key": "string_variable",
     "inputs": "[ \"from_variable\", \"unchanged_spacing\" ]"
   }
@@ -67,6 +71,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
       },
       {
         "for_each_task": {
+          "inputs": "[\"from_reference_x\", \"y\"]",
+          "task": {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/default/files/notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "interpolation_inner"
+          }
+        },
+        "task_key": "string_interpolation"
+      },
+      {
+        "for_each_task": {
           "inputs": "[ \"from_variable\", \"unchanged_spacing\" ]",
           "task": {
             "notebook_task": {
@@ -92,6 +109,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   {
     "task_key": "objects",
     "inputs": "[{\"count\":3,\"enabled\":true,\"name\":\"quoted \\\"name\\\" with \\\\backslash\"},{\"count\":0,\"enabled\":false,\"name\":\"second\"}]"
+  },
+  {
+    "task_key": "string_interpolation",
+    "inputs": "[\"from_reference_x\", \"y\"]"
   },
   {
     "task_key": "string_variable",
@@ -147,6 +168,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
           }
         },
         "task_key": "objects"
+      },
+      {
+        "for_each_task": {
+          "inputs": "[\"from_reference_x\", \"y\"]",
+          "task": {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/override/files/notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "interpolation_inner"
+          }
+        },
+        "task_key": "string_interpolation"
       },
       {
         "for_each_task": {

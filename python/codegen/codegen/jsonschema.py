@@ -91,6 +91,20 @@ def _unwrap_variable(schema: dict):
     return None
 
 
+def _property_ref(value: dict) -> Optional[str]:
+    if ref := value.get("$ref"):
+        return ref
+
+    # CLI accepts literal YAML arrays here, while PyDABs still emits the SDK string.
+    if value.get("oneOf") == [
+        {"$ref": "#/$defs/string"},
+        {"type": "array"},
+    ]:
+        return "#/$defs/string"
+
+    return None
+
+
 def _parse_schema(schema: dict) -> Schema:
     schema = _unwrap_variable(schema) or schema
     properties = {}
@@ -106,10 +120,11 @@ def _parse_schema(schema: dict) -> Schema:
         assert v.get("properties") is None
         assert v.get("items") is None
 
-        assert v.get("$ref")
+        ref = _property_ref(v)
+        assert ref
 
         prop = Property(
-            ref=v["$ref"],
+            ref=ref,
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
             stage=v.get("x-databricks-launch-stage"),
@@ -179,9 +194,9 @@ def _refs_in_raw_schema(schema: dict) -> list[str]:
     schema = _unwrap_variable(schema) or schema
 
     return [
-        prop["$ref"].split("/")[-1]
+        ref.split("/")[-1]
         for prop in schema.get("properties", {}).values()
-        if prop.get("$ref")
+        if (ref := _property_ref(prop))
     ]
 
 
