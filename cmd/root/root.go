@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdlog "log"
 	"log/slog"
 	"os"
 	"runtime"
@@ -160,10 +161,14 @@ Stack Trace:
 	// nothing writes to the closed file.
 	var logFile logFileSlot
 	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
+	// slog.SetDefault also redirects the standard log package, so both are restored.
 	prevLogger := slog.Default()
+	prevLogWriter, prevLogFlags := stdlog.Writer(), stdlog.Flags()
 	defer func() {
 		logFile.close()
 		slog.SetDefault(prevLogger)
+		stdlog.SetOutput(prevLogWriter)
+		stdlog.SetFlags(prevLogFlags)
 	}()
 
 	// Run the command

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	stdlog "log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -212,4 +213,31 @@ func TestExecuteLogsExitStatus(t *testing.T) {
 	}
 	require.NotNil(t, failed, "no failed execution record in %s", logFile)
 	assert.Equal(t, "2", failed["exit_code"])
+}
+
+// TestExecuteRestoresStdLogOutput checks that the standard log package writes where it did before Execute, not to the
+// log file that Execute closes. slog.SetDefault redirects the standard log package to a non-default handler.
+func TestExecuteRestoresStdLogOutput(t *testing.T) {
+	keepDefaultLogger(t)
+	var out bytes.Buffer
+	prevWriter, prevFlags := stdlog.Writer(), stdlog.Flags()
+	stdlog.SetOutput(&out)
+	t.Cleanup(func() {
+		stdlog.SetOutput(prevWriter)
+		stdlog.SetFlags(prevFlags)
+	})
+
+	logFile := filepath.Join(t.TempDir(), "run.log")
+	cmd := New(t.Context())
+	cmd.AddCommand(&cobra.Command{
+		Use:  "ok",
+		RunE: func(*cobra.Command, []string) error { return nil },
+	})
+	cmd.SetArgs([]string{"ok", "--log-file", logFile, "--log-level", "debug"})
+	cmd.SetErr(io.Discard)
+	require.NoError(t, Execute(t.Context(), cmd))
+
+	stdlog.Print("after execute")
+	assert.Equal(t, prevFlags, stdlog.Flags())
+	assert.Contains(t, out.String(), "after execute")
 }
