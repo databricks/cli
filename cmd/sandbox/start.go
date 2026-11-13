@@ -97,14 +97,8 @@ func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string)
 	return waitForState(ctx, api, s, id, "Running", "Starting", "Stopped", "Terminated", "Failed")
 }
 
-// The API rejects start requests until teardown finishes, so STOPPING needs
-// its own polling phase.
-func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
-	return waitForState(ctx, api, s, id, "Stopped", "Stopping", "Terminated", "Failed")
-}
-
 // Centralizing lifecycle polling keeps timeout, cancellation, and terminal
-// state handling consistent across start and SSH.
+// state handling consistent across start requests.
 func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
 	start := time.Now()
 	deadline := start.Add(startWaitTimeout)
