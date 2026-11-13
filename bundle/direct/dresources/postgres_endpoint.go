@@ -162,7 +162,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	}
 
 	// Wait for the operation to complete
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}
