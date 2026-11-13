@@ -1060,6 +1060,9 @@ func TestBinaryStatus(t *testing.T) {
 	assert.Equal(t, checkFailed, binaryStatus(missing, found))
 	assert.Equal(t, statusOK, binaryStatus("databricks", found))
 	assert.Equal(t, checkFailed, binaryStatus("databricks", notFound))
+	// An empty command resolves to the working directory, and a directory is not a binary.
+	assert.Equal(t, checkFailed, binaryStatus("", found))
+	assert.Equal(t, checkFailed, binaryStatus(t.TempDir(), notFound))
 }
 
 // TestSignInStatus checks the sign-in state that --check reports for one service.

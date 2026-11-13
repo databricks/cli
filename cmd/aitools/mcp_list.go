@@ -441,14 +441,16 @@ func withConfigFile(ctx context.Context, path string, fn func(ctx context.Contex
 	return os.Setenv(mcpconfig.ConfigFileEnv, previous)
 }
 
-// binaryStatus reports whether the recorded command exists. It resolves the command as binaryPathFor does: an
-// absolute path must be on disk, and a bare name must be found by lookPath.
+// binaryStatus reports whether the recorded command is a binary. It resolves the command as binaryPathFor does: an
+// absolute path must be a file on disk, and a bare name must be found by lookPath. An empty command resolves to the
+// working directory, and a directory is not a binary, so both are missing.
 func binaryStatus(command string, lookPath func(string) (string, error)) string {
 	path, absolute := binaryPathFor(command, lookPath)
 	if !absolute {
 		return checkFailed
 	}
-	if _, err := os.Stat(path); err != nil {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
 		return checkFailed
 	}
 	return statusOK
