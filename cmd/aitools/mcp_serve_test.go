@@ -848,9 +848,9 @@ func TestServeSignInRestartDeletesCredentialFirst(t *testing.T) {
 				case !deleted:
 					_, _ = io.WriteString(rw, active)
 				default:
-					// The caller has not signed in yet after the delete, and then does.
+					// The caller has not signed in yet after the delete, which the wait and the sign-in both read, and then does.
 					gets++
-					if gets == 1 {
+					if gets <= 2 {
 						rw.WriteHeader(http.StatusNotFound)
 						_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
 						return
@@ -1068,4 +1068,94 @@ func guardedTestClient(t *testing.T, host string, guard *refreshGuard) *databric
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: host, Credentials: guardCredentials{refresh: guard}, WorkspaceID: "1"})
 	require.NoError(t, err)
 	return w
+}
+
+// TestServeSignInRestartWaitsForDeletedCredential checks that after a restart's delete the sign-in does not read the
+// credential as ACTIVE. A delete can take a moment to show, so the first reads may still say ACTIVE; the sign-in waits
+// until they do not, and then opens the page rather than answering that the caller is already signed in.
+func TestServeSignInRestartWaitsForDeletedCredential(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	prevRestart := restartWaitTimeout
+	t.Cleanup(func() {
+		signInPollInterval, signInWaitTimeout, restartWaitTimeout = prevPoll, prevWait, prevRestart
+	})
+	signInPollInterval, signInWaitTimeout, restartWaitTimeout = time.Millisecond, 10*time.Second, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	const active = `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`
+	var mu sync.Mutex
+	deleted := false
+	var reads int
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			deleted = true
+			_, _ = io.WriteString(rw, `{}`)
+			return
+		}
+		// After the delete, the first two reads still say ACTIVE, two read NOT_FOUND, and the caller then signs in.
+		reads++
+		switch {
+		case !deleted:
+			_, _ = io.WriteString(rw, active)
+		case reads <= 2:
+			_, _ = io.WriteString(rw, active)
+		case reads <= 4:
+			rw.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+		default:
+			_, _ = io.WriteString(rw, active)
+		}
+	}))
+	t.Cleanup(server.Close)
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+
+	polls := 0
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func() { polls++ }, Stderr: io.Discard})
+
+	require.NoError(t, err)
+	assert.False(t, alreadySignedIn, "a deleted credential is not reported as signed in")
+	assert.True(t, urlShown)
+	assert.Equal(t, 1, polls, "the sign-in waits for the page's sign-in, one poll")
+}
+
+// TestServeSignInRestartGivesUpOnStaleCredential checks that a credential that still reads ACTIVE after a restart's delete
+// ends the sign-in with an error, and that no page is shown for it.
+func TestServeSignInRestartGivesUpOnStaleCredential(t *testing.T) {
+	prevPoll, prevRestart := signInPollInterval, restartWaitTimeout
+	t.Cleanup(func() { signInPollInterval, restartWaitTimeout = prevPoll, prevRestart })
+	signInPollInterval, restartWaitTimeout = time.Millisecond, 20*time.Millisecond
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	const active = `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			_, _ = io.WriteString(rw, `{}`)
+			return
+		}
+		_, _ = io.WriteString(rw, active)
+	}))
+	t.Cleanup(server.Close)
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: "logfood", cancel: func() {}})
+
+	signIn := serveSignIn(w, "logfood", "system.ai.github", "")
+	alreadySignedIn, urlShown, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Stderr: io.Discard})
+
+	require.Error(t, err)
+	assert.False(t, alreadySignedIn)
+	assert.False(t, urlShown, "no page is shown while the credential still reads as signed in")
 }

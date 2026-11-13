@@ -121,17 +121,17 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	if err != nil {
 		return nil, err
 	}
-	switch req.Method {
-	case "tools/list":
-		if h.isChallenge(status, message) {
-			return [][]byte{h.authenticateList(req.ID)}, nil
-		}
-	case methodToolsCall:
-		if h.isChallenge(status, message) {
-			return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
-		}
+	if req.Method != "tools/list" && req.Method != methodToolsCall {
+		return [][]byte{message}, nil
 	}
-	return [][]byte{message}, nil
+	if !h.isChallenge(status, message) {
+		h.succeeded(status)
+		return [][]byte{message}, nil
+	}
+	if req.Method == "tools/list" {
+		return [][]byte{h.authenticateList(req.ID)}, nil
+	}
+	return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
 }
 
 // isChallenge reports whether an upstream answer is a challenge, and records that the session has been challenged.
@@ -147,6 +147,18 @@ func (h *signInHooks) isChallenge(status int, message []byte) bool {
 		h.alreadySignedIn = false
 	}
 	return true
+}
+
+// succeeded records an upstream answer that is not a challenge. An answer with a success status means the service accepts
+// the caller's credential, so the "Already signed in" state ends: a challenge after this one is not a challenge to that
+// answer.
+func (h *signInHooks) succeeded(status int) {
+	if status/100 != 2 {
+		return
+	}
+	h.stateMu.Lock()
+	defer h.stateMu.Unlock()
+	h.alreadySignedIn = false
 }
 
 // upstreamReply is the part of an upstream message that challenge detection reads.
@@ -279,9 +291,10 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
-	if ctx.Err() != nil {
-		// A restart that was cancelled may not have deleted the credential, so the next sign-in restarts again.
-		h.restart = h.restart || restart
+	if restart && !urlShown && err != nil {
+		// A restart that failed before its page was shown may not have deleted the credential, so the next sign-in restarts
+		// again. Once the page was shown the credential is deleted, and a sign-in the user may still finish is kept.
+		h.restart = true
 	}
 	h.stateMu.Unlock()
 	if ctx.Err() != nil {

@@ -633,3 +633,105 @@ func TestAuthenticateSendsNoProgressForNullToken(t *testing.T) {
 
 	assert.NotContains(t, strings.Join(lines, "\n"), "notifications/progress")
 }
+
+// listAnswer answers each tools/list with the challenge while challenged is set, and with one tool otherwise. Unlike the
+// fixtures above it answers with the id of each request, so later lists match their answers.
+func listAnswer(challenged *atomic.Bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		if m.Method != "tools/list" {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if challenged.Load() {
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, m.ID)
+			return
+		}
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`, m.ID)
+	}
+}
+
+// TestChallengeAfterSuccessDoesNotRestartSignIn checks that a challenge long after an "Already signed in" answer does not
+// start the next sign-in from no credential. A successful answer from the service ends that state, so only a challenge
+// that follows the answer with no success in between does.
+func TestChallengeAfterSuccessDoesNotRestartSignIn(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
+	signIn := &signInStub{reply: func(int) (bool, error) { return true, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 3)
+	challenged.Store(false)
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	p.waitLines(t, 4)
+	challenged.Store(true)
+	p.send(t, `{"jsonrpc":"2.0","id":7,"method":"tools/list"}`)
+	p.waitLines(t, 5)
+	p.send(t, fmt.Sprintf(authenticate, 8))
+	p.waitLines(t, 6)
+	require.NoError(t, p.finish(t))
+
+	reqs := signIn.requests()
+	require.Len(t, reqs, 2)
+	assert.False(t, reqs[1].Restart, "a challenge after a success is not a challenge to the credential that was reported signed in")
+}
+
+// TestRestartIsNotRepeatedAfterItsPageWasShown checks the restart that a challenge after "Already signed in" asks for.
+// Once its page was shown the credential was deleted, and a sign-in cancelled after that does not delete again, since
+// the user may finish the page that is still open. A restart whose page was never shown is asked for again.
+func TestRestartIsNotRepeatedAfterItsPageWasShown(t *testing.T) {
+	for name, urlShown := range map[string]bool{"page shown": true, "page not shown": false} {
+		t.Run(name, func(t *testing.T) {
+			var challenged atomic.Bool
+			challenged.Store(true)
+			srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
+			entered, returned := make(chan struct{}), make(chan struct{})
+			var mu sync.Mutex
+			var reqs []SignInRequest
+			signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
+				mu.Lock()
+				reqs = append(reqs, req)
+				n := len(reqs)
+				mu.Unlock()
+				switch n {
+				case 1:
+					return true, false, nil
+				case 2:
+					close(entered)
+					<-ctx.Done()
+					close(returned)
+					return false, urlShown, ctx.Err()
+				default:
+					return false, true, nil
+				}
+			}
+			p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+			authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+			challenge(t, p)
+
+			p.send(t, fmt.Sprintf(authenticate, 5))
+			p.waitLines(t, 3)
+			p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+			p.waitLines(t, 4)
+			p.send(t, fmt.Sprintf(authenticate, 7))
+			waitClosed(t, entered, "the restart to start")
+			p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":7}}`)
+			waitClosed(t, returned, "the restart to return")
+			p.send(t, fmt.Sprintf(authenticate, 8))
+			p.waitLines(t, 5)
+			require.NoError(t, p.finish(t))
+
+			mu.Lock()
+			defer mu.Unlock()
+			require.Len(t, reqs, 3)
+			assert.True(t, reqs[1].Restart, "the challenge after the answer asks for a restart")
+			assert.Equal(t, !urlShown, reqs[2].Restart)
+		})
+	}
+}

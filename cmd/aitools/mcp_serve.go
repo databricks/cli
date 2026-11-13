@@ -28,6 +28,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -209,6 +210,33 @@ func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, profileNa
 	return svc, nil
 }
 
+// restartWaitTimeout bounds the wait, after a restart deletes the credential, for the credential to stop reading as ACTIVE.
+// Tests shorten it.
+var restartWaitTimeout = 30 * time.Second
+
+// waitDeleted waits, up to restartWaitTimeout, until the caller's credential no longer reads as ACTIVE. A delete can take
+// a moment to show, and a sign-in that read ACTIVE then would answer that the caller is already signed in, with no page.
+func waitDeleted(ctx context.Context, w *databricks.WorkspaceClient, service string) error {
+	deadline := time.Now().Add(restartWaitTimeout)
+	for {
+		state, err := mcp.CredentialState(ctx, w, service)
+		if err != nil {
+			return err
+		}
+		if state != catalog.ProvisioningInfoStateActive {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("the deleted sign-in to %s still reads as signed in", service)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(signInPollInterval):
+		}
+	}
+}
+
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
 // proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
 // often the browser opens. w must be guardedClient's.
@@ -219,6 +247,9 @@ func serveSignIn(w *databricks.WorkspaceClient, profileName, service, pinnedFile
 		if req.Restart {
 			// The credential is deleted first, so that the sign-in below starts from no credential.
 			if _, err := mcp.SignOut(ctx, w, service); err != nil {
+				return false, false, err
+			}
+			if err := waitDeleted(ctx, w, service); err != nil {
 				return false, false, err
 			}
 		}
