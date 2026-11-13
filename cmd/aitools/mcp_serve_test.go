@@ -1163,3 +1163,51 @@ func TestServeSignInProgressNamesThePage(t *testing.T) {
 		})
 	}
 }
+
+// TestServeSignInPageIsNotCancelledWithTheRequest checks that the page of a sign-in whose request is cancelled is opened with
+// a context that the cancellation does not reach. A browser command the request's context started would be killed with the
+// request, and the page the user is on with it.
+func TestServeSignInPageIsNotCancelledWithTheRequest(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
+	t.Setenv("BROWSER", "")
+	prevOpen := serveOpenPage
+	t.Cleanup(func() { serveOpenPage = prevOpen })
+	entered, release := make(chan struct{}), make(chan struct{})
+	pageErr := make(chan error, 1)
+	serveOpenPage = func(ctx context.Context, _ string) error {
+		close(entered)
+		<-release
+		pageErr <- ctx.Err()
+		return nil
+	}
+
+	// The credential is never signed in, so the sign-in waits until its request is cancelled.
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusNotFound)
+		_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	signInErr := make(chan error, 1)
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+	go func() {
+		_, _, err := signIn(ctx, proxy.SignInRequest{Open: true, Progress: func(string) {}, Stderr: io.Discard})
+		signInErr <- err
+	}()
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the page did not open")
+	}
+	cancel()
+	close(release)
+
+	require.ErrorIs(t, <-signInErr, context.Canceled)
+	assert.NoError(t, <-pageErr, "the page is opened with a context the request's cancellation does not reach")
+}

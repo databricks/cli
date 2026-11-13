@@ -245,6 +245,10 @@ func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, profileNa
 	return svc, nil
 }
 
+// serveOpenPage opens the sign-in page for serve. Its stdin is the protocol stream, so the browser command gets none. Tests
+// replace it.
+var serveOpenPage = browser.OpenOutputToStderrWithoutStdin
+
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
 // proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
 // often the browser opens. w must be guardedClient's.
@@ -264,7 +268,11 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 		// The opener is called even when the page must not open, so a call that must not open it passes one that does nothing.
 		openPage := func(context.Context, string) error { return nil }
 		if req.Open {
-			openPage = browser.OpenOutputToStderr
+			// The browser command must outlive the request: the request's context would kill it when the call is cancelled, and
+			// with it the page the user is on.
+			openPage = func(pageCtx context.Context, url string) error {
+				return serveOpenPage(context.WithoutCancel(pageCtx), url)
+			}
 		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
 		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, signInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(url) }})

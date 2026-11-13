@@ -78,6 +78,8 @@ type Executor struct {
 	inheritOutput bool
 	// stdoutToStderr sends the command's stdout to stderr when inheritOutput is set.
 	stdoutToStderr bool
+	// noStdin gives the command no stdin when inheritOutput is set, instead of this process's stdin.
+	noStdin bool
 }
 
 // NewCommandExecutor creates an Executor with default output behavior (no inheritance)
@@ -102,6 +104,12 @@ func (e *Executor) WithInheritOutput() {
 func (e *Executor) WithInheritOutputToStderr() {
 	e.inheritOutput = true
 	e.stdoutToStderr = true
+}
+
+// WithoutStdin gives the command no stdin, so that it reads no input, with the output set as WithInheritOutput or
+// WithInheritOutputToStderr sets it. It is for a caller whose stdin is a stream the command must not read.
+func (e *Executor) WithoutStdin() {
+	e.noStdin = true
 }
 
 func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
@@ -145,7 +153,9 @@ func (e *Executor) start(cmd *osexec.Cmd, ec *execContext) (Command, error) {
 			cmd.Stdout = os.Stderr
 		}
 		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
+		if !e.noStdin {
+			cmd.Stdin = os.Stdin
+		}
 		return &command{cmd, ec, nil, nil}, cmd.Start()
 	}
 	stdout, err := cmd.StdoutPipe()
