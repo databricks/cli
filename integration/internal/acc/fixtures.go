@@ -2,9 +2,11 @@ package acc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
@@ -104,9 +106,14 @@ func TemporaryVolume(t *WorkspaceT) string {
 	w := t.W
 
 	// Create a schema
-	schema, err := w.Schemas.Create(ctx, catalog.CreateSchema{
-		CatalogName: "main",
-		Name:        testutil.RandomName("test-schema-"),
+	schemaName := testutil.RandomName("test-schema-")
+	schema, err := createRetryingTransient(ctx, func() (*catalog.SchemaInfo, error) {
+		return w.Schemas.Create(ctx, catalog.CreateSchema{
+			CatalogName: "main",
+			Name:        schemaName,
+		})
+	}, func() (*catalog.SchemaInfo, error) {
+		return w.Schemas.GetByFullName(ctx, "main."+schemaName)
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -117,11 +124,15 @@ func TemporaryVolume(t *WorkspaceT) string {
 	})
 
 	// Create a volume
-	volume, err := w.Volumes.Create(ctx, catalog.CreateVolumeRequestContent{
-		CatalogName: "main",
-		SchemaName:  schema.Name,
-		Name:        "my-volume",
-		VolumeType:  catalog.VolumeTypeManaged,
+	volume, err := createRetryingTransient(ctx, func() (*catalog.VolumeInfo, error) {
+		return w.Volumes.Create(ctx, catalog.CreateVolumeRequestContent{
+			CatalogName: "main",
+			SchemaName:  schema.Name,
+			Name:        "my-volume",
+			VolumeType:  catalog.VolumeTypeManaged,
+		})
+	}, func() (*catalog.VolumeInfo, error) {
+		return w.Volumes.ReadByName(ctx, schema.FullName+".my-volume")
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -132,4 +143,22 @@ func TemporaryVolume(t *WorkspaceT) string {
 	})
 
 	return fmt.Sprintf("/Volumes/%s/%s/%s", "main", schema.Name, volume.Name)
+}
+
+// createRetryingTransient retries create on transient errors such as a
+// connection cut mid-response ("unexpected EOF"), which the SDK does not retry
+// for a POST. The request may have been applied before the connection broke, so
+// a 409 on a retry is our own resource and get returns it; the name is unique to
+// this test, so nothing else could have created it. ErrResourceConflict also
+// matches service-specific already-exists codes the SDK does not map by name.
+func createRetryingTransient[T any](ctx context.Context, create, get func() (T, error)) (T, error) {
+	attempt := 0
+	return retry.With(ctx, retry.IsTransientRead, func() (T, error) {
+		attempt++
+		result, err := create()
+		if attempt > 1 && errors.Is(err, apierr.ErrResourceConflict) {
+			return get()
+		}
+		return result, err
+	})
 }
