@@ -1133,6 +1133,29 @@ func TestServeSignInAuthenticatesEveryRequest(t *testing.T) {
 	assert.Equal(t, reads.Load(), authenticated.Load(), "every request of the sign-in is authenticated by the guard")
 }
 
+// TestServeSignInTransientFailureKeepsServing checks that a token failure which is not a rejection fails only the
+// sign-in's request, with the transient message, and does not stop the proxy.
+func TestServeSignInTransientFailureKeepsServing(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	server := serviceServer(t, http.StatusOK, `{}`)
+	var stopped bool
+	guard := &refreshGuard{
+		authenticate: func(*http.Request) error { return errors.New("dial tcp: i/o timeout") },
+		profile:      testProfile,
+		cancel:       func() { stopped = true },
+	}
+	w := guardedTestClient(t, server.URL, guard)
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Stderr: io.Discard})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "the next request tries again")
+	assert.NotContains(t, err.Error(), "restart the MCP server")
+	assert.False(t, stopped, "the proxy keeps running")
+	assert.NoError(t, guard.failure())
+}
+
 // TestServeSignInRestartDeleteRefreshFailureStopsProxy checks that the DELETE of a restart is authenticated by the guard
 // too, so a token that cannot be refreshed for it stops the proxy with the login hint.
 func TestServeSignInRestartDeleteRefreshFailureStopsProxy(t *testing.T) {
