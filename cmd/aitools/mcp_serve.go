@@ -117,7 +117,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
-	// The sign-in client and the bridge authenticate through the same guard, so a refresh failure in either stops the proxy.
+	// The bridge and the sign-in client share the guard, so a refresh failure in either one stops the proxy.
 	refresh := &refreshGuard{authenticate: cfg.Authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
 
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
@@ -182,7 +182,7 @@ func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, refresh *
 }
 
 // serveSignIn is the authenticate tool's sign-in, the one `login` runs. Progress goes to errOut, which is stderr because
-// stdout carries the protocol. The page opens only when open is set, so the proxy decides how often the browser opens.
+// stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how often the browser opens.
 func serveSignIn(w *databricks.WorkspaceClient, refresh *refreshGuard, profileName, service, pinnedFile string, errOut io.Writer) proxy.SignInFunc {
 	// The proxy runs one sign-in at a time, so the workspace ID is resolved by the first sign-in that needs it.
 	var workspaceID string
