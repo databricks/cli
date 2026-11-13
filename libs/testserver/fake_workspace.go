@@ -247,7 +247,8 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
-	// McpUserCredentials holds each caller's sign-in to an MCP service, keyed by the service full name.
+	// McpUserCredentials holds the caller's sign-in to each MCP service, keyed by the service full name. The fake has one
+	// caller.
 	McpUserCredentials    map[string]catalog.McpServiceUserMappedCredential
 	ModelProviderServices map[string]catalog.ModelProviderService
 

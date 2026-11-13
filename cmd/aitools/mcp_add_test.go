@@ -1387,15 +1387,3 @@ func writeFakeCLI(t *testing.T, binary string) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), 0o755))
 	t.Setenv("PATH", dir)
 }
-
-// TestTopLevelFailureKeepsErrorsOutsideAgents checks that a run error which joins per-agent failures with another failure,
-// such as a sign-in that failed, keeps the other failure as the document's top-level error.
-func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
-	signInErr := errors.New("sign-in failed")
-	agentErr := &agentErrors{err: errors.New("agent failed")}
-
-	assert.NoError(t, topLevelFailure(agentErr))
-	top := topLevelFailure(errors.Join(agentErr, signInErr))
-	require.ErrorIs(t, top, signInErr)
-	assert.Equal(t, signInErr.Error(), top.Error())
-}

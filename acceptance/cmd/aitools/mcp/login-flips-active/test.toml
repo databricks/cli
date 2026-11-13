@@ -2,3 +2,6 @@
 # retry default of 2.5 seconds to show. The retries wait up to 30 seconds.
 Env.RETRY_MAX_ATTEMPTS = "60"
 Env.RETRY_INTERVAL_MS = "500"
+
+# The background login and add write these files, and the script removes them.
+Ignore = ["login.txt", "add.txt"]

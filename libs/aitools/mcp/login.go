@@ -24,14 +24,14 @@ var ErrSignInTimeout = errors.New("sign-in did not complete before the timeout")
 // ErrSignInFailed means the credential reached the FAILED provisioning state.
 var ErrSignInFailed = errors.New("sign-in failed")
 
-// SignInOptions controls how SignIn waits. Callers set all four fields.
+// SignInOptions controls how SignIn waits. Poll and Timeout are required. Profile names the profile in the notice
+// before the page. Open opens the page in the background, and is not called when BROWSER=none, because the URL is
+// already printed.
 type SignInOptions struct {
-	// Profile is the profile whose user signs in. The notice before the page names it.
 	Profile string
 	Poll    time.Duration
 	Timeout time.Duration
-	// Open opens the sign-in page. It is not called when BROWSER=none, because the URL is already printed.
-	Open func(ctx context.Context, url string) error
+	Open    func(ctx context.Context, url string) error
 }
 
 // CredentialState returns the provisioning state of the caller's sign-in to a sign-in-required

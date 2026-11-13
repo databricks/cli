@@ -168,7 +168,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: every detected MCP-capable agent)")
 	cmd.Flags().StringVar(&f.name, "name", "", "Server name to use instead of the generated one; only with exactly one service")
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
-	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server right after it is installed")
+	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server that was installed, after the installs")
 	cmd.Flags().BoolVar(&f.noLogin, "no-login", false, "Do not sign in; print the login commands for sign-in-required servers (default)")
 	return cmd
 }
