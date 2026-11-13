@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+// ConfigFileEnv is the environment variable that selects the Databricks config file. An agent
+// entry pins its value when this CLI sees it set, and the MCP binding reads the same variable.
+// A write that does not pin it removes it; other variables are the user's.
+const ConfigFileEnv = "DATABRICKS_CONFIG_FILE"
+
 // Format is the on-disk format of an agent's MCP config file.
 type Format int
 

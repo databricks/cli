@@ -66,16 +66,11 @@ var launchKeys = []string{"command", "args", "env", "environment", "type"}
 // environment in OpenCode.
 var envKeys = []string{"env", "environment"}
 
-// pinnedEnv is the environment variable that this CLI pins into an entry when it
-// is set in the caller's environment. A write that does not pin it removes it from
-// the entry. Other variables are the user's, and are kept.
-const pinnedEnv = "DATABRICKS_CONFIG_FILE"
-
 // ownedKeys returns the launch keys that the agent's builder writes. Upsert
 // updates these keys and keeps every other key of the entry. The probe passes a
 // variable, since a builder writes its env key only when it has variables.
 func ownedKeys(spec *mcpconfig.Spec) []string {
-	probe := spec.Entry("", nil, map[string]string{pinnedEnv: ""})
+	probe := spec.Entry("", nil, map[string]string{mcpconfig.ConfigFileEnv: ""})
 	var keys []string
 	for _, key := range launchKeys {
 		if _, ok := probe[key]; ok {
@@ -343,8 +338,8 @@ func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, 
 }
 
 // mergeEnv returns the env table after a write. It holds the variables of want,
-// and the variables of have other than pinnedEnv. It reports false when the table
-// is absent: want lacks it and no variable is left.
+// and the variables of have other than the pinned config file variable. It
+// reports false when the table is absent: want lacks it and no variable is left.
 func mergeEnv(have, want any, inWant bool) (any, bool, error) {
 	haveEnv, err := envTable(have)
 	if err != nil {
@@ -353,7 +348,7 @@ func mergeEnv(have, want any, inWant bool) (any, bool, error) {
 	wantEnv, _ := want.(map[string]any)
 	out := map[string]any{}
 	for k, v := range haveEnv {
-		if k != pinnedEnv {
+		if k != mcpconfig.ConfigFileEnv {
 			out[k] = v
 		}
 	}

@@ -201,9 +201,8 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 	// state file; otherwise persist the trimmed state.
 	if len(state.Skills) == 0 && len(state.Plugins) == 0 {
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
-		stateFile := filepath.Join(baseDir, stateFileName)
-		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("failed to remove state file: %w", err)
+		if err := removeState(baseDir); err != nil {
+			return nil, err
 		}
 	} else {
 		if err := SaveState(baseDir, state); err != nil {

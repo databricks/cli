@@ -695,3 +695,41 @@ func TestFormatUpdateResultCheckMode(t *testing.T) {
 	assert.Contains(t, checkOutput, "would add databricks-notebooks")
 	assert.Contains(t, checkOutput, "Would update 2 skills.")
 }
+
+func TestUpdateMCPOnlyStateReturnsInstallHint(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
+}
+
+// TestUpdateAfterPruningEverySkillAddsNewSkills checks that an update which prunes every skill leaves
+// a state file behind, so the next update adds the skills the manifest now lists.
+func TestUpdateAfterPruningEverySkillAddsNewSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	agent := testAgent(tmp)
+
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{}))
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	empty := &Manifest{Version: "1", UpdatedAt: "2024-02-01", Skills: map[string]SkillMeta{}}
+	_, err := UpdateSkills(ctx, &mockManifestSource{manifest: empty}, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.3.0")
+	_, err = UpdateSkills(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Contains(t, state.Skills, "databricks-sql")
+}

@@ -380,7 +380,7 @@ func TestUninstallSkillsWithResultTearsDownPlugin(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", InstalledMarketplace: true},
@@ -411,7 +411,7 @@ func TestUninstallSkillsWithResultTargetsPluginAgents(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: "user"},
@@ -447,7 +447,7 @@ func TestUninstallNeverDeregistersSharedMarketplace(t *testing.T) {
 	// Claude's claude-plugins-official is a Shared marketplace; even a stale
 	// InstalledMarketplace=true must never trigger a de-register.
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Plugins: map[string]PluginRecord{
 			agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", InstalledMarketplace: true},
 		},
@@ -476,7 +476,7 @@ func TestUninstallKeepMarketplace(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
 		},
@@ -497,7 +497,7 @@ func TestUninstallKeepsUnknownAgentRecord(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Plugins: map[string]PluginRecord{
 			"mystery-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
 		},
@@ -526,7 +526,7 @@ func TestUninstallClearsRecordWhenMarketplaceRemoveFails(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", InstalledMarketplace: true},
 		},
@@ -551,7 +551,7 @@ func TestUpdateInstalledPlugins(t *testing.T) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
@@ -596,7 +596,7 @@ func TestUpdateInstalledPluginsRecordsUnknownVersionWhenRefreshFails(t *testing.
 			dir, err := GlobalSkillsDir(ctx)
 			require.NoError(t, err)
 			require.NoError(t, SaveState(dir, &InstallState{
-				SchemaVersion: schemaVersionV2,
+				SchemaVersion: CurrentSchemaVersion,
 				Release:       "v" + tc.recorded,
 				Plugins: map[string]PluginRecord{
 					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: "user", Version: tc.recorded},
@@ -635,7 +635,7 @@ func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
 			dir, err := GlobalSkillsDir(ctx)
 			require.NoError(t, err)
 			require.NoError(t, SaveState(dir, &InstallState{
-				SchemaVersion: schemaVersionV2,
+				SchemaVersion: CurrentSchemaVersion,
 				Release:       "v0.2.6",
 				Plugins: map[string]PluginRecord{
 					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: scope, Version: "0.2.6"},
@@ -729,7 +729,7 @@ func saveUnknownAgentPlugin(t *testing.T) (context.Context, string) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			"future-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
@@ -748,7 +748,7 @@ func saveCopilotPlugin(t *testing.T) (context.Context, string) {
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Release:       "v0.2.6",
 		Plugins: map[string]PluginRecord{
 			agents.NameCopilot: {Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: "user", Version: "0.2.6"},
@@ -769,7 +769,7 @@ func TestUninstallSkillsWithResultUsesRecordedClaudeScope(t *testing.T) {
 			dir, err := GlobalSkillsDir(ctx)
 			require.NoError(t, err)
 			require.NoError(t, SaveState(dir, &InstallState{
-				SchemaVersion: schemaVersionV2,
+				SchemaVersion: CurrentSchemaVersion,
 				Plugins: map[string]PluginRecord{
 					agents.NameClaudeCode: {Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: scope},
 				},
