@@ -1113,3 +1113,29 @@ func TestCallChallengeKeepsAuthenticateListed(t *testing.T) {
 	assert.Equal(t, []bool{true}, signIn.calls())
 	assert.Equal(t, []string{"echo"}, toolNames(t, lines[5]), "after the sign-in the list is the service's own")
 }
+
+// TestProgressIsNotSentAfterCancel checks that a poll which fires after the client cancelled the call writes no progress
+// for it. The sign-in reports its poll once the cancellation has arrived, as a poll that was already in flight does.
+func TestProgressIsNotSentAfterCancel(t *testing.T) {
+	srv, _ := challengedService(t)
+	entered, returned := make(chan struct{}), make(chan struct{})
+	signIn := func(ctx context.Context, req SignInRequest) (bool, bool, error) {
+		close(entered)
+		<-ctx.Done()
+		req.Progress(testURL)
+		close(returned)
+		return false, true, ctx.Err()
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":"t"}}}`)
+	waitClosed(t, entered, "the sign-in to start")
+	p.send(t, `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":5}}`)
+	waitClosed(t, returned, "the sign-in to return")
+	require.NoError(t, p.finish(t))
+
+	for _, line := range outLines(p.out.String()) {
+		assert.NotContains(t, line, "notifications/progress", "a cancelled call gets no progress")
+	}
+}

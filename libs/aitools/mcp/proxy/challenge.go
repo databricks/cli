@@ -351,7 +351,8 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.RawMessage, notify func([]byte)) [][]byte {
 	var polls int
 	report := func(pageURL string) {
-		if len(progressToken) == 0 {
+		// A poll that fires after the client cancelled the call reports nothing for it.
+		if len(progressToken) == 0 || ctx.Err() != nil {
 			return
 		}
 		polls++
