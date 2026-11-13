@@ -60,13 +60,18 @@ func (p *Plan) CountActions() ActionCounts {
 		case Create:
 			c.Create++
 		case Update, UpdateWithID, Resize:
+			if entry.StateOnly {
+				// A re-key changes nothing in the backend.
+				c.Unchanged++
+				continue
+			}
 			c.Change++
 		case Delete:
 			// A state-only delete touches nothing in the backend and only drops the
 			// state entry, so it is not a real action: leave it out of the tally
 			// entirely rather than misreport it as deleted or unchanged. This matches
 			// how `bundle destroy` counts its own deletions.
-			if entry.IsStateOnlyDelete() {
+			if entry.IsStateOnly() {
 				continue
 			}
 			c.Delete++
@@ -119,6 +124,9 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
+	// ID is set when the resource is at another ID than the one in state: a rename moved it there
+	// (see findMoved), or a parent renamed in this plan moves it before it is recreated (see
+	// addParentMoves). Applying the entry addresses the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
@@ -126,23 +134,28 @@ type PlanEntry struct {
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
 	Gone bool `json:"gone,omitempty"`
-	// StateOnly is set on Delete entries for resources that implement no DoDelete:
-	// deleting them has no backend effect. Like Gone, applying such an entry only
-	// removes it from the state and it is excluded from destructive-action prompts,
-	// textual plan output and the deleted count — but unlike Gone it is a property of
-	// the resource type, not of the current remote state, so planning skips the
-	// remote read that Gone detection needs.
+	// StateOnly marks an entry whose apply has no backend effect and only changes the state:
+	//   - a Delete of a resource that implements no DoDelete. Like Gone, applying it only
+	//     removes it from the state and it is excluded from destructive-action prompts,
+	//     textual plan output and the deleted count — but unlike Gone it is a property of
+	//     the resource type, not of the current remote state, so planning skips the remote
+	//     read that Gone detection needs.
+	//   - an UpdateWithID that only follows a parent's rename (or a rename found by the plan):
+	//     the backend already moved the resource, so applying it records the state under the
+	//     ID IDFromState gives it. It is left out of the textual plan and counted as unchanged.
+	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
+	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
+	//     likewise left out of the textual plan and counted as unchanged.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
 }
 
-// IsStateOnlyDelete reports whether applying this delete only drops the state entry
-// without any backend call: the resource is already gone remotely (Gone) or has no
-// delete operation (StateOnly). Such deletes are omitted from human output, excluded
-// from the resource counts, and need no destructive-action approval.
-func (e *PlanEntry) IsStateOnlyDelete() bool {
+// IsStateOnly reports whether applying this entry makes no backend call and only changes the
+// state: a delete of a resource already gone remotely (Gone) or without a delete operation, or a
+// re-key (StateOnly). Such entries are omitted from human output and need no approval.
+func (e *PlanEntry) IsStateOnly() bool {
 	return e.Gone || e.StateOnly
 }
 
@@ -184,6 +197,14 @@ const (
 	// it and whatever the remote reports is not drift (e.g. cluster libraries without a libraries
 	// section, where job runs install their task libraries cluster-wide).
 	ReasonUnmanaged = "unmanaged"
+	// ReasonInternalID: the resource's internal ID field (see ResourceLifecycleConfig.InternalIDField),
+	// which config never sets.
+	ReasonInternalID = "internal_id"
+
+	// ReasonParentRenamed: an ID field that references the name of a parent being renamed in
+	// place. The backend moves the resource along with its parent, so it is re-keyed rather
+	// than recreated.
+	ReasonParentRenamed = "parent_renamed"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
@@ -229,6 +250,17 @@ func (c *Changes) HasChangeExcept(prefixes ...string) bool {
 		}
 	}
 	return false
+}
+
+// HasOnlySingleReason reports whether every actionable change has the given reason. It also holds
+// when no change is actionable.
+func (c *Changes) HasOnlySingleReason(reason string) bool {
+	for _, change := range *c {
+		if change.Action != Skip && change.Reason != reason {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *Plan) GetActions() []Action {

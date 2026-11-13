@@ -1,0 +1,41 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+# Drop the remote_state fields that differ between clouds or from the test server.
+plan() {
+    trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+}
+
+title "Deploy a schema with a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "$SCHEMA.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the volume out of band"
+trace $CLI volumes update "$SCHEMA.myvolume" --new-name myvolume2 | jq '{full_name, volume_id}'
+print_requests.py //unity-catalog &> LOG.rename_requests
+
+title "With the config unchanged, the plan creates the volume again under its configured name"
+trace $CLI bundle plan
+
+title "With the config renamed to match, the plan finds the volume at its new name, with the same volume_id"
+trace update_file.py databricks.yml "name: myvolume" "name: myvolume2"
+plan
+
+title "Deploy only records the new name in the state"
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$SCHEMA.myvolume2" | jq '{full_name, volume_id}'
+trace $CLI bundle summary --output json | jq '.resources.volumes.volume1.id'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
