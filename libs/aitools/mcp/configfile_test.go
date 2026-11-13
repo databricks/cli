@@ -81,6 +81,6 @@ func TestSamePathComparesExistingFilesByIdentity(t *testing.T) {
 		t.Skipf("cannot create hard link: %v", err)
 	}
 
-	assert.True(t, samePath(a, b))
-	assert.False(t, samePath(filepath.Join(dir, "x"), filepath.Join(dir, "X")))
+	assert.True(t, SamePath(a, b))
+	assert.False(t, SamePath(filepath.Join(dir, "x"), filepath.Join(dir, "X")))
 }

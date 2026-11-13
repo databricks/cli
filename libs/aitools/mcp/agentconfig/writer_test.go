@@ -120,13 +120,13 @@ func TestRoundTripPerAgent(t *testing.T) {
 			assert.Equal(t, StatusUnchanged, status)
 			assert.Equal(t, after, readFile(t, path))
 
-			entries, err := Read(ctx, a)
+			entries, err := readAgent(ctx, a)
 			require.NoError(t, err)
 			require.Contains(t, entries, testName)
 			assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
 			assert.Contains(t, entries, "other")
 
-			removed, err := Remove(ctx, a, testName)
+			removed, err := removeAgent(ctx, a, testName)
 			require.NoError(t, err)
 			assert.True(t, removed)
 			assert.Equal(t, semantic(t, a.MCP.Format, before), semantic(t, a.MCP.Format, readFile(t, path)))
@@ -159,7 +159,7 @@ func TestUpsertRefusesUnparsableFile(t *testing.T) {
 			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
 			require.ErrorIs(t, err, ErrConfigInvalid)
 			assert.ErrorContains(t, err, filepath.ToSlash(path))
-			_, err = Remove(t.Context(), a, testName)
+			_, err = removeAgent(t.Context(), a, testName)
 			require.ErrorIs(t, err, ErrConfigInvalid)
 
 			assert.Equal(t, tc.data, string(readFile(t, path)))
@@ -180,7 +180,7 @@ func TestUpsertRefusesEntryWeDidNotWrite(t *testing.T) {
 	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.True(t, mcpconfig.IsDatabricksEntry(entries[testName]))
 }
@@ -205,7 +205,7 @@ func TestUpsertUpdatesOwnedEntry(t *testing.T) {
 			_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 			require.NoError(t, err)
 			assert.Equal(t, StatusUpdated, status)
-			entries, err := Read(t.Context(), a)
+			entries, err := readAgent(t.Context(), a)
 			require.NoError(t, err)
 			assert.Equal(t, testArgs("test"), toStrings(t, entries[testName]["args"]))
 		})
@@ -251,7 +251,7 @@ func TestUpsertRefusesCommandThatIsNotDatabricks(t *testing.T) {
 
 func TestReadMissingFileHasNoEntries(t *testing.T) {
 	a := testAgent(filepath.Join(t.TempDir(), "missing.toml"), mcpconfig.FormatTOML, "mcp_servers")
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
@@ -262,7 +262,7 @@ func TestRemoveRefusesEntryWeDidNotWrite(t *testing.T) {
 	writeFile(t, path, []byte(other), 0o600)
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
-	_, err := Remove(t.Context(), a, testName)
+	_, err := removeAgent(t.Context(), a, testName)
 	require.ErrorIs(t, err, ErrNotOwned)
 	assert.Equal(t, other, string(readFile(t, path)))
 }
@@ -271,7 +271,7 @@ func TestRemoveAbsentEntryDoesNotCreateFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "missing.json")
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
-	removed, err := Remove(t.Context(), a, testName)
+	removed, err := removeAgent(t.Context(), a, testName)
 	require.NoError(t, err)
 	assert.False(t, removed)
 	_, err = os.Stat(path)
@@ -338,7 +338,7 @@ func TestUpsertWritesThroughSymlink(t *testing.T) {
 	info, err := os.Lstat(link)
 	require.NoError(t, err)
 	assert.NotZero(t, info.Mode()&os.ModeSymlink, "link is replaced by a regular file")
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Contains(t, entries, testName)
 }
@@ -379,7 +379,7 @@ func TestWindowsCommandPathRoundTrip(t *testing.T) {
 			require.NoError(t, err)
 			assert.Contains(t, string(readFile(t, path)), tc.want)
 
-			entries, err := Read(t.Context(), a)
+			entries, err := readAgent(t.Context(), a)
 			require.NoError(t, err)
 			require.Contains(t, entries, testName)
 			assert.Equal(t, winCmd, entries[testName]["command"])
@@ -437,7 +437,7 @@ func TestUpsertKeepsUserKeysJSON(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Equal(t, testArgs("other"), toStrings(t, entries[testName]["args"]))
 	assert.Equal(t, true, entries[testName]["disabled"])
@@ -448,7 +448,7 @@ func TestUpsertKeepsUserKeysJSON(t *testing.T) {
 	_, status, err = Upsert(t.Context(), testAgent(foreign, mcpconfig.FormatJSON, "mcpServers"), testName, testCmd, testArgs("test"), nil, true)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err = Read(t.Context(), testAgent(foreign, mcpconfig.FormatJSON, "mcpServers"))
+	entries, err = readAgent(t.Context(), testAgent(foreign, mcpconfig.FormatJSON, "mcpServers"))
 	require.NoError(t, err)
 	assert.NotContains(t, entries[testName], "disabled")
 }
@@ -469,7 +469,7 @@ func TestUpsertKeepsUserKeysTOML(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Equal(t, testArgs("other"), toStrings(t, entries[testName]["args"]))
 	assert.Equal(t, false, entries[testName]["enabled"])
@@ -496,7 +496,7 @@ func TestUpsertKeepsToolsNarrowedByUser(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Equal(t, []any{"search"}, entries[testName]["tools"])
 }
@@ -565,7 +565,7 @@ func TestUpsertUpdateAddsAndRemovesLaunchKeys(t *testing.T) {
 	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{mcpconfig.ConfigFileEnv: "/cfg"}, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{mcpconfig.ConfigFileEnv: "/cfg"}, entries[testName]["env"])
 	requireStrictJSON(t, string(readFile(t, path)))
@@ -573,7 +573,7 @@ func TestUpsertUpdateAddsAndRemovesLaunchKeys(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err = Read(t.Context(), a)
+	entries, err = readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.NotContains(t, entries[testName], "env")
 	requireStrictJSON(t, string(readFile(t, path)))
@@ -591,7 +591,7 @@ func TestTOMLUpdateKeepsUserTables(t *testing.T) {
 	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("other"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUpdated, status)
-	entries, err := Read(t.Context(), a)
+	entries, err := readAgent(t.Context(), a)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"search": map[string]any{"approval_mode": "approve"}}, entries[testName]["tools"])
 }
@@ -615,7 +615,7 @@ func TestUpsertAndRemoveRefuseDuplicateKeysJSON(t *testing.T) {
 
 			_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, true)
 			require.ErrorIs(t, err, ErrConfigInvalid)
-			_, err = Remove(t.Context(), a, testName)
+			_, err = removeAgent(t.Context(), a, testName)
 			require.ErrorIs(t, err, ErrConfigInvalid)
 			assert.Equal(t, data, string(readFile(t, path)))
 		})
@@ -642,7 +642,7 @@ func TestRemoveRefusesInvalidServerName(t *testing.T) {
 	writeFile(t, path, []byte(data), 0o600)
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 
-	_, err := Remove(t.Context(), a, "genie.one")
+	_, err := removeAgent(t.Context(), a, "genie.one")
 	assert.ErrorContains(t, err, "must contain only letters, digits, '-' and '_'")
 	assert.Equal(t, data, string(readFile(t, path)))
 }
@@ -650,7 +650,7 @@ func TestRemoveRefusesInvalidServerName(t *testing.T) {
 // entryOf returns the entry of server name in agent a's config.
 func entryOf(t *testing.T, ctx context.Context, a *agents.Agent, name string) map[string]any {
 	t.Helper()
-	entries, err := Read(ctx, a)
+	entries, err := readAgent(ctx, a)
 	require.NoError(t, err)
 	require.Contains(t, entries, name)
 	return entries[name]
@@ -783,4 +783,74 @@ func TestUpsertRefusesEnvThatIsNotATable(t *testing.T) {
 	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{mcpconfig.ConfigFileEnv: "/cfg"}, false)
 	require.ErrorIs(t, err, ErrConfigInvalid)
 	assert.Equal(t, data, string(readFile(t, path)))
+}
+
+// TestPathIsTheFileTheSpecNames checks that Path returns the file the spec names, without creating or reading it.
+func TestPathIsTheFileTheSpecNames(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	got, err := Path(t.Context(), a)
+	require.NoError(t, err)
+	assert.Equal(t, path, got)
+	_, err = os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestPathFailsForAgentWithoutMCP(t *testing.T) {
+	_, err := Path(t.Context(), &agents.Agent{Name: "pi", DisplayName: "Pi"})
+	require.Error(t, err)
+}
+
+// TestReadAtAndRemoveAtUseTheGivenFile checks that ReadAt and RemoveAt work on the file they are given, not on the
+// file the agent's spec names now. The entry is written to one file, and the spec names another.
+func TestReadAtAndRemoveAtUseTheGivenFile(t *testing.T) {
+	recorded := filepath.Join(t.TempDir(), "recorded.json")
+	current := filepath.Join(t.TempDir(), "current.json")
+	_, _, err := Upsert(t.Context(), testAgent(recorded, mcpconfig.FormatJSON, "mcpServers"), testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	a := testAgent(current, mcpconfig.FormatJSON, "mcpServers")
+
+	entries, err := ReadAt(a, recorded)
+	require.NoError(t, err)
+	assert.Contains(t, entries, testName)
+
+	entries, err = readAgent(t.Context(), a)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "the spec's file does not have the entry")
+
+	removed, err := RemoveAt(a, recorded, testName)
+	require.NoError(t, err)
+	assert.True(t, removed)
+	entries, err = ReadAt(a, recorded)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+	_, err = os.Stat(current)
+	assert.ErrorIs(t, err, os.ErrNotExist, "RemoveAt does not write the spec's file")
+}
+
+// TestReadAtMissingFileHasNoEntries checks that a file that no longer exists reads as having no entries.
+func TestReadAtMissingFileHasNoEntries(t *testing.T) {
+	a := testAgent(filepath.Join(t.TempDir(), "current.json"), mcpconfig.FormatJSON, "mcpServers")
+	entries, err := ReadAt(a, filepath.Join(t.TempDir(), "gone.json"))
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+// readAgent reads the entries of agent a's config at the path Path names, as the commands read the config.
+func readAgent(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
+	path, err := Path(ctx, a)
+	if err != nil {
+		return nil, err
+	}
+	return ReadAt(a, path)
+}
+
+// removeAgent removes server name from agent a's config at the path Path names.
+func removeAgent(ctx context.Context, a *agents.Agent, name string) (bool, error) {
+	path, err := Path(ctx, a)
+	if err != nil {
+		return false, err
+	}
+	return RemoveAt(a, path, name)
 }

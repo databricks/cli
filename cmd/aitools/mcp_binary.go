@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 )
 
 // binaryArg0 is the name the CLI was started with. It is a variable so that tests can set it.
@@ -28,7 +28,7 @@ func binaryPathFor(arg0 string, lookPath func(string) (string, error)) (string, 
 	}
 	if filepath.Base(arg0) != arg0 {
 		// A leading "./" names the working directory, which the join already gives.
-		abs, err := mcp.AbsoluteAsWritten(strings.TrimPrefix(arg0, "."+string(filepath.Separator)))
+		abs, err := mcpconfig.AbsoluteAsWritten(strings.TrimPrefix(arg0, "."+string(filepath.Separator)))
 		if err != nil {
 			return arg0, false
 		}

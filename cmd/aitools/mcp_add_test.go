@@ -598,9 +598,9 @@ func TestCursorApprovalHintNamesBinary(t *testing.T) {
 		cursorApprovalHint("github-logfood"))
 }
 
-// newAddTestRoot returns a root command with the persistent --profile and --output flags that root
+// newMCPTestRoot returns a root command with the persistent --profile and --output flags that root
 // defines, and the mcp group.
-func newAddTestRoot() *cobra.Command {
+func newMCPTestRoot() *cobra.Command {
 	parent := &cobra.Command{Use: "databricks", SilenceErrors: true, SilenceUsage: true}
 	output := flags.OutputText
 	parent.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
@@ -612,7 +612,7 @@ func newAddTestRoot() *cobra.Command {
 // newAddTestCmd runs `aitools mcp add` under a root, as root does.
 func newAddTestCmd(t *testing.T, args ...string) (*bytes.Buffer, error) {
 	t.Helper()
-	parent := newAddTestRoot()
+	parent := newMCPTestRoot()
 	var stdout bytes.Buffer
 	parent.SetOut(&stdout)
 	parent.SetErr(&bytes.Buffer{})
@@ -723,7 +723,7 @@ func TestMcpAddRejectsUnknownAgentBeforeProfile(t *testing.T) {
 func TestMcpAddJSONWriteFailureKeepsRunError(t *testing.T) {
 	withHome(t)
 	withDatabricksBinary(t)
-	parent := newAddTestRoot()
+	parent := newMCPTestRoot()
 	parent.SetOut(failingWriter{})
 	parent.SetErr(&bytes.Buffer{})
 	parent.SetArgs([]string{"mcp", "add", "--names", "github", "--output", "json"})

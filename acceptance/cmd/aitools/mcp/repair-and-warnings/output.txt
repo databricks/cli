@@ -1,0 +1,57 @@
+
+=== Claude Code and Codex get the server
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code, codex
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
+  codex        installed  [TEST_TMP_DIR]/home/.codex/config.toml
+
+=== Claude Code reads its config from another directory: list says path changed, and remove takes the entry out of the file it was written to
+
+>>> [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code (path changed), Codex CLI
+
+>>> [CLI] aitools mcp remove --names genie_one_mcp-logfood --agents claude-code
+Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code)
+
+>>> jq .mcpServers | keys home/.claude.json
+[]
+
+=== A Codex config that cannot be parsed is a warning: list exits 0 and shows Codex CLI as unknown
+
+>>> [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Codex CLI (unknown)
+Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1 (last key "mcp_servers.broken"): expected a top-level item to end with a newline, comment, or EOF, but got ']' instead
+
+=== An entry that runs aitools mcp serve without an install record is unmanaged, and remove does not touch it
+
+>>> jq .mcpServers.orphan = {"command": "databricks", "args": ["aitools", "mcp", "serve", "--profile", "logfood", "--service", "system.ai.genie_one_mcp", "--agent", "claude-code"]} home/.claude.json
+
+>>> [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Codex CLI (unknown)
+
+Unmanaged Databricks MCP entries (not changed by this command):
+  Claude Code    orphan               databricks aitools mcp serve, no install record
+Warning: could not read the Codex CLI config: [TEST_TMP_DIR]/home/.codex/config.toml: agent config file cannot be parsed: toml: line 1 (last key "mcp_servers.broken"): expected a top-level item to end with a newline, comment, or EOF, but got ']' instead
+
+>>> musterr [CLI] aitools mcp remove --names orphan
+Error: no installed MCP server named orphan
+
+>>> jq .mcpServers | keys home/.claude.json
+[
+  "orphan"
+]
+
+=== A profile or an agent with nothing installed is refused
+
+>>> musterr [CLI] aitools mcp remove --profile typo
+Error: no installed MCP servers on profile typo
+
+>>> musterr [CLI] aitools mcp remove --names genie_one_mcp-logfood --agents cursor
+Error: no selected MCP server is installed for Cursor

@@ -10,9 +10,10 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
+	"gopkg.in/ini.v1"
 )
 
-// Drift kinds reported by Reconcile.
+// Drift kinds reported by CheckEntries.
 const (
 	DriftProfileMissing DriftKind = "profile_missing"
 	DriftHostChanged    DriftKind = "host_changed"
@@ -48,6 +49,9 @@ type Drift struct {
 	// CurrentWorkspaceID is the workspace the profile names when Kind is DriftHostChanged: its
 	// workspace_id, else the workspace in its host query. It is "" when the profile names none.
 	CurrentWorkspaceID string
+	// NoHost is set when Kind is DriftProfileMissing because the profile's section has no host, not
+	// because the section is absent.
+	NoHost bool
 }
 
 // LoadState reads the MCP section of the aitools state file. A missing file or section
@@ -77,81 +81,98 @@ func SaveState(ctx context.Context, state *State) error {
 	return installer.SaveMCPState(dir, state)
 }
 
-// Reconcile reports entries whose profile is gone or has no host, and entries whose profile now
-// names another host, or another workspace when both the entry and the profile name one. Each
-// entry is checked against the config file it is pinned to; an entry with no pinned file is checked
-// against the default file, ~/.databrickscfg, whatever the environment names. Each config file is
-// read once.
-//
-// An entry that cannot be checked, such as one whose "~" path has no home directory to resolve, does
-// not stop the others. Its error is joined into the returned error, and the drifts of the other
-// entries are still returned.
-func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
-	files := configFiles{}
-	var drifts []Drift
-	var errs []error
-	for _, entry := range state.Servers {
-		drift, err := checkEntry(ctx, files, entry)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("MCP server %s: %w", entry.Name, err))
-			continue
-		}
-		if drift != nil {
-			drifts = append(drifts, *drift)
-		}
-	}
-	return drifts, errors.Join(errs...)
+// EntryCheck is the result of checking one state entry. Drift is nil when the entry's profile still names the recorded
+// host and workspace. Err is set when the entry cannot be checked. Path is the config file the entry is checked against,
+// resolved; it is "" when that file cannot be resolved, and Err says why.
+type EntryCheck struct {
+	Drift *Drift
+	Err   error
+	Path  string
 }
 
-// checkEntry returns the drift of one entry, or nil when its profile still names the recorded host
-// and workspace. The entry's profile is read from the config file the entry is pinned to.
-func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, error) {
+// CheckEntries checks each entry of state against its profile and returns one result per entry, in state order. Each
+// entry is checked against the config file it is pinned to; an entry with no pinned file is checked against the default
+// file, ~/.databrickscfg, whatever the environment names. Each config file is read once for all the entries. An entry
+// that cannot be checked, such as one whose "~" path has no home directory to resolve, does not stop the others.
+func CheckEntries(ctx context.Context, state *State) []EntryCheck {
+	files := configFiles{}
+	checks := make([]EntryCheck, len(state.Servers))
+	for i, entry := range state.Servers {
+		checks[i] = checkEntry(ctx, files, entry)
+	}
+	return checks
+}
+
+// checkEntry checks one entry against the profile in the config file it is pinned to.
+func checkEntry(ctx context.Context, files configFiles, entry Entry) EntryCheck {
 	path, err := ResolveConfigFile(ctx, entry.ConfigFile)
 	if err != nil {
-		return nil, err
+		return EntryCheck{Err: err}
 	}
+	check := EntryCheck{Path: path}
 	p, err := files.profile(path, entry.Profile)
-	if errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost) {
-		return &Drift{Kind: DriftProfileMissing, Entry: entry}, nil
+	switch {
+	case errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost):
+		check.Drift = &Drift{Kind: DriftProfileMissing, Entry: entry, NoHost: errors.Is(err, errProfileNoHost)}
+	case err != nil:
+		check.Err = err
+	default:
+		check.Drift = driftOf(entry, p)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return driftOf(entry, p), nil
+	return check
 }
 
-// configFiles holds the config files that one lookup has read, by resolved path, so that each file is
-// parsed once. A nil file is one that does not exist.
-type configFiles map[string]*config.File
+// configFiles holds the config files that one lookup has read, by resolved path, so that each file is parsed once. A
+// file that cannot be read keeps its error, which every profile of that file then reports.
+type configFiles map[string]configFile
+
+// configFile is one config file as a lookup read it: the parsed file, which is nil when the file does not exist, or the
+// error that reading it gave.
+type configFile struct {
+	file *config.File
+	err  error
+}
 
 // profile returns the profile named name from the config file at path. It returns errProfileMissing
 // when the file does not exist or has no section of that name, and errProfileNoHost when the section
 // has no host or an empty one.
 func (c configFiles) profile(path, name string) (profile.Profile, error) {
-	file, ok := c[path]
+	f, ok := c[path]
 	if !ok {
-		loaded, err := config.LoadFile(path)
-		switch {
-		case errors.Is(err, fs.ErrNotExist):
-			loaded = nil
-		case err != nil:
-			return profile.Profile{}, fmt.Errorf("failed to read Databricks profiles: %w", err)
-		}
-		file = loaded
-		c[path] = file
+		f = readConfigFile(path)
+		c[path] = f
 	}
-	if file == nil {
+	if f.err != nil {
+		return profile.Profile{}, f.err
+	}
+	if f.file == nil {
 		return profile.Profile{}, errProfileMissing
 	}
-	section, err := file.GetSection(name)
+	section, err := f.file.GetSection(name)
 	if err != nil {
 		return profile.Profile{}, errProfileMissing
 	}
 	keys := section.KeysHash()
+	if len(keys) == 0 && name == ini.DefaultSection {
+		// The INI parser always has a DEFAULT section, so an empty one means the file has no such profile.
+		return profile.Profile{}, errProfileMissing
+	}
 	if keys["host"] == "" {
 		return profile.Profile{}, errProfileNoHost
 	}
 	return profile.Profile{Name: name, Host: keys["host"], WorkspaceID: keys["workspace_id"]}, nil
+}
+
+// readConfigFile reads the config file at path. A file that does not exist is read as nil, with no error.
+func readConfigFile(path string) configFile {
+	file, err := config.LoadFile(path)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return configFile{}
+	case err != nil:
+		return configFile{err: fmt.Errorf("failed to read Databricks profiles: %w", err)}
+	}
+	return configFile{file: file}
 }
 
 // driftOf returns the drift of an entry against the profile it names, or nil when the profile still

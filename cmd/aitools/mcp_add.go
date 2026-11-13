@@ -566,12 +566,11 @@ type agentEntries map[*agents.Agent]map[string]map[string]any
 
 func readAgentEntries(ctx context.Context, targets []*agents.Agent) agentEntries {
 	held := make(agentEntries, len(targets))
+	files := newAgentFiles()
 	for _, a := range targets {
-		entries, err := agentconfig.Read(ctx, a)
-		if err != nil {
-			continue
+		if cfg := files.current(ctx, a); cfg.err == nil {
+			held[a] = cfg.entries
 		}
-		held[a] = entries
 	}
 	return held
 }

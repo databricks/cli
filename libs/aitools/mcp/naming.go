@@ -34,7 +34,7 @@ func Sanitize(s string) string {
 func ServerName(fullName, profile string) string {
 	parts := strings.Split(fullName, ".")
 	if inSystemAI(fullName) {
-		parts = []string{leafOf(fullName)}
+		parts = []string{LeafOf(fullName)}
 	}
 
 	var name []string
@@ -46,8 +46,8 @@ func ServerName(fullName, profile string) string {
 	return strings.Join(name, "-")
 }
 
-// leafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
-func leafOf(fullName string) string {
+// LeafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
+func LeafOf(fullName string) string {
 	return fullName[strings.LastIndex(fullName, ".")+1:]
 }
 

@@ -100,7 +100,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if !mcpconfig.IsDatabricksEntry(ours) {
 		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
 	}
-	path, err := spec.Path(ctx)
+	path, err := configPath(ctx, spec)
 	if err != nil {
 		return "", "", err
 	}
@@ -149,18 +149,14 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	return path, status, nil
 }
 
-// Remove deletes server name from agent a's config. It reports false, without
-// writing, when there is no such entry, and refuses an entry this CLI did not
-// write.
-func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
+// RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
+// false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry.
+func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err
 	}
 	spec, err := specOf(a)
-	if err != nil {
-		return false, err
-	}
-	path, err := spec.Path(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -188,14 +184,11 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	return true, nil
 }
 
-// Read returns every server entry in agent a's config, keyed by name. A missing
-// file has no entries.
-func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
+// ReadAt returns every server entry in the config file at path, keyed by name. A missing file has no entries. The file
+// need not be the one the spec names now: a record names the file an entry was written to, and the agent's config may
+// have moved since.
+func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
 	spec, err := specOf(a)
-	if err != nil {
-		return nil, err
-	}
-	path, err := spec.Path(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +203,27 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	return entries, nil
 }
 
-// checkName refuses a name that no agent would accept. Upsert and Remove both
+// Path returns the absolute path of agent a's MCP config file, where Upsert writes. It does not read the file.
+func Path(ctx context.Context, a *agents.Agent) (string, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return "", err
+	}
+	return configPath(ctx, spec)
+}
+
+// configPath returns the absolute path of the config file of spec. A config dir set to a relative path is made absolute
+// here, not when the path is used, so that a record of the path works from any directory. The path is not cleaned, as
+// mcpconfig.AbsoluteAsWritten keeps it, so that a ".." after a symlink still resolves through the link.
+func configPath(ctx context.Context, spec *mcpconfig.Spec) (string, error) {
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return "", err
+	}
+	return mcpconfig.AbsoluteAsWritten(path)
+}
+
+// checkName refuses a name that no agent would accept. Upsert and RemoveAt both
 // check it, so a name that cannot be written is never looked up either.
 func checkName(name string) error {
 	if !mcpconfig.ValidServerName(name) {

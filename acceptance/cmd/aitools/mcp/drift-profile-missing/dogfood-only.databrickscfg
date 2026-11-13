@@ -1,0 +1,3 @@
+[dogfood]
+host = $DATABRICKS_HOST
+token = test-token-dogfood

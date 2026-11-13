@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,7 +128,7 @@ func TestBindProfileAbsent(t *testing.T) {
 				Host:       bindingTestHost,
 				ConfigFile: path,
 			}}},
-			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --profile gone`, filepath.ToSlash(path), filepath.ToSlash(path)),
+			want: fmt.Sprintf(`MCP server github-gone is bound to Databricks profile "gone", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile gone or remove the server with: databricks aitools mcp remove --names github-gone`, filepath.ToSlash(path), shellquote.BashArg(filepath.ToSlash(path))),
 		},
 		{
 			name:  "without state entry",
@@ -175,12 +176,12 @@ func TestBindHostChanged(t *testing.T) {
 		{
 			name:  "host",
 			entry: "https://adb-999.test",
-			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --profile logfood and add it again",
+			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --names github-logfood and add it again",
 		},
 		{
 			name:  "host with a query naming another workspace on the same host",
 			entry: "https://adb-999.test/?o=111",
-			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --profile logfood and add it again",
+			want:  "MCP server github-logfood was set up for https://adb-999.test, but profile \"logfood\" now points at https://adb-123.test. Run: databricks aitools mcp remove --names github-logfood and add it again",
 		},
 	}
 	for _, tt := range tests {
@@ -219,7 +220,7 @@ func TestBindHostChangedDoesNotContactNewHost(t *testing.T) {
 }
 
 func TestBindWorkspaceChanged(t *testing.T) {
-	const want = "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --profile logfood and add it again"
+	const want = "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --names github-logfood and add it again"
 	tests := []struct {
 		name        string
 		entryHost   string
@@ -423,7 +424,7 @@ func TestBindWorkspaceFromHostQueryChanged(t *testing.T) {
 				Stderr:  &bytes.Buffer{},
 			})
 			requireBindError(t, err, mcp.BindProfileHostChanged)
-			assert.Equal(t, "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+			assert.Equal(t, "MCP server github-logfood was set up for workspace 111, but profile \"logfood\" now points at workspace 222. Run: databricks aitools mcp remove --names github-logfood and add it again", err.Error())
 		})
 	}
 }
@@ -663,7 +664,7 @@ func TestBindProfileWithoutHost(t *testing.T) {
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
 	resolved := filepath.ToSlash(bindingTestResolved(t, path))
-	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --profile logfood`, resolved, resolved), err.Error())
+	assert.Equal(t, fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "logfood", which has no host in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile logfood or remove the server with: databricks aitools mcp remove --names github-logfood`, resolved, shellquote.BashArg(resolved)), err.Error())
 }
 
 // TestBindHostMetadataFailureIsNotAuthFailure checks that a host whose metadata cannot be fetched does
@@ -776,8 +777,8 @@ func TestBindRecreateHintQuotesValues(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindProfileNotFound)
-	want := fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "my profile", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile 'my profile' or remove the server with: databricks aitools mcp remove --profile 'my profile'`,
-		filepath.ToSlash(bindingTestResolved(t, cfgPath)), filepath.ToSlash(bindingTestResolved(t, cfgPath)))
+	want := fmt.Sprintf(`MCP server github-logfood is bound to Databricks profile "my profile", which no longer exists in %s. Recreate it with: DATABRICKS_CONFIG_FILE=%s databricks auth login --host https://adb-123.test --profile 'my profile' or remove the server with: databricks aitools mcp remove --names github-logfood`,
+		filepath.ToSlash(bindingTestResolved(t, cfgPath)), shellquote.BashArg(filepath.ToSlash(bindingTestResolved(t, cfgPath))))
 	assert.Equal(t, want, err.Error())
 }
 
@@ -801,7 +802,7 @@ func TestCheckBindingMatchesBind(t *testing.T) {
 
 	_, err := bindingTestCheck(t, state)
 	requireBindError(t, err, mcp.BindProfileHostChanged)
-	assert.Equal(t, "MCP server github-logfood was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL+". Run: databricks aitools mcp remove --profile logfood and add it again", err.Error())
+	assert.Equal(t, "MCP server github-logfood was set up for https://adb-123.test, but profile \"logfood\" now points at "+server.URL+". Run: databricks aitools mcp remove --names github-logfood and add it again", err.Error())
 }
 
 func TestCheckBindingPassesWhenEntryMatchesOrIsAbsent(t *testing.T) {
