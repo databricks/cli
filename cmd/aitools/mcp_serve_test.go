@@ -115,7 +115,7 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 // in its login command, so that the command logs in to the file the profile is read from.
 func TestRefreshGuardNamesPinnedConfigFile(t *testing.T) {
 	g := &refreshGuard{
-		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      "logfood",
 		pinnedFile:   "/work/cfg/logfood.cfg",
 		cancel:       func() {},
@@ -282,7 +282,7 @@ func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
 func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
-		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      "logfood",
 		cancel:       func() { cancelled = true },
 	}
@@ -514,7 +514,7 @@ func TestServeProxyTransientRefreshFailureKeepsServing(t *testing.T) {
 		Config:       &config.Config{Host: server.URL},
 		Authenticate: failsToolsListOnce(errors.New("dial tcp: i/o timeout")),
 		Profile:      "logfood",
-	})
+	}, "")
 
 	require.NoError(t, err)
 	out := stdout.String()
@@ -554,7 +554,7 @@ func TestServeProxyRefreshRejectionStopsAfterTransientFailure(t *testing.T) {
 		Config:       &config.Config{Host: server.URL},
 		Authenticate: rejected,
 		Profile:      "logfood",
-	})
+	}, "")
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
