@@ -1,0 +1,10 @@
+# Target overrides from an included file, after a.yml.
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          description: description from b.yml
+          max_concurrent_runs: null
+          timeout_seconds: null
+        bar: null

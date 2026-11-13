@@ -1,0 +1,23 @@
+bundle:
+  cluster_id: null
+
+presets:
+  name_prefix: null
+  tags:
+    removed: null
+    not_in_base: null
+
+sync:
+  include: null
+
+permissions: null
+
+variables:
+  with_default:
+    default: null
+
+run_as: null
+
+resources:
+  jobs:
+    bar: null

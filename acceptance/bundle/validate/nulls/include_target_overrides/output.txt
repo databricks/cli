@@ -1,0 +1,43 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.description
+  in a.yml:7:24
+
+Warning: expected a string value, found null
+  at targets.dev.resources.jobs.foo.tags.removed
+  in a.yml:10:22
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.tasks[0].max_retries
+  in a.yml:13:28
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.max_concurrent_runs
+  in b.yml:8:32
+
+Warning: expected a int value, found null
+  at targets.dev.resources.jobs.foo.timeout_seconds
+  in b.yml:9:28
+
+{
+  "foo": {
+    "description": "description from b.yml",
+    "max_concurrent_runs": 10,
+    "timeout_seconds": 120,
+    "tags": {
+      "kept": "1",
+      "removed": "1"
+    },
+    "tasks": [
+      {
+        "task_key": "t1",
+        "max_retries": 3
+      }
+    ]
+  },
+  "jobs": [
+    "bar",
+    "foo"
+  ]
+}
