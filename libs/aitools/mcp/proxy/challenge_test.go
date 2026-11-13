@@ -1064,3 +1064,52 @@ func TestSuccessEndsAPendingRestart(t *testing.T) {
 	require.Len(t, reqs, 2)
 	assert.False(t, reqs[1].Restart, "a success after the challenge ends the restart it asked for")
 }
+
+// callAnswer answers a tools/call with the sign-in challenge while challenged is set, and each tools/list with the
+// service's one tool. A challenge to a call does not challenge the list, which is the service's, so the list passes.
+func callAnswer(challenged *atomic.Bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case m.Method == methodToolsCall && challenged.Load():
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, m.ID)
+		case m.Method == methodToolsList || m.Method == methodToolsCall:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`, m.ID)
+		default:
+			w.WriteHeader(http.StatusAccepted)
+		}
+	}
+}
+
+// TestCallChallengeKeepsAuthenticateListed checks the agent's list after a challenged tools/call. The list passes, since
+// the service does not challenge its tools, but the agent is told to call authenticate, so the list carries it until a
+// sign-in ends. Once the sign-in ends, the next list is the service's own.
+func TestCallChallengeKeepsAuthenticateListed(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, callAnswer(&challenged))
+	signIn := &signInStub{reply: func(int) (bool, error) {
+		challenged.Store(false)
+		return false, nil
+	}}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+
+	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	p.waitLines(t, 2)
+	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/list"}`)
+	lines := p.waitLines(t, 3)
+	assert.Equal(t, []string{"echo", "authenticate"}, toolNames(t, lines[2]), "the list carries the authenticate tool after the call challenge")
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines = p.waitLines(t, 5)
+	assert.Contains(t, resultText(t, lines[3]), "Signed in to system.ai.github on profile logfood.")
+
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	lines = p.waitLines(t, 6)
+	require.NoError(t, p.finish(t))
+
+	assert.Equal(t, []bool{true}, signIn.calls())
+	assert.Equal(t, []string{"echo"}, toolNames(t, lines[5]), "after the sign-in the list is the service's own")
+}

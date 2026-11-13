@@ -94,6 +94,9 @@ type signInHooks struct {
 	// restart means the next sign-in starts from no credential. A challenge that follows an "Already signed in" answer
 	// sets it: the credential reads as signed in, but the service does not accept it.
 	restart bool
+	// callChallenged means the last challenge came from a tools/call, and no sign-in has ended and no call has passed
+	// since. The agent was told to call authenticate, so a tools/list that passes still lists it.
+	callChallenged bool
 }
 
 // newSignInHooks returns the sign-in hooks of c. Progress lines of a sign-in are written to stderr.
@@ -153,7 +156,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 		return [][]byte{message}, nil
 	}
 	if challenged {
-		h.recordChallenge()
+		h.recordChallenge(req.Method)
 		if req.Method == methodToolsList {
 			return [][]byte{h.authenticateList(req.ID)}, nil
 		}
@@ -162,35 +165,74 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	// A result with no error means the service accepts the caller's credential. An error answer, such as a JSON-RPC
 	// error on HTTP 200 or a failure the bridge wrote for the request, says nothing about it.
 	if status/100 == 2 && reply.Error == nil && reply.Result != nil {
-		h.succeeded(req.Method)
+		msg, err := h.succeeded(req.Method, message)
+		if err != nil {
+			return nil, err
+		}
+		return [][]byte{msg}, nil
 	}
 	return [][]byte{message}, nil
 }
 
-// recordChallenge records a challenge to the session. The authenticate tool is listed from now on, and a challenge that
-// follows an "Already signed in" answer asks for a restart of the sign-in.
-func (h *signInHooks) recordChallenge() {
+// recordChallenge records a challenge to a request of method. The authenticate tool is listed from now on, and a challenge
+// that follows an "Already signed in" answer asks for a restart of the sign-in.
+func (h *signInHooks) recordChallenge(method string) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.exposed = true
+	h.callChallenged = method == methodToolsCall
 	if h.alreadySignedIn {
 		h.restart = true
 		h.alreadySignedIn = false
 	}
 }
 
-// succeeded records a successful answer to a request of method. The "Already signed in" state and a pending restart end:
-// a challenge after this answer is not a challenge to the credential that was reported signed in, and the service
-// accepts the credential, so there is nothing to restart. A tools/list answer also takes the authenticate tool off the
-// list, since the list is the service's again.
-func (h *signInHooks) succeeded(method string) {
+// succeeded records a successful answer to a request of method, and returns the message to write. The "Already signed in"
+// state and a pending restart end: a challenge after this answer is not a challenge to the credential that was reported
+// signed in, and the service accepts the credential, so there is nothing to restart. A successful tools/call ends a call
+// challenge. A tools/list answer takes the authenticate tool off the list, since the list is the service's again, unless
+// a call challenge is still pending; then the tool stays on it.
+func (h *signInHooks) succeeded(method string, message []byte) ([]byte, error) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.alreadySignedIn = false
 	h.restart = false
-	if method == methodToolsList {
-		h.exposed = false
+	if method == methodToolsCall {
+		h.callChallenged = false
+		return message, nil
 	}
+	if !h.callChallenged {
+		h.exposed = false
+		return message, nil
+	}
+	return h.withAuthenticate(message)
+}
+
+// withAuthenticate adds the authenticate tool to the tools of a tools/list result, which has a result.
+func (h *signInHooks) withAuthenticate(msg []byte) ([]byte, error) {
+	var env map[string]json.RawMessage
+	if err := json.Unmarshal(msg, &env); err != nil {
+		return nil, err
+	}
+	result, err := decodeObject(env[keyResult])
+	if err != nil {
+		return nil, fmt.Errorf("tools/list result: %w", err)
+	}
+	var tools []json.RawMessage
+	if err := json.Unmarshal(member(result, keyTools), &tools); err != nil {
+		return nil, fmt.Errorf("tools/list tools: %w", err)
+	}
+	tool, err := json.Marshal(h.authenticateToolDef())
+	if err != nil {
+		return nil, err
+	}
+	if result[keyTools], err = json.Marshal(append(tools, tool)); err != nil {
+		return nil, err
+	}
+	if env[keyResult], err = json.Marshal(result); err != nil {
+		return nil, err
+	}
+	return json.Marshal(env)
 }
 
 // upstreamReply is an upstream message as challenge detection reads it: its envelope, and its error or result.
@@ -281,7 +323,12 @@ func (h *signInHooks) authFailure() string {
 
 // authenticateList is the one-tool list a challenged service answers with.
 func (h *signInHooks) authenticateList(id json.RawMessage) []byte {
-	tool := map[string]any{
+	return resultResponse(id, map[string]any{"tools": []any{h.authenticateToolDef()}})
+}
+
+// authenticateToolDef is the definition of the authenticate tool, as a tools/list result lists it.
+func (h *signInHooks) authenticateToolDef() map[string]any {
+	return map[string]any{
 		"name": authenticateTool,
 		"description": fmt.Sprintf("Sign-in is required before this Databricks MCP service (%s, workspace %s, CLI profile %s) can list or run its tools. "+
 			"Call this tool when the user asks for this service. It opens a browser for the user to sign in to %s with the same account as the Databricks profile "+
@@ -289,7 +336,6 @@ func (h *signInHooks) authenticateList(id json.RawMessage) []byte {
 			h.c.Service, h.c.Host, h.c.Profile, h.c.Label),
 		"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}, "additionalProperties": false},
 	}
-	return resultResponse(id, map[string]any{"tools": []any{tool}})
 }
 
 // signInRequired answers a challenged tool call without opening a browser.
@@ -325,6 +371,10 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
+	if err == nil {
+		// The sign-in ended, so the next list is the service's own, unless it is challenged again.
+		h.callChallenged = false
+	}
 	if restart && !urlShown && err != nil {
 		// A restart that failed before its page was shown may not have deleted the credential, so it is asked for again.
 		h.restart = true
