@@ -1,5 +1,4 @@
 
-=== Root arrays serialize to JSON strings and string variables retain their formatting
 >>> [CLI] bundle validate -o json
 [
   {
@@ -99,7 +98,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== A target array replaces the root array for the same task key
 >>> [CLI] bundle validate -o json -t override
 [
   {
