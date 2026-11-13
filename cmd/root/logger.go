@@ -88,14 +88,8 @@ func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (c
 		slot.file = &f.file
 	}
 
-	if carriesProtocol(cmd) {
-		toStdout, err := writesToStdout(f.file.Writer(), os.Stdout, os.Stderr)
-		if err != nil {
-			return nil, err
-		}
-		if toStdout {
-			return nil, fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
-		}
+	if carriesProtocol(cmd) && writesToStdout(f.file.Writer(), os.Stdout, os.Stderr) {
+		return nil, fmt.Errorf("%s writes protocol messages to stdout, so its logs cannot go to stdout; use --log-file stderr or a file", cmd.CommandPath())
 	}
 
 	handler, err := f.makeLogHandler(ctx, opts)

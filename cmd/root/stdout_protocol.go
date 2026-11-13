@@ -25,34 +25,27 @@ func carriesProtocol(cmd *cobra.Command) bool {
 //
 // A file that is also stderr is not stdout. When stdout and stderr are one file, as on a terminal, the protocol
 // already shares it with the diagnostics, so the check cannot help and the log file is allowed.
-func writesToStdout(w io.Writer, stdout, stderr *os.File) (bool, error) {
+func writesToStdout(w io.Writer, stdout, stderr *os.File) bool {
 	f, ok := w.(*os.File)
-	if !ok {
-		return false, nil
+	if !ok || f == stderr {
+		return false
 	}
-	toStdout, err := sameFile(f, stdout)
-	if err != nil || !toStdout {
-		return false, err
-	}
-	toStderr, err := sameFile(f, stderr)
-	if err != nil {
-		return false, err
-	}
-	return !toStderr, nil
+	return sameFile(f, stdout) && !sameFile(f, stderr)
 }
 
-// sameFile reports whether a and b are the same open file.
-func sameFile(a, b *os.File) (bool, error) {
+// sameFile reports whether a and b are the same open file. A stream that cannot be stat'ed, such as a closed one, is
+// not the same file as anything.
+func sameFile(a, b *os.File) bool {
 	if a == b {
-		return true, nil
+		return true
 	}
 	ai, err := a.Stat()
 	if err != nil {
-		return false, err
+		return false
 	}
 	bi, err := b.Stat()
 	if err != nil {
-		return false, err
+		return false
 	}
-	return sameFileInfo(ai, bi), nil
+	return sameFileInfo(ai, bi)
 }

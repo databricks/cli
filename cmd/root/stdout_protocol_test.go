@@ -142,8 +142,7 @@ func TestWritesToStdout(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ok, err := writesToStdout(tc.w, stdout, stderr)
-			require.NoError(t, err)
+			ok := writesToStdout(tc.w, stdout, stderr)
 			assert.Equal(t, tc.want, ok)
 		})
 	}
@@ -160,13 +159,51 @@ func TestWritesToStdoutAllowsStderrFile(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { second.Close() })
 
-	ok, err := writesToStdout(second, shared, shared)
-	require.NoError(t, err)
+	ok := writesToStdout(second, shared, shared)
 	assert.False(t, ok)
 
-	ok, err = writesToStdout(shared, shared, shared)
-	require.NoError(t, err)
+	ok = writesToStdout(shared, shared, shared)
 	assert.False(t, ok)
+}
+
+// TestWritesToStdoutIgnoresStatFailure checks that a stream that cannot be stat'ed is not stdout: a closed stderr does
+// not stop a protocol command, and a closed stdout is not the file a log file names.
+func TestWritesToStdoutIgnoresStatFailure(t *testing.T) {
+	stdout := newPipe(t)
+	closed := newPipe(t)
+	require.NoError(t, closed.Close())
+	file, err := os.Create(filepath.Join(t.TempDir(), "run.log"))
+	require.NoError(t, err)
+	t.Cleanup(func() { file.Close() })
+
+	ok := writesToStdout(stdout, stdout, closed)
+	assert.True(t, ok, "stdout is still stdout when stderr is closed")
+
+	ok = writesToStdout(file, stdout, closed)
+	assert.False(t, ok)
+
+	ok = writesToStdout(file, closed, stdout)
+	assert.False(t, ok)
+}
+
+// TestExecuteRunsProtocolCommandWithClosedStderr checks that a protocol command without a log file runs when stderr is
+// closed, as `2>&-` leaves it.
+func TestExecuteRunsProtocolCommandWithClosedStderr(t *testing.T) {
+	closed, err := os.Create(filepath.Join(t.TempDir(), "stderr.txt"))
+	require.NoError(t, err)
+	require.NoError(t, closed.Close())
+	prev := os.Stderr
+	os.Stderr = closed
+	t.Cleanup(func() { os.Stderr = prev })
+
+	ran := false
+	cmd := New(t.Context())
+	cmd.AddCommand(protocolTestCommand(&ran))
+	cmd.SetArgs([]string{"serve"})
+	cmd.SetErr(io.Discard)
+
+	require.NoError(t, Execute(t.Context(), cmd))
+	assert.True(t, ran)
 }
 
 // newPipe returns the write end of a pipe that the test closes.
