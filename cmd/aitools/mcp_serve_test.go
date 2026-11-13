@@ -774,7 +774,7 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
 	require.NoError(t, err)
 
-	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", io.Discard)
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	require.NotNil(t, challenge)
 	assert.Equal(t, "system.ai.github", challenge.Service)
@@ -783,13 +783,26 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, "GitHub", challenge.Label)
 	assert.Equal(t, int32(0), lookups.Load(), "an install record answers without a lookup")
 
-	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: false}, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.Nil(t, challenge)
 	assert.Equal(t, int32(0), lookups.Load())
 
-	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", io.Discard)
+	challenge, err = serveChallenge(t.Context(), w, nil, "logfood", "system.ai.github", "", io.Discard)
 	require.NoError(t, err)
 	assert.NotNil(t, challenge)
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
+}
+
+// TestServeChallengeHintNamesPinnedFileAndQuotesProfile checks that a server pinned to a config file names that file in
+// the login command its hints print, and that a profile name with a space is quoted for a shell.
+func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "test-token"})
+	require.NoError(t, err)
+	const pinned = "/work/cfg/my file.cfg"
+
+	challenge, err := serveChallenge(t.Context(), w, &mcp.Entry{SignInRequired: true, ConfigFile: pinned}, "my profile", "system.ai.github", pinned, io.Discard)
+	require.NoError(t, err)
+	require.NotNil(t, challenge)
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'", challenge.LoginCommand)
 }

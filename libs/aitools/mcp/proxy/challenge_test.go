@@ -50,10 +50,13 @@ func (s *signInStub) calls() []bool {
 	return append([]bool(nil), s.opens...)
 }
 
+// loginCommand is the hint that the command builds for a pinned config file and a profile name with a space.
+const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'`
+
 // challengedBridge returns a bridge to url with the sign-in hooks of a service that needs sign-in.
 func challengedBridge(url string, signIn SignInFunc) *Bridge {
 	b := bridgeFor(url)
-	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", SignIn: signIn}}
+	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}}
 	return b
 }
 
@@ -289,4 +292,25 @@ func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
 
 	assert.ErrorIs(t, err, lastCheck)
 	assert.Nil(t, errors.Unwrap(&SignInTimeout{URL: testURL}))
+}
+
+// TestChallengeHintsPrintTheLoginCommand checks that the challenge and the timeout print the login command that the
+// command built, so a pinned config file and a profile name with a space are quoted for a shell.
+func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
+	newBridge := func(url string, signIn SignInFunc) *Bridge {
+		b := bridgeFor(url)
+		b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}}
+		return b
+	}
+	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, callChallenge))
+	out, _ := runAll(t, newBridge(srv.URL, nil), `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`+"\n")
+	require.Len(t, out, 2)
+	assert.Contains(t, resultText(t, out[0]), "Call the authenticate tool, or run: "+loginCommand+". If")
+
+	timeout := func(context.Context, bool) (bool, bool, error) {
+		return false, true, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
+	}
+	out, _ = runAll(t, newBridge(srv.URL, timeout), `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`+"\n")
+	require.Len(t, out, 1)
+	assert.Contains(t, resultText(t, out[0]), "then retry, or run: "+loginCommand)
 }

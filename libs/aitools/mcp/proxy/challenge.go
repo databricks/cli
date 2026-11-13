@@ -54,6 +54,8 @@ type Challenge struct {
 	Host string
 	// Label names the provider in messages.
 	Label string
+	// LoginCommand is the command that signs the profile in to the service, as the hints print it.
+	LoginCommand string
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself.
 	SignIn SignInFunc
 }
@@ -202,10 +204,9 @@ func (h *signInHooks) authenticateList(id json.RawMessage) []byte {
 
 // signInRequired answers a challenged tool call without opening a browser.
 func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
-	text := fmt.Sprintf("%s on profile %s needs a one-time sign-in to %s. Call the authenticate tool, or run: "+
-		"databricks aitools mcp login %s --profile %s. If the consent screen says your organization requires approval, "+
-		"share the app name shown there with your Databricks admin.",
-		h.c.Service, h.c.Profile, h.c.Label, h.c.Service, h.c.Profile)
+	text := fmt.Sprintf("%s on profile %s needs a one-time sign-in to %s. Call the authenticate tool, or run: %s. "+
+		"If the consent screen says your organization requires approval, share the app name shown there with your Databricks admin.",
+		h.c.Service, h.c.Profile, h.c.Label, h.c.LoginCommand)
 	return toolResult(id, text, true)
 }
 
@@ -234,8 +235,8 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 		}
 	case timedOut:
 		return [][]byte{toolResult(id, fmt.Sprintf(
-			"Sign-in to %s did not complete in %g minutes. Finish at %s then retry, or run: databricks aitools mcp login %s --profile %s",
-			h.c.Service, timeout.Wait.Minutes(), timeout.URL, h.c.Service, h.c.Profile), true)}
+			"Sign-in to %s did not complete in %g minutes. Finish at %s then retry, or run: %s",
+			h.c.Service, timeout.Wait.Minutes(), timeout.URL, h.c.LoginCommand), true)}
 	default:
 		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
 	}
