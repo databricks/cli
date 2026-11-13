@@ -1,0 +1,6 @@
+experiment_name: my-exp
+compute:
+  accelerator_type: a10
+  num_accelerators: 1
+max_retries: 1
+command: echo ok

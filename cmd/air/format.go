@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -359,15 +360,105 @@ func gpuDisplayName(gpuType string) string {
 	return gpuType
 }
 
-// maxRetries returns the configured retry limit for the run's latest task as a
-// display string: "unlimited" for the backend's -1, otherwise the count.
-func maxRetries(run *jobs.Run) string {
+// maxRetriesSource says where a run's retry limit was read from.
+type maxRetriesSource string
+
+const (
+	// maxRetriesReported: runs/get returned max_retries on the task.
+	maxRetriesReported maxRetriesSource = "reported"
+	// maxRetriesConfigured: the run's uploaded config sets max_retries.
+	maxRetriesConfigured maxRetriesSource = "configured"
+	// maxRetriesCLIDefault: the config leaves max_retries unset, and the CLI
+	// submitted its default.
+	maxRetriesCLIDefault maxRetriesSource = "cli_default"
+)
+
+// runMaxRetries is a run's retry limit and where it came from. Limit -1 means
+// unlimited.
+type runMaxRetries struct {
+	Limit  int
+	Source maxRetriesSource
+}
+
+// resolveMaxRetries returns the retry limit of the run's latest task, or nil
+// when it can't be known. configRaw is the run's training config as uploaded
+// (nil when it was not found or could not be downloaded).
+//
+// runs/get omits max_retries on task runs, and the SDK decodes the missing field
+// as 0, so a value is trusted only when the response actually carried the key.
+// Otherwise the limit is read from the config, and only for one-time submit
+// runs: a job run (for example a bundle deployed with `air convert-to-dabs`)
+// takes its retries from the job settings, which the config doesn't track. When
+// the config leaves the key unset, the CLI default is assumed only for
+// ai_runtime_task runs, because every CLI that submits that task type sends 3
+// (runsubmit.go always sends max_retries). Legacy gen_ai_compute_task runs may
+// predate the Python CLI's switch from 0 to 3, so their unset limit is unknown.
+func resolveMaxRetries(run *jobs.Run, configRaw []byte) *runMaxRetries {
+	if n, ok := reportedMaxRetries(run); ok {
+		return &runMaxRetries{Limit: n, Source: maxRetriesReported}
+	}
+	if run.RunType != jobs.RunTypeSubmitRun {
+		return nil
+	}
+	n, set, ok := configMaxRetries(configRaw)
+	switch {
+	case !ok:
+		return nil
+	case set:
+		return &runMaxRetries{Limit: n, Source: maxRetriesConfigured}
+	case aiRuntimeTaskOf(run) != nil:
+		return &runMaxRetries{Limit: defaultMaxRetries, Source: maxRetriesCLIDefault}
+	default:
+		return nil
+	}
+}
+
+// maxRetriesDisplay renders a retry limit for the text view: "N/A" when it is
+// unknown, "unlimited" for -1, and a "(CLI default)" note when the config left
+// it unset.
+func maxRetriesDisplay(m *runMaxRetries) string {
+	if m == nil {
+		return na
+	}
+	s := strconv.Itoa(m.Limit)
+	if m.Limit < 0 {
+		s = "unlimited"
+	}
+	if m.Source == maxRetriesCLIDefault {
+		s += " (CLI default)"
+	}
+	return s
+}
+
+// reportedMaxRetries returns the latest task's max_retries if the runs/get
+// response carried the key. The SDK records a decoded zero value in
+// ForceSendFields, which tells an explicit 0 apart from a missing field.
+func reportedMaxRetries(run *jobs.Run) (int, bool) {
 	if len(run.Tasks) == 0 {
-		return "0"
+		return 0, false
 	}
-	n := run.Tasks[len(run.Tasks)-1].MaxRetries
-	if n < 0 {
-		return "unlimited"
+	t := run.Tasks[len(run.Tasks)-1]
+	if t.MaxRetries == 0 && !slices.Contains(t.ForceSendFields, "MaxRetries") {
+		return 0, false
 	}
-	return strconv.Itoa(n)
+	return t.MaxRetries, true
+}
+
+// configMaxRetries reads max_retries from a run's config YAML: the value, whether
+// the key is set, and whether the config parsed at all. It decodes only that
+// key so configs written by other CLI versions still parse.
+func configMaxRetries(raw []byte) (n int, set, ok bool) {
+	if len(raw) == 0 {
+		return 0, false, false
+	}
+	var cfg struct {
+		MaxRetries *int `yaml:"max_retries"`
+	}
+	if err := yaml.Unmarshal(raw, &cfg); err != nil {
+		return 0, false, false
+	}
+	if cfg.MaxRetries == nil {
+		return 0, false, true
+	}
+	return *cfg.MaxRetries, true, true
 }

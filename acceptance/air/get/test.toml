@@ -4,12 +4,15 @@
 Pattern = "HEAD /"
 Response.Body = ''
 
-# A single GenAI-compute run with an experiment, GPUs, and a creator.
+# A single GenAI-compute run with an experiment, GPUs, and a creator. Like the
+# real runs/get, the task carries no max_retries, and its yaml_parameters leave
+# max_retries unset, so the limit is unknown.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
 {
   "run_id": 123,
+  "run_type": "SUBMIT_RUN",
   "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
   "creator_user_name": "user@example.com",
   "start_time": 1700000000000,
@@ -20,7 +23,6 @@ Response.Body = '''
       "task_key": "train",
       "run_id": 456,
       "attempt_number": 0,
-      "max_retries": 3,
       "gen_ai_compute_task": {
         "mlflow_experiment_name": "/Users/user@example.com/my-exp",
         "compute": {"gpu_type": "GPU_1xA10", "num_gpus": 1},
