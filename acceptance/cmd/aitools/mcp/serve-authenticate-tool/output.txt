@@ -19,6 +19,7 @@ No install record for system.ai.github on profile "logfood"; using its current h
 
 >>> cat serve.stderr.txt
 No install record for system.ai.github on profile "logfood"; using its current host [DATABRICKS_URL]
+Sign in with the same account you use for Databricks profile logfood.
 Open this URL to sign in to system.ai.github:
 [DATABRICKS_URL]/mcp-service-login?name=system.ai.github&o=[WORKSPACE_ID]
 Waiting for sign-in...
