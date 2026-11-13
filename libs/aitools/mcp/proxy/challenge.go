@@ -48,7 +48,7 @@ type SignInRequest struct {
 
 // SignInFunc runs the sign-in for the authenticate tool and waits for it. It reports alreadySignedIn when the caller
 // needed no sign-in, and urlShown when the sign-in page's URL was printed, which is so even when the wait is then
-// cancelled. It returns a *mcp.SignInTimeoutError when the wait ended first.
+// cancelled. Its error is the answer's text.
 type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, urlShown bool, err error)
 
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
@@ -385,8 +385,6 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 		// A cancelled request is not answered.
 		return nil
 	}
-	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
-
 	switch {
 	case err == nil && alreadySignedIn:
 		// The credential was there already, for example from `mcp login` in a terminal, while the agent's list still
@@ -400,14 +398,6 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 			toolResult(id, fmt.Sprintf("Signed in to %s on profile %s. Tools are available now; retry the user's request in this turn.", h.c.Service, h.c.Profile), false),
 			listChangedNotification,
 		}
-	case timedOut:
-		lastCheck := ""
-		if timeout.LastCheck != nil {
-			lastCheck = fmt.Sprintf(" (the last check failed: %v)", timeout.LastCheck)
-		}
-		return [][]byte{toolResult(id, fmt.Sprintf(
-			"Sign-in to %s did not complete in %g minutes%s. Finish at %s then retry, or run: %s",
-			h.c.Service, timeout.Wait.Minutes(), lastCheck, timeout.URL, h.c.LoginCommand), true)}
 	default:
 		return [][]byte{toolResult(id, err.Error(), true)}
 	}

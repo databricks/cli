@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -260,7 +259,8 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
 		if call == 1 {
-			return false, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
+			return false, errors.New("sign-in to system.ai.github on profile logfood did not complete in 5 minutes. Finish at " + testURL +
+				" then retry: databricks aitools mcp login system.ai.github --profile logfood")
 		}
 		return false, nil
 	}}
@@ -274,7 +274,7 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	assert.Equal(t, true, parseReply(t, lines[1]).Result["isError"])
 	text := resultText(t, lines[1])
 	assert.Contains(t, text, "did not complete in 5 minutes. Finish at "+testURL)
-	assert.Contains(t, text, "databricks aitools mcp login system.ai.github --profile logfood")
+	assert.Contains(t, text, "then retry: databricks aitools mcp login system.ai.github --profile logfood")
 
 	p.send(t, fmt.Sprintf(authenticate, 8))
 	lines = p.waitLines(t, 4)
@@ -340,7 +340,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 	var calls atomic.Int32
 	signIn := func(ctx context.Context, _ SignInRequest) (bool, bool, error) {
 		calls.Add(1)
-		return false, true, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
+		return false, true, errors.New("sign-in to system.ai.github did not complete in 5 minutes. Finish at " + testURL + " then retry: " + loginCommand)
 	}
 	b := bridgeFor(srv.URL)
 	b.Hooks = newSignInHooks(&Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}, io.Discard)
@@ -354,7 +354,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 	lines = p.waitLines(t, 3)
 	require.NoError(t, p.finish(t))
 	assert.EqualValues(t, 1, calls.Load())
-	assert.Contains(t, resultText(t, lines[2]), "then retry, or run: "+loginCommand)
+	assert.Contains(t, resultText(t, lines[2]), "then retry: "+loginCommand)
 }
 
 // TestAuthenticateWritesNothingWhenCancelled checks that an authenticate call the client cancelled is not answered: the
@@ -410,7 +410,7 @@ func TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt(t *testing.T)
 	}{
 		"cancelled after the page was shown":  {first: attempt{cancel: true, urlShown: true}, wantOpen: false},
 		"cancelled before the page was shown": {first: attempt{cancel: true}, wantOpen: true},
-		"timed out":                           {first: attempt{urlShown: true, err: &mcp.SignInTimeoutError{URL: testURL, Wait: time.Minute}}, wantOpen: true},
+		"timed out":                           {first: attempt{urlShown: true, err: errors.New("timed out")}, wantOpen: true},
 		"failed":                              {first: attempt{urlShown: true, err: errors.New("sign-in failed")}, wantOpen: true},
 		"error before the page":               {first: attempt{err: errors.New("credential read failed")}, wantOpen: true},
 		"already signed in":                   {first: attempt{alreadySignedIn: true, urlShown: true}, wantOpen: true},
@@ -864,13 +864,13 @@ func TestQueuedAuthenticateReportsProgress(t *testing.T) {
 	assert.Positive(t, signedIn, "the queued call's progress comes before the first sign-in answers")
 }
 
-// TestAuthenticateTimeoutNamesTheLastFailedCheck checks that a timeout whose last poll failed says why, so that the agent
-// and the user can tell a failing service from a sign-in nobody finished.
-func TestAuthenticateTimeoutNamesTheLastFailedCheck(t *testing.T) {
+// TestAuthenticateAnswersWithTheSignInError checks that a sign-in that ends in an error, such as a timeout, is answered
+// with the error's text. The text is the sign-in's own, so it names the service, the profile and the fix.
+func TestAuthenticateAnswersWithTheSignInError(t *testing.T) {
+	const text = "sign-in to system.ai.github on profile logfood did not complete in 5 minutes (the last check failed: HTTP 503: unavailable). " +
+		"Finish at " + testURL + " then retry: databricks aitools mcp login system.ai.github --profile logfood"
 	srv, _ := challengedService(t)
-	signIn := &signInStub{reply: func(int) (bool, error) {
-		return false, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute, LastCheck: errors.New("HTTP 503: unavailable")}
-	}}
+	signIn := &signInStub{reply: func(int) (bool, error) { return false, errors.New(text) }}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
 	challenge(t, p)
 
@@ -878,7 +878,8 @@ func TestAuthenticateTimeoutNamesTheLastFailedCheck(t *testing.T) {
 	lines := p.waitLines(t, 2)
 	require.NoError(t, p.finish(t))
 
-	assert.Contains(t, resultText(t, lines[1]), "did not complete in 5 minutes (the last check failed: HTTP 503: unavailable). Finish at "+testURL)
+	assert.Equal(t, true, parseReply(t, lines[1]).Result["isError"])
+	assert.Equal(t, text, resultText(t, lines[1]))
 }
 
 // TestAuthenticateProgressNamesThePageWhenItIsNotOpened checks that progress names the sign-in page when the sign-in says
