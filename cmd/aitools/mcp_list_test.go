@@ -1080,6 +1080,55 @@ func TestAddChecksBoundsAProfileThatNeverAnswers(t *testing.T) {
 	require.NotEmpty(t, out.Warnings)
 }
 
+// TestAddChecksChecksAServerThatMatchesADriftedProfile checks that a server which still matches its profile is checked
+// when another server of the same profile has drifted: the drift is the other server's, not the profile's.
+func TestAddChecksChecksAServerThatMatchesADriftedProfile(t *testing.T) {
+	home := withHome(t)
+	server := listCheckServer(t, http.StatusOK, http.StatusNotFound, `{"error_code":"NOT_FOUND","message":"not found"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	// github-old was set up for another host. github-new was set up for the profile's host now.
+	saveState(t, listCheckGitHub(t, "github-old", "logfood", "https://adb-old.test", ""), listCheckGitHub(t, "github-new", "logfood", server.URL, ""))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 1)
+	servers := map[string]mcpListServer{}
+	for _, s := range out.Profiles[0].Servers {
+		servers[s.Name] = s
+	}
+
+	require.NotNil(t, servers["github-old"].Check)
+	assert.Equal(t, checkSkippedDrifted, servers["github-old"].Check.Skipped)
+	assert.Empty(t, servers["github-old"].Check.Token)
+	require.NotNil(t, servers["github-new"].Check)
+	assert.Equal(t, statusOK, servers["github-new"].Check.Token)
+	assert.Equal(t, checkNeeded, servers["github-new"].Check.SignIn)
+	assert.Empty(t, out.Warnings)
+}
+
+// TestAddChecksSkipsAServerThatCannotBeReadAndSaysWhy checks that a server whose config file cannot be read is skipped
+// with its own reason, in the JSON check and in the text. It did not drift, so the text does not say the profile changed.
+func TestAddChecksSkipsAServerThatCannotBeReadAndSaysWhy(t *testing.T) {
+	withHome(t)
+	// A directory is not a config file, so the profile cannot be read from it.
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", "https://adb-1.test", t.TempDir()))
+
+	out, err := buildMcpList(t.Context(), "")
+	require.NoError(t, err)
+	addChecks(t.Context(), &out)
+	require.Len(t, out.Profiles, 1)
+	require.Len(t, out.Profiles[0].Servers, 1)
+	s := out.Profiles[0].Servers[0]
+	require.NotNil(t, s.Check)
+	assert.Equal(t, checkSkippedUnknown, s.Check.Skipped)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	renderMcpList(ctx, out, "")
+	assert.Contains(t, stderr.String(), "check skipped: this server could not be checked")
+	assert.NotContains(t, stderr.String(), "no longer matches")
+}
+
 // TestAddChecksReadsEachProfileFromItsOwnConfigFile checks that two groups of one profile name, in two config files, are
 // checked with their own file's credentials, and that the config file environment is the caller's again afterwards.
 func TestAddChecksReadsEachProfileFromItsOwnConfigFile(t *testing.T) {

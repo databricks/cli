@@ -76,8 +76,6 @@ type mcpListProfile struct {
 	// token is the --check result of minting a token for the profile. The JSON carries it in each server's check,
 	// so it is text only.
 	token string
-	// checkSkipped is set by --check for a profile that drifted, which is not checked. The text says so.
-	checkSkipped bool
 }
 
 type mcpListServer struct {
@@ -88,7 +86,8 @@ type mcpListServer struct {
 	SignInRequired bool           `json:"sign_in_required"`
 	Status         string         `json:"status"`
 	Agents         []mcpListAgent `json:"agents"`
-	// Check is the --check result of the server. It is nil without --check, and for a profile that drifted.
+	// Check is the --check result of the server. It is nil without --check. A server that is not checked has only its
+	// Skipped reason set.
 	Check *mcpListCheck `json:"check,omitempty"`
 
 	// entry is the state record, and drift the drift of the server from its profile, when it has one.
@@ -96,11 +95,20 @@ type mcpListServer struct {
 	drift *mcp.Drift
 }
 
-// mcpListCheck is the --check result of one server. SignIn is set only for sign-in-required servers.
+// Reasons why the --check tests of a server are skipped, which are the values of mcpListCheck.Skipped. A drifted server
+// does not match its profile. An unknown server could not be read, so there is nothing to say about it.
+const (
+	checkSkippedDrifted = "drifted"
+	checkSkippedUnknown = "unknown"
+)
+
+// mcpListCheck is the --check result of one server. SignIn is set only for sign-in-required servers. Skipped is set
+// instead of the results when the server is not checked, and says why.
 type mcpListCheck struct {
-	Token  string `json:"token"`
-	SignIn string `json:"sign_in,omitempty"`
-	Binary string `json:"binary"`
+	Skipped string `json:"skipped,omitempty"`
+	Token   string `json:"token,omitempty"`
+	SignIn  string `json:"sign_in,omitempty"`
+	Binary  string `json:"binary,omitempty"`
 }
 
 type mcpListAgent struct {
@@ -358,14 +366,15 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 // profileCheckTimeout bounds the --check tests of one profile. Tests shorten it.
 var profileCheckTimeout = 5 * time.Second
 
-// addChecks runs the --check tests for each profile that did not drift: a token mint, the sign-in state of each
-// sign-in-required server, and whether the recorded binary exists. Each profile is checked with the config file of its
-// group. A check that cannot run is a warning, and its result is unknown.
+// addChecks runs the --check tests for each server that did not drift from its profile and can be read: a token mint, the
+// sign-in state of each sign-in-required server, and whether the recorded binary exists. Each profile is checked with the
+// config file of its group. A server that is not checked says why, and a profile with no server to check is not contacted.
+// A check that cannot run is a warning, and its result is unknown.
 func addChecks(ctx context.Context, out *mcpListOutput) {
 	for i := range out.Profiles {
 		p := &out.Profiles[i]
-		if p.Status != statusOK {
-			p.checkSkipped = true
+		skipUncheckable(p)
+		if !slices.ContainsFunc(p.Servers, func(s mcpListServer) bool { return skipReason(s) == "" }) {
 			continue
 		}
 		// The login hints name the file that login writes, which the shell's environment decides. It is derived before
@@ -380,9 +389,9 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 	}
 }
 
-// addProfileChecks runs the checks of one profile, whose config file is in ctx. The checks end after profileCheckTimeout.
-// login is the config file that the profile's login hints name, or "" (see loginFile). A profile whose token cannot be
-// checked has no sign-in checks: its warning says why.
+// addProfileChecks runs the checks of the servers of one profile that can be checked, whose config file is in ctx. The
+// checks end after profileCheckTimeout. login is the config file that the profile's login hints name, or "" (see
+// loginFile). A profile whose token cannot be checked has no sign-in checks: its warning says why.
 func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out *mcpListOutput) {
 	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
 	defer cancel()
@@ -399,6 +408,9 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 	}
 	for j := range p.Servers {
 		s := &p.Servers[j]
+		if skipReason(*s) != "" {
+			continue
+		}
 		s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
 		if err != nil {
 			// The sign-in is unknown when the profile cannot authenticate. The record says whether it was required.
@@ -435,6 +447,28 @@ func tokenStatus(err error) string {
 		return statusFailed
 	}
 	return statusUnknown
+}
+
+// skipReason returns why the --check tests do not run for a server, or "" when they do. A server that drifted from its
+// profile is not checked, and neither is one whose entry could not be read.
+func skipReason(s mcpListServer) string {
+	switch {
+	case s.drift != nil:
+		return checkSkippedDrifted
+	case s.Status == statusUnknown:
+		return checkSkippedUnknown
+	}
+	return ""
+}
+
+// skipUncheckable records on each server of p that is not checked why it is not. The servers that are checked get
+// their results in addProfileChecks.
+func skipUncheckable(p *mcpListProfile) {
+	for j := range p.Servers {
+		if reason := skipReason(p.Servers[j]); reason != "" {
+			p.Servers[j].Check = &mcpListCheck{Skipped: reason}
+		}
+	}
 }
 
 // signInStatus reads the caller's sign-in to a service, as the service requires it now. Only an ACTIVE credential
@@ -552,8 +586,6 @@ func renderMcpList(ctx context.Context, out mcpListOutput, profileName string) {
 			line := fmt.Sprintf("  %-24s %-30s %s", s.Name, s.Service, listAgentsText(s.Agents))
 			if text := checkText(s.Check); text != "" {
 				line += "  " + text
-			} else if p.checkSkipped {
-				line += "  check skipped: the profile no longer matches this server"
 			}
 			cmdio.LogString(ctx, line)
 			if hint := serverHint(ctx, p, s); hint != "" {
@@ -602,6 +634,9 @@ func checkText(c *mcpListCheck) string {
 	if c == nil {
 		return ""
 	}
+	if c.Skipped != "" {
+		return skippedText(c.Skipped)
+	}
 	var parts []string
 	switch c.SignIn {
 	case statusOK:
@@ -615,6 +650,14 @@ func checkText(c *mcpListCheck) string {
 		parts = append(parts, "binary missing")
 	}
 	return strings.Join(parts, ", ")
+}
+
+// skippedText says why the --check tests of a server did not run.
+func skippedText(reason string) string {
+	if reason == checkSkippedDrifted {
+		return "check skipped: the profile no longer matches this server"
+	}
+	return "check skipped: this server could not be checked"
 }
 
 // serverHint tells the user what to do about a server: how to sign in, when its sign-in is needed, or how to repair it
