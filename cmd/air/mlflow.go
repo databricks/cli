@@ -158,8 +158,8 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
 // its run ID when the name is unknown. A label wider than width keeps its end
-// behind a leading "…", since run names and IDs tend to share a prefix and
-// differ in their tail. A width of 0 or less means no limit.
+// behind a leading "…", because run names often share a prefix and differ at
+// the end. A width of 0 or less means no limit.
 func mlflowRunLabel(name, mlflowRunID string, width int) string {
 	label := name
 	if label == "" {
@@ -168,8 +168,7 @@ func mlflowRunLabel(name, mlflowRunID string, width int) string {
 	if width <= 0 || lipgloss.Width(label) <= width {
 		return label
 	}
-	// Drop leading runes until the rest fits beside the "…"; a wide rune takes
-	// two cells, so the cut is by display width, not rune count.
+	// A wide rune takes two cells, so cut by display width, not rune count.
 	runes := []rune(label)
 	for len(runes) > 0 && lipgloss.Width(string(runes)) > width-1 {
 		runes = runes[1:]
