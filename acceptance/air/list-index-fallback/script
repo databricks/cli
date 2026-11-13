@@ -1,0 +1,5 @@
+title "list --all-status falls back to a bounded Jobs scan when the index fails (text)"
+trace $CLI air list --all-status
+
+title "list --all-status fallback (json): the warning stays on stderr"
+trace $CLI air list --all-status -o json 2>/dev/null
