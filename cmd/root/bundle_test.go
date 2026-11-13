@@ -387,10 +387,9 @@ workspace:
 func TestTargetFlagFull(t *testing.T) {
 	cmd := emptyCommand(t)
 	initTargetFlag(cmd)
-	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, []string{"version", "--target", "development"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))
@@ -399,10 +398,9 @@ func TestTargetFlagFull(t *testing.T) {
 func TestTargetFlagShort(t *testing.T) {
 	cmd := emptyCommand(t)
 	initTargetFlag(cmd)
-	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, []string{"version", "-t", "production"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "production", getTarget(cmd))
@@ -413,10 +411,9 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd := emptyCommand(t)
 	initTargetFlag(cmd)
 	initEnvironmentFlag(cmd)
-	cmd.SetArgs([]string{"version", "--environment", "development"})
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, []string{"version", "--environment", "development"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))
