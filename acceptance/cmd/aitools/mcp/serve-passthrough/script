@@ -3,9 +3,6 @@ sethome home
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
-# With no install record the proxy reads the service to learn whether it needs sign-in, so the fake needs it.
-MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
-
 # DATABRICKS_HOST points elsewhere; the proxy must still talk to the profile's host.
 export DATABRICKS_HOST=https://elsewhere.test
 

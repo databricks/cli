@@ -8,7 +8,7 @@ export BROWSER=none
 export RETRY_MAX_ATTEMPTS=60
 
 # The fake gets the GitHub service with its OAuth connection; the caller has no credential for it yet.
-MSYS_NO_PATHCONV=1 trace $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' &> LOG.create-github
 
 # Stdin stays open until the last request is answered: the proxy shuts down at EOF and cancels a call
 # still in flight after 2 s. Each step waits for the previous answer, so the order is deterministic.
@@ -18,7 +18,7 @@ MSYS_NO_PATHCONV=1 trace $CLI api post "/api/2.1/unity-catalog/mcp-services?pare
   cat serve.stderr.txt > stderr-before-authenticate.txt
   cat requests-authenticate.ndjson
   retry --until "Waiting for sign-in" cat serve.stderr.txt > /dev/null
-  MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+  MSYS_NO_PATHCONV=1 $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' &> LOG.sign-in-credential
   retry --until '"id":3' cat serve.stdout.txt > /dev/null
   cat requests-after.ndjson
 } | $CLI aitools mcp serve --profile logfood --service system.ai.github --agent claude-code > serve.stdout.txt 2> serve.stderr.txt

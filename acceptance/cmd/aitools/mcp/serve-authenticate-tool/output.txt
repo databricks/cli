@@ -1,6 +1,4 @@
 
->>> [CLI] api post /api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github --profile logfood --json {"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}
-
 === Before sign-in, tools/list answers with one tool, authenticate; it opened no sign-in
 
 >>> jq -c select(.id==2) | [.result.tools[].name] serve.stdout.txt
