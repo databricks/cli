@@ -1147,3 +1147,24 @@ func TestURLPatternFindsURLsInText(t *testing.T) {
 	text := "Open [the page](" + testURL + ") or <" + testHost + "/x>."
 	assert.Equal(t, []string{testURL, testHost + "/x"}, urlPattern().FindAllString(text, -1))
 }
+
+// TestUndecodableResponsePassesThrough checks that a response whose shape the sign-in checks do not read, a result that is
+// not an object or an error code that is not an integer, passes through on a sign-in service. It is neither a challenge nor
+// a success, so the request is not failed and the sign-in state does not change.
+func TestUndecodableResponsePassesThrough(t *testing.T) {
+	for name, msg := range map[string]string{
+		"result is not an object":      `{"jsonrpc":"2.0","id":2,"result":5}`,
+		"error code is not an integer": `{"jsonrpc":"2.0","id":2,"error":{"code":"x","message":"m"}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := newSignInHooks(testChallenge(nil), io.Discard)
+			h.alreadySignedIn = true
+
+			out, err := h.Result(t.Context(), []byte(`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`), http.StatusOK, []byte(msg))
+			require.NoError(t, err)
+			assert.Equal(t, [][]byte{[]byte(msg)}, out)
+			assert.True(t, h.alreadySignedIn, "the response is not a success")
+			assert.False(t, h.exposed, "the response is not a challenge")
+		})
+	}
+}

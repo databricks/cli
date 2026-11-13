@@ -143,11 +143,15 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	if err != nil {
 		return nil, err
 	}
-	var reply upstreamReply
-	if err := json.Unmarshal(message, &reply); err != nil {
-		return nil, err
+	// Only the responses to tools/list and tools/call are read for a challenge or a success. An HTTP 401 is read for any
+	// request, since it is an auth failure unless its body asks for a sign-in.
+	if req.Method != methodToolsList && req.Method != methodToolsCall && status != http.StatusUnauthorized {
+		return [][]byte{message}, nil
 	}
-	if !reply.isResponseTo(req) {
+	var reply upstreamReply
+	// A message that is not the response to the request, or whose shape the checks do not read, is neither a challenge nor
+	// a success, so it passes through.
+	if json.Unmarshal(message, &reply) != nil || !reply.isResponseTo(req) {
 		return [][]byte{message}, nil
 	}
 	challenged := h.challenged(&reply)
