@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -16,6 +18,19 @@ import (
 
 // mcpServicePrefix is the resource-name prefix of an MCP service.
 const mcpServicePrefix = "mcp-services/"
+
+// PathSafeName reports whether fullName is free of the characters that change a request path: "/", "?", "#", "%" and
+// control characters. A service name never contains them, so a name that has one is refused, not escaped.
+func PathSafeName(fullName string) bool {
+	return !strings.ContainsAny(fullName, "/?#%") && !strings.ContainsFunc(fullName, unicode.IsControl)
+}
+
+// serviceResourceName returns the resource name of the service fullName for a request. The SDK puts the name into the
+// request path as it is, so the name is escaped here: an unescaped "#" or "?" would cut the path short, and "/" or "%"
+// would name another resource.
+func serviceResourceName(fullName string) string {
+	return mcpServicePrefix + url.PathEscape(fullName)
+}
 
 // oauthProviderOption is the source connection option that marks a service as needing sign-in.
 const oauthProviderOption = "oauth_provider"
@@ -59,7 +74,7 @@ func Discover(ctx context.Context, w *databricks.WorkspaceClient, location strin
 // answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see, and so does a
 // service whose source connection was deleted, which Discover drops.
 func GetService(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (Service, error) {
-	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServicePrefix + fullName})
+	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: serviceResourceName(fullName)})
 	if err != nil {
 		return Service{}, err
 	}

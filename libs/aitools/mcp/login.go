@@ -39,7 +39,7 @@ type SignInOptions struct {
 // service. It is "" when the caller has not signed in: the API answers NOT_FOUND until then.
 func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service string) (catalog.ProvisioningInfoState, error) {
 	cred, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, catalog.GetMcpServiceUserMappedCredentialRequest{
-		Name: mcpServicePrefix + service,
+		Name: serviceResourceName(service),
 	})
 	if errors.Is(err, apierr.ErrNotFound) {
 		return "", nil
@@ -124,7 +124,7 @@ func waitEnded(ctx context.Context) error {
 // signed in, which is not an error.
 func SignOut(ctx context.Context, w *databricks.WorkspaceClient, service string) (bool, error) {
 	_, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, catalog.DeleteMcpServiceUserMappedCredentialRequest{
-		Name: mcpServicePrefix + service,
+		Name: serviceResourceName(service),
 	})
 	if errors.Is(err, apierr.ErrNotFound) {
 		return false, nil

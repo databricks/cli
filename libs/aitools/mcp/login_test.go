@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -274,4 +276,43 @@ func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
 	})
 	require.ErrorIs(t, err, ErrSignInTimeout)
 	assert.Less(t, time.Since(start), 5*time.Second)
+}
+
+// TestServiceNamesReachTheirOwnCredential checks that a service name with a character that means something in a URL path
+// is escaped in the request, so that the request names the credential and never the service. The SDK puts the name into
+// the path as it is, so an unescaped "#" would send a DELETE to the service itself.
+func TestServiceNamesReachTheirOwnCredential(t *testing.T) {
+	for _, name := range []string{"system.ai.git#hub", "system.ai.git?hub", "system.ai.git/hub", "system.ai.git%hub"} {
+		t.Run(name, func(t *testing.T) {
+			var mu sync.Mutex
+			var requests []string
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				if !strings.HasPrefix(r.URL.Path, "/api/") {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				mu.Lock()
+				requests = append(requests, r.Method+" "+r.URL.EscapedPath())
+				mu.Unlock()
+				http.Error(rw, `{"error_code":"NOT_FOUND","message":"not found"}`, http.StatusNotFound)
+			}))
+			t.Cleanup(server.Close)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+			require.NoError(t, err)
+
+			_, err = SignOut(t.Context(), w, name)
+			require.NoError(t, err)
+			_, err = CredentialState(t.Context(), w, name)
+			require.NoError(t, err)
+			_, err = GetService(t.Context(), w, name)
+			require.ErrorIs(t, err, apierr.ErrNotFound)
+
+			escaped := "/api/2.1/unity-catalog/mcp-services/" + url.PathEscape(name)
+			assert.Equal(t, []string{
+				"DELETE " + escaped + "/user-credentials",
+				"GET " + escaped + "/user-credentials",
+				"GET " + escaped,
+			}, requests)
+		})
+	}
 }
