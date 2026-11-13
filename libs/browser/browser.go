@@ -65,6 +65,9 @@ func IsDisabled(ctx context.Context) bool {
 // Sign-in can start an open while another one runs.
 var defaultOpenMu sync.Mutex
 
+// openDefaultURL is the launcher of the default opener. Tests replace it, so that no browser opens on any OS.
+var openDefaultURL = browserpkg.OpenURL
+
 func openDefault(url string, stdoutToStderr bool) error {
 	defaultOpenMu.Lock()
 	defer defaultOpenMu.Unlock()
@@ -80,7 +83,7 @@ func openDefault(url string, stdoutToStderr bool) error {
 	if stdoutToStderr {
 		browserpkg.Stdout = os.Stderr
 	}
-	return browserpkg.OpenURL(url)
+	return openDefaultURL(url)
 }
 
 func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr bool) error {

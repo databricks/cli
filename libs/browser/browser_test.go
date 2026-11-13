@@ -115,15 +115,35 @@ func runOpener(t *testing.T, open func(context.Context, string) error) (stdout, 
 
 	prevStdout, prevStderr := os.Stdout, os.Stderr
 	os.Stdout, os.Stderr = stdoutFile, stderrFile
+	defer func() { os.Stdout, os.Stderr = prevStdout, prevStderr }()
 	ctx := env.Set(t.Context(), "BROWSER", os.Args[0])
 	err = open(ctx, "https://example.com/login")
-	os.Stdout, os.Stderr = prevStdout, prevStderr
 
 	gotStdout, readErr := os.ReadFile(stdoutFile.Name())
 	require.NoError(t, readErr)
 	gotStderr, readErr := os.ReadFile(stderrFile.Name())
 	require.NoError(t, readErr)
 	return string(gotStdout), string(gotStderr), err
+}
+
+// replaceDefaultLauncher sets the launcher of the default opener to fn for the test.
+func replaceDefaultLauncher(t *testing.T, fn func(url string) error) {
+	t.Helper()
+	prev := openDefaultURL
+	t.Cleanup(func() { openDefaultURL = prev })
+	openDefaultURL = fn
+}
+
+// waitForSleeper registers a cleanup that waits until the sleeper that a test's browser command started has ended, so
+// that no child outlives the test.
+func waitForSleeper(t *testing.T, sleepFile string) {
+	t.Helper()
+	t.Cleanup(func() {
+		assert.Eventually(t, func() bool {
+			_, err := os.Stat(sleepFile)
+			return err == nil
+		}, 5*openerSleepTime, 10*time.Millisecond, "the sleeper did not end")
+	})
 }
 
 // TestOpenOutputToStderrSendsCommandStdoutToStderr checks that the output of a custom browser command goes to stderr, so
@@ -151,6 +171,7 @@ func TestOpenOutputToStderrReturnsWhenCommandBackgroundsChild(t *testing.T) {
 	t.Setenv(openerChildEnv, "1")
 	sleepFile := filepath.Join(t.TempDir(), "sleeper-done")
 	t.Setenv(openerBackgroundEnv, sleepFile)
+	waitForSleeper(t, sleepFile)
 	ctx := env.Set(t.Context(), "BROWSER", os.Args[0])
 
 	require.NoError(t, OpenOutputToStderr(ctx, "https://example.com/login"))
@@ -159,12 +180,12 @@ func TestOpenOutputToStderrReturnsWhenCommandBackgroundsChild(t *testing.T) {
 }
 
 // TestOpenDefaultOverlappingOpensRestoreStreams checks that two default opens that run at once, as sign-in can start
-// one while add --login starts another, leave the streams of pkg/browser as they were. The PATH is empty, so the
-// opener cannot start a browser: the opens fail at once, after they have swapped the streams. The race detector reports
-// the unsynchronized swaps when two opens overlap.
+// one while add --login starts another, leave the streams of pkg/browser as they were. The launcher is a stub that
+// starts nothing, so no browser opens on any OS. The race detector reports the unsynchronized swaps when two opens
+// overlap.
 func TestOpenDefaultOverlappingOpensRestoreStreams(t *testing.T) {
 	t.Setenv("BROWSER", "")
-	t.Setenv("PATH", t.TempDir())
+	replaceDefaultLauncher(t, func(string) error { return nil })
 	stdout, stderr := browserpkg.Stdout, browserpkg.Stderr
 
 	var opens sync.WaitGroup
