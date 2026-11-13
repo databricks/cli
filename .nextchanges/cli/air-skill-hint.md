@@ -1,0 +1,1 @@
+* Claude Code gets the Databricks skills install hint only on `databricks air` subcommands, where it names the `databricks-ai-runtime` skill, what it covers, and how to preview it with `databricks aitools install --path`; other commands no longer print the hint, and `databricks air --help` lists the preview too.

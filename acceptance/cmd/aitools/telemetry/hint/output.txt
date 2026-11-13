@@ -1,22 +1,46 @@
 
-=== hint printed on an authenticated command: one hint-shown event is uploaded
+=== hint printed on an air command: one hint-shown event is uploaded
+
+>>> [CLI] air list
+Tip: the databricks-ai-runtime skill is not installed. It documents the air workload YAML, GPU types, secrets, and how to follow and debug runs. Install it: databricks aitools install --skills-only --skills databricks-ai-runtime (to read it first without installing: databricks aitools install --path <dir> --skills databricks-ai-runtime)
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> print_telemetry
+{"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+=== commands outside air print no hint and log no event
 
 >>> [CLI] jobs list
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 
 >>> print_telemetry
-{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
-
-=== hint printed on a command that resolves no auth: nothing is uploaded
 
 >>> [CLI] version
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 Databricks CLI v[CLI_VERSION]
 
+=== previewing a skill with --path installs nothing, so air still hints
+
+>>> [CLI] aitools install --path ./preview --skills databricks-test
+Using skills version test-ref
+Wrote 1 skill to ./preview
+
 >>> print_telemetry
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"PATH"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"PATH"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SKILLS_DUMPED","interactive":false,"install_mode":"PATH"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"install_mode":"PATH"}}
+preview/databricks-test/SKILL.md
+no aitools state in HOME
+
+>>> [CLI] air list
+Tip: the databricks-ai-runtime skill is not installed. It documents the air workload YAML, GPU types, secrets, and how to follow and debug runs. Install it: databricks aitools install --skills-only --skills databricks-ai-runtime (to read it first without installing: databricks aitools install --path <dir> --skills databricks-ai-runtime)
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> print_telemetry
+{"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 
 === plugin installed: no hint, no event
 
->>> [CLI] jobs list
+>>> [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
 
 >>> print_telemetry

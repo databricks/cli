@@ -54,6 +54,11 @@ func TestHelpFooterOnlyOnAirCommand(t *testing.T) {
 	cmd.HelpFunc()(cmd, nil)
 	assert.Contains(t, airOut.String(), "Learn more:")
 	assert.Contains(t, airOut.String(), "databricks air run -h config")
+	// The footer is where `air` and `air --help` recommend the agent skill
+	// (help never reaches the pre-run hook that prints the install hint).
+	assert.Contains(t, airOut.String(), "databricks aitools install --skills-only --skills databricks-ai-runtime")
+	assert.Contains(t, airOut.String(), "Teaches coding agents the workload YAML")
+	assert.Contains(t, airOut.String(), "databricks aitools install --path <dir> --skills databricks-ai-runtime")
 
 	list := findSubcommand(t, cmd, "list")
 	var listOut bytes.Buffer

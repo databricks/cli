@@ -1,21 +1,21 @@
 
 === Plugin installed only in the custom config directory
 
->>> CLAUDE_CONFIG_DIR=custom [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR=custom [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
 
 === Custom directory takes precedence over the default installation
 
->>> CLAUDE_CONFIG_DIR=missing [CLI] version
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR=missing [CLI] air list
+Tip: the databricks-ai-runtime skill is not installed. It documents the air workload YAML, GPU types, secrets, and how to follow and debug runs. Install it: databricks aitools install --skills-only --skills databricks-ai-runtime (to read it first without installing: databricks aitools install --path <dir> --skills databricks-ai-runtime)
+No active runs found. Use --all-status to include runs that are no longer active.
 
 === Empty override uses the default installation
 
->>> CLAUDE_CONFIG_DIR= [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR= [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
 
 === Unset override uses the default installation
 
->>> [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.

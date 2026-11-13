@@ -21,6 +21,10 @@ Learn more:
   Quickstart (AWS)         https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
   Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
   Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
+                           Teaches coding agents the workload YAML, GPU types, secrets,
+                           and how to follow and debug runs.
+  Preview the skill        databricks aitools install --path <dir> --skills databricks-ai-runtime
+                           Writes the skill files to <dir> without installing anything.
 `
 
 // New returns the root command for the AI Runtime CLI.
