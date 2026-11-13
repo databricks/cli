@@ -99,6 +99,9 @@ func waitForComputeToSettle(ctx context.Context, w *databricks.WorkspaceClient, 
 			return nil, retries.Halt(err)
 		}
 
+		// GET always returns compute_status (the SDK waiters dereference it unconditionally, and
+		// a no_compute app reports STOPPED, not nil). Kept as a guard: isAppComputeStopped treats
+		// nil as stopped and starts the app, so waiting here would only burn the timeout.
 		if app.ComputeStatus == nil {
 			return app, nil
 		}
