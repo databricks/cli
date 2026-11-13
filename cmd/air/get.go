@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
@@ -166,10 +167,16 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 				fmt.Errorf("failed to get status for run %d: %w", runID, err))
 		}
 
-		workspaceID, err := w.CurrentWorkspaceID(ctx)
+		// Prefer the configured workspace ID; only look it up when it is unset.
+		id, err := auth.ResolveWorkspaceID(ctx, w)
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to get workspace id for run %d: %w", runID, err))
+		}
+		workspaceID, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("configured workspace_id %q is not a numeric workspace ID", id))
 		}
 
 		data := buildGetData(run)

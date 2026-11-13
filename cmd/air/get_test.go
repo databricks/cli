@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"text/template"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -173,6 +176,75 @@ func TestGetRunNotFoundJSON(t *testing.T) {
 	var got errorEnvelope
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, jsonError{Code: "NOT_FOUND", Kind: "NOT_FOUND", Message: "run 5 not found: check the run ID and that it is a job run ID"}, got.Error)
+}
+
+// getRunServer serves a terminal runs/get and a /Me that reports workspace
+// 12345 in the X-Databricks-Org-Id header. *meCalls counts /Me requests.
+func getRunServer(t *testing.T, meCalls *atomic.Int32) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}}`))
+		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
+			meCalls.Add(1)
+			w.Header().Set("X-Databricks-Org-Id", "12345")
+			_, _ = w.Write([]byte(`{"userName": "u@example.com"}`))
+		default:
+			// SDK config discovery.
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func runGetJSON(t *testing.T, w *databricks.WorkspaceClient) (string, error) {
+	t.Helper()
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), w)
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newGetCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+	err := cmd.RunE(cmd, []string{"5"})
+	return buf.String(), err
+}
+
+func TestGetRunURLUsesConfiguredWorkspaceID(t *testing.T) {
+	var meCalls atomic.Int32
+	srv := getRunServer(t, &meCalls)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "67890"})
+	require.NoError(t, err)
+
+	out, err := runGetJSON(t, w)
+	require.NoError(t, err)
+	assert.Contains(t, out, "/jobs/runs/5?o=67890")
+	assert.Zero(t, meCalls.Load(), "a configured workspace ID needs no /Me lookup")
+}
+
+func TestGetRunURLLooksUpUnsetWorkspaceID(t *testing.T) {
+	// The SDK also reads the workspace ID from the environment.
+	t.Setenv("DATABRICKS_WORKSPACE_ID", "")
+	var meCalls atomic.Int32
+	srv := getRunServer(t, &meCalls)
+
+	out, err := runGetJSON(t, newTestWorkspaceClient(t, srv.URL))
+	require.NoError(t, err)
+	assert.Contains(t, out, "/jobs/runs/5?o=12345")
+	assert.Equal(t, int32(1), meCalls.Load())
+}
+
+func TestGetRunRejectsNonNumericWorkspaceID(t *testing.T) {
+	var meCalls atomic.Int32
+	srv := getRunServer(t, &meCalls)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "not-a-number"})
+	require.NoError(t, err)
+
+	out, err := runGetJSON(t, w)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal([]byte(out), &got))
+	assert.Equal(t, jsonError{Code: "INVALID_ARGS", Kind: "PERMANENT", Message: `configured workspace_id "not-a-number" is not a numeric workspace ID`}, got.Error)
 }
 
 func TestGetTemplateSweep(t *testing.T) {
