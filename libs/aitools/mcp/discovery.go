@@ -135,13 +135,17 @@ func listServices(ctx context.Context, w *databricks.WorkspaceClient, location s
 // blocked the request. They keep the server's message and get no location or grants hint.
 var unrelatedErrorCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "PRIVATE_LINK_VALIDATION_ERROR"}
 
+// isUnrelatedError reports whether err is one of the unrelatedErrorCodes.
+func isUnrelatedError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode)
+}
+
 // mapListError classifies a listing failure. Other errors are returned with context only.
 func mapListError(location string, err error) error {
-	apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
-
 	var kind ListErrorKind
 	switch {
-	case isAPIErr && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode):
+	case isUnrelatedError(err):
 		// Not about the schema or grants: leave it unclassified.
 	case errors.Is(err, apierr.ErrNotFound):
 		kind = ListErrLocationNotFound
