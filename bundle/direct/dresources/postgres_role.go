@@ -95,8 +95,9 @@ func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRol
 }
 
 // makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
-// Since 2026-11 GET echoes spec, except for fields still marked spec:input_only
-// in postgres_roles.yml, whose remote values stay empty.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_roles.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	var spec postgres.RoleRoleSpec
 	if role.Spec != nil {

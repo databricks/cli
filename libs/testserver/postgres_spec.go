@@ -2,16 +2,20 @@ package testserver
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 )
 
 // echoedSpec returns the spec the real API echoes back on GET after a create or
-// update. Since 2026-11-12 the Lakebase API returns spec as stored: the fields the
+// update. Since 2026-11-12 the API returns spec as stored for projects, branches,
+// endpoints, databases and roles (catalogs, data APIs and synced tables were not
+// observed to change and still return status only): the fields the
 // caller set (a field masked but absent from the body keeps its previous value),
 // minus inputOnly fields that are consulted once and never echoed. Defaults the
 // backend materializes appear only in status, not in spec.
 //
-// mask is the update_mask ("" on create, which takes the body's spec as is).
+// mask is the update_mask. "" takes the body's spec as is: on create, and on an
+// unmasked update, matching how the status of databases and roles is replaced.
 // oneofGroups uses the same "spec."-prefixed paths as the update mask validators;
 // setting one member of a group clears its siblings.
 func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[string][]string, inputOnly ...string) *T {
@@ -49,7 +53,7 @@ func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[stri
 			}
 			if members, isGroup := oneofGroups[path]; isGroup {
 				for _, m := range members {
-					parts := strings.Split(strings.TrimPrefix(m, "spec."), ".")
+					parts := specPathParts(m)
 					if v, ok := specMapGet(bodySpec, parts); ok {
 						specMapSet(result, parts, v)
 					}
@@ -63,20 +67,25 @@ func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[stri
 		}
 	}
 
-	// A oneof holds one member: whichever the body set wins over the stored sibling.
-	for _, members := range oneofGroups {
-		var set []string
+	// A oneof holds one member: when the request sets the group, its member replaces
+	// the stored sibling. A group the mask does not cover keeps its stored member.
+	for group, members := range oneofGroups {
+		if mask != "" && !maskSetsGroup(mask, group, members) {
+			continue
+		}
+		var set string
 		for _, m := range members {
-			if _, ok := specMapGet(bodySpec, strings.Split(strings.TrimPrefix(m, "spec."), ".")); ok {
-				set = append(set, m)
+			if _, ok := specMapGet(bodySpec, specPathParts(m)); ok {
+				set = m
+				break
 			}
 		}
-		if len(set) == 0 {
+		if set == "" {
 			continue
 		}
 		for _, m := range members {
-			if m != set[0] {
-				specMapDelete(result, strings.Split(strings.TrimPrefix(m, "spec."), "."))
+			if m != set {
+				specMapDelete(result, specPathParts(m))
 			}
 		}
 	}
@@ -99,6 +108,24 @@ func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[stri
 	return &spec
 }
 
+// maskSetsGroup reports whether update_mask covers the oneof group: the whole spec,
+// the group itself, or one of its members.
+func maskSetsGroup(mask, group string, members []string) bool {
+	for path := range strings.SplitSeq(mask, ",") {
+		path = strings.TrimSpace(path)
+		if path == "spec" || path == "*" || path == group || slices.Contains(members, path) {
+			return true
+		}
+	}
+	return false
+}
+
+// specPathParts splits a "spec."-prefixed mask path into keys relative to the spec.
+func specPathParts(path string) []string {
+	return strings.Split(strings.TrimPrefix(path, "spec."), ".")
+}
+
+// mergeSpecMap deep-merges src into dst; keys absent from src keep their dst value.
 func mergeSpecMap(dst, src map[string]any) {
 	for k, v := range src {
 		srcChild, srcIsMap := v.(map[string]any)
@@ -111,6 +138,7 @@ func mergeSpecMap(dst, src map[string]any) {
 	}
 }
 
+// specMapGet returns the value at parts in m, if present.
 func specMapGet(m map[string]any, parts []string) (any, bool) {
 	var node any = m
 	for _, p := range parts {
@@ -126,6 +154,7 @@ func specMapGet(m map[string]any, parts []string) (any, bool) {
 	return node, true
 }
 
+// specMapSet sets the value at parts in m, creating intermediate maps.
 func specMapSet(m map[string]any, parts []string, v any) {
 	for _, p := range parts[:len(parts)-1] {
 		child, ok := m[p].(map[string]any)
@@ -138,6 +167,7 @@ func specMapSet(m map[string]any, parts []string, v any) {
 	m[parts[len(parts)-1]] = v
 }
 
+// specMapDelete removes the value at parts from m, if present.
 func specMapDelete(m map[string]any, parts []string) {
 	for _, p := range parts[:len(parts)-1] {
 		child, ok := m[p].(map[string]any)
@@ -148,3 +178,10 @@ func specMapDelete(m map[string]any, parts []string) {
 	}
 	delete(m, parts[len(parts)-1])
 }
+
+// Spec fields the API consults once and does not echo back on GET.
+var (
+	projectInputOnlySpecFields = []string{"pg_version"}
+	branchInputOnlySpecFields  = []string{"source_branch", "source_branch_lsn", "source_branch_time"}
+	roleInputOnlySpecFields    = []string{"postgres_role", "auth_method", "identity_type"}
+)

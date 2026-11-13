@@ -152,7 +152,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
-		project.Spec = echoedSpec[postgres.ProjectSpec](nil, req.Body, "", projectOneofGroups, "pg_version")
+		project.Spec = echoedSpec[postgres.ProjectSpec](nil, req.Body, "", projectOneofGroups, projectInputOnlySpecFields...)
 	}
 
 	s.PostgresProjects[name] = project
@@ -248,7 +248,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 	}
 
-	project.Spec = echoedSpec(project.Spec, req.Body, req.URL.Query().Get("update_mask"), projectOneofGroups, "pg_version")
+	project.Spec = echoedSpec(project.Spec, req.Body, req.URL.Query().Get("update_mask"), projectOneofGroups, projectInputOnlySpecFields...)
 	project.UpdateTime = nowTime()
 	s.PostgresProjects[name] = project
 
@@ -372,7 +372,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 		branch.Status.ExpireTime = branch.Spec.ExpireTime
 	}
 
-	branch.Spec = echoedSpec[postgres.BranchSpec](nil, req.Body, "", branchOneofGroups, "source_branch", "source_branch_lsn", "source_branch_time")
+	branch.Spec = echoedSpec[postgres.BranchSpec](nil, req.Body, "", branchOneofGroups, branchInputOnlySpecFields...)
 
 	s.PostgresBranches[name] = branch
 
@@ -468,7 +468,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		}
 	}
 
-	branch.Spec = echoedSpec(branch.Spec, req.Body, req.URL.Query().Get("update_mask"), branchOneofGroups, "source_branch", "source_branch_lsn", "source_branch_time")
+	branch.Spec = echoedSpec(branch.Spec, req.Body, req.URL.Query().Get("update_mask"), branchOneofGroups, branchInputOnlySpecFields...)
 	branch.UpdateTime = nowTime()
 	s.PostgresBranches[name] = branch
 
@@ -1750,7 +1750,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 		existing.UpdateTime = now
 		existing.Status = roleStatusFromSpec(role.Spec)
 		existing.Status.RoleId = roleID
-		existing.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, "postgres_role", "auth_method", "identity_type")
+		existing.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, roleInputOnlySpecFields...)
 		s.PostgresRoles[name] = existing
 
 		return Response{
@@ -1766,7 +1766,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 
 	role.Status = roleStatusFromSpec(role.Spec)
 	role.Status.RoleId = roleID
-	role.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, "postgres_role", "auth_method", "identity_type")
+	role.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, roleInputOnlySpecFields...)
 
 	s.PostgresRoles[name] = role
 
@@ -1865,7 +1865,7 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		role.Status.RoleId = roleID
 	}
 
-	role.Spec = echoedSpec(role.Spec, req.Body, req.URL.Query().Get("update_mask"), nil, "postgres_role", "auth_method", "identity_type")
+	role.Spec = echoedSpec(role.Spec, req.Body, req.URL.Query().Get("update_mask"), nil, roleInputOnlySpecFields...)
 	role.UpdateTime = nowTime()
 	s.PostgresRoles[name] = role
 

@@ -79,8 +79,9 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 }
 
 // makePostgresEndpointRemote converts the SDK Endpoint into the embedded remote shape.
-// Since 2026-11 GET echoes spec, except for fields still marked spec:input_only
-// in postgres_endpoints.yml, whose remote values stay empty.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_endpoints.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
 	var spec postgres.EndpointSpec
 	if endpoint.Spec != nil {

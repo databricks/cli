@@ -70,8 +70,9 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 }
 
 // makePostgresProjectRemote converts the SDK Project into the embedded remote shape.
-// Since 2026-11 GET echoes spec, except for fields still marked spec:input_only
-// in postgres_projects.yml, whose remote values stay empty.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_projects.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote {
 	var spec postgres.ProjectSpec
 	if project.Spec != nil {

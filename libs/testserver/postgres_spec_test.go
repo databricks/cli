@@ -38,3 +38,12 @@ func TestEchoedSpecUpdateMaskedButAbsentKeepsPrevious(t *testing.T) {
 	assert.Equal(t, "b", spec.DisplayName)
 	require.NotNil(t, spec.HistoryRetentionDuration)
 }
+
+func TestEchoedSpecUpdateKeepsOneofOutsideMask(t *testing.T) {
+	stored := echoedSpec[postgres.BranchSpec](nil, []byte(`{"spec":{"ttl":"3600s"}}`), "", branchOneofGroups)
+	spec := echoedSpec(stored, []byte(`{"spec":{"is_protected":true,"no_expiry":true}}`), "spec.is_protected", branchOneofGroups)
+	require.NotNil(t, spec)
+	assert.True(t, spec.IsProtected)
+	assert.NotNil(t, spec.Ttl, "a oneof the mask does not cover keeps its stored member")
+	assert.False(t, spec.NoExpiry)
+}

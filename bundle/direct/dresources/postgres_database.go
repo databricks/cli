@@ -70,8 +70,9 @@ func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *Pos
 }
 
 // makePostgresDatabaseRemote converts the SDK Database into the embedded remote
-// shape. Since 2026-11 GET echoes spec, except for fields still marked
-// spec:input_only in postgres_databases.yml, whose remote values stay empty.
+// shape. Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_databases.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRemote {
 	var spec postgres.DatabaseDatabaseSpec
 	if database.Spec != nil {
