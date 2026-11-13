@@ -28,6 +28,9 @@ After generation, you can deploy this job to other targets using:
 Usage:
   databricks bundle generate job [flags]
 
+Aliases:
+  job, jobs
+
 Flags:
   -d, --config-dir string             Dir path where the output config will be stored (default "resources")
       --download-spark-python-files   download workspace files referenced by spark_python_task and rewrite them to a relative path

@@ -65,6 +65,10 @@ func sortMapAlphabetically(mv dyn.Value) (dyn.Value, error) {
 }
 
 func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[string]dyn.Value) (dyn.Value, error) {
+	// The YAML encoder orders map entries by Location.Line. Without an explicit
+	// order, number the entries so the alphabetical order from
+	// sortMapAlphabetically survives instead of Go map iteration order.
+	line := 0
 	for _, pair := range mv.MustMap().Pairs() {
 		k := pair.Key.MustString()
 		v := pair.Value
@@ -84,7 +88,8 @@ func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[strin
 		}
 
 		if order == nil {
-			dst[k] = v
+			line++
+			dst[k] = dyn.NewValue(v.Value(), []diag.Location{{Line: line}})
 		} else {
 			dst[k] = dyn.NewValue(v.Value(), []diag.Location{{Line: order.Get(k)}})
 		}

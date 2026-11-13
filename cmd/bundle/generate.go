@@ -35,12 +35,7 @@ Use --key to specify the resource name in your bundle configuration.
 Use --bind to automatically bind the generated resource to the existing workspace resource.`,
 	}
 
-	cmd.AddCommand(generate.NewGenerateJobCommand())
-	cmd.AddCommand(generate.NewGeneratePipelineCommand())
-	cmd.AddCommand(generate.NewGenerateDashboardCommand())
-	cmd.AddCommand(generate.NewGenerateAlertCommand())
-	cmd.AddCommand(generate.NewGenerateAppCommand())
-	cmd.AddCommand(generate.NewGenerateGenieSpaceCommand())
+	cmd.AddCommand(generate.NewCommands()...)
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
 	return cmd
 }
