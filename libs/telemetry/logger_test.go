@@ -465,3 +465,66 @@ func TestWithinReturnsPanicAsError(t *testing.T) {
 	assert.EqualError(t, err, "panic: boom")
 	assert.Eventually(t, func() bool { return running.Load() == 0 }, time.Second, time.Millisecond)
 }
+
+// TestUploadUsesConfigSetByCommand checks that the upload authenticates with the config the command set, in place of the
+// one cmdctx.ConfigUsed holds.
+func TestUploadUsesConfigSetByCommand(t *testing.T) {
+	bound := testserver.New(t)
+	t.Cleanup(bound.Close)
+	other := testserver.New(t)
+	t.Cleanup(other.Close)
+	var boundCalls, otherCalls int
+	bound.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		boundCalls++
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+	other.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		otherCalls++
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: other.URL, Token: "other"})
+	SetUploadConfig(ctx, &config.Config{Host: bound.URL, Token: "bound"})
+
+	cfg, ok := UploadConfig(ctx)
+	require.True(t, ok)
+	assert.Equal(t, bound.URL, cfg.Host)
+
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	assert.Equal(t, 1, boundCalls)
+	assert.Zero(t, otherCalls)
+}
+
+// TestUploadRefusedSendsNothing checks that a run which refused its upload sends nothing, even with a config set by the
+// command, and that a config set after the refusal is not used.
+func TestUploadRefusedSendsNothing(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	var calls int
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		calls++
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	SetUploadConfig(ctx, &config.Config{Host: server.URL, Token: "token"})
+	RefuseUpload(ctx)
+	SetUploadConfig(ctx, &config.Config{Host: server.URL, Token: "token"})
+
+	_, ok := UploadConfig(ctx)
+	assert.False(t, ok)
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	assert.Zero(t, calls)
+}
+
+// TestUploadConfigWithoutLogger checks that the upload slot is a no-op without a logger, as Log is.
+func TestUploadConfigWithoutLogger(t *testing.T) {
+	ctx := t.Context()
+	SetUploadConfig(ctx, &config.Config{Host: "https://ws.test"})
+	RefuseUpload(ctx)
+	_, ok := UploadConfig(ctx)
+	assert.False(t, ok)
+}

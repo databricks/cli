@@ -37,6 +37,39 @@ func Disabled(ctx context.Context) bool {
 	return env.Get(ctx, disableEnvVar) != ""
 }
 
+// SetUploadConfig sets the config that Upload authenticates with, in place of the one cmdctx.ConfigUsed holds. A command
+// sets it once its own binding checks have passed, so that the upload authenticates with the profile the command bound.
+// Like Log, it is a no-op without a logger.
+func SetUploadConfig(ctx context.Context, cfg *config.Config) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.upload = cfg
+	}
+}
+
+// RefuseUpload makes Upload send nothing for the run, whatever config is set. A run calls it once a credential was
+// rejected, since the upload would present that credential again. Like Log, it is a no-op without a logger.
+func RefuseUpload(ctx context.Context) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.refused = true
+	}
+}
+
+// UploadConfig returns the config that Upload authenticates with: the one SetUploadConfig set, else the one
+// cmdctx.ConfigUsed holds. It returns false when the run refused its upload or has no config.
+func UploadConfig(ctx context.Context) (*config.Config, bool) {
+	l, ok := loggerFromContext(ctx)
+	if !ok || l.refused {
+		return nil, false
+	}
+	if l.upload != nil {
+		return l.upload, true
+	}
+	if cmdctx.HasConfigUsed(ctx) {
+		return cmdctx.ConfigUsed(ctx), true
+	}
+	return nil, false
+}
+
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	// A missing logger means telemetry was never initialized on this context
 	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
@@ -53,6 +86,11 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 type logger struct {
 	logs             []protos.FrontendLog
 	stateLineageHash string
+
+	// upload is the config Upload authenticates with, as SetUploadConfig set it. Nil leaves cmdctx.ConfigUsed to it.
+	upload *config.Config
+	// refused means the run refused its upload (RefuseUpload), so Upload sends nothing.
+	refused bool
 
 	// running counts the goroutines that Upload started and stopped waiting
 	// for, which may still be using the config (see within).
@@ -123,8 +161,9 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		protoLogs[i] = string(b)
 	}
 
-	if !cmdctx.HasConfigUsed(ctx) {
-		log.Debugf(ctx, "no auth config available; skipping telemetry upload")
+	cfg, ok := UploadConfig(ctx)
+	if !ok {
+		log.Debugf(ctx, "no auth config available, or the run refused its telemetry upload; skipping telemetry upload")
 		return nil
 	}
 
@@ -150,7 +189,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	apiClient, err := within(ctx, &l.running, func() (*client.DatabricksClient, error) {
-		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running)
+		return newAPIClient(cfg, &l.running)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
