@@ -233,22 +233,25 @@ var restartWaitTimeout = 30 * time.Second
 
 // waitDeleted waits, up to restartWaitTimeout, until the caller's credential no longer reads as ACTIVE. A delete can take
 // a moment to show, and a sign-in that read ACTIVE then would answer that the caller is already signed in, with no page.
-func waitDeleted(ctx context.Context, w *databricks.WorkspaceClient, service string) error {
-	deadline := time.Now().Add(restartWaitTimeout)
+// The bound covers the reads too, so a read that does not return ends the wait at the bound.
+func waitDeleted(parent context.Context, w *databricks.WorkspaceClient, service, profileName, pinnedFile string) error {
+	ctx, cancel := context.WithTimeout(parent, restartWaitTimeout)
+	defer cancel()
 	for {
 		state, err := mcp.CredentialState(ctx, w, service)
-		if err != nil {
-			return err
-		}
-		if state != catalog.ProvisioningInfoStateActive {
+		switch {
+		case err == nil && state != catalog.ProvisioningInfoStateActive:
 			return nil
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("the deleted sign-in to %s still reads as signed in", service)
+		case parent.Err() != nil:
+			return parent.Err()
+		case ctx.Err() != nil:
+			return fmt.Errorf("the removed sign-in to %s on profile %s still reads as signed in; run: %s",
+				service, profileName, mcpLoginHint(service, profileName, pinnedFile))
+		case err != nil:
+			return describeRequestError(profileName, pinnedFile, err)
 		}
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
 		case <-time.After(signInPollInterval):
 		}
 	}
@@ -264,17 +267,21 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
 		if req.Restart {
 			// The credential is deleted first, so that the sign-in below starts from no credential.
-			if _, err := mcp.SignOut(ctx, w, service); err != nil {
-				return false, false, err
+			deleted, err := mcp.SignOut(ctx, w, service)
+			if err != nil {
+				return false, false, describeRequestError(profileName, pinnedFile, err)
 			}
-			if err := waitDeleted(ctx, w, service); err != nil {
+			if deleted {
+				fmt.Fprintf(req.Stderr, "%s did not accept the sign-in on profile %s, so it was removed; sign in again.\n", service, profileName)
+			}
+			if err := waitDeleted(ctx, w, service, profileName, pinnedFile); err != nil {
 				return false, false, err
 			}
 		}
 		if workspaceID == "" {
 			id, err := auth.ResolveWorkspaceID(ctx, w)
 			if err != nil {
-				return false, false, err
+				return false, false, describeRequestError(profileName, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 			}
 			workspaceID = id
 		}

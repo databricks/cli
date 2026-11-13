@@ -1327,3 +1327,149 @@ func TestServeSignInProgressNamesThePage(t *testing.T) {
 		})
 	}
 }
+
+// TestServeSignInRestartSaysTheCredentialWasRemoved checks that a restart that removes the caller's sign-in says so on the
+// sign-in's stderr before the page, since the agent's user did not ask for the sign-in to be removed.
+func TestServeSignInRestartSaysTheCredentialWasRemoved(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	prevRestart := restartWaitTimeout
+	t.Cleanup(func() {
+		signInPollInterval, signInWaitTimeout, restartWaitTimeout = prevPoll, prevWait, prevRestart
+	})
+	signInPollInterval, signInWaitTimeout, restartWaitTimeout = time.Millisecond, 10*time.Second, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	var mu sync.Mutex
+	deleted := false
+	var reads int
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			deleted = true
+			_, _ = io.WriteString(rw, `{}`)
+			return
+		}
+		// After the delete, the first two reads say NOT_FOUND, and the third, the first poll, says ACTIVE.
+		if !deleted {
+			_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
+			return
+		}
+		reads++
+		if reads <= 2 {
+			rw.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+			return
+		}
+		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
+	}))
+	t.Cleanup(server.Close)
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
+
+	var stderr bytes.Buffer
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func(string) {}, Stderr: &stderr})
+
+	require.NoError(t, err)
+	notice := testService + " did not accept the sign-in on profile " + testProfile + ", so it was removed; sign in again."
+	require.Contains(t, stderr.String(), notice)
+	assert.Less(t, strings.Index(stderr.String(), notice), strings.Index(stderr.String(), "Open this URL"), "the notice comes before the page")
+}
+
+// TestServeSignInRestartWaitIsBounded checks that the wait for a restart's delete ends at restartWaitTimeout even when a
+// read of the credential does not return, so the wait is not held up by the SDK's own retry budget.
+func TestServeSignInRestartWaitIsBounded(t *testing.T) {
+	prevRestart := restartWaitTimeout
+	t.Cleanup(func() { restartWaitTimeout = prevRestart })
+	restartWaitTimeout = 100 * time.Millisecond
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodDelete {
+			_, _ = io.WriteString(rw, `{}`)
+			return
+		}
+		// A read that hangs until the client gives up.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	t.Cleanup(server.Close)
+	w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
+
+	start := time.Now()
+	signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+	_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func(string) {}, Stderr: io.Discard})
+
+	require.Error(t, err)
+	assert.Less(t, time.Since(start), 3*time.Second, "the wait ends at its bound, not when the hung read returns")
+}
+
+// TestServeSignInErrorsNameTheProfileAndFix checks that the errors of a sign-in that the authenticate tool answers name
+// the profile and the fix, as the other sign-in errors do: a delete the profile may not make, and a wait that ends while
+// the removed sign-in still reads as signed in.
+func TestServeSignInErrorsNameTheProfileAndFix(t *testing.T) {
+	prevRestart := restartWaitTimeout
+	t.Cleanup(func() { restartWaitTimeout = prevRestart })
+	restartWaitTimeout = 50 * time.Millisecond
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	const active = `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`
+	cases := map[string]struct {
+		deleteStatus int
+		deleteBody   string
+		read         string
+		want         string
+	}{
+		"delete refused": {
+			deleteStatus: http.StatusUnauthorized,
+			deleteBody:   `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`,
+			read:         active,
+			want:         "databricks auth login --profile " + testProfile,
+		},
+		"credential still signed in": {
+			deleteStatus: http.StatusOK,
+			deleteBody:   `{}`,
+			read:         active,
+			want:         "still reads as signed in; run: databricks aitools mcp login " + testService + " --profile " + testProfile,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != credentialPath {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				rw.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodDelete {
+					rw.WriteHeader(tc.deleteStatus)
+					_, _ = io.WriteString(rw, tc.deleteBody)
+					return
+				}
+				_, _ = io.WriteString(rw, tc.read)
+			}))
+			t.Cleanup(server.Close)
+			w := guardedTestClient(t, server.URL, &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}})
+
+			signIn := serveSignIn(serveTarget{w: w, profile: testProfile, service: testService})
+			_, _, err := signIn(t.Context(), proxy.SignInRequest{Open: true, Restart: true, Progress: func(string) {}, Stderr: io.Discard})
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+}
