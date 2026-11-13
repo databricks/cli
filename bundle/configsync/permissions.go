@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -29,9 +28,6 @@ const permissionsReadLimit = 10
 // resources that declare none.
 func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundle, plan *deployplan.Plan) error {
 	for resourceKey, entry := range plan.Plan {
-		if !isPermissionsOrGrantsSubResource(resourceKey) {
-			continue
-		}
 		if err := addDeclaredPermissionsChanges(changes, b, resourceKey, entry); err != nil {
 			return err
 		}
@@ -69,8 +65,17 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 		if err != nil {
 			return fmt.Errorf("failed to parse path %s: %w", path, err)
 		}
-		key, principal, ok := node.AsSlice()[0].KeyValue()
-		if !ok || (changeDesc.New != nil && !declared[key+"="+principal]) {
+		nodes := node.AsSlice()
+		if len(nodes) == 0 {
+			// The remote ACL has no direct entries left, so the change covers the whole list.
+			if changeDesc.Action != deployplan.Skip {
+				for selector := range declared {
+					changes.set(parentKey, "permissions"+selector, &ConfigChangeDesc{Operation: OperationRemove})
+				}
+			}
+			continue
+		}
+		if _, _, ok := nodes[0].KeyValue(); !ok || (changeDesc.New != nil && !declared[nodes[0].String()]) {
 			continue
 		}
 
@@ -86,8 +91,8 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 	return nil
 }
 
-// declaredPrincipals returns the principals of the permissions written in the resource's config,
-// as "<key>=<value>" like the plan's "[<key>='<value>']" selectors. Added entries have no location.
+// declaredPrincipals returns the permissions written in the resource's config as the plan's
+// selectors, e.g. "[user_name='a']". Entries added by mutators have no location.
 func declaredPrincipals(b *bundle.Bundle, resourceKey string) map[string]bool {
 	path, err := dyn.NewPathFromString(resourceKey)
 	if err != nil {
@@ -102,7 +107,7 @@ func declaredPrincipals(b *bundle.Bundle, resourceKey string) map[string]bool {
 		}
 		for _, key := range []string{"user_name", "service_principal_name", "group_name"} {
 			if value, ok := permission.Get(key).AsString(); ok && value != "" {
-				result[key+"="+value] = true
+				result[structpath.NewKeyValue(nil, key, value).String()] = true
 			}
 		}
 	}
@@ -128,7 +133,7 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 
 	for resourceKey, adapter := range unmanagedPermissionsAdapters(b, plan) {
 		g.Go(func() error {
-			permissions, err := readPermissions(ctx, b, adapter, resourceKey+".permissions")
+			permissions, err := readPermissions(ctx, b, adapter, resourceKey)
 			if err != nil {
 				// A user who can deploy a resource is not necessarily allowed to read its ACL.
 				log.Warnf(ctx, "reading permissions of %s: %s", resourceKey, err)
@@ -169,32 +174,25 @@ func unmanagedPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[s
 	return result
 }
 
-func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.Adapter, permissionsKey string) ([]dresources.StatePermission, error) {
-	sv, err := adapter.PrepareInputConfig([]dresources.StatePermission{}, permissionsKey)
+func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.Adapter, resourceKey string) ([]dresources.StatePermission, error) {
+	sv, err := adapter.PrepareInputConfig([]dresources.StatePermission{}, resourceKey+".permissions")
 	if err != nil {
 		return nil, err
 	}
+	// The object ID references a field of the resource, e.g. "/jobs/${resources.jobs.foo.id}". It is
+	// resolved here by key, since a key with e.g. spaces does not parse as a reference.
 	objectID := sv.Refs["object_id"]
-	ref, ok := dynvar.NewRef(dyn.V(objectID))
-	if !ok {
-		// The resource key cannot be referenced, e.g. it has spaces.
-		return nil, nil
+	objectType, field, ok := strings.Cut(objectID, "${"+resourceKey+".")
+	field, hasSuffix := strings.CutSuffix(field, "}")
+	if !ok || !hasSuffix {
+		return nil, fmt.Errorf("unexpected object_id %q", objectID)
 	}
-	for _, target := range ref.References() {
-		path, err := structpath.ParsePath(target)
-		if err != nil {
-			return nil, err
-		}
-		value, err := lookupDeployedField(b, path)
-		if err != nil {
-			return nil, fmt.Errorf("resolving %s: %w", target, err)
-		}
-		if err := sv.ResolveRef("${"+target+"}", value); err != nil {
-			return nil, err
-		}
+	value, err := lookupDeployedField(b, resourceKey, field)
+	if err != nil {
+		return nil, fmt.Errorf("resolving %s.%s: %w", resourceKey, field, err)
 	}
 
-	id := sv.Value.(*dresources.PermissionsState).ObjectID
+	id := objectType + fmt.Sprint(value)
 	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return adapter.DoRead(ctx, id)
 	})
@@ -207,16 +205,19 @@ func readPermissions(ctx context.Context, b *bundle.Bundle, adapter *dresources.
 // lookupDeployedField reads a field of a deployed resource, such as the ID its permissions are
 // keyed by. The plan drops the new state of unchanged resources, so other fields come from the
 // remote state it read.
-func lookupDeployedField(b *bundle.Bundle, path *structpath.PathNode) (any, error) {
-	resourceKey, field := path.Prefix(3).String(), path.SkipPrefix(3)
-	if field.String() == "id" {
+func lookupDeployedField(b *bundle.Bundle, resourceKey, field string) (any, error) {
+	if field == "id" {
 		return b.DeploymentBundle.StateDB.GetResourceID(resourceKey), nil
+	}
+	path, err := structpath.ParsePath(field)
+	if err != nil {
+		return nil, err
 	}
 	remote, ok := b.DeploymentBundle.RemoteStateCache.Load(resourceKey)
 	if !ok {
 		return nil, fmt.Errorf("no remote state for %s", resourceKey)
 	}
-	return structaccess.Get(remote, field)
+	return structaccess.Get(remote, path)
 }
 
 // withoutCurrentUserManage drops the current user's IS_OWNER and CAN_MANAGE, one of which

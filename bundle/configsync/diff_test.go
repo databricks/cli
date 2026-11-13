@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -414,7 +413,41 @@ func TestLookupDeployedFieldReadsRemoteState(t *testing.T) {
 	b.DeploymentBundle.RemoteStateCache.Store("resources.model_serving_endpoints.my_endpoint",
 		&dresources.ModelServingEndpointRemote{EndpointId: "abc123"})
 
-	value, err := lookupDeployedField(b, structpath.MustParsePath("resources.model_serving_endpoints.my_endpoint.endpoint_id"))
+	value, err := lookupDeployedField(b, "resources.model_serving_endpoints.my_endpoint", "endpoint_id")
 	require.NoError(t, err)
 	assert.Equal(t, "abc123", value)
+}
+
+func TestExtractChangesEmptyRemotePermissions(t *testing.T) {
+	value, err := yamlloader.LoadYAML("databricks.yml", strings.NewReader(`
+resources:
+  apps:
+    my_app:
+      permissions:
+        - level: CAN_USE
+          group_name: users
+`))
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(dyn.Value) (dyn.Value, error) { return value, nil }))
+
+	declared := []dresources.StatePermission{{Level: "CAN_USE", GroupName: "users"}}
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.apps.my_app": {},
+		"resources.apps.my_app.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/apps/my_app"},
+			Changes: deployplan.Changes{
+				"": {Action: deployplan.Update, Old: declared, New: declared},
+			},
+		},
+	}}
+
+	changes, err := ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.apps.my_app": {
+			"permissions[group_name='users']": {Operation: OperationRemove},
+		},
+	}, changes)
 }
