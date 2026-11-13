@@ -10,7 +10,6 @@ package browser
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"sync"
 
@@ -69,17 +68,27 @@ var defaultOpenMu sync.Mutex
 var openDefaultURL = browserpkg.OpenURL
 
 func openDefault(url string, stdoutToStderr bool) error {
-	defaultOpenMu.Lock()
-	defer defaultOpenMu.Unlock()
 	// github.com/pkg/browser writes xdg-open's output to os.Stdout and its error output to os.Stderr, even when the
 	// open succeeds, producing spurious noise on Linux desktops. The error output is discarded. The streams are the
 	// package variables Stdout and Stderr (https://github.com/pkg/browser/blob/5ac0b6a4141c/browser.go).
+	//
+	// The streams must be files. exec passes a file to the command as it is, so the command's Run returns when the
+	// launcher exits. Any other writer is copied through a pipe, and Run waits for the pipe to close, which a browser
+	// started by the launcher keeps open.
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	defer devNull.Close()
+
+	defaultOpenMu.Lock()
+	defer defaultOpenMu.Unlock()
 	originalStdout, originalStderr := browserpkg.Stdout, browserpkg.Stderr
 	defer func() {
 		browserpkg.Stdout = originalStdout
 		browserpkg.Stderr = originalStderr
 	}()
-	browserpkg.Stderr = io.Discard
+	browserpkg.Stderr = devNull
 	if stdoutToStderr {
 		browserpkg.Stdout = os.Stderr
 	}

@@ -164,6 +164,30 @@ func TestOpenKeepsCommandStdoutOnStdout(t *testing.T) {
 	assert.NotContains(t, stderr, "opener stdout")
 }
 
+// TestOpenDoesNotWaitForLauncherChild checks that the default opener returns when its launcher returns, although the
+// browser the launcher started is still running. The launcher is a stub that runs this test binary the way pkg/browser's
+// runCmd runs xdg-open: with the package's Stdout and Stderr, and waiting only for the command. The sleeper is the
+// browser, and it writes sleepFile when it ends. Neither open may wait for it.
+func TestOpenDoesNotWaitForLauncherChild(t *testing.T) {
+	t.Setenv(openerChildEnv, "1")
+	sleepFile := filepath.Join(t.TempDir(), "sleeper-done")
+	t.Setenv(openerBackgroundEnv, sleepFile)
+	waitForSleeper(t, sleepFile)
+	replaceDefaultLauncher(t, func(url string) error {
+		cmd := exec.Command(os.Args[0], url)
+		cmd.Stdout = browserpkg.Stdout
+		cmd.Stderr = browserpkg.Stderr
+		return cmd.Run()
+	})
+	ctx := env.Set(t.Context(), "BROWSER", "")
+
+	for range 2 {
+		require.NoError(t, Open(ctx, "https://example.com/login"))
+		_, err := os.Stat(sleepFile)
+		assert.ErrorIs(t, err, fs.ErrNotExist, "the open waited for the browser that the launcher started")
+	}
+}
+
 // TestOpenOutputToStderrReturnsWhenCommandBackgroundsChild checks that a browser command that starts a child and returns
 // does not hold up the caller. The child outlives the command, as a launcher that backgrounds the browser does, and writes
 // its file only when it ends. The file must not exist when the call returns.
