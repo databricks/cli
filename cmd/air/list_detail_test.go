@@ -80,7 +80,7 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 
 	// When the list, the info pane and the logs pane render the run.
 	rows, err := newRunFetcher(ctx, w, listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10, fetchMLflow: true,
+		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
 	info, err := runDetailText(ctx, w, 7)
@@ -132,7 +132,7 @@ func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testi
 
 	// When the list and the info pane render the run.
 	rows, err := newRunFetcher(ctx, w, listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10, fetchMLflow: true,
+		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
 	info, err := runDetailText(ctx, w, 7)
