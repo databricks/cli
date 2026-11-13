@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -41,11 +43,40 @@ type getData struct {
 	ESTRemainingSeconds *int64 `json:"est_remaining_seconds"`
 	ESTPercentComplete  *int   `json:"est_percent_complete"`
 
-	// The fields below are pre-rendered text-view cells, excluded from JSON
-	// (matching `air get --json`). Each shows "N/A" when its value is
-	// missing. The styled single-run renderer (render.go) consumes them; the
-	// Run ID, Status, and MLflow Run cells it draws are styled and hyperlinked
-	// there rather than stored here.
+	// The fields below carry the values of the text view's Configuration and
+	// Metadata boxes and its sweep summary. Missing values are null; config-based
+	// retry limits require opting in to reading the stored config.
+	User            *string `json:"user"`
+	AcceleratorType *string `json:"accelerator_type"`
+	NumAccelerators *int    `json:"num_accelerators"`
+	// EnvironmentVersion and BaseEnvironment come from the run's serverless
+	// environment spec; at most one is set.
+	EnvironmentVersion *string `json:"environment_version"`
+	BaseEnvironment    *string `json:"base_environment"`
+	// MaxRetries is the run's retry limit and its source (see resolveMaxRetries).
+	MaxRetries *runMaxRetries `json:"max_retries"`
+	// Config is the stored run config the Configuration box shows, before display
+	// reformatting. ConfigSource names where it came from: "uploaded" (the
+	// training_config.yaml `air run` uploads after applying overrides and
+	// stripping comments), or "yaml_parameters" / "yaml_parameters_file" (legacy
+	// runs, a different schema). A config synthesized for display is not exposed.
+	Config       *string `json:"-"`
+	ConfigSource *string `json:"-"`
+	// MLflowRunName is the MLflow run's name, which the MLflow Run cell shows.
+	MLflowRunName *string `json:"mlflow_run_name"`
+	// Sweep is set for foreach runs; its table replaces the single-run view.
+	Sweep *sweepInfo `json:"sweep"`
+
+	// configBody is the Configuration box body, which may be synthesized for a
+	// legacy run without stored parameters.
+	configBody string
+	// detailsResolved records that enrichRunDetails has run.
+	detailsResolved bool
+
+	// The fields below are pre-rendered text-view cells, excluded from JSON.
+	// Each shows "N/A" when its value is missing. The styled single-run renderer
+	// (render.go) consumes them; the Run ID, Status, and MLflow Run cells it draws
+	// are styled and hyperlinked there rather than stored here.
 	SubmittedDisplay    string `json:"-"`
 	DurationDisplay     string `json:"-"`
 	ExperimentDisplay   string `json:"-"`
@@ -58,8 +89,6 @@ type getData struct {
 	DisplayStatus   string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
-	// Sweep replaces the single-run view for foreach runs.
-	Sweep *sweepInfo `json:"-"`
 }
 
 // getTemplate is the text-mode layout for a sweep (foreach) run. Single runs are
@@ -118,6 +147,7 @@ func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err err
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
+	var includeConfig bool
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
@@ -129,6 +159,8 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 			"template": getTemplate,
 		},
 	}
+
+	cmd.Flags().BoolVar(&includeConfig, "include-config", false, "Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)")
 
 	// Resolve and authenticate the workspace client up front so an auth failure
 	// fails fast here, before any run status or config is fetched or printed.
@@ -144,6 +176,9 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		if includeConfig && root.OutputType(cmd) == flags.OutputText {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, errors.New("--include-config requires -o json"))
+		}
 		w := cmdctx.WorkspaceClient(ctx)
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
@@ -206,11 +241,27 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
-		} else if genAIComputeTask(run) == nil {
-			enrichFromAiRuntimeTask(run, &data)
+		} else {
+			if genAIComputeTask(run) == nil {
+				enrichFromAiRuntimeTask(run, &data)
+			}
+			enrichCtx := ctx
+			if root.OutputType(cmd) != flags.OutputText {
+				// A failed read already shows as a null field; keep stderr quiet
+				// for callers that merge it into stdout.
+				enrichCtx = withQuietEnrichment(ctx)
+			}
+			enrichRunDetails(enrichCtx, w, run, &data, ids, root.OutputType(cmd) == flags.OutputText || includeConfig)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
+			if includeConfig {
+				return renderEnvelope(ctx, struct {
+					getData
+					Config       *string `json:"config"`
+					ConfigSource *string `json:"config_source"`
+				}{data, data.Config, data.ConfigSource})
+			}
 			return renderEnvelope(ctx, data)
 		}
 
@@ -243,9 +294,7 @@ func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
 		if d.CommandPath != "" {
 			data.TrainingConfigPath = path.Join(path.Dir(d.CommandPath), trainingConfigName)
 		}
-		if a := acceleratorLabel(string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount); a != "" {
-			data.AcceleratorsDisplay = a
-		}
+		setAccelerators(data, string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount)
 	}
 	if task.Experiment != "" {
 		exp := stripExperimentUserPrefix(task.Experiment)
@@ -285,11 +334,90 @@ func buildGetData(run *jobs.Run) getData {
 	if data.ExperimentName != nil {
 		data.ExperimentDisplay = *data.ExperimentName
 	}
+	data.User = nilIfEmpty(run.CreatorUserName)
 	data.UserDisplay = orNA(run.CreatorUserName)
-	data.AcceleratorsDisplay = orNA(accelerators(run))
+	data.AcceleratorsDisplay = na
+	accelType, count := jobCompute(run)
+	setAccelerators(&data, accelType, count)
 	// EnvironmentDisplay is resolved at render time: the serverless environment
 	// version needs a raw GetRun read (the typed SDK Run drops it), so it is not
 	// filled here alongside the fields read straight off the run.
 	data.EnvironmentDisplay = na
 	return data
+}
+
+// setAccelerators records GPU compute in the same nullable shape as air list.
+func setAccelerators(data *getData, accelType string, count int) {
+	data.AcceleratorType = nilIfEmpty(accelType)
+	if count != 0 {
+		data.NumAccelerators = new(count)
+	} else {
+		data.NumAccelerators = nil
+	}
+	data.AcceleratorsDisplay = orNA(acceleratorLabel(accelType, count))
+}
+
+// enrichRunDetails resolves the single-run values that need requests beyond the
+// typed GetRun: the environment (raw GetRun), the stored config (download) and
+// the retry limit and the MLflow run name. When readConfig is false, only a
+// server-reported retry limit is available. Each read is best-effort.
+func enrichRunDetails(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers, readConfig bool) {
+	data.detailsResolved = true
+
+	// The reads are independent, so run them concurrently.
+	var (
+		wg            sync.WaitGroup
+		version, base string
+		body          string
+		raw           []byte
+		mlflowName    string
+	)
+	wg.Go(func() { version, base = aiRuntimeEnvironment(ctx, w, run.RunId) })
+	if readConfig {
+		wg.Go(func() { body, raw = resolveConfigYAML(ctx, w, run, data) })
+	}
+	if ids != nil {
+		wg.Go(func() { mlflowName = fetchMLflowRunName(ctx, w, ids.RunID) })
+	}
+	wg.Wait()
+
+	data.EnvironmentVersion = nilIfEmpty(version)
+	data.BaseEnvironment = nilIfEmpty(base)
+	data.EnvironmentDisplay = orNA(version)
+	data.configBody = body
+	if len(raw) > 0 {
+		cfg := string(raw)
+		data.Config = &cfg
+		data.ConfigSource = configSource(run, data)
+	}
+	data.MaxRetries = resolveMaxRetries(run, raw)
+	data.MLflowRunName = nilIfEmpty(mlflowName)
+}
+
+// configSource names where resolveConfigYAML read a stored config from.
+func configSource(run *jobs.Run, data *getData) *string {
+	source := "uploaded"
+	if task := genAIComputeTask(run); task != nil && data.TrainingConfigPath == "" {
+		source = "yaml_parameters_file"
+		if task.YamlParameters != "" {
+			source = "yaml_parameters"
+		}
+	}
+	return &source
+}
+
+type quietEnrichmentKey struct{}
+
+// withQuietEnrichment demotes best-effort enrichment failures from warnings to
+// debug logs.
+func withQuietEnrichment(ctx context.Context) context.Context {
+	return context.WithValue(ctx, quietEnrichmentKey{}, true)
+}
+
+func enrichmentWarnf(ctx context.Context, format string, v ...any) {
+	if quiet, _ := ctx.Value(quietEnrichmentKey{}).(bool); quiet {
+		log.Debugf(ctx, format, v...)
+		return
+	}
+	log.Warnf(ctx, format, v...)
 }

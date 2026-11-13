@@ -1,0 +1,1 @@
+* `air get -o json` includes run details including flat `accelerator_type` and `num_accelerators`. Use `--include-config` to include stored config, which may contain plaintext `env_variables` and parameters; downloads over 1 MiB are omitted, and config-dependent `max_retries` is otherwise null.

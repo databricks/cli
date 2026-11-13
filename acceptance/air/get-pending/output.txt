@@ -14,6 +14,17 @@
     "mlflow_url": null,
     "status_message": "Waiting for accelerator compute capacity to become available...",
     "est_remaining_seconds": null,
-    "est_percent_complete": null
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": {
+      "limit": 0,
+      "source": "reported"
+    },
+    "mlflow_run_name": null,
+    "sweep": null
   }
 }

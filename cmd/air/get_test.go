@@ -324,7 +324,9 @@ func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
 	assert.JSONEq(t, `{
 		"run_id":"5","status":"FAILED","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
-		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null
+		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null,
+		"user":null,"accelerator_type":null,"num_accelerators":null,"environment_version":null,"base_environment":null,
+		"max_retries":null,"mlflow_run_name":null,"sweep":null
 	}`, string(body))
 
 	canceled := buildGetData(&jobs.Run{RunId: 6, State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "user canceled"}})
@@ -346,7 +348,9 @@ func TestBuildGetDataWaitingForComputeStatus(t *testing.T) {
 	assert.JSONEq(t, `{
 		"run_id":"8","status":"PENDING","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
-		"est_remaining_seconds":null,"est_percent_complete":null
+		"est_remaining_seconds":null,"est_percent_complete":null,
+		"user":null,"accelerator_type":null,"num_accelerators":null,"environment_version":null,"base_environment":null,
+		"max_retries":null,"mlflow_run_name":null,"sweep":null
 	}`, string(body))
 }
 
@@ -399,4 +403,224 @@ func TestBuildGetDataEmpty(t *testing.T) {
 	assert.Equal(t, na, d.ExperimentDisplay)
 	assert.Equal(t, na, d.UserDisplay)
 	assert.Equal(t, na, d.AcceleratorsDisplay)
+}
+
+func TestBuildGetDataMetadata(t *testing.T) {
+	t.Run("legacy task", func(t *testing.T) {
+		d := buildGetData(&jobs.Run{
+			CreatorUserName: "me@example.com",
+			Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
+				Compute: &jobs.ComputeConfig{GpuType: "GPU_8xH100", NumGpus: 8},
+			}}},
+		})
+		assert.Equal(t, "me@example.com", *d.User)
+		assert.Equal(t, new("GPU_8xH100"), d.AcceleratorType)
+		assert.Equal(t, new(8), d.NumAccelerators)
+		assert.Equal(t, "8x H100", d.AcceleratorsDisplay)
+	})
+
+	t.Run("ai_runtime task", func(t *testing.T) {
+		d := buildGetData(&jobs.Run{Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{
+			Deployments: []jobs.DeploymentSpec{{
+				Compute: jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xA10, AcceleratorCount: 1},
+			}},
+		}}}})
+		assert.Equal(t, new("GPU_1xA10"), d.AcceleratorType)
+		assert.Equal(t, new(1), d.NumAccelerators)
+		assert.Equal(t, "1x A10", d.AcceleratorsDisplay)
+	})
+
+	t.Run("no compute or creator stays null", func(t *testing.T) {
+		d := buildGetData(&jobs.Run{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
+			Compute: &jobs.ComputeConfig{NumGpus: 0},
+		}}}})
+		assert.Nil(t, d.User)
+		assert.Nil(t, d.AcceleratorType)
+		assert.Nil(t, d.NumAccelerators)
+		assert.Equal(t, na, d.AcceleratorsDisplay)
+		assert.Equal(t, na, d.UserDisplay)
+	})
+}
+
+func TestGetAcceleratorJSONMatchesListWhenCountMissing(t *testing.T) {
+	run := &jobs.Run{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{GpuType: "GPU_1xA10"}}}}}
+	data := buildGetData(run)
+	encoded, err := json.Marshal(data)
+	require.NoError(t, err)
+	var fields map[string]any
+	require.NoError(t, json.Unmarshal(encoded, &fields))
+	assert.Equal(t, "GPU_1xA10", fields["accelerator_type"])
+	assert.Nil(t, fields["num_accelerators"])
+}
+
+func TestEnrichRunDetails(t *testing.T) {
+	const uploaded = "/Workspace/run/training_config.yaml"
+	submitAiRuntime := `"run_type": "SUBMIT_RUN", "tasks": [{"ai_runtime_task": {}}]`
+	tests := []struct {
+		name        string
+		run         string
+		config      string // served at uploaded; empty means not found
+		mlflowName  string // empty means the MLflow lookup fails
+		wantVersion *string
+		wantBase    *string
+		wantEnvCell string
+		wantSource  *string
+		wantRetries *runMaxRetries
+		wantBody    string
+	}{
+		{
+			name:        "uploaded config and environment version",
+			run:         `{"run_id": 1, "environments": [{"environment_key": "default", "spec": {"environment_version": "6"}}], ` + submitAiRuntime + `}`,
+			config:      "max_retries: 1\n",
+			mlflowName:  "my-run",
+			wantVersion: new("6"), wantEnvCell: "6",
+			wantSource: new("uploaded"), wantRetries: &runMaxRetries{Limit: 1, Source: maxRetriesConfigured}, wantBody: "max_retries: 1",
+		},
+		{
+			name:        "uploaded config without max_retries uses the CLI default",
+			run:         `{"run_id": 1, ` + submitAiRuntime + `}`,
+			config:      "experiment_name: e\n",
+			wantEnvCell: na, wantSource: new("uploaded"),
+			wantRetries: &runMaxRetries{Limit: 3, Source: maxRetriesCLIDefault}, wantBody: "experiment_name: e",
+		},
+		{
+			name:        "server-reported unlimited",
+			run:         `{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"max_retries": -1, "ai_runtime_task": {}}]}`,
+			wantEnvCell: na, wantRetries: &runMaxRetries{Limit: -1, Source: maxRetriesReported},
+		},
+		{
+			name:        "job run with a readable config is unknown",
+			run:         `{"run_id": 1, "run_type": "JOB_RUN", "tasks": [{"ai_runtime_task": {}}]}`,
+			config:      "max_retries: 1\n",
+			wantEnvCell: na, wantSource: new("uploaded"), wantBody: "max_retries: 1",
+		},
+		{
+			name:     "base environment, config unreadable",
+			run:      `{"run_id": 1, "environments": [{"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai_v5"}}], ` + submitAiRuntime + `}`,
+			wantBase: new("workspace-base-environments/databricks_ai_v5"), wantEnvCell: na,
+		},
+		{
+			name:        "legacy inline parameters",
+			run:         `{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"gen_ai_compute_task": {"yaml_parameters": "max_retries: 2\ncommand: echo hi\n"}}]}`,
+			wantEnvCell: na, wantSource: new("yaml_parameters"),
+			wantRetries: &runMaxRetries{Limit: 2, Source: maxRetriesConfigured}, wantBody: "max_retries: 2\ncommand: echo hi",
+		},
+		{
+			name:        "legacy inline parameters without max_retries are unknown",
+			run:         `{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"gen_ai_compute_task": {"yaml_parameters": "command: echo hi\n"}}]}`,
+			wantEnvCell: na, wantSource: new("yaml_parameters"), wantBody: "command: echo hi",
+		},
+		{
+			name:        "legacy synthesized config is not exposed",
+			run:         `{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"gen_ai_compute_task": {"mlflow_experiment_name": "exp"}}]}`,
+			wantEnvCell: na, wantBody: "experiment_name: exp",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.URL.Path == "/api/2.2/jobs/runs/get":
+					_, _ = w.Write([]byte(tt.run))
+				case strings.HasPrefix(r.URL.Path, "/api/2.0/workspace/export") && tt.config != "":
+					_, _ = w.Write([]byte(tt.config))
+				case r.URL.Path == "/api/2.0/mlflow/runs/get" && tt.mlflowName != "":
+					_, _ = w.Write([]byte(`{"run": {"info": {"run_name": "` + tt.mlflowName + `"}}}`))
+				default:
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte(`{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "not found"}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+			w := newTestWorkspaceClient(t, srv.URL)
+			ctx := withQuietEnrichment(cmdio.MockDiscard(t.Context()))
+			run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: 1})
+			require.NoError(t, err)
+			data := buildGetData(run)
+			if genAIComputeTask(run) == nil {
+				data.TrainingConfigPath = uploaded
+			}
+
+			enrichRunDetails(ctx, w, run, &data, &mlflowIdentifiers{ExperimentID: "e1", RunID: "r1"}, true)
+
+			assert.Equal(t, tt.wantVersion, data.EnvironmentVersion)
+			assert.Equal(t, tt.wantBase, data.BaseEnvironment)
+			assert.Equal(t, tt.wantEnvCell, data.EnvironmentDisplay)
+			assert.Equal(t, tt.wantSource, data.ConfigSource)
+			assert.Equal(t, tt.wantSource == nil, data.Config == nil)
+			assert.Equal(t, tt.wantRetries, data.MaxRetries)
+			assert.Equal(t, tt.wantBody, data.configBody)
+			if tt.mlflowName == "" {
+				assert.Nil(t, data.MLflowRunName)
+			} else {
+				assert.Equal(t, tt.mlflowName, *data.MLflowRunName)
+			}
+
+			// JSON is null exactly when the text cell is N/A, and both render the
+			// one resolved value.
+			body, err := json.Marshal(data)
+			require.NoError(t, err)
+			var got struct {
+				MaxRetries *runMaxRetries `json:"max_retries"`
+			}
+			require.NoError(t, json.Unmarshal(body, &got))
+			assert.Equal(t, maxRetriesDisplay(data.MaxRetries) == na, got.MaxRetries == nil)
+			assert.Equal(t, maxRetriesDisplay(data.MaxRetries), maxRetriesDisplay(got.MaxRetries))
+		})
+	}
+}
+
+func TestEnrichRunDetailsWithoutConfig(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
+			_, _ = w.Write([]byte(`{"run_id":1}`))
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/api/2.0/workspace/export") {
+			t.Errorf("unexpected config download: %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+	w := newTestWorkspaceClient(t, srv.URL)
+	run := &jobs.Run{RunId: 1, RunType: jobs.RunTypeSubmitRun, Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{}}}}
+	data := buildGetData(run)
+	data.TrainingConfigPath = "/Workspace/run/training_config.yaml"
+	enrichRunDetails(withQuietEnrichment(t.Context()), w, run, &data, nil, false)
+	assert.Nil(t, data.Config)
+	assert.Nil(t, data.ConfigSource)
+	assert.Nil(t, data.MaxRetries)
+
+	// Inline legacy parameters must not be parsed either without opt-in.
+	legacy := &jobs.Run{RunId: 1, RunType: jobs.RunTypeSubmitRun, Tasks: []jobs.RunTask{{
+		GenAiComputeTask: &jobs.GenAiComputeTask{YamlParameters: "max_retries: 2\n"},
+	}}}
+	legacyData := buildGetData(legacy)
+	enrichRunDetails(withQuietEnrichment(t.Context()), w, legacy, &legacyData, nil, false)
+	assert.Nil(t, legacyData.Config)
+	assert.Nil(t, legacyData.MaxRetries)
+
+	// Server-reported limits remain available without reading config.
+	legacy.Tasks[0].MaxRetries = 4
+	enrichRunDetails(withQuietEnrichment(t.Context()), w, legacy, &legacyData, nil, false)
+	assert.Equal(t, &runMaxRetries{Limit: 4, Source: maxRetriesReported}, legacyData.MaxRetries)
+}
+
+func TestSweepJSON(t *testing.T) {
+	exp := "exp"
+	body, err := json.Marshal(getData{RunID: "1", Sweep: &sweepInfo{
+		Total: 2, Succeeded: 1, Active: 1, Completed: 1,
+		Tasks: []sweepTask{
+			{TaskKey: "t0", RunID: "10", Status: "SUCCESS", Experiment: exp, ExperimentName: &exp},
+			{TaskKey: "t1", RunID: "11", Status: "RUNNING"},
+		},
+	}})
+	require.NoError(t, err)
+	var got struct {
+		Sweep json.RawMessage `json:"sweep"`
+	}
+	require.NoError(t, json.Unmarshal(body, &got))
+	assert.JSONEq(t, `{"total":2,"succeeded":1,"failed":0,"active":1,"completed":1,"tasks":[
+		{"task_key":"t0","run_id":"10","status":"SUCCESS","experiment_name":"exp"},
+		{"task_key":"t1","run_id":"11","status":"RUNNING","experiment_name":null}]}`, string(got.Sweep))
 }

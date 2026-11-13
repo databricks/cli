@@ -10,22 +10,25 @@ import (
 )
 
 // sweepInfo summarizes a "foreach" run, which fans a single config out into many
-// iterations (a hyperparameter sweep). It is shown only in text output.
+// iterations (a hyperparameter sweep).
 type sweepInfo struct {
-	Total     int
-	Succeeded int
-	Failed    int
-	Active    int
-	Completed int
-	Tasks     []sweepTask
+	Total     int         `json:"total"`
+	Succeeded int         `json:"succeeded"`
+	Failed    int         `json:"failed"`
+	Active    int         `json:"active"`
+	Completed int         `json:"completed"`
+	Tasks     []sweepTask `json:"tasks"`
 }
 
 // sweepTask is one iteration of a sweep.
 type sweepTask struct {
-	TaskKey    string
-	RunID      string
-	Status     string
-	Experiment string
+	TaskKey string `json:"task_key"`
+	RunID   string `json:"run_id"`
+	Status  string `json:"status"`
+	// ExperimentName is null when the iteration names no experiment; Experiment
+	// is the same value for the text table, which shows it blank.
+	ExperimentName *string `json:"experiment_name"`
+	Experiment     string  `json:"-"`
 }
 
 // findForEachTask returns the run's foreach task if it has one, or nil. A run is
@@ -44,7 +47,7 @@ func findForEachTask(run *jobs.Run) *jobs.RunTask {
 // iterations require a second lookup. If that lookup fails we still return the
 // counts (logging the failure) so the user sees the summary.
 func buildSweepInfo(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.RunTask) *sweepInfo {
-	info := &sweepInfo{}
+	info := &sweepInfo{Tasks: []sweepTask{}}
 	if task.ForEachTask.Stats != nil && task.ForEachTask.Stats.TaskRunStats != nil {
 		stats := task.ForEachTask.Stats.TaskRunStats
 		info.Total = stats.TotalIterations
@@ -68,7 +71,9 @@ func buildSweepInfo(ctx context.Context, w *databricks.WorkspaceClient, task *jo
 			Status:  runStatus(it.State),
 		}
 		if it.GenAiComputeTask != nil && it.GenAiComputeTask.MlflowExperimentName != "" {
-			row.Experiment = stripExperimentUserPrefix(it.GenAiComputeTask.MlflowExperimentName)
+			exp := stripExperimentUserPrefix(it.GenAiComputeTask.MlflowExperimentName)
+			row.Experiment = exp
+			row.ExperimentName = &exp
 		}
 		info.Tasks = append(info.Tasks, row)
 	}

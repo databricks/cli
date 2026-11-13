@@ -196,3 +196,28 @@ func TestRunDetailTextReadsTheUploadedConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestRunDetailTextShowsEnvironmentAndLegacyConfig(t *testing.T) {
+	// The list picker's detail pane renders through runDetailText, not `air get`,
+	// so it must still resolve the environment and the full legacy config.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id": 123, "run_type": "SUBMIT_RUN", "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+				"environments": [{"environment_key": "default", "spec": {"environment_version": "4"}}],
+				"tasks": [{"run_id": 456, "attempt_number": 0, "gen_ai_compute_task": {
+					"compute": {"gpu_type": "GPU_1xA10", "num_gpus": 1},
+					"yaml_parameters": "experiment_name: my-exp\nmax_retries: 2\ncommand: echo legacy-command\n"}}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123)
+	require.NoError(t, err)
+	assert.Contains(t, got, "command: echo legacy-command")
+	assert.Regexp(t, `Environment\s+4`, got)
+	assert.Regexp(t, `Max Retries\s+2 `, got)
+	assert.Regexp(t, `Accelerators\s+1x A10`, got)
+}

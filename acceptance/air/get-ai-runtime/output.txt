@@ -51,7 +51,48 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
     "est_remaining_seconds": null,
-    "est_percent_complete": null
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": "4",
+    "base_environment": null,
+    "max_retries": null,
+    "mlflow_run_name": "my-run",
+    "sweep": null
+  }
+}
+
+=== get (json, include config)
+
+>>> [CLI] air get 123 -o json --include-config
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": "4",
+    "base_environment": null,
+    "max_retries": {
+      "limit": 3,
+      "source": "cli_default"
+    },
+    "mlflow_run_name": "my-run",
+    "sweep": null,
+    "config": "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: |-\n  for i in $(seq 1 10); do\n    echo \"step $i\"\n  done\n",
+    "config_source": "uploaded"
   }
 }
 
@@ -88,3 +129,64 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
+
+=== get (json, max_retries set in the config)
+
+>>> [CLI] air get 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": "4",
+    "base_environment": null,
+    "max_retries": null,
+    "mlflow_run_name": "my-run",
+    "sweep": null
+  }
+}
+
+=== get (json, include config, max_retries set)
+
+>>> [CLI] air get 123 -o json --include-config
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": "4",
+    "base_environment": null,
+    "max_retries": {
+      "limit": 1,
+      "source": "configured"
+    },
+    "mlflow_run_name": "my-run",
+    "sweep": null,
+    "config": "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\nmax_retries: 1\ncommand: echo ok\n",
+    "config_source": "uploaded"
+  }
+}
