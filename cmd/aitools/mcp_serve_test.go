@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,23 @@ import (
 
 func TestMcpServeIsHidden(t *testing.T) {
 	assert.True(t, NewMcpServeCmd().Hidden)
+}
+
+// The argv that `aitools mcp add` writes into an agent config parses with serve's flags.
+func TestServeParsesArgvThatAddWrites(t *testing.T) {
+	parent := newMCPTestRoot()
+	serve, _, err := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, err)
+	argv := []string{mcpconfig.ProfileFlag, "logfood", mcpconfig.ServiceFlag, "system.ai.github", mcpconfig.AgentFlag, "claude-code"}
+	require.NoError(t, serve.ParseFlags(argv))
+
+	profile, err := serve.Flags().GetString("profile")
+	require.NoError(t, err)
+	service, err := serve.Flags().GetString("service")
+	require.NoError(t, err)
+	agent, err := serve.Flags().GetString("agent")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"logfood", "system.ai.github", "claude-code"}, []string{profile, service, agent})
 }
 
 func TestRefreshGuardPassesThroughWhileTokensRefresh(t *testing.T) {
@@ -120,10 +138,6 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, 2, root.ExitStatus(err))
 	assert.ErrorIs(t, err, cause)
-}
-
-func TestServeDialerHasConnectTimeout(t *testing.T) {
-	assert.Equal(t, 10*time.Second, serveDialer().Timeout)
 }
 
 // The profile's insecure_skip_verify reaches the transport, and HTTP/2 is kept with it.

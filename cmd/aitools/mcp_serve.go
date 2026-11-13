@@ -27,18 +27,13 @@ import (
 // serveConnectTimeout bounds one upstream connect. http.DefaultTransport waits 30 s.
 const serveConnectTimeout = 10 * time.Second
 
-// serveDialer dials the upstream service with serveConnectTimeout.
-func serveDialer() *net.Dialer {
-	return &net.Dialer{Timeout: serveConnectTimeout}
-}
-
 // serveTransport is the transport of the bridge's upstream requests. It starts from
 // http.DefaultTransport, so proxy use and the other timeouts stay as they are, and replaces the
 // dialer to set the connect timeout. The profile's InsecureSkipVerify is honored; the clone keeps
 // HTTP/2 enabled.
 func serveTransport(cfg *config.Config) *http.Transport {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.DialContext = serveDialer().DialContext
+	tr.DialContext = (&net.Dialer{Timeout: serveConnectTimeout}).DialContext
 	if cfg.InsecureSkipVerify {
 		if tr.TLSClientConfig == nil {
 			tr.TLSClientConfig = &tls.Config{}
@@ -68,8 +63,11 @@ func NewMcpServeCmd() *cobra.Command {
 			return runMcpServe(cmd, f)
 		},
 	}
-	cmd.Flags().StringVar(&f.service, "service", "", "Full name of the MCP service, for example system.ai.github")
-	cmd.Flags().StringVar(&f.agent, "agent", "", "Registry name of the calling agent, used only for the User-Agent")
+	// The names are the ones `aitools mcp add` writes into each agent's config, so an entry binds what add wrote.
+	cmd.Flags().StringVar(&f.service, strings.TrimPrefix(mcpconfig.ServiceFlag, "--"), "",
+		"Full name of the MCP service, for example system.ai.github")
+	cmd.Flags().StringVar(&f.agent, strings.TrimPrefix(mcpconfig.AgentFlag, "--"), "",
+		"Registry name of the calling agent, used only for the User-Agent")
 	return cmd
 }
 
@@ -171,8 +169,8 @@ func serveAgent(name string, stderr io.Writer) string {
 	return ""
 }
 
-// serveBindStatus is the exit status of a binding or auth failure. Agents and `list --check` tell it from a
-// transport error, so it is not 1.
+// serveBindStatus is the exit status of a binding or auth failure. It is not 1, so an agent can tell a failed
+// binding or sign-in from the other failures, which exit 1.
 const serveBindStatus = 2
 
 // serveFailure prints err to stderr and returns it with the exit status. Execute does not print it again,
