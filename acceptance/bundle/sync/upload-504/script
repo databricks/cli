@@ -1,7 +1,13 @@
 # Inject a single 504 on the first file upload. Uploads overwrite, so they are retried and the sync succeeds.
 fault.py "POST /api/2.0/workspace-files/import-file/**" 504 0 1
 
-$CLI bundle sync
+# Progress goes to stdout from a separate goroutine while the retry warning is logged to stderr,
+# so their interleaving is nondeterministic. Print stderr after stdout to keep the order stable.
+# The file lives outside the synced directory so that it is not uploaded.
+errfile=$(mktemp)
+$CLI bundle sync 2> "$errfile"
+cat "$errfile"
+rm "$errfile"
 
 # databricks.yml is the only file. Two requests for it should appear: the initial 504 and the successful retry.
 print_requests.py //api/2.0/workspace-files/import-file | jq -r .path
