@@ -155,10 +155,10 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	if req.Method != methodToolsList && req.Method != methodToolsCall && status != http.StatusUnauthorized {
 		return [][]byte{message}, nil
 	}
-	var reply upstreamReply
 	// A message that is not the response to the request, or whose shape the checks do not read, is neither a challenge nor
 	// a success, so it passes through.
-	if json.Unmarshal(message, &reply) != nil || !reply.isResponseTo(req) {
+	reply, ok := readReply(message, req)
+	if !ok {
 		return [][]byte{message}, nil
 	}
 	challenged := h.challenged(&reply)
@@ -292,6 +292,16 @@ func isFirstPage(request []byte) (bool, error) {
 		return false, err
 	}
 	return req.Params.Cursor == "", nil
+}
+
+// readReply decodes an upstream message as challenge detection reads it. It reports false when the message is not the
+// response to request, or when its shape is not one the checks read.
+func readReply(message []byte, request message) (upstreamReply, bool) {
+	var reply upstreamReply
+	if json.Unmarshal(message, &reply) != nil || !reply.isResponseTo(request) {
+		return reply, false
+	}
+	return reply, true
 }
 
 // upstreamReply is an upstream message as challenge detection reads it: its envelope, and its error or result.

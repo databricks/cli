@@ -1181,9 +1181,9 @@ func TestCallChallengeListsAuthenticateOnFirstPageOnly(t *testing.T) {
 	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
 	p.waitLines(t, 2)
 	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/list"}`)
-	lines := p.waitLines(t, 3)
+	p.waitLines(t, 3)
 	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/list","params":{"cursor":"page-2"}}`)
-	lines = p.waitLines(t, 4)
+	lines := p.waitLines(t, 4)
 	require.NoError(t, p.finish(t))
 
 	assert.Equal(t, []string{"echo", "authenticate"}, toolNames(t, lines[2]))
