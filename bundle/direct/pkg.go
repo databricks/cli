@@ -54,6 +54,10 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
+	// refTypes maps a resource key to the type of the resource each of its pure-reference
+	// fields references, recorded before resolveReferences drops them (see addParentMoves).
+	refTypes sync.Map
+
 	// DeployDurations maps a resource key to the time.Duration its create, update or
 	// recreate took. Only successfully deployed resources are recorded; Apply runs
 	// nodes in parallel, hence the sync.Map.

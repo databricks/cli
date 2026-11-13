@@ -1,0 +1,1 @@
+* Add `file:<path>` selectors to `pipelines run` and pipeline `bundle run`. `--refresh` and `--full-refresh` now use space-separated lists, such as `--refresh "orders payments"`, instead of comma-separated lists. Single names containing spaces now require backticks, e.g. ``--refresh 'table:`order details`'``. ([#7184](https://github.com/databricks/cli/pull/7184))

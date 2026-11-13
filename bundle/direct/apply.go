@@ -44,13 +44,23 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	if oldID == "" {
 		return errors.New("state entry not found")
 	}
+	if planEntry.ID != "" {
+		// The plan found the resource at the ID its config gives it: a rename moved it.
+		oldID = planEntry.ID
+	}
 
 	switch actionType {
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
+		if planEntry.StateOnly {
+			return d.RecordState(ctx, db, oldID, newState, planEntry)
+		}
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
+		if planEntry.StateOnly {
+			return d.Rekey(ctx, db, oldID, newState, planEntry)
+		}
 		return d.UpdateWithID(ctx, db, oldID, newState, planEntry)
 	case deployplan.Resize:
 		return d.Resize(ctx, db, oldID, newState, planEntry)
@@ -89,7 +99,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState)
+	err = d.saveState(ctx, db, newID, newState, nil)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -187,7 +197,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(ctx, db, id, newState)
+		err = d.saveState(ctx, db, id, newState, planEntry.RemoteState)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -236,7 +246,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState)
+	err = d.saveState(ctx, db, newID, newState, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -254,6 +264,32 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
+	return nil
+}
+
+// Rekey records the resource under the ID its new state gives it, without calling the backend: a
+// rename already moved it there (see PlanEntry.StateOnly).
+func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
+	newID, err := d.Adapter.IDFromState(newState)
+	if err != nil {
+		return err
+	}
+	log.Infof(ctx, "Re-keyed %s id=%#v (previously %#v)", d.ResourceKey, newID, oldID)
+
+	err = d.saveState(ctx, db, newID, newState, planEntry.RemoteState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", newID, err)
+	}
+	return nil
+}
+
+// RecordState saves the state at its ID without a backend call. A state-only update does this to
+// record the internal ID the state lacks, from the plan's remote state.
+func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
+	err := d.saveState(ctx, db, id, newState, planEntry.RemoteState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
+	}
 	return nil
 }
 
@@ -329,7 +365,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(ctx, db, id, newState)
+	err = d.saveState(ctx, db, id, newState, entry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -353,7 +389,19 @@ func (d *DeploymentUnit) RecordPreventDestroy(ctx context.Context, db *dstate.De
 // with content hashes, see dresources.CompactState) before persisting it. Fields already
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
-func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any) error {
+//
+// It first records the internal ID in state (see ResourceLifecycleConfig.InternalIDField), from the
+// remote state the operation returned or else from planRemote, the object as the plan read it (nil
+// for a new object).
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state, planRemote any) error {
+	remote := d.RemoteState
+	if remote == nil {
+		remote = planRemote
+	}
+	err := d.Adapter.RecordInternalID(state, remote)
+	if err != nil {
+		return fmt.Errorf("recording internal id: %w", err)
+	}
 	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
 	if err != nil {
 		return fmt.Errorf("compacting state: %w", err)

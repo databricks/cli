@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -33,20 +34,33 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch manifest: %w", err)
+		return nil, &FetchError{Stage: FetchStageManifest, Err: fmt.Errorf("failed to fetch manifest: %w", err)}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("skills manifest at %s@%s: %w", skillsRepoName, ref, clicompat.ErrNotFound)
+		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("skills manifest at %s@%s: %w", skillsRepoName, ref, clicompat.ErrNotFound)}
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
+		return nil, newHTTPFetchError(FetchStageManifest, resp, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode))
 	}
 
+	// Read the whole body before parsing it: a connection dropped mid-body is a
+	// fetch failure, while a body that arrived but is empty or truncated JSON is
+	// an invalid manifest. A streaming decoder reports both as io.ErrUnexpectedEOF.
+	// The cap is far above the manifest's size, so a large non-manifest body (a
+	// captive portal, a wrong mirror) is not read whole. One byte past the cap
+	// tells an oversized body apart from one that fits exactly.
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxFetchBodySize+1))
+	if err != nil {
+		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to read manifest: %w", err)}
+	}
+	if len(data) > maxFetchBodySize {
+		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: ErrManifestTooLarge}
+	}
 	var manifest Manifest
-	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
-		return nil, fmt.Errorf("failed to parse manifest: %w", err)
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to parse manifest: %w", err)}
 	}
 
 	normalizeManifest(&manifest)

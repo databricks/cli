@@ -235,6 +235,9 @@ func bindHostMetadataLogger(ctx context.Context, cfg *config.Config) {
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 	ctx := cmd.Context()
+	if shouldSkipTokenRefresh(ctx) {
+		cfg.Credentials = auth.CredentialsWithoutRefresh()
+	}
 	liteswap.Apply(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
@@ -365,6 +368,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	cfg := &config.Config{}
+	if shouldSkipTokenRefresh(ctx) {
+		cfg.Credentials = auth.CredentialsWithoutRefresh()
+	}
 	liteswap.Apply(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 

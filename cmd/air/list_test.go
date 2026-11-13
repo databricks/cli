@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -137,6 +138,10 @@ func TestRunFetcherResumesAcrossCalls(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true})
+	f.validateEmpty = func() error {
+		t.Fatal("validation should not run after an earlier page matched")
+		return nil
+	}
 
 	first, err := f.next(2)
 	require.NoError(t, err)
@@ -251,4 +256,77 @@ func TestListInvalidFilter(t *testing.T) {
 	err := cmd.RunE(cmd, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported --filter key")
+}
+
+func TestListInvalidAcceleratorFilter(t *testing.T) {
+	jobsCalled := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
+			_, _ = w.Write([]byte(`{}`))
+		case "/api/2.2/jobs/runs/list":
+			jobsCalled = true
+			_, _ = w.Write([]byte(runsListBody(t, "")))
+		case computeOptionsPath:
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newListCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.Flags().Set("all-users", "true"))
+	require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=GPU_1xV100"))
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "valid values for this workspace")
+	assert.Contains(t, err.Error(), "GPU_8xH100")
+	assert.True(t, jobsCalled)
+}
+
+func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		runs    string
+		wantErr bool
+	}{
+		{"matching run", runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")), false},
+		{"no matching run", runsListBody(t, ""), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			computeOptionsCalled := false
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case computeOptionsPath:
+					computeOptionsCalled = true
+					http.Error(w, "unavailable", http.StatusNotFound)
+				case "/api/2.2/jobs/runs/list":
+					_, _ = w.Write([]byte(tc.runs))
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+			cmd := withOutput(newListCommand(), flags.OutputJSON)
+			cmd.SetContext(ctx)
+			require.NoError(t, cmd.Flags().Set("all-users", "true"))
+			require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=A10"))
+
+			err := cmd.RunE(cmd, nil)
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Equal(t, "no runs matched --filter accelerator_type=\"A10\"\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", err.Error())
+				assert.True(t, computeOptionsCalled)
+			} else {
+				require.NoError(t, err)
+				assert.False(t, computeOptionsCalled)
+			}
+		})
+	}
 }

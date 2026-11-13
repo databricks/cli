@@ -10,3 +10,8 @@ Env.MSYS_NO_PATHCONV = "1"
 [[Repls]]
 Old = '\b[0-9a-f]{40}\b'
 New = '[COMMIT_SHA]'
+
+# The fake workspace reports "main"; the real repo's default branch is "ide".
+[[Repls]]
+Old = '"current_branch": "(main|ide)"'
+New = '"current_branch": "[BRANCH]"'

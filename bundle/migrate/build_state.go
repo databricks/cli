@@ -257,6 +257,22 @@ func BuildStateFromTF(
 			}
 		}
 
+		// The internal ID, where the terraform provider records it under the same name (schema_id;
+		// databricks_volume has no volume_id, so a migrated volume has none).
+		if adapter.HasInternalID() {
+			path, err := structpath.ParsePath(adapter.ResourceConfig().InternalIDField)
+			if err != nil {
+				return warningsSeen, fmt.Errorf("%s: %w", node, err)
+			}
+			if v, err := LookupTFField(tfAttrs, group, srcName, path); err == nil {
+				if internalID, ok := v.(string); ok && internalID != "" {
+					if err := structaccess.Set(sv.Value, path, internalID); err != nil {
+						return warningsSeen, fmt.Errorf("%s: cannot set %s: %w", node, path, err)
+					}
+				}
+			}
+		}
+
 		// Reconcile id-composing fields with the deployed terraform state so a pending id
 		// change surfaces in the plan instead of being snapshotted as already applied. A no-op
 		// for permissions/grants sub-nodes: their adapters declare no id fields.
