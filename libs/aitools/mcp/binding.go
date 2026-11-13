@@ -186,12 +186,13 @@ func RecreateCommand(host, profileName, configFile string) string {
 }
 
 // ConfigFileCommand returns command with DATABRICKS_CONFIG_FILE set to configFile, when configFile is not "". A command
-// that a hint prints names the file of a profile that is not the one the shell reads.
+// that a hint prints names the file of a profile that is not the one the shell reads. The file is written with forward
+// slashes on every platform, as the other paths in the hints are.
 func ConfigFileCommand(configFile, command string) string {
 	if configFile == "" {
 		return command
 	}
-	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
+	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(filepath.ToSlash(configFile)) + " " + command
 }
 
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not

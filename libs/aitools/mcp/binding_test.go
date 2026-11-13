@@ -884,3 +884,12 @@ func TestAuthErrorNamesPinnedConfigFile(t *testing.T) {
 		"Invalid access token.\nRun: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
 	assert.EqualError(t, mcp.AuthError("logfood", "", cause), "Invalid access token.\nRun: databricks auth login --profile logfood")
 }
+
+// TestConfigFileCommandUsesForwardSlashes checks that a pinned config file is named with forward slashes, so that the
+// hints read the same on Windows. A path that filepath builds there has backslashes, which the shell command must not
+// carry. On other systems the two forms are the same, so the test guards the Windows run.
+func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
+	path := filepath.Join("work", "cfg", "logfood.cfg")
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+filepath.ToSlash(path)+" databricks auth login --profile logfood",
+		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
+}
