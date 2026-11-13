@@ -350,7 +350,6 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	var err error
 
 	tcases := []struct {
 		name           string
@@ -432,7 +431,7 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 			t.Parallel()
 
 			// Upload the notebook
-			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
+			err := f.Write(ctx, tc.name, strings.NewReader(tc.content1))
 			require.NoError(t, err)
 
 			// Assert contents after initial upload. Note that we expect the content
