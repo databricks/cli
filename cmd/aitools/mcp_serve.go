@@ -92,7 +92,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if f.service == "" {
 		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
-	if !isFullName(strings.Split(f.service, ".")) {
+	if !isServiceName(f.service) {
 		return fmt.Errorf("%s needs a full service name such as system.ai.github", mcpconfig.ServiceFlag)
 	}
 

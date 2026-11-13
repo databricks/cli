@@ -298,7 +298,7 @@ func TestServeAgentKeepsOnlyKnownAgents(t *testing.T) {
 // any binding check, with the flag named.
 func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	withHome(t)
-	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d"} {
+	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d", "system.ai.git#hub", "system.ai.git?hub", "system.ai.git/hub"} {
 		t.Run(service, func(t *testing.T) {
 			parent := newMCPTestRoot()
 			parent.SetArgs([]string{"mcp", "serve", "--profile", "logfood", "--service", service})
