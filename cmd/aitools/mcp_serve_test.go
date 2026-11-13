@@ -1025,6 +1025,22 @@ func TestServeChallengeLookupAuthFailureExitsTwo(t *testing.T) {
 	assert.Contains(t, err.Error(), "databricks auth login --profile logfood")
 }
 
+// TestServeChallengeStopsQuietlyOnSignal checks that a signal during the startup read ends the start as a shutdown does:
+// the read's cancellation is returned, and nothing is written, rather than a line that says the read failed.
+func TestServeChallengeStopsQuietlyOnSignal(t *testing.T) {
+	server := serviceServer(t, http.StatusInternalServerError, `{"error_code":"INTERNAL_ERROR","message":"boom"}`)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	var stderr bytes.Buffer
+
+	_, err = serveChallenge(ctx, serveTarget{w: w, profile: testProfile, service: testService}, &stderr)
+
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Empty(t, stderr.String())
+}
+
 // TestServeStartStatusIsOneForOtherFailures checks that a startup failure that is not a credential's exits 1.
 func TestServeStartStatusIsOneForOtherFailures(t *testing.T) {
 	assert.Equal(t, 1, serveStartStatus(errors.New("cannot read MCP service system.ai.github: not found")))

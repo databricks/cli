@@ -122,13 +122,23 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	// The bridge and the sign-in client share the guard, so a refresh failure in either one stops the proxy.
 	refresh := &refreshGuard{authenticate: cfg.Authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
 
-	w, err := guardedClient(cfg, refresh)
-	if err != nil {
-		return serveFailure(cmd, err, 1)
+	// The sign-in client is built only when serveChallenge reads the service or signs in. A server whose record says it
+	// needs no sign-in makes no call at start.
+	var w *databricks.WorkspaceClient
+	if entry == nil || entry.SignInRequired {
+		w, err = guardedClient(cfg, refresh)
+		if err != nil {
+			return serveFailure(cmd, err, 1)
+		}
 	}
 	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
 	if err != nil {
-		return serveFailure(cmd, err, serveStartStatus(err))
+		if ctx.Err() != nil {
+			// A signal during the start ends serve as a shutdown does, with no line.
+			return nil
+		}
+		// serveChallenge fails only on an auth failure (see lookupAtStart), which exits serveBindStatus.
+		return serveFailure(cmd, err, serveBindStatus)
 	}
 
 	return serveProxy(ctx, cmd, refresh, proxy.Options{
@@ -193,6 +203,9 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		switch {
 		case err == nil:
 			signInRequired = svc.SignInRequired
+		case ctx.Err() != nil:
+			// The serve is stopping, so the read's failure is its cancellation, which is not reported.
+			return nil, ctx.Err()
 		case serveStartStatus(err) == serveBindStatus:
 			return nil, err
 		default:
