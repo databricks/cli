@@ -284,13 +284,8 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 		if req.Open {
 			openPage = browser.OpenOutputToStderr
 		}
-		// A poll names the page when this attempt did not open it, so that the client can show where the user finishes.
-		pageURL := url
-		if req.Open {
-			pageURL = ""
-		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
-		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(pageURL) }})
+		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(url) }})
 		return alreadySignedIn, urlShown, err
 	}
 }

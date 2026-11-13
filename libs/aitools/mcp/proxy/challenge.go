@@ -39,8 +39,8 @@ type SignInRequest struct {
 	// Restart deletes the caller's sign-in before the sign-in runs, so that it starts from no credential. The proxy asks
 	// for it when the service challenged the session again after an "Already signed in" answer.
 	Restart bool
-	// Progress is called on each poll of the wait. Its pageURL is the sign-in page when this attempt did not open the page,
-	// so that the client can show where the user finishes, and "" otherwise. It is never nil.
+	// Progress is called on each poll of the wait with the sign-in page, so that the client can show where the user
+	// finishes, whether or not this attempt opened the page. It is never nil.
 	Progress func(pageURL string)
 	// Stderr receives the progress lines of the sign-in. Writes to it are serialized with the bridge's diagnostics.
 	Stderr io.Writer

@@ -1280,9 +1280,9 @@ func TestServeSignInRestartGivesUpOnStaleCredential(t *testing.T) {
 	assert.False(t, urlShown, "no page is shown while the credential still reads as signed in")
 }
 
-// TestServeSignInProgressNamesPageWhenNotOpened checks that the progress of a sign-in names its page when this attempt
-// does not open it, and names none when it does.
-func TestServeSignInProgressNamesPageWhenNotOpened(t *testing.T) {
+// TestServeSignInProgressNamesThePage checks that the progress of a sign-in names its page on every poll, whether or not
+// this attempt opens the page. A client that hides stderr sees the page only through progress.
+func TestServeSignInProgressNamesThePage(t *testing.T) {
 	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
 	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
 	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
@@ -1322,10 +1322,7 @@ func TestServeSignInProgressNamesPageWhenNotOpened(t *testing.T) {
 
 			require.NoError(t, err)
 			// The fixture is read twice before the caller signs in: the check before the sign-in, then two polls.
-			want := ""
-			if !tc.open {
-				want = mcp.SignInURL(server.URL, testService, "1")
-			}
+			want := mcp.SignInURL(server.URL, testService, "1")
 			assert.Equal(t, []string{want, want}, pageURLs)
 		})
 	}
