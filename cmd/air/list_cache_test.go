@@ -59,7 +59,7 @@ func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {
 	putRow(ctx, newListCache(ctx), host, 7, []jobs.RunTask{{RunId: 70}}, 1000_000, listRow{RunID: "7", Status: "SUCCESS"}, filterFields{})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	})
 	rows, err := f.next(10)
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestIndexStrategyFiltersCachedRow(t *testing.T) {
 		filterFields{Experiment: "bar"})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 		filters: listFilters{Experiment: "foo"},
 	})
 	rows, err := f.next(10)
@@ -104,7 +104,7 @@ func TestIndexStrategyServesMatchingCachedRow(t *testing.T) {
 		filterFields{Experiment: "foo"})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 		filters: listFilters{Experiment: "foo"},
 	})
 	rows, err := f.next(10)
@@ -149,7 +149,7 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	query := listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	}
 	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), query).next(10)
 	require.NoError(t, err)

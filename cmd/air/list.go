@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -74,10 +74,12 @@ type listedRun struct {
 
 // listQuery holds the resolved inputs to a runFetcher.
 type listQuery struct {
-	activeOnly  bool
-	allUsers    bool
-	userFilter  string
-	currentUser string
+	activeOnly bool
+	allUsers   bool
+	userFilter string
+	// currentUser resolves the caller's user name for a self-scoped list. It is
+	// nil when an explicit user= filter or --all-users is set.
+	currentUser func() (string, error)
 	filters     listFilters
 	fetchMLflow bool
 	limit       int
@@ -141,37 +143,23 @@ Filters:
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
-		// unless --all-users is set. runs/list has no creator param, so the
-		// creator is matched while scanning.
-		userFilter := f.User
-		var currentUser string
-		if userFilter == "" && !allUsers {
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-			if err != nil {
-				return fmt.Errorf("failed to resolve current user: %w", err)
-			}
-			currentUser = me.UserName
-			userFilter = currentUser
-		}
-
-		// Fetch workspace ID once for dashboard links; proceed with 0 on error.
-		var workspaceID int64
-		wsID, err := w.CurrentWorkspaceID(ctx)
-		if err != nil {
-			log.Debugf(ctx, "air list: could not fetch workspace ID for dashboard links: %v", err)
-		} else {
-			workspaceID = wsID
+		// unless --all-users is set. The user is resolved only if a strategy
+		// needs it: the index is already scoped to the caller, and runs/list has
+		// no creator param, so the scan matches the creator itself.
+		var currentUser func() (string, error)
+		if f.User == "" && !allUsers {
+			currentUser = sync.OnceValues(func() (string, error) { return currentUserEmail(ctx, w) })
 		}
 
 		fetcher := newRunFetcher(ctx, w, listQuery{
 			activeOnly:  !allStatus,
 			allUsers:    allUsers,
-			userFilter:  userFilter,
+			userFilter:  f.User,
 			currentUser: currentUser,
 			filters:     f,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
-			workspaceID: workspaceID,
+			workspaceID: workspaceIDForRunLink(ctx, w),
 		})
 		if f.AcceleratorType != "" {
 			fetcher.validateEmpty = func() error {
@@ -249,7 +237,7 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 // the Jobs scan so the command still returns. Everything else — the default
 // active list, --all-users, and --all-status for another user — uses the scan.
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
-	useIndex := !q.activeOnly && !q.allUsers && (q.userFilter == "" || q.userFilter == q.currentUser)
+	useIndex := !q.activeOnly && q.currentUser != nil
 	if !useIndex {
 		return newJobsScanStrategy(ctx, w, q)
 	}
@@ -304,6 +292,7 @@ type jobsScanStrategy struct {
 	w           *databricks.WorkspaceClient
 	iter        listing.Iterator[jobs.BaseRun]
 	userFilter  string
+	currentUser func() (string, error) // resolves userFilter for a self-scoped scan
 	filters     listFilters
 	host        string
 	workspaceID int64
@@ -318,11 +307,17 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 		Limit:       jobsPageLimit,
 		ActiveOnly:  q.activeOnly,
 	}
+	// Resolve the current user while the first runs/list page is fetched; next()
+	// waits for it only when it first needs to match a run's creator.
+	if q.currentUser != nil {
+		go func() { _, _ = q.currentUser() }()
+	}
 	return &jobsScanStrategy{
 		ctx:         ctx,
 		w:           w,
 		iter:        w.Jobs.ListRuns(ctx, req),
 		userFilter:  q.userFilter,
+		currentUser: q.currentUser,
 		filters:     q.filters,
 		host:        w.Config.Host,
 		workspaceID: q.workspaceID,
@@ -341,6 +336,13 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		run := baseRunToRun(base)
 		if !isAirRun(run) {
 			continue
+		}
+		if s.currentUser != nil {
+			user, err := s.currentUser()
+			if err != nil {
+				return nil, err
+			}
+			s.userFilter, s.currentUser = user, nil
 		}
 		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
 			continue

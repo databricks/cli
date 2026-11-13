@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -191,6 +192,14 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	}
 
 	out := cmd.OutOrStdout()
+	if !req.jsonOutput && !req.staticView && !status.terminal() {
+		runURL := req.runURL
+		if runURL == "" {
+			workspaceID, _ := strconv.ParseInt(w.Config.WorkspaceID, 10, 64)
+			runURL = dashboardURL(w.Config.Host, req.runID, workspaceID)
+		}
+		defer printJobRunLink(ctx, out, runURL)
+	}
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -243,4 +252,12 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 		return mlflowLogFallback(ctx, w, out, req, status)
 	}
 	return success, err
+}
+
+// printJobRunLink leaves the run link below the streamed output, including on failure.
+func printJobRunLink(ctx context.Context, out io.Writer, runURL string) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
 }

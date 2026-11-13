@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -18,11 +20,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// watchServer serves submit, the user lookup, a terminal runs/get, and a single
-// page of Bricklens logs — everything `air run --watch` touches after submit.
+// watchServer serves submit, the user lookup, a RUNNING-to-terminal transition,
+// and a page of Bricklens logs.
 // resultState is the terminal result the run reports (e.g. SUCCESS, FAILED).
 func watchServer(t *testing.T, resultState string) *httptest.Server {
 	t.Helper()
+	oldPollInterval := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = oldPollInterval })
+	var runGets atomic.Int32
 	runGet := `{
 		"run_id": 777,
 		"start_time": 1700000000000,
@@ -35,12 +41,18 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
 			_, _ = w.Write([]byte(`{"run_id": 777}`))
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			if runGets.Add(1) == 1 {
+				_, _ = w.Write([]byte(`{"run_id":777,"start_time":1700000000000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":778,"attempt_number":0}]}`))
+				return
+			}
 			_, _ = w.Write([]byte(runGet))
 		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
-			_, _ = w.Write([]byte(`{"log_records": [
-				{"time_unix_nano": 1700000002000000000, "body": "step 2", "node_index": 0},
-				{"time_unix_nano": 1700000001000000000, "body": "step 1", "node_index": 0}
-			]}`))
+			first := `{"time_unix_nano":1700000001000000000,"body":"step 1","node_index":0}`
+			second := `{"time_unix_nano":1700000002000000000,"body":"step 2","node_index":0}`
+			if r.URL.Query().Get("ascending") == "false" {
+				first, second = second, first
+			}
+			_, _ = fmt.Fprintf(w, `{"log_records":[%s,%s]}`, first, second)
 		default:
 			// Me() user lookup, workspace-id, SDK config discovery.
 			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
@@ -101,7 +113,9 @@ func runWatchCmdWithConfig(t *testing.T, out flags.Output, buf *bytes.Buffer, sr
 	require.NoError(t, cmd.Flags().Set("watch", "true"))
 
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, nil, buf, buf, "", ""))
-	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
+	client := newTestWorkspaceClient(t, srvURL)
+	client.Config.WorkspaceID = "42"
+	ctx = cmdctx.SetWorkspaceClient(ctx, client)
 	cmd.SetContext(ctx)
 	cmd.SetOut(buf)
 	return cmd.RunE(cmd, nil)
@@ -122,12 +136,13 @@ compute:
 
 func TestRunWatchStreamsLogs(t *testing.T) {
 	var buf bytes.Buffer
-	err := runWatchCmd(t, flags.OutputText, &buf, watchServer(t, "SUCCESS").URL)
+	srv := watchServer(t, "SUCCESS")
+	err := runWatchCmd(t, flags.OutputText, &buf, srv.URL)
 	require.NoError(t, err)
 
 	out := buf.String()
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
-	assert.Contains(t, out, "View job run at: ")
+	assert.Equal(t, 2, strings.Count(out, "View job run at: "+srv.URL+"/jobs/runs/777?o=42\n"))
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
 	// Retries are announced only when one happens, so a healthy run doesn't look like it failed.
 	assert.NotContains(t, out, "retried")
@@ -137,6 +152,7 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "───")
 	// The submitted run's logs stream through, oldest-first.
 	assert.Contains(t, out, "step 1\nstep 2")
+	assert.True(t, strings.HasSuffix(out, "\n\nView job run at: "+srv.URL+"/jobs/runs/777?o=42\n"), out)
 }
 
 func TestRunWatchMultinodeIdentifiesStreamedNode(t *testing.T) {
@@ -162,6 +178,7 @@ func TestRunWatchJSONEmitsSubmittedThenLogs(t *testing.T) {
 	assert.Contains(t, all, `"type":"LOG"`)
 	assert.Contains(t, all, `"line":"step 1"`)
 	assert.NotContains(t, all, "Monitoring run and streaming logs")
+	assert.NotContains(t, all, "View job run at:")
 	// The last line is the closing terminal-status envelope carrying SUCCESS.
 	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
 	assert.Contains(t, lines[len(lines)-1], `"run_id":"777"`)
@@ -175,15 +192,18 @@ func TestRunWatchJSONFailedRunTerminalEnvelope(t *testing.T) {
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	assert.Contains(t, lines[len(lines)-1], `"status":"FAILED"`)
+	assert.NotContains(t, buf.String(), "View job run at:")
 }
 
 func TestRunWatchFailedRunExitsNonZero(t *testing.T) {
 	var buf bytes.Buffer
 	// A run that ends FAILED streams its logs but exits non-zero, surfaced as
 	// ErrAlreadyPrinted (the output was already written).
-	err := runWatchCmd(t, flags.OutputText, &buf, watchServer(t, "FAILED").URL)
+	srv := watchServer(t, "FAILED")
+	err := runWatchCmd(t, flags.OutputText, &buf, srv.URL)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "step 1\nstep 2")
+	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+srv.URL+"/jobs/runs/777?o=42\n"), buf.String())
 }
 
 func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {

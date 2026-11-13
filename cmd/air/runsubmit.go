@@ -468,12 +468,12 @@ func workspaceIDForRunLink(ctx context.Context, w *databricks.WorkspaceClient) i
 	defer cancel()
 	id, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		log.Debugf(ctx, "air run: could not resolve workspace ID for the run link: %v", err)
+		log.Debugf(ctx, "could not resolve workspace ID for the run link: %v", err)
 		return 0
 	}
 	workspaceID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		log.Debugf(ctx, "air run: workspace ID %q for the run link is not numeric", id)
+		log.Debugf(ctx, "workspace ID %q for the run link is not numeric", id)
 		return 0
 	}
 	return workspaceID

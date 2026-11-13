@@ -2,9 +2,12 @@ package aircmd
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -82,6 +85,41 @@ func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	require.Len(t, rows, 2)
 	assert.Equal(t, "1", rows[0].RunID)
 	assert.Equal(t, "5", rows[1].RunID)
+}
+
+func TestListAirRunsResolvesCurrentUserOnce(t *testing.T) {
+	runs := []jobs.BaseRun{
+		airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(2, "other@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(3, "me@example.com", "GPU_1xA10", 1, "exp"),
+	}
+	srv := runsServer(t, runsListBody(t, "", runs...))
+
+	var lookups atomic.Int32
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			lookups.Add(1)
+			return "me@example.com", nil
+		}),
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "3", rows[1].RunID)
+	assert.Equal(t, int32(1), lookups.Load())
+}
+
+func TestListAirRunsReportsUserLookupFailure(t *testing.T) {
+	srv := runsServer(t, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")))
+
+	_, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			return "", errors.New("failed to resolve current user: boom")
+		}),
+	}).next(10)
+	require.ErrorContains(t, err, "failed to resolve current user: boom")
 }
 
 func TestListAirRunsExperimentFilter(t *testing.T) {
