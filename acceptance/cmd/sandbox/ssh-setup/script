@@ -1,0 +1,7 @@
+export DATABRICKS_CONFIG_FILE="$TEST_TMP_DIR/databrickscfg"
+printf '[sandbox-test]\nhost = %s\ntoken = %s\n' "$DATABRICKS_HOST" "$DATABRICKS_TOKEN" > "$DATABRICKS_CONFIG_FILE"
+trace $CLI sandbox ssh-setup test --name my-sandbox --profile sandbox-test --releases-dir "$TEST_TMP_DIR/releases"
+trace $CLI sandbox ssh-setup test --name my-sandbox --profile sandbox-test --releases-dir "$TEST_TMP_DIR/releases"
+trace cat "$TEST_TMP_DIR/.ssh/config"
+trace cat "$TEST_TMP_DIR/.databricks/ssh-tunnel-configs/my-sandbox"
+trace musterr $CLI sandbox ssh-setup test --name ../escape

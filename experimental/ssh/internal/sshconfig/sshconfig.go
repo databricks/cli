@@ -220,6 +220,11 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 // `ssh setup --name <alias> --cluster <id>`: without it ssh would look the key up under the
 // alias, find no matching entry, and fail strict host key checking (DECO-27882).
 func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand string) string {
+	return GenerateHostConfigWithTimeout(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand, 360)
+}
+
+// GenerateHostConfigWithTimeout supports proxies that enforce their own startup timeout.
+func GenerateHostConfigWithTimeout(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand string, connectTimeoutSeconds int) string {
 	hostKeyAliasLine := ""
 	if hostKeyAlias != "" {
 		hostKeyAliasLine = fmt.Sprintf("    HostKeyAlias %s\n", hostKeyAlias)
@@ -227,12 +232,12 @@ func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, hostKe
 	return fmt.Sprintf(`
 Host %s
     User %s
-    ConnectTimeout 360
+    ConnectTimeout %d
     ServerAliveInterval %d
     StrictHostKeyChecking yes
     UserKnownHostsFile %q
 %s    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, ServerAliveIntervalSeconds, knownHostsFile, hostKeyAliasLine, identityFile, proxyCommand)
+`, hostName, userName, connectTimeoutSeconds, ServerAliveIntervalSeconds, knownHostsFile, hostKeyAliasLine, identityFile, proxyCommand)
 }
