@@ -26,8 +26,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Results of the `mcp list --check` checks that are not server statuses. They are the JSON values of SPEC 4.6;
-// statusOK and statusUnknown carry the other two.
+// Results of the `mcp list --check` checks that are not server statuses. statusOK and statusUnknown carry the other two.
 const (
 	checkFailed = "failed"
 	checkNeeded = "needed"
@@ -123,8 +122,8 @@ type profileKey struct {
 	path    string
 }
 
-// NewMcpListCmd returns `aitools mcp list`. It reads the state file and the agent configs only, so it
-// needs no network. Drift and unreadable entries are reported, not failed: the command exits 0.
+// NewMcpListCmd returns `aitools mcp list`. Without --check it reads the state file and the agent configs only, and
+// makes no network calls. Drift and unreadable entries are reported, not failed: the command exits 0.
 func NewMcpListCmd() *cobra.Command {
 	var check bool
 	cmd := &cobra.Command{

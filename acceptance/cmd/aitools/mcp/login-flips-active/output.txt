@@ -25,7 +25,6 @@ Public repositories only until a repository owner installs https://github.com/ap
 === login again when already signed in returns at once
 
 >>> [CLI] aitools mcp login system.ai.github --profile logfood --output json
-Sign in with the same account you use for Databricks profile logfood.
 Signed in to system.ai.github on profile logfood.
 Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector.
 {

@@ -25,8 +25,10 @@ var ErrSignInTimeout = errors.New("sign-in did not complete before the timeout")
 // ErrSignInFailed means the credential reached the FAILED provisioning state.
 var ErrSignInFailed = errors.New("sign-in failed")
 
-// SignInOptions controls how SignIn waits. Callers set all three fields.
+// SignInOptions controls how SignIn waits. Callers set all four fields.
 type SignInOptions struct {
+	// Profile is the profile whose user signs in. The notice before the page names it.
+	Profile string
 	Poll    time.Duration
 	Timeout time.Duration
 	// Open opens the sign-in page. It is not called when BROWSER=none, because the URL is already printed.
@@ -63,6 +65,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		return nil
 	}
 
+	fmt.Fprintf(out, "Sign in with the same account you use for Databricks profile %s.\n", opts.Profile)
 	fmt.Fprintf(out, "Open this URL to sign in to %s:\n%s\n", service, url)
 	if !browser.IsDisabled(ctx) {
 		if err := opts.Open(ctx, url); err != nil {

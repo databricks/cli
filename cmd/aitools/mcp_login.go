@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -193,11 +194,19 @@ func mcpLogout(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceCli
 	return nil
 }
 
+// mcpLoginCommand is the command that signs a profile in to a service. The hints name it.
+const mcpLoginCommand = "databricks aitools mcp login"
+
+// mcpLoginHint returns the command that signs profileName in to service.
+func mcpLoginHint(service, profileName string) string {
+	return mcpLoginCommand + " " + shellquote.BashArg(service) + " --profile " + shellquote.BashArg(profileName)
+}
+
 // signIn runs the provider sign-in of svc for the profile and reports progress on errOut. It returns
 // the sign-in state name and the failure, which is categorized for JSON. `add --login` shares it.
 func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, profileName, url string, svc mcp.Service) (string, error) {
-	fmt.Fprintf(errOut, "Sign in with the same account you use for Databricks profile %s.\n", profileName)
 	err := mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
+		Profile: profileName,
 		Poll:    mcp.SignInPollInterval,
 		Timeout: mcp.SignInWaitTimeout,
 		Open:    browser.Open,
@@ -205,12 +214,12 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 	switch {
 	case errors.Is(err, mcp.ErrSignInTimeout):
 		return signInStateTimeout, failure(categorySignInTimeout, err,
-			"Sign-in to %s did not complete in %g minutes. Finish at %s then retry: databricks aitools mcp login %s --profile %s",
-			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, svc.FullName, profileName)
+			"sign-in to %s did not complete in %g minutes. Finish at %s then retry: %s",
+			svc.FullName, mcp.SignInWaitTimeout.Minutes(), url, mcpLoginHint(svc.FullName, profileName))
 	case errors.Is(err, mcp.ErrSignInFailed):
 		return signInStateFailed, failure(protos.AitoolsErrorCategoryUncategorized, err,
-			"Sign-in to %s failed on profile %s. Run: databricks aitools mcp login %s --profile %s",
-			svc.FullName, profileName, svc.FullName, profileName)
+			"sign-in to %s failed on profile %s. Run: %s",
+			svc.FullName, profileName, mcpLoginHint(svc.FullName, profileName))
 	case err != nil:
 		return "", describeRequestError(profileName, err)
 	}

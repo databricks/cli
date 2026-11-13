@@ -156,3 +156,9 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 	assert.Contains(t, errOut.String(), "system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood\n")
 	assert.NotContains(t, errOut.String(), "system.ai.genie_one_mcp needs sign-in")
 }
+
+// TestMcpLoginHintQuotesItsArguments checks that the login command a hint prints can be pasted into a shell as written.
+func TestMcpLoginHintQuotesItsArguments(t *testing.T) {
+	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile logfood", mcpLoginHint("system.ai.github", "logfood"))
+	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile 'my profile'", mcpLoginHint("system.ai.github", "my profile"))
+}

@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -867,7 +866,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 
 // signInHint is the command that signs the profile in to a sign-in-required service.
 func signInHint(service, profileName string) string {
-	return fmt.Sprintf("%s needs sign-in. Run: databricks aitools mcp login %s --profile %s", service, shellquote.BashArg(service), shellquote.BashArg(profileName))
+	return fmt.Sprintf("%s needs sign-in. Run: %s", service, mcpLoginHint(service, profileName))
 }
 
 // installedAnywhere reports whether the server reached at least one agent.
