@@ -1084,6 +1084,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			if signedIn(ctx, w, plans[i].service.FullName) {
 				server.SignIn = &addSignInOutput{State: signInStateActive}
 				reportSignedIn(errOut, plans[i].service, req.profile, true)
+				logMcpEvent(ctx, addSignInEvent(server.Service, signInStateActive, true, nil))
 				continue
 			}
 			yes, err := promptSignInNow(server.Service)
@@ -1100,11 +1101,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		state, alreadySignedIn, _, err := signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
 		server.SignIn = &addSignInOutput{State: state}
-		logMcpEvent(ctx, protos.AitoolsMcpEvent{
-			CallingAgent: callingAgentType(),
-			Operation:    protos.AitoolsMcpOperationSignIn,
-			Servers:      []protos.AitoolsMcpServerResult{signInServerResult(server.Service, state, alreadySignedIn, err)},
-		})
+		logMcpEvent(ctx, addSignInEvent(server.Service, state, alreadySignedIn, err))
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)
 			server.SignIn.Error = err.Error()

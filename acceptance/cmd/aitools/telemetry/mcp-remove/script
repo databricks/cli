@@ -33,3 +33,9 @@ title "An entry already gone from the agent config is SKIPPED, and the state rec
 jq 'del(.mcpServers["genie_one_mcp-logfood"])' home/.claude.json > home/claude.tmp && mv home/claude.tmp home/.claude.json
 $CLI aitools mcp remove --names genie_one_mcp-logfood --profile logfood --output json > /dev/null
 mcp_events
+
+title "A record with no agent left goes with a REMOVE of its own: CHANGED with no agent, and no profile bound"
+mkdir -p home/.databricks/aitools/skills
+cp record-only.state.json home/.databricks/aitools/skills/.state.json
+trace $CLI aitools mcp remove --names dbsql-logfood --profile logfood --output json > /dev/null
+mcp_events

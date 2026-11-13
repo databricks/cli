@@ -102,7 +102,10 @@ func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAct
 	if out.cfg != nil {
 		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), out.cfg))
 	}
-	logMcpEvent(ctx, signInEvent(operation, out, runErr))
+	// The event uploads with the profile's config, so a run that reached no server logs nothing.
+	if out.cfg != nil {
+		logMcpEvent(ctx, signInEvent(operation, out, runErr))
+	}
 	if !jsonMode {
 		return runErr
 	}

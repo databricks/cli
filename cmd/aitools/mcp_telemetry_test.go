@@ -3,6 +3,7 @@ package aitools
 import (
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
@@ -129,6 +130,15 @@ func TestSignInServerResult(t *testing.T) {
 			want:  protos.AitoolsMcpServerResult{Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeUnchanged, SignInState: protos.AitoolsMcpSignInStateNotRequired},
 		},
 		{
+			// A run that never learned the state, such as a read that failed, reports none.
+			name: "state not learned",
+			err:  failure(protos.AitoolsErrorCategoryMCPServiceNotFound, nil, "not found"),
+			want: protos.AitoolsMcpServerResult{
+				Service: protos.AitoolsMcpServiceGitHub, Outcome: protos.AitoolsTargetOutcomeFailed,
+				ErrorCategory: protos.AitoolsErrorCategoryMCPServiceNotFound,
+			},
+		},
+		{
 			name:  "timed out",
 			state: signInStateTimeout,
 			err:   failure(protos.AitoolsErrorCategorySignInTimeout, nil, "timed out"),
@@ -193,13 +203,31 @@ func TestSignInPromptedEvent(t *testing.T) {
 }
 
 func TestBoundProfileCount(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "first.cfg")
+	second := filepath.Join(dir, "second.cfg")
 	state := &mcp.State{Servers: []mcp.Entry{
-		{Profile: "logfood", Service: "system.ai.github"},
-		{Profile: "logfood", Service: "system.ai.genie_one_mcp"},
-		{Profile: "dogfood", Service: "system.ai.github"},
+		{Profile: "logfood", Service: "system.ai.github", ConfigFile: first},
+		{Profile: "logfood", Service: "system.ai.genie_one_mcp", ConfigFile: first},
+		// DEFAULT in two config files is two profiles, as list groups them.
+		{Profile: "DEFAULT", Service: "system.ai.github", ConfigFile: first},
+		{Profile: "DEFAULT", Service: "system.ai.github", ConfigFile: second},
 	}}
-	assert.Equal(t, int64(2), boundProfileCount(state))
-	assert.Equal(t, int64(0), boundProfileCount(&mcp.State{}))
+	assert.Equal(t, int64(3), boundProfileCount(t.Context(), state))
+	assert.Equal(t, int64(0), boundProfileCount(t.Context(), &mcp.State{}))
+}
+
+func TestAddSignInEvent(t *testing.T) {
+	// An ACTIVE credential that the add found signed in is UNCHANGED, as add --login reports it.
+	assert.Equal(t, protos.AitoolsMcpEvent{
+		CallingAgent: callingAgentType(),
+		Operation:    protos.AitoolsMcpOperationSignIn,
+		Servers: []protos.AitoolsMcpServerResult{{
+			Service:     protos.AitoolsMcpServiceGitHub,
+			Outcome:     protos.AitoolsTargetOutcomeUnchanged,
+			SignInState: protos.AitoolsMcpSignInStateActive,
+		}},
+	}, addSignInEvent("system.ai.github", signInStateActive, true, nil))
 }
 
 // The event carries enums and counts only. A custom service and the host of its profile must not

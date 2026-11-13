@@ -111,15 +111,20 @@ func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) {
 		log.Debugf(ctx, "telemetry: cannot read the MCP state; dropping the event: %s", err)
 		return
 	}
-	event.BoundProfileCount = boundProfileCount(state)
+	event.BoundProfileCount = boundProfileCount(ctx, state)
 	telemetry.Log(ctx, protos.DatabricksCliLog{AitoolsMcpEvent: &event})
 }
 
-// boundProfileCount returns the number of distinct profiles that have servers installed.
-func boundProfileCount(state *mcp.State) int64 {
-	profiles := map[string]bool{}
+// boundProfileCount returns the number of distinct profiles that have servers installed. A profile is its name in its
+// config file, as list groups them, so DEFAULT in two config files counts twice.
+func boundProfileCount(ctx context.Context, state *mcp.State) int64 {
+	profiles := map[profileKey]bool{}
 	for _, e := range state.Servers {
-		profiles[e.Profile] = true
+		path, err := mcp.ResolveConfigFile(ctx, e.ConfigFile)
+		if err != nil {
+			path = e.ConfigFile
+		}
+		profiles[profileKey{profile: e.Profile, path: path}] = true
 	}
 	return int64(len(profiles))
 }
@@ -178,10 +183,12 @@ func removeServerResult(service, agent string, outcome removeOutcome, err error)
 	return r
 }
 
-// signInStateOf maps a sign-in state name of login to its telemetry state. Anything but ACTIVE or
-// NOT_REQUIRED is still PENDING.
+// signInStateOf maps a sign-in state name of login to its telemetry state. A run that never learned the state leaves it
+// unset. Anything but ACTIVE or NOT_REQUIRED is still PENDING.
 func signInStateOf(state string) protos.AitoolsMcpSignInState {
 	switch state {
+	case "":
+		return ""
 	case signInStateActive:
 		return protos.AitoolsMcpSignInStateActive
 	case signInStateNotRequired:
@@ -204,6 +211,16 @@ func signInServerResult(service, state string, alreadySignedIn bool, err error) 
 		r.Outcome = protos.AitoolsTargetOutcomeChanged
 	}
 	return r
+}
+
+// addSignInEvent is the SIGN_IN event of one provider sign-in under add --login. A sign-in that found the caller
+// already signed in is UNCHANGED.
+func addSignInEvent(service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
+	return protos.AitoolsMcpEvent{
+		CallingAgent: callingAgentType(),
+		Operation:    protos.AitoolsMcpOperationSignIn,
+		Servers:      []protos.AitoolsMcpServerResult{signInServerResult(service, state, alreadySignedIn, err)},
+	}
 }
 
 // signOutServerResult returns the result of a logout. Logout does not read whether the service needs

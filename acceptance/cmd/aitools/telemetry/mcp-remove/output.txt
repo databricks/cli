@@ -68,3 +68,18 @@
   ],
   "bound_profile_count": 0
 }
+
+=== A record with no agent left goes with a REMOVE of its own: CHANGED with no agent, and no profile bound
+
+>>> [CLI] aitools mcp remove --names dbsql-logfood --profile logfood --output json
+{
+  "calling_agent": "TYPE_UNSPECIFIED",
+  "operation": "REMOVE",
+  "servers": [
+    {
+      "service": "DBSQL",
+      "outcome": "CHANGED"
+    }
+  ],
+  "bound_profile_count": 0
+}

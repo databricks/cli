@@ -232,7 +232,11 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 			removed.Agents = append(removed.Agents, agentName)
 			drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 		}
-		// A server with no agent left in state is removed from state too, so it is reported as removed.
+		// A server with no agent left in state is removed from state too, so it is reported as removed. Only its
+		// record goes, which is a change to the state.
+		if len(e.Agents) == 0 {
+			out.results = append(out.results, protos.AitoolsMcpServerResult{Service: mcpServiceType(e.Service), Outcome: protos.AitoolsTargetOutcomeChanged})
+		}
 		if len(removed.Agents) > 0 || len(e.Agents) == 0 {
 			out.Removed = append(out.Removed, removed)
 		}
