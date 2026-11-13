@@ -318,7 +318,7 @@ func installedSkillsRelease(state *InstallState) (ref string, allowFallback bool
 
 func checkSkillsDowngrade(installedRef, ref string, explicit bool) error {
 	if !explicit && semver.Compare(ref, installedRef) < 0 {
-		return fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)
+		return &RefusedError{Err: fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)}
 	}
 	return nil
 }
@@ -366,7 +366,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
 	legacyInstall := state == nil && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
 	if legacyInstall && len(opts.SpecificSkills) > 0 {
-		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
+		return &RefusedError{Err: errors.New("legacy install detected without state tracking; run 'databricks aitools install --scope=global --skills-only' (without --skills) first to rebuild state")}
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)

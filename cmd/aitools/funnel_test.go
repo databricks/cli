@@ -378,7 +378,7 @@ func TestInstallFunnelEmptyPickerSelectionIsCancelled(t *testing.T) {
 	cmd.SetContext(ctx)
 	err := cmd.RunE(cmd, nil)
 	require.ErrorIs(t, err, errNoAgentsSelected)
-	assert.Equal(t, "at least one agent must be selected", err.Error())
+	assert.Equal(t, "at least one agent must be selected\nTo install without prompts, name the scope and agents, for example: databricks aitools install --scope=global --agents=<name>", err.Error())
 	assert.Equal(t, []string{"STARTED", "FLAGS_VALIDATED", "SCOPE_RESOLVED", "FINISHED:CANCELLED:"}, funnelShape(funnelEvents(ctx)))
 }
 
