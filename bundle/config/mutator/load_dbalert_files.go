@@ -178,7 +178,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			Evaluation:           dbalertFromFile.Evaluation,
 			EffectiveRunAs:       dbalertFromFile.EffectiveRunAs,
 			RunAs:                dbalertFromFile.RunAs,
-			RunAsUserName:        dbalertFromFile.RunAsUserName,
+			RunAsUserName:        dbalertFromFile.RunAsUserName, //nolint:staticcheck // SA1019: run_as_user_name is still accepted in alert files; run_as is the replacement
 			ParentPath:           dbalertFromFile.ParentPath,
 			Parameters:           dbalertFromFile.Parameters,
 			CustomTemplateFormat: dbalertFromFile.CustomTemplateFormat,

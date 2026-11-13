@@ -80,14 +80,15 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "A SQL alert. An alert runs a query on a schedule, evaluates the result against a condition,\nand notifies users or notification destinations when the condition is met.",
                     "properties": {
                       "custom_description": {
-                        "description": "Custom description for the alert. Interpreted according to `custom_template_format`.",
+                        "description": "Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.\nThe available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
                       "custom_summary": {
-                        "description": "Custom summary for the alert. Interpreted according to `custom_template_format`.",
+                        "description": "Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -102,6 +103,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "evaluation": {
+                        "description": "Condition evaluated against the query result, and who is notified when it is met.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -138,13 +140,14 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "run_as_user_name": {
-                        "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                        "description": "Deprecated: Use `run_as` field instead. This field will be removed in a future release.\nThe run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA",
                         "deprecationMessage": "This field is deprecated",
                         "deprecated": true
                       },
                       "schedule": {
+                        "description": "Schedule on which the alert runs its query and evaluates the condition.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -2143,6 +2146,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "description": {
+                        "description": "The description of the serving endpoint.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -2733,7 +2737,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "role": {
-                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nA database always has an owner.",
+                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nRequired when creating the Database.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       }
@@ -14191,7 +14195,7 @@
                       "deprecated": true
                     },
                     "filter_condition": {
-                      "description": "Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.",
+                      "description": "A single WHERE clause to filter the Delta table before applying transformations.\nThe predicate is evaluated for each row.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -14209,7 +14213,7 @@
                       "deprecated": true
                     },
                     "transformation_sql": {
-                      "description": "A single SQL SELECT expression applied after filter_condition.\nShould contains all the columns needed (eg. \"SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a \u003e 0\" would have `transformation_sql` \"*, col_a + col_b AS col_c\")\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
+                      "description": "A single SQL SELECT expression applied after filter_condition.\nThe expression must contain all required columns (e.g., \"*, col_a + col_b AS col_c\").\nIf transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -20658,6 +20662,7 @@
                   "type": "object",
                   "properties": {
                     "served_entity_name": {
+                      "description": "The name of the served entity this route configures traffic for.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -20699,6 +20704,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "entity_version": {
+                      "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -20812,10 +20818,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "model_name": {
+                      "description": "The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "model_version": {
+                      "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -21167,12 +21175,12 @@
                   "type": "object",
                   "properties": {
                     "comparison_operator": {
-                      "description": "Operator used for comparison in alert evaluation.",
+                      "description": "Operator used for comparison in alert evaluation. The alert is triggered when the comparison of the source value with the threshold is true. `IS_NULL` and `IS_NOT_NULL` take no threshold.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator",
                       "x-databricks-launch-stage": "GA"
                     },
                     "empty_result_state": {
-                      "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
+                      "description": "Alert state if result is empty. If not set, an empty result sets the state to `ERROR`. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -21187,7 +21195,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "threshold": {
-                      "description": "Threshold to user for alert evaluation, can be a column or a value.",
+                      "description": "Threshold to compare the source column against, either another column or a fixed value. Not needed when `comparison_operator` is `IS_NULL` or `IS_NOT_NULL`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21220,6 +21228,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "subscriptions": {
+                      "description": "Users and notification destinations that receive notifications.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21238,10 +21247,12 @@
                   "type": "object",
                   "properties": {
                     "column": {
+                      "description": "Compare the source against another column of the query result.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn",
                       "x-databricks-launch-stage": "GA"
                     },
                     "value": {
+                      "description": "Compare the source against a fixed value.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21260,15 +21271,17 @@
                   "type": "object",
                   "properties": {
                     "aggregation": {
-                      "description": "If not set, the behavior is equivalent to using `First row` in the UI.",
+                      "description": "Aggregation applied to the column across all rows of the query result: `SUM`, `COUNT`, `COUNT_DISTINCT`, `AVG`, `MEDIAN`, `MIN`, `MAX` or `STDDEV`.\nIf not set, the value in the first row is used, which is equivalent to using `First row` in the UI.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation",
                       "x-databricks-launch-stage": "GA"
                     },
                     "display": {
+                      "description": "Label for the column in notifications. Defaults to `name`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "name": {
+                      "description": "Name of the column in the query result.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21290,14 +21303,17 @@
                   "type": "object",
                   "properties": {
                     "bool_value": {
+                      "description": "Boolean threshold, for boolean columns.",
                       "$ref": "#/$defs/bool",
                       "x-databricks-launch-stage": "GA"
                     },
                     "double_value": {
+                      "description": "Numeric threshold, for numeric columns.",
                       "$ref": "#/$defs/float64",
                       "x-databricks-launch-stage": "GA"
                     },
                     "string_value": {
+                      "description": "String threshold, for string or timestamp columns.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21340,10 +21356,12 @@
                   "type": "object",
                   "properties": {
                     "destination_id": {
+                      "description": "ID of the notification destination to notify, as returned by the Notification Destinations API.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "user_email": {
+                      "description": "Email address of the workspace user to notify.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21446,12 +21464,12 @@
                   "type": "object",
                   "properties": {
                     "pause_status": {
-                      "description": "Indicate whether this schedule is paused or not.",
+                      "description": "Indicates whether this schedule is paused. While paused, the alert is not evaluated.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus",
                       "x-databricks-launch-stage": "GA"
                     },
                     "quartz_cron_schedule": {
-                      "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+                      "description": "A cron expression using quartz syntax that specifies the schedule for this alert.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },

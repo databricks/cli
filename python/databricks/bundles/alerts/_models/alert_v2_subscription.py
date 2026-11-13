@@ -16,8 +16,14 @@ class AlertV2Subscription:
     """"""
 
     destination_id: VariableOrOptional[str] = None
+    """
+    ID of the notification destination to notify, as returned by the Notification Destinations API.
+    """
 
     user_email: VariableOrOptional[str] = None
+    """
+    Email address of the workspace user to notify.
+    """
 
     @classmethod
     def from_dict(cls, value: "AlertV2SubscriptionDict") -> "Self":
@@ -31,8 +37,14 @@ class AlertV2SubscriptionDict(TypedDict, total=False):
     """"""
 
     destination_id: VariableOrOptional[str]
+    """
+    ID of the notification destination to notify, as returned by the Notification Destinations API.
+    """
 
     user_email: VariableOrOptional[str]
+    """
+    Email address of the workspace user to notify.
+    """
 
 
 AlertV2SubscriptionParam = AlertV2SubscriptionDict | AlertV2Subscription
