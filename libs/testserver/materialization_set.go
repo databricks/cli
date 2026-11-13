@@ -130,6 +130,33 @@ func featureMaterializationDestination(members []ml.MaterializedFeature) string 
 	return offline + "|" + online
 }
 
+// validateResolvedFeatureNames mirrors CreateMaterializationSet's rule that each member names its
+// feature by its resolved name, which UC stores lowercase.
+func validateResolvedFeatureNames(members []ml.MaterializedFeature) *materializationSetRefusal {
+	requestedFeatureNames := map[string]bool{}
+	for _, member := range members {
+		requestedFeatureNames[member.FeatureName] = true
+	}
+
+	var missingResolvedFeatureNames []string
+	for featureName := range requestedFeatureNames {
+		resolvedFeatureName := strings.ToLower(featureName)
+		if !requestedFeatureNames[resolvedFeatureName] &&
+			!slices.Contains(missingResolvedFeatureNames, resolvedFeatureName) {
+			missingResolvedFeatureNames = append(missingResolvedFeatureNames, resolvedFeatureName)
+		}
+	}
+	if len(missingResolvedFeatureNames) == 0 {
+		return nil
+	}
+	slices.Sort(missingResolvedFeatureNames)
+	return &materializationSetRefusal{
+		errorCode: "BAD_REQUEST",
+		message: "Materialized feature requests must include the resolved feature names: " +
+			strings.Join(missingResolvedFeatureNames, ", "),
+	}
+}
+
 // validateSharedMaterializationDestination mirrors the create-path rule that every feature in a
 // set asks for an identical destination pair. Because the pair carries the online config, a set
 // cannot mix a feature materialized to both stores with one materialized offline only.
@@ -330,6 +357,7 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 	// than a rejected request: the backend reaches these rules inside the batch create it calls
 	// after reserving, and reports them by settling the record.
 	for _, bad := range []*materializationSetRefusal{
+		validateResolvedFeatureNames(set.MaterializedFeatures),
 		s.validateBatchAndStreamingFeaturesNotMixed(set.MaterializedFeatures),
 		validateSharedMaterializationDestination(set.MaterializedFeatures),
 		s.validateSawtoothMaterializedFeatures(set.MaterializedFeatures),
