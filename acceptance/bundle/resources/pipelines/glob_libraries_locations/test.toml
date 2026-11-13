@@ -1,0 +1,1 @@
+Badness = "The libraries that a glob expands to lose the location of the glob: only the first warning has a location."
