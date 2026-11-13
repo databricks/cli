@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,12 +20,14 @@ import (
 )
 
 func TestMcpSignInRequiresFullServiceName(t *testing.T) {
-	for _, service := range []string{"github", "system.github", "system..github", "a.b.c.d"} {
+	// A name with a character that is URL syntax, or a control character, is refused before any request: the request
+	// path would name another resource.
+	for _, service := range []string{"github", "system.github", "system..github", "a.b.c.d", "system.ai.git#hub", "system.ai.git?hub", "system.ai.git/hub", "system.ai.git%hub", "system.ai.git\nhub"} {
 		t.Run(service, func(t *testing.T) {
 			var out mcpSignInOutput
 			err := runMcpSignIn(cmdio.MockDiscard(t.Context()), &bytes.Buffer{}, "", service, mcpLogin, &out)
 			require.Error(t, err)
-			assert.Equal(t, `service must be a full name such as system.ai.github, got "`+service+`"`, err.Error())
+			assert.Equal(t, fmt.Sprintf("service must be a full name such as system.ai.github, got %q", service), err.Error())
 			assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, errorCategory(err))
 		})
 	}

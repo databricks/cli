@@ -108,8 +108,13 @@ func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAct
 	return nil
 }
 
+// isServiceName reports whether service is a full name that can be sent in a request path as it is.
+func isServiceName(service string) bool {
+	return isFullName(strings.Split(service, ".")) && mcp.PathSafeName(service)
+}
+
 func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service string, action mcpSignInAction, out *mcpSignInOutput) error {
-	if !isFullName(strings.Split(service, ".")) {
+	if !isServiceName(service) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, nil, "service must be a full name such as system.ai.github, got %q", service)
 	}
 	// The config file is resolved once, as add resolves it, so that the profile lookup and the client read the same file.
