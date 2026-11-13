@@ -73,9 +73,7 @@ class Alert(Resource):
 
     custom_template_format: VariableOrOptional[CustomTemplateFormat] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Public Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -178,9 +176,7 @@ class AlertDict(TypedDict, total=False):
 
     custom_template_format: VariableOrOptional[CustomTemplateFormatParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Public Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
