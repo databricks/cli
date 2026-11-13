@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -259,7 +260,7 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
 		if call == 1 {
-			return false, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
+			return false, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
 		}
 		return false, nil
 	}}
@@ -329,15 +330,6 @@ func TestChallengeTurnsOnAfterSignIn(t *testing.T) {
 	require.NoError(t, p.finish(t))
 }
 
-// TestSignInTimeoutKeepsLastCheck checks that the timeout exposes the failure of its last poll through the error chain.
-func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
-	lastCheck := errors.New("the last poll failed")
-	err := error(&SignInTimeout{URL: testURL, Wait: time.Minute, LastCheck: lastCheck})
-
-	assert.ErrorIs(t, err, lastCheck)
-	assert.NoError(t, errors.Unwrap(&SignInTimeout{URL: testURL}))
-}
-
 // TestChallengeHintsPrintTheLoginCommand checks that the challenge and the timeout print the login command that the
 // command built, so a pinned config file and a profile name with a space are quoted for a shell.
 func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
@@ -345,7 +337,7 @@ func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
 	var calls atomic.Int32
 	signIn := func(ctx context.Context, _ SignInRequest) (bool, bool, error) {
 		calls.Add(1)
-		return false, true, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
+		return false, true, &mcp.SignInTimeoutError{URL: testURL, Wait: 5 * time.Minute}
 	}
 	b := bridgeFor(srv.URL)
 	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}}
@@ -415,7 +407,7 @@ func TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt(t *testing.T)
 	}{
 		"cancelled after the page was shown":  {first: attempt{cancel: true, urlShown: true}, wantOpen: false},
 		"cancelled before the page was shown": {first: attempt{cancel: true}, wantOpen: true},
-		"timed out":                           {first: attempt{urlShown: true, err: &SignInTimeout{URL: testURL, Wait: time.Minute}}, wantOpen: true},
+		"timed out":                           {first: attempt{urlShown: true, err: &mcp.SignInTimeoutError{URL: testURL, Wait: time.Minute}}, wantOpen: true},
 		"failed":                              {first: attempt{urlShown: true, err: errors.New("sign-in failed")}, wantOpen: true},
 		"error before the page":               {first: attempt{err: errors.New("credential read failed")}, wantOpen: true},
 		"already signed in":                   {first: attempt{alreadySignedIn: true, urlShown: true}, wantOpen: true},

@@ -9,34 +9,18 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/databricks/cli/libs/aitools/mcp"
 )
 
 const (
 	authenticateTool = "authenticate"
-	signInPath       = "/mcp-service-login"
 
 	codeSignInRequired = -32006
 	codeURLElicitation = -32042
 )
 
 var listChangedNotification = []byte(`{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`)
-
-// SignInTimeout means the sign-in page was shown and the credential did not become ACTIVE within Wait. URL is the page
-// the user can finish at. LastCheck is the failure of the last poll, when that poll failed.
-type SignInTimeout struct {
-	URL       string
-	Wait      time.Duration
-	LastCheck error
-}
-
-func (e *SignInTimeout) Error() string {
-	return "sign-in did not complete before the timeout"
-}
-
-func (e *SignInTimeout) Unwrap() error {
-	return e.LastCheck
-}
 
 // SignInRequest says how one sign-in runs.
 type SignInRequest struct {
@@ -51,7 +35,7 @@ type SignInRequest struct {
 
 // SignInFunc runs the sign-in for the authenticate tool and waits for it. It reports alreadySignedIn when the caller
 // needed no sign-in, and urlShown when the sign-in page's URL was printed, which is so even when the wait is then
-// cancelled. It returns a *SignInTimeout when the wait ended first.
+// cancelled. It returns a *mcp.SignInTimeoutError when the wait ended first.
 type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, urlShown bool, err error)
 
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
@@ -233,7 +217,7 @@ func (h *signInHooks) isSignInURL(raw string) bool {
 		return false
 	}
 	return u.Scheme == base.Scheme && strings.EqualFold(u.Host, base.Host) &&
-		u.Path == signInPath && strings.EqualFold(u.Query().Get("name"), h.c.Service)
+		u.Path == mcp.SignInPath && strings.EqualFold(u.Query().Get("name"), h.c.Service)
 }
 
 // authenticateList is the one-tool list a challenged service answers with.
@@ -290,7 +274,7 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 		// The client cancelled the request or shutdown began. Nothing is answered for a cancelled request.
 		return nil
 	}
-	timeout, timedOut := errors.AsType[*SignInTimeout](err)
+	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
 
 	switch {
 	case err == nil && alreadySignedIn:

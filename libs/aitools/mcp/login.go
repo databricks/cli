@@ -21,16 +21,21 @@ const (
 	SignInWaitTimeout  = 5 * time.Minute
 )
 
-// SignInTimeoutError means the caller's credential did not become ACTIVE before the wait ended. LastCheck is the
-// failure of the last poll, when that poll failed; a poll that reads the credential clears it.
+// SignInTimeoutError means the caller's credential did not become ACTIVE before the wait ended. URL is the sign-in page
+// the user finishes at, and Wait is how long the wait was. LastCheck is the failure of the last poll, when that poll
+// failed; a poll that reads the credential clears it.
 type SignInTimeoutError struct {
+	URL       string
+	Wait      time.Duration
 	LastCheck error
 }
 
+// Error implements error.
 func (e *SignInTimeoutError) Error() string {
 	return "sign-in did not complete before the timeout"
 }
 
+// Unwrap returns the failure of the last poll, so that errors.Is and errors.As see it.
 func (e *SignInTimeoutError) Unwrap() error {
 	return e.LastCheck
 }
@@ -119,7 +124,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	for {
 		select {
 		case <-waitCtx.Done():
-			return false, true, waitEnded(ctx, lastCheck)
+			return false, true, waitEnded(ctx, url, opts.Timeout, lastCheck)
 		case err := <-opened:
 			opened = nil
 			if err != nil {
@@ -134,7 +139,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		state, err := CredentialState(waitCtx, w, service)
 		if err != nil {
 			if waitCtx.Err() != nil {
-				return false, true, waitEnded(ctx, lastCheck)
+				return false, true, waitEnded(ctx, url, opts.Timeout, lastCheck)
 			}
 			if !transientPollError(err) {
 				return false, true, err
@@ -166,13 +171,13 @@ func transientPollError(err error) bool {
 	return ok
 }
 
-// waitEnded returns why the sign-in wait ended: the caller's cancellation, or else the timeout, with the failure of the
-// last poll.
-func waitEnded(ctx context.Context, lastCheck error) error {
+// waitEnded returns why the sign-in wait ended: the caller's cancellation, or else the timeout, with the page URL, the
+// wait and the failure of the last poll.
+func waitEnded(ctx context.Context, url string, wait time.Duration, lastCheck error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return &SignInTimeoutError{LastCheck: lastCheck}
+	return &SignInTimeoutError{URL: url, Wait: wait, LastCheck: lastCheck}
 }
 
 // SignOut deletes the caller's sign-in to a service. It reports false when the caller was not
