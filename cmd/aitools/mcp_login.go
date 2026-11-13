@@ -35,16 +35,14 @@ const (
 
 // mcpSignInOutput is the `mcp login` and `mcp logout` document.
 type mcpSignInOutput struct {
-	Service       string                      `json:"service"`
-	Profile       string                      `json:"profile"`
-	Host          string                      `json:"host"`
-	State         string                      `json:"state"`
+	Service string `json:"service"`
+	// Profile and Host are set once they are known, so a failure before that leaves them out.
+	Profile       string                      `json:"profile,omitempty"`
+	Host          string                      `json:"host,omitempty"`
+	State         string                      `json:"state,omitempty"`
 	URL           string                      `json:"url,omitempty"`
 	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
 	Error         string                      `json:"error,omitempty"`
-
-	// configFile is the resolved config file that the profile is read from. It is not in the JSON.
-	configFile string
 }
 
 // mcpSignInAction runs login or logout against the profile's client and records the result in out.
@@ -131,6 +129,7 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
+	out.Profile = profileName
 	if _, err := mcp.CheckBinding(ctx, state, service, profileName, configFile); err != nil {
 		return err
 	}
@@ -138,9 +137,7 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
-	out.Profile = profileName
 	out.Host = w.Config.Host
-	out.configFile = configFile
 	return action(ctx, errOut, w, out)
 }
 

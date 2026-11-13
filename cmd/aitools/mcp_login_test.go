@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/cmdio"
@@ -178,4 +180,27 @@ func TestSignInInstalledSignsInToEveryServer(t *testing.T) {
 func TestMcpLoginHintQuotesItsArguments(t *testing.T) {
 	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile logfood", mcpLoginHint("system.ai.github", "logfood"))
 	assert.Equal(t, "databricks aitools mcp login system.ai.github --profile 'my profile'", mcpLoginHint("system.ai.github", "my profile"))
+}
+
+// TestMcpLoginJSONNamesProfileWhenBindingFails checks that a failure after the profile is resolved still names the profile
+// in the document, and that a state the command never reached is left out rather than sent empty.
+func TestMcpLoginJSONNamesProfileWhenBindingFails(t *testing.T) {
+	home := withHome(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveEntry(t, mcp.Entry{Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test"})
+
+	parent := newMCPTestRoot()
+	var stdout bytes.Buffer
+	parent.SetOut(&stdout)
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "login", "system.ai.github", "--profile", "logfood", "--output", "json"})
+	err := parent.ExecuteContext(cmdio.MockDiscard(t.Context()))
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var out mcpSignInOutput
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out), stdout.String())
+	assert.Equal(t, "logfood", out.Profile)
+	assert.Equal(t, "PROFILE_HOST_CHANGED", string(out.ErrorCategory))
+	assert.NotContains(t, stdout.String(), `"state"`)
 }
