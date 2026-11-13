@@ -360,7 +360,7 @@ func TestResolveMaxRetriesSource(t *testing.T) {
 	assert.Equal(t, &runMaxRetries{Limit: 2, Source: maxRetriesReported}, resolveMaxRetries(run, nil))
 }
 
-// The runs/get bodies below are trimmed copies of real e2-dogfood responses:
+// The runs/get bodies below are trimmed copies of real workspace responses:
 // task runs carry no max_retries key at all.
 func TestMaxRetriesFromDecodedRunGet(t *testing.T) {
 	decode := func(body string) *jobs.Run {
