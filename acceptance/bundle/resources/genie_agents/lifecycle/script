@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# The server assigns the id; read it from state and register the [AGENT_ID]
+# replacement so the golden does not pin the random value.
+AGENT=$(read_id.py agent)
+
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
+
+# Verify there is no drift right after deploy. Text plan (not -o json) keeps the
+# output identical between the mock and a real workspace.
+trace $CLI bundle plan
+
+title "Update description in place"
+trace update_file.py databricks.yml "Agent grounded in sales tables" "Agent grounded in sales tables, updated"
+trace $CLI bundle deploy
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
+
+trace $CLI bundle plan

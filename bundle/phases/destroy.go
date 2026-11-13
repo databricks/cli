@@ -50,6 +50,7 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
+	{group: "genie_agents", message: deleteGenieAgentMessage},
 	{group: "features", message: deleteFeatureMessage},
 	{group: "feature_specs", message: deleteFeatureSpecMessage},
 }

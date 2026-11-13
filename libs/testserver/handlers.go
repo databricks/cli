@@ -666,6 +666,20 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.GenieSpaceTrash(req)
 	})
 
+	// Genie Agents:
+	server.Handle("GET", "/api/2.0/genie/agents/{genie_agent_id}", func(req Request) any {
+		return req.Workspace.GenieAgentGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/agents", func(req Request) any {
+		return req.Workspace.GenieAgentCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/agents/{genie_agent_id}", func(req Request) any {
+		return req.Workspace.GenieAgentUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/agents/{genie_agent_id}", func(req Request) any {
+		return req.Workspace.GenieAgentDelete(req)
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {

@@ -26,6 +26,8 @@ feature_specs: ml.FeatureSpec
 
 features: ml.Feature
 
+genie_agents: genieagents.CreateGenieAgentRequest
+
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool

@@ -1,0 +1,280 @@
+
+=== Initial summary before deploy
+
+>>> [CLI] bundle summary -o json
+{
+  "definition": {
+    "config": {
+      "sample_questions": [
+        {
+          "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
+          "question": "What were total sales last month?"
+        }
+      ]
+    },
+    "data_sources": {
+      "tables": [
+        {
+          "description": "One row per order, with order date and amount.",
+          "identifier": "main.sales.orders"
+        }
+      ]
+    }
+  },
+  "description": "COMMENT1",
+  "display_name": "my-agent",
+  "genie_agent_id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "modified_status": "created",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+  "warehouse_id": "test-warehouse-id"
+}
+
+=== Verify it does not exist yet
+
+>>> musterr [CLI] genie-agents get-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+Error: Genie Agent not found
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created genie_agents.agent1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //genie/agents //workspace/mkdirs
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/genie/agents",
+  "q": {
+    "genie_agent_id": "01f0a1b2c3d4e5f60718293a4b5c6d7e"
+  },
+  "body": {
+    "definition": {
+      "config": {
+        "sample_questions": [
+          {
+            "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
+            "question": "What were total sales last month?"
+          }
+        ]
+      },
+      "data_sources": {
+        "tables": [
+          {
+            "description": "One row per order, with order date and amount.",
+            "identifier": "main.sales.orders"
+          }
+        ]
+      }
+    },
+    "description": "COMMENT1",
+    "display_name": "my-agent",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+    "warehouse_id": "test-warehouse-id"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/genie/agents",
+  "q": {
+    "genie_agent_id": "01f0a1b2c3d4e5f60718293a4b5c6d7e"
+  },
+  "body": {
+    "definition": {
+      "config": {
+        "sample_questions": [
+          {
+            "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
+            "question": "What were total sales last month?"
+          }
+        ]
+      },
+      "data_sources": {
+        "tables": [
+          {
+            "description": "One row per order, with order date and amount.",
+            "identifier": "main.sales.orders"
+          }
+        ]
+      }
+    },
+    "description": "COMMENT1",
+    "display_name": "my-agent",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+    "warehouse_id": "test-warehouse-id"
+  }
+}
+
+=== Summary should show the id and the Genie room url
+
+>>> [CLI] bundle summary -o json
+{
+  "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "url": "[DATABRICKS_URL]/genie/rooms/01f0a1b2c3d4e5f60718293a4b5c6d7e?w=[WORKSPACE_ID]"
+}
+
+=== Verify deployment
+
+>>> [CLI] genie-agents get-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "my-agent",
+  "description": "COMMENT1",
+  "warehouse_id": "test-warehouse-id",
+  "etag": "1"
+}
+
+=== Update description (should update in place, not recreate)
+
+>>> update_file.py databricks.yml COMMENT1 COMMENT2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated genie_agents.agent1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //genie/agents
+{
+  "method": "PATCH",
+  "path": "/api/2.0/genie/agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "q": {
+    "update_mask": "*"
+  },
+  "body": {
+    "definition": {
+      "config": {
+        "sample_questions": [
+          {
+            "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
+            "question": "What were total sales last month?"
+          }
+        ]
+      },
+      "data_sources": {
+        "tables": [
+          {
+            "description": "One row per order, with order date and amount.",
+            "identifier": "main.sales.orders"
+          }
+        ]
+      }
+    },
+    "description": "COMMENT2",
+    "display_name": "my-agent",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+    "warehouse_id": "test-warehouse-id"
+  }
+}
+
+>>> [CLI] genie-agents get-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "my-agent",
+  "description": "COMMENT2",
+  "warehouse_id": "test-warehouse-id",
+  "etag": "1"
+}
+
+=== Change the identity field (should plan a recreate)
+
+>>> update_file.py databricks.yml 01f0a1b2c3d4e5f60718293a4b5c6d7e 02f0a1b2c3d4e5f60718293a4b5c6d7e
+
+>>> [CLI] bundle plan
+recreate genie_agents.agent1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following Genie agents.
+The conversation history attached to a deleted agent is permanently lost:
+  recreate resources.genie_agents.agent1
+Recreated genie_agents.agent1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py //genie/agents
+{
+  "method": "DELETE",
+  "path": "/api/2.0/genie/agents/01f0a1b2c3d4e5f60718293a4b5c6d7e"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/genie/agents",
+  "q": {
+    "genie_agent_id": "02f0a1b2c3d4e5f60718293a4b5c6d7e"
+  },
+  "body": {
+    "definition": {
+      "config": {
+        "sample_questions": [
+          {
+            "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
+            "question": "What were total sales last month?"
+          }
+        ]
+      },
+      "data_sources": {
+        "tables": [
+          {
+            "description": "One row per order, with order date and amount.",
+            "identifier": "main.sales.orders"
+          }
+        ]
+      }
+    },
+    "description": "COMMENT2",
+    "display_name": "my-agent",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+    "warehouse_id": "test-warehouse-id"
+  }
+}
+
+=== Destroy
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_agents.agent1
+
+This action will result in the deletion of the following Genie agents.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_agents.agent1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //genie/agents
+{
+  "method": "DELETE",
+  "path": "/api/2.0/genie/agents/02f0a1b2c3d4e5f60718293a4b5c6d7e"
+}

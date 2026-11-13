@@ -1,0 +1,20 @@
+AGENT="01f0a1b2c3d4e5f60718293a4b5c6d7e"
+
+# Create the object outside the bundle with the CLI's own create command.
+trace $CLI genie-agents create-genie-agent --json '{
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id",
+  "definition": {
+    "config": {
+      "sample_questions": [
+        {"id": "01f0a1b2c3d4e5f60718293a4b5c6d7f", "question": "What were total sales last month?"}
+      ]
+    }
+  }
+}' --genie-agent-id "$AGENT" | agent_fields
+
+trace $CLI bundle deployment bind agent1 "$AGENT" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind agent1
+trace $CLI bundle summary

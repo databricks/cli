@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/genieagents"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -232,6 +233,7 @@ type FakeWorkspace struct {
 	Dashboards            *EventualMap[string, *fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
+	GenieAgents           map[string]genieagents.GenieAgent
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
 	PurgedAlertIDs        map[string]bool
@@ -553,6 +555,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:           map[string]dashboards.GenieSpace{},
+		GenieAgents:           map[string]genieagents.GenieAgent{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,

@@ -1,0 +1,6 @@
+# Genie agents are managed by the direct deployment engine.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]

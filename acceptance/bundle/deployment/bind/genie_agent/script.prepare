@@ -1,0 +1,4 @@
+# Project a genie agent read to the fields the test asserts.
+agent_fields() {
+    jq '{name, display_name, warehouse_id, etag}'
+}

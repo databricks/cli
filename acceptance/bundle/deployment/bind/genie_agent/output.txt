@@ -1,0 +1,48 @@
+
+>>> [CLI] genie-agents create-genie-agent --json {
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id",
+  "definition": {
+    "config": {
+      "sample_questions": [
+        {"id": "01f0a1b2c3d4e5f60718293a4b5c6d7f", "question": "What were total sales last month?"}
+      ]
+    }
+  }
+} --genie-agent-id 01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id",
+  "etag": "1"
+}
+
+>>> [CLI] bundle deployment bind agent1 01f0a1b2c3d4e5f60718293a4b5c6d7e --auto-approve
+Successfully bound genie_agent with an id '01f0a1b2c3d4e5f60718293a4b5c6d7e'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Genie Agents:
+    agent1:
+      Name: bound-agent
+      URL:  [DATABRICKS_URL]/genie/rooms/01f0a1b2c3d4e5f60718293a4b5c6d7e?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle deployment unbind agent1
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Genie Agents:
+    agent1:
+      Name: bound-agent
+      URL:  (not deployed)

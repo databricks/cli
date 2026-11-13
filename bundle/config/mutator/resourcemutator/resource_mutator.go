@@ -53,6 +53,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.genie_spaces.*.parent_path", b.Config.Workspace.ResourcePath},
+		{"resources.genie_agents.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
 		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},

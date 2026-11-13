@@ -1,0 +1,6 @@
+provided_id_fields:
+  # genie_agent_id is the leaf of the server-derived resource name
+  # (agents/{genie_agent_id}), which is what the resource is fetched by. It is
+  # server-assigned when omitted on create; a local change recreates.
+  - field: genie_agent_id
+    reason: id_field

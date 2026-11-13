@@ -993,6 +993,48 @@ resources:
         "time_window":
           "description": |-
             PLACEHOLDER
+    "genie_agents":
+      "description": |-
+        The Genie agent definitions for the bundle, where each key is the name of the agent.
+      "$fields":
+        "definition":
+          "description": |-
+            The definition of the Genie Agent: its sample questions, data sources, instructions, and benchmarks. Must set at least one field. Replaced as a whole on update.
+        "description":
+          "description": |-
+            Description of the Genie Agent. The maximum length is 4,096 characters.
+        "display_name":
+          "description": |-
+            Display name of the Genie Agent. Must be unique within its folder. The maximum length is 63 characters.
+        "genie_agent_id":
+          "description": |-
+            Client-specified ID for the agent: 32 lowercase hexadecimal characters (a UUID without dashes), not all zeros. Assigned by the server if omitted. Immutable: changing this field recreates the resource.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "parent_path":
+          "description": |-
+            Workspace folder in which to create the Genie Agent. If omitted, the caller's home folder is used. On update, setting it moves the agent and clearing it does not.
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
+        "warehouse_id":
+          "description": |-
+            ID of the SQL warehouse used by this Genie Agent.
     "genie_spaces":
       "description": |-
         PLACEHOLDER
