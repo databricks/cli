@@ -985,3 +985,51 @@ func TestAuthFailureNamesPinnedConfigFile(t *testing.T) {
 	require.Len(t, out, 1)
 	assert.Contains(t, parseReply(t, out[0]).Error.Message, "Run: DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks auth login --profile logfood, then restart")
 }
+
+// TestOnlyTheResponseToTheRequestEndsTheSignInState checks which upstream messages can change the sign-in state. A
+// notification that comes before the answer is not the answer, and neither is an answer with a 200 status that is an
+// error, so "Already signed in" and the authenticate tool stay as they were.
+func TestOnlyTheResponseToTheRequestEndsTheSignInState(t *testing.T) {
+	progress := `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1}}`
+	cases := []struct {
+		name, request, id, challenge string
+	}{
+		{"tools/list", `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`, "2", listChallenge},
+		{"tools/call", `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`, "3", callChallenge},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+" progress before the challenge", func(t *testing.T) {
+			h := newSignInHooks(testChallenge(nil), io.Discard)
+			h.alreadySignedIn = true
+
+			out, err := h.Result(t.Context(), []byte(tc.request), http.StatusOK, []byte(progress))
+			require.NoError(t, err)
+			assert.Equal(t, [][]byte{[]byte(progress)}, out, "a notification passes through untouched")
+			assert.True(t, h.alreadySignedIn, "a notification does not end the state")
+
+			_, err = h.Result(t.Context(), []byte(tc.request), http.StatusOK, []byte(tc.challenge))
+			require.NoError(t, err)
+			assert.True(t, h.restart, "the challenge after the answer asks for a restart")
+		})
+		t.Run(tc.name+" answers that are not results", func(t *testing.T) {
+			rpcError := fmt.Sprintf(`{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"rate limited"}}`, tc.id)
+			bridgeError := errorResponse(json.RawMessage(tc.id), codeUpstream, "no data from upstream for 2m0s")
+			for _, msg := range []string{rpcError, string(bridgeError)} {
+				h := newSignInHooks(testChallenge(nil), io.Discard)
+				h.exposed = true
+				h.alreadySignedIn = true
+
+				out, err := h.Result(t.Context(), []byte(tc.request), http.StatusOK, []byte(msg))
+				require.NoError(t, err)
+				assert.Equal(t, [][]byte{[]byte(msg)}, out, "the answer passes through untouched")
+				assert.True(t, h.exposed, "the authenticate tool stays listed")
+				assert.True(t, h.alreadySignedIn, "the answer is not a success")
+			}
+		})
+	}
+}
+
+// testChallenge is the challenge of the tests that drive the hooks directly. signIn is its sign-in.
+func testChallenge(signIn SignInFunc) *Challenge {
+	return &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub", LoginCommand: "databricks aitools mcp login system.ai.github --profile logfood", SignIn: signIn}
+}

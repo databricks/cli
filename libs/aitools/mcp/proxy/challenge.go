@@ -131,33 +131,45 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 
 // Result replaces a challenged tools/list answer with the authenticate tool. A challenged tools/call
 // answer becomes a sign-in message, followed by tools/list_changed so an agent that cached its list re-lists. A 401 that
-// is not a challenge becomes the auth failure (see authFailure).
+// is not a challenge becomes the auth failure (see authFailure). Only the response to the request is read; any other
+// message passes through untouched.
 func (h *signInHooks) Result(_ context.Context, request []byte, status int, message []byte) ([][]byte, error) {
 	req, err := parseMessage(request)
 	if err != nil {
 		return nil, err
 	}
-	if status == http.StatusUnauthorized && !h.challenged(message) {
+	var reply upstreamReply
+	if err := json.Unmarshal(message, &reply); err != nil {
+		return nil, err
+	}
+	if !reply.isResponseTo(req) {
+		return [][]byte{message}, nil
+	}
+	challenged := h.challenged(&reply)
+	if status == http.StatusUnauthorized && !challenged {
 		return [][]byte{errorResponse(req.ID, codeUpstream, h.authFailure())}, nil
 	}
 	if req.Method != methodToolsList && req.Method != methodToolsCall {
 		return [][]byte{message}, nil
 	}
-	if !h.isChallenge(message) {
-		h.succeeded(req.Method, status)
-		return [][]byte{message}, nil
+	if challenged {
+		h.recordChallenge()
+		if req.Method == methodToolsList {
+			return [][]byte{h.authenticateList(req.ID)}, nil
+		}
+		return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
 	}
-	if req.Method == methodToolsList {
-		return [][]byte{h.authenticateList(req.ID)}, nil
+	// A result with no error means the service accepts the caller's credential. An error answer, such as a JSON-RPC
+	// error on HTTP 200 or a failure the bridge wrote for the request, says nothing about it.
+	if status/100 == 2 && reply.Error == nil && reply.Result != nil {
+		h.succeeded(req.Method)
 	}
-	return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
+	return [][]byte{message}, nil
 }
 
-// isChallenge reports whether an upstream answer is a challenge, and records that the session has been challenged.
-func (h *signInHooks) isChallenge(message []byte) bool {
-	if !h.challenged(message) {
-		return false
-	}
+// recordChallenge records a challenge to the session. The authenticate tool is listed from now on, and a challenge that
+// follows an "Already signed in" answer asks for a restart of the sign-in.
+func (h *signInHooks) recordChallenge() {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.exposed = true
@@ -165,16 +177,12 @@ func (h *signInHooks) isChallenge(message []byte) bool {
 		h.restart = true
 		h.alreadySignedIn = false
 	}
-	return true
 }
 
-// succeeded records an upstream answer that is not a challenge. An answer with a success status means the service accepts
-// the caller's credential, so the "Already signed in" state ends: a challenge after this one is not a challenge to that
-// answer. A tools/list answer also takes the authenticate tool off the list, since the list is the service's again.
-func (h *signInHooks) succeeded(method string, status int) {
-	if status/100 != 2 {
-		return
-	}
+// succeeded records a successful answer to a request of method. The "Already signed in" state ends: a challenge after
+// this answer is not a challenge to the credential that was reported signed in. A tools/list answer also takes the
+// authenticate tool off the list, since the list is the service's again.
+func (h *signInHooks) succeeded(method string) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.alreadySignedIn = false
@@ -183,8 +191,9 @@ func (h *signInHooks) succeeded(method string, status int) {
 	}
 }
 
-// upstreamReply is the part of an upstream message that challenge detection reads.
+// upstreamReply is an upstream message as challenge detection reads it: its envelope, and its error or result.
 type upstreamReply struct {
+	message
 	Error *struct {
 		Code int             `json:"code"`
 		Data json.RawMessage `json:"data"`
@@ -201,11 +210,7 @@ type textContent struct {
 
 // challenged reports whether an upstream answer says the caller must sign in: JSON-RPC -32006, a -32042 whose elicitations
 // are all sign-in URLs, or an isError result whose text has one. An HTTP 401 is a challenge only with one of these bodies.
-func (h *signInHooks) challenged(message []byte) bool {
-	var reply upstreamReply
-	if err := json.Unmarshal(message, &reply); err != nil {
-		return false
-	}
+func (h *signInHooks) challenged(reply *upstreamReply) bool {
 	if reply.Error != nil {
 		switch reply.Error.Code {
 		case codeSignInRequired:
