@@ -2334,7 +2334,7 @@ func TestSignInWritesShareTheBridgeStderr(t *testing.T) {
 	require.NoError(t, <-done)
 
 	var progress int
-	for _, line := range strings.Split(stderr.String(), "\n") {
+	for line := range strings.SplitSeq(stderr.String(), "\n") {
 		if strings.HasPrefix(line, "sign-in progress ") {
 			progress++
 		}
