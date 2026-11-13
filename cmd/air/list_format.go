@@ -34,12 +34,7 @@ func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 		accel = a
 	}
 
-	var dashboardURLJSON *string
-	var runURL string
-	if workspaceID != 0 {
-		runURL = dashboardURL(host, run.RunId, workspaceID)
-		dashboardURLJSON = &runURL
-	}
+	runURL := dashboardURL(host, run.RunId, workspaceID)
 
 	return listRow{
 		RunID:           strconv.FormatInt(run.RunId, 10),
@@ -53,7 +48,7 @@ func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 		DurationSeconds: durationSecondsValue,
 		AcceleratorType: acceleratorTypeJSON,
 		NumAccelerators: numAcceleratorsJSON,
-		DashboardURL:    dashboardURLJSON,
+		DashboardURL:    runURL,
 		Experiment:      experiment,
 		Duration:        duration,
 		MLflowURL:       "-",

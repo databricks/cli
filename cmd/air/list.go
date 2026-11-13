@@ -48,7 +48,7 @@ type listRow struct {
 	DurationSeconds *int64  `json:"duration_seconds"`
 	AcceleratorType *string `json:"accelerator_type"`
 	NumAccelerators *int    `json:"num_accelerators"`
-	DashboardURL    *string `json:"dashboard_url"`
+	DashboardURL    string  `json:"dashboard_url"`
 
 	// The fields below are pre-rendered table cells or text-only enrichment.
 	Experiment string `json:"-"`

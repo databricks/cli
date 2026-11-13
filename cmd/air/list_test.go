@@ -196,9 +196,8 @@ func TestBuildListRow(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.False(t, row.IsSweep)
 	require.NotNil(t, row.StartedAt)
-	require.NotNil(t, row.DashboardURL)
-	assert.Equal(t, "https://example.test/jobs/runs/123?o=456", *row.DashboardURL)
-	assert.Equal(t, *row.DashboardURL, row.RunURL)
+	assert.Equal(t, "https://example.test/jobs/runs/123?o=456", row.DashboardURL)
+	assert.Equal(t, row.DashboardURL, row.RunURL)
 
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
@@ -244,7 +243,7 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	}`, string(body))
 }
 
-func TestBuildListRowDashFallbacks(t *testing.T) {
+func TestBuildListRowMissingValues(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
 	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
@@ -253,15 +252,15 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.Equal(t, "UNKNOWN", row.Status)
 	assert.Nil(t, row.StartedAt)
-	assert.Empty(t, row.RunURL)
-	assert.Nil(t, row.DashboardURL)
+	assert.Equal(t, "https://example.test/jobs/runs/7", row.RunURL)
+	assert.Equal(t, row.RunURL, row.DashboardURL)
 
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"run_id":"7","run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
 		"experiment_name":null,"duration_seconds":null,"accelerator_type":null,"num_accelerators":null,
-		"dashboard_url":null
+		"dashboard_url":"https://example.test/jobs/runs/7"
 	}`, string(body))
 }
 

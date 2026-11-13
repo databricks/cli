@@ -39,7 +39,7 @@ type cachedRun struct {
 	DurationSeconds *int64       `json:"duration_seconds"`
 	AcceleratorType *string      `json:"accelerator_type"`
 	NumAccelerators *int         `json:"num_accelerators"`
-	DashboardURL    *string      `json:"dashboard_url"`
+	DashboardURL    string       `json:"dashboard_url"`
 	Experiment      string       `json:"experiment"`
 	Duration        string       `json:"duration"`
 	MLflowURL       string       `json:"mlflow_url"`
