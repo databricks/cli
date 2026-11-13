@@ -218,6 +218,16 @@ func TestLogMcpEventDropsRejectedCredential(t *testing.T) {
 	assert.False(t, uploads, "the add event is logged, and it is not uploaded with the rejected run")
 }
 
+// TestMcpProxyAuthRejectedRefusesUpload checks that a 401 the proxy answers refuses the run's upload, even though the
+// serve command sets its upload config at exit.
+func TestMcpProxyAuthRejectedRefusesUpload(t *testing.T) {
+	ctx := telemetry.WithNewLogger(t.Context())
+	telemetry.SetUploadConfig(ctx, &config.Config{Profile: "logfood", Host: "https://adb-1.test"})
+	mcpProxyTelemetry{}.AuthRejected(ctx)
+	_, uploads := telemetry.UploadConfig(ctx)
+	assert.False(t, uploads)
+}
+
 func TestSignInPromptedEvent(t *testing.T) {
 	for signedIn, state := range map[bool]protos.AitoolsMcpSignInState{
 		true:  protos.AitoolsMcpSignInStateActive,

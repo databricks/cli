@@ -68,16 +68,24 @@ func (s *signInStub) requests() []SignInRequest {
 // loginCommand is the hint that the command builds for a pinned config file and a profile name with a space.
 const loginCommand = `DATABRICKS_CONFIG_FILE='/work/cfg/my file.cfg' databricks aitools mcp login system.ai.github --profile 'my profile'`
 
-// promptRecorder records the SIGN_IN_PROMPTED events: one per sign-in page that authenticate opened.
+// promptRecorder records the SIGN_IN_PROMPTED events: one per sign-in page that authenticate opened. It counts the
+// rejections of the Databricks credential too.
 type promptRecorder struct {
 	mu       sync.Mutex
 	signedIn []bool
+	rejected int
 }
 
 func (r *promptRecorder) SignInPrompted(_ context.Context, signedIn bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.signedIn = append(r.signedIn, signedIn)
+}
+
+func (r *promptRecorder) AuthRejected(_ context.Context) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.rejected++
 }
 
 func (r *promptRecorder) prompts() []bool {
@@ -984,6 +992,23 @@ func TestUnauthorizedIsAuthFailureUnlessItAsksForSignIn(t *testing.T) {
 			assert.Empty(t, signIn.calls(), "a rejected credential starts no sign-in")
 		})
 	}
+}
+
+// TestUnauthorizedRecordsRejectedCredential checks that a 401 without a sign-in challenge is recorded as a rejected
+// credential, once per answer, so that the command refuses its telemetry upload.
+func TestUnauthorizedRecordsRejectedCredential(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	})
+	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
+	recorder := &promptRecorder{}
+	challenge := testChallenge(signIn.SignIn)
+	challenge.Recorder = recorder
+	b := bridgeFor(srv.URL)
+	b.Hooks = newSignInHooks(challenge, io.Discard)
+	runAll(t, b, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`+"\n")
+
+	assert.Equal(t, 1, recorder.rejected)
 }
 
 // TestRejectedCredentialDoesNotAskForLogout checks a rejected Databricks token after "Already signed in": the credential reads

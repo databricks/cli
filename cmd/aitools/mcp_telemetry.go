@@ -248,6 +248,11 @@ func (t mcpProxyTelemetry) SignInPrompted(ctx context.Context, signedIn bool) {
 	logMcpEvent(ctx, signInPromptedEvent(t.agent, t.service, signedIn))
 }
 
+// AuthRejected refuses the run's upload, since the upload would present the rejected credential again.
+func (t mcpProxyTelemetry) AuthRejected(ctx context.Context) {
+	telemetry.RefuseUpload(ctx)
+}
+
 // signInPromptedEvent is the SIGN_IN_PROMPTED event of serve: the sign-in is required, and the
 // sign-in state is ACTIVE when the wait ended with the credential, PENDING otherwise.
 func signInPromptedEvent(agent protos.AitoolsAgentType, service string, signedIn bool) protos.AitoolsMcpEvent {

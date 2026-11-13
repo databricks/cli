@@ -57,6 +57,9 @@ type Recorder interface {
 	// earlier cancelled call opened, which the user may still have open. signedIn reports whether the credential became
 	// ACTIVE. A retry after a cancelled call reports its own outcome.
 	SignInPrompted(ctx context.Context, signedIn bool)
+	// AuthRejected runs when the service answers 401 without asking for a sign-in: the Databricks credential was
+	// rejected, and the answer is the auth failure.
+	AuthRejected(ctx context.Context)
 }
 
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
@@ -156,7 +159,7 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 // answer becomes a sign-in message, followed by tools/list_changed so an agent that cached its list re-lists. A 401 that
 // is not a challenge becomes the auth failure (see authFailure). Only the response to the request is read; any other
 // message passes through untouched.
-func (h *signInHooks) Result(_ context.Context, request []byte, status int, message []byte) ([][]byte, error) {
+func (h *signInHooks) Result(ctx context.Context, request []byte, status int, message []byte) ([][]byte, error) {
 	req, err := parseMessage(request)
 	if err != nil {
 		return nil, err
@@ -174,6 +177,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	}
 	challenged := h.challenged(&reply)
 	if status == http.StatusUnauthorized && !challenged {
+		h.c.Recorder.AuthRejected(ctx)
 		return [][]byte{errorResponse(req.ID, codeUpstream, h.authFailure())}, nil
 	}
 	if req.Method != methodToolsList && req.Method != methodToolsCall {
