@@ -1,5 +1,0 @@
-# serverless is only enabled if UC is enabled
-
-[[Repls]]
-Old = '\\'
-New = '/'

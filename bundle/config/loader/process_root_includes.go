@@ -68,7 +68,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Bundle root path contains glob pattern characters",
-			Detail:   fmt.Sprintf("The path to the bundle root %s contains glob pattern character %q. Please remove the character from this path to use bundle commands.", b.BundleRootPath, char),
+			Detail:   fmt.Sprintf("The path to the bundle root %s contains glob pattern character %q. Please remove the character from this path to use bundle commands.", filepath.ToSlash(b.BundleRootPath), char),
 		})
 
 		return diags
