@@ -1149,3 +1149,81 @@ func TestIsErrorResultChangesNoSignInState(t *testing.T) {
 		exposed: h.exposed, alreadySignedIn: h.alreadySignedIn, stillChallenged: h.stillChallenged, callChallenged: h.callChallenged, callPending: h.callPending,
 	})
 }
+
+// TestCallChallengeListsAuthenticateOnFirstPageOnly checks a paginated list after a challenged tools/call. The authenticate
+// tool is added to the first page, which has no cursor, and not to the pages after it.
+func TestCallChallengeListsAuthenticateOnFirstPageOnly(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
+		var req struct {
+			Params struct {
+				Cursor string `json:"cursor"`
+			} `json:"params"`
+		}
+		_ = json.Unmarshal(body, &req)
+		switch {
+		case m.Method == methodToolsCall && challenged.Load():
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, m.ID)
+		case m.Method == methodToolsList && req.Params.Cursor == "":
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}],"nextCursor":"page-2"}}`, m.ID)
+		case m.Method == methodToolsList:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"more","inputSchema":{"type":"object"}}]}}`, m.ID)
+		default:
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, (&signInStub{reply: func(int) (bool, error) { return false, nil }}).SignIn))
+
+	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	p.waitLines(t, 2)
+	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/list"}`)
+	lines := p.waitLines(t, 3)
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/list","params":{"cursor":"page-2"}}`)
+	lines = p.waitLines(t, 4)
+	require.NoError(t, p.finish(t))
+
+	assert.Equal(t, []string{"echo", "authenticate"}, toolNames(t, lines[2]))
+	assert.Equal(t, []string{"more"}, toolNames(t, lines[3]), "the next page gets no authenticate tool")
+}
+
+// TestCallChallengeKeepsTheServicesAuthenticateTool checks a service whose own list has a tool named authenticate. The list
+// keeps that one alone, and a call to it is forwarded to the service, since the service's tool is not the sign-in.
+func TestCallChallengeKeepsTheServicesAuthenticateTool(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		m, _ := parseMessage(body)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case m.Method == methodToolsCall && challenged.Load():
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, m.ID)
+		case m.Method == methodToolsCall:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"content":[{"type":"text","text":"upstream"}],"isError":false}}`, m.ID)
+		case m.Method == methodToolsList:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}},{"name":"authenticate","inputSchema":{"type":"object"}}]}}`, m.ID)
+		default:
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+
+	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	p.waitLines(t, 2)
+	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/list"}`)
+	lines := p.waitLines(t, 3)
+	assert.Equal(t, []string{"echo", "authenticate"}, toolNames(t, lines[2]), "the service's authenticate is listed once")
+
+	challenged.Store(false)
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines = p.waitLines(t, 4)
+	require.NoError(t, p.finish(t))
+
+	assert.Empty(t, signIn.calls(), "a call to the service's authenticate starts no sign-in")
+	assert.Equal(t, `{"jsonrpc":"2.0","id":5,"result":{"content":[{"type":"text","text":"upstream"}],"isError":false}}`, lines[3])
+}

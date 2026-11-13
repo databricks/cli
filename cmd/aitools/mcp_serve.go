@@ -221,14 +221,14 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		return nil, nil
 	}
 	return &proxy.Challenge{
-		Service:      t.service,
-		Profile:      t.profile,
-		Host:         t.w.Config.Host,
-		Label:        mcp.ProviderLabel(t.service),
+		Service:       t.service,
+		Profile:       t.profile,
+		Host:          t.w.Config.Host,
+		Label:         mcp.ProviderLabel(t.service),
 		LoginCommand:  mcpLoginHint(t.service, t.profile, t.pinnedFile),
 		LogoutCommand: mcpLogoutHint(t.service, t.profile, t.pinnedFile),
 		PinnedFile:    t.pinnedFile,
-		SignIn:       serveSignIn(t),
+		SignIn:        serveSignIn(t),
 	}, nil
 }
 

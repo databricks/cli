@@ -91,6 +91,9 @@ type signInHooks struct {
 	// unchallenged clears it, unless a call challenge is pending (see callChallenged). The tool is the proxy's only while it
 	// is exposed.
 	exposed bool
+	// ownAuthenticate means the first page of the service's last list had a tool named authenticate, which the proxy neither
+	// adds nor intercepts. A challenge that shows the proxy's own list clears it.
+	ownAuthenticate bool
 	// alreadySignedIn means the last authenticate answered "Already signed in".
 	alreadySignedIn bool
 	// stillChallenged means the service challenged the session after an "Already signed in" answer: the credential reads as
@@ -126,9 +129,9 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 		return nil, false
 	}
 	h.stateMu.Lock()
-	exposed := h.exposed
+	intercept := h.exposed && !h.ownAuthenticate
 	h.stateMu.Unlock()
-	if !exposed {
+	if !intercept {
 		return nil, false
 	}
 	var progressToken json.RawMessage
@@ -176,7 +179,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	// JSON-RPC error on HTTP 200, a failure the bridge wrote for the request, or an isError result without a sign-in URL,
 	// says nothing about it.
 	if status/100 == 2 && reply.Error == nil && reply.Result != nil && !reply.Result.IsError {
-		msg, err := h.succeeded(req.Method, message)
+		msg, err := h.succeeded(request, req.Method, message)
 		if err != nil {
 			return nil, err
 		}
@@ -193,6 +196,10 @@ func (h *signInHooks) recordChallenge(method string) {
 	h.exposed = true
 	h.callChallenged = method == methodToolsCall
 	h.callPending = h.callChallenged
+	if method == methodToolsList {
+		// The list the agent gets is the proxy's one-tool list, so the service's authenticate tool is not on it.
+		h.ownAuthenticate = false
+	}
 	if h.alreadySignedIn {
 		h.stillChallenged = true
 		h.alreadySignedIn = false
@@ -204,7 +211,7 @@ func (h *signInHooks) recordChallenge(method string) {
 // two too, unless the pending challenge came from a tools/call, which only a successful tools/call ends. It also takes the
 // authenticate tool off the list, since the list is the service's again, unless a call challenge is still pending; then
 // the tool stays on it.
-func (h *signInHooks) succeeded(method string, message []byte) ([]byte, error) {
+func (h *signInHooks) succeeded(request []byte, method string, message []byte) ([]byte, error) {
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	if method == methodToolsCall {
@@ -222,11 +229,20 @@ func (h *signInHooks) succeeded(method string, message []byte) ([]byte, error) {
 		h.exposed = false
 		return message, nil
 	}
-	return h.withAuthenticate(message)
+	return h.withAuthenticate(request, message)
 }
 
-// withAuthenticate adds the authenticate tool to the tools of a tools/list result, which has a result.
-func (h *signInHooks) withAuthenticate(msg []byte) ([]byte, error) {
+// withAuthenticate adds the authenticate tool to the tools of a tools/list result, which has a result. Only the first page
+// gets it, since a page that has no cursor is the start of the list. A list that already has a tool named authenticate
+// keeps its own, and the proxy neither adds one nor intercepts calls to it.
+func (h *signInHooks) withAuthenticate(request, msg []byte) ([]byte, error) {
+	firstPage, err := isFirstPage(request)
+	if err != nil {
+		return nil, err
+	}
+	if !firstPage {
+		return msg, nil
+	}
 	var env map[string]json.RawMessage
 	if err := json.Unmarshal(msg, &env); err != nil {
 		return nil, err
@@ -239,6 +255,19 @@ func (h *signInHooks) withAuthenticate(msg []byte) ([]byte, error) {
 	if err := json.Unmarshal(member(result, keyTools), &tools); err != nil {
 		return nil, fmt.Errorf("tools/list tools: %w", err)
 	}
+	h.ownAuthenticate = false
+	for _, raw := range tools {
+		var tool struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal(raw, &tool); err != nil {
+			return nil, fmt.Errorf("tools/list tool: %w", err)
+		}
+		if tool.Name == authenticateTool {
+			h.ownAuthenticate = true
+			return msg, nil
+		}
+	}
 	tool, err := json.Marshal(h.authenticateToolDef())
 	if err != nil {
 		return nil, err
@@ -250,6 +279,19 @@ func (h *signInHooks) withAuthenticate(msg []byte) ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(env)
+}
+
+// isFirstPage reports whether a tools/list request asks for the first page, which has no cursor.
+func isFirstPage(request []byte) (bool, error) {
+	var req struct {
+		Params struct {
+			Cursor string `json:"cursor"`
+		} `json:"params"`
+	}
+	if err := json.Unmarshal(request, &req); err != nil {
+		return false, err
+	}
+	return req.Params.Cursor == "", nil
 }
 
 // upstreamReply is an upstream message as challenge detection reads it: its envelope, and its error or result.
