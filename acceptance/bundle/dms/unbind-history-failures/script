@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+job_id=$($CLI jobs create --json '{"name": "unbind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+for key in create_failed record_failed complete_failed upload_failed; do
+    $CLI bundle deployment bind "$key" "$job_id" --auto-approve >> LOG.setup 2>&1
+done
+rm -f "$OUT_REQUESTS"
+
+title "A version creation failure does not prevent unbinding"
+trace fault.py "POST /api/2.0/bundle/deployments/*/versions" 400 0 1
+trace $CLI bundle deployment unbind create_failed
+rm -rf .databricks
+
+title "An operation recording failure does not prevent unbinding"
+trace fault.py "PATCH /api/2.0/bundle/**" 400 0 1
+trace $CLI bundle deployment unbind record_failed
+rm -rf .databricks
+
+title "A version completion failure does not prevent unbinding"
+trace fault.py "POST /api/2.0/bundle/deployments/*/versions/*/complete" 400 0 1
+trace $CLI bundle deployment unbind complete_failed
+
+title "Successful unbindings survived the remote state round trips and the job still exists"
+trace jq '.state' .databricks/bundle/default/resources.json
+trace $CLI jobs get "$job_id" | jq '{job_id, name: .settings.name}'
+trace print_requests.py --dms //versions --oneline
+
+
+title "A remote state upload failure fails the unbind version"
+trace fault.py "POST /api/2.0/workspace-files/import-file/**resources.json" 400 0 1
+trace musterr $CLI bundle deployment unbind upload_failed
+trace print_requests.py --dms //versions --oneline
+
+rm -rf .databricks
+title "Remote state still contains the binding whose upload failed"
+trace $CLI bundle summary -o json | jq '.resources.jobs | map_values(.id // null)'
+rm -f "$OUT_REQUESTS"

@@ -197,7 +197,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 		return
 	}
 
+	var history *bindingHistory
+	var historyErr error
 	defer func() {
+		completeBindingHistory(ctx, b, history, historyErr == nil && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
@@ -210,10 +213,15 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 
 	fullResourceKey := fmt.Sprintf("resources.%s.%s", group, resourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
-	err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
+	metadata, err := b.DeploymentBundle.Unbind(ctx, &b.Config, statePath, fullResourceKey)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
+	}
+
+	history, historyErr = recordUnbindHistory(ctx, b, metadata)
+	if historyErr != nil {
+		log.Warnf(ctx, "Failed to record unbind history: %s", historyErr)
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
@@ -237,6 +245,28 @@ func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		return nil, err
 	}
 	history.buffer.RecordOperation(ctx, resourceKey, false, entry.ID, state)
+	return history, history.buffer.Drain(ctx)
+}
+
+// recordUnbindHistory publishes committed removals when DMS metadata was requested.
+func recordUnbindHistory(ctx context.Context, b *bundle.Bundle, metadata *direct.DMSUnbindMetadata) (*bindingHistory, error) {
+	if metadata == nil || len(metadata.ResourceKeys) == 0 {
+		return nil, nil
+	}
+	staged := make([]bundledeployments.StagedOperation, 0, len(metadata.ResourceKeys))
+	for _, key := range metadata.ResourceKeys {
+		staged = append(staged, bundledeployments.StagedOperation{
+			ResourceKey: strings.TrimPrefix(key, dms.StatePrefix),
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
+		})
+	}
+	history, err := createBindingVersion(ctx, b, metadata.Serial, staged)
+	if err != nil {
+		return nil, err
+	}
+	for _, key := range metadata.ResourceKeys {
+		history.buffer.RecordOperation(ctx, key, false, "", nil)
+	}
 	return history, history.buffer.Drain(ctx)
 }
 
