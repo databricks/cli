@@ -99,3 +99,23 @@ func TestMaterializationSetMemberKeySeparatesAbsentOnlineStoreFromEmptyName(t *t
 		onlineWithoutName)
 	assert.NotEqual(t, offline, onlineWithoutName)
 }
+
+func TestMaterializationSetMemberKeyIgnoresFeatureNameCase(t *testing.T) {
+	_, mixedCase := MaterializedFeatureMemberKey(ml.MaterializedFeature{FeatureName: "main.MySchema.Feat"})
+	_, lowercase := MaterializedFeatureMemberKey(ml.MaterializedFeature{FeatureName: "main.myschema.feat"})
+
+	assert.Equal(t, "feature_name=main.myschema.feat|is_streaming_mode=false", mixedCase)
+	assert.Equal(t, lowercase, mixedCase)
+}
+
+func TestMaterializationSetMemberKeyKeepsTheCaseOfAReference(t *testing.T) {
+	_, mixedCaseKey := MaterializedFeatureMemberKey(ml.MaterializedFeature{
+		FeatureName: "${resources.features.Feat.full_name}",
+	})
+	_, lowercaseKey := MaterializedFeatureMemberKey(ml.MaterializedFeature{
+		FeatureName: "${resources.features.feat.full_name}",
+	})
+
+	assert.Equal(t, "feature_name=${resources.features.Feat.full_name}|is_streaming_mode=false", mixedCaseKey)
+	assert.NotEqual(t, lowercaseKey, mixedCaseKey)
+}
