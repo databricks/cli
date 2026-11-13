@@ -359,3 +359,65 @@ resources:
 	)
 	assert.Contains(t, string(state["resources.jobs.my_job"].State), `"name": "hello"`)
 }
+
+func TestBuildStateFromTFPermissionRefToUndeployedResourceDropsEntry(t *testing.T) {
+	state := runBuildStateFromTF(t, `
+resources:
+  apps:
+    new_app:
+      name: new-app
+      source_code_path: ./app
+  jobs:
+    my_job:
+      name: "hello"
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE
+          service_principal_name: "${resources.apps.new_app.service_principal_client_id}"
+`,
+		migrate.TFStateAttrs{
+			"databricks_job":         {"my_job": json.RawMessage(`{"id": "1", "name": "hello"}`)},
+			"databricks_permissions": {"my_job": json.RawMessage(`{"id": "/jobs/1"}`)},
+		},
+		map[string]string{"resources.jobs.my_job": "1", "resources.jobs.my_job.permissions": "/jobs/1"},
+	)
+
+	var got struct {
+		Entries []map[string]string `json:"__embed__"`
+	}
+	require.NoError(t, json.Unmarshal(state["resources.jobs.my_job.permissions"].State, &got))
+	assert.Equal(t, []map[string]string{{"level": "CAN_VIEW", "group_name": "users"}}, got.Entries)
+}
+
+func TestBuildStateFromTFGrantRefToUndeployedResourceDropsEntry(t *testing.T) {
+	state := runBuildStateFromTF(t, `
+resources:
+  schemas:
+    new_schema:
+      catalog_name: main
+      name: new
+    my_schema:
+      catalog_name: main
+      name: existing
+      grants:
+        - principal: viewers
+          privileges: [USE_SCHEMA]
+        - principal: "${resources.schemas.new_schema.name}"
+          privileges: [CREATE_TABLE]
+`,
+		migrate.TFStateAttrs{
+			"databricks_schema": {"my_schema": json.RawMessage(`{"id": "main.existing", "catalog_name": "main", "name": "existing"}`)},
+		},
+		map[string]string{"resources.schemas.my_schema": "main.existing", "resources.schemas.my_schema.grants": "schema/main.existing"},
+	)
+
+	var got struct {
+		Entries []struct {
+			Principal string `json:"principal"`
+		} `json:"__embed__"`
+	}
+	require.NoError(t, json.Unmarshal(state["resources.schemas.my_schema.grants"].State, &got))
+	require.Len(t, got.Entries, 1)
+	assert.Equal(t, "viewers", got.Entries[0].Principal)
+}
