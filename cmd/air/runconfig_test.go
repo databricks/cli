@@ -414,6 +414,16 @@ func TestLoadRunConfig_UnknownFieldErrors(t *testing.T) {
 		})
 	}
 
+	t.Run("decoder reports a mapping that merges itself", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"code_source: &c\n  root_path: src\n  <<: *c\n"))
+		require.ErrorContains(t, err, "anchor 'c' value contains itself")
+	})
+
+	t.Run("unknown keys pulled in by a merge are left to the decoder", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+"x-base: &b\n  root_path: src\ncode_source:\n  <<: *b\n"))
+		require.ErrorContains(t, err, `line 7: unknown field "x-base"; run "databricks air run -h config" for the list of fields`)
+	})
+
 	t.Run("free-form maps accept any key", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+"parameters:\n  environmnt: 1\n  nested:\n    zzz: 2\n"))
 		require.NoError(t, err)
