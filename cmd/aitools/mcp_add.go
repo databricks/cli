@@ -880,7 +880,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			continue
 		}
 		url := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
-		state, _, _, err := signIn(ctx, errOut, w, req.pinned, url, plans[i].service, mcp.SignInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
+		state, _, _, err := signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
 		server.SignIn = &addSignInOutput{State: state}
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)

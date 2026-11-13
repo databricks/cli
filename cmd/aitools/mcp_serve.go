@@ -285,7 +285,7 @@ func serveSignIn(t serveTarget) proxy.SignInFunc {
 			openPage = browser.OpenOutputToStderr
 		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
-		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(url) }})
+		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, signInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(url) }})
 		return alreadySignedIn, urlShown, err
 	}
 }

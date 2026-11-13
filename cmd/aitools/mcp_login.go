@@ -180,7 +180,7 @@ func mcpLogin(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClie
 		return describeRequestError(out.Profile, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 	url := mcp.SignInURL(out.Host, svc.FullName, workspaceID)
-	state, _, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: out.Profile, Open: browser.OpenOutputToStderr})
+	state, _, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, signInOptions{Profile: out.Profile, Open: browser.OpenOutputToStderr})
 	out.State = state
 	// The URL is named when it was printed. A sign-in that failed before its page is printed names none.
 	if urlShown {
@@ -233,15 +233,26 @@ var (
 	signInWaitTimeout  = mcp.SignInWaitTimeout
 )
 
+// signInOptions is what a caller of signIn sets: the profile named in the notice before the page, the page opener, and
+// the poll callback. signIn adds the polling settings.
+type signInOptions struct {
+	Profile string
+	Open    func(ctx context.Context, url string) error
+	OnPoll  func()
+}
+
 // signIn runs the provider sign-in of svc for the profile named in opts and reports progress on errOut. It returns the
 // sign-in state name, whether the caller was already signed in, whether url was printed, and the failure, which is
-// categorized for JSON. opts sets the page opener and the poll callback; `add --login` shares this. signIn sets opts.Poll
-// and opts.Timeout to the sign-in settings, so the values a caller sets for them are replaced.
-func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, pinnedFile, url string, svc mcp.Service, opts mcp.SignInOptions) (state string, alreadySignedIn, urlShown bool, err error) {
+// categorized for JSON. `add --login` shares this.
+func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, pinnedFile, url string, svc mcp.Service, opts signInOptions) (state string, alreadySignedIn, urlShown bool, err error) {
 	profileName := opts.Profile
-	opts.Poll = signInPollInterval
-	opts.Timeout = signInWaitTimeout
-	alreadySignedIn, urlShown, err = mcp.SignIn(ctx, w, url, svc.FullName, errOut, opts)
+	alreadySignedIn, urlShown, err = mcp.SignIn(ctx, w, url, svc.FullName, errOut, mcp.SignInOptions{
+		Profile: profileName,
+		Poll:    signInPollInterval,
+		Timeout: signInWaitTimeout,
+		Open:    opts.Open,
+		OnPoll:  opts.OnPoll,
+	})
 	timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err)
 	switch {
 	case timedOut:
