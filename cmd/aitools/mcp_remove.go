@@ -94,14 +94,13 @@ and reported. When an agent's config moved, the entry is removed from the file i
 Entries that run 'aitools mcp serve' without an install record are not chosen by any flag;
 'aitools mcp list' shows them as unmanaged. Provider credentials are not deleted.`,
 		Args: cobra.NoArgs,
-		// Resolve auth best-effort so telemetry can upload; see tryConfigureAuth.
-		PreRunE: tryConfigureAuth,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
 
 			out := &removeOutput{Removed: []removeRemoved{}, Skipped: []removeSkipped{}}
 			runErr := runMcpRemove(ctx, cmd, f, jsonMode, out)
+			configureUploadAuth(cmd)
 			logMcpEvent(ctx, protos.AitoolsMcpEvent{
 				CallingAgent: callingAgentType(),
 				Operation:    protos.AitoolsMcpOperationRemove,

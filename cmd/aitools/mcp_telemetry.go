@@ -3,13 +3,46 @@ package aitools
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/spf13/cobra"
 )
+
+// uploadAuthBudget bounds the resolution of the profile that authenticates a telemetry upload.
+const uploadAuthBudget = 3 * time.Second
+
+// configureUploadAuth sets the config that authenticates the exit-time upload of a command that edits local files
+// only. It runs after the edit, so an offline run does not wait on the network before it edits a file, and it does
+// nothing when telemetry is disabled. The profile is the one the command would use without a flag; without one
+// the upload is skipped.
+func configureUploadAuth(cmd *cobra.Command) {
+	ctx := cmd.Context()
+	if telemetry.Disabled(ctx) {
+		return
+	}
+	configFile, _, err := addConfigFile(ctx)
+	if err != nil {
+		log.Debugf(ctx, "telemetry: no config file to upload with: %s", err)
+		return
+	}
+	profileName, err := resolveProfile(ctx, profileFlag(cmd))
+	if err != nil {
+		log.Debugf(ctx, "telemetry: no profile to upload with: %s", err)
+		return
+	}
+	cfg, err := mcp.BoundConfigWithin(profileName, configFile, uploadAuthBudget)
+	if err != nil {
+		log.Debugf(ctx, "telemetry: cannot resolve profile %s to upload with: %s", profileName, err)
+		return
+	}
+	cmd.SetContext(cmdctx.SetConfigUsed(ctx, cfg))
+}
 
 // mcpServiceTypes maps the system.ai leaves in the CLI's service table to their telemetry enum.
 var mcpServiceTypes = map[string]protos.AitoolsMcpService{

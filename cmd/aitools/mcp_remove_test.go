@@ -180,6 +180,23 @@ func TestMcpRemoveDeletesOwnedEntriesAndPrunesMissing(t *testing.T) {
 	assert.Equal(t, "github-dogfood", state.Servers[0].Name)
 }
 
+// TestMcpRemoveMakesNoRequestWhenTelemetryIsOff checks that remove edits its agent config without a request to the
+// profile's host. Nothing is uploaded when telemetry is off, so no auth is resolved for an upload.
+func TestMcpRemoveMakesNoRequestWhenTelemetryIsOff(t *testing.T) {
+	home := withHome(t)
+	t.Setenv("DATABRICKS_CLI_DISABLE_TELEMETRY", "1")
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = oauth-m2m\nclient_id = id\nclient_secret = secret\n")
+	claude := agents.ByName("claude-code")
+	claudePath := filepath.Join(home, ".claude.json")
+	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", server.URL)
+	saveState(t, genie)
+
+	_, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood")
+}
+
 func TestMcpRemoveSkipsEntryChangedOutsideCLI(t *testing.T) {
 	home := withHome(t)
 	claude := agents.ByName("claude-code")
