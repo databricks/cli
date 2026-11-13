@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -21,11 +20,11 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -35,6 +34,12 @@ type BindOptions struct {
 	Group       string
 	ResourceKey string
 	ResourceId  string
+}
+
+// bindingHistory keeps the recorder alive through the remote state upload.
+type bindingHistory struct {
+	name   string
+	buffer *dms.OperationBuffer
 }
 
 // createBindingDeployment registers a first binding without changing metadata from an existing deploy.
@@ -68,10 +73,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	var historyVersion string
+	var history *bindingHistory
 	var historyErr error
 	defer func() {
-		completeBindingHistory(ctx, b, historyVersion, historyErr == nil && !logdiag.HasError(ctx))
+		completeBindingHistory(ctx, b, history, historyErr == nil && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -148,7 +153,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
-	historyVersion, historyErr = recordBindHistory(ctx, b, resourceKey, result.DMSMetadata)
+	history, historyErr = recordBindHistory(ctx, b, resourceKey, result.DMSMetadata)
 	if historyErr != nil {
 		log.Warnf(ctx, "Failed to record bind history: %s", historyErr)
 	}
@@ -157,16 +162,17 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 }
 
 // completeBindingHistory completes the recorded version after the remote state upload.
-func completeBindingHistory(ctx context.Context, b *bundle.Bundle, versionName string, success bool) {
-	if versionName == "" {
+func completeBindingHistory(ctx context.Context, b *bundle.Bundle, history *bindingHistory, success bool) {
+	if history == nil {
 		return
 	}
+	history.buffer.Stop()
 	reason := bundledeployments.VersionCompleteVersionCompleteFailure
 	if success {
 		reason = bundledeployments.VersionCompleteVersionCompleteSuccess
 	}
 	_, err := b.WorkspaceClient(ctx).BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
-		Name:             versionName,
+		Name:             history.name,
 		CompletionReason: reason,
 	})
 	if err != nil {
@@ -214,34 +220,40 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 }
 
 // recordBindHistory publishes a committed binding when DMS metadata was requested.
-func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string, metadata *direct.DMSBindMetadata) (string, error) {
+func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string, metadata *direct.DMSBindMetadata) (*bindingHistory, error) {
 	if metadata == nil {
-		return "", nil
+		return nil, nil
 	}
-	versionName, err := createBindingVersion(ctx, b, metadata.Serial, []bundledeployments.StagedOperation{{
+	entry := metadata.ResourceState
+	state, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+	if err != nil {
+		return nil, err
+	}
+	history, err := createBindingVersion(ctx, b, metadata.Serial, []bundledeployments.StagedOperation{{
 		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
-		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeBind,
+		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
 	}})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return versionName, recordBindingOperation(ctx, b, versionName, resourceKey, &metadata.ResourceState)
+	history.buffer.RecordOperation(ctx, resourceKey, false, entry.ID, state)
+	return history, history.buffer.Drain(ctx)
 }
 
 // createBindingVersion claims a history version for the staged binding operations.
-func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, staged []bundledeployments.StagedOperation) (string, error) {
+func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, staged []bundledeployments.StagedOperation) (*bindingHistory, error) {
 	deploymentID, current, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	previous, err := dms.ParseLastVersionID(current)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if current == nil {
 		deploymentID, err = createBindingDeployment(ctx, b)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	versionID := max(previous, serial) + 1
@@ -265,41 +277,16 @@ func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, sta
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create deployment version: %w", err)
+		return nil, fmt.Errorf("failed to create deployment version: %w", err)
 	}
-	return version.Name, nil
-}
-
-// recordBindingOperation sends an operation's saved state, or its removal, directly to DMS.
-func recordBindingOperation(ctx context.Context, b *bundle.Bundle, versionName, resourceKey string, entry *dstate.ResourceEntry) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	var state json.RawMessage
-	var resourceID string
-	if entry != nil {
-		var err error
-		state, err = json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
-		if err != nil {
-			return err
-		}
-		resourceID = entry.ID
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	update, err := dms.NewStateUpdate(resourceID, state, false)
-	if err != nil {
-		return err
-	}
-	// Newly staged operations start at sequence 0; DMS requires it even though Go omits zero values.
-	_, err = retry.With(ctx, retry.IsTransient, func() (*bundledeployments.Operation, error) {
-		return b.WorkspaceClient(ctx).BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
-			Name: versionName + "/operations/" + strings.TrimPrefix(resourceKey, dms.StatePrefix),
-			Operation: bundledeployments.Operation{
-				State:           string(update.State),
-				ResourceId:      update.ResourceID,
-				Status:          update.Status,
-				ForceSendFields: []string{"SequenceId", "ErrorMessage"},
-			},
-			UpdateMask: update.Fields.Mask(),
-		})
-	})
-	return err
+	return &bindingHistory{
+		name: version.Name,
+		buffer: dms.StartOperationBuffer(ctx, deploymentID, versionID, dms.BufferOptions{
+			BestEffort:           true,
+			StagedOperationCount: len(staged),
+		}),
+	}, nil
 }

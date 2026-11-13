@@ -6,7 +6,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
-    "last_action_type": "OPERATION_ACTION_TYPE_BIND",
+    "last_action_type": "OPERATION_ACTION_TYPE_UPDATE",
     "resource_id": "[JOB_ID]",
     "resource_key": "jobs.foo"
   }
