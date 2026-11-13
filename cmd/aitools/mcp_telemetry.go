@@ -3,7 +3,6 @@ package aitools
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
@@ -13,9 +12,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
-
-// uploadAuthBudget bounds the resolution of the profile that authenticates a telemetry upload.
-const uploadAuthBudget = 3 * time.Second
 
 // configureUploadAuth sets the config that authenticates the exit-time upload of a command that edits local files
 // only. It runs after the edit, so an offline run does not wait on the network before it edits a file, and it does
@@ -40,10 +36,11 @@ func configureUploadAuth(cmd *cobra.Command) {
 }
 
 // setUploadConfig sets the config of profileName in configFile for the exit-time upload, resolved within
-// uploadAuthBudget. A profile that does not resolve uploads nothing.
+// telemetryAuthBudget, with credentials that never refresh (mcp.BoundUploadConfig). A profile that does not resolve
+// uploads nothing.
 func setUploadConfig(cmd *cobra.Command, profileName, configFile string) {
 	ctx := cmd.Context()
-	cfg, err := mcp.BoundConfigWithin(profileName, configFile, uploadAuthBudget)
+	cfg, err := mcp.BoundUploadConfig(profileName, configFile, telemetryAuthBudget)
 	if err != nil {
 		log.Debugf(ctx, "telemetry: cannot resolve profile %s to upload with: %s", profileName, err)
 		return

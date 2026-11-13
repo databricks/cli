@@ -125,8 +125,9 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
 
-	// The bound profile authenticates the exit-time telemetry upload.
-	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), cfg))
+	// The bound profile authenticates the exit-time telemetry upload. The session's own config refreshes its token, which
+	// the upload must not do, so the upload gets a config of its own.
+	setUploadConfig(cmd, profileName, cfg.ConfigFile)
 
 	// A server pinned to a config file names that file in its hints, as add and login do.
 	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
