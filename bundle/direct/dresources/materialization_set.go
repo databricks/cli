@@ -78,6 +78,8 @@ func isAbsentRemotely(remote any) bool {
 // reasonMemberAdded marks a recreate caused by a configured member the deployed set lacks.
 const reasonMemberAdded = "member_added"
 
+// reasonFeatureNameCaseOnly marks a skip of a member's feature name that differs from the deployed
+// one only in case.
 const reasonFeatureNameCaseOnly = "feature_name_case_only"
 
 // OverrideChangeDesc plans a member removed from the set as an update and a member the deployed
@@ -162,7 +164,8 @@ func (r *ResourceMaterializationSet) DoRead(ctx context.Context, id string) (*ml
 	})
 }
 
-// withLowercaseFeatureNames returns a copy of the set with each member's feature name lowercased.
+// withLowercaseFeatureNames returns a copy of the set with each member's feature name lowercased,
+// because the service rejects a member not named by its feature's resolved, lowercase name.
 func withLowercaseFeatureNames(set ml.MaterializationSet) ml.MaterializationSet {
 	set.MaterializedFeatures = slices.Clone(set.MaterializedFeatures)
 	for i := range set.MaterializedFeatures {
