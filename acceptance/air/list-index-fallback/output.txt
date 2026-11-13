@@ -18,7 +18,12 @@ Warn: air list: the AI Runtime run index is unavailable (failed to list training
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",
-        "is_sweep": false
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
       }
     ]
   }

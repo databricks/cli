@@ -401,8 +401,13 @@ func (s *jobsScanStrategy) truncated() bool {
 // warnIfTruncated warns when a scan hit its safety cap, so the output signals
 // its results may be incomplete.
 func warnIfTruncated(ctx context.Context, f *runFetcher) {
+	if !f.strategy.truncated() {
+		return
+	}
+	// Only the scan strategy can report truncated, and it carries the scanned
+	// count for the warning.
 	s, ok := f.strategy.(*jobsScanStrategy)
-	if !ok || !s.truncated() {
+	if !ok {
 		return
 	}
 	log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete. Narrow the search with --filter or a smaller --limit", s.scanned)
