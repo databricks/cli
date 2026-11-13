@@ -13,6 +13,8 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,8 @@ type removeOutput struct {
 
 	// results is one telemetry result per (service, agent) attempted. It is not in the JSON.
 	results []protos.AitoolsMcpServerResult
+	// stateBefore is the state as it was read before the removal. It is not in the JSON.
+	stateBefore *mcp.State
 }
 
 type removeRemoved struct {
@@ -100,28 +104,12 @@ Entries that run 'aitools mcp serve' without an install record are not chosen by
 
 			out := &removeOutput{Removed: []removeRemoved{}, Skipped: []removeSkipped{}}
 			runErr := runMcpRemove(ctx, cmd, f, jsonMode, out)
-			configureUploadAuth(cmd)
-			logMcpEvent(ctx, protos.AitoolsMcpEvent{
-				CallingAgent: callingAgentType(),
-				Operation:    protos.AitoolsMcpOperationRemove,
-				Servers:      out.results,
-			})
-			if !jsonMode {
-				return runErr
+			err := runErr
+			if jsonMode {
+				err = writeRemoveJSON(cmd, out, runErr)
 			}
-
-			// The document carries a top-level failure; per-agent failures are already in skipped.
-			if top := topLevelFailure(runErr); top != nil {
-				out.Error = top.Error()
-				out.ErrorCategory = errorCategory(top)
-			}
-			if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
-				return errors.Join(runErr, err)
-			}
-			if runErr != nil {
-				return root.ErrAlreadyPrinted
-			}
-			return nil
+			logRemoveEvent(cmd, args, out)
+			return err
 		},
 	}
 
@@ -129,6 +117,51 @@ Entries that run 'aitools mcp serve' without an install record are not chosen by
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to remove from, comma-separated (default: every agent the server is installed for)")
 	cmd.Flags().BoolVar(&f.all, "all", false, "Remove every server this CLI installed")
 	return cmd
+}
+
+// writeRemoveJSON writes the JSON document of a run that ended with runErr and returns the command's error.
+func writeRemoveJSON(cmd *cobra.Command, out *removeOutput, runErr error) error {
+	// The document carries a top-level failure; per-agent failures are already in skipped.
+	if top := topLevelFailure(runErr); top != nil {
+		out.Error = top.Error()
+		out.ErrorCategory = errorCategory(top)
+	}
+	if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
+		return errors.Join(runErr, err)
+	}
+	if runErr != nil {
+		return root.ErrAlreadyPrinted
+	}
+	return nil
+}
+
+// logRemoveEvent buffers the REMOVE event and sets the config its exit-time upload authenticates with. It runs after
+// the output is written, and only when the run touched a server: a run that touched none has nothing to upload, so it
+// resolves no auth. The auth resolves as install's does (startTelemetryAuth), within telemetryAuthBudget, and the upload
+// is skipped when a server recorded for the profile no longer matches it (bindingDrifted).
+func logRemoveEvent(cmd *cobra.Command, args []string, out *removeOutput) {
+	ctx := cmd.Context()
+	logMcpEvent(ctx, protos.AitoolsMcpEvent{
+		CallingAgent: callingAgentType(),
+		Operation:    protos.AitoolsMcpOperationRemove,
+		Servers:      out.results,
+	})
+	if len(telemetry.BufferedEvents(ctx)) == 0 {
+		return
+	}
+	auth := startTelemetryAuth(cmd, args)
+	if auth == nil {
+		return
+	}
+	if !auth.wait() {
+		log.Debugf(ctx, "auth for telemetry not resolved within %s; not uploading telemetry", telemetryAuthBudget)
+		return
+	}
+	if auth.cfg != nil && bindingDrifted(ctx, out.stateBefore, auth.cfg) {
+		log.Debugf(ctx, "telemetry: profile %s no longer matches an MCP server recorded for it; not uploading telemetry", auth.cfg.Profile)
+		return
+	}
+	auth.apply(cmd, false)
 }
 
 // runMcpRemove removes the chosen servers from the agent configs and records the result. Results are printed
@@ -157,6 +190,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if err != nil {
 		return err
 	}
+	out.stateBefore = state
 	var selected []mcp.Entry
 	if interactive && !f.all && len(names) == 0 && profileName == "" {
 		// An agent with no installed server is refused as it is without a terminal, before the picker offers nothing for it.

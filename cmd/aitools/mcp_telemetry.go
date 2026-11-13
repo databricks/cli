@@ -10,30 +10,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
-
-// configureUploadAuth sets the config that authenticates the exit-time upload of a command that edits local files
-// only. It runs after the edit, so an offline run does not wait on the network before it edits a file, and it does
-// nothing when telemetry is disabled. The profile is the one the command would use without a flag; without one
-// the upload is skipped.
-func configureUploadAuth(cmd *cobra.Command) {
-	ctx := cmd.Context()
-	if telemetry.Disabled(ctx) {
-		return
-	}
-	configFile, _, err := addConfigFile(ctx)
-	if err != nil {
-		log.Debugf(ctx, "telemetry: no config file to upload with: %s", err)
-		return
-	}
-	profileName, err := resolveProfile(ctx, profileFlag(cmd))
-	if err != nil {
-		log.Debugf(ctx, "telemetry: no profile to upload with: %s", err)
-		return
-	}
-	setUploadConfig(cmd, profileName, configFile)
-}
 
 // setUploadConfig sets the config of profileName in configFile for the exit-time upload, resolved within
 // telemetryAuthBudget, with credentials that never refresh (mcp.BoundUploadConfig). A profile that does not resolve
@@ -279,4 +258,19 @@ func signInPromptedEvent(agent protos.AitoolsAgentType, service string, signedIn
 			SignInState:   state,
 		}},
 	}
+}
+
+// bindingDrifted reports whether a server recorded for cfg's profile in state no longer matches the profile: its host or
+// workspace changed, or its config file moved. The upload would send the profile's token to the host the profile names
+// now, which the server was not set up against. It reads the config files only.
+func bindingDrifted(ctx context.Context, state *mcp.State, cfg *config.Config) bool {
+	for _, e := range state.Servers {
+		if e.Profile != cfg.Profile {
+			continue
+		}
+		if _, err := mcp.CheckBinding(ctx, state, e.Service, cfg.Profile, cfg.ConfigFile); err != nil {
+			return true
+		}
+	}
+	return false
 }
