@@ -41,10 +41,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === UC lowercases the name, so the id is lowercase
+
 >>> [CLI] bundle summary -o json
 "main.myschema.myfeature"
 
 === A plan on an unchanged bundle skips the name instead of recreating the feature
+
 >>> [CLI] bundle plan -o json
 {
   "resources.features.feature1": {
@@ -62,6 +64,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Renaming the feature still recreates it
+
 >>> update_file.py databricks.yml main.myschema.MyFeature main.myschema.MyOtherFeature
 
 >>> [CLI] bundle plan

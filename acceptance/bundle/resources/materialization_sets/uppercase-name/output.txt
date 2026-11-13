@@ -9,6 +9,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Each feature is created under the schema's spelling
+
 >>> print_requests.py --keep //feature-engineering/features
 [
   "main.MySchema.FeatA",
@@ -16,12 +17,13 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Each member names its feature in lowercase, from a reference or written out
+
 >>> print_requests.py //feature-engineering/materialization-sets
 {
   "method": "POST",
   "path": "/api/2.0/feature-engineering/materialization-sets",
   "q": {
-    "request_id": "[UUID]"
+    "request_id": "[UUID][0]"
   },
   "body": {
     "materialized_features": [
@@ -54,6 +56,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A plan on an unchanged bundle skips each member's feature name instead of recreating the set
+
 >>> set_plan
 {
   "action": "skip",
@@ -73,6 +76,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 === Changing only the case of a written-out feature name is skipped
+
 >>> update_file.py databricks.yml feature_name: main.MySchema.FeatB feature_name: main.myschema.featb
 
 >>> set_plan
@@ -108,6 +112,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 }
 
 === Naming another feature still recreates the set
+
 >>> update_file.py databricks.yml feature_name: MAIN.MYSCHEMA.FEATB feature_name: main.MySchema.FeatC
 
 >>> set_plan
@@ -133,6 +138,7 @@ Warn: planning resources.materialization_sets.set1: the member for feature "main
 >>> update_file.py databricks.yml feature_name: main.MySchema.FeatC feature_name: main.MySchema.FeatB
 
 === Removing a member updates the set, naming the remaining member's feature in lowercase
+
 >>> update_file.py databricks.yml         - feature_name: main.MySchema.FeatB
           offline_store_config:
             catalog_name: main
@@ -152,13 +158,13 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 >>> print_requests.py //feature-engineering/materialization-sets
 {
   "method": "PATCH",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID][1]",
   "q": {
-    "request_id": "[UUID]",
+    "request_id": "[UUID][2]",
     "update_mask": "*"
   },
   "body": {
-    "materialization_set_id": "[UUID]",
+    "materialization_set_id": "[UUID][1]",
     "materialized_features": [
       {
         "cron_schedule_trigger": {
@@ -180,6 +186,7 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 === The service refuses a member that names its feature in other than lowercase
+
 >>> musterr [CLI] feature-engineering create-materialization-set --json {"materialized_features": [{"feature_name": "main.MySchema.FeatA", "offline_store_config": {"catalog_name": "main", "schema_name": "myschema", "table_name_prefix": "direct"}, "cron_schedule_trigger": {"mode": "MANUAL", "cron_expression": "0 0 * * * ?"}}]}
 Error: operation failed: [BAD_REQUEST] Materialized feature requests must include the resolved feature names: main.myschema.feata
 
@@ -188,7 +195,7 @@ Error: operation failed: [BAD_REQUEST] Materialized feature requests must includ
   "method": "POST",
   "path": "/api/2.0/feature-engineering/materialization-sets",
   "q": {
-    "request_id": "[UUID]"
+    "request_id": "[UUID][3]"
   },
   "body": {
     "materialized_features": [
@@ -230,8 +237,8 @@ Destroy: 4 deleted
 >>> print_requests.py //feature-engineering/materialization-sets
 {
   "method": "DELETE",
-  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID]",
+  "path": "/api/2.0/feature-engineering/materialization-sets/[UUID][1]",
   "q": {
-    "request_id": "[UUID]"
+    "request_id": "[UUID][4]"
   }
 }
