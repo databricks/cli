@@ -155,8 +155,16 @@ Stack Trace:
 
 	startTime := time.Now()
 
-	// Close the log file the command opened, after its last log line.
-	defer func() { closeLogFile(cmd.Context()) }()
+	// initializeContext puts the log file it opens in this slot. When Execute returns, whether the command returned or
+	// panicked, the file is closed after the last log line, and the default logger that was in place is restored, so
+	// nothing writes to the closed file.
+	var logFile logFileSlot
+	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
+	prevLogger := slog.Default()
+	defer func() {
+		logFile.close()
+		slog.SetDefault(prevLogger)
+	}()
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)

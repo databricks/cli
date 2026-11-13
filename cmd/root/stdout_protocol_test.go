@@ -1,6 +1,7 @@
 package root
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -46,7 +47,6 @@ func useSeparateStderr(t *testing.T) {
 }
 
 func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
-	keepDefaultLogger(t)
 	useSeparateStderr(t)
 	for _, logFile := range []string{"stdout", "STDOUT", "/dev/stdout"} {
 		t.Run(logFile, func(t *testing.T) {
@@ -68,8 +68,41 @@ func TestExecuteRefusesStdoutLogForProtocolCommand(t *testing.T) {
 	}
 }
 
+// TestExecuteClosesLogFileAndRestoresLogger checks that once Execute returns, the file the command logged to is closed
+// and the default logger writes elsewhere. It also checks the panic path, where the command never returns.
+func TestExecuteClosesLogFileAndRestoresLogger(t *testing.T) {
+	prev := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	for _, panics := range []bool{false, true} {
+		t.Run(fmt.Sprintf("panics=%v", panics), func(t *testing.T) {
+			var slot *logFileSlot
+			cmd := New(t.Context())
+			cmd.AddCommand(&cobra.Command{
+				Use: "serve",
+				RunE: func(cmd *cobra.Command, _ []string) error {
+					var ok bool
+					slot, ok = cmd.Context().Value(logFileKey{}).(*logFileSlot)
+					require.True(t, ok)
+					if panics {
+						panic("boom")
+					}
+					return nil
+				},
+			})
+			logFile := filepath.Join(t.TempDir(), "run.log")
+			cmd.SetArgs([]string{"serve", "--log-file", logFile})
+			cmd.SetErr(io.Discard)
+
+			err := Execute(t.Context(), cmd)
+			assert.Equal(t, panics, err != nil)
+			assert.Equal(t, prev, slog.Default())
+			require.NotNil(t, slot)
+			assert.ErrorIs(t, slot.file.Close(), os.ErrClosed)
+		})
+	}
+}
+
 func TestExecuteAllowsFileLogForProtocolCommand(t *testing.T) {
-	keepDefaultLogger(t)
 	useSeparateStderr(t)
 	logFile := filepath.Join(t.TempDir(), "serve.log")
 	ran := false

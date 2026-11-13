@@ -44,14 +44,18 @@ func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions)
 	}
 }
 
-// logFileKey is the context key of the log file that initializeContext opened. Execute closes it when the command
-// returns.
+// logFileKey is the context key of the logFileSlot that Execute puts in the context.
 type logFileKey struct{}
 
-// closeLogFile closes the log file in ctx, if the command opened one.
-func closeLogFile(ctx context.Context) {
-	if f, ok := ctx.Value(logFileKey{}).(io.Closer); ok {
-		_ = f.Close()
+// logFileSlot holds the log file that initializeContext opened. Execute closes it when it returns.
+type logFileSlot struct {
+	file io.Closer // nil until initializeContext opens the log file
+}
+
+// close closes the log file, if one was opened.
+func (s *logFileSlot) close() {
+	if s.file != nil {
+		_ = s.file.Close()
 	}
 }
 
@@ -79,6 +83,10 @@ func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (c
 	if err != nil {
 		return nil, err
 	}
+	// Commands run without Execute have no slot, and then nothing closes the file.
+	if slot, ok := ctx.Value(logFileKey{}).(*logFileSlot); ok {
+		slot.file = &f.file
+	}
 
 	if carriesProtocol(cmd) {
 		toStdout, stdoutErr := writesToStdout(f.file.Writer(), os.Stdout, os.Stderr)
@@ -99,8 +107,6 @@ func (f *logFlags) initializeContext(ctx context.Context, cmd *cobra.Command) (c
 	}
 
 	slog.SetDefault(slog.New(handler).With(slog.Int("pid", os.Getpid())))
-	// The log file is closed when Execute returns, after the last log line.
-	ctx = context.WithValue(ctx, logFileKey{}, &f.file)
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
