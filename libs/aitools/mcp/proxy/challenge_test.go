@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -67,6 +68,27 @@ func answerWith(status int, body string) http.HandlerFunc {
 		w.WriteHeader(status)
 		_, _ = io.WriteString(w, body)
 	}
+}
+
+// challengedService answers tools/list with the sign-in challenge and every other request with 202, as a service that
+// needs sign-in does until the caller signs in.
+func challengedService(t *testing.T) (*httptest.Server, *fakeEndpoint) {
+	return newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if m, _ := parseMessage(body); m.Method != "tools/list" {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+		answerWith(http.StatusOK, listChallenge)(w, r)
+	})
+}
+
+// challenge lists the tools of the session, which the challengedService answers with the challenge, and waits for the
+// answer. The calls after it see a challenged session.
+func challenge(t *testing.T, p *piped) {
+	t.Helper()
+	p.send(t, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+	p.waitLines(t, 1)
 }
 
 // unauthorized answers 401 with a plain body, as the gateway does to a caller it cannot authenticate.
@@ -184,39 +206,42 @@ func TestChallengeNeverTriggeredByInitialize(t *testing.T) {
 }
 
 func TestAuthenticateSignsInAndSendsListChanged(t *testing.T) {
-	srv, fake := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
+	srv, fake := challengedService(t)
 	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
-	out, _ := runAll(t, challengedBridge(srv.URL, signIn.SignIn),
-		`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`+"\n")
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	challenge(t, p)
+	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines := p.waitLines(t, 3)
+	require.NoError(t, p.finish(t))
 
-	require.Len(t, out, 2)
 	assert.Equal(t, []bool{true}, signIn.calls())
-	assert.Empty(t, fake.requests(), "authenticate is answered locally, never sent upstream")
-	reply := parseReply(t, out[0])
+	assert.Len(t, fake.requests(), 1, "authenticate is answered locally, never sent upstream; only the list is")
+	reply := parseReply(t, lines[1])
 	assert.JSONEq(t, `4`, string(reply.ID))
 	assert.Equal(t, false, reply.Result["isError"])
-	assert.Contains(t, out[0], "Signed in to system.ai.github on profile logfood. Tools are available now")
-	assert.Equal(t, listChangedMsg, out[1])
+	assert.Contains(t, lines[1], "Signed in to system.ai.github on profile logfood. Tools are available now")
+	assert.Equal(t, listChangedMsg, lines[2])
 }
 
 func TestAuthenticateSaysAlreadySignedInAfterSignIn(t *testing.T) {
-	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
+	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) { return call > 1, nil }}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
 	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
 
 	p.send(t, fmt.Sprintf(authenticate, 5))
-	p.waitLines(t, 2)
+	p.waitLines(t, 3)
 	p.send(t, fmt.Sprintf(authenticate, 6))
-	lines := p.waitLines(t, 4)
+	lines := p.waitLines(t, 5)
 
 	assert.Equal(t, []bool{true, true}, signIn.calls(), "a sign-in that completed does not hold the page back")
-	assert.Contains(t, lines[2], "Already signed in to system.ai.github")
+	assert.Contains(t, lines[3], "Already signed in to system.ai.github")
 	require.NoError(t, p.finish(t))
 }
 
 func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
-	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
+	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(call int) (bool, error) {
 		if call == 1 {
 			return false, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
@@ -225,32 +250,36 @@ func TestAuthenticateReopensPageAfterTimeout(t *testing.T) {
 	}}
 	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
 	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
 
 	p.send(t, fmt.Sprintf(authenticate, 7))
-	lines := p.waitLines(t, 1)
-	require.Len(t, lines, 1)
-	assert.Equal(t, true, parseReply(t, lines[0]).Result["isError"])
-	text := resultText(t, lines[0])
+	lines := p.waitLines(t, 2)
+	require.Len(t, lines, 2)
+	assert.Equal(t, true, parseReply(t, lines[1]).Result["isError"])
+	text := resultText(t, lines[1])
 	assert.Contains(t, text, "did not complete in 5 minutes. Finish at "+testURL)
 	assert.Contains(t, text, "databricks aitools mcp login system.ai.github --profile logfood")
 
 	p.send(t, fmt.Sprintf(authenticate, 8))
-	lines = p.waitLines(t, 3)
+	lines = p.waitLines(t, 4)
 
 	assert.Equal(t, []bool{true, true}, signIn.calls(), "a timed-out attempt may open the page again")
-	assert.Contains(t, lines[1], "Signed in to system.ai.github")
+	assert.Contains(t, lines[2], "Signed in to system.ai.github")
 	require.NoError(t, p.finish(t))
 }
 
 func TestAuthenticateReportsFailureWithoutListChanged(t *testing.T) {
-	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, listTools))
+	srv, _ := challengedService(t)
 	signIn := &signInStub{reply: func(int) (bool, error) { return false, errors.New("sign-in failed for the test") }}
-	out, _ := runAll(t, challengedBridge(srv.URL, signIn.SignIn),
-		`{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`+"\n")
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	challenge(t, p)
+	p.send(t, `{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines := p.waitLines(t, 2)
+	require.NoError(t, p.finish(t))
 
-	require.Len(t, out, 1)
-	assert.Equal(t, true, parseReply(t, out[0]).Result["isError"])
-	assert.Contains(t, out[0], "Sign-in to system.ai.github on profile logfood failed: sign-in failed for the test")
+	require.Len(t, lines, 2, "the failure is the only answer to authenticate, and no list_changed follows it")
+	assert.Equal(t, true, parseReply(t, lines[1]).Result["isError"])
+	assert.Contains(t, lines[1], "Sign-in to system.ai.github on profile logfood failed: sign-in failed for the test")
 }
 
 // TestChallengeTurnsOnAfterSignIn runs the flow an agent sees: a challenged list, authenticate, then the
@@ -297,22 +326,25 @@ func TestSignInTimeoutKeepsLastCheck(t *testing.T) {
 // TestChallengeHintsPrintTheLoginCommand checks that the challenge and the timeout print the login command that the
 // command built, so a pinned config file and a profile name with a space are quoted for a shell.
 func TestChallengeHintsPrintTheLoginCommand(t *testing.T) {
-	newBridge := func(url string, signIn SignInFunc) *Bridge {
-		b := bridgeFor(url)
-		b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}}
-		return b
-	}
 	srv, _ := newFakeEndpoint(t, answerWith(http.StatusOK, callChallenge))
-	out, _ := runAll(t, newBridge(srv.URL, nil), `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`+"\n")
-	require.Len(t, out, 2)
-	assert.Contains(t, resultText(t, out[0]), "Call the authenticate tool, or run: "+loginCommand+". If")
-
-	timeout := func(context.Context, bool) (bool, bool, error) {
+	var calls atomic.Int32
+	signIn := func(ctx context.Context, _ bool) (bool, bool, error) {
+		calls.Add(1)
 		return false, true, &SignInTimeout{URL: testURL, Wait: 5 * time.Minute}
 	}
-	out, _ = runAll(t, newBridge(srv.URL, timeout), `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`+"\n")
-	require.Len(t, out, 1)
-	assert.Contains(t, resultText(t, out[0]), "then retry, or run: "+loginCommand)
+	b := bridgeFor(srv.URL)
+	b.Hooks = &signInHooks{c: &Challenge{Service: testService, Profile: "my profile", Host: testHost, Label: "GitHub", LoginCommand: loginCommand, SignIn: signIn}}
+	p := startPiped(t, t.Context(), b)
+
+	p.send(t, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{}}}`)
+	lines := p.waitLines(t, 2)
+	assert.Contains(t, resultText(t, lines[0]), "Call the authenticate tool, or run: "+loginCommand+". If")
+
+	p.send(t, `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines = p.waitLines(t, 3)
+	require.NoError(t, p.finish(t))
+	assert.EqualValues(t, 1, calls.Load())
+	assert.Contains(t, resultText(t, lines[2]), "then retry, or run: "+loginCommand)
 }
 
 // TestAuthenticateWritesNothingWhenCancelled checks that an authenticate call the client cancelled is not answered: the
@@ -422,4 +454,18 @@ func TestAuthenticateOpensPageAgainUnlessACancelledAttemptShowedIt(t *testing.T)
 			assert.Equal(t, tc.wantOpen, opens[1])
 		})
 	}
+}
+
+// TestAuthenticateIsForwardedBeforeAChallenge checks that before the service challenges the session, a tool named
+// authenticate is the upstream's tool and is forwarded. The proxy's tool exists only after a challenge.
+func TestAuthenticateIsForwardedBeforeAChallenge(t *testing.T) {
+	const upstream = `{"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"upstream"}]}}`
+	srv, fake := newFakeEndpoint(t, answerWith(http.StatusOK, upstream))
+	signIn := &signInStub{reply: func(int) (bool, error) { return false, nil }}
+	out, _ := runAll(t, challengedBridge(srv.URL, signIn.SignIn),
+		`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`+"\n")
+
+	assert.Empty(t, signIn.calls(), "no sign-in runs for a tool the service answers")
+	assert.Len(t, fake.requests(), 1)
+	assert.Equal(t, []string{upstream}, out)
 }

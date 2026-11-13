@@ -64,14 +64,20 @@ type Challenge struct {
 type signInHooks struct {
 	c *Challenge
 
-	// mu serializes authenticate calls and guards the field below.
+	// mu serializes authenticate calls, which may run a sign-in for minutes. pageCancelled is read and written under it.
 	mu sync.Mutex
 	// pageCancelled means the last attempt showed the sign-in page and the client cancelled it before the sign-in
 	// completed. The user may still be on that page, so the next attempt does not open it again.
 	pageCancelled bool
+
+	// stateMu guards challenged. It is held only briefly, so an answer to a request is not held up by a sign-in.
+	stateMu sync.Mutex
+	// sessionChallenged means a request of this session was challenged. The authenticate tool is the proxy's only after that.
+	sessionChallenged bool
 }
 
-// Local answers the authenticate tool call. Other requests, and messages that do not decode, are forwarded.
+// Local answers the authenticate tool call once the session has been challenged. Before that, and for other requests and
+// messages that do not decode, the request is forwarded.
 func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool) {
 	var req struct {
 		message
@@ -80,6 +86,12 @@ func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool
 		} `json:"params"`
 	}
 	if json.Unmarshal(request, &req) != nil || !req.isRequest() || req.Method != methodToolsCall || req.Params.Name != authenticateTool {
+		return nil, false
+	}
+	h.stateMu.Lock()
+	challenged := h.sessionChallenged
+	h.stateMu.Unlock()
+	if !challenged {
 		return nil, false
 	}
 	return h.authenticate(ctx, req.ID), true
@@ -94,15 +106,26 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 	}
 	switch req.Method {
 	case "tools/list":
-		if h.challenged(status, message) {
+		if h.isChallenge(status, message) {
 			return [][]byte{h.authenticateList(req.ID)}, nil
 		}
 	case methodToolsCall:
-		if h.challenged(status, message) {
+		if h.isChallenge(status, message) {
 			return [][]byte{h.signInRequired(req.ID), listChangedNotification}, nil
 		}
 	}
 	return [][]byte{message}, nil
+}
+
+// isChallenge reports whether an upstream answer is a challenge, and records that the session has been challenged.
+func (h *signInHooks) isChallenge(status int, message []byte) bool {
+	if !h.challenged(status, message) {
+		return false
+	}
+	h.stateMu.Lock()
+	h.sessionChallenged = true
+	h.stateMu.Unlock()
+	return true
 }
 
 // upstreamReply is the part of an upstream message that challenge detection reads.
