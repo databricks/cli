@@ -364,7 +364,7 @@ func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *age
 	if !owned {
 		return removeKept, keptReason(e, a, loc.path, loc.entry), nil
 	}
-	if _, err := agentconfig.RemoveAt(a, loc.path, e.Name); err != nil {
+	if _, err := agentconfig.RemoveAt(ctx, a, loc.path, e.Name); err != nil {
 		return 0, "", err
 	}
 	return removeDeleted, "", nil

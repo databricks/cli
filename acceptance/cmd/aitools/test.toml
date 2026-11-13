@@ -1,0 +1,2 @@
+# The argv log of the agent CLI stand-ins (script.prepare) is shown by the tests that need it, not compared as a new file.
+Ignore = ["agent-calls.log"]

@@ -1,0 +1,16 @@
+# The host's claude, codex, gemini and copilot must not run from any test under acceptance/cmd/aitools. The harness built
+# stand-ins for them (see acceptance/internal/fakeagent), and they go first on PATH, so `add` and `remove` reach the
+# stand-ins and nothing else. An empty FAKE_AGENT_DIR would put the host's CLIs first on PATH, so the test stops instead.
+if [[ -z "${FAKE_AGENT_DIR:-}" ]]; then
+    echo "FAKE_AGENT_DIR is empty: the agent CLI stand-ins were not built" >&2
+    exit 1
+fi
+# Each stand-in appends its argv to agent-calls.log, which a test can show with trace. The agent CLIs run in an empty
+# directory, not in the test's, so the log path is absolute. Go opens it, so on msys it is in the mixed form.
+export FAKE_AGENT_LOG="$PWD/agent-calls.log"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    export PATH="$(cygpath -u "$FAKE_AGENT_DIR"):$PATH"
+    export FAKE_AGENT_LOG="$(cygpath -m "$FAKE_AGENT_LOG")"
+else
+    export PATH="$FAKE_AGENT_DIR:$PATH"
+fi

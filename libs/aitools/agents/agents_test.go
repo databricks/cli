@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -304,4 +305,103 @@ func TestInstalledForMCP(t *testing.T) {
 		assert.NoDirExists(t, filepath.Join(home, ".gemini", "config"))
 		assert.True(t, installed(t, NameAntigravity))
 	})
+}
+
+// Each command gets the Windows path of the databricks binary as one argument, with spaces, and the server arguments
+// with a space inside one of them. The argv must pass each value through as one element.
+var (
+	testMCPCmd  = `C:\Program Files\Databricks\databricks.exe`
+	testMCPArgs = []string{"aitools", "mcp", "serve", "--profile", "my profile", "--service", "system.ai.github", "--agent", "codex"}
+)
+
+func TestMCPAddArgsPerAgent(t *testing.T) {
+	pin := map[string]string{"DATABRICKS_CONFIG_FILE": `C:\Users\me\.databrickscfg`}
+	tests := []struct {
+		name  string
+		agent string
+		env   map[string]string
+		want  []string
+	}{
+		{
+			name:  "codex without env",
+			agent: NameCodex,
+			want:  append([]string{"mcp", "add", "github", "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "codex pins the config file as --env",
+			agent: NameCodex,
+			env:   pin,
+			want:  append([]string{"mcp", "add", "github", "--env", `DATABRICKS_CONFIG_FILE=C:\Users\me\.databrickscfg`, "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "copilot without env",
+			agent: NameCopilot,
+			want:  append([]string{"mcp", "add", "github", "--tools", "*", "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "copilot pins the config file as --env",
+			agent: NameCopilot,
+			env:   pin,
+			want:  append([]string{"mcp", "add", "github", "--tools", "*", "--env", `DATABRICKS_CONFIG_FILE=C:\Users\me\.databrickscfg`, "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "gemini without env",
+			agent: NameGemini,
+			want:  append([]string{"mcp", "add", "--scope", "user", "github", testMCPCmd, "--"}, testMCPArgs...),
+		},
+		{
+			name:  "gemini pins the config file as -e",
+			agent: NameGemini,
+			env:   pin,
+			want:  append([]string{"mcp", "add", "--scope", "user", "-e", `DATABRICKS_CONFIG_FILE=C:\Users\me\.databrickscfg`, "github", testMCPCmd, "--"}, testMCPArgs...),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ByName(tt.agent).MCP.AddArgs("github", testMCPCmd, testMCPArgs, tt.env)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGeminiMCPAddArgsRefusesEnvValueWithEquals(t *testing.T) {
+	// Gemini's -e keeps only the first two parts of KEY=VALUE, so the direct writer makes this change.
+	got := ByName(NameGemini).MCP.AddArgs("github", testMCPCmd, testMCPArgs, map[string]string{"DATABRICKS_CONFIG_FILE": "C:\\a=b"})
+	assert.Nil(t, got)
+}
+
+func TestClaudeMCPAddArgsPassesTheEntryAsJSON(t *testing.T) {
+	pin := map[string]string{"DATABRICKS_CONFIG_FILE": `C:\Users\me\.databrickscfg`}
+	got := ByName(NameClaudeCode).MCP.AddArgs("github", testMCPCmd, testMCPArgs, pin)
+	require.Len(t, got, 6)
+	assert.Equal(t, []string{"mcp", "add-json", "--scope", "user", "github"}, got[:5])
+
+	want, err := json.Marshal(claudeMCPEntry(testMCPCmd, testMCPArgs, pin))
+	require.NoError(t, err)
+	assert.JSONEq(t, string(want), got[5])
+}
+
+func TestMCPRemoveArgsPerAgent(t *testing.T) {
+	tests := []struct {
+		agent string
+		want  []string
+	}{
+		{NameClaudeCode, []string{"mcp", "remove", "--scope", "user", "github"}},
+		{NameCodex, []string{"mcp", "remove", "github"}},
+		{NameGemini, []string{"mcp", "remove", "--scope", "user", "github"}},
+		{NameCopilot, []string{"mcp", "remove", "github"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.agent, func(t *testing.T) {
+			assert.Equal(t, tt.want, ByName(tt.agent).MCP.RemoveArgs("github"))
+		})
+	}
+}
+
+func TestOtherAgentsHaveNoCLIArgs(t *testing.T) {
+	for _, name := range []string{NameCursor, NameOpenCode, NameAntigravity} {
+		spec := ByName(name).MCP
+		assert.Nil(t, spec.AddArgs, name)
+		assert.Nil(t, spec.RemoveArgs, name)
+	}
 }
