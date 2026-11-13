@@ -77,8 +77,9 @@ type signInHooks struct {
 	// stateMu guards the three fields below. It is held only briefly, so an answer to a request is not held up by a
 	// sign-in.
 	stateMu sync.Mutex
-	// sessionChallenged means a request of this session was challenged. The authenticate tool is the proxy's only after that.
-	sessionChallenged bool
+	// exposed means the agent's list shows the authenticate tool: a challenge sets it, and a tools/list that passes through
+	// unchallenged clears it. The tool is the proxy's only while it is exposed.
+	exposed bool
 	// alreadySignedIn means the last authenticate answered "Already signed in".
 	alreadySignedIn bool
 	// restart means the next sign-in starts from no credential. A challenge that follows an "Already signed in" answer
@@ -102,9 +103,9 @@ func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]b
 		return nil, false
 	}
 	h.stateMu.Lock()
-	challenged := h.sessionChallenged
+	exposed := h.exposed
 	h.stateMu.Unlock()
-	if !challenged {
+	if !exposed {
 		return nil, false
 	}
 	var progressToken json.RawMessage
@@ -125,7 +126,7 @@ func (h *signInHooks) Result(_ context.Context, request []byte, status int, mess
 		return [][]byte{message}, nil
 	}
 	if !h.isChallenge(status, message) {
-		h.succeeded(status)
+		h.succeeded(req.Method, status)
 		return [][]byte{message}, nil
 	}
 	if req.Method == "tools/list" {
@@ -141,7 +142,7 @@ func (h *signInHooks) isChallenge(status int, message []byte) bool {
 	}
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
-	h.sessionChallenged = true
+	h.exposed = true
 	if h.alreadySignedIn {
 		h.restart = true
 		h.alreadySignedIn = false
@@ -151,14 +152,17 @@ func (h *signInHooks) isChallenge(status int, message []byte) bool {
 
 // succeeded records an upstream answer that is not a challenge. An answer with a success status means the service accepts
 // the caller's credential, so the "Already signed in" state ends: a challenge after this one is not a challenge to that
-// answer.
-func (h *signInHooks) succeeded(status int) {
+// answer. A tools/list answer also takes the authenticate tool off the list, since the list is the service's again.
+func (h *signInHooks) succeeded(method string, status int) {
 	if status/100 != 2 {
 		return
 	}
 	h.stateMu.Lock()
 	defer h.stateMu.Unlock()
 	h.alreadySignedIn = false
+	if method == "tools/list" {
+		h.exposed = false
+	}
 }
 
 // upstreamReply is the part of an upstream message that challenge detection reads.

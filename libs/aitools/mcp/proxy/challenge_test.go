@@ -634,22 +634,24 @@ func TestAuthenticateSendsNoProgressForNullToken(t *testing.T) {
 	assert.NotContains(t, strings.Join(lines, "\n"), "notifications/progress")
 }
 
-// listAnswer answers each tools/list with the challenge while challenged is set, and with one tool otherwise. Unlike the
-// fixtures above it answers with the id of each request, so later lists match their answers.
+// listAnswer answers each tools/list with the challenge while challenged is set, and with one tool otherwise. A tools/call
+// is answered by the upstream's tool, as a signed-in service does. Unlike the fixtures above it answers with the id of
+// each request, so later requests match their answers.
 func listAnswer(challenged *atomic.Bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		m, _ := parseMessage(body)
-		if m.Method != "tools/list" {
-			w.WriteHeader(http.StatusAccepted)
-			return
-		}
 		w.Header().Set("Content-Type", "application/json")
-		if challenged.Load() {
+		switch {
+		case m.Method == "tools/list" && challenged.Load():
 			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32006,"message":"rejected","data":null}}`, m.ID)
-			return
+		case m.Method == "tools/list":
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`, m.ID)
+		case m.Method == methodToolsCall:
+			fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"content":[{"type":"text","text":"upstream"}],"isError":false}}`, m.ID)
+		default:
+			w.WriteHeader(http.StatusAccepted)
 		}
-		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object"}}]}}`, m.ID)
 	}
 }
 
@@ -734,4 +736,31 @@ func TestRestartIsNotRepeatedAfterItsPageWasShown(t *testing.T) {
 			assert.Equal(t, !urlShown, reqs[2].Restart)
 		})
 	}
+}
+
+// TestAuthenticateIsForwardedOnceTheListPasses checks that the authenticate tool is the proxy's only while its list is
+// shown. Once a tools/list passes through unchallenged, the list is the service's again, and a tool of the service named
+// authenticate is forwarded to it.
+func TestAuthenticateIsForwardedOnceTheListPasses(t *testing.T) {
+	var challenged atomic.Bool
+	challenged.Store(true)
+	srv, _ := newFakeEndpoint(t, listAnswer(&challenged))
+	signIn := &signInStub{reply: func(int) (bool, error) {
+		challenged.Store(false)
+		return false, nil
+	}}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn.SignIn))
+	authenticate := `{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`
+	challenge(t, p)
+
+	p.send(t, fmt.Sprintf(authenticate, 5))
+	p.waitLines(t, 3)
+	p.send(t, `{"jsonrpc":"2.0","id":6,"method":"tools/list"}`)
+	p.waitLines(t, 4)
+	p.send(t, fmt.Sprintf(authenticate, 7))
+	lines := p.waitLines(t, 5)
+	require.NoError(t, p.finish(t))
+
+	assert.Equal(t, []bool{true}, signIn.calls(), "the forwarded call starts no sign-in")
+	assert.Equal(t, `{"jsonrpc":"2.0","id":7,"result":{"content":[{"type":"text","text":"upstream"}],"isError":false}}`, lines[4])
 }
