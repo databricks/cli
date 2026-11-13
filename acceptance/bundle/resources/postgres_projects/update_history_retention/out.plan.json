@@ -2,8 +2,7 @@
   "action": "update",
   "changes": {
     "display_name": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "Test Project for History Retention Update",
       "new": "Test Project for History Retention Update"
     },

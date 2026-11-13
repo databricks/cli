@@ -5,7 +5,15 @@
       "label": "${resources.postgres_projects.my_project.id}"
     }
   ],
-  "action": "skip",
+  "action": "update",
+  "new_state": {
+    "value": {
+      "branch_id": "dev-branch",
+      "is_protected": false,
+      "no_expiry": true,
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]"
+    }
+  },
   "remote_state": {
     "branch_id": "dev-branch",
     "create_time": "[TIMESTAMP]",
@@ -32,8 +40,7 @@
       "new": false
     },
     "no_expiry": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": true,
       "new": true
     }

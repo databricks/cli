@@ -38,8 +38,7 @@
       "new": "renamed_db_name"
     },
     "role": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
       "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
       "remote": ""

@@ -370,21 +370,20 @@ func newCancelBatch() *cobra.Command {
 	var cancelBatchReq aifunctions.CancelBatchRequest
 
 	cmd.Use = "cancel-batch NAME"
-	cmd.Short = `Cancel a batch.`
-	cmd.Long = `Cancel a batch.
+	cmd.Short = `*Beta* Cancel a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
 
-  Cancel a batch. Cancellation is asynchronous: requests in flight drain first,
-  so read the batch to observe the CANCELLING and CANCELLED statuses.
+Cancel a batch.
+
+  Starts the asynchronous cancellation of a batch. Requests in progress are
+  drained first. Cancellation is best effort, so the batch can still complete.
 
   Arguments:
-    NAME: ID of the batch, in the form batch_<id>.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    NAME: Resource name of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -436,39 +435,40 @@ func newCreateBatch() *cobra.Command {
 
 	cmd.Flags().Var(&createBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createBatchReq.Batch.Name, "name", createBatchReq.Batch.Name, `ID of the batch, in the form batch_<id>.`)
-	cmd.Flags().StringVar(&createBatchReq.Batch.OutputRef, "output-ref", createBatchReq.Batch.OutputRef, `Path on a Unity Catalog volume to write the JSONL output to.`)
 	// TODO: map via StringToStringVar: params
 	// TODO: complex arg: request_counts
 
-	cmd.Use = "create-batch ENDPOINT INPUT_REF"
-	cmd.Short = `Create a batch.`
-	cmd.Long = `Create a batch.
+	cmd.Use = "create-batch ENDPOINT INPUT_REF OUTPUT_REF"
+	cmd.Short = `*Beta* Create a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
 
-  Run an AI function over every request in a file on a Unity Catalog volume. The
-  batch runs asynchronously; read it to follow its progress.
+Create a batch.
+
+  Creates a batch that runs an AI function on every request in a JSONL file on a
+  Unity Catalog volume. The batch runs asynchronously. To follow its progress,
+  get the batch.
 
   Arguments:
-    ENDPOINT: The AI function to run for every request, for example ai_extract.
-    INPUT_REF: Path of the JSONL input file on a Unity Catalog volume. Each line is one
-      request.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    ENDPOINT: The AI function, for example ai_parse_document.
+    INPUT_REF: Unity Catalog volume path of the JSONL input file. Each line is one
+      request, in the form {"custom_id": ..., "body": ...}. The file can hold
+      up to 50,000 requests and be up to 200 MiB.
+    OUTPUT_REF: Unity Catalog volume path to write the JSONL output file to. If the path
+      is a directory, the file is <path>/<name>_output.jsonl.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint', 'input_ref' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint', 'input_ref', 'output_ref' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -494,6 +494,9 @@ func newCreateBatch() *cobra.Command {
 		}
 		if !cmd.Flags().Changed("json") {
 			createBatchReq.Batch.InputRef = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createBatchReq.Batch.OutputRef = args[2]
 		}
 
 		response, err := w.AiFunctions.CreateBatch(ctx, createBatchReq)
@@ -531,20 +534,19 @@ func newGetBatch() *cobra.Command {
 	var getBatchReq aifunctions.GetBatchRequest
 
 	cmd.Use = "get-batch NAME"
-	cmd.Short = `Get a batch.`
-	cmd.Long = `Get a batch.
+	cmd.Short = `*Beta* Get a batch.`
+	cmd.Long = `This command is in Beta and may change without notice.
 
-  Read one batch, with its status and progress.
+Get a batch.
+
+  Gets the latest status and progress of a batch.
 
   Arguments:
-    NAME: ID of the batch, in the form batch_<id>.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    NAME: Resource name of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -606,17 +608,16 @@ func newListBatches() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-batches"
-	cmd.Short = `List batches.`
-	cmd.Long = `List batches.
+	cmd.Short = `*Beta* List batches.`
+	cmd.Long = `This command is in Beta and may change without notice.
 
-  List the batches the caller created in this workspace.`
+List batches.
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+  Lists the batches that the caller created in this workspace.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

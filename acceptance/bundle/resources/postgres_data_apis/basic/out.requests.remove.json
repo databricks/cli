@@ -1,4 +1,42 @@
 {
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.display_name"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Data API",
+      "pg_version": 16
+    }
+  }
+}
+{
   "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+  "q": {
+    "update_mask": "spec.expiration"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database",
+  "q": {
+    "update_mask": "spec.postgres_database,spec.role"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/roles/app-owner"
+    }
+  }
 }

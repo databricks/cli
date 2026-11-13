@@ -39,8 +39,7 @@
       "new": false
     },
     "no_expiry": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": true,
       "new": true
     }

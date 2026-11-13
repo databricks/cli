@@ -48,14 +48,19 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Verify no_change (no changes)
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+update postgres_branches.dev_branch
+update postgres_projects.my_project
+
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
+Updated postgres_branches.dev_branch
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -91,16 +96,18 @@ resources:
 
 >>> [CLI] bundle plan
 update postgres_branches.dev_branch
+update postgres_projects.my_project
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
 Updated postgres_branches.dev_branch
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -128,16 +135,18 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle plan
 update postgres_branches.dev_branch
+update postgres_projects.my_project
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
 Updated postgres_branches.dev_branch
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

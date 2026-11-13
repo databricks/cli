@@ -3,6 +3,19 @@
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch"
 }
 {
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.display_name"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Branch Fork Point",
+      "pg_version": 16
+    }
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
   "q": {

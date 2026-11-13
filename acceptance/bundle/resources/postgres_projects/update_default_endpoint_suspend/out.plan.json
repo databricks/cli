@@ -20,8 +20,7 @@
       "new": "600s"
     },
     "display_name": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "Test Project for Default Endpoint Suspend Update",
       "new": "Test Project for Default Endpoint Suspend Update"
     },

@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
   "q": {
-    "update_mask": "spec.history_retention_duration"
+    "update_mask": "spec.display_name,spec.history_retention_duration"
   },
   "body": {
     "spec": {

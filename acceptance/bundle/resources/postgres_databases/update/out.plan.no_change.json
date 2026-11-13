@@ -9,7 +9,15 @@
       "label": "${resources.postgres_roles.owner.id}"
     }
   ],
-  "action": "skip",
+  "action": "update",
+  "new_state": {
+    "value": {
+      "database_id": "my-database",
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  },
   "remote_state": {
     "create_time": "[TIMESTAMP]",
     "database_id": "my-database",
@@ -25,14 +33,12 @@
   },
   "changes": {
     "postgres_database": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "initial_db_name",
       "new": "initial_db_name"
     },
     "role": {
-      "action": "skip",
-      "reason": "spec:input_only",
+      "action": "update",
       "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
       "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
       "remote": ""

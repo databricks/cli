@@ -13,15 +13,11 @@ Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
+update postgres_projects.my_project
 recreate postgres_synced_tables.my_table
 
-Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
-Recreated postgres_synced_tables.my_table
-Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
+Plan: 1 to add, 1 to change, 1 to delete, 2 unchanged
+contains error: 'Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged' not found in the output.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -41,3 +37,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 4 deleted
 Cleaning up temporary source table
+
+Exit code: 1

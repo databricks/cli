@@ -1,3 +1,4 @@
 recreate postgres_branches.main
+update postgres_projects.my_project
 
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged

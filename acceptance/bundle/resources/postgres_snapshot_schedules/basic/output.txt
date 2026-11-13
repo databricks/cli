@@ -25,9 +25,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-basic-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.my_project
 Updated postgres_snapshot_schedules.main_schedule
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
 {
@@ -62,8 +63,9 @@ resources:
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-basic-[UNIQUE_NAME]/default/files...
 Deleted postgres_snapshot_schedules.main_schedule
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 1 deleted, 0 unchanged
 
 >>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
 {
@@ -74,7 +76,9 @@ Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 === Plan again to confirm no drift after removal
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

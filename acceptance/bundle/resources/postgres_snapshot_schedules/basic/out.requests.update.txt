@@ -4,15 +4,24 @@
 }
 {
   "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule"
 }
 {
   "method": "GET",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.display_name"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Snapshot Schedules",
+      "pg_version": 16
+    }
+  }
 }
 {
   "method": "PATCH",

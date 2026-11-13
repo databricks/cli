@@ -47,14 +47,21 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === Verify no changes
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+update postgres_branches.main
+recreate postgres_endpoints.my_endpoint
+update postgres_projects.my_project
+
+Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Recreated postgres_endpoints.my_endpoint
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
+Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -93,17 +100,21 @@ resources:
       suspend_timeout_duration: 300s
 
 >>> [CLI] bundle plan
-update postgres_endpoints.my_endpoint
+update postgres_branches.main
+recreate postgres_endpoints.my_endpoint
+update postgres_projects.my_project
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
-Updated postgres_endpoints.my_endpoint
+Recreated postgres_endpoints.my_endpoint
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -127,17 +138,21 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
 
 >>> [CLI] bundle plan
-update postgres_endpoints.my_endpoint
+update postgres_branches.main
+recreate postgres_endpoints.my_endpoint
+update postgres_projects.my_project
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 1 to add, 2 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
-Updated postgres_endpoints.my_endpoint
+Recreated postgres_endpoints.my_endpoint
+Updated postgres_branches.main
+Updated postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+Resources: 1 created, 2 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
