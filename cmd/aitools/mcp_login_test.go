@@ -335,6 +335,49 @@ func TestMcpLoginHintNamesPinnedConfigFile(t *testing.T) {
 		mcpLoginHint("system.ai.github", "logfood", "/work/cfg/logfood.cfg"))
 }
 
+// TestMcpLoginJSONURLIsNamedOnlyWhenThePageIsShown checks that the document names the sign-in URL when a page was shown,
+// or when the sign-in failed and the URL is how to finish it. A failure before the page is shown names no URL.
+func TestMcpLoginJSONURLIsNamedOnlyWhenThePageIsShown(t *testing.T) {
+	t.Setenv("BROWSER", "none")
+	prevPoll := signInPollInterval
+	t.Cleanup(func() { signInPollInterval = prevPoll })
+	signInPollInterval = time.Millisecond
+	cases := []struct {
+		name           string
+		credentialCode int
+		credentialBody string
+		wantURL        bool
+	}{
+		{
+			name:           "the credential cannot be read before the page",
+			credentialCode: http.StatusForbidden,
+			credentialBody: `{"error_code":"PERMISSION_DENIED","message":"no access"}`,
+		},
+		{
+			name:           "the sign-in fails after the page",
+			credentialCode: http.StatusOK,
+			credentialBody: `{"provisioning_info":{"state":"FAILED"}}`,
+			wantURL:        true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			home := withHome(t)
+			server := listCheckServer(t, http.StatusOK, tc.credentialCode, tc.credentialBody)
+			writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\nworkspace_id = 123\n")
+
+			out := mcpSignInOutput{Service: "system.ai.github"}
+			err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogin, &out)
+			require.Error(t, err)
+			if tc.wantURL {
+				assert.Equal(t, server.URL+"/mcp-service-login?name=system.ai.github&o=123", out.URL)
+			} else {
+				assert.Empty(t, out.URL)
+			}
+		})
+	}
+}
+
 // TestMcpLoginJSONNamesProfileWhenBindingFails checks that a failure after the profile is resolved still names the profile
 // in the document, and that a state the command never reached is left out rather than sent empty.
 func TestMcpLoginJSONNamesProfileWhenBindingFails(t *testing.T) {

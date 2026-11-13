@@ -68,22 +68,23 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 
 // SignIn signs the caller in to a sign-in-required service, at url from SignInURL. When the caller is already signed in
 // it returns alreadySignedIn true and nil, and prints nothing and opens no page. Otherwise it deletes a FAILED credential
-// left by an earlier attempt, prints url to out, opens it, and polls until the credential is ACTIVE. A poll that fails
-// with a server error or a network error is polled again until the wait ends; any other failed poll ends the sign-in.
-// The errors are a *SignInTimeoutError, ErrSignInFailed, or an API error.
-func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) (alreadySignedIn bool, err error) {
+// left by an earlier attempt, prints url to out, opens it, and polls until the credential is ACTIVE. urlShown reports
+// whether url was printed, which is not so when a read or the delete of a FAILED credential fails first. A poll that
+// fails with a server error or a network error is polled again until the wait ends; any other failed poll ends the
+// sign-in. The errors are a *SignInTimeoutError, ErrSignInFailed, or an API error.
+func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) (alreadySignedIn, urlShown bool, err error) {
 	state, err := CredentialState(ctx, w, service)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	switch state {
 	case catalog.ProvisioningInfoStateActive:
-		return true, nil
+		return true, false, nil
 	case catalog.ProvisioningInfoStateFailed:
 		// A FAILED credential is left by an earlier attempt. It is deleted, so that a FAILED state seen while waiting is
 		// the result of this attempt, and so that the page starts from no credential.
 		if _, err := SignOut(ctx, w, service); err != nil {
-			return false, err
+			return false, false, err
 		}
 	case catalog.ProvisioningInfoStateDegraded, catalog.ProvisioningInfoStateDeleting,
 		catalog.ProvisioningInfoStateProvisioning, catalog.ProvisioningInfoStateUpdating:
@@ -119,7 +120,7 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	for {
 		select {
 		case <-waitCtx.Done():
-			return false, waitEnded(ctx, lastCheck)
+			return false, true, waitEnded(ctx, lastCheck)
 		case err := <-opened:
 			opened = nil
 			if err != nil {
@@ -131,10 +132,10 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		state, err := CredentialState(waitCtx, w, service)
 		if err != nil {
 			if waitCtx.Err() != nil {
-				return false, waitEnded(ctx, lastCheck)
+				return false, true, waitEnded(ctx, lastCheck)
 			}
 			if !transientPollError(err) {
-				return false, err
+				return false, true, err
 			}
 			lastCheck = err
 			continue
@@ -143,9 +144,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		// Other states (PROVISIONING, UPDATING, ...) mean the login has not completed yet.
 		switch state {
 		case catalog.ProvisioningInfoStateActive:
-			return false, nil
+			return false, true, nil
 		case catalog.ProvisioningInfoStateFailed:
-			return false, ErrSignInFailed
+			return false, true, ErrSignInFailed
 		case catalog.ProvisioningInfoStateDegraded, catalog.ProvisioningInfoStateDeleting,
 			catalog.ProvisioningInfoStateProvisioning, catalog.ProvisioningInfoStateUpdating:
 			// The login has not completed yet.
