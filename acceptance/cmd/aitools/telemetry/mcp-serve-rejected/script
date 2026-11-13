@@ -1,8 +1,0 @@
-sethome home
-envsubst < .databrickscfg > out && mv out .databrickscfg
-export DATABRICKS_CONFIG_FILE=.databrickscfg
-export BROWSER=none
-
-title "serve whose startup check is rejected: exit 2, and nothing is uploaded: a failed start logs no event"
-trace musterr $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < /dev/null > /dev/null
-mcp_events

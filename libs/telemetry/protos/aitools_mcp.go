@@ -56,8 +56,9 @@ const (
 type AitoolsTargetOutcome string
 
 const (
-	AitoolsTargetOutcomeChanged         AitoolsTargetOutcome = "CHANGED"
-	AitoolsTargetOutcomeUnchanged       AitoolsTargetOutcome = "UNCHANGED"
+	AitoolsTargetOutcomeChanged   AitoolsTargetOutcome = "CHANGED"
+	AitoolsTargetOutcomeUnchanged AitoolsTargetOutcome = "UNCHANGED"
+	// AitoolsTargetOutcomeUpdateAvailable mirrors the schema. No MCP command sends it yet.
 	AitoolsTargetOutcomeUpdateAvailable AitoolsTargetOutcome = "UPDATE_AVAILABLE"
 	AitoolsTargetOutcomeSkipped         AitoolsTargetOutcome = "SKIPPED"
 	AitoolsTargetOutcomeFailed          AitoolsTargetOutcome = "FAILED"

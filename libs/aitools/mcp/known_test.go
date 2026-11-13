@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,18 @@ func TestKnownSystemAITable(t *testing.T) {
 			assert.Equal(t, tt.beta, known.Beta)
 			assert.Equal(t, tt.recommended, known.Recommended)
 		})
+	}
+}
+
+// TestKnownLeavesAreTheSystemAITable checks that KnownLeaves lists the leaves of the system.ai table, sorted, with each
+// leaf known as a system.ai service.
+func TestKnownLeavesAreTheSystemAITable(t *testing.T) {
+	leaves := KnownLeaves()
+	assert.Contains(t, leaves, "genie_one_mcp")
+	assert.True(t, slices.IsSorted(leaves))
+	assert.Len(t, leaves, len(knownSystemAI))
+	for _, leaf := range leaves {
+		assert.NotNil(t, KnownOf(SystemAILocation+"."+leaf), leaf)
 	}
 }
 

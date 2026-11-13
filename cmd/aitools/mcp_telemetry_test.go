@@ -251,7 +251,7 @@ func TestBoundProfileCount(t *testing.T) {
 	assert.Equal(t, int64(0), boundProfileCount(t.Context(), &mcp.State{}))
 }
 
-func TestAddSignInEvent(t *testing.T) {
+func TestSignInEventOf(t *testing.T) {
 	// An ACTIVE credential that the add found signed in is UNCHANGED, as add --login reports it.
 	assert.Equal(t, protos.AitoolsMcpEvent{
 		CallingAgent: callingAgentType(),
@@ -261,7 +261,7 @@ func TestAddSignInEvent(t *testing.T) {
 			Outcome:     protos.AitoolsTargetOutcomeUnchanged,
 			SignInState: protos.AitoolsMcpSignInStateActive,
 		}},
-	}, addSignInEvent("system.ai.github", signInStateActive, true, nil))
+	}, signInEventOf("system.ai.github", signInStateActive, true, nil))
 }
 
 // TestMcpEventOmitsUserContent checks that the event carries enums and counts only: a custom service's name must not

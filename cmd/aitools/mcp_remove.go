@@ -83,7 +83,7 @@ type recordDrop struct {
 	agent string
 }
 
-// NewMcpRemoveCmd returns `aitools mcp remove`. It needs no network.
+// NewMcpRemoveCmd returns `aitools mcp remove`. The edit needs no network; the telemetry upload after it is best-effort.
 func NewMcpRemoveCmd() *cobra.Command {
 	var f mcpRemoveFlags
 	cmd := &cobra.Command{

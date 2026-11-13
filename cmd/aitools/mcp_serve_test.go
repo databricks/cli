@@ -334,8 +334,6 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	}
 }
 
-// TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
-// exits 2 like the other binding failures.
 // TestMcpServeFailedStartLogsNothing checks that a start that fails its binding checks logs no PROXY_STARTED, so nothing
 // uploads.
 func TestMcpServeFailedStartLogsNothing(t *testing.T) {
@@ -352,6 +350,29 @@ func TestMcpServeFailedStartLogsNothing(t *testing.T) {
 	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
 }
 
+// TestMcpServeRejectedStartLogsNothing checks that a start whose startup read is rejected by the profile's credential logs
+// no PROXY_STARTED, so the run uploads nothing: the rejected token is not sent again.
+func TestMcpServeRejectedStartLogsNothing(t *testing.T) {
+	home := withHome(t)
+	server := serviceServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-expired\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+	_, uploads := telemetry.UploadConfig(serve.Context())
+	assert.False(t, uploads)
+}
+
+// TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
+// exits 2 like the other binding failures.
 func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
 	withHome(t)
 	dir, err := installer.GlobalSkillsDir(t.Context())

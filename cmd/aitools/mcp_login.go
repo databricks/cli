@@ -162,16 +162,13 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 
 // signInEvent is the SIGN_IN or SIGN_OUT event of one login or logout.
 func signInEvent(operation protos.AitoolsMcpOperation, out *mcpSignInOutput, err error) protos.AitoolsMcpEvent {
-	var r protos.AitoolsMcpServerResult
 	if operation == protos.AitoolsMcpOperationSignIn {
-		r = signInServerResult(out.Service, out.State, out.alreadySignedIn, err)
-	} else {
-		r = signOutServerResult(out.Service, out.State, err)
+		return signInEventOf(out.Service, out.State, out.alreadySignedIn, err)
 	}
 	return protos.AitoolsMcpEvent{
 		CallingAgent: callingAgentType(),
 		Operation:    operation,
-		Servers:      []protos.AitoolsMcpServerResult{r},
+		Servers:      []protos.AitoolsMcpServerResult{signOutServerResult(out.Service, out.State, err)},
 	}
 }
 

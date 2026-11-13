@@ -75,7 +75,8 @@ const (
 	// counted here: it ends the process before telemetry is uploaded.
 	AitoolsErrorCategoryCommandInterrupted AitoolsErrorCategory = "COMMAND_INTERRUPTED"
 
-	// `aitools mcp`: profiles and sign-in.
+	// `aitools mcp`: profiles and sign-in. Bind failures send their category by value (mcp.BindCategory), so
+	// PROFILE_NOT_FOUND and PROFILE_HOST_CHANGED have no reference by name.
 	AitoolsErrorCategoryNoProfile          AitoolsErrorCategory = "NO_PROFILE"
 	AitoolsErrorCategoryProfileRequired    AitoolsErrorCategory = "PROFILE_REQUIRED"
 	AitoolsErrorCategoryProfileNotFound    AitoolsErrorCategory = "PROFILE_NOT_FOUND"
@@ -84,7 +85,8 @@ const (
 	AitoolsErrorCategorySignInRequired     AitoolsErrorCategory = "SIGN_IN_REQUIRED"
 	AitoolsErrorCategorySignInTimeout      AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
 
-	// `aitools mcp`: the service list, agent configs and the proxy.
+	// `aitools mcp`: the service list, agent configs and the proxy. MCP_UPSTREAM_ERROR is in the schema but not sent yet:
+	// the proxy does not log upstream errors in v1.
 	AitoolsErrorCategoryMCPServiceNotFound  AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
 	AitoolsErrorCategoryMCPPermissionDenied AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
 	AitoolsErrorCategoryMCPLocationNotFound AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"

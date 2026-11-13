@@ -198,9 +198,9 @@ func signInServerResult(service, state string, alreadySignedIn bool, err error) 
 	return r
 }
 
-// addSignInEvent is the SIGN_IN event of one provider sign-in under add --login. A sign-in that found the caller
+// signInEventOf is the SIGN_IN event of one provider sign-in, under add --login or login. A sign-in that found the caller
 // already signed in is UNCHANGED.
-func addSignInEvent(service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
+func signInEventOf(service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
 	return protos.AitoolsMcpEvent{
 		CallingAgent: callingAgentType(),
 		Operation:    protos.AitoolsMcpOperationSignIn,
