@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
@@ -112,13 +114,39 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 	for k, v := range s.Properties {
 		item := ta.Fields[k]
-		if item.Description == "" {
-			item.Description = annotation.Placeholder
-			d.missingAnnotations.SetField(refPath, k, annotation.Descriptor{Description: annotation.Placeholder})
+		if item.Description == "" || item.Description == annotation.Placeholder {
+			if text := boilerplateDescription(typ, k); text != "" {
+				item.Description = text
+				d.missingAnnotations.SetField(refPath, k, annotation.Descriptor{Description: text})
+			} else if item.Description == "" {
+				item.Description = annotation.Placeholder
+				d.missingAnnotations.SetField(refPath, k, annotation.Descriptor{Description: annotation.Placeholder})
+			}
 		}
 		assignAnnotation(v, item)
 	}
 	return s
+}
+
+const resourceLifecycleDescription = "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed."
+
+// boilerplateDescription returns the text that every resource type repeats for
+// field k of typ, or "". Callers apply it only to undocumented or placeholder
+// fields, so hand-written text is never replaced.
+func boilerplateDescription(typ reflect.Type, k string) string {
+	switch {
+	case typ == reflect.TypeFor[config.Resources]():
+		desc, ok := config.SupportedResources()[k]
+		if !ok {
+			return ""
+		}
+		name := strings.ReplaceAll(desc.SingularName, "_", " ")
+		return fmt.Sprintf("The %s definitions for the bundle, where each key is the name of the %s.", name, name)
+	case k == "lifecycle" && typ.PkgPath() == reflect.TypeFor[resources.Job]().PkgPath():
+		return resourceLifecycleDescription
+	default:
+		return ""
+	}
 }
 
 // Writes the annotations file back in canonical form, adding placeholder

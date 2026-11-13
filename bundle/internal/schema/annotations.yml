@@ -258,7 +258,7 @@ resources:
   "$fields":
     "alerts":
       "description": |-
-        PLACEHOLDER
+        The alert definitions for the bundle, where each key is the name of the alert.
       "$fields":
         "file_path":
           "description": |-
@@ -480,7 +480,7 @@ resources:
             PLACEHOLDER
     "catalogs":
       "description": |-
-        PLACEHOLDER
+        The catalog definitions for the bundle, where each key is the name of the catalog.
       "$fields":
         "grants":
           "description": |-
@@ -520,11 +520,11 @@ resources:
                     PLACEHOLDER
     "cluster_policies":
       "description": |-
-        PLACEHOLDER
+        The cluster policy definitions for the bundle, where each key is the name of the cluster policy.
       "$fields":
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -768,7 +768,7 @@ resources:
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "database_catalogs":
       "description": |-
-        PLACEHOLDER
+        The database catalog definitions for the bundle, where each key is the name of the database catalog.
       "$fields":
         "create_database_if_not_exists":
           "description": |-
@@ -781,7 +781,7 @@ resources:
             PLACEHOLDER
     "database_instances":
       "description": |-
-        PLACEHOLDER
+        The database instance definitions for the bundle, where each key is the name of the database instance.
       "$fields":
         "lifecycle":
           "description": |-
@@ -860,7 +860,7 @@ resources:
                 The name of the user granted the permission level.
     "external_locations":
       "description": |-
-        PLACEHOLDER
+        The external location definitions for the bundle, where each key is the name of the external location.
       "$fields":
         "effective_file_event_queue":
           "$fields":
@@ -971,7 +971,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "source":
           "$fields":
             "delta_table_source":
@@ -995,7 +995,7 @@ resources:
             PLACEHOLDER
     "genie_spaces":
       "description": |-
-        PLACEHOLDER
+        The genie space definitions for the bundle, where each key is the name of the genie space.
       "$fields":
         "description":
           "description": |-
@@ -1295,7 +1295,7 @@ resources:
                 Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
-        PLACEHOLDER
+        The mcp service definitions for the bundle, where each key is the name of the mcp service.
       "$fields":
         "comment":
           "description": |-
@@ -1308,7 +1308,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "mcp_service_id":
           "description": |-
             PLACEHOLDER
@@ -1317,7 +1317,7 @@ resources:
             PLACEHOLDER
     "model_provider_services":
       "description": |-
-        PLACEHOLDER
+        The model provider service definitions for the bundle, where each key is the name of the model provider service.
       "$fields":
         "comment":
           "description": |-
@@ -1330,7 +1330,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "model_provider_service_id":
           "description": |-
             PLACEHOLDER
@@ -1339,7 +1339,7 @@ resources:
             PLACEHOLDER
     "model_services":
       "description": |-
-        PLACEHOLDER
+        The model service definitions for the bundle, where each key is the name of the model service.
       "$fields":
         "comment":
           "description": |-
@@ -1352,7 +1352,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "model_service_id":
           "description": |-
             PLACEHOLDER
@@ -2091,7 +2091,7 @@ resources:
                     PLACEHOLDER
     "synced_database_tables":
       "description": |-
-        PLACEHOLDER
+        The synced database table definitions for the bundle, where each key is the name of the synced database table.
       "$fields":
         "data_synchronization_status":
           "$fields":
@@ -2105,7 +2105,7 @@ resources:
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "vector_search_endpoints":
       "description": |-
-        PLACEHOLDER
+        The vector search endpoint definitions for the bundle, where each key is the name of the vector search endpoint.
       "$fields":
         "lifecycle":
           "description": |-
@@ -2142,7 +2142,7 @@ resources:
                 PLACEHOLDER
     "vector_search_indexes":
       "description": |-
-        PLACEHOLDER
+        The vector search index definitions for the bundle, where each key is the name of the vector search index.
       "$fields":
         "grants":
           "description": |-
