@@ -1022,7 +1022,7 @@ func ReadMissingInternalIDs(ctx context.Context, client *databricks.WorkspaceCli
 		}
 		if err != nil {
 			// The ID is optional: without it a state-only update in the next deploy records it.
-			log.Warnf(ctx, "%s: reading id=%q to record its internal id: %s", resourceKey, record.ID, err)
+			log.Debugf(ctx, "%s: reading id=%q to record its internal id: %s", resourceKey, record.ID, err)
 			continue
 		}
 		if err := recordInternalID(adapter, data, resourceKey, remote); err != nil {
