@@ -71,13 +71,13 @@ var mcpServiceTypes = map[string]protos.AitoolsMcpService{
 // services outside system.ai are CUSTOM.
 func mcpServiceType(fullName string) protos.AitoolsMcpService {
 	parts := strings.Split(fullName, ".")
-	if len(parts) != 3 || !strings.EqualFold(parts[0]+"."+parts[1], "system.ai") {
+	if len(parts) != 3 || !strings.EqualFold(parts[0]+"."+parts[1], mcp.SystemAILocation) {
 		return protos.AitoolsMcpServiceCustom
 	}
-	if t, ok := mcpServiceTypes[strings.ToLower(parts[2])]; ok {
-		return t
+	if mcp.KnownOf(fullName) == nil {
+		return protos.AitoolsMcpServiceOtherSystem
 	}
-	return protos.AitoolsMcpServiceOtherSystem
+	return mcpServiceTypes[strings.ToLower(parts[2])]
 }
 
 // callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.

@@ -40,6 +40,16 @@ func TestMcpServiceType(t *testing.T) {
 	}
 }
 
+// Every service in the CLI's known table has its own enum, so a known service never reports OTHER_SYSTEM. A new table
+// entry needs a new value in mcpServiceTypes.
+func TestMcpServiceTypeCoversKnownServices(t *testing.T) {
+	for _, leaf := range mcp.KnownLeaves() {
+		assert.Contains(t, mcpServiceTypes, leaf, "system.ai.%s has no telemetry enum: add it to mcpServiceTypes", leaf)
+		assert.NotEqualf(t, protos.AitoolsMcpServiceOtherSystem, mcpServiceType(mcp.SystemAILocation+"."+leaf),
+			"system.ai.%s has no telemetry enum", leaf)
+	}
+}
+
 func TestAddServerResults(t *testing.T) {
 	servers := []addServerOutput{
 		{
