@@ -31,7 +31,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     "spark_conf['spark.master']": {
       "action": "skip",
       "reason": "backend_default",
-      "remote": "local[*, 4]"
+      "remote": "local[*, [CORES]]"
     }
   },
   "resources.clusters.implicit": {
@@ -47,7 +47,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
       "reason": "backend_default",
       "remote": {
         "spark.databricks.cluster.profile": "singleNode",
-        "spark.master": "local[*, 4]"
+        "spark.master": "local[*, [CORES]]"
       }
     }
   }
@@ -70,7 +70,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
   "spark_conf['spark.master']": {
     "action": "skip",
     "reason": "backend_default",
-    "remote": "local[*, 4]"
+    "remote": "local[*, [CORES]]"
   },
   "spark_conf['spark.sql.shuffle.partitions']": {
     "action": "update",

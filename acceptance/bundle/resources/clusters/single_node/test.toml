@@ -10,3 +10,8 @@ Ignore = [
     "databricks.yml",
     "edit.json",
 ]
+
+# The core count the backend puts in spark.master follows the node type.
+[[Repls]]
+Old = 'local\[\*, \d+\]'
+New = 'local[*, [CORES]]'
