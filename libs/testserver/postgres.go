@@ -152,8 +152,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
-		// Clear spec so it's not returned in response (API only returns status)
-		project.Spec = nil
+		project.Spec = echoedSpec[postgres.ProjectSpec](nil, req.Body, "", projectOneofGroups, "pg_version")
 	}
 
 	s.PostgresProjects[name] = project
@@ -249,6 +248,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 	}
 
+	project.Spec = echoedSpec(project.Spec, req.Body, req.URL.Query().Get("update_mask"), projectOneofGroups, "pg_version")
 	project.UpdateTime = nowTime()
 	s.PostgresProjects[name] = project
 
@@ -372,8 +372,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 		branch.Status.ExpireTime = branch.Spec.ExpireTime
 	}
 
-	// Clear spec - API only returns status
-	branch.Spec = nil
+	branch.Spec = echoedSpec[postgres.BranchSpec](nil, req.Body, "", branchOneofGroups, "source_branch", "source_branch_lsn", "source_branch_time")
 
 	s.PostgresBranches[name] = branch
 
@@ -469,6 +468,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		}
 	}
 
+	branch.Spec = echoedSpec(branch.Spec, req.Body, req.URL.Query().Get("update_mask"), branchOneofGroups, "source_branch", "source_branch_lsn", "source_branch_time")
 	branch.UpdateTime = nowTime()
 	s.PostgresBranches[name] = branch
 
@@ -678,8 +678,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		endpoint.Status.Disabled = endpoint.Spec.Disabled
 	}
 
-	// Clear spec - API only returns status
-	endpoint.Spec = nil
+	endpoint.Spec = echoedSpec[postgres.EndpointSpec](nil, req.Body, "", endpointOneofGroups)
 
 	s.PostgresEndpoints[name] = endpoint
 
@@ -1061,6 +1060,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
 	}
 
+	endpoint.Spec = echoedSpec(endpoint.Spec, req.Body, req.URL.Query().Get("update_mask"), endpointOneofGroups)
 	endpoint.UpdateTime = nowTime()
 	s.PostgresEndpoints[name] = endpoint
 
@@ -1147,7 +1147,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 		}
 		existing.UpdateTime = now
 		existing.Status = status
-		existing.Spec = nil
+		existing.Spec = echoedSpec[postgres.DatabaseDatabaseSpec](nil, req.Body, "", nil)
 		s.PostgresDatabases[name] = existing
 
 		return Response{
@@ -1161,14 +1161,14 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	database.CreateTime = now
 	database.UpdateTime = now
 
-	// Mirror spec onto status; the real API only echoes Status on GET.
+	// Mirror spec onto status.
 	status := &postgres.DatabaseDatabaseStatus{
 		DatabaseId:       databaseID,
 		PostgresDatabase: database.Spec.PostgresDatabase,
 		Role:             database.Spec.Role,
 	}
 	database.Status = status
-	database.Spec = nil
+	database.Spec = echoedSpec[postgres.DatabaseDatabaseSpec](nil, req.Body, "", nil)
 
 	s.PostgresDatabases[name] = database
 
@@ -1264,6 +1264,7 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 		database.Status.DatabaseId = databaseID
 	}
 
+	database.Spec = echoedSpec(database.Spec, req.Body, req.URL.Query().Get("update_mask"), nil)
 	database.UpdateTime = nowTime()
 	s.PostgresDatabases[name] = database
 
@@ -1273,7 +1274,7 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 }
 
 // databaseStatusFromSpec mirrors the real Postgres Database server's behavior of
-// echoing the spec onto Status while leaving Spec=nil on GET responses.
+// echoing the spec onto Status.
 func databaseStatusFromSpec(spec *postgres.DatabaseDatabaseSpec) *postgres.DatabaseDatabaseStatus {
 	status := &postgres.DatabaseDatabaseStatus{}
 	if spec == nil {
@@ -1661,8 +1662,7 @@ func (s *FakeWorkspace) PostgresCatalogDelete(name string) Response {
 var roleIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{3,62}$`)
 
 // roleStatusFromSpec mirrors the real Postgres Role server's behavior of echoing
-// the spec onto Status (plus default-deriving fields the user did not specify)
-// while leaving Spec=nil on GET responses.
+// the spec onto Status (plus default-deriving fields the user did not specify).
 func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
 	status := &postgres.RoleRoleStatus{}
 	if spec == nil {
@@ -1750,7 +1750,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 		existing.UpdateTime = now
 		existing.Status = roleStatusFromSpec(role.Spec)
 		existing.Status.RoleId = roleID
-		existing.Spec = nil
+		existing.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, "postgres_role", "auth_method", "identity_type")
 		s.PostgresRoles[name] = existing
 
 		return Response{
@@ -1766,7 +1766,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 
 	role.Status = roleStatusFromSpec(role.Spec)
 	role.Status.RoleId = roleID
-	role.Spec = nil
+	role.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, "postgres_role", "auth_method", "identity_type")
 
 	s.PostgresRoles[name] = role
 
@@ -1865,6 +1865,7 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		role.Status.RoleId = roleID
 	}
 
+	role.Spec = echoedSpec(role.Spec, req.Body, req.URL.Query().Get("update_mask"), nil, "postgres_role", "auth_method", "identity_type")
 	role.UpdateTime = nowTime()
 	s.PostgresRoles[name] = role
 
