@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -354,42 +355,85 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 	return agentStatusInstalled, loc.path, "", nil
 }
 
-// addChecks runs the --check tests of SPEC 4.2 for each profile that did not drift: a token mint, the
-// sign-in state of each sign-in-required server, and whether the recorded binary exists.
+// addChecks runs the --check tests for each profile that did not drift: a token mint, the sign-in state of each
+// sign-in-required server, and whether the recorded binary exists. Each profile is checked with the config file of its
+// group. A check that cannot run is a warning, and its result is unknown.
 func addChecks(ctx context.Context, out *mcpListOutput) {
 	for i := range out.Profiles {
 		p := &out.Profiles[i]
 		if p.Status != statusOK {
 			continue
 		}
-		w, err := profileClient(ctx, p.Profile, p.configPath)
-		p.token = statusOK
+		err := withConfigFile(ctx, p.configPath, func(ctx context.Context) {
+			addProfileChecks(ctx, p, out)
+		})
 		if err != nil {
-			p.token = checkFailed
-		}
-		for j := range p.Servers {
-			s := &p.Servers[j]
-			s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
-			if s.SignInRequired {
-				s.Check.SignIn = statusUnknown
-				if err == nil {
-					s.Check.SignIn = signInStatus(ctx, w, s.Service)
-				}
-			}
+			out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
 		}
 	}
 }
 
-// signInStatus reads the caller's sign-in to a service. Only an ACTIVE credential counts as signed in.
-func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, service string) string {
-	state, err := mcp.CredentialState(ctx, w, service)
-	switch {
-	case err != nil:
-		return statusUnknown
-	case state == catalog.ProvisioningInfoStateActive:
-		return statusOK
+// addProfileChecks runs the checks of one profile, whose config file is in ctx. A profile whose token cannot be minted
+// has no sign-in checks: its warning says why.
+func addProfileChecks(ctx context.Context, p *mcpListProfile, out *mcpListOutput) {
+	w, err := profileClient(ctx, p.Profile, p.configPath)
+	p.token = statusOK
+	if err != nil {
+		p.token = checkFailed
+		out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
 	}
-	return checkNeeded
+	for j := range p.Servers {
+		s := &p.Servers[j]
+		s.Check = &mcpListCheck{Token: p.token, Binary: binaryStatus(s.entry.Command, exec.LookPath)}
+		if !s.SignInRequired {
+			continue
+		}
+		s.Check.SignIn = statusUnknown
+		if err != nil {
+			continue
+		}
+		status, signInErr := signInStatus(ctx, w, p.Profile, s.Service)
+		s.Check.SignIn = status
+		if signInErr != nil {
+			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
+		}
+	}
+}
+
+// signInStatus reads the caller's sign-in to a service. Only an ACTIVE credential counts as signed in. A service the
+// profile can no longer see is unknown, not a sign-in that is needed, and a read that fails is unknown too; the error
+// says why.
+func signInStatus(ctx context.Context, w *databricks.WorkspaceClient, profileName, service string) (string, error) {
+	_, err := mcp.GetService(ctx, w, service)
+	if errors.Is(err, apierr.ErrNotFound) {
+		return statusUnknown, fmt.Errorf("%s is not an MCP service visible to profile %s", service, profileName)
+	}
+	if err != nil {
+		return statusUnknown, describeRequestError(profileName, err)
+	}
+	state, err := mcp.CredentialState(ctx, w, service)
+	if err != nil {
+		return statusUnknown, describeRequestError(profileName, err)
+	}
+	if state == catalog.ProvisioningInfoStateActive {
+		return statusOK, nil
+	}
+	return checkNeeded, nil
+}
+
+// withConfigFile runs fn with path as the config file of a profile: in the context that fn receives, and in the process
+// environment, which the token store reads (see mcp.Bind). The environment is restored afterwards, and its error is
+// returned.
+func withConfigFile(ctx context.Context, path string, fn func(ctx context.Context)) error {
+	previous, wasSet := os.LookupEnv(mcpconfig.ConfigFileEnv)
+	if err := os.Setenv(mcpconfig.ConfigFileEnv, path); err != nil {
+		return err
+	}
+	fn(env.Set(ctx, mcpconfig.ConfigFileEnv, path))
+	if !wasSet {
+		return os.Unsetenv(mcpconfig.ConfigFileEnv)
+	}
+	return os.Setenv(mcpconfig.ConfigFileEnv, previous)
 }
 
 // binaryStatus reports whether the recorded command exists. It resolves the command as binaryPathFor does: an
