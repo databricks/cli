@@ -333,7 +333,7 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // payload, and submit it. It
 // returns the new run_id and its dashboard URL, which carries the ?o= workspace
 // hint only when the workspace ID could be resolved. showProgress enables the stderr
-// staging spinner (text mode only).
+// staging spinner and the non-git snapshot notice (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, runURL string, err error) {
 	start := time.Now()
 	var snap snapshotResult
@@ -364,11 +364,20 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	var stageSnapshot func(context.Context) (snapshotResult, error)
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
-		// uploadSnapshot replaces this when remote_volume is configured.
+		// prepareSnapshot replaces this when remote_volume is configured.
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
+		// Resolve the snapshot before staging so its notice prints before the
+		// staging spinner starts drawing on stderr.
+		var prepared preparedSnapshot
+		prepared, err = prepareSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath)
+		if err != nil {
+			snap = prepared.result
+			return 0, "", err
+		}
+		announceSnapshot(ctx, prepared, showProgress)
 		stageSnapshot = func(ctx context.Context) (snapshotResult, error) {
 			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-			return uploadSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
+			return prepared.upload(ctx, fc, funcDir)
 		}
 	}
 

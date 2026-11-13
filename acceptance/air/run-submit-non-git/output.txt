@@ -1,0 +1,38 @@
+
+=== submit from a non-git directory
+
+>>> [CLI] air run -f run.yaml
+Submitting experiment: submit-non-git-smoke
+No git repository at [TEST_TMP_DIR]; packaging 5 file(s) (64.3 KiB uncompressed) from the working tree.
+Uploading [SNAPSHOT_TARBALL]...
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs 555
+
+=== unchanged resubmit reuses the cached snapshot
+
+>>> [CLI] air run -f run.yaml
+Submitting experiment: submit-non-git-smoke
+No git repository at [TEST_TMP_DIR]; reusing the cached snapshot (5 file(s), 64.3 KiB uncompressed).
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs 555
+
+=== json mode: no notice, like the Submitting line
+
+>>> [CLI] -o json air run -f run.yaml
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "status": "PENDING",
+    "run_id": "555",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/555"
+  }
+}
