@@ -282,6 +282,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	// Claude Code sets this in the commands it runs; it enables the native
+	// <claude-code-hint> line, so a host Claude Code session must not leak it.
+	os.Unsetenv("CLAUDE_CODE_CHILD_SESSION") //nolint:usetesting // t.Setenv cannot unset
+
 	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
 	// from the host shell would move the venv the localenv tests expect.
 	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset

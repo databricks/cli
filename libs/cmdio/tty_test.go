@@ -69,6 +69,18 @@ func TestFakeTTY(t *testing.T) {
 	assert.Equal(t, "test", buf.String())
 }
 
+func TestFakeTTYReader(t *testing.T) {
+	src := bytes.NewBufferString("input")
+	assert.False(t, isTTY(src))
+
+	fake := FakeTTYReader(src)
+	assert.True(t, isTTY(fake))
+
+	got, err := io.ReadAll(fake)
+	assert.NoError(t, err)
+	assert.Equal(t, "input", string(got))
+}
+
 func TestFakeTTY_PreservesWriterBehavior(t *testing.T) {
 	buf := &bytes.Buffer{}
 	fake := FakeTTY(buf)

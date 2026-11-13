@@ -23,6 +23,9 @@ func isTTY(v any) bool {
 	if _, ok := v.(*fakeTTY); ok {
 		return true
 	}
+	if _, ok := v.(*fakeTTYReader); ok {
+		return true
+	}
 
 	// Check if it's an actual TTY.
 	f, ok := v.(*os.File)
@@ -43,4 +46,15 @@ type fakeTTY struct {
 // This is useful for testing terminal-dependent behavior.
 func FakeTTY(w io.Writer) io.Writer {
 	return &fakeTTY{Writer: w}
+}
+
+// fakeTTYReader is fakeTTY for a reader, so stdin can pose as a terminal.
+type fakeTTYReader struct {
+	io.Reader
+}
+
+// FakeTTYReader creates a reader that IsTTY will recognize as a TTY, for
+// testing behavior that depends on stdin being a terminal.
+func FakeTTYReader(r io.Reader) io.Reader {
+	return &fakeTTYReader{Reader: r}
 }
