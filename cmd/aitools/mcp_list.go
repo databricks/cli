@@ -360,7 +360,8 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 	return agentStatusInstalled, loc.path, "", nil
 }
 
-// profileCheckTimeout bounds the --check tests of one profile. Tests shorten it.
+// profileCheckTimeout bounds each --check request of a profile, so that a host that never answers ends the profile's
+// checks while a profile with many servers still gets every answer. Tests shorten it.
 var profileCheckTimeout = 5 * time.Second
 
 // addChecks runs the --check tests for each server that did not drift from its profile and can be read: a token mint, the
@@ -386,19 +387,11 @@ func addChecks(ctx context.Context, out *mcpListOutput) {
 	}
 }
 
-// addProfileChecks runs the checks of the servers of one profile that can be checked, whose config file is in ctx. The
-// checks end after profileCheckTimeout. login is the config file that the profile's login hints name, or "" (see
+// addProfileChecks runs the checks of the servers of one profile that can be checked, whose config file is in ctx. Each
+// request ends after profileCheckTimeout. login is the config file that the profile's login hints name, or "" (see
 // loginFile). A profile whose token cannot be checked has no sign-in checks: its warning says why.
 func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out *mcpListOutput) {
-	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
-	defer cancel()
-	w, err := profileCheckClient(ctx, p, login)
-	if err == nil {
-		// A personal access token is sent only with a request, so the token is checked with one.
-		if _, err = w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			err = describeRequestError(p.Profile, login, err)
-		}
-	}
+	w, err := checkProfileToken(ctx, p, login)
 	token := tokenStatus(err)
 	if err != nil {
 		out.Warnings = append(out.Warnings, fmt.Sprintf("profile %s: %s", p.Profile, err))
@@ -416,12 +409,34 @@ func addProfileChecks(ctx context.Context, p *mcpListProfile, login string, out 
 			}
 			continue
 		}
-		status, signInErr := signInStatus(ctx, w, p.Profile, login, s.Service, s.SignInRequired)
+		status, signInErr := checkServerSignIn(ctx, w, p.Profile, login, s)
 		s.Check.SignIn = status
 		if signInErr != nil {
 			out.Warnings = append(out.Warnings, fmt.Sprintf("MCP server %s: %s", s.Name, signInErr))
 		}
 	}
+}
+
+// checkProfileToken returns the client of a profile for its --check tests and checks its token. A personal access token is
+// sent only with a request, so the token is checked with one, bounded by profileCheckTimeout.
+func checkProfileToken(ctx context.Context, p *mcpListProfile, login string) (*databricks.WorkspaceClient, error) {
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	w, err := profileCheckClient(ctx, p, login)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+		return nil, describeRequestError(p.Profile, login, err)
+	}
+	return w, nil
+}
+
+// checkServerSignIn returns the sign-in status of one server, with its requests bounded by profileCheckTimeout.
+func checkServerSignIn(ctx context.Context, w *databricks.WorkspaceClient, profileName, login string, s *mcpListServer) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	return signInStatus(ctx, w, profileName, login, s.Service, s.SignInRequired)
 }
 
 // profileCheckClient returns the client of a profile for its --check tests. Resolving the profile's config is bounded too,

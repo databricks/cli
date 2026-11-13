@@ -1080,6 +1080,28 @@ func TestAddChecksBoundsAProfileThatNeverAnswers(t *testing.T) {
 	require.NotEmpty(t, out.Warnings)
 }
 
+// TestAddChecksBoundsEachRequestNotTheProfile checks that the time limit applies to each --check request: a profile whose
+// requests each answer within the limit gets every answer, even when together they take longer than the limit.
+func TestAddChecksBoundsEachRequestNotTheProfile(t *testing.T) {
+	home := withHome(t)
+	shortProfileCheck(t)
+	signedIn := listCheckServer(t, http.StatusOK, http.StatusOK, `{"provisioning_info":{"state":"ACTIVE"}}`)
+	// Three requests of 400 ms each: the token, the service and the sign-in, 1.2 s together against a 1 s limit.
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(400 * time.Millisecond)
+		signedIn.Config.Handler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(slow.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+slow.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", slow.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusOK, s.Check.Token)
+	assert.Equal(t, statusOK, s.Check.SignIn)
+	assert.Empty(t, out.Warnings)
+}
+
 // TestAddChecksChecksAServerThatMatchesADriftedProfile checks that a server which still matches its profile is checked
 // when another server of the same profile has drifted: the drift is the other server's, not the profile's.
 func TestAddChecksChecksAServerThatMatchesADriftedProfile(t *testing.T) {
