@@ -1,0 +1,118 @@
+
+=== Deploy a schema with grants
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Created schemas.schema1.grants
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-schema-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}
+
+>>> read_state.py schemas schema1.grants id
+schemas schema1.grants id='schema/main.test-schema-[UNIQUE_NAME]'
+
+=== Rename the schema: its ID changes, and so does the ID of its grants
+
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+>>> [CLI] bundle plan --output json
+{
+  "full_name": {
+    "action": "update_id",
+    "reason": "id_changes",
+    "old": "main.test-schema-[UNIQUE_NAME]",
+    "new": "",
+    "remote": "main.test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Deploy moves the schema to the new name and applies the grants there
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated schemas.schema1
+Updated schemas.schema1.grants
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "test-schema-renamed-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.test-schema-renamed-[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}
+
+>>> [CLI] grants get schema main.test-schema-renamed-[UNIQUE_NAME]
+{
+  "principal": "deco-test-user@databricks.com",
+  "privileges": [
+    "USE_SCHEMA"
+  ]
+}
+
+=== The grants are recorded under the new name, so the next plan is a no-op
+
+>>> read_state.py schemas schema1.grants id
+schemas schema1.grants id='schema/main.test-schema-renamed-[UNIQUE_NAME]'
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

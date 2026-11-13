@@ -62,17 +62,17 @@ func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *Pos
 		Parent:     remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		DatabaseDatabaseSpec: remote.DatabaseDatabaseSpec,
 	}
 }
 
 // makePostgresDatabaseRemote converts the SDK Database into the embedded remote
-// shape. GET does not echo spec today (only status is returned); the embedded
-// spec fields stay at their zero values, and postgres_databases.yml suppresses phantom
-// drift via ignore_remote_changes with reason spec:input_only.
+// shape. Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_databases.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRemote {
 	var spec postgres.DatabaseDatabaseSpec
 	if database.Spec != nil {
@@ -113,7 +113,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -121,7 +121,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 	}
 
 	// Wait for the database to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}

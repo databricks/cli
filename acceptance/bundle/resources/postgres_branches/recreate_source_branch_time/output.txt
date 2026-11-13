@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-branch-fork-[UNIQUE_NAME]/default/files...
 Created postgres_branches.dev_branch
@@ -8,6 +9,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change the fork point: source_branch_time is immutable, so this recreates
+
 >>> update_file.py databricks.yml [FORK_TIME_BEFORE] [FORK_TIME_AFTER]
 
 >>> [CLI] bundle plan

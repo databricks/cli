@@ -1,0 +1,12 @@
+# An explicit false is kept in the config, and a target can override true with false
+# (everything under targets.dev).
+trace $CLI bundle validate -o json | jq '{
+  fail_on_active_runs: .bundle.deployment.fail_on_active_runs,
+  lock_force: .bundle.deployment.lock.force,
+  workspace: .workspace | {azure_use_msi},
+  presets: .presets | {artifacts_dynamic_version},
+  variables: .variables | map_values({sensitive}),
+  artifacts: .artifacts | map_values({dynamic_version}),
+  resources: .resources | map_values(map_values({embed_credentials, purge_on_delete, replace_existing} | with_entries(select(.value != null)))),
+  experimental
+}'

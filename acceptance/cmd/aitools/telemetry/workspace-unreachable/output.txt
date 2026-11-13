@@ -1,0 +1,18 @@
+
+=== install: the background auth resolution prints nothing
+
+>>> [CLI] aitools install --skills-only --scope=global --agents=cursor
+Installing Databricks skills for Cursor...
+Using skills version test-ref
+Fetching skills manifest...
+Installed 1 skill.
+
+=== update: the background auth resolution prints nothing
+
+>>> [CLI] aitools update --scope=global
+Already up to date.
+
+=== uninstall: the background auth resolution prints nothing
+
+>>> [CLI] aitools uninstall --scope=global
+Uninstalled 1 skill.

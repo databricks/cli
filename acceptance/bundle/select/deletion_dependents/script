@@ -9,7 +9,7 @@ trap cleanup EXIT
 
 # Deploy three jobs; consumer references producer, so state records consumer's
 # dependency on producer.
-title "Initial deploy\n"
+title "Initial deploy"
 trace $CLI bundle deploy
 replace_ids.py
 
@@ -38,7 +38,7 @@ envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
 # untouched. The dependency direction is reversed for deletes.
 trace $CLI bundle plan --select jobs.producer
 
-title "bundle deploy --select jobs.producer\n"
+title "bundle deploy --select jobs.producer"
 trace $CLI bundle deploy --select jobs.producer
 
 # Both producer and consumer were deleted, dependent first; keep was not. Not sorted:

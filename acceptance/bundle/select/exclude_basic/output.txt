@@ -85,6 +85,7 @@ Error: cannot exclude jobs.deferred: deployed jobs.deferred still depends on job
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Destroy
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.deferred

@@ -13,15 +13,15 @@ $CLI bundle plan > out.plan_.txt
 $CLI bundle plan -o json | nostamp > out.plan_.json
 trace $CLI bundle deploy -q
 
-title "Cluster should exist with num_workers after bundle deployment:\n"
+title "Cluster should exist with num_workers after bundle deployment:"
 CLUSTER_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.clusters.test_cluster.id')
 add_repl "$CLUSTER_ID" CLUSTER_ID
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
-title "Terminating the cluster\n"
+title "Terminating the cluster"
 $CLI clusters delete "${CLUSTER_ID}" | jq '{cluster_id}'
 
-title "Adding autoscale section should call update API on stopped cluster\n"
+title "Adding autoscale section should call update API on stopped cluster"
 update_file.py databricks.yml "      num_workers: 2" "      autoscale:
         min_workers: 2
         max_workers: 4"
@@ -31,10 +31,10 @@ trace $CLI bundle deploy -q
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' "$OUT_REQUESTS"
 rm "$OUT_REQUESTS"
 
-title "Cluster should have autoscale\n"
+title "Cluster should have autoscale"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
-title "Changing autoscale should call update API on stopped cluster\n"
+title "Changing autoscale should call update API on stopped cluster"
 update_file.py databricks.yml "min_workers: 2" "min_workers: 3"
 update_file.py databricks.yml "max_workers: 4" "max_workers: 5"
 $CLI bundle plan >> out.plan_.txt
@@ -43,13 +43,13 @@ trace $CLI bundle deploy -q
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' "$OUT_REQUESTS"
 rm "$OUT_REQUESTS"
 
-title "Cluster should have new autoscale\n"
+title "Cluster should have new autoscale"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
-title "Starting the cluster\n"
+title "Starting the cluster"
 $CLI clusters start "${CLUSTER_ID}"
 
-title "Changing autoscale should call resize API on running cluster\n"
+title "Changing autoscale should call resize API on running cluster"
 update_file.py databricks.yml "min_workers: 3" "min_workers: 4"
 update_file.py databricks.yml "max_workers: 5" "max_workers: 6"
 $CLI bundle plan >> out.plan_.txt
@@ -58,10 +58,10 @@ trace $CLI bundle deploy -q
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' "$OUT_REQUESTS"
 rm "$OUT_REQUESTS"
 
-title "Cluster should have new autoscale\n"
+title "Cluster should have new autoscale"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
-title "Removing autoscale section should call resize API\n"
+title "Removing autoscale section should call resize API"
 update_file.py databricks.yml "      autoscale:
         min_workers: 4
         max_workers: 6" "      num_workers: 3"
@@ -71,5 +71,5 @@ trace $CLI bundle deploy -q
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' "$OUT_REQUESTS"
 rm "$OUT_REQUESTS"
 
-title "Cluster should have num_workers\n"
+title "Cluster should have num_workers"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'

@@ -15,7 +15,7 @@ musterr trace $CLI bundle deploy --exclude jobs.deferred --plan plan.json
 musterr trace env DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan --exclude jobs.deferred
 
 $CLI bundle plan --exclude jobs.deferred -o json > plan.json
-title "Deploy prerequisites with --exclude\n"
+title "Deploy prerequisites with --exclude"
 if [ -n "$READPLAN" ]; then
     $CLI bundle deploy --plan plan.json
 else
@@ -25,7 +25,7 @@ replace_ids.py
 trace $CLI bundle summary
 trace print_requests.py --nostamp --sort //jobs
 
-title "Deploy deferred resource with --select\n"
+title "Deploy deferred resource with --select"
 trace $CLI bundle deploy --select jobs.deferred
 # The deployed job still references its prerequisite until it is updated.
 envsubst '$UNIQUE_NAME' < databricks-removed.yml.tmpl > databricks.yml

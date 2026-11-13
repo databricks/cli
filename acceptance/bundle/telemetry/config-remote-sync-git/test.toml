@@ -1,0 +1,7 @@
+# config-remote-sync is not supported on Windows.
+GOOS.windows = false
+
+# git-repo-init creates a repo in the test directory so the run has git metadata.
+Ignore = [
+    '.git',
+]

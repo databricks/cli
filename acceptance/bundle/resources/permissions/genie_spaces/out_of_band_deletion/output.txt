@@ -7,6 +7,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Permissions are set on the live space
+
 >>> [CLI] api get /api/2.0/permissions/genie/[GENIE_SPACE_ID]
 {
   "object_type": "genie-space",
@@ -34,9 +35,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Trash the space out-of-band
+
 >>> [CLI] genie trash-space [GENIE_SPACE_ID]
 
 === Permissions API still returns the ACLs for the trashed space (no 404)
+
 >>> [CLI] api get /api/2.0/permissions/genie/[GENIE_SPACE_ID]
 {
   "object_type": "genie-space",
@@ -64,6 +67,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Plan recreates the gone space
+
 >>> [CLI] bundle plan
 create genie_spaces.foo
 update genie_spaces.foo.permissions

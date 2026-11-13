@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // The AiTrainingService index path caches hydrated terminal runs on disk:
@@ -41,9 +42,11 @@ type cachedRun struct {
 	RunURL        string       `json:"run_url"`
 	ExperimentURL string       `json:"experiment_url"`
 	Accelerators  string       `json:"accelerators"`
-	TaskRunID     int64        `json:"task_run_id"`
 	Fields        filterFields `json:"filter_fields"`
 	SubmitTimeMs  int64        `json:"submit_time_ms"`
+
+	// Tasks are the run's task runs (see retryTasks), which pick its MLflow link.
+	Tasks []jobs.RunTask `json:"tasks"`
 }
 
 func (c cachedRun) toRow() listRow {
@@ -55,13 +58,13 @@ func (c cachedRun) toRow() listRow {
 	}
 }
 
-func cachedRunFromRow(r listRow, taskRunID int64, fields filterFields, submitTimeMs int64) cachedRun {
+func cachedRunFromRow(r listRow, tasks []jobs.RunTask, fields filterFields, submitTimeMs int64) cachedRun {
 	return cachedRun{
 		RunID: r.RunID, RunName: r.RunName, User: r.User, Status: r.Status,
 		StartedAt: r.StartedAt, IsSweep: r.IsSweep, Experiment: r.Experiment,
 		Duration: r.Duration, MLflowURL: r.MLflowURL, MLflowLabel: r.MLflowLabel,
 		RunURL: r.RunURL, ExperimentURL: r.ExperimentURL, Accelerators: r.Accelerators,
-		TaskRunID: taskRunID, Fields: fields, SubmitTimeMs: submitTimeMs,
+		Tasks: tasks, Fields: fields, SubmitTimeMs: submitTimeMs,
 	}
 }
 
@@ -71,19 +74,19 @@ func newListCache(ctx context.Context) *cache.Cache {
 	return cache.NewCache(ctx, listCacheComponent, listCacheTTL, nil)
 }
 
-// cachedRow returns the cached row, filter fields, and task run id for a run.
-// Entries written before task ids were cached are treated as misses.
-func cachedRow(ctx context.Context, c *cache.Cache, host string, runID int64) (listRow, filterFields, int64, bool) {
+// cachedRow returns the cached row, filter fields, and task runs for a run.
+// Entries written before task runs were cached are treated as misses.
+func cachedRow(ctx context.Context, c *cache.Cache, host string, runID int64) (listRow, filterFields, []jobs.RunTask, bool) {
 	entry, ok := cache.Get[cachedRun](ctx, c, listCacheKey{Host: host, RunID: runID})
-	if !ok || entry.TaskRunID == 0 {
-		return listRow{}, filterFields{}, 0, false
+	if !ok || len(entry.Tasks) == 0 {
+		return listRow{}, filterFields{}, nil, false
 	}
-	return entry.toRow(), entry.Fields, entry.TaskRunID, true
+	return entry.toRow(), entry.Fields, entry.Tasks, true
 }
 
 // putRow caches a terminal run's base row and filter fields under its submit time.
-func putRow(ctx context.Context, c *cache.Cache, host string, runID, taskRunID, submitTimeMs int64, row listRow, fields filterFields) {
-	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRunFromRow(row, taskRunID, fields, submitTimeMs))
+func putRow(ctx context.Context, c *cache.Cache, host string, runID int64, tasks []jobs.RunTask, submitTimeMs int64, row listRow, fields filterFields) {
+	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRunFromRow(row, tasks, fields, submitTimeMs))
 }
 
 // updateCachedRow replaces the display row while preserving cache metadata.
@@ -93,5 +96,5 @@ func updateCachedRow(ctx context.Context, c *cache.Cache, host string, runID int
 	if !ok {
 		return
 	}
-	cache.Put(ctx, c, key, cachedRunFromRow(row, entry.TaskRunID, entry.Fields, entry.SubmitTimeMs))
+	cache.Put(ctx, c, key, cachedRunFromRow(row, entry.Tasks, entry.Fields, entry.SubmitTimeMs))
 }

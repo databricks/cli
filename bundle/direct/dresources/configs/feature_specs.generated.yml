@@ -1,0 +1,11 @@
+# Generated, do not edit.
+
+recreate_on_changes:
+  - field: exclude_columns
+    reason: spec:immutable
+  - field: extra_pip_requirements
+    reason: spec:immutable
+  - field: features
+    reason: spec:immutable
+  - field: name
+    reason: spec:immutable

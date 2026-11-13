@@ -169,7 +169,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc diag.Location) (dyn.Value, err
 	switch merge.Kind {
 	case yaml.SequenceNode:
 		mnodes = merge.Content
-	case yaml.AliasNode:
+	case yaml.MappingNode, yaml.AliasNode:
 		mnodes = []*yaml.Node{merge}
 	default:
 		return dyn.NilValue, merr

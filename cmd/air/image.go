@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -27,8 +28,8 @@ const (
 var (
 	// DAR uses the OCI repository-component grammar without dots or slashes,
 	// which are forbidden in Unity Catalog names.
-	artifactNamePattern = regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`)
-	imageTagPattern     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
+	artifactNamePattern = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`) })
+	imageTagPattern     = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`) })
 )
 
 type imagePushOptions struct {
@@ -105,7 +106,7 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "Manage container images for AI Runtime",
+		Short: "Push container images for custom environments",
 		RunE:  root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newImagePushCommand())
@@ -124,7 +125,7 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 		Use:   "push",
 		Short: "*Preview* Push a container image to Databricks Artifact Registry",
 		Long: `This CLI command is in Preview. For current feature status and requirements, see:
-  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/docker-images
   Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
@@ -240,14 +241,14 @@ func resolveImagePushOptions(
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !artifactNamePattern.MatchString(catalog) {
+	if !artifactNamePattern().MatchString(catalog) {
 		return resolvedImagePushOptions{}, fmt.Errorf("invalid catalog %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", catalog)
 	}
 	schema, err := promptImagePushValue(ctx, opts.schema, "Unity Catalog schema", "", "--schema")
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !artifactNamePattern.MatchString(schema) {
+	if !artifactNamePattern().MatchString(schema) {
 		return resolvedImagePushOptions{}, fmt.Errorf("invalid schema %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", schema)
 	}
 
@@ -312,7 +313,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 		tag = after
 	}
 
-	if !artifactNamePattern.MatchString(artifact) {
+	if !artifactNamePattern().MatchString(artifact) {
 		return "", "", fmt.Errorf("invalid artifact name %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", artifact)
 	}
 	if tag == "" {
@@ -321,7 +322,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 	if len(tag) > maxImageTagLength {
 		return "", "", fmt.Errorf("invalid image tag: must be %d characters or less", maxImageTagLength)
 	}
-	if !imageTagPattern.MatchString(tag) {
+	if !imageTagPattern().MatchString(tag) {
 		return "", "", fmt.Errorf("invalid image tag %q", tag)
 	}
 	return artifact, tag, nil
@@ -338,7 +339,7 @@ func sourceImageDefaults(source string) (string, string) {
 		tag = source[lastColon+1:]
 	}
 	artifact := repository[strings.LastIndex(repository, "/")+1:]
-	if !artifactNamePattern.MatchString(artifact) {
+	if !artifactNamePattern().MatchString(artifact) {
 		artifact = ""
 	}
 	return artifact, tag

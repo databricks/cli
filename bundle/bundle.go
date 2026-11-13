@@ -143,6 +143,10 @@ type Bundle struct {
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
 
+	// InGitRepo reports whether the bundle root is inside a git repository.
+	// Nil when git detection did not run or failed.
+	InGitRepo *bool
+
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
@@ -396,6 +400,28 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 	return dir, nil
 }
 
+// GetSyncFiles lists files matching the bundle sync configuration.
+func (b *Bundle) GetSyncFiles(ctx context.Context) ([]fileset.File, error) {
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	if err != nil {
+		return nil, err
+	}
+	list, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	return list.Files(ctx)
+}
+
+// RemoteFilePath returns the workspace root for bundle files:
+// the sync root for in-place deployments, otherwise workspace.file_path.
+func (b *Bundle) RemoteFilePath() string {
+	if b.IsSourceLinkedDeployment() {
+		return filepath.ToSlash(b.SyncRootPath)
+	}
+	return b.Config.Workspace.FilePath
+}
+
 // GetSyncIncludePatterns returns a list of user defined includes
 // And also adds InternalDir folder to include list for sync command
 // so this folder is always synced
@@ -444,7 +470,7 @@ func (b *Bundle) SyncMode() config.SyncMode {
 	switch {
 	case b.Config.Workspace.SyncMode != "":
 		return b.Config.Workspace.SyncMode
-	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+	case b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.ImmutableFolder):
 		return config.SyncModeImmutable
 	case config.IsExplicitlyEnabled(sourceLinked):
 		return config.SyncModeInPlace

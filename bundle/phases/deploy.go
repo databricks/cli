@@ -40,6 +40,9 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
+	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
+	{group: "features", message: deleteOrRecreateFeatureMessage},
+	{group: "feature_specs", message: deleteOrRecreateFeatureSpecMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -47,7 +50,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	// Deletes that only clean up the state (already gone remotely, or no delete
 	// operation) are not destructive and need no approval.
-	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {

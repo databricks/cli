@@ -26,6 +26,7 @@ const (
 	cacheKeyCatalogs          = "_catalogs"
 	cacheKeyDatabaseInstances = "_database_instances"
 	cacheKeyPostgresProjects  = "_postgres_projects"
+	cacheKeySystemAIModels    = "_system_ai_model_services"
 )
 
 // firstStepPrefetch maps multi-step resource types to the cache key and
@@ -34,10 +35,11 @@ var firstStepPrefetch = map[string]struct {
 	cacheKey string
 	ctor     pagedConstructor
 }{
-	ResourceTypeVolume:     {cacheKeyCatalogs, ListCatalogs},
-	ResourceTypeUCFunction: {cacheKeyCatalogs, ListCatalogs},
-	ResourceTypeDatabase:   {cacheKeyDatabaseInstances, ListDatabaseInstances},
-	ResourceTypePostgres:   {cacheKeyPostgresProjects, ListPostgresProjects},
+	ResourceTypeVolume:       {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeUCFunction:   {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeModelService: {cacheKeySystemAIModels, listSystemAIModelServices},
+	ResourceTypeDatabase:     {cacheKeyDatabaseInstances, ListDatabaseInstances},
+	ResourceTypePostgres:     {cacheKeyPostgresProjects, ListPostgresProjects},
 }
 
 // PrefetchResources kicks off a background goroutine for every resource type

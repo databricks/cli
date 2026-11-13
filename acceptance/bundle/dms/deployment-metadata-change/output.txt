@@ -1,5 +1,6 @@
 
 === Deploy: the deployment is created carrying this bundle's metadata
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev/files...
 Created schemas.foo
@@ -47,7 +48,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_metadata_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -60,11 +61,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan records the deployment_history feature; the service holds the schema at version 1
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
@@ -84,6 +86,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === Rename the bundle and switch target+mode. The state path is pinned, so this is the same deployment, updated in place - the mask carries every field that changed
+
 >>> update_file.py databricks.yml dms-metadata-before dms-metadata-after
 
 >>> [CLI] bundle deploy -t prod
@@ -125,7 +128,7 @@ A common practice is to use a username or principal name in this path, i.e. use
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
@@ -151,6 +154,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === Deploy again without touching anything: the record already says this, so no deployment update
+
 >>> [CLI] bundle deploy -t prod
 Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
 

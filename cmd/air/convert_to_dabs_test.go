@@ -78,7 +78,7 @@ code_source:
 
 func TestConvertToDabsCommandShape(t *testing.T) {
 	cmd := newConvertToDabsCommand()
-	assert.Equal(t, "convert-to-dabs <yaml_path>", cmd.Use)
+	assert.Equal(t, "convert-to-dabs YAML_PATH", cmd.Use)
 	assert.Empty(t, cmd.Commands(), "convert-to-dabs must not register subcommands")
 	// Exactly one positional (the YAML path).
 	assert.NoError(t, cmd.Args(cmd, []string{"run.yaml"}))
@@ -193,10 +193,10 @@ func TestConvertToDabsPreservesPoolPriorityAndUnityCatalogImage(t *testing.T) {
 	}{
 		{name: "unset"},
 		{name: "pool", poolID: "capacity-1"},
-		{name: "pool-priority", poolID: "capacity-1", priorityClass: "CRITICAL"},
+		{name: "pool-priority", poolID: "capacity-1", priorityClass: "NORMAL"},
 		{name: "image", imagePath: "main.air.training:prod"},
 		{name: "pool-image", poolID: "capacity-1", imagePath: "main.air.training:prod"},
-		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "CRITICAL", imagePath: "main.air.training:prod"},
+		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "NORMAL", imagePath: "main.air.training:prod"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := minimalConfig

@@ -10,7 +10,7 @@ resources.postgres_databases.*.modified_status	string	INPUT
 resources.postgres_databases.*.name	string	REMOTE
 resources.postgres_databases.*.parent	string	ALL
 resources.postgres_databases.*.postgres_database	string	ALL
-resources.postgres_databases.*.replace_existing	bool	INPUT	STATE
+resources.postgres_databases.*.replace_existing	*bool	INPUT	STATE
 resources.postgres_databases.*.role	string	ALL
 resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
 resources.postgres_databases.*.status.database_id	string	REMOTE

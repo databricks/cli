@@ -1,5 +1,6 @@
 
 === Deploy without telemetry_config
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created model_serving_endpoints.endpoint1
@@ -7,7 +8,9 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Configure telemetry out of band
+
 === Remote-only telemetry_config is not drift
+
 >>> [CLI] bundle plan --output json
 {
   "telemetry_config": {
@@ -20,6 +23,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy does not remove it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
@@ -31,5 +35,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === Only the out-of-band telemetry PATCH was sent
+
 >>> print_requests.py --method PATCH --oneline //serving-endpoints
 {"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {"telemetry_config": {"table_names": {"logs_table": "main.default.other_logs"}}}}

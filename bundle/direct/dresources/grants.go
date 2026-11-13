@@ -18,6 +18,7 @@ var grantResourceToSecurableType = map[string]string{
 	"external_locations":      "external_location",
 	"volumes":                 "volume",
 	"registered_models":       "function",
+	"feature_specs":           "function",
 	"secrets":                 "secret",
 	"vector_search_indexes":   "table",
 	"model_services":          "model_service",
@@ -126,7 +127,18 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 		return "", nil, retrySafe(err)
 	}
 
-	return state.SecurableType + "/" + state.FullName, nil, nil
+	return makeGrantsID(state), nil, nil
+}
+
+// DoUpdateWithID records the new ID when the parent's ID changes (a rename, or a recreate
+// under a new name). Otherwise DoRead keeps listing the grants of the old name and every
+// later plan reports an update.
+func (r *ResourceGrants) DoUpdateWithID(ctx context.Context, id string, state *GrantsState, entry *PlanEntry) (string, *GrantsState, error) {
+	_, err := r.DoUpdate(ctx, id, state, entry)
+	if err != nil {
+		return "", nil, err
+	}
+	return makeGrantsID(state), nil, nil
 }
 
 func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, entry *PlanEntry) (*GrantsState, error) {
@@ -298,6 +310,10 @@ func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 		}
 		slices.Sort(privileges)
 	}
+}
+
+func makeGrantsID(state *GrantsState) string {
+	return state.SecurableType + "/" + state.FullName
 }
 
 func parseGrantsID(id string) (string, string, error) {

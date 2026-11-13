@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
 )
@@ -79,6 +81,16 @@ var cursorIDE = ideDescriptor{
 	LaunchArgs: []string{"--classic"},
 }
 
+// IDECommandEnv overrides the IDE command with an absolute path. The VS Code extension sets it
+// to the running editor's own CLI, so connecting doesn't depend on the command being on PATH. It
+// replaces the command of whichever IDE --ide selects, so it must point at that IDE's CLI.
+const IDECommandEnv = "DATABRICKS_SSH_IDE_COMMAND"
+
+// ErrIDECommandOverrideInvalid is returned when the IDECommandEnv override can't be run. It is
+// kept apart from a command missing on PATH because it points at whatever set the variable
+// rather than at the user's PATH.
+var ErrIDECommandOverrideInvalid = errors.New("IDE command override is not runnable")
+
 func getIDE(option string) ideDescriptor {
 	if option == CursorOption {
 		return cursorIDE
@@ -86,20 +98,39 @@ func getIDE(option string) ideDescriptor {
 	return vsCodeIDE
 }
 
-// CheckIDECommand verifies the IDE CLI command is available on PATH.
-func CheckIDECommand(option string) error {
+// ideCommand returns the command to run the IDE CLI with: the IDECommandEnv override if set,
+// otherwise the IDE's command name to look up on PATH.
+func ideCommand(ctx context.Context, ide ideDescriptor) string {
+	if command := env.Get(ctx, IDECommandEnv); command != "" {
+		return command
+	}
+	return ide.Command
+}
+
+// CheckIDECommand verifies the IDE CLI command is available.
+func CheckIDECommand(ctx context.Context, option string) error {
 	ide := getIDE(option)
 
-	if _, err := exec.LookPath(ide.Command); err != nil {
-		return fmt.Errorf(
-			"%q command not found on PATH. To fix this:\n"+
-				"1. Install %s from %s\n"+
-				"2. Open the Command Palette (Cmd+Shift+P / Ctrl+Shift+P) and run \"Shell Command: Install '%s' command\"\n"+
-				"3. Restart your terminal",
-			ide.Command, ide.Name, ide.InstallURL, ide.Command,
-		)
+	if command := env.Get(ctx, IDECommandEnv); command != "" {
+		if !filepath.IsAbs(command) {
+			return fmt.Errorf("%w: %s must be an absolute path, got %q", ErrIDECommandOverrideInvalid, IDECommandEnv, command)
+		}
+		if _, err := exec.LookPath(command); err != nil {
+			return fmt.Errorf("%w: %s command %s from %s: %w", ErrIDECommandOverrideInvalid, ide.Name, command, IDECommandEnv, err)
+		}
+		return nil
 	}
-	return nil
+
+	if _, err := exec.LookPath(ide.Command); err == nil {
+		return nil
+	}
+	return fmt.Errorf(
+		"%q command not found on PATH. To fix this:\n"+
+			"1. Install %s from %s\n"+
+			"2. Open the Command Palette (Cmd+Shift+P / Ctrl+Shift+P) and run \"Shell Command: Install '%s' command\"\n"+
+			"3. Restart your terminal",
+		ide.Command, ide.Name, ide.InstallURL, ide.Command,
+	)
 }
 
 // parseExtensionVersion finds the version of the given extension in the output
@@ -157,7 +188,9 @@ func consentErrorf(sentinel error, format string, args ...any) error {
 func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) error {
 	ide := getIDE(option)
 
-	out, err := exec.CommandContext(ctx, ide.Command, "--list-extensions", "--show-versions").Output()
+	command := ideCommand(ctx, ide)
+
+	out, err := exec.CommandContext(ctx, command, "--list-extensions", "--show-versions").Output()
 	if err != nil {
 		return fmt.Errorf("%w in %s: %w", ErrSSHExtensionListFailed, ide.Name, err)
 	}
@@ -179,7 +212,7 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 		if !cmdio.IsPromptSupported(ctx) {
 			return consentErrorf(ErrSSHExtensionInstallUnavailable,
 				"%s Install it with: %s --install-extension %s, or pass --auto-approve",
-				msg, ide.Command, ide.SSHExtensionID)
+				msg, command, ide.SSHExtensionID)
 		}
 
 		shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
@@ -189,14 +222,14 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 		if !shouldInstall {
 			return consentErrorf(ErrSSHExtensionInstallDeclined,
 				"%s Install it with: %s --install-extension %s",
-				msg, ide.Command, ide.SSHExtensionID)
+				msg, command, ide.SSHExtensionID)
 		}
 	} else {
 		cmdio.LogString(ctx, msg+" Installing automatically (--auto-approve).")
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Installing %q...", ide.SSHExtensionName))
-	installCmd := exec.CommandContext(ctx, ide.Command, "--install-extension", ide.SSHExtensionID, "--force")
+	installCmd := exec.CommandContext(ctx, command, "--install-extension", ide.SSHExtensionID, "--force")
 	installCmd.Stdout = os.Stdout
 	installCmd.Stderr = os.Stderr
 	if err := installCmd.Run(); err != nil {
@@ -229,7 +262,7 @@ func LaunchIDE(ctx context.Context, ideOption, connectionName, databricksUserNam
 
 	log.Infof(ctx, "Launching %s with args: %v", ideOption, args)
 
-	ideCmd := exec.CommandContext(ctx, ide.Command, args...)
+	ideCmd := exec.CommandContext(ctx, ideCommand(ctx, ide), args...)
 	ideCmd.Stdout = os.Stdout
 	ideCmd.Stderr = os.Stderr
 

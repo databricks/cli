@@ -67,7 +67,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 					b.Config.Bundle.ClusterId = clusterId
 				}
 				if cmd.Flag("fail-on-active-runs").Changed {
-					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+					b.Config.Bundle.Deployment.FailOnActiveRuns = new(failOnActiveRuns)
 				}
 			},
 			Verbose:      verbose,

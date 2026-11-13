@@ -45,6 +45,8 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
+	{group: "features", message: deleteFeatureMessage},
+	{group: "feature_specs", message: deleteFeatureSpecMessage},
 }
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
@@ -91,7 +93,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	// operation) are not destructive, so they are not listed as deletions and need no
 	// approval. In particular this makes prevent_destroy inert for state-only
 	// resources: nothing is destroyed.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
@@ -191,7 +193,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		// a destruction to report.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnly() {
 				deleted++
 			}
 		}

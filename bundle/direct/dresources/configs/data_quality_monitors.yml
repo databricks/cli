@@ -1,0 +1,7 @@
+provided_id_fields:
+  # object_type + object_id identify the monitored object and compose the ID the
+  # monitor is fetched by. Both are immutable; a local change recreates.
+  - field: object_type
+    reason: id_field
+  - field: object_id
+    reason: id_field

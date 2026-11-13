@@ -85,11 +85,13 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = installer.WithAiToolsInUserAgent(ctx)
 		ctx = installer.WithAiDevKitInUserAgent(ctx)
+		ctx = installer.WithCallingAgentToolingInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
 		// Recommend installing Databricks AI tooling to Claude Code when it is
-		// driving the CLI without the tooling installed (best-effort, stderr only).
+		// driving the CLI without the tooling installed (best-effort: a stderr
+		// line and a telemetry event that is uploaded at exit).
 		agents.MaybeHint(ctx, cmd)
 		return nil
 	}

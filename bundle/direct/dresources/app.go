@@ -176,9 +176,25 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
-var updateMask = strings.Join(UpdateMaskFields, ",")
+// appUpdateMask returns the update mask for an app update request. compute_size is a
+// backend default (see configs/apps.yml), so when the bundle does not declare it the field
+// is left out of the mask. Naming it while the body omits it asks the backend to reset the
+// size to its default on every deploy, even when the app was resized out of band.
+func appUpdateMask(app *apps.App) string {
+	fields := UpdateMaskFields
+	if app.ComputeSize == "" {
+		fields = slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
+			return f == "compute_size"
+		})
+	}
+	return strings.Join(fields, ",")
+}
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
+	return nil, withMissingServicePrincipalHint(r.doUpdate(ctx, id, config, entry), id)
+}
+
+func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) error {
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
@@ -186,24 +202,40 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: updateMask,
+			UpdateMask: appUpdateMask(&app),
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		response, err := updateWaiter.Get()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
-			return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+			return fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
 		}
 	}
 
-	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+	return r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+}
+
+// missingServicePrincipalMessage is part of the backend error for an app whose service
+// principal is gone. The backend reports it as a generic 400 BAD_REQUEST or as a compute
+// ERROR status message, so there is no error code or sentinel to match on. Such an app
+// cannot be updated or started again, only recreated.
+const missingServicePrincipalMessage = "service principal does not exist or is deleted"
+
+func withMissingServicePrincipalHint(err error, name string) error {
+	if err == nil || !strings.Contains(strings.ToLower(err.Error()), missingServicePrincipalMessage) {
+		return err
+	}
+	return fmt.Errorf("%w\n\nThe app cannot be updated or started without its service principal. "+
+		"To recreate the app, delete it with \"databricks apps delete %s\", wait for the deletion to finish, "+
+		"and run \"databricks bundle deploy\" again, using the same profile and target as for this deploy. "+
+		"Deleting the app also deletes its deployment history", err, name)
 }
 
 func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *AppState, alreadyStarted bool) error {
@@ -331,6 +363,11 @@ func (*ResourceApp) IsGone(remote *AppRemote) bool {
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
+	remote, err := r.waitAfterCreate(ctx, config)
+	return remote, withMissingServicePrincipalHint(err, config.Name)
+}
+
+func (r *ResourceApp) waitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
 	remote, err := r.waitForApp(ctx, r.client, config.Name)
 	if err != nil {
 		return nil, err

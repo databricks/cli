@@ -1,5 +1,6 @@
 
 === depends_on: only the real reference creates an edge
+
 >>> jq .plan | map_values(.depends_on) plan.json
 {
   "resources.jobs.bar": null,

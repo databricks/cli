@@ -106,3 +106,18 @@ func TestRestoreStatsCountersNilSafe(t *testing.T) {
 		s.incFromSiblings()
 	})
 }
+
+func TestCollectSkippedResources(t *testing.T) {
+	var stats Stats
+	stats.CollectSkippedResources([]SkippedChange{
+		{ResourceKey: "resources.jobs.a", Reason: SkipReasonClusterPolicyNotFound, PolicyID: "p1"},
+		{ResourceKey: "resources.jobs.b", Reason: SkipReasonClusterPolicyNotFound, PolicyID: "p1"},
+		{ResourceKey: "resources.jobs.c", Reason: SkipReasonClusterPolicyPermissionDenied, PolicyID: "p2", Error: "denied"},
+		{ResourceKey: "resources.clusters.d", Reason: SkipReasonClusterPolicyReadFailed, PolicyID: "p3", Error: "boom"},
+	})
+	assert.Equal(t, Stats{
+		ClusterPolicyNotFoundCount:         2,
+		ClusterPolicyPermissionDeniedCount: 1,
+		ClusterPolicyReadFailedCount:       1,
+	}, stats)
+}

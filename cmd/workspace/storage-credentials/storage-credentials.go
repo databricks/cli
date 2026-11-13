@@ -488,9 +488,6 @@ func newValidate() *cobra.Command {
   validation, and __external_location_name__ will be ignored when checking
   overlapping urls.
 
-  Either the __storage_credential_name__ or the cloud-specific credential must
-  be provided.
-
   The caller must be a metastore admin or the storage credential owner or have
   the **CREATE_EXTERNAL_LOCATION** privilege on the metastore and the storage
   credential.`
