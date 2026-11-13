@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -249,93 +251,133 @@ func TestWithMissingServicePrincipalHint(t *testing.T) {
 	}
 }
 
+const appComputeUpdatingDeleteMessage = "Cannot delete app test-app as it is not terminal with state UPDATING, " +
+	"and was updated less than 20 minutes ago. Please wait before trying again."
+
+// newAppComputeSettleServer serves GET /api/2.0/apps/{name} with the given compute states in
+// order (the last one repeats) and counts the calls.
+func newAppComputeSettleServer(t *testing.T, gets *int, states ...apps.ComputeState) *testserver.Server {
+	t.Setenv(retry.IntervalMsVariable, "1")
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		if len(states) == 0 {
+			return testserver.Response{
+				StatusCode: 404,
+				Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "App not found."},
+			}
+		}
+		state := states[min(*gets, len(states)-1)]
+		*gets++
+		return apps.App{Name: req.Vars["name"], ComputeStatus: &apps.ComputeStatus{State: state}}
+	})
+	return server
+}
+
+func newAppForServer(t *testing.T, server *testserver.Server) *ResourceApp {
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+	return (&ResourceApp{}).New(client)
+}
+
 func TestAppDoDelete_RetriesWhileComputeSettles(t *testing.T) {
 	tests := []struct {
-		name string
-		// computeStates are the states GET returns in order; the last one repeats.
+		name          string
+		message       string
 		computeStates []apps.ComputeState
 		wantDeletes   int
-		wantErr       bool
+		wantGets      int
+		wantErr       string
 	}{
 		{
 			name:          "retries after compute leaves UPDATING",
+			message:       appComputeUpdatingDeleteMessage,
 			computeStates: []apps.ComputeState{apps.ComputeStateUpdating, apps.ComputeStateActive},
 			wantDeletes:   2,
+			wantGets:      2,
 		},
 		{
-			name:          "fails at once when compute is not transitional",
+			name:          "retries when compute settled before the first read",
+			message:       appComputeUpdatingDeleteMessage,
 			computeStates: []apps.ComputeState{apps.ComputeStateActive},
-			wantDeletes:   1,
-			wantErr:       true,
+			wantDeletes:   2,
+			wantGets:      1,
 		},
 		{
-			name:          "fails at once when app is already deleting",
+			name:        "treats an app gone while waiting as deleted",
+			message:     appComputeUpdatingDeleteMessage,
+			wantDeletes: 1,
+		},
+		{
+			name:          "does not retry a delete of a DELETING app",
+			message:       "Cannot delete app test-app as it is not terminal with state DELETING, and was updated less than 20 minutes ago. Please wait before trying again.",
 			computeStates: []apps.ComputeState{apps.ComputeStateDeleting},
 			wantDeletes:   1,
-			wantErr:       true,
+			wantErr:       "state DELETING",
+		},
+		{
+			name:          "does not retry other bad requests",
+			message:       "Invalid app name.",
+			computeStates: []apps.ComputeState{apps.ComputeStateUpdating},
+			wantDeletes:   1,
+			wantErr:       "Invalid app name.",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			server := testserver.New(t)
-			deletes := 0
 			gets := 0
-
+			server := newAppComputeSettleServer(t, &gets, tc.computeStates...)
+			deletes := 0
 			server.Handle("DELETE", "/api/2.0/apps/{name}", func(req testserver.Request) any {
 				deletes++
 				if deletes == 1 {
 					return testserver.Response{
 						StatusCode: 400,
-						Body: map[string]string{
-							"error_code": "BAD_REQUEST",
-							"message":    "Cannot delete app test-app as it is not terminal with state UPDATING, and was updated less than 20 minutes ago. Please wait before trying again.",
-						},
+						Body:       map[string]string{"error_code": "BAD_REQUEST", "message": tc.message},
 					}
 				}
 				return apps.App{Name: req.Vars["name"]}
 			})
-			server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-				state := tc.computeStates[min(gets, len(tc.computeStates)-1)]
-				gets++
-				return apps.App{Name: req.Vars["name"], ComputeStatus: &apps.ComputeStatus{State: state}}
-			})
-			testserver.AddDefaultHandlers(server)
+			r := newAppForServer(t, server)
 
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
-			require.NoError(t, err)
-
-			r := (&ResourceApp{}).New(client)
-			err = r.DoDelete(t.Context(), "test-app", nil)
-			if tc.wantErr {
-				require.ErrorContains(t, err, "not terminal with state UPDATING")
+			err := r.DoDelete(t.Context(), "test-app", nil)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
 			} else {
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.wantDeletes, deletes)
+			assert.Equal(t, tc.wantGets, gets)
 		})
 	}
 }
 
-func TestAppRetryWhileComputeSettles_IgnoresNonBadRequest(t *testing.T) {
-	server := testserver.New(t)
+func TestAppDoUpdate_RetriesWhileComputeSettles(t *testing.T) {
 	gets := 0
-	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		gets++
-		return apps.App{Name: req.Vars["name"], ComputeStatus: &apps.ComputeStatus{State: apps.ComputeStateUpdating}}
+	server := newAppComputeSettleServer(t, &gets, apps.ComputeStateUpdating, apps.ComputeStateActive)
+	updates := 0
+	server.Handle("POST", "/api/2.0/apps/{name}/update", func(req testserver.Request) any {
+		updates++
+		if updates == 1 {
+			return testserver.Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "BAD_REQUEST",
+					"message":    "Cannot update app test-app as its compute is in UPDATING state. App compute needs to be ACTIVE or STOPPED to update.",
+				},
+			}
+		}
+		return apps.AppUpdate{Status: &apps.AppUpdateUpdateStatus{State: apps.AppUpdateUpdateStatusUpdateStateSucceeded}}
 	})
-	testserver.AddDefaultHandlers(server)
+	server.Handle("GET", "/api/2.0/apps/{name}/update", func(req testserver.Request) any {
+		return apps.AppUpdate{Status: &apps.AppUpdateUpdateStatus{State: apps.AppUpdateUpdateStatusUpdateStateSucceeded}}
+	})
+	r := newAppForServer(t, server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	entry := &PlanEntry{Changes: deployplan.Changes{"description": {Action: deployplan.Update}}}
+	_, err := r.DoUpdate(t.Context(), "test-app", &AppState{Name: "test-app", Description: "new"}, entry)
 	require.NoError(t, err)
-
-	r := (&ResourceApp{}).New(client)
-	calls := 0
-	err = r.retryWhileComputeSettles(t.Context(), "test-app", func() error {
-		calls++
-		return &apierr.APIError{StatusCode: 500, ErrorCode: "INTERNAL_ERROR", Message: "boom"}
-	})
-	require.ErrorContains(t, err, "boom")
-	assert.Equal(t, 1, calls)
-	assert.Equal(t, 0, gets)
+	assert.Equal(t, 2, updates)
+	assert.Equal(t, 2, gets)
 }

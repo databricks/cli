@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -196,6 +198,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 }
 
 func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) error {
+	alreadyStarted := remoteIsStarted(entry)
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
@@ -206,13 +209,17 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 			UpdateMask: appUpdateMask(&app),
 		}
 		var updateWaiter *apps.WaitGetUpdateAppSucceeded[apps.AppUpdate]
-		err := r.retryWhileComputeSettles(ctx, id, func() error {
+		settled, err := r.retryWhileComputeSettles(ctx, id, func() error {
 			var err error
 			updateWaiter, err = r.client.Apps.CreateUpdate(ctx, request)
 			return err
 		})
 		if err != nil {
 			return err
+		}
+		// The plan-time compute state is stale if the compute moved while we waited.
+		if settled != nil {
+			alreadyStarted = !isComputeStopped(settled)
 		}
 
 		response, err := updateWaiter.Get()
@@ -225,7 +232,7 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
-	return r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+	return r.manageLifecycle(ctx, id, config, alreadyStarted)
 }
 
 // missingServicePrincipalMessage is part of the backend error for an app whose service
@@ -349,34 +356,58 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
-	return r.retryWhileComputeSettles(ctx, id, func() error {
+	_, err := r.retryWhileComputeSettles(ctx, id, func() error {
 		_, err := r.client.Apps.DeleteByName(ctx, id)
 		return err
 	})
+	if errors.Is(err, errAppGoneWhileSettling) {
+		return nil
+	}
+	return err
 }
 
-// maxComputeSettleRetries bounds how often retryWhileComputeSettles repeats a call, so a
-// compute that keeps going back into a transitional state cannot loop forever.
-const maxComputeSettleRetries = 3
+// computeTransitionalStateError matches the 400 BAD_REQUEST messages the Apps API returns for
+// an update or delete while the compute is in a transitional state: "Cannot update app X as
+// its compute is in UPDATING state" and "Cannot delete app X as it is not terminal with state
+// UPDATING". DELETING is left out: a delete of a DELETING app is handled by IsGone and
+// deleteConfirmedGone, and waiting would not help.
+var computeTransitionalStateError = regexp.MustCompile(`(?:is in|with state) (?:UPDATING|STARTING|STOPPING)\b`)
 
-// retryWhileComputeSettles calls fn and, if it fails with 400 BAD_REQUEST while the app
-// compute is in a transitional state, waits for the compute to settle and calls fn again.
-// The Apps API rejects update and delete while the compute is UPDATING ("App compute needs
-// to be ACTIVE or STOPPED to update", "not terminal with state UPDATING"), and the compute
-// can enter UPDATING on its own shortly after a create or update returned. Checking the
-// state instead of the error text keeps other 400s failing at once.
-func (r *ResourceApp) retryWhileComputeSettles(ctx context.Context, name string, fn func() error) error {
-	for attempt := 0; ; attempt++ {
-		err := fn()
-		apiErr, ok := errors.AsType[*apierr.APIError](err)
-		if !ok || apiErr.StatusCode != http.StatusBadRequest || attempt >= maxComputeSettleRetries {
-			return err
+func isComputeTransitionalStateError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusBadRequest && computeTransitionalStateError.MatchString(apiErr.Message)
+}
+
+// errAppGoneWhileSettling reports that the app disappeared while waiting for its compute.
+var errAppGoneWhileSettling = errors.New("app is gone")
+
+// computeSettleTimeout bounds one wait for the app compute to leave a transitional state.
+const computeSettleTimeout = 20 * time.Minute
+
+// retryWhileComputeSettles calls fn and, if the Apps API rejected it because the compute is in
+// a transitional state, waits for the compute to settle and calls fn again (see retry.With for
+// the attempt limit). The compute can enter UPDATING on its own shortly after a create or
+// update returned. It returns the app as last read while waiting, or nil if it did not wait,
+// so a caller can refresh what it knew about the compute state.
+func (r *ResourceApp) retryWhileComputeSettles(ctx context.Context, name string, fn func() error) (*apps.App, error) {
+	var settled *apps.App
+	var waitErr error
+	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
+		if !isComputeTransitionalStateError(err) {
+			return false
 		}
-		waited, waitErr := r.waitForComputeToSettle(ctx, name)
-		if waitErr != nil || !waited {
-			return err
+		settled, waitErr = r.waitForComputeToSettle(ctx, name)
+		return waitErr == nil
+	}, func() (struct{}, error) {
+		return struct{}{}, fn()
+	})
+	if err != nil && waitErr != nil {
+		if apierr.IsMissing(waitErr) {
+			return nil, fmt.Errorf("%w: %w", errAppGoneWhileSettling, waitErr)
 		}
+		return nil, errors.Join(err, waitErr)
 	}
+	return settled, err
 }
 
 func isComputeTransitional(app *apps.App) bool {
@@ -391,24 +422,19 @@ func isComputeTransitional(app *apps.App) bool {
 	}
 }
 
-// waitForComputeToSettle polls the app until its compute leaves a transitional state. It
-// reports whether it saw a transitional state at all, so a caller can tell a failure caused
-// by the compute state from any other one.
-func (r *ResourceApp) waitForComputeToSettle(ctx context.Context, name string) (bool, error) {
-	waited := false
-	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
-	_, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+// waitForComputeToSettle polls the app until its compute leaves a transitional state.
+func (r *ResourceApp) waitForComputeToSettle(ctx context.Context, name string) (*apps.App, error) {
+	retrier := retries.New[apps.App](retries.WithTimeout(computeSettleTimeout), retries.WithRetryFunc(shouldRetry))
+	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		app, err := r.client.Apps.GetByName(ctx, name)
 		if err != nil {
 			return nil, retries.Halt(err)
 		}
 		if isComputeTransitional(app) {
-			waited = true
-			return nil, retries.Continues(string(app.ComputeStatus.State))
+			return nil, retries.Continues(fmt.Sprintf("app compute is %s", app.ComputeStatus.State))
 		}
 		return app, nil
 	})
-	return waited, err
 }
 
 // IsGone treats a DELETING app as already-deleted. The Apps DELETE is
