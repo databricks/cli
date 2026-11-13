@@ -13,7 +13,7 @@ import (
 
 const (
 	staleVersionThreshold = 6 * 30 * 24 * time.Hour
-	installDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
+	InstallDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
 )
 
 // staleVersionWarning returns the warning for a build older than the threshold, or "" otherwise.
@@ -28,7 +28,7 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	if upgradeCommand != "" {
 		return msg + "To upgrade, run: " + upgradeCommand + "\n"
 	}
-	return msg + "See " + installDocsURL + " to upgrade.\n"
+	return msg + "See " + InstallDocsURL + " to upgrade.\n"
 }
 
 func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {

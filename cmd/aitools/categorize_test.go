@@ -48,6 +48,11 @@ func TestClassifyInstallError(t *testing.T) {
 			want: protos.AitoolsErrorCategoryPluginInstallFailed,
 		},
 		{
+			name: "blocked shim exited with error",
+			err:  &installer.BlockedError{Agent: "copilot", Reason: installer.ReasonShimExitedWithError},
+			want: protos.AitoolsErrorCategoryPluginInstallFailed,
+		},
+		{
 			name: "blocked timeout wins over its reason",
 			err:  &installer.BlockedError{Agent: "claude-code", Reason: installer.ReasonCLINotOnPath, TimedOut: true},
 			want: protos.AitoolsErrorCategoryPluginCLITimeout,

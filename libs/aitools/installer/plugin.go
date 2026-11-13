@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"maps"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -35,7 +38,8 @@ const (
 // BlockedError reports that a plugin operation could not be performed for an
 // agent. The command layer maps Reason to a user-facing message and decides
 // whether to skip-with-warning or hard-fail (per the non-TTY policy). It never
-// causes a silent fall back to skills.
+// causes a fall back to skills: install gives skill files to an agent whose
+// CLI is not on PATH when it plans the run, before any plugin install.
 type BlockedError struct {
 	Agent  string
 	Reason string
@@ -52,6 +56,10 @@ const (
 	// ReasonCLINotOnPath: the agent's CLI binary is not on PATH, or its CLI does
 	// not expose a working `plugin` subcommand.
 	ReasonCLINotOnPath = "cli-not-on-path"
+	// ReasonShimExitedWithError: the agent's Windows .cmd/.bat shim printed its
+	// `plugin --help` but exited with an error. The install stops here rather
+	// than run plugin commands through a shim that may fail part way.
+	ReasonShimExitedWithError = "shim-exited-with-error"
 	// ReasonInstallFailed: the agent's plugin CLI ran but returned an error.
 	ReasonInstallFailed = "install-failed"
 	// ReasonNoPlugin: the agent has no installable plugin. Callers filter these
@@ -308,9 +316,66 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
 	if _, err := runAgentCmd(ctx, pluginProbeTimeout, []string{bin, "plugin", "--help"}); err != nil {
+		if perr, ok := windowsShimPrintedHelp(bin, err); ok {
+			return "", &BlockedError{Agent: agent.Name, Reason: ReasonShimExitedWithError, Detail: shimExitedDetail(bin, perr)}
+		}
 		return "", newBlockedError(agent, ReasonCLINotOnPath, err)
 	}
 	return bin, nil
+}
+
+// shimExitedDetail explains a shim that printed its plugin help but exited with
+// an error. It keeps the shim's stderr, since a re-run may show only the help,
+// and names how to read the exit code, which neither Windows shell prints. The
+// path stays absolute and keeps its backslashes so it can be pasted into
+// Command Prompt or PowerShell as is, and it is quoted because a profile path
+// can contain spaces. PowerShell needs the & call operator before a quoted path.
+// Command Prompt expands %ERRORLEVEL% when it reads a line, so the hint reads it
+// in a separate command after the shim has run.
+func shimExitedDetail(bin string, perr *process.ProcessError) string {
+	detail := fmt.Sprintf("printed its plugin help but exited with an error (%s)", perr.Err)
+	if stderr := strings.TrimSpace(perr.Stderr); stderr != "" {
+		detail += ": " + stderr
+	}
+	return detail + fmt.Sprintf("; to see the error and exit code, run `& \"%[1]s\" plugin --help; $LASTEXITCODE` in PowerShell or `\"%[1]s\" plugin --help` and then `echo %%ERRORLEVEL%%` in Command Prompt, and re-run this command once it exits with 0", bin)
+}
+
+// pluginHelpUsage, pluginHelpInstall and pluginHelpMarket match the help that
+// `<agent> plugin --help` prints: a "Usage: <bin> plugin" line and an indented
+// command list that includes install (add for Codex) and marketplace. An error
+// message that merely mentions those words has neither shape.
+var (
+	pluginHelpUsage   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?im)^usage:[ \t]+\S+[ \t]+plugin\b`) })
+	pluginHelpInstall = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?m)^[ \t]+(install|add)\b`) })
+	pluginHelpMarket  = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`(?m)^[ \t]+marketplace\b`) })
+)
+
+// windowsShimPrintedHelp reports whether a failed probe is a Windows shim that
+// printed the full `plugin --help` and then exited with an error, and returns
+// the failed process. Such a CLI is present, so reporting it as not on PATH
+// would point the user at the wrong fix. Agent binaries are bare names, so
+// LookPath returns a .cmd or .bat path only on Windows. Only stdout is matched:
+// the agent CLIs print --help to stdout, and help on stderr usually means the
+// CLI rejected its arguments.
+//
+// TestProbeRealCmdShimPrintedHelp runs a real .cmd that prints the help and
+// exits 1, which checks how this path sees a shim's exit code on Windows.
+func windowsShimPrintedHelp(bin string, err error) (*process.ProcessError, bool) {
+	if ext := strings.ToLower(filepath.Ext(bin)); ext != ".cmd" && ext != ".bat" {
+		return nil, false
+	}
+	if _, ok := errors.AsType[*agentCmdTimeoutError](err); ok {
+		return nil, false
+	}
+	perr, ok := errors.AsType[*process.ProcessError](err)
+	if !ok {
+		return nil, false
+	}
+	out := perr.Stdout
+	if !pluginHelpUsage().MatchString(out) || !pluginHelpInstall().MatchString(out) || !pluginHelpMarket().MatchString(out) {
+		return nil, false
+	}
+	return perr, true
 }
 
 // InstallPluginForAgent registers the databricks marketplace and installs the
@@ -430,7 +495,8 @@ func claudeAlreadyDisabled(err error) bool {
 // RecordPluginInstalls persists plugin install records into the state file for
 // the given CLI scope (global or project), creating state if none exists. ref
 // is the resolved skills release the install corresponds to. An empty ref
-// (release unresolved) keeps the existing state.Release.
+// leaves state.Release unchanged: the release could not be resolved, or the
+// skills install failed and the skills on disk are still at the old release.
 func RecordPluginInstalls(ctx context.Context, cliScope string, records map[string]PluginRecord, ref string) error {
 	dir, err := skillsDir(ctx, cliScope)
 	if err != nil {
@@ -461,6 +527,72 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 	state.LastUpdated = time.Now()
 	state.Scope = cliScope
 	return SaveState(dir, state)
+}
+
+// PluginRecorded reports whether the CLI install state for cliScope records a
+// databricks plugin install for the agent. A scope without state, or a state
+// that cannot be read, has no record.
+func PluginRecorded(ctx context.Context, cliScope, agentName string) bool {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
+		return false
+	}
+	if state == nil {
+		return false
+	}
+	_, ok := state.Plugins[agentName]
+	return ok
+}
+
+// ForgetPluginInstalls removes the plugin install records of the named agents
+// from the state file for the given CLI scope, for agents that no longer have
+// the plugin. Agents without a record, or a scope without state, are left as
+// they are.
+func ForgetPluginInstalls(ctx context.Context, cliScope string, agentNames []string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil || state == nil {
+		return err
+	}
+	changed := false
+	for _, name := range agentNames {
+		if _, ok := state.Plugins[name]; ok {
+			delete(state.Plugins, name)
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return SaveState(dir, state)
+}
+
+// ManualPluginInstallCommands returns the commands, in order, that install the
+// databricks plugin through the agent's own CLI. When the headless install
+// fails, running them by hand shows the agent's full output. Returns nil for an
+// agent without a plugin or CLI binary.
+func ManualPluginInstallCommands(agent *agents.Agent, nativeScope string) []string {
+	if agent.Plugin == nil || agent.Binary == "" {
+		return nil
+	}
+	var cmds []string
+	if agent.Plugin.Source != "" {
+		cmds = append(cmds, strings.Join(prepend(agent.Binary, marketplaceAddArgs(agent.Plugin)), " "))
+	}
+	// The same refresh the headless install runs; a stale local marketplace
+	// reports the plugin as missing.
+	if args := marketplaceUpdateArgs(agent, agent.Plugin.Marketplace); args != nil {
+		cmds = append(cmds, strings.Join(prepend(agent.Binary, args), " "))
+	}
+	return append(cmds, strings.Join(prepend(agent.Binary, pluginInstallArgs(agent, nativeScope)), " "))
 }
 
 // prepend returns a fresh argv with bin as argv[0] followed by args.

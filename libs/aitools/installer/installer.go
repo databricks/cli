@@ -318,7 +318,7 @@ func installedSkillsRelease(state *InstallState) (ref string, allowFallback bool
 
 func checkSkillsDowngrade(installedRef, ref string, explicit bool) error {
 	if !explicit && semver.Compare(ref, installedRef) < 0 {
-		return fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)
+		return &RefusedError{Err: fmt.Errorf("refusing to downgrade skills from %s to %s; retry when the latest release is available or set DATABRICKS_SKILLS_REF=%s to select this version explicitly", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(ref), ref)}
 	}
 	return nil
 }
@@ -366,7 +366,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// hasLegacyInstall lives in update.go (shared with the update/uninstall paths).
 	legacyInstall := state == nil && scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir)
 	if legacyInstall && len(opts.SpecificSkills) > 0 {
-		return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
+		return &RefusedError{Err: errors.New("legacy install detected without state tracking; run 'databricks aitools install --scope=global --skills-only' (without --skills) first to rebuild state")}
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)
@@ -393,6 +393,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	targetSkills, err := resolveSkills(ctx, manifest.Skills, opts)
 	if err != nil {
 		return err
+	}
+	if len(targetSkills) == 0 {
+		return ErrNoSkillsResolved
 	}
 
 	params := installParams{
@@ -576,7 +579,14 @@ func InstallAllSkills(ctx context.Context) error {
 
 	PrintInstallingFor(ctx, installed)
 	src := &GitHubManifestSource{}
-	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
+	err := InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
+	// An optional setup step (apps init) has nothing to install; that is no
+	// failure for it.
+	if errors.Is(err, ErrNoSkillsResolved) {
+		cmdio.LogString(ctx, NoSkillsResolvedMessage)
+		return nil
+	}
+	return err
 }
 
 // PrintInstallingFor prints the "Installing..." header with agent names.

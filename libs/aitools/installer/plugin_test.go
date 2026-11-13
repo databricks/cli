@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -674,7 +675,7 @@ func TestPluginOperationsReportFailures(t *testing.T) {
 		result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Scope: ScopeGlobal})
 		require.NoError(t, err)
 		assert.Equal(t, 0, result.PluginsRemoved)
-		assert.Equal(t, 0, result.SkillsRemoved)
+		assert.Equal(t, 0, result.SkillsChanged)
 		require.Len(t, result.PluginFailures, 1)
 		blocked, ok := errors.AsType[*BlockedError](result.PluginFailures[0])
 		require.True(t, ok, "got %v", result.PluginFailures[0])
@@ -856,6 +857,37 @@ func TestRunAgentCmdTimeoutKeepsPartialStderr(t *testing.T) {
 	assert.Equal(t, "timed out after 1ms: Waiting for login...", blocked.Detail)
 }
 
+func TestForgetPluginInstalls(t *testing.T) {
+	setupTestHome(t)
+	t.Chdir(t.TempDir())
+	ctx := t.Context()
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+
+	// No state yet: nothing to forget, and no state file is created.
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameClaudeCode}))
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, st)
+	assert.False(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameClaudeCode: {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+		agents.NameCodex:      {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+	}, "v0.2.6"))
+	assert.True(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+	assert.False(t, PluginRecorded(ctx, ScopeProject, agents.NameClaudeCode), "the project scope has its own state")
+
+	// An agent without a record is left alone; a recorded one is dropped.
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameCopilot}))
+	require.NoError(t, ForgetPluginInstalls(ctx, ScopeGlobal, []string{agents.NameClaudeCode}))
+	st, err = LoadState(dir)
+	require.NoError(t, err)
+	assert.NotContains(t, st.Plugins, agents.NameClaudeCode)
+	assert.Contains(t, st.Plugins, agents.NameCodex)
+	assert.False(t, PluginRecorded(ctx, ScopeGlobal, agents.NameClaudeCode))
+}
+
 func TestRunAgentCmdReportsTimeout(t *testing.T) {
 	// A slow agent CLI used to be reported as "not on PATH" with whatever the
 	// killed process left on stderr.
@@ -871,4 +903,91 @@ func TestRunAgentCmdReportsTimeout(t *testing.T) {
 	assert.True(t, blocked.TimedOut)
 	assert.Equal(t, ReasonCLINotOnPath, blocked.Reason)
 	assert.Equal(t, "timed out after 1ms", blocked.Detail)
+}
+
+func TestManualPluginInstallCommands(t *testing.T) {
+	assert.Equal(t, []string{
+		"claude plugin marketplace add databricks/databricks-agent-skills",
+		"claude plugin marketplace update databricks-agent-skills",
+		"claude plugin install databricks@databricks-agent-skills --scope user",
+	}, ManualPluginInstallCommands(claudeAgent(), "user"))
+	assert.Equal(t, []string{
+		"codex plugin marketplace add databricks/databricks-agent-skills",
+		"codex plugin add databricks@databricks-agent-skills",
+	}, ManualPluginInstallCommands(codexAgent(), ""))
+	assert.Nil(t, ManualPluginInstallCommands(noPluginAgent(), ""))
+}
+
+// copilotPluginHelp is the commander-style shape of `copilot plugin --help`.
+const copilotPluginHelp = "Usage: copilot plugin [options] [command]\n\nManage plugins\n\nCommands:\n  install <plugin>     Install a plugin\n  uninstall <plugin>   Uninstall a plugin\n  marketplace          Manage marketplaces\n"
+
+// codexPluginHelp is the clap-style shape of `codex plugin --help`, which
+// lists add rather than install.
+const codexPluginHelp = "Manage plugins\n\nUsage: codex plugin [OPTIONS] <COMMAND>\n\nCommands:\n  add          Install a plugin\n  marketplace  Manage plugin marketplaces\n  help         Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help  Print help\n"
+
+func TestProbeWindowsShimPrintedHelp(t *testing.T) {
+	copilot := pluginAgent(agents.NameCopilot, "GitHub Copilot", "copilot")
+	tests := []struct {
+		name   string
+		agent  *agents.Agent
+		bin    string
+		stdout string
+		stderr string
+		shim   bool
+	}{
+		{name: "windows .bat shim printed help and exited 1", agent: copilot, bin: `C:\npm\copilot.bat`, stdout: copilotPluginHelp, shim: true},
+		{name: "windows .cmd shim printed help and exited 1", agent: copilot, bin: `C:\npm\copilot.cmd`, stdout: copilotPluginHelp, shim: true},
+		{name: "windows shim under a path with a space", agent: copilot, bin: `C:\Users\Jane Doe\AppData\Roaming\npm\copilot.cmd`, stdout: copilotPluginHelp, shim: true},
+		{name: "windows shim that printed an error on stderr", agent: copilot, bin: `C:\npm\copilot.cmd`, stdout: copilotPluginHelp, stderr: "  node: bad option\n", shim: true},
+		{name: "help on stderr is not a shim that printed help", agent: copilot, bin: `C:\npm\copilot.cmd`, stderr: copilotPluginHelp},
+		{name: "windows codex .cmd shim printed clap help and exited 1", agent: codexAgent(), bin: `C:\npm\codex.cmd`, stdout: codexPluginHelp, shim: true},
+		{name: "windows shim without a plugin command", agent: codexAgent(), bin: `C:\npm\codex.cmd`, stdout: "error: unknown command 'plugin'\n"},
+		{name: "unix binary is not a shim", agent: copilot, bin: "/usr/bin/copilot", stdout: copilotPluginHelp},
+		{name: "windows .exe is not a shim", agent: copilot, bin: `C:\bin\copilot.exe`, stdout: copilotPluginHelp},
+		{name: "error that mentions both words", agent: copilot, bin: `C:\npm\copilot.bat`, stdout: "Error: cannot install plugins: marketplace disabled by policy\n"},
+		{name: "usage line without a command list", agent: copilot, bin: `C:\npm\copilot.bat`, stdout: "Usage: copilot plugin\nerror: install and marketplace are not available\n"},
+		{name: "unindented words after blank lines", agent: copilot, bin: `C:\npm\copilot.bat`, stdout: "Usage: copilot plugin [options]\n\nmarketplace: disabled by policy\n\ninstall is not permitted\n"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origLook := lookPath
+			t.Cleanup(func() { lookPath = origLook })
+			lookPath = func(string) (string, error) { return tc.bin, nil }
+
+			ctx, stub := process.WithStub(t.Context())
+			stub.WithCallback(func(*exec.Cmd) error { return nil })
+			stub.WithStdoutFor("plugin --help", tc.stdout)
+			stub.WithStderrFor("plugin --help", tc.stderr)
+			stub.WithFailureFor("plugin --help", errors.New("exit status 1"))
+
+			_, err := InstallPluginForAgent(ctx, tc.agent, "", "v0.2.6")
+			var be *BlockedError
+			require.ErrorAs(t, err, &be)
+			if tc.shim {
+				assert.Equal(t, ReasonShimExitedWithError, be.Reason)
+				assert.False(t, be.TimedOut)
+				wantDetail := "printed its plugin help but exited with an error (exit status 1)"
+				if tc.stderr != "" {
+					wantDetail += ": " + strings.TrimSpace(tc.stderr)
+				}
+				wantDetail += "; to see the error and exit code, run `& \"" + tc.bin + "\" plugin --help; $LASTEXITCODE` in PowerShell or `\"" + tc.bin + "\" plugin --help` and then `echo %ERRORLEVEL%` in Command Prompt, and re-run this command once it exits with 0"
+				assert.Equal(t, wantDetail, be.Detail)
+			} else {
+				assert.Equal(t, ReasonCLINotOnPath, be.Reason)
+			}
+			assert.Len(t, stub.Commands(), 1, "nothing runs after a failed probe")
+		})
+	}
+}
+
+func TestWindowsShimPrintedHelpRejectsTimeout(t *testing.T) {
+	// A shim that printed the help and then hung until its deadline reports the
+	// timeout, even though the same output without the timeout is a shim error.
+	perr := &process.ProcessError{Command: "copilot.bat plugin --help", Err: errors.New("exit status 1"), Stdout: copilotPluginHelp}
+	bin := `C:\npm\copilot.bat`
+	got, ok := windowsShimPrintedHelp(bin, perr)
+	assert.True(t, ok)
+	assert.Same(t, perr, got)
+	_, ok = windowsShimPrintedHelp(bin, &agentCmdTimeoutError{timeout: time.Second, err: perr})
+	assert.False(t, ok)
 }
