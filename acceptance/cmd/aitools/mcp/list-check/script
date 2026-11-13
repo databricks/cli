@@ -15,7 +15,7 @@ title "list --check: the token mints, and GitHub needs sign-in"
 trace $CLI aitools mcp list --check
 
 title "Once the sign-in completes, GitHub is signed in"
-trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 trace $CLI aitools mcp list --check
 
 title "A recorded binary that is gone is reported as missing"

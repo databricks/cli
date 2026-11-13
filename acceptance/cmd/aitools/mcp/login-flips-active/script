@@ -17,7 +17,7 @@ title "login prints the sign-in URL and waits; the sign-in completes in the brow
 $CLI aitools mcp login system.ai.github --profile logfood > login.txt 2>&1 &
 PID=$!
 trace retry --until "Waiting for sign-in" cat login.txt
-trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 wait $PID
 trace cat login.txt
 
@@ -32,7 +32,7 @@ title "add --login installs the server and signs in during the same run"
 $CLI aitools mcp add --profile logfood --names system.ai.github --agents claude-code --login > add.txt 2>&1 &
 PID=$!
 trace retry --until "Waiting for sign-in" cat add.txt
-trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
 wait $PID
 trace cat add.txt
 trace jq '.mcp | [.servers[] | {name, service, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json
