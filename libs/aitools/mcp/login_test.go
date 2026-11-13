@@ -219,7 +219,7 @@ func TestSignInTimeout(t *testing.T) {
 		Timeout: 30 * time.Millisecond,
 	})
 	timeout := requireSignInTimeout(t, err)
-	assert.Nil(t, timeout.LastCheck)
+	assert.NoError(t, timeout.LastCheck)
 	assert.Contains(t, out.String(), "/mcp-service-login?name=system.ai.github&o=123")
 }
 
@@ -300,7 +300,7 @@ func TestSignInTimeoutDoesNotReportAFailedCheckThatWasRecovered(t *testing.T) {
 		Poll:    time.Millisecond,
 		Timeout: 50 * time.Millisecond,
 	})
-	assert.Nil(t, requireSignInTimeout(t, err).LastCheck)
+	assert.NoError(t, requireSignInTimeout(t, err).LastCheck)
 }
 
 // TestSignInKeepsPollingThroughServerErrors checks that a poll which fails with a server error does not end the sign-in:
@@ -450,7 +450,7 @@ func TestSignInTimeoutCutsOffPendingRequest(t *testing.T) {
 		Timeout: 200 * time.Millisecond,
 		Open:    noopOpen,
 	})
-	requireSignInTimeout(t, err)
+	_ = requireSignInTimeout(t, err)
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
 
