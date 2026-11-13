@@ -1197,8 +1197,11 @@ func TestAddChecksAuthWarningNamesPinnedConfigFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(configFile, []byte("[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-revoked\n"), 0o600))
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, configFile))
+	// The warning names the file as it resolves, with forward slashes. A temporary directory is a symlink on macOS.
+	resolved, err := mcp.ResolveConfigFile(t.Context(), configFile)
+	require.NoError(t, err)
 
 	_, out := checkedListServer(t)
 	require.Len(t, out.Warnings, 1)
-	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+configFile+" databricks auth login --profile logfood")
+	assert.Contains(t, out.Warnings[0], "Run: DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(resolved))+" databricks auth login --profile logfood")
 }
