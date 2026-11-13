@@ -54,7 +54,8 @@ func CredentialState(ctx context.Context, w *databricks.WorkspaceClient, service
 }
 
 // SignIn signs the caller in to a sign-in-required service, at url from SignInURL. It returns nil at once when the
-// caller is already signed in. Otherwise it prints url to out, opens it, and polls until the credential is ACTIVE.
+// caller is already signed in. Otherwise it deletes a FAILED credential left by an earlier attempt, prints url to out,
+// opens it, and polls until the credential is ACTIVE.
 // The errors are ErrSignInTimeout, ErrSignInFailed, or an API error.
 func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service string, out io.Writer, opts SignInOptions) error {
 	state, err := CredentialState(ctx, w, service)
@@ -63,6 +64,13 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	}
 	if state == catalog.ProvisioningInfoStateActive {
 		return nil
+	}
+	if state == catalog.ProvisioningInfoStateFailed {
+		// A FAILED credential is left by an earlier attempt. It is deleted, so that a FAILED state seen while waiting is
+		// the result of this attempt, and so that the page starts from no credential.
+		if _, err := SignOut(ctx, w, service); err != nil {
+			return err
+		}
 	}
 
 	fmt.Fprintf(out, "Sign in with the same account you use for Databricks profile %s.\n", opts.Profile)
@@ -84,9 +92,6 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 	ticker := time.NewTicker(opts.Poll)
 	defer ticker.Stop()
 
-	// A FAILED state left by an earlier attempt is still there when this one starts. FAILED counts only once the
-	// state has changed since the previous read, so it is the result of this attempt.
-	previous := state
 	for {
 		select {
 		case <-waitCtx.Done():
@@ -105,10 +110,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 		if state == catalog.ProvisioningInfoStateActive {
 			return nil
 		}
-		if state == catalog.ProvisioningInfoStateFailed && state != previous {
+		if state == catalog.ProvisioningInfoStateFailed {
 			return ErrSignInFailed
 		}
-		previous = state
 	}
 }
 

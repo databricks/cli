@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -77,6 +78,18 @@ func loginTestSignInURL(w *databricks.WorkspaceClient) string {
 
 func noopOpen(context.Context, string) error {
 	return nil
+}
+
+// browserOpens returns a context in which the browser is not disabled, so that SignIn calls the test's Open. The
+// runner's BROWSER=none would otherwise skip it.
+func browserOpens(t *testing.T) context.Context {
+	return env.Set(t.Context(), "BROWSER", "test-opener")
+}
+
+func (s *loginTestServer) isDeleted() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.deleted
 }
 
 // loginTestClient starts the fake and returns a client for it.
@@ -216,19 +229,40 @@ func TestSignOut(t *testing.T) {
 	assert.False(t, deleted)
 }
 
-// TestSignInFailedFromEarlierAttemptIsNotTheResult checks that a FAILED credential left by an earlier attempt is not the
-// result of this one. The state only counts as failed once it changes, so the new sign-in can still complete.
-func TestSignInFailedFromEarlierAttemptIsNotTheResult(t *testing.T) {
-	s := &loginTestServer{states: []string{"FAILED", "FAILED", "ACTIVE"}}
+// TestSignInDeletesFailedCredentialFromEarlierAttempt checks that a FAILED credential left by an earlier attempt is
+// deleted before the page opens, so the FAILED state the wait then sees is not the earlier attempt's, and the new
+// sign-in can complete.
+func TestSignInDeletesFailedCredentialFromEarlierAttempt(t *testing.T) {
+	s := &loginTestServer{states: []string{"FAILED", "", "ACTIVE"}, signedIn: true}
 	w := loginTestClient(t, s)
 
-	err := SignIn(t.Context(), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+	deletedBeforeOpen := make(chan bool, 1)
+	err := SignIn(browserOpens(t), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
 		Poll:    time.Millisecond,
 		Timeout: 10 * time.Second,
-		Open:    noopOpen,
+		Open: func(context.Context, string) error {
+			deletedBeforeOpen <- s.isDeleted()
+			return nil
+		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 3, s.reads)
+	assert.True(t, <-deletedBeforeOpen)
+}
+
+// TestSignInFailedCredentialThatFailsAgainIsFailed checks that a sign-in that fails again, after the FAILED credential
+// of an earlier attempt was deleted, is reported as failed at once. Without the deletion the state would never change,
+// and the wait would end in a timeout.
+func TestSignInFailedCredentialThatFailsAgainIsFailed(t *testing.T) {
+	s := &loginTestServer{states: []string{"FAILED"}, signedIn: true}
+	w := loginTestClient(t, s)
+
+	err := SignIn(browserOpens(t), w, loginTestSignInURL(w), loginTestService, io.Discard, SignInOptions{
+		Poll:    time.Millisecond,
+		Timeout: 2 * time.Second,
+		Open:    noopOpen,
+	})
+	require.ErrorIs(t, err, ErrSignInFailed)
+	assert.True(t, s.isDeleted())
 }
 
 // TestSignInFailedAfterProgressIsFailed checks that a FAILED state that follows a change of state fails the sign-in.
