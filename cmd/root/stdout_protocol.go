@@ -22,7 +22,9 @@ func carriesProtocol(cmd *cobra.Command) bool {
 // /dev/stdout does not match a stdout pipe, but the opened /dev/stdout does. The streams are parameters so tests can
 // pass their own, since under `go test -json` os.Stderr is os.Stdout.
 //
-// A file that is also stderr is not stdout, because one terminal file carries both diagnostics and protocol.
+// A file that is also stderr is not stdout, because one terminal file carries both diagnostics and protocol. That holds
+// on Unix only. On Windows a console is not a regular file, so sameFileInfo never matches it, and `--log-file stdout`
+// is refused even in a terminal.
 func writesToStdout(w io.Writer, stdout, stderr *os.File) bool {
 	f, ok := w.(*os.File)
 	if !ok || f == stderr {

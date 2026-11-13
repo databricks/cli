@@ -50,6 +50,10 @@ type mcpServeFlags struct {
 
 // NewMcpServeCmd returns the hidden `aitools mcp serve`: the stdio MCP proxy an agent starts for one
 // installed server. Its stdout carries only JSON-RPC messages; every diagnostic goes to stderr.
+//
+// Known limitation: the binding is checked only when serve starts. If the profile is pointed at another host during
+// the session, for example by `databricks auth login --profile P --host B`, serve keeps sending the profile's token,
+// which is now B's, to the endpoint of the host it was bound to.
 func NewMcpServeCmd() *cobra.Command {
 	var f mcpServeFlags
 	cmd := &cobra.Command{
@@ -212,7 +216,8 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	if r.Context().Err() != nil || r.Method == http.MethodDelete {
 		return err
 	}
-	// The hint says to restart the server, since the next spawn is what picks up the new login.
+	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
+	// new login.
 	authErr := fmt.Errorf("%w, then restart the MCP server in your agent", mcp.AuthError(g.profile, err))
 	g.mu.Lock()
 	first := g.err == nil
