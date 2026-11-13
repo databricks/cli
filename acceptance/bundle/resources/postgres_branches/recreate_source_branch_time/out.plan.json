@@ -1,12 +1,6 @@
 {
   "action": "recreate",
   "changes": {
-    "no_expiry": {
-      "action": "skip",
-      "reason": "spec:input_only",
-      "old": true,
-      "new": true
-    },
     "source_branch": {
       "action": "skip",
       "reason": "spec:input_only",
