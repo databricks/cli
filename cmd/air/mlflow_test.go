@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -175,12 +176,33 @@ func TestMLflowURLs(t *testing.T) {
 }
 
 func TestMLflowRunLabel(t *testing.T) {
-	// Uses the run name when it is known.
-	assert.Equal(t, "sunny-cat-42", mlflowRunLabel("sunny-cat-42", "0123456789abcdef"))
-	// Falls back to the last 8 characters of a long run id.
-	assert.Equal(t, "...9abcdef0", mlflowRunLabel("", "0123456789abcdef0"))
-	// A short run id is shown in full behind the ellipsis.
-	assert.Equal(t, "...short", mlflowRunLabel("", "short"))
+	const runID = "0123456789abcdef0123456789abcdef"
+	tests := []struct {
+		name    string
+		runName string
+		runID   string
+		width   int
+		want    string
+	}{
+		{name: "long name keeps its end", runName: "qwen-finetune-2026-10-23-lr-3e-5", runID: runID, width: 22, want: "…ne-2026-10-23-lr-3e-5"},
+		{name: "short name is shown whole", runName: "sunny-cat-42", runID: runID, width: 22, want: "sunny-cat-42"},
+		{name: "name at the width is shown whole", runName: "exactly-twenty-two-chr", runID: runID, width: 22, want: "exactly-twenty-two-chr"},
+		{name: "unnamed run keeps the end of its ID", runID: runID, width: 22, want: "…bcdef0123456789abcdef"},
+		{name: "short ID is shown whole", runID: "short", width: 22, want: "short"},
+		{name: "wide characters count as two cells", runName: "训练运行-实验-第一百二十三次", runID: runID, width: 8, want: "…十三次"},
+		{name: "width of one leaves only the ellipsis", runName: "sunny-cat-42", runID: runID, width: 1, want: "…"},
+		{name: "no width limit shows the whole name", runName: "qwen-finetune-2026-10-23-lr-3e-5", runID: runID, want: "qwen-finetune-2026-10-23-lr-3e-5"},
+		{name: "no width limit shows the whole ID", runID: runID, want: runID},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mlflowRunLabel(tt.runName, tt.runID, tt.width)
+			assert.Equal(t, tt.want, got)
+			if tt.width > 0 {
+				assert.LessOrEqual(t, lipgloss.Width(got), tt.width)
+			}
+		})
+	}
 }
 
 func TestFetchMLflowRunName(t *testing.T) {
