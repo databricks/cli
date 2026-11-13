@@ -130,7 +130,7 @@ func TestPrependWorkspacePrefixAfterVariableResolution(t *testing.T) {
 			diags := bundle.ApplySeq(t.Context(), b,
 				DefineDefaultWorkspacePaths(),
 				PrependWorkspacePrefix(),
-				ResolveVariableReferencesBeforeWorkspacePrefix(),
+				ResolveVariableReferencesInWorkspacePaths(),
 			)
 			require.NoError(t, diags.Error())
 			require.Equal(t, root+"/path/to/root", b.Config.Workspace.RootPath)
@@ -146,4 +146,30 @@ func TestPrependWorkspacePrefixAfterVariableResolution(t *testing.T) {
 			require.Equal(t, "/Workspace"+root+"/path/to/root/files/config.yaml", b.Config.Variables["config_file"].Value)
 		})
 	}
+}
+
+func TestPrependWorkspacePrefixSourceLinkedAlias(t *testing.T) {
+	b := &bundle.Bundle{
+		SyncRootPath: "/Workspace/Users/jane/source",
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Users/jane/bundle",
+				FilePath: "${workspace.root_path}/files",
+				SyncMode: config.SyncModeInPlace,
+			},
+			Variables: map[string]*variable.Variable{
+				"config_file": {Value: "${workspace.file_path}/config.yaml"},
+			},
+		},
+	}
+
+	diags := bundle.ApplySeq(t.Context(), b,
+		PrependWorkspacePrefix(),
+		ResolveVariableReferencesInWorkspacePaths(),
+		PrependWorkspacePrefix(),
+		ResolveVariableReferencesWithoutResources(),
+	)
+	require.NoError(t, diags.Error())
+	require.Equal(t, "/Workspace/Users/jane/bundle/files", b.Config.Workspace.FilePath)
+	require.Equal(t, "/Workspace/Users/jane/source/config.yaml", b.Config.Variables["config_file"].Value)
 }

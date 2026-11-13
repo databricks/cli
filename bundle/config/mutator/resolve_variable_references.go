@@ -61,10 +61,8 @@ type resolveVariableReferences struct {
 
 	artifactsReferenceUsed bool
 
-	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
-	// resolution should be skipped. References to these paths remain unresolved so a
-	// later mutator can set the value and re-run resolution.
-	excludePaths []string
+	// includePaths limits resolution to these configuration values when set.
+	includePaths []string
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
@@ -91,13 +89,14 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 	}
 }
 
-// ResolveVariableReferencesBeforeWorkspacePrefix defers workspace path references until their prefixes are final.
-func ResolveVariableReferencesBeforeWorkspacePrefix() bundle.Mutator {
+// ResolveVariableReferencesInWorkspacePaths resolves paths before prefixing them.
+func ResolveVariableReferencesInWorkspacePaths() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    defaultPrefixes,
 		lookupFn:    lookup,
 		extraRounds: maxResolutionRounds - 1,
-		excludePaths: []string{
+		pattern:     dyn.NewPattern(dyn.Key("workspace"), dyn.AnyKey()),
+		includePaths: []string{
 			"workspace.root_path",
 			"workspace.file_path",
 			"workspace.artifact_path",
@@ -238,6 +237,10 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if len(m.includePaths) > 0 && !slices.Contains(m.includePaths, p.String()) {
+				return v, nil
+			}
+
 			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
@@ -262,9 +265,6 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				if slices.ContainsFunc(prefixes, path.HasPrefix) {
-					if slices.Contains(m.excludePaths, path.String()) {
-						return dyn.InvalidValue, dynvar.ErrSkipResolution
-					}
 					if m.allowPathFn != nil && !m.allowPathFn(path) {
 						return dyn.InvalidValue, dynvar.ErrSkipResolution
 					}

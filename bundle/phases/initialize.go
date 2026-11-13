@@ -125,14 +125,15 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
 		mutator.ResolveLookupVariables(),
 
-		// Reads (dynamic): * (strings) (searches for variable references in string values)
-		// Updates (dynamic): * (except 'resources') (strings) (resolves variable references to their actual values)
-		// Resolve variable references outside resources, deferring workspace path references
-		// until their prefixes are final.
-		mutator.ResolveVariableReferencesBeforeWorkspacePrefix(),
+		// Reads (dynamic): workspace paths and their variable references
+		// Updates (dynamic): workspace paths
+		// Resolve workspace paths before adding their prefixes.
+		mutator.ResolveVariableReferencesInWorkspacePaths(),
 		// Variable-based workspace paths can become absolute only after resolution.
 		mutator.PrependWorkspacePrefix(),
-		// Resolve references to workspace paths after their prefixes are final.
+		// Reads (dynamic): * (strings) (searches for variable references in string values)
+		// Updates (dynamic): * (except 'resources') (strings) (resolves variable references to their actual values)
+		// Resolve the remaining references after workspace path prefixes are final.
 		mutator.ResolveVariableReferencesWithoutResources(),
 
 		// Check for invalid use of /Volumes in workspace paths
