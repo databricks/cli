@@ -970,3 +970,39 @@ func TestServeSignInRefreshFailureStopsProxy(t *testing.T) {
 	assert.Equal(t, serveBindStatus, serveStartStatus(err))
 	assert.Contains(t, err.Error(), "databricks auth login --profile logfood, then restart the MCP server in your agent")
 }
+
+// TestServeSignInReportsEachPoll checks that the sign-in of the authenticate tool calls the progress of the request on
+// each poll, so the proxy can tell the client that the wait is still going.
+func TestServeSignInReportsEachPoll(t *testing.T) {
+	prevPoll, prevWait := signInPollInterval, signInWaitTimeout
+	t.Cleanup(func() { signInPollInterval, signInWaitTimeout = prevPoll, prevWait })
+	signInPollInterval, signInWaitTimeout = time.Millisecond, 10*time.Second
+	t.Setenv("BROWSER", "none")
+
+	const credentialPath = "/api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials"
+	var gets atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != credentialPath {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		// The caller signs in on the third read: the first is the check before the sign-in, then two polls.
+		if gets.Add(1) < 3 {
+			rw.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"Credential is not found"}`)
+			return
+		}
+		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","provisioning_info":{"state":"ACTIVE"}}`)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "1"})
+	require.NoError(t, err)
+
+	polls := 0
+	signIn := serveSignIn(w, passingGuard(), "logfood", "system.ai.github", "", io.Discard)
+	_, _, err = signIn(t.Context(), proxy.SignInRequest{Open: true, Progress: func() { polls++ }})
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, polls)
+}

@@ -40,12 +40,13 @@ var ErrSignInFailed = errors.New("sign-in failed")
 
 // SignInOptions controls how SignIn waits. Poll and Timeout are required. Profile names the profile in the notice
 // before the page. Open opens the page in the background, and is not called when BROWSER=none, because the URL is
-// already printed.
+// already printed. OnPoll, when set, is called on each poll of the wait.
 type SignInOptions struct {
 	Profile string
 	Poll    time.Duration
 	Timeout time.Duration
 	Open    func(ctx context.Context, url string) error
+	OnPoll  func()
 }
 
 // CredentialState returns the provisioning state of the caller's sign-in to a sign-in-required
@@ -125,6 +126,9 @@ func SignIn(ctx context.Context, w *databricks.WorkspaceClient, url, service str
 				fmt.Fprintf(out, "Could not open a browser (%v). Open the URL above.\n", err)
 			}
 		case <-ticker.C:
+		}
+		if opts.OnPoll != nil {
+			opts.OnPoll()
 		}
 
 		state, err := CredentialState(waitCtx, w, service)

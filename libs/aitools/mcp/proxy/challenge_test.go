@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -541,7 +542,10 @@ func TestAuthenticateStartsSignInAfterChallengeFollowingAlreadySignedIn(t *testi
 	lines := p.waitLines(t, 4)
 	require.NoError(t, p.finish(t))
 
-	assert.Equal(t, []SignInRequest{{Open: true}, {Open: true, Restart: true}}, signIn.requests())
+	reqs := signIn.requests()
+	require.Len(t, reqs, 2)
+	assert.False(t, reqs[0].Restart)
+	assert.True(t, reqs[1].Restart, "the sign-in after the challenge starts from no credential")
 	assert.Contains(t, lines[1], "Already signed in to system.ai.github")
 	assert.Contains(t, lines[3], "Signed in to system.ai.github")
 }
@@ -564,4 +568,53 @@ func TestAuthenticateStaleAnswerWithoutChallengeKeepsCredential(t *testing.T) {
 	for _, req := range signIn.requests() {
 		assert.False(t, req.Restart)
 	}
+}
+
+// TestAuthenticateSendsProgressOnEachPoll checks that an authenticate call with a progress token gets a progress
+// notification on each poll of its wait, numbered in order, before its answer. Progress keeps a client that times out
+// requests without progress from giving up while the user signs in.
+func TestAuthenticateSendsProgressOnEachPoll(t *testing.T) {
+	srv, _ := challengedService(t)
+	proceed := make(chan struct{})
+	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
+		for range 2 {
+			req.Progress()
+			<-proceed
+		}
+		return false, true, nil
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{},"_meta":{"progressToken":"sign-in-1"}}}`)
+	lines := p.waitLines(t, 2)
+	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"sign-in-1","progress":1,"message":"Waiting for the sign-in to GitHub to complete."}}`, lines[1])
+	proceed <- struct{}{}
+
+	lines = p.waitLines(t, 3)
+	assert.JSONEq(t, `{"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"sign-in-1","progress":2,"message":"Waiting for the sign-in to GitHub to complete."}}`, lines[2])
+	proceed <- struct{}{}
+
+	lines = p.waitLines(t, 5)
+	require.NoError(t, p.finish(t))
+	assert.Contains(t, lines[3], "Signed in to system.ai.github")
+	assert.Equal(t, listChangedMsg, lines[4])
+}
+
+// TestAuthenticateSendsNoProgressWithoutToken checks that a call without a progress token gets no progress notification.
+func TestAuthenticateSendsNoProgressWithoutToken(t *testing.T) {
+	srv, _ := challengedService(t)
+	signIn := func(_ context.Context, req SignInRequest) (bool, bool, error) {
+		req.Progress()
+		req.Progress()
+		return false, true, nil
+	}
+	p := startPiped(t, t.Context(), challengedBridge(srv.URL, signIn))
+	challenge(t, p)
+	p.send(t, `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"authenticate","arguments":{}}}`)
+	lines := p.waitLines(t, 3)
+	require.NoError(t, p.finish(t))
+
+	require.Len(t, lines, 3)
+	assert.NotContains(t, strings.Join(lines, "\n"), "notifications/progress")
 }

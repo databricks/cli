@@ -60,8 +60,9 @@ var (
 type Hooks interface {
 	// Local answers a client request without forwarding it when handled is true; the messages it
 	// returns are written in order. Requests it does not handle are forwarded as usual. Local is
-	// called from the goroutine of each request, as Result is.
-	Local(ctx context.Context, request []byte) (msgs [][]byte, handled bool)
+	// called from the goroutine of each request, as Result is. It may write a message before its
+	// answer, such as a progress notification, through notify.
+	Local(ctx context.Context, request []byte, notify func(msg []byte)) (msgs [][]byte, handled bool)
 	// Result receives each upstream message for a client request, with the HTTP status (0 when the
 	// request failed before a response). It returns the messages to write in its place, in order:
 	// a single copy of message passes it through, an empty slice drops it. Result is called
@@ -271,7 +272,7 @@ func (c *conn) answerLocally(ctx context.Context, line []byte) bool {
 	if c.b.Hooks == nil {
 		return false
 	}
-	msgs, handled := c.b.Hooks.Local(ctx, line)
+	msgs, handled := c.b.Hooks.Local(ctx, line, c.reply)
 	if err := c.writeLines(msgs); err != nil {
 		c.logf("stdout: %v", err)
 	}

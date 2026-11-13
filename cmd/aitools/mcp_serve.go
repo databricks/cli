@@ -207,7 +207,7 @@ func serveSignIn(w *databricks.WorkspaceClient, refresh *refreshGuard, profileNa
 			openPage = browser.OpenOutputToStderr
 		}
 		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
-		_, alreadySignedIn, urlShown, err := signIn(ctx, errOut, w, profileName, pinnedFile, url, svc, openPage)
+		_, alreadySignedIn, urlShown, err := signIn(ctx, errOut, w, pinnedFile, url, svc, mcp.SignInOptions{Profile: profileName, Open: openPage, OnPoll: req.Progress})
 		if timeout, timedOut := errors.AsType[*mcp.SignInTimeoutError](err); timedOut {
 			return false, urlShown, &proxy.SignInTimeout{URL: url, Wait: signInWaitTimeout, LastCheck: timeout.LastCheck}
 		}

@@ -827,7 +827,7 @@ func (f hookFunc) Result(ctx context.Context, request []byte, status int, msg []
 	return f(ctx, request, status, msg)
 }
 
-func (hookFunc) Local(context.Context, []byte) ([][]byte, bool) {
+func (hookFunc) Local(context.Context, []byte, func([]byte)) ([][]byte, bool) {
 	return nil, false
 }
 
@@ -2206,7 +2206,7 @@ func (localHooks) Result(_ context.Context, _ []byte, _ int, msg []byte) ([][]by
 	return [][]byte{msg}, nil
 }
 
-func (h localHooks) Local(_ context.Context, request []byte) ([][]byte, bool) {
+func (h localHooks) Local(_ context.Context, request []byte, _ func([]byte)) ([][]byte, bool) {
 	if !bytes.Contains(request, []byte("local")) {
 		return nil, false
 	}

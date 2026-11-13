@@ -45,6 +45,8 @@ type SignInRequest struct {
 	// Restart deletes the caller's sign-in before the sign-in runs, so that it starts from no credential. The proxy asks
 	// for it when the service challenged the session again after an "Already signed in" answer.
 	Restart bool
+	// Progress is called on each poll of the wait. It is never nil.
+	Progress func()
 }
 
 // SignInFunc runs the sign-in for the authenticate tool and waits for it. It reports alreadySignedIn when the caller
@@ -92,11 +94,14 @@ type signInHooks struct {
 
 // Local answers the authenticate tool call once the session has been challenged. Before that, and for other requests and
 // messages that do not decode, the request is forwarded.
-func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool) {
+func (h *signInHooks) Local(ctx context.Context, request []byte, notify func([]byte)) ([][]byte, bool) {
 	var req struct {
 		message
 		Params struct {
 			Name string `json:"name"`
+			Meta struct {
+				ProgressToken json.RawMessage `json:"progressToken"`
+			} `json:"_meta"`
 		} `json:"params"`
 	}
 	if json.Unmarshal(request, &req) != nil || !req.isRequest() || req.Method != methodToolsCall || req.Params.Name != authenticateTool {
@@ -108,7 +113,7 @@ func (h *signInHooks) Local(ctx context.Context, request []byte) ([][]byte, bool
 	if !challenged {
 		return nil, false
 	}
-	return h.authenticate(ctx, req.ID), true
+	return h.authenticate(ctx, req.ID, req.Params.Meta.ProgressToken, notify), true
 }
 
 // Result replaces a challenged tools/list answer with the authenticate tool. A challenged tools/call
@@ -253,8 +258,9 @@ func (h *signInHooks) signInRequired(id json.RawMessage) []byte {
 }
 
 // authenticate runs the sign-in and answers the tool call. Calls are serialized, so a second call waits for the first.
-// The page opens unless the last attempt was cancelled while its page was showing (see pageCancelled).
-func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]byte {
+// The page opens unless the last attempt was cancelled while its page was showing (see pageCancelled). With a
+// progressToken, each poll of the wait is reported to the client through notify.
+func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.RawMessage, notify func([]byte)) [][]byte {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -263,7 +269,15 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 	h.restart = false
 	h.stateMu.Unlock()
 
-	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart})
+	progress := func() {}
+	if len(progressToken) > 0 {
+		polls := 0
+		progress = func() {
+			polls++
+			notify(progressNotification(progressToken, polls, h.c.Label))
+		}
+	}
+	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{Open: !h.pageCancelled, Restart: restart, Progress: progress})
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn
@@ -294,6 +308,22 @@ func (h *signInHooks) authenticate(ctx context.Context, id json.RawMessage) [][]
 	default:
 		return [][]byte{toolResult(id, fmt.Sprintf("Sign-in to %s on profile %s failed: %v", h.c.Service, h.c.Profile, err), true)}
 	}
+}
+
+// progressNotification is the notifications/progress message for the n-th poll of a sign-in that the client asked to
+// hear about through token.
+func progressNotification(token json.RawMessage, n int, label string) []byte {
+	// Cannot fail: the token came from a parsed request and the rest holds plain values.
+	b, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"method":  "notifications/progress",
+		"params": map[string]any{
+			"progressToken": token,
+			"progress":      n,
+			"message":       fmt.Sprintf("Waiting for the sign-in to %s to complete.", label),
+		},
+	})
+	return b
 }
 
 // resultResponse builds a JSON-RPC success response.
