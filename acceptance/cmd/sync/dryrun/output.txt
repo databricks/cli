@@ -47,3 +47,10 @@ Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
+
+>>> [CLI] sync . /Users/[USERNAME] --dry-run -o json --exclude project-folder/**
+Warn: Running in dry-run mode. No actual changes will be made.
+{"type":"start","dry_run":true,"put":[".gitignore"]}
+{"type":"progress","dry_run":true,"action":"put","path":".gitignore","progress":0}
+{"type":"progress","dry_run":true,"action":"put","path":".gitignore","progress":1}
+{"type":"complete","dry_run":true,"put":[".gitignore"]}

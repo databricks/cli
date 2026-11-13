@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,21 +9,12 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// newTestSyncCommand attaches the sync command to a root command so the root persistent flags resolve.
-func newTestSyncCommand(t *testing.T) *cobra.Command {
-	syncCmd := New()
-	root.New(t.Context()).AddCommand(syncCmd)
-	return syncCmd
-}
 
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
@@ -43,7 +35,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 	}
 
 	f := syncFlags{}
-	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
+	opts, err := f.syncOptionsFromBundle(t.Context(), []string{}, b)
 	require.NoError(t, err)
 	assert.Equal(t, tempDir, opts.LocalRoot.Native())
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
@@ -51,35 +43,34 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 	assert.NotNil(t, opts.WorkspaceClient)
 }
 
-func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
-	var err error
-	f := syncFlags{}
-	_, err = f.syncOptionsFromArgs(New(), []string{})
-	require.ErrorContains(t, err, "accepts 2 arg(s), received 0")
-	_, err = f.syncOptionsFromArgs(New(), []string{"foo"})
-	require.ErrorContains(t, err, "accepts 2 arg(s), received 1")
-	_, err = f.syncOptionsFromArgs(New(), []string{"foo", "bar", "qux"})
-	require.ErrorContains(t, err, "accepts 2 arg(s), received 3")
-}
-
 func TestSyncOptionsFromArgs(t *testing.T) {
 	local := t.TempDir()
 	remote := "/remote"
 
 	f := syncFlags{}
-	cmd := newTestSyncCommand(t)
-	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
-	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), nil)
+	opts, err := f.syncOptionsFromArgs(ctx, flags.OutputText, io.Discard, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
 }
 
-func TestSyncShorthandFlags(t *testing.T) {
-	cmd := newTestSyncCommand(t)
-	require.NoError(t, cmd.ParseFlags([]string{"-o", "json", "-p", "myprofile"}))
-	assert.Equal(t, flags.OutputJSON, root.OutputType(cmd))
-	assert.Equal(t, "myprofile", cmd.Flag("profile").Value.String())
+func TestSyncOptionsFromArgsRequiresSrcAndDst(t *testing.T) {
+	f := syncFlags{}
+	_, err := f.syncOptionsFromArgs(t.Context(), flags.OutputText, io.Discard, []string{"src"})
+	assert.EqualError(t, err, "expected SRC and DST, got 1 arguments")
+}
+
+// Flags that sync defines with the names or shorthands of the root's
+// --output and --profile flags would shadow them.
+func TestSyncDoesNotShadowRootFlags(t *testing.T) {
+	cmd := New()
+	for _, name := range []string{"output", "profile"} {
+		assert.Nil(t, cmd.LocalFlags().Lookup(name), name)
+	}
+	for _, shorthand := range []string{"o", "p"} {
+		assert.Nil(t, cmd.LocalFlags().ShorthandLookup(shorthand), shorthand)
+	}
 }
 
 func TestReadPatternsFileErrorNamesFlag(t *testing.T) {
@@ -108,12 +99,11 @@ func TestExcludeFromFlag(t *testing.T) {
 
 	// Set up the flags
 	f := syncFlags{excludeFrom: excludeFromPath}
-	cmd := newTestSyncCommand(t)
-	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), nil)
 
 	// Test with both exclude flag and exclude-from flag
 	f.exclude = []string{"node_modules/"}
-	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
+	opts, err := f.syncOptionsFromArgs(ctx, flags.OutputText, io.Discard, []string{local, remote})
 	require.NoError(t, err)
 
 	// Should include both exclude flag and exclude-from patterns

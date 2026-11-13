@@ -32,3 +32,6 @@ trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --exclude 'project-folder/
 
 # use negated include to exclude files from syncing:
 trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run --include 'ignored-folder/**' --include '!ignored-folder/folder1/big-blob' | grep -v "^Action" | sort
+
+# the root's -o flag selects the output format:
+trace $CLI sync . /Users/$CURRENT_USER_NAME --dry-run -o json --exclude 'project-folder/**' | jq -c 'del(.timestamp, .seq)'

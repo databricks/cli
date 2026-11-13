@@ -60,12 +60,12 @@ func readPatternsFile(flagName, filePath string) ([]string, error) {
 	return patterns, nil
 }
 
-func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
+func (f *syncFlags) syncOptionsFromBundle(ctx context.Context, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	if len(args) > 0 {
 		return nil, errors.New("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	opts, err := files.GetSyncOptions(cmd.Context(), b)
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
@@ -91,13 +91,15 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	return opts, nil
 }
 
-func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
-	if err := root.ExactArgs(2)(cmd, args); err != nil {
-		return nil, err
+// syncOptionsFromArgs returns the options to sync the SRC and DST in args,
+// writing progress in the output format to stdout.
+func (f *syncFlags) syncOptionsFromArgs(ctx context.Context, output flags.Output, stdout io.Writer, args []string) (*sync.SyncOptions, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("expected SRC and DST, got %d arguments", len(args))
 	}
 
 	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-	switch root.OutputType(cmd) {
+	switch output {
 	case flags.OutputText:
 		outputFunc = sync.TextOutput
 	case flags.OutputJSON:
@@ -107,11 +109,10 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	var outputHandler sync.OutputHandler
 	if outputFunc != nil {
 		outputHandler = func(ctx context.Context, events <-chan sync.Event) {
-			outputFunc(ctx, events, cmd.OutOrStdout())
+			outputFunc(ctx, events, stdout)
 		}
 	}
 
-	ctx := cmd.Context()
 	client := cmdctx.WorkspaceClient(ctx)
 
 	if f.dryRun {
@@ -195,7 +196,10 @@ func New() *cobra.Command {
 		var opts *sync.SyncOptions
 		var err error
 
-		opts, err = f.syncOptionsFromArgs(cmd, args)
+		if err := root.ExactArgs(2)(cmd, args); err != nil {
+			return err
+		}
+		opts, err = f.syncOptionsFromArgs(cmd.Context(), root.OutputType(cmd), cmd.OutOrStdout(), args)
 		if err != nil {
 			return err
 		}
