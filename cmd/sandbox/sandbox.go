@@ -32,6 +32,7 @@ Common workflows:
 `,
 	}
 
+	cmd.AddCommand(newServerCommand())
 	cmd.AddCommand(newRegisterCommand())
 	cmd.AddCommand(newSSHKeyCommand())
 	cmd.AddCommand(newSetDefaultCommand())

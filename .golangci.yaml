@@ -57,6 +57,11 @@ linters:
             - "**"
             - "!**/cmd/cmd.go"
             - "!**/cmd/experimental/**"
+            # Sandbox SSH command files integrate the shared SSH implementation.
+            - "!**/cmd/sandbox/server.go"
+            - "!**/cmd/sandbox/ssh.go"
+            - "!**/cmd/sandbox/ssh_setup.go"
+            - "!**/cmd/sandbox/ssh_test.go"
             - "!**/experimental/**"
           deny:
             - pkg: "github.com/databricks/cli/experimental"
