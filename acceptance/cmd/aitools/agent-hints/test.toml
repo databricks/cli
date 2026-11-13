@@ -1,0 +1,3 @@
+# The throttle markers live in the file cache, which a host could disable.
+Env.DATABRICKS_CACHE_ENABLED = "true"
+Ignore = ["home"]

@@ -1,0 +1,1 @@
+* When Codex, Cursor, GitHub Copilot CLI, OpenCode, Gemini CLI, Antigravity, Pi, Goose or Kiro run the CLI without Databricks skills installed for that agent, the CLI now prints a one-line hint to install them with `databricks aitools install --agents <agent> --scope global`, previously shown only to Claude Code. ([#7586](https://github.com/databricks/cli/pull/7586))
