@@ -24,7 +24,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/browser"
-	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -147,12 +147,10 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		// serveChallenge fails only on an auth failure (see lookupAtStart), which exits serveBindStatus.
 		return serveFailure(cmd, err, serveBindStatus)
 	}
-	// Only a serving start is logged. The upload authenticates with a config of its own that never refreshes a token
-	// (see setUploadConfig), since the session's config refreshes its token.
-	setUploadConfig(cmd, profileName, cfg.ConfigFile)
+	// Only a serving start is logged.
 	logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service))
 
-	return serveProxy(ctx, cmd, refresh, proxy.Options{
+	err = serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:        cmd.InOrStdin(),
 		Out:       cmd.OutOrStdout(),
 		Err:       cmd.ErrOrStderr(),
@@ -163,6 +161,10 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Transport: serveTransport(cfg),
 		Challenge: challenge,
 	})
+	// The upload authenticates with the profile at exit, with a config of its own that never refreshes a token, since the
+	// session's config refreshes its token. A refresh failure has refused the upload (proxyResult), so nothing is set then.
+	setUploadConfig(cmd.Context(), profileName, cfg.ConfigFile)
+	return err
 }
 
 // guardedClient returns the client of the bound profile whose requests the refresh guard authenticates. The SDK calls
@@ -301,7 +303,7 @@ func serveProxy(ctx context.Context, cmd *cobra.Command, refresh *refreshGuard, 
 func proxyResult(cmd *cobra.Command, refresh *refreshGuard, runErr error) error {
 	if refreshErr := refresh.failure(); refreshErr != nil {
 		// The token was rejected, so the upload at exit would only ask the token endpoint again.
-		cmd.SetContext(cmdctx.ClearConfigUsed(cmd.Context()))
+		telemetry.RefuseUpload(cmd.Context())
 		fmt.Fprintf(cmd.ErrOrStderr(), "stopped after a token refresh failure for profile %s\n", refresh.profile)
 		return exitAlreadyPrinted(refreshErr, serveBindStatus)
 	}

@@ -20,12 +20,12 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -108,21 +108,30 @@ func TestMcpLoginRejectedTokenIsAuthFailed(t *testing.T) {
 	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
 }
 
-// TestMcpLoginRejectedTokenHasOneSetOfNextSteps checks the error that root prints for a rejected token after login has
-// its client: the MCP login command is the only set of next steps, since root's auth enrichment leaves it alone. Root
-// enriches the errors of a command whose telemetry upload is authenticated with the profile.
-func TestMcpLoginRejectedTokenHasOneSetOfNextSteps(t *testing.T) {
+// TestMcpLogoutForbiddenKeepsItsText checks that a 403 from logout is reported as the API said it, with no next steps
+// added: root enriches a command's auth errors only when the command sets its profile's config for the context, and
+// logout's upload config is not that config. The run still uploads with the profile it bound.
+func TestMcpLogoutForbiddenKeepsItsText(t *testing.T) {
 	home := withHome(t)
-	server := loginTestServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
-	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-expired\n")
+	server := loginTestServer(t, http.StatusForbidden, `{"error_code":"PERMISSION_DENIED","message":"no access"}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
 
-	out := mcpSignInOutput{Service: "system.ai.github"}
-	err := runMcpSignIn(t.Context(), io.Discard, "logfood", "system.ai.github", mcpLogin, &out)
+	parent := newMCPTestRoot()
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "logout", "system.ai.github", "--profile", "logfood"})
+	ctx, _ := cmdio.NewTestContextWithStderr(telemetry.WithNewLogger(t.Context()))
+	err := parent.ExecuteContext(ctx)
+	logout, _, findErr := parent.Find([]string{"mcp", "logout"})
+	require.NoError(t, findErr)
+
 	require.Error(t, err)
-	require.NotEmpty(t, out.Host, "the client exists, so the profile's config is known")
-	enriched := auth.EnrichAuthError(t.Context(), &config.Config{Host: out.Host, Profile: "logfood"}, err)
-	assert.Equal(t, err.Error(), enriched.Error())
-	assert.Equal(t, 0, strings.Count(enriched.Error(), "Next steps:"))
+	assert.Contains(t, err.Error(), "no access")
+	assert.NotContains(t, err.Error(), "Next steps")
+	assert.False(t, cmdctx.HasConfigUsed(logout.Context()), "root does not enrich the error")
+	cfg, uploads := telemetry.UploadConfig(logout.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "logfood", cfg.Profile)
 }
 
 // TestMcpLogoutUnknownServiceIsAnError checks that logout of a service the profile cannot see fails, rather than

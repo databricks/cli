@@ -63,33 +63,6 @@ func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
 	assert.Equal(t, "PERMISSION_DENIED", unwrapped.ErrorCode)
 }
 
-// stepsIncludedError is an authentication failure whose message already gives the next steps.
-type stepsIncludedError struct {
-	cause error
-}
-
-func (e *stepsIncludedError) Error() string {
-	return "credential rejected. Run: databricks auth login --profile test"
-}
-
-func (e *stepsIncludedError) Unwrap() error {
-	return e.cause
-}
-
-func (e *stepsIncludedError) NextStepsIncluded() bool {
-	return true
-}
-
-func TestEnrichAuthErrorLeavesErrorWithNextStepsAsIs(t *testing.T) {
-	cfg := &config.Config{Profile: "test", Host: "https://ws.test", AuthType: "pat"}
-	original := &stepsIncludedError{cause: &apierr.APIError{StatusCode: 401, Message: "Unauthorized"}}
-	assert.Equal(t, original, EnrichAuthError(t.Context(), cfg, original))
-
-	// An API error without a message of its own is still enriched.
-	plain := &apierr.APIError{StatusCode: 401, Message: "Unauthorized"}
-	assert.Contains(t, EnrichAuthError(t.Context(), cfg, plain).Error(), "Next steps:")
-}
-
 func TestEnrichAuthError(t *testing.T) {
 	tests := []struct {
 		name       string

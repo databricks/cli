@@ -12,9 +12,10 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,9 @@ type removeOutput struct {
 	results []protos.AitoolsMcpServerResult
 	// stateBefore is the state as it was read before the removal. It is not in the JSON.
 	stateBefore *mcp.State
+	// profile is the profile that the selected servers are bound to, when they all are bound to one. It is "" otherwise.
+	// It is not in the JSON.
+	profile string
 }
 
 type removeRemoved struct {
@@ -108,7 +112,7 @@ Entries that run 'aitools mcp serve' without an install record are not chosen by
 			if jsonMode {
 				err = writeRemoveJSON(cmd, out, runErr)
 			}
-			logRemoveEvent(cmd, args, out)
+			logRemoveEvent(ctx, out)
 			return err
 		},
 	}
@@ -135,33 +139,31 @@ func writeRemoveJSON(cmd *cobra.Command, out *removeOutput, runErr error) error 
 	return nil
 }
 
-// logRemoveEvent buffers the REMOVE event and sets the config its exit-time upload authenticates with. It runs after
-// the output is written, and only when the run touched a server: a run that touched none has nothing to upload, so it
-// resolves no auth. The auth resolves as install's does (startTelemetryAuth), within telemetryAuthBudget, and the upload
-// is skipped when a server recorded for the profile no longer matches it (bindingDrifted).
-func logRemoveEvent(cmd *cobra.Command, args []string, out *removeOutput) {
-	ctx := cmd.Context()
-	logMcpEvent(ctx, protos.AitoolsMcpEvent{
+// logRemoveEvent buffers the REMOVE event and sets the config its exit-time upload authenticates with. It runs after the
+// output is written. A run that logged no event touched no server, so it has nothing to upload and sets no config.
+func logRemoveEvent(ctx context.Context, out *removeOutput) {
+	if !logMcpEvent(ctx, protos.AitoolsMcpEvent{
 		CallingAgent: callingAgentType(),
 		Operation:    protos.AitoolsMcpOperationRemove,
 		Servers:      out.results,
-	})
-	if len(telemetry.BufferedEvents(ctx)) == 0 {
+	}) {
 		return
 	}
-	auth := startTelemetryAuth(cmd, args)
-	if auth == nil {
+	if out.profile == "" {
 		return
 	}
-	if !auth.wait() {
-		log.Debugf(ctx, "auth for telemetry not resolved within %s; not uploading telemetry", telemetryAuthBudget)
+	configFile, err := mcp.ResolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
+	if err != nil {
+		log.Debugf(ctx, "telemetry: cannot resolve the config file to upload with: %s", err)
 		return
 	}
-	if auth.cfg != nil && bindingDrifted(ctx, out.stateBefore, auth.cfg) {
-		log.Debugf(ctx, "telemetry: profile %s no longer matches an MCP server recorded for it; not uploading telemetry", auth.cfg.Profile)
+	// The upload sends the profile's token to the profile's host, so a profile whose recorded servers no longer match it
+	// uploads nothing. The records are the ones read before the removal.
+	if bindingDrifted(ctx, out.stateBefore, out.profile, configFile) {
+		log.Debugf(ctx, "telemetry: profile %s no longer matches an MCP server recorded for it; not uploading telemetry", out.profile)
 		return
 	}
-	auth.apply(cmd, false)
+	setUploadConfig(ctx, out.profile, configFile)
 }
 
 // runMcpRemove removes the chosen servers from the agent configs and records the result. Results are printed
@@ -230,6 +232,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		// --agents chooses the servers installed for those agents, so a server with no agent left is not chosen.
 		selected = slices.DeleteFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 })
 	}
+	out.profile = sharedProfile(selected)
 
 	// Each agent config file is read once per command, and each server's config file is resolved once.
 	files := newAgentFiles()
@@ -256,6 +259,10 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				continue
 			}
 			outcome, reason, err := removeFromAgent(ctx, files, e, a, pin)
+			// A pruned entry changes the state only, so a save that fails undoes it, as for a record-only removal.
+			if outcome == removePruned && err == nil {
+				recordOnly = append(recordOnly, len(out.results))
+			}
 			out.results = append(out.results, removeServerResult(e.Service, agentName, outcome, err))
 			if err != nil {
 				errs = append(errs, err)

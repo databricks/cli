@@ -150,7 +150,6 @@ func (o *addOutput) slashPaths() {
 // NewMcpAddCmd returns `aitools mcp add`.
 func NewMcpAddCmd() *cobra.Command {
 	var f mcpAddFlags
-	var auth *telemetryAuth
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Install Databricks managed MCP servers into coding agents",
@@ -171,8 +170,6 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
-			// The events upload with the auth resolved for the profile, and a run that logs one waits for it.
-			auth.waitAtExit = true
 
 			out := &addOutput{
 				Scope:         installer.ScopeGlobal,
@@ -212,8 +209,6 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
 	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server that was installed, after the installs")
 	cmd.Flags().BoolVar(&f.noLogin, "no-login", false, "Do not sign in; print the login commands for sign-in-required servers (default without a terminal; in a terminal, the default asks for each one)")
-	// Resolve auth best-effort so the telemetry can upload, as install does.
-	auth = withTelemetryAuth(cmd)
 	return cmd
 }
 
@@ -338,6 +333,9 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := planningRefusals(plans, targets); err != nil {
 		return err
 	}
+	// Every refusal that needs no request has come, so the upload authenticates with the profile this run binds. Resolving
+	// its config makes the host's metadata request, which is why it waits for the refusals.
+	setUploadConfig(ctx, profileName, configFile)
 
 	if !pickingServices {
 		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)

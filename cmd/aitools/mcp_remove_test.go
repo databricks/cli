@@ -11,19 +11,16 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -807,7 +804,8 @@ func claudeServerEntry(claudePath, name, service string) mcp.Entry {
 func runRemoveWithTelemetry(t *testing.T, stdout, logs *bytes.Buffer, logLevel slog.Level, args ...string) (*cobra.Command, error) {
 	t.Helper()
 	parent := newMCPTestRoot()
-	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	ctx := telemetry.WithNewLogger(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
 	ctx = log.NewContext(ctx, slog.New(handler.NewFriendlyHandler(logs, &handler.Options{Level: logLevel})))
 	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
 	parent.SetOut(stdout)
@@ -819,25 +817,27 @@ func runRemoveWithTelemetry(t *testing.T, stdout, logs *bytes.Buffer, logLevel s
 	return remove, err
 }
 
-// TestMcpRemoveResolvesNothingWithoutAnEvent checks that a run that removes nothing logs no event, so it resolves no auth
-// for an upload.
-func TestMcpRemoveResolvesNothingWithoutAnEvent(t *testing.T) {
-	withHome(t)
-	resolves := 0
-	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error {
-		resolves++
-		return nil
-	})
+// unsetConfigFile makes DATABRICKS_CONFIG_FILE unset for the test, as opposed to set to "".
+func unsetConfigFile(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	require.NoError(t, os.Unsetenv("DATABRICKS_CONFIG_FILE"))
+}
 
+// TestMcpRemoveSetsNoUploadWithoutAnEvent checks that a run that removes nothing logs no event, so it sets no config for
+// an upload.
+func TestMcpRemoveSetsNoUploadWithoutAnEvent(t *testing.T) {
+	withHome(t)
 	var stdout, logs bytes.Buffer
-	_, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--all", "--output", "json")
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--all", "--output", "json")
 	require.NoError(t, err)
-	assert.Zero(t, resolves)
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.False(t, uploads)
+	assert.Empty(t, telemetry.BufferedEvents(remove.Context()))
 }
 
 // TestMcpRemoveUploadSkipsDriftedProfile checks that the upload is not authenticated with a profile that a server recorded
 // for it no longer matches, as its host here is not the one the server was set up against. The removal is done either
-// way, and the output is written before the auth resolves.
+// way.
 func TestMcpRemoveUploadSkipsDriftedProfile(t *testing.T) {
 	home := withHome(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-2.test\nauth_type = pat\ntoken = t\n")
@@ -848,57 +848,65 @@ func TestMcpRemoveUploadSkipsDriftedProfile(t *testing.T) {
 	saveState(t, entry)
 
 	var stdout, logs bytes.Buffer
-	var outputWrittenFirst bool
-	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, _ []string) error {
-		outputWrittenFirst = stdout.Len() > 0
-		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Profile: "logfood", Host: "https://adb-2.test", ConfigFile: filepath.Join(home, ".databrickscfg")}))
-		return nil
-	})
-
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
 	require.NoError(t, err)
-	assert.True(t, outputWrittenFirst, "the auth resolves after the JSON is written")
-	assert.False(t, cmdctx.HasConfigUsed(remove.Context()), "a drifted profile is not used to upload")
+	require.Len(t, telemetry.BufferedEvents(remove.Context()), 1, "the removal is logged")
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.False(t, uploads, "a drifted profile is not used to upload")
 	assert.NotContains(t, readJSONFile(t, claudePath)["mcpServers"], "genie_one_mcp-logfood", "the removal is done")
 }
 
-// TestMcpRemoveUploadUsesMatchingProfile checks that a profile whose recorded servers still match is used for the upload.
+// TestMcpRemoveUploadUsesMatchingProfile checks that a profile whose recorded servers still match is used for the upload,
+// read from the default config file when DATABRICKS_CONFIG_FILE is unset.
 func TestMcpRemoveUploadUsesMatchingProfile(t *testing.T) {
 	home := withHome(t)
+	unsetConfigFile(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
 	claude := agents.ByName("claude-code")
 	entry := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test")
 	saveState(t, entry)
 
-	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, _ []string) error {
-		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Profile: "logfood", Host: "https://adb-1.test", ConfigFile: filepath.Join(home, ".databrickscfg")}))
-		return nil
-	})
+	var stdout, logs bytes.Buffer
+	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
+	require.NoError(t, err)
+	cfg, uploads := telemetry.UploadConfig(remove.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "logfood", cfg.Profile)
+	assert.Equal(t, "https://adb-1.test", cfg.Host)
+	assert.Equal(t, "t", cfg.Token)
+}
+
+// TestMcpRemoveUploadIgnoresEnvironmentToken checks that the upload authenticates with the profile's own token, never with
+// a DATABRICKS_TOKEN of another workspace in the environment.
+func TestMcpRemoveUploadIgnoresEnvironmentToken(t *testing.T) {
+	home := withHome(t)
+	unsetConfigFile(t)
+	t.Setenv("DATABRICKS_TOKEN", "token-of-another-workspace")
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	claude := agents.ByName("claude-code")
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
 
 	var stdout, logs bytes.Buffer
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "genie_one_mcp-logfood", "--output", "json")
 	require.NoError(t, err)
-	require.True(t, cmdctx.HasConfigUsed(remove.Context()))
-	assert.Equal(t, "https://adb-1.test", cmdctx.ConfigUsed(remove.Context()).Host)
+	cfg, uploads := telemetry.UploadConfig(remove.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "t", cfg.Token)
 }
 
-// TestMcpRemoveOfflineResolutionWarnsNothing checks that an auth resolution that fails, as it does offline, leaves nothing
-// in the output: its logs are debug only.
-func TestMcpRemoveOfflineResolutionWarnsNothing(t *testing.T) {
+// TestMcpRemoveOfflineSetsUploadWithoutWarning checks that a remove that cannot reach the workspace warns nothing: the
+// upload's config is resolved without a request, so there is no failure to report.
+func TestMcpRemoveOfflineSetsUploadWithoutWarning(t *testing.T) {
 	home := withHome(t)
 	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
 	claude := agents.ByName("claude-code")
 	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
 
-	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, _ []string) error {
-		log.Warnf(cmd.Context(), "[hostmetadata] failed to fetch host metadata for https://adb-1.test")
-		return errors.New("cannot reach https://adb-1.test")
-	})
-
 	var stdout, logs bytes.Buffer
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelWarn, "--names", "genie_one_mcp-logfood", "--output", "json")
 	require.NoError(t, err)
-	assert.False(t, cmdctx.HasConfigUsed(remove.Context()))
+	_, uploads := telemetry.UploadConfig(remove.Context())
+	assert.True(t, uploads)
 	assert.Empty(t, logs.String())
 	assert.Contains(t, stdout.String(), `"removed"`)
 }
@@ -914,7 +922,6 @@ func TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved(t *testing.T) {
 	saveState(t, retired)
 	saveMCPState = func(context.Context, *mcp.State) error { return errors.New("state file is read-only") }
 	t.Cleanup(func() { saveMCPState = mcp.SaveState })
-	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error { return nil })
 
 	var stdout, logs bytes.Buffer
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelDebug, "--names", "dbsql-logfood", "--output", "json")
@@ -922,6 +929,7 @@ func TestMcpRemoveRecordOnlyReportsFailedWhenStateIsNotSaved(t *testing.T) {
 
 	events := telemetry.BufferedEvents(remove.Context())
 	require.Len(t, events, 1)
+	require.NotNil(t, events[0].AitoolsMcpEvent)
 	require.Len(t, events[0].AitoolsMcpEvent.Servers, 1)
 	assert.Equal(t, protos.AitoolsTargetOutcomeFailed, events[0].AitoolsMcpEvent.Servers[0].Outcome)
 	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, events[0].AitoolsMcpEvent.Servers[0].ErrorCategory)

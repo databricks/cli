@@ -104,8 +104,8 @@ func TestAddServerResults(t *testing.T) {
 func TestRemoveServerResult(t *testing.T) {
 	assert.Equal(t, protos.AitoolsTargetOutcomeChanged,
 		removeServerResult("system.ai.github", "claude-code", removeDeleted, nil).Outcome)
-	// An entry already gone, or changed outside this CLI, is left as it is.
-	assert.Equal(t, protos.AitoolsTargetOutcomeSkipped,
+	// A pruned entry changes the state, so it is CHANGED too. An entry changed outside this CLI is left in place: SKIPPED.
+	assert.Equal(t, protos.AitoolsTargetOutcomeChanged,
 		removeServerResult("system.ai.github", "claude-code", removePruned, nil).Outcome)
 	assert.Equal(t, protos.AitoolsTargetOutcomeSkipped,
 		removeServerResult("system.ai.github", "claude-code", removeKept, nil).Outcome)

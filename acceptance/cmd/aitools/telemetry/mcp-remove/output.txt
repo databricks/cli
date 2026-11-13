@@ -73,7 +73,7 @@
     {
       "service": "GENIE_ONE",
       "agent": "CLAUDE_CODE",
-      "outcome": "SKIPPED"
+      "outcome": "CHANGED"
     }
   ],
   "bound_profile_count": 0

@@ -60,12 +60,6 @@ func (e *BindError) Unwrap() error {
 	return e.cause
 }
 
-// NextStepsIncluded reports whether the message already names the next steps: an AUTH_FAILED message names the login
-// command for the profile. The root command does not add a second set of steps to it.
-func (e *BindError) NextStepsIncluded() bool {
-	return e.Category == BindAuthFailed
-}
-
 // Bind checks that the profile still names the host and workspace recorded for the service,
 // then authenticates with the profile's own credentials. It never reads stdin, prompts, or
 // loads a bundle. It returns the resolved config and the matching state entry, which is nil

@@ -951,12 +951,3 @@ func TestBoundUploadConfigNeverRefreshes(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEqual(t, auth.CredentialsWithoutRefresh(), session.Credentials)
 }
-
-// TestBindErrorNextStepsIncludedOnlyForAuthFailed checks that only an AUTH_FAILED message names the next steps, so root
-// adds no second set of steps to the others.
-func TestBindErrorNextStepsIncludedOnlyForAuthFailed(t *testing.T) {
-	assert.True(t, (&mcp.BindError{Category: mcp.BindAuthFailed}).NextStepsIncluded())
-	for _, category := range []mcp.BindCategory{mcp.BindProfileNotFound, mcp.BindProfileHostChanged, mcp.BindUncategorized} {
-		assert.False(t, (&mcp.BindError{Category: category}).NextStepsIncluded(), category)
-	}
-}

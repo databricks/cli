@@ -56,7 +56,6 @@ type mcpSignInAction func(ctx context.Context, errOut io.Writer, w *databricks.W
 
 // NewMcpLoginCmd returns `aitools mcp login`.
 func NewMcpLoginCmd() *cobra.Command {
-	var auth *telemetryAuth
 	cmd := &cobra.Command{
 		Use:   "login <service>",
 		Short: "Sign in to a Databricks managed MCP service with your account",
@@ -67,17 +66,14 @@ sign-in to complete. Without a browser, open the printed URL yourself.
 <service> is a full name such as system.ai.github. The profile is the one whose user signs in.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			auth.waitAtExit = true
 			return runMcpSignInCommand(cmd, args[0], mcpLogin, protos.AitoolsMcpOperationSignIn)
 		},
 	}
-	auth = withTelemetryAuth(cmd)
 	return cmd
 }
 
 // NewMcpLogoutCmd returns `aitools mcp logout`.
 func NewMcpLogoutCmd() *cobra.Command {
-	var auth *telemetryAuth
 	cmd := &cobra.Command{
 		Use:   "logout <service>",
 		Short: "Remove your sign-in to a Databricks managed MCP service",
@@ -87,11 +83,9 @@ stays in place. Running it when you are not signed in is not an error.
 <service> is a full name such as system.ai.github.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			auth.waitAtExit = true
 			return runMcpSignInCommand(cmd, args[0], mcpLogout, protos.AitoolsMcpOperationSignOut)
 		},
 	}
-	auth = withTelemetryAuth(cmd)
 	return cmd
 }
 
@@ -155,6 +149,7 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	if err != nil {
 		return err
 	}
+	setUploadConfig(ctx, profileName, configFile)
 	// A server pinned to a config file names that file in the hints, as add does.
 	pinnedFile := mcp.PinnedFile(entry, configFile)
 	w, err := profileClient(ctx, profileName, configFile, pinnedFile)
