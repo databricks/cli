@@ -12,8 +12,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// User-Agent extras of a proxied session. The SDK default already carries cli/<version>
-// and agent/<name>; these identify the proxy and the calling agent.
+// User-Agent extras of a proxied session. useragent.FromContext carries cli/<version> but not
+// agent/<name>, so Run adds that from useragent.AgentProvider. The extras identify the proxy and
+// the calling agent.
 const (
 	proxyAgentKey  = "aitools-mcp"
 	clientAgentKey = "aitools-mcp-client"

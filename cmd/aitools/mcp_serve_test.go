@@ -1,11 +1,15 @@
 package aitools
 
 import (
+	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
 	"testing"
 	"time"
 
@@ -99,13 +103,8 @@ func TestServeFailureSetsExitStatusWithoutReprinting(t *testing.T) {
 	assert.Equal(t, 2, root.ExitStatus(err))
 }
 
-func TestServeTransportHasConnectTimeout(t *testing.T) {
+func TestServeDialerHasConnectTimeout(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serveDialer().Timeout)
-
-	tr := serveTransport(&config.Config{})
-	assert.NotNil(t, tr.DialContext)
-	require.NotNil(t, tr.TLSClientConfig)
-	assert.False(t, tr.TLSClientConfig.InsecureSkipVerify)
 }
 
 func TestServeTransportSkipsTLSVerifyWhenProfileSetsIt(t *testing.T) {
@@ -114,10 +113,123 @@ func TestServeTransportSkipsTLSVerifyWhenProfileSetsIt(t *testing.T) {
 	assert.True(t, tr.TLSClientConfig.InsecureSkipVerify)
 }
 
-func TestServeTransportKeepsProfileHTTPTransportTLS(t *testing.T) {
-	base := &http.Transport{TLSClientConfig: &tls.Config{ServerName: "profile.test"}}
-	tr := serveTransport(&config.Config{HTTPTransport: base})
+func TestServeTransportVerifiesTLSByDefault(t *testing.T) {
+	tr := serveTransport(&config.Config{})
 	require.NotNil(t, tr.TLSClientConfig)
-	assert.Equal(t, "profile.test", tr.TLSClientConfig.ServerName)
-	assert.NotSame(t, base.TLSClientConfig, tr.TLSClientConfig)
+	assert.False(t, tr.TLSClientConfig.InsecureSkipVerify)
+}
+
+// A request whose own context ended (the client cancelled it, or shutdown began) fails that request only: the
+// token was not shown to be unusable.
+func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
+	cancelled := false
+	g := &refreshGuard{
+		authenticate: func(r *http.Request) error { return r.Context().Err() },
+		profile:      "logfood",
+		cancel:       func() { cancelled = true },
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	err := g.authenticateRequest((&http.Request{Header: http.Header{}}).WithContext(ctx))
+
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.NoError(t, g.failure())
+	assert.False(t, cancelled)
+}
+
+// The session DELETE at shutdown is best effort. Its auth failure is logged by the bridge, and a normal shutdown
+// exits 0.
+func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
+	cancelled := false
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error { return errors.New("refresh token expired") },
+		profile:      "logfood",
+		cancel:       func() { cancelled = true },
+	}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, "https://workspace.test/mcp", nil)
+	require.NoError(t, err)
+
+	require.Error(t, g.authenticateRequest(req))
+
+	assert.NoError(t, g.failure())
+	assert.False(t, cancelled)
+}
+
+func TestServeAgentKeepsOnlyKnownAgents(t *testing.T) {
+	assert.Equal(t, "claude-code", serveAgent(t.Context(), "claude-code"))
+	assert.Empty(t, serveAgent(t.Context(), "agent-from-a-later-release"))
+	assert.Empty(t, serveAgent(t.Context(), ""))
+}
+
+// signalHelperEnv marks the child process that TestServeSecondSignalEndsProcess starts.
+const signalHelperEnv = "AITOOLS_SERVE_SIGNAL_HELPER"
+
+// TestServeSignalHelper is the child of TestServeSecondSignalEndsProcess. It runs the signal context serve uses,
+// prints when the first signal cancels it, then stays alive as shutdown would.
+func TestServeSignalHelper(t *testing.T) {
+	if os.Getenv(signalHelperEnv) == "" {
+		t.Skip("runs only as the child of TestServeSecondSignalEndsProcess")
+	}
+	ctx, cancel := serveSignalContext(t.Context())
+	defer cancel()
+	fmt.Println("ready")
+	<-ctx.Done()
+	fmt.Println("cancelled")
+	time.Sleep(time.Minute)
+}
+
+// The first signal cancels the context and the second one ends the process. A second signal that the handler
+// swallowed during shutdown would leave the child running until the timeout.
+func TestServeSecondSignalEndsProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Process.Signal cannot send SIGINT on Windows")
+	}
+	pr, pw, err := os.Pipe()
+	require.NoError(t, err)
+	defer pr.Close()
+
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestServeSignalHelper$")
+	cmd.Env = append(os.Environ(), signalHelperEnv+"=1")
+	cmd.Stdout = pw
+	require.NoError(t, cmd.Start())
+	require.NoError(t, pw.Close())
+
+	lines := make(chan string)
+	go func() {
+		defer close(lines)
+		sc := bufio.NewScanner(pr)
+		for sc.Scan() {
+			lines <- sc.Text()
+		}
+	}()
+	waitForLine := func(want string) {
+		t.Helper()
+		for {
+			select {
+			case line, ok := <-lines:
+				require.True(t, ok, "child exited before it printed %q", want)
+				if line == want {
+					return
+				}
+			case <-time.After(20 * time.Second):
+				t.Fatalf("timed out waiting for %q", want)
+			}
+		}
+	}
+
+	waitForLine("ready")
+	require.NoError(t, cmd.Process.Signal(os.Interrupt))
+	waitForLine("cancelled")
+	require.NoError(t, cmd.Process.Signal(os.Interrupt))
+
+	exited := make(chan error, 1)
+	go func() { exited <- cmd.Wait() }()
+	select {
+	case err := <-exited:
+		require.Error(t, err, "the child exited without a signal")
+	case <-time.After(20 * time.Second):
+		_ = cmd.Process.Kill()
+		t.Fatal("the second signal did not end the process")
+	}
 }

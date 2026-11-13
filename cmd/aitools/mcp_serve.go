@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -33,18 +34,10 @@ func serveDialer() *net.Dialer {
 
 // serveTransport is the transport of the bridge's upstream requests. It starts from
 // http.DefaultTransport, so proxy use and the other timeouts stay as they are, and replaces the
-// dialer to set the connect timeout. The profile's TLS settings are honored as cmd/apps/logs.go
-// honors them.
+// dialer to set the connect timeout. The profile's InsecureSkipVerify is honored.
 func serveTransport(cfg *config.Config) *http.Transport {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.DialContext = serveDialer().DialContext
-	if base, ok := cfg.HTTPTransport.(*http.Transport); ok && base != nil {
-		tr.Proxy = base.Proxy
-		if base.TLSClientConfig != nil {
-			tr.TLSClientConfig = base.TLSClientConfig.Clone()
-		}
-		return tr
-	}
 	if cfg.InsecureSkipVerify {
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
@@ -89,9 +82,6 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if f.service == "" {
 		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
-	if f.agent != "" && agents.ByName(f.agent) == nil {
-		return fmt.Errorf("unknown agent %q", f.agent)
-	}
 
 	state, err := mcp.LoadState(cmd.Context())
 	if err != nil {
@@ -109,9 +99,8 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 
 	// The bound profile authenticates the exit-time telemetry upload.
 	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), cfg))
-	// Telemetry for the proxy start (PROXY_STARTED) is logged here by the telemetry change.
 
-	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -125,7 +114,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Config:       cfg,
 		Authenticate: refresh.authenticateRequest,
 		Profile:      profileName,
-		Agent:        f.agent,
+		Agent:        serveAgent(cmd.Context(), f.agent),
 		Transport:    serveTransport(cfg),
 	})
 	if err != nil {
@@ -135,6 +124,35 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, refreshErr)
 	}
 	return nil
+}
+
+// serveSignalContext returns a context that the first SIGINT or SIGTERM cancels. The handler is released
+// before the context reports done, so a second signal during shutdown ends the process rather than being
+// swallowed. stop releases the handler and cancels the context.
+func serveSignalContext(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-sigs:
+			signal.Stop(sigs)
+			cancel()
+		case <-ctx.Done():
+			signal.Stop(sigs)
+		}
+	}()
+	return ctx, cancel
+}
+
+// serveAgent returns the registry name of the calling agent for the User-Agent. A name this binary does
+// not know, such as an agent added by a later release, is left out and logged; the server still serves.
+func serveAgent(ctx context.Context, name string) string {
+	if name == "" || agents.ByName(name) != nil {
+		return name
+	}
+	log.Debugf(ctx, "--agent %q is not a known agent; leaving it out of the User-Agent", name)
+	return ""
 }
 
 // serveFailure prints err to stderr and returns it with the exit status that err carries: a binding
@@ -147,7 +165,9 @@ func serveFailure(cmd *cobra.Command, err error) error {
 
 // refreshGuard wraps the profile's authenticate for the bridge. A token that cannot be refreshed
 // mid-session fails that request with an error naming the profile, then stops the proxy, so the
-// command exits 2 and the next spawn re-runs the binding checks.
+// command exits 2 and the next spawn re-runs the binding checks. Two failures do not stop it: a request
+// whose own context ended, which the client cancelled or shutdown ended, and the session DELETE at
+// shutdown, which is best effort.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
@@ -162,6 +182,9 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	err := g.authenticate(r)
 	if err == nil {
 		return nil
+	}
+	if r.Context().Err() != nil || r.Method == http.MethodDelete {
+		return err
 	}
 	authErr := mcp.AuthError(g.profile, err)
 	g.mu.Lock()

@@ -23,9 +23,9 @@ Error: --profile is required
 Exit code: 1
 
 >>> cat out.stderr.txt
-Error: unknown agent "nope"
+MCP server genie_one_mcp-logfood was set up for https://other.test, but profile "logfood" now points at [DATABRICKS_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
 
-Exit code: 1
+Exit code: 2
 
 >>> cat out.stderr.txt
 Error: --output does not apply to serve: its stdout carries the MCP protocol
