@@ -32,13 +32,6 @@ var permissionResourceToObjectType = map[string]string{
 	"vector_search_endpoints": "/vector-search-endpoints/",
 }
 
-// HasObjectPermissions reports whether permissions of the given resource type are managed
-// through the permissions API.
-func HasObjectPermissions(resourceType string) bool {
-	_, ok := permissionResourceToObjectType[resourceType]
-	return ok
-}
-
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
 

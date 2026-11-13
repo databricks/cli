@@ -323,7 +323,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil, false)
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return

@@ -12,14 +12,16 @@ job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
 
 title "Add permissions remotely to resources that declare none"
-# The owner entry is managed by deploy, so it must not be written to the config.
+# The current user's owner entry is managed by deploy, so it must not be written to the config.
 $CLI permissions set jobs $job_id --json '{"access_control_list":[
   {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
   {"permission_level":"CAN_MANAGE","user_name":"viewer@example.com"},
   {"permission_level":"CAN_MANAGE_RUN","user_name":"admin@example.com"}
 ]}' > /dev/null
+# An owner transferred to another user is kept.
 $CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
-  {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"IS_OWNER","user_name":"owner@example.com"},
+  {"permission_level":"CAN_MANAGE","user_name":"'"$CURRENT_USER_NAME"'"},
   {"permission_level":"CAN_VIEW","group_name":"users"}
 ]}' > /dev/null
 
@@ -32,4 +34,27 @@ trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "Sync again: the permissions are now in the config"
+$CLI bundle config-remote-sync
+
+title "Deploy keeps the remote owner"
+$CLI bundle deploy
+trace $CLI permissions get pipelines $pipeline_id | jq -c '[.access_control_list[] | {user_name, group_name, level: .all_permissions[0].permission_level}]'
+
+title "Change a level, add and remove principals remotely"
+$CLI permissions set jobs $job_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_VIEW","user_name":"viewer@example.com"},
+  {"permission_level":"CAN_MANAGE_RUN","group_name":"data-team"}
+]}' > /dev/null
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Deploy and sync again"
+$CLI bundle deploy
 $CLI bundle config-remote-sync

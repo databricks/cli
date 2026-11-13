@@ -8,12 +8,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structdiff"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type OperationType string
@@ -147,11 +145,10 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
 		// ("resources.<type>.<name>.permissions" / ".grants"; see splitResourcePath
-		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
-		// to YAML: their fields (e.g. object_id) are server-populated with no source
-		// location, and bundle-level permissions have no per-resource YAML node at all,
-		// so resolving them would fail the whole sync. Skip them instead; only the
-		// permissions of resources that declare none are added below, as a whole.
+		// in bundle/direct/bundle_plan.go). Their fields (e.g. object_id) are
+		// server-populated with no source location, so they cannot be written back
+		// as is; permissions are added below under their parent resource instead,
+		// and grants are skipped.
 		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
@@ -160,26 +157,13 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
-					continue
-				}
-
-				fullPath := resourceKey + "." + path
-				change, err := convertChangeDesc(fullPath, changeDesc)
+				change, err := convertPlanChange(resourceKey+"."+path, changeDesc, b.Config.Presets.NamePrefix)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
-				if change.Operation == OperationSkip {
-					continue
+				if change != nil {
+					resourceChanges[path] = change
 				}
-				// The state snapshot holds real per-field values, so New != Old
-				// means the local config diverged from the last deploy and this
-				// change overwrites that pending edit.
-				if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
-					change.LocalEdit = true
-				}
-				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
-				resourceChanges[path] = change
 			}
 		}
 
@@ -190,52 +174,33 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	for resourceKey, entry := range plan.Plan {
-		permissions := unmanagedPermissions(b, resourceKey, entry)
-		if len(permissions) == 0 {
-			continue
-		}
-		value, err := normalizeValue(permissions)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
-		}
-		parentKey := strings.TrimSuffix(resourceKey, ".permissions")
-		if changes[parentKey] == nil {
-			changes[parentKey] = make(ResourceChanges)
-		}
-		changes[parentKey]["permissions"] = &ConfigChangeDesc{
-			Operation: OperationAdd,
-			Value:     value,
-		}
+	if err := addPermissionsChanges(ctx, changes, b, plan); err != nil {
+		return nil, err
 	}
 
 	return changes, nil
 }
 
-// unmanagedPermissions returns the remote permissions the plan read for a resource whose config
-// declares none (see CalculatePlan), without the owner and the current user's CAN_MANAGE:
-// FixPermissions adds those on deploy, so they do not belong in the config.
-func unmanagedPermissions(b *bundle.Bundle, resourceKey string, entry *deployplan.PlanEntry) []dresources.StatePermission {
-	remote, ok := entry.RemoteState.(*dresources.PermissionsState)
-	if !ok {
-		return nil
-	}
-	path, err := dyn.NewPathFromString(resourceKey)
-	if err != nil {
-		return nil
-	}
-	if _, err := dyn.GetByPath(b.Config.Value(), path); err == nil {
-		return nil
+// convertPlanChange converts a plan change at fullPath, returning nil when there is nothing to
+// write back.
+func convertPlanChange(fullPath string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
+	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
+		return nil, nil
 	}
 
-	currentUser := b.Config.Workspace.CurrentUser.UserName
-	var result []dresources.StatePermission
-	for _, p := range remote.EmbeddedSlice {
-		isCurrentUser := p.UserName == currentUser || p.ServicePrincipalName == currentUser
-		if p.Level == iam.PermissionLevelIsOwner || (p.Level == iam.PermissionLevelCanManage && isCurrentUser) {
-			continue
-		}
-		result = append(result, p)
+	change, err := convertChangeDesc(fullPath, changeDesc)
+	if err != nil {
+		return nil, err
 	}
-	return result
+	if change.Operation == OperationSkip {
+		return nil, nil
+	}
+	// The state snapshot holds real per-field values, so New != Old
+	// means the local config diverged from the last deploy and this
+	// change overwrites that pending edit.
+	if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+		change.LocalEdit = true
+	}
+	change.Value = stripNamePrefix(fullPath, change.Value, namePrefix)
+	return change, nil
 }

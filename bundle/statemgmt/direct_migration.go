@@ -200,7 +200,7 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 		return nil, fmt.Errorf("opening migrated state for plan check: %w", err)
 	}
 
-	return planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg, false)
+	return planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
 }
 
 // recreatedResources returns the sorted keys of resources the plan would recreate

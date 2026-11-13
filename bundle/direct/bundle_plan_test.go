@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structdiff"
@@ -795,31 +794,4 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
-}
-
-func TestUnmanagedPermissionsNodes(t *testing.T) {
-	db := &dstate.Database{State: map[string]dstate.ResourceEntry{
-		"resources.jobs.unmanaged":            {ID: "1"},
-		"resources.jobs.in_state":             {ID: "2"},
-		"resources.jobs.in_state.permissions": {ID: "/jobs/2"},
-		"resources.jobs.in_config":            {ID: "3"},
-		"resources.pipelines.unmanaged":       {ID: "4"},
-		"resources.secret_scopes.scope":       {ID: "scope"},
-		"resources.jobs.with spaces":          {ID: "5"},
-	}}
-	nodes := []string{
-		"resources.jobs.unmanaged",
-		"resources.jobs.in_state",
-		"resources.jobs.in_config",
-		"resources.jobs.in_config.permissions",
-		"resources.jobs.not_deployed",
-		"resources.pipelines.unmanaged",
-		"resources.secret_scopes.scope",
-		"resources.jobs.with spaces",
-	}
-
-	assert.Equal(t, map[string]bool{
-		"resources.jobs.unmanaged.permissions":      true,
-		"resources.pipelines.unmanaged.permissions": true,
-	}, unmanagedPermissionsNodes(nodes, db))
 }

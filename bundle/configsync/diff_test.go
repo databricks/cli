@@ -1,14 +1,14 @@
 package configsync
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/jsonloader"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -304,52 +304,79 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	assert.Contains(t, namedPerms, "description")
 }
 
-func TestExtractChangesAddsUnmanagedPermissions(t *testing.T) {
-	value, err := jsonloader.LoadJSON([]byte(`{"resources": {"jobs": {
-		"unmanaged": {"name": "unmanaged"},
-		"managed": {"name": "managed", "permissions": [{"level": "CAN_VIEW", "group_name": "users"}]}
-	}}}`), "test config")
+func TestExtractChangesDeclaredPermissions(t *testing.T) {
+	value, err := yamlloader.LoadYAML("databricks.yml", strings.NewReader(`
+resources:
+  jobs:
+    my_job:
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_VIEW
+          user_name: gone@example.com
+`))
+	require.NoError(t, err)
+	// FixPermissions adds the current user's entry, with no location.
+	value, err = dyn.Set(value, "resources.jobs.my_job.permissions", dyn.V(append(
+		value.Get("resources").Get("jobs").Get("my_job").Get("permissions").MustSequence(),
+		dyn.V(map[string]dyn.Value{"level": dyn.V("IS_OWNER"), "user_name": dyn.V("me@example.com")}),
+	)))
 	require.NoError(t, err)
 	b := &bundle.Bundle{}
 	require.NoError(t, b.Config.Mutate(func(dyn.Value) (dyn.Value, error) { return value, nil }))
-	b.Config.Workspace.CurrentUser = &config.User{User: &iam.User{UserName: "me@example.com"}}
 
-	remote := func(permissions ...dresources.StatePermission) *dresources.PermissionsState {
-		return &dresources.PermissionsState{ObjectID: "/jobs/123", EmbeddedSlice: permissions}
-	}
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
-		"resources.jobs.unmanaged": {},
-		"resources.jobs.unmanaged.permissions": {
-			Action: deployplan.Skip,
-			RemoteState: remote(
-				dresources.StatePermission{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
-				dresources.StatePermission{Level: iam.PermissionLevelCanManage, UserName: "me@example.com"},
-				dresources.StatePermission{Level: iam.PermissionLevelCanView, GroupName: "users"},
-				dresources.StatePermission{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
-			),
-		},
-		"resources.jobs.owner_only.permissions": {
-			Action:      deployplan.Skip,
-			RemoteState: remote(dresources.StatePermission{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"}),
-		},
-		"resources.jobs.managed": {},
-		"resources.jobs.managed.permissions": {
-			Action:      deployplan.Skip,
-			RemoteState: remote(dresources.StatePermission{Level: iam.PermissionLevelCanManageRun, GroupName: "admins"}),
+		"resources.jobs.my_job": {},
+		"resources.jobs.my_job.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/jobs/123"},
+			Changes: deployplan.Changes{
+				"[user_name='viewer@example.com'].level": {
+					Action: deployplan.Update, Old: "CAN_VIEW", New: "CAN_VIEW", Remote: "CAN_MANAGE",
+				},
+				"[group_name='data-team']": {
+					Action: deployplan.Update,
+					Remote: dresources.StatePermission{Level: iam.PermissionLevelCanView, GroupName: "data-team"},
+				},
+				"[user_name='gone@example.com']": {
+					Action: deployplan.Update,
+					Old:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+					New:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+				},
+				"[user_name='me@example.com'].level": {
+					Action: deployplan.Update, Old: "IS_OWNER", New: "IS_OWNER", Remote: "CAN_MANAGE",
+				},
+				"object_id": {Action: deployplan.Update, Remote: "/jobs/456"},
+			},
 		},
 	}}
 
 	changes, err := ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	assert.Equal(t, Changes{
-		"resources.jobs.unmanaged": {
-			"permissions": {
+		"resources.jobs.my_job": {
+			"permissions[user_name='viewer@example.com'].level": {Operation: OperationReplace, Value: "CAN_MANAGE"},
+			"permissions[group_name='data-team']": {
 				Operation: OperationAdd,
-				Value: []any{
-					map[string]any{"level": "CAN_VIEW", "group_name": "users"},
-					map[string]any{"level": "CAN_MANAGE", "user_name": "other@example.com"},
-				},
+				Value:     map[string]any{"level": "CAN_VIEW", "group_name": "data-team"},
 			},
+			"permissions[user_name='gone@example.com']": {Operation: OperationRemove},
 		},
 	}, changes)
+}
+
+func TestWithoutCurrentUserManage(t *testing.T) {
+	permissions := []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
+		{Level: iam.PermissionLevelCanManage, ServicePrincipalName: "me@example.com"},
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}
+
+	assert.Equal(t, []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}, withoutCurrentUserManage(permissions, "me@example.com"))
 }
