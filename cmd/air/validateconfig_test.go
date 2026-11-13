@@ -492,3 +492,33 @@ func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"base_environment":"workspace-base-environments/databricks_ai_v6","dependencies":["torch==2.3.0","numpy"]}`, string(raw))
 }
+
+func TestValidateConfigRequestCarriesContainerEnvironmentVariables(t *testing.T) {
+	cfg := baseRunConfig()
+	command := "python train.py"
+	cfg.Containers = []containerConfig{
+		{
+			Name:              "trainer",
+			Command:           &command,
+			Ranks:             []int{0},
+			UnityCatalogImage: "main.ml.trainer:v1",
+			EnvironmentVariables: &containerEnvironmentVariablesConfig{
+				Variables: map[string]string{"MODEL_NAME": "llama"},
+			},
+		},
+	}
+
+	request := validateConfigRequest(
+		t.Context(),
+		cfg,
+		"",
+		submittedContainers(cfg, "/Workspace/Users/me/run"),
+		"token",
+	)
+	task := request["task"].(map[string]any)
+	deployment := task["deployments"].([]any)[0].(map[string]any)
+	container := deployment["containers"].([]any)[0].(map[string]any)
+	assert.Equal(t, map[string]any{
+		"variables": map[string]string{"MODEL_NAME": "llama"},
+	}, container["environment_variables"])
+}

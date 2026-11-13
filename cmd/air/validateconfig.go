@@ -290,12 +290,18 @@ func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath stri
 	} else {
 		raw := make([]any, 0, len(containers))
 		for _, container := range containers {
-			raw = append(raw, map[string]any{
+			rawContainer := map[string]any{
 				"name":                     container.Name,
 				"command_path":             container.CommandPath,
 				"ranks":                    container.Ranks,
 				"unity_catalog_image_path": container.UnityCatalogImagePath,
-			})
+			}
+			if len(container.EnvironmentVariables) > 0 {
+				rawContainer["environment_variables"] = map[string]any{
+					"variables": container.EnvironmentVariables,
+				}
+			}
+			raw = append(raw, rawContainer)
 		}
 		deployment["containers"] = raw
 	}
