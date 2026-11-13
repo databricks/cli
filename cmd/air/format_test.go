@@ -357,10 +357,10 @@ func TestMaxRetriesFromDecodedRunGet(t *testing.T) {
 	display := func(run *jobs.Run, config []byte) string {
 		return maxRetriesDisplay(resolveMaxRetries(run, config))
 	}
-	// Run 915071793879841: submitted with max_retries 1, failed, retried once.
-	aiRuntime := decode(`{"run_id": 915071793879841, "run_type": "SUBMIT_RUN", "tasks": [
-		{"task_key": "t", "run_id": 996740861702356, "attempt_number": 0, "ai_runtime_task": {"experiment": "e"}},
-		{"task_key": "t", "run_id": 286970869718720, "attempt_number": 1, "ai_runtime_task": {"experiment": "e"}}]}`)
+	// Run 111111111111111: submitted with max_retries 1, failed, retried once.
+	aiRuntime := decode(`{"run_id": 111111111111111, "run_type": "SUBMIT_RUN", "tasks": [
+		{"task_key": "t", "run_id": 222222222222222, "attempt_number": 0, "ai_runtime_task": {"experiment": "e"}},
+		{"task_key": "t", "run_id": 333333333333333, "attempt_number": 1, "ai_runtime_task": {"experiment": "e"}}]}`)
 	assert.Equal(t, "1", display(aiRuntime, []byte("experiment_name: e\nmax_retries: 1\n")))
 	assert.Equal(t, "3 (CLI default)", display(aiRuntime, []byte("experiment_name: e\n")))
 
