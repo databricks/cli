@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -16,20 +17,100 @@ import (
 // of run ids from the AiTrainingService index.
 const hydrateConcurrency = 16
 
-// firstTask returns the run's first task, unwrapping a foreach sweep to the
-// iterated task, or nil when the run has no tasks.
-func firstTask(r *jobs.Run) *jobs.RunTask {
+// isAirTask reports whether a task run is an AI runtime workload: an
+// ai_runtime_task, or a legacy gen_ai_compute_task with a training script. A
+// foreach task counts when the task it iterates is one.
+func isAirTask(t *jobs.RunTask) bool {
+	if t.ForEachTask != nil {
+		inner := t.ForEachTask.Task
+		return inner.AiRuntimeTask != nil ||
+			(inner.GenAiComputeTask != nil && inner.GenAiComputeTask.TrainingScriptPath != "")
+	}
+	return t.AiRuntimeTask != nil ||
+		(t.GenAiComputeTask != nil && t.GenAiComputeTask.TrainingScriptPath != "")
+}
+
+// firstAirTaskIndex returns the index in r.Tasks of the run's first AI runtime
+// task in task order, or -1 when it has none. A job may put other tasks before
+// it (the official multi-task DAB runs a notebook prep step first), so the
+// first task is not inspected directly.
+func firstAirTaskIndex(r *jobs.Run) int {
+	for i := range r.Tasks {
+		if isAirTask(&r.Tasks[i]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// airTaskKeys returns the task keys of the run's AI runtime tasks in task
+// order, each once: a retried task appears in r.Tasks once per attempt.
+func airTaskKeys(r *jobs.Run) []string {
+	var keys []string
+	for i := range r.Tasks {
+		t := &r.Tasks[i]
+		if isAirTask(t) && !slices.Contains(keys, t.TaskKey) {
+			keys = append(keys, t.TaskKey)
+		}
+	}
+	return keys
+}
+
+// taskRun returns a copy of r narrowed to the task runs (every attempt, in
+// order) of the AI runtime task with the given key, so the display helpers,
+// which read a run's tasks, report that task alone. It returns nil when key is
+// not one of the run's AI runtime tasks.
+func taskRun(r *jobs.Run, key string) *jobs.Run {
+	if !slices.Contains(airTaskKeys(r), key) {
+		return nil
+	}
+	narrowed := *r
+	narrowed.Tasks = nil
+	for i := range r.Tasks {
+		if r.Tasks[i].TaskKey == key {
+			narrowed.Tasks = append(narrowed.Tasks, r.Tasks[i])
+		}
+	}
+	return &narrowed
+}
+
+// airWrapperTask returns the run's first AI runtime task run as the Jobs API
+// reports it (for a sweep, the foreach wrapper, which carries the state and
+// timing), or nil when the run has none.
+func airWrapperTask(r *jobs.Run) *jobs.RunTask {
+	i := firstAirTaskIndex(r)
+	if i < 0 {
+		return nil
+	}
+	return &r.Tasks[i]
+}
+
+// leadTask returns the task run whose state and timing stand for the run: its
+// first AI runtime task (for a sweep, the foreach wrapper), else, for a run
+// without one, its first task; nil when the run has no tasks.
+func leadTask(r *jobs.Run) *jobs.RunTask {
+	if t := airWrapperTask(r); t != nil {
+		return t
+	}
 	if len(r.Tasks) == 0 {
 		return nil
 	}
-	t := &r.Tasks[0]
-	if t.AiRuntimeTask != nil || t.GenAiComputeTask != nil {
-		return t
+	return &r.Tasks[0]
+}
+
+// firstTask returns the run's first AI runtime task, unwrapping a foreach sweep
+// to the iterated task. A run without one falls back to its first task, so a
+// legacy run's fields are still read; nil when the run has no tasks.
+func firstTask(r *jobs.Run) *jobs.RunTask {
+	t := leadTask(r)
+	if t == nil {
+		return nil
 	}
 	if t.ForEachTask != nil {
 		// The foreach inner task is a jobs.Task; expose the AI fields via a
 		// synthetic RunTask so callers can treat both shapes uniformly.
 		return &jobs.RunTask{
+			TaskKey:          t.TaskKey,
 			AiRuntimeTask:    t.ForEachTask.Task.AiRuntimeTask,
 			GenAiComputeTask: t.ForEachTask.Task.GenAiComputeTask,
 		}
@@ -37,20 +118,16 @@ func firstTask(r *jobs.Run) *jobs.RunTask {
 	return t
 }
 
-// isAirRun reports whether a run is an AI runtime workload: an ai_runtime_task,
-// or a legacy gen_ai_compute_task with a training script.
+// isAirRun reports whether a run is an AI runtime workload: it has an
+// ai_runtime_task, or a legacy gen_ai_compute_task with a training script.
 func isAirRun(r *jobs.Run) bool {
-	t := firstTask(r)
-	if t == nil {
-		return false
-	}
-	return t.AiRuntimeTask != nil ||
-		(t.GenAiComputeTask != nil && t.GenAiComputeTask.TrainingScriptPath != "")
+	return firstAirTaskIndex(r) >= 0
 }
 
-// isSweep reports whether the run's first task fans out into iterations.
+// isSweep reports whether the run's AI runtime task fans out into iterations.
 func isSweep(r *jobs.Run) bool {
-	return len(r.Tasks) > 0 && r.Tasks[0].ForEachTask != nil
+	t := leadTask(r)
+	return t != nil && t.ForEachTask != nil
 }
 
 // retryTasks returns the run's task runs with only the fields that pick its
@@ -96,14 +173,13 @@ func jobCompute(r *jobs.Run) (string, int) {
 }
 
 // jobTiming returns the run's start and end times (epoch ms), preferring the
-// first task's window so a run reports its task attempt rather than the wrapper.
+// AI runtime task's window so a run reports its task attempt rather than the
+// wrapper.
 func jobTiming(r *jobs.Run) (startMillis, endMillis int64) {
 	startMillis, endMillis = r.StartTime, r.EndTime
-	if len(r.Tasks) > 0 {
-		if t := r.Tasks[0]; t.StartTime > 0 {
-			startMillis = t.StartTime
-			endMillis = t.EndTime
-		}
+	if t := leadTask(r); t != nil && t.StartTime > 0 {
+		startMillis = t.StartTime
+		endMillis = t.EndTime
 	}
 	return startMillis, endMillis
 }

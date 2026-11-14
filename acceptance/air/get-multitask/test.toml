@@ -1,0 +1,84 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A multi-task job in the shape of the official DAB example (universe
+# ai-compute/dabs/examples/03_multitask_dag): a notebook prep task first, then the
+# ai_runtime_task that depends on it, plus a second ai_runtime_task. `air get`
+# must read the AI Runtime task wherever it sits, not tasks[0].
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "environments": [
+    {"environment_key": "default", "spec": {"environment_version": "5"}}
+  ],
+  "tasks": [
+    {
+      "task_key": "prep",
+      "run_id": 455,
+      "attempt_number": 0,
+      "start_time": 1700000000000,
+      "end_time": 1700000002000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "notebook_task": {"notebook_path": "/Workspace/Users/user@example.com/prep"}
+    },
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 0,
+      "start_time": 1700000002000,
+      "end_time": 1700000012000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "depends_on": [{"task_key": "prep"}],
+      "environment_key": "default",
+      "ai_runtime_task": {
+        "experiment": "air-byot-multitask-dag",
+        "deployments": [
+          {"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}
+        ]
+      }
+    },
+    {
+      "task_key": "eval",
+      "run_id": 457,
+      "attempt_number": 0,
+      "max_retries": 2,
+      "start_time": 1700000012000,
+      "end_time": 1700000020000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "depends_on": [{"task_key": "train"}],
+      "environment_key": "default",
+      "ai_runtime_task": {
+        "experiment": "/Users/user@example.com/eval-exp",
+        "deployments": [
+          {"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}
+        ]
+      }
+    }
+  ]
+}
+'''
+
+# MLflow identifiers for the deep link, fetched for the selected task's run.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "matmul-smoke"}}}
+'''

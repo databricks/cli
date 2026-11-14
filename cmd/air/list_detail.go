@@ -12,8 +12,9 @@ import (
 )
 
 // runDetailText fetches a run and renders the same styled view as `air get` into
-// a string, for the list picker's detail pane.
-func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (string, error) {
+// a string, for the list picker's detail pane. taskKey selects the AI runtime
+// task shown, as `air get --task-key` does; "" means the first.
+func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int64, taskKey string) (string, error) {
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -21,8 +22,14 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		}
 		return "", fmt.Errorf("failed to fetch run: %w", err)
 	}
+	fullRun := run
+	run, err = selectAirTask(run, taskKey)
+	if err != nil {
+		return "", err
+	}
 
 	data := buildGetData(run)
+	annotateTask(fullRun, run, &data)
 	// As in `air get`: an ai_runtime_task run keeps its experiment, accelerators
 	// and config path on the task.
 	if genAIComputeTask(run) == nil {

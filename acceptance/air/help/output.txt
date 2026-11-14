@@ -92,12 +92,18 @@ Show a run's status, configuration, and timing.
 
 JOB_RUN_ID is the job run ID returned by "databricks air run".
 
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one.
+
 Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
   -h, --help[=true|false]             help for get
       --include-config[=true|false]   Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)
+      --task-key string               Show this AI Runtime task of the run (default: the first in task order)
 
 Global Flags:
       --debug[=true|false]   enable debug logging

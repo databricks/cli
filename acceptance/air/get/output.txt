@@ -43,6 +43,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
   "ts": "[TIMESTAMP]",
   "data": {
     "run_id": "123",
+    "task_key": "train",
     "status": "SUCCESS",
     "started_at": "[TIMESTAMP]",
     "duration_seconds": 12,

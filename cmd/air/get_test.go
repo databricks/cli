@@ -428,7 +428,7 @@ func TestGetRunMLflowRetryJSON(t *testing.T) {
 	t.Run("an older retry's mlflow run names the retry", func(t *testing.T) {
 		data := getRunJSON(t, srv, "123")
 		assert.JSONEq(t, `{
-			"run_id":"123","status":"FAILED","started_at":"2023-11-14T22:13:20+00:00",
+			"run_id":"123","task_key":"train","status":"FAILED","started_at":"2023-11-14T22:13:20+00:00",
 			"duration_seconds":12,"attempt_number":2,"experiment_name":null,
 			"dashboard_url":"`+host+`/jobs/runs/123?o=9999",
 			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R0/logs",
@@ -444,7 +444,7 @@ func TestGetRunMLflowRetryJSON(t *testing.T) {
 	t.Run("the latest attempt's mlflow run has no mlflow_retry key", func(t *testing.T) {
 		data := getRunJSON(t, srv, "124")
 		assert.JSONEq(t, `{
-			"run_id":"124","status":"SUCCESS","started_at":"2023-11-14T22:13:20+00:00",
+			"run_id":"124","task_key":"train","status":"SUCCESS","started_at":"2023-11-14T22:13:20+00:00",
 			"duration_seconds":12,"attempt_number":0,"experiment_name":null,
 			"dashboard_url":"`+host+`/jobs/runs/124?o=9999",
 			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R1/logs",
@@ -539,7 +539,7 @@ func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
 	body, err := json.Marshal(failed)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
-		"run_id":"5","status":"FAILED","started_at":null,"duration_seconds":null,
+		"run_id":"5","task_key":null,"status":"FAILED","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
 		"mlflow_experiment_id":null,"mlflow_run_id":null,
 		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null,
@@ -564,7 +564,7 @@ func TestBuildGetDataWaitingForComputeStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, `{
-		"run_id":"8","status":"PENDING","started_at":null,"duration_seconds":null,
+		"run_id":"8","task_key":null,"status":"PENDING","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
 		"mlflow_experiment_id":null,"mlflow_run_id":null,
 		"est_remaining_seconds":null,"est_percent_complete":null,
@@ -842,4 +842,95 @@ func TestSweepJSON(t *testing.T) {
 	assert.JSONEq(t, `{"total":2,"succeeded":1,"failed":0,"active":1,"completed":1,"tasks":[
 		{"task_key":"t0","run_id":"10","status":"SUCCESS","experiment_name":"exp"},
 		{"task_key":"t1","run_id":"11","status":"RUNNING","experiment_name":null}]}`, string(got.Sweep))
+}
+
+func TestAiRuntimeTaskOfSkipsNonAirTasks(t *testing.T) {
+	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{
+		notebookTask("prep", 51),
+		aiRuntimeTask("train", 52, "/Users/me@example.com/exp", "GPU_1xA10", 1),
+	}}
+	task := aiRuntimeTaskOf(run)
+	require.NotNil(t, task)
+	assert.Equal(t, "/Users/me@example.com/exp", task.Experiment)
+}
+
+// multiTaskGetServer serves runs/get for a job with a notebook prep task and two
+// ai_runtime_tasks, and stubs every other request.
+func multiTaskGetServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	run := jobs.Run{
+		RunId: 5,
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess},
+		Tasks: []jobs.RunTask{
+			notebookTask("prep", 51),
+			aiRuntimeTask("train", 52, "/Users/me@example.com/exp-train", "GPU_1xA10", 1),
+			aiRuntimeTask("eval", 53, "/Users/me@example.com/exp-eval", "GPU_8xH100", 8),
+		},
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
+			_ = json.NewEncoder(w).Encode(run)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func runGetJSONTask(t *testing.T, w *databricks.WorkspaceClient, taskKey string) (string, error) {
+	t.Helper()
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), w)
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newGetCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+	if taskKey != "" {
+		require.NoError(t, cmd.Flags().Set("task-key", taskKey))
+	}
+	err := cmd.RunE(cmd, []string{"5"})
+	return buf.String(), err
+}
+
+func TestGetRunSelectsAirTask(t *testing.T) {
+	srv := multiTaskGetServer(t)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "67890"})
+	require.NoError(t, err)
+
+	type got struct {
+		Data struct {
+			TaskKey        *string `json:"task_key"`
+			ExperimentName *string `json:"experiment_name"`
+		} `json:"data"`
+	}
+
+	t.Run("defaults to the first AIR task, skipping the notebook", func(t *testing.T) {
+		out, err := runGetJSONTask(t, w, "")
+		require.NoError(t, err)
+		var g got
+		require.NoError(t, json.Unmarshal([]byte(out), &g))
+		require.NotNil(t, g.Data.TaskKey)
+		assert.Equal(t, "train", *g.Data.TaskKey)
+		require.NotNil(t, g.Data.ExperimentName)
+		assert.Equal(t, "exp-train", *g.Data.ExperimentName)
+	})
+
+	t.Run("--task-key selects a later AIR task", func(t *testing.T) {
+		out, err := runGetJSONTask(t, w, "eval")
+		require.NoError(t, err)
+		var g got
+		require.NoError(t, json.Unmarshal([]byte(out), &g))
+		require.NotNil(t, g.Data.TaskKey)
+		assert.Equal(t, "eval", *g.Data.TaskKey)
+		require.NotNil(t, g.Data.ExperimentName)
+		assert.Equal(t, "exp-eval", *g.Data.ExperimentName)
+	})
+
+	t.Run("--task-key must name an AIR task", func(t *testing.T) {
+		out, err := runGetJSONTask(t, w, "prep")
+		require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+		var e errorEnvelope
+		require.NoError(t, json.Unmarshal([]byte(out), &e))
+		assert.Equal(t, jsonError{Code: "INVALID_ARGS", Kind: "PERMANENT", Message: `run 5 has no AI Runtime task "prep"; its AI Runtime tasks are: train, eval`}, e.Error)
+	})
 }

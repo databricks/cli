@@ -14,6 +14,7 @@ Warn: air list: the AI Runtime run index is unavailable (failed to list training
     "runs": [
       {
         "run_id": "334747067049496",
+        "task_key": "",
         "run_name": "qwen-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",

@@ -75,6 +75,9 @@ func newPalette(r *lipgloss.Renderer) palette {
 type runView struct {
 	runID        string
 	dashboardURL string
+	// task is the selected AI runtime task's key, shown only when the run has
+	// several AI runtime tasks to tell apart.
+	task         string
 	status       string
 	submitted    string
 	retries      int
@@ -109,6 +112,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	view := runView{
 		runID:        data.RunID,
 		dashboardURL: data.DashboardURL,
+		task:         data.TaskDisplay,
 		status:       data.Status,
 		submitted:    data.SubmittedDisplay,
 		retries:      data.AttemptNumber,
@@ -162,12 +166,14 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 }
 
-// genAIComputeTask returns the run's first GenAI-compute task, or nil.
+// genAIComputeTask returns the run's first AI runtime task's GenAI-compute
+// task, or nil.
 func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	return run.Tasks[0].GenAiComputeTask
+	return t.GenAiComputeTask
 }
 
 // aiRuntimeEnvironment returns the serverless environment an ai_runtime run used,
@@ -447,12 +453,17 @@ func renderFields(p palette, colorOn bool, v runView) string {
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),
+	}
+	if v.task != "" {
+		rows = append(rows, field(p, "Task", p.n12.Render(stripControl(v.task))))
+	}
+	rows = append(rows,
 		field(p, "Status", status),
 		field(p, "Submitted", p.n12.Render(v.submitted)),
 		field(p, "Retries", p.n12.Render(strconv.Itoa(v.retries))),
 		field(p, "Max Retries", p.n12.Render(v.maxRetries)),
 		field(p, "Duration", p.n12.Render(v.duration)),
-	}
+	)
 	// Progress is shown only for a running run we could estimate; amber marks it
 	// as live, in-progress information.
 	if v.progress != "" {
