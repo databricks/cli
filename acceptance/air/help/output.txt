@@ -96,7 +96,8 @@ Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
-  -h, --help   help for get
+  -h, --help             help for get
+      --include-config   Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)
 
 Global Flags:
       --debug            enable debug logging

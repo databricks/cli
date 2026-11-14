@@ -326,19 +326,6 @@ func stripExperimentUserPrefix(name string) string {
 	return name
 }
 
-// accelerators returns a short description of the GPUs the run uses, such as
-// "8x H100", or an empty string if the run has no GPU compute attached.
-func accelerators(run *jobs.Run) string {
-	if len(run.Tasks) == 0 {
-		return ""
-	}
-	task := run.Tasks[0].GenAiComputeTask
-	if task == nil || task.Compute == nil {
-		return ""
-	}
-	return acceleratorLabel(task.Compute.GpuType, task.Compute.NumGpus)
-}
-
 // acceleratorLabel renders a GPU count and type as "8x H100", "" for none, or
 // the count alone ("8x") when the type is unrecognized.
 func acceleratorLabel(gpuType string, count int) string {
@@ -376,8 +363,8 @@ const (
 // runMaxRetries is a run's retry limit and where it came from. Limit -1 means
 // unlimited.
 type runMaxRetries struct {
-	Limit  int
-	Source maxRetriesSource
+	Limit  int              `json:"limit"`
+	Source maxRetriesSource `json:"source"`
 }
 
 // resolveMaxRetries returns the retry limit of the run's latest task, or nil

@@ -2,16 +2,18 @@ package aircmd
 
 import (
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 // asciiPalette returns a palette whose styles emit no escape codes, so render
@@ -19,6 +21,26 @@ import (
 func asciiPalette(t *testing.T) palette {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	return newPalette(r)
+}
+
+// A local HTTP server exercises the SDK export path without a live workspace.
+func configTestClient(t *testing.T, path, content string) *databricks.WorkspaceClient {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/workspace/export" {
+			assert.Equal(t, path, r.URL.Query().Get("path"))
+			assert.Equal(t, "true", r.URL.Query().Get("direct_download"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.Empty(t, body)
+			_, _ = io.WriteString(w, content)
+			return
+		}
+		_, _ = io.WriteString(w, `{}`)
+	}))
+	t.Cleanup(srv.Close)
+	return newTestWorkspaceClient(t, srv.URL)
 }
 
 func TestConfigYAML(t *testing.T) {
@@ -36,12 +58,9 @@ func TestConfigYAML(t *testing.T) {
 	})
 
 	t.Run("downloads the parameters file when there are no inline parameters", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockWorkspaceAPI().EXPECT().
-			Download(mock.Anything, "/Workspace/cfg.yaml").
-			Return(io.NopCloser(strings.NewReader("experiment_name: from-file\n")), nil)
+		w := configTestClient(t, "/Workspace/cfg.yaml", "experiment_name: from-file\n")
 		task := &jobs.GenAiComputeTask{YamlParametersFilePath: "/Workspace/cfg.yaml"}
-		got, raw := configYAML(ctx, m.WorkspaceClient, task)
+		got, raw := configYAML(ctx, w, task)
 		assert.Equal(t, "experiment_name: from-file", got)
 		assert.Equal(t, "experiment_name: from-file\n", string(raw))
 	})
@@ -57,17 +76,65 @@ func TestConfigYAML(t *testing.T) {
 	})
 }
 
+func TestDownloadConfigSizeLimit(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		size    int
+		wantNil bool
+	}{
+		{"at limit", maxConfigYAMLBytes, false},
+		{"above limit", maxConfigYAMLBytes + 1, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := configTestClient(t, "/Workspace/cfg.yaml", strings.Repeat("a", tc.size))
+			got := downloadConfig(withQuietEnrichment(t.Context()), w, "/Workspace/cfg.yaml")
+			if tc.wantNil {
+				assert.Nil(t, got)
+			} else {
+				assert.Len(t, got, tc.size)
+			}
+		})
+	}
+}
+
+type configCountingReader struct {
+	reader    io.Reader
+	bytesRead int
+}
+
+func (r *configCountingReader) Read(p []byte) (int, error) {
+	n, err := r.reader.Read(p)
+	r.bytesRead += n
+	return n, err
+}
+
+func TestDownloadConfigLimitsSDKResponseReads(t *testing.T) {
+	for _, contentType := range []string{"application/json", "application/octet-stream"} {
+		t.Run(contentType, func(t *testing.T) {
+			body := &configCountingReader{reader: strings.NewReader(strings.Repeat("x", 4*maxConfigYAMLBytes))}
+			// The transport simulates a large workspace export without a live service.
+			transport := validationRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+				if req.URL.Path != "/api/2.0/workspace/export" {
+					return &http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(`{}`)), Request: req}, nil
+				}
+				return &http.Response{StatusCode: http.StatusOK, Header: http.Header{"Content-Type": []string{contentType}}, Body: io.NopCloser(body), Request: req}, nil
+			})
+			w := validationTestWorkspaceClientWithTransport(t, transport)
+			got := downloadConfig(withQuietEnrichment(t.Context()), w, "/Workspace/cfg.yaml")
+			assert.Nil(t, got)
+			assert.LessOrEqual(t, body.bytesRead, maxConfigYAMLBytes+1)
+		})
+	}
+}
+
 func TestResolveConfigYAML(t *testing.T) {
 	ctx := t.Context()
 
 	t.Run("downloads the training config path for new runs", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockWorkspaceAPI().EXPECT().
-			Download(mock.Anything, "/Workspace/run/training_config.yaml").
-			Return(io.NopCloser(strings.NewReader("experiment_name: from-air\n")), nil)
+		w := configTestClient(t, "/Workspace/run/training_config.yaml", "experiment_name: from-air\n")
 		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
 		data := &getData{TrainingConfigPath: "/Workspace/run/training_config.yaml"}
-		got, raw := resolveConfigYAML(ctx, m.WorkspaceClient, run, data)
+		got, raw := resolveConfigYAML(ctx, w, run, data)
 		assert.Equal(t, "experiment_name: from-air", got)
 		assert.Equal(t, "experiment_name: from-air\n", string(raw))
 	})
