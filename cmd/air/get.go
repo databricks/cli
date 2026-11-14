@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
@@ -23,7 +24,10 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID             string  `json:"run_id"`
+	RunID string `json:"run_id"`
+	// TaskKey is the AI runtime task shown (see selectAirTask), or null for a
+	// run without one.
+	TaskKey           *string `json:"task_key"`
 	Status            string  `json:"status"`
 	StartedAt         *string `json:"started_at"`
 	DurationSeconds   *int64  `json:"duration_seconds"`
@@ -46,6 +50,9 @@ type getData struct {
 	// missing. The styled single-run renderer (render.go) consumes them; the
 	// Run ID, Status, and MLflow Run cells it draws are styled and hyperlinked
 	// there rather than stored here.
+	// TaskDisplay is the "Task" cell, set only when the run has several AI
+	// runtime tasks, so the view says which one it shows.
+	TaskDisplay         string `json:"-"`
 	SubmittedDisplay    string `json:"-"`
 	DurationDisplay     string `json:"-"`
 	ExperimentDisplay   string `json:"-"`
@@ -119,17 +126,25 @@ func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err err
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
+	var taskKey string
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Show a run's status, configuration, and timing",
 		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".
+
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one.`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},
 	}
+
+	cmd.Flags().StringVar(&taskKey, "task-key", "", "Show this AI Runtime task of the run (default: the first in task order)")
 
 	// Resolve and authenticate the workspace client up front so an auth failure
 	// fails fast here, before any run status or config is fetched or printed.
@@ -167,6 +182,14 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 				fmt.Errorf("failed to get status for run %d: %w", runID, err))
 		}
 
+		// From here on, run holds only the selected AI runtime task's task runs,
+		// so the status, timing, MLflow and config lookups all read that task.
+		fullRun := run
+		run, err = selectAirTask(run, taskKey)
+		if err != nil {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		}
+
 		// Prefer the configured workspace ID; only look it up when it is unset.
 		id, err := auth.ResolveWorkspaceID(ctx, w)
 		if err != nil {
@@ -180,6 +203,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		}
 
 		data := buildGetData(run)
+		annotateTask(fullRun, run, &data)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
 		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
 		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
@@ -231,6 +255,43 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 	return cmd
 }
 
+// selectAirTask narrows run (see taskRun) to the AI runtime task named by key,
+// or to its first AI runtime task in task order when key is empty, so the rest
+// of the command reads that task alone. A run with no AI runtime task is
+// returned unchanged when no key is given. The error names the run's AI runtime
+// tasks when key is not one of them.
+func selectAirTask(run *jobs.Run, key string) (*jobs.Run, error) {
+	keys := airTaskKeys(run)
+	if key == "" {
+		if len(keys) == 0 {
+			return run, nil
+		}
+		key = keys[0]
+	}
+	if narrowed := taskRun(run, key); narrowed != nil {
+		return narrowed, nil
+	}
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("run %d has no AI Runtime task %q; it has no AI Runtime tasks", run.RunId, key)
+	}
+	return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))
+}
+
+// annotateTask records which AI runtime task of full the view shows: selected
+// is full narrowed to it (see selectAirTask). The text cell is set only when
+// full has several AI runtime tasks.
+func annotateTask(full, selected *jobs.Run, data *getData) {
+	t := leadTask(selected)
+	if t == nil {
+		return
+	}
+	key := t.TaskKey
+	data.TaskKey = &key
+	if len(airTaskKeys(full)) > 1 {
+		data.TaskDisplay = key
+	}
+}
+
 // enrichFromAiRuntimeTask fills the config path, experiment, and accelerators
 // from the run's ai_runtime_task. Best-effort: empty fields leave the existing
 // "N/A" fallbacks in place.
@@ -257,10 +318,11 @@ func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
 
 // aiRuntimeTaskOf returns the run's first ai_runtime_task, or nil.
 func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	return run.Tasks[0].AiRuntimeTask
+	return t.AiRuntimeTask
 }
 
 // buildGetData extracts the fields we display from a run. The text-view cells

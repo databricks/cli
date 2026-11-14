@@ -83,7 +83,7 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
-	info, err := runDetailText(ctx, w, 7)
+	info, err := runDetailText(ctx, w, 7, "")
 	require.NoError(t, err)
 	logs, err := runLogsSnapshot(ctx, w, 7)
 	require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testi
 		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
-	info, err := runDetailText(ctx, w, 7)
+	info, err := runDetailText(ctx, w, 7, "")
 	require.NoError(t, err)
 
 	// Then the list row keeps the end of the ID and the whole retry note within
@@ -177,7 +177,7 @@ func TestRunDetailTextShowsAiRuntimeTaskFields(t *testing.T) {
 	t.Cleanup(srv.Close)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	info, err := runDetailText(ctx, newTestWorkspaceClient(t, srv.URL), 7)
+	info, err := runDetailText(ctx, newTestWorkspaceClient(t, srv.URL), 7, "")
 	require.NoError(t, err)
 
 	// The pane shows what the list row and `air get` show, with the experiment
@@ -186,4 +186,33 @@ func TestRunDetailTextShowsAiRuntimeTaskFields(t *testing.T) {
 	assert.Contains(t, info, "Experiment    "+experiment)
 	assert.Contains(t, info, "Accelerators  1x A10")
 	assert.Contains(t, info, "command: python train.py")
+}
+
+func TestRunDetailTextShowsTheSelectedAirTask(t *testing.T) {
+	run := jobs.Run{RunId: 7, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}, Tasks: []jobs.RunTask{
+		notebookTask("prep", 71),
+		aiRuntimeTask("train", 72, "/Users/me@example.com/exp-train", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 73, "/Users/me@example.com/exp-eval", "GPU_8xH100", 8),
+	}}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
+			_ = json.NewEncoder(w).Encode(run)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	info, err := runDetailText(ctx, w, 7, "")
+	require.NoError(t, err)
+	assert.Contains(t, info, "Experiment    exp-train", "the default is the first AIR task, not the notebook")
+	assert.Contains(t, info, "Task          train")
+
+	info, err = runDetailText(ctx, w, 7, "eval")
+	require.NoError(t, err)
+	assert.Contains(t, info, "Experiment    exp-eval")
+	assert.Contains(t, info, "Accelerators  8x H100")
+	assert.Contains(t, info, "Task          eval")
 }

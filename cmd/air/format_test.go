@@ -306,3 +306,18 @@ func TestTerminationReason(t *testing.T) {
 	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateSuccess, StateMessage: "done"}}))
 	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "cancelled"}}))
 }
+
+func TestLegacyExperimentAndAcceleratorsSkipNonAirTasks(t *testing.T) {
+	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{
+		notebookTask("prep", 51),
+		{TaskKey: "train", RunId: 52, GenAiComputeTask: &jobs.GenAiComputeTask{
+			TrainingScriptPath:   "/train.py",
+			MlflowExperimentName: "/Users/me@example.com/legacy-exp",
+			Compute:              &jobs.ComputeConfig{GpuType: "H100", NumGpus: 8},
+		}},
+	}}
+	name := experimentName(run)
+	require.NotNil(t, name)
+	assert.Equal(t, "legacy-exp", *name)
+	assert.Equal(t, "8x H100", accelerators(run))
+}

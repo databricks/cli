@@ -106,6 +106,9 @@ all active runs submitted by the current user.
 					fmt.Errorf("failed to list active runs: %w", err))
 			}
 
+			// A job with several AI runtime tasks lists one row per task; the
+			// run is cancelled (and previewed) once.
+			rows = firstRowPerRun(rows)
 			runIDs = make([]string, 0, len(rows))
 			for i := range rows {
 				if rows[i].RunID != "" {
@@ -213,6 +216,20 @@ func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string, s
 	}
 	_, err = w.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
 	return err
+}
+
+// firstRowPerRun keeps the first row of each run id, in order.
+func firstRowPerRun(rows []listRow) []listRow {
+	seen := make(map[string]bool, len(rows))
+	unique := make([]listRow, 0, len(rows))
+	for _, row := range rows {
+		if seen[row.RunID] {
+			continue
+		}
+		seen[row.RunID] = true
+		unique = append(unique, row)
+	}
+	return unique
 }
 
 // displayCancelPreview shows the runs that `cancel --all` is about to terminate.

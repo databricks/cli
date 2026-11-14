@@ -37,7 +37,10 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID           string  `json:"run_id"`
+	RunID string `json:"run_id"`
+	// TaskKey names the AI runtime task the row shows. A job with several AI
+	// runtime tasks has one row per task, all with the same RunID.
+	TaskKey         string  `json:"task_key"`
 	RunName         string  `json:"run_name"`
 	User            string  `json:"user"`
 	Status          string  `json:"status"`
@@ -68,6 +71,7 @@ type listRow struct {
 type listedRun struct {
 	row      listRow
 	runID    int64
+	taskKey  string
 	tasks    []jobs.RunTask // see retryTasks
 	terminal bool
 }
@@ -347,10 +351,12 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
 			continue
 		}
-		if !s.filters.matches(run) {
-			continue
+		// One row per AI runtime task, each filtered on its own task.
+		for _, e := range buildListRows(run, s.host, s.workspaceID) {
+			if s.filters.matchesFields(e.fields) {
+				entries = append(entries, e.entry)
+			}
 		}
-		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, tasks: retryTasks(run), terminal: isTerminal(run)})
 	}
 	return entries, nil
 }

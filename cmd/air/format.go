@@ -119,10 +119,11 @@ func runWaitingForCompute(run *jobs.Run) bool {
 	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
 		return true
 	}
-	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
+	task := leadTask(run)
+	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || task == nil || task.State == nil {
 		return false
 	}
-	switch run.Tasks[0].State.LifeCycleState {
+	switch task.State.LifeCycleState {
 	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
 		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
 		return true
@@ -156,8 +157,8 @@ func terminationReason(run *jobs.Run) *string {
 			return &message
 		}
 	}
-	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
-		if message := strings.TrimSpace(run.Tasks[0].State.StateMessage); message != "" {
+	if task := leadTask(run); task != nil && task.State != nil {
+		if message := strings.TrimSpace(task.State.StateMessage); message != "" {
 			return &message
 		}
 	}
@@ -299,10 +300,11 @@ func latestAttemptNumber(run *jobs.Run) int {
 // "/Users/me@example.com/my-experiment"); we strip that prefix so users see just
 // the experiment name they chose.
 func experimentName(run *jobs.Run) *string {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	task := run.Tasks[0].GenAiComputeTask
+	task := t.GenAiComputeTask
 	if task == nil || task.MlflowExperimentName == "" {
 		return nil
 	}
@@ -328,10 +330,11 @@ func stripExperimentUserPrefix(name string) string {
 // accelerators returns a short description of the GPUs the run uses, such as
 // "8x H100", or an empty string if the run has no GPU compute attached.
 func accelerators(run *jobs.Run) string {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return ""
 	}
-	task := run.Tasks[0].GenAiComputeTask
+	task := t.GenAiComputeTask
 	if task == nil || task.Compute == nil {
 		return ""
 	}

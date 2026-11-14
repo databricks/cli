@@ -285,7 +285,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Run Details"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunDetail(runID)
+				return m, m.fetchRunDetail(runID, m.rows[m.cursor].TaskKey)
 			}
 		case "L", "l":
 			// Open the logs snapshot pane; the fetch fills it in.
@@ -375,12 +375,13 @@ func (m listModel) renderHint() string {
 	return faint.Render(hint)
 }
 
-// fetchRunDetail returns a tea.Cmd that fetches run details in the background.
-func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
+// fetchRunDetail returns a tea.Cmd that fetches the details of the run's task
+// in the background.
+func (m listModel) fetchRunDetail(runID int64, taskKey string) tea.Cmd {
 	ctx := m.fetcher.ctx
 	w := m.fetcher.w
 	return func() tea.Msg {
-		body, err := runDetailText(ctx, w, runID)
+		body, err := runDetailText(ctx, w, runID, taskKey)
 		if err != nil {
 			return detailMsg{title: "Run Details", err: err}
 		}
