@@ -1,0 +1,3 @@
+trace musterr $CLI sync
+trace musterr $CLI sync foo
+trace musterr $CLI sync foo bar qux

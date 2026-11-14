@@ -1,30 +1,27 @@
 package bundle
 
 import (
+	"io"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// newTestSyncCommand attaches the sync command to a root command so the root persistent flags resolve.
-func newTestSyncCommand(t *testing.T) *cobra.Command {
-	syncCmd := newSyncCommand()
-	root.New(t.Context()).AddCommand(syncCmd)
-	return syncCmd
-}
-
-func TestBundleSyncShorthandFlags(t *testing.T) {
-	cmd := newTestSyncCommand(t)
-	require.NoError(t, cmd.ParseFlags([]string{"-o", "json", "-p", "myprofile"}))
-	assert.Equal(t, flags.OutputJSON, root.OutputType(cmd))
-	assert.Equal(t, "myprofile", cmd.Flag("profile").Value.String())
+// Flags that bundle sync defines with the names or shorthands of the root's
+// --output and --profile flags would shadow them.
+func TestBundleSyncDoesNotShadowRootFlags(t *testing.T) {
+	cmd := newSyncCommand()
+	for _, name := range []string{"output", "profile"} {
+		assert.Nil(t, cmd.LocalFlags().Lookup(name), name)
+	}
+	for _, shorthand := range []string{"o", "p"} {
+		assert.Nil(t, cmd.LocalFlags().ShorthandLookup(shorthand), shorthand)
+	}
 }
 
 func TestBundleSyncInstallsOutputHandler(t *testing.T) {
@@ -46,19 +43,9 @@ func TestBundleSyncInstallsOutputHandler(t *testing.T) {
 
 	f := syncFlags{}
 
-	// bundle sync defaults to text output, matching the standalone sync command:
-	// the root --output flag resolves to text when unset, so a handler is installed.
-	cmd := newTestSyncCommand(t)
-	cmd.SetContext(t.Context())
-	require.NoError(t, cmd.ParseFlags(nil))
-	opts, err := f.syncOptionsFromBundle(cmd, b)
-	require.NoError(t, err)
-	assert.NotNil(t, opts.OutputHandler)
-
-	cmd = newTestSyncCommand(t)
-	cmd.SetContext(t.Context())
-	require.NoError(t, cmd.ParseFlags([]string{"-o", "json"}))
-	opts, err = f.syncOptionsFromBundle(cmd, b)
-	require.NoError(t, err)
-	assert.NotNil(t, opts.OutputHandler)
+	for _, output := range []flags.Output{flags.OutputText, flags.OutputJSON} {
+		opts, err := f.syncOptionsFromBundle(t.Context(), output, io.Discard, b)
+		require.NoError(t, err)
+		assert.NotNil(t, opts.OutputHandler, output)
+	}
 }
