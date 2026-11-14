@@ -1,0 +1,1 @@
+* `air convert-to-dabs` now explains the `--output-dir` workaround when `code_source.root_path` resolves to the bundle root, and notes when the generated job carries the default `max_retries`. ([#7579](https://github.com/databricks/cli/pull/7579))

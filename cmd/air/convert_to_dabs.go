@@ -103,6 +103,10 @@ does not contact the workspace.`,
 		}
 
 		printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
+		if note := retryDefaultsNote(cfg); note != "" {
+			cmdio.LogString(ctx, "")
+			cmdio.LogString(ctx, note)
+		}
 		return nil
 	}
 
@@ -203,10 +207,16 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// A code dir that resolves to the bundle root has no basename to nest under: the
 	// archive would sit directly at /databricks/code_source (no <dir>), and an include
 	// rooted at "." would also sweep the bundle's own generated files (databricks.yml,
-	// generated_artifacts/, the output tarball) into it. Reject rather than emit that;
-	// the user should point root_path at a subdirectory.
+	// generated_artifacts/, the output tarball) into it. Reject rather than emit that.
 	if codeDirRel == "." {
-		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot package code there (no code directory to nest under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
+		remedy := "move the code into a subdirectory (for example ./src) and point root_path at it"
+		// A bundle rooted at the parent only works for a working-tree snapshot: a git
+		// snapshot is archived from the bundle root, which would then sit outside the
+		// repository (or inside an unrelated one).
+		if snap.Git == nil {
+			remedy += ", or pass --output-dir with a dedicated parent directory that contains the code directory"
+		}
+		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root, so there is no code directory to nest under %s/<dir>; %s", snap.RootPath, runtimeCodeSourceRoot, remedy)
 	}
 	dirName := path.Base(codeDirRel)
 	art := &codeArtifact{
@@ -558,8 +568,8 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	// Refuse to clobber an existing file, with one consistent message. A user
 	// re-running convert into the same dir gets a clear error rather than a silent
 	// overwrite of edits they may have made. The hint names --force rather than
-	// --output-dir: the code_source must live inside the bundle dir, so redirecting
-	// the output usually isn't a usable escape hatch for an in-place conversion.
+	// --output-dir: a re-run is replacing a bundle that already sits where the
+	// code_source needs it, so writing a second copy elsewhere isn't what the user wants.
 	artifactDir := filepath.Join(dir, generatedArtifactsDir)
 	if err := os.MkdirAll(artifactDir, 0o700); err != nil {
 		return nil, err
@@ -645,6 +655,16 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	cmdio.LogString(ctx, "persistent job that is not garbage-collected. When you are done, remove the")
 	cmdio.LogString(ctx, "job and its uploaded files with:")
 	cmdio.LogString(ctx, "  "+self+" bundle destroy")
+}
+
+// retryDefaultsNote explains retry settings the bundle carries but the YAML omits:
+// `air run` applies them implicitly, so written down they look invented by the
+// conversion. Returns "" when the YAML sets max_retries.
+func retryDefaultsNote(cfg *runConfig) string {
+	if cfg.MaxRetries != nil {
+		return ""
+	}
+	return fmt.Sprintf("Note: the YAML does not set max_retries, so the job uses the `air run` default\n(max_retries: %d, retry_on_timeout: %t). Edit databricks.yml to change it.", defaultMaxRetries, defaultMaxRetries > 0)
 }
 
 // cliInvocation is how the user should spell this binary in a follow-up command.
