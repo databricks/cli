@@ -1,6 +1,8 @@
 package aircmd
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -494,4 +496,319 @@ func TestStaticListTableIgnoresTerminalWidth(t *testing.T) {
 	assert.Equal(t, computeListCols(wideListRows()).tableWidth(), ansi.StringWidth(lines[0]))
 	// The one-shot table still cuts a long Experiment at its end.
 	assert.Contains(t, lines[1], " /Users/someone.longname@example.com… ")
+}
+
+func TestLayoutListCols(t *testing.T) {
+	rows := wideListRows()
+	natural := computeListCols(rows)
+	require.Equal(t, 134, natural.fitWidth(134).tableWidth())
+
+	tests := []struct {
+		name           string
+		width          int
+		wantExperiment int
+		wantUser       int
+		wantCompact    bool
+		wantHidden     []string
+		wantOverflow   bool
+	}{
+		{name: "unknown width keeps natural columns", width: 0, wantExperiment: columnCap, wantUser: columnCap},
+		// Even at the floors the full table is 134 cells, so the compact tier
+		// applies and its 17 spare cells go back to Experiment and User.
+		{name: "133 compacts Started and MLflow", width: 133, wantExperiment: 18, wantUser: 19, wantCompact: true},
+		{name: "120 compacts and shows every column", width: 120, wantExperiment: 12, wantUser: 12, wantCompact: true},
+		// Hiding Accelerators alone leaves 102 cells, so User goes too and
+		// Experiment widens into the freed space.
+		{name: "100 hides Accelerators and User", width: 100, wantExperiment: 20, wantUser: 0, wantCompact: true, wantHidden: []string{"User", "Accelerators"}},
+		{name: "80 hides MLflow as well", width: 80, wantExperiment: 14, wantUser: 0, wantCompact: true, wantHidden: []string{"MLflow", "User", "Accelerators"}},
+		// With every hideable column gone the table is 66 cells, so it still
+		// overflows and the floors hold.
+		{name: "60 hides Progress and still overflows", width: 60, wantExperiment: experimentMinWidth, wantUser: 0, wantCompact: true, wantHidden: []string{"Progress", "MLflow", "User", "Accelerators"}, wantOverflow: true},
+		{name: "160 is unchanged from today", width: 160, wantExperiment: 23, wantUser: 23},
+		{name: "200 is unchanged from today", width: 200, wantExperiment: columnCap, wantUser: columnCap},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := layoutListCols(rows, tt.width)
+			assert.Equal(t, tt.wantExperiment, got.experiment)
+			if got.shown(columnUser) {
+				assert.Equal(t, tt.wantUser, got.user)
+			} else {
+				assert.Equal(t, 0, tt.wantUser, "User hidden but a width was expected")
+			}
+			assert.Equal(t, tt.wantCompact, got.compactStarted)
+			assert.Equal(t, tt.wantHidden, got.hiddenNames())
+			switch {
+			case tt.wantOverflow:
+				assert.Greater(t, got.tableWidth(), tt.width)
+			case tt.width > 0:
+				assert.LessOrEqual(t, got.tableWidth(), tt.width)
+			}
+			if tt.wantCompact {
+				assert.Equal(t, 11, got.started)
+				assert.Equal(t, len("qwen-run-001"), got.mlflow, "MLflow is sized to its widest label")
+			} else {
+				// A terminal that fits today's table gets today's layout.
+				assert.Equal(t, natural.fitWidth(tt.width), got)
+				assert.Equal(t, mlflowColWidth, got.mlflow)
+			}
+		})
+	}
+}
+
+// fullLabelListRows is wideListRows with MLflow labels at mlflowColWidth, the
+// widest list.go produces and the usual case for a run named by MLflow. With
+// these labels compacting saves only the 8 cells of Started.
+func fullLabelListRows() []listRow {
+	rows := wideListRows()
+	for i := range rows {
+		if rows[i].MLflowURL != "-" {
+			rows[i].MLflowLabel = "…ne-2026-10-23-lr-3e-5"
+			if lipgloss.Width(rows[i].MLflowLabel) != mlflowColWidth {
+				panic("fixture label is not mlflowColWidth cells wide")
+			}
+		}
+	}
+	return rows
+}
+
+func TestLayoutListColsFullLabels(t *testing.T) {
+	rows := fullLabelListRows()
+	tests := []struct {
+		name           string
+		width          int
+		wantExperiment int
+		wantUser       int
+		wantHidden     []string
+	}{
+		{name: "133 compacts Started only", width: 133, wantExperiment: 13, wantUser: 14},
+		{name: "126 is the narrowest compact fit", width: 126, wantExperiment: experimentMinWidth, wantUser: userMinWidth},
+		{name: "125 hides Accelerators", width: 125, wantExperiment: 16, wantUser: 17, wantHidden: []string{"Accelerators"}},
+		{name: "120 hides Accelerators", width: 120, wantExperiment: 14, wantUser: 14, wantHidden: []string{"Accelerators"}},
+		{name: "100 hides MLflow and User too", width: 100, wantExperiment: 34, wantHidden: []string{"MLflow", "User", "Accelerators"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := layoutListCols(rows, tt.width)
+			assert.True(t, got.compactStarted)
+			assert.Equal(t, mlflowColWidth, got.mlflow)
+			assert.Equal(t, tt.wantExperiment, got.experiment)
+			if got.shown(columnUser) {
+				assert.Equal(t, tt.wantUser, got.user)
+			}
+			assert.Equal(t, tt.wantHidden, got.hiddenNames())
+			assert.LessOrEqual(t, got.tableWidth(), tt.width)
+		})
+	}
+}
+
+func TestLayoutListColsMovesOneWayAsPagesLoad(t *testing.T) {
+	// Loading more rows can only widen the natural columns, so a column that
+	// is hidden stays hidden and a compact layout stays compact.
+	rows := wideListRows()
+	for _, width := range []int{80, 100, 120, 133, 160} {
+		first := layoutListCols(rows[1:], width)
+		all := layoutListCols(rows, width)
+		assert.Equal(t, first.hidden, first.hidden&all.hidden, "width %d: a hidden column reappeared", width)
+		if first.compactStarted {
+			assert.True(t, all.compactStarted, "width %d: Started widened again", width)
+		}
+	}
+	// The sample does cross a tier: the second page hides User at 100 columns.
+	assert.Equal(t, []string{"Accelerators"}, layoutListCols(rows[1:], 100).hiddenNames())
+	assert.Equal(t, []string{"User", "Accelerators"}, layoutListCols(rows, 100).hiddenNames())
+}
+
+func TestLayoutListColsCapsMLflowAtColumnWidth(t *testing.T) {
+	// A label wider than the column (none is built that way) never widens it.
+	rows := wideListRows()
+	rows[0].MLflowLabel = strings.Repeat("x", mlflowColWidth+5)
+	assert.Equal(t, mlflowColWidth, layoutListCols(rows, 120).mlflow)
+}
+
+func TestLayoutListColsMLflowFloorIsHeader(t *testing.T) {
+	// With no MLflow links the compact column is just wide enough for its header.
+	rows := wideListRows()
+	for i := range rows {
+		rows[i].MLflowURL, rows[i].MLflowLabel = "-", "-"
+	}
+	got := layoutListCols(rows, 120)
+	assert.True(t, got.compactStarted)
+	assert.Equal(t, len("MLflow"), got.mlflow)
+}
+
+func TestStartedCompact(t *testing.T) {
+	assert.Equal(t, "-", startedCompact(listRow{}))
+	assert.Equal(t, "06-05 17:32", startedCompact(listRow{StartedAt: new("2026-06-05T17:32:39.000000+00:00")}))
+	assert.Equal(t, "2026-06", startedCompact(listRow{StartedAt: new("2026-06")}))
+	assert.Equal(t, "Mon Jan  2 15:04:05 2006", startedCompact(listRow{StartedAt: new("Mon Jan  2 15:04:05 2006")}))
+}
+
+func TestHiddenNote(t *testing.T) {
+	assert.Empty(t, hiddenNote(nil, true))
+	assert.Empty(t, hiddenNote(nil, false))
+	assert.Equal(t, "  ·  hidden: User, Accelerators", hiddenNote([]string{"User", "Accelerators"}, true))
+	assert.Equal(t, "  ·  1 column hidden", hiddenNote([]string{"Accelerators"}, false))
+	assert.Equal(t, "  ·  2 columns hidden", hiddenNote([]string{"User", "Accelerators"}, false))
+}
+
+func TestRenderHidesColumns(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	styles := newListStyles(r)
+	rows := wideListRows()
+	cols := layoutListCols(rows, 80)
+	require.Equal(t, []string{"MLflow", "User", "Accelerators"}, cols.hiddenNames())
+
+	header := styles.renderHeader(cols)
+	assert.Equal(t, cols.tableWidth(), ansi.StringWidth(header))
+	for _, name := range cols.hiddenNames() {
+		assert.NotContains(t, header, name)
+	}
+	assert.Contains(t, header, "Progress")
+
+	for _, selected := range []bool{false, true} {
+		row := styles.renderRow(cols, rows[0], selected, true)
+		assert.LessOrEqual(t, ansi.StringWidth(row), cols.tableWidth())
+		assert.Contains(t, row, "10-23 17:32")
+		assert.NotContains(t, row, "qwen-run-001")
+		assert.NotContains(t, row, "8x H100")
+		assert.NotContains(t, row, "runs/04c41514fbb0", "a hidden MLflow column carries no hyperlink")
+	}
+	assert.True(t, strings.HasPrefix(styles.renderRow(cols, rows[0], true, false), "▸"))
+}
+
+func TestListModelNarrowTerminalHidesColumns(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	f := &runFetcher{ctx: t.Context(), exhausted: true}
+	m := newListModel(r, f, wideListRows(), false)
+
+	view := func(width int) []string {
+		next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		m = next.(listModel)
+		lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+		require.Len(t, lines, 4) // header, two rows, hint
+		for _, line := range lines {
+			assert.LessOrEqual(t, ansi.StringWidth(line), width, line)
+		}
+		return lines
+	}
+
+	lines := view(80)
+	assert.NotContains(t, lines[0], "User")
+	assert.Contains(t, lines[3], "↑/↓ ←/→ ↵ i L q  ·  row 1/2  ·  hidden: MLflow, User, Accelerators")
+
+	lines = view(100)
+	assert.Contains(t, lines[0], "MLflow")
+	assert.Contains(t, lines[3], "hidden: User, Accelerators")
+
+	lines = view(120)
+	assert.Contains(t, lines[0], "Accelerators")
+	assert.Contains(t, lines[1], "10-23 17:32")
+	assert.Contains(t, lines[3], "↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit  ·  row 1/2")
+	assert.NotContains(t, lines[3], "hidden")
+
+	// Widening past today's threshold restores the full timestamp.
+	lines = view(160)
+	assert.Contains(t, lines[1], "2026-10-23T17:32:39")
+}
+
+func TestListModelHintNamesHiddenColumnsWithFullLegend(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	f := &runFetcher{ctx: t.Context(), exhausted: true}
+	m := newListModel(r, f, fullLabelListRows(), false)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = next.(listModel)
+	lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+	require.Len(t, lines, 4)
+	assert.NotContains(t, lines[0], "Accelerators")
+	assert.Contains(t, lines[0], "MLflow")
+	assert.Equal(t, hintLegend+"  ·  row 1/2  ·  hidden: Accelerators", lines[3])
+	assert.LessOrEqual(t, ansi.StringWidth(lines[3]), 120)
+}
+
+func TestListModelHintFitsNarrowTerminal(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	// Enough rows for a three-digit counter, all with wide values so every
+	// hideable column goes at the narrowest widths.
+	var rows []listRow
+	for len(rows) < 120 {
+		rows = append(rows, wideListRows()...)
+	}
+	for _, width := range []int{40, 46, 70, 75, 80, 100} {
+		for _, state := range []string{"idle", "loading", "failed"} {
+			t.Run(fmt.Sprintf("%d/%s", width, state), func(t *testing.T) {
+				f := &runFetcher{ctx: t.Context(), exhausted: true}
+				m := newListModel(r, f, rows, false)
+				next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+				m = next.(listModel)
+				switch state {
+				case "loading":
+					m.loading = true
+				case "failed":
+					m.loadErr = errors.New("boom")
+				}
+				m.cursor = len(rows) - 1
+				hint := m.renderHint()
+				assert.LessOrEqual(t, ansi.StringWidth(hint), width, hint)
+				// The row counter and paging state come first, so they survive
+				// every step down.
+				assert.Contains(t, hint, "row 120/120")
+				switch state {
+				case "loading":
+					assert.Contains(t, hint, "(loading…)")
+				case "failed":
+					assert.Contains(t, hint, "(load failed)")
+				}
+				// Only the last-resort truncation, which needs a terminal
+				// narrower than the table's own minimum, can cut the note or
+				// make the idle and loading hints differ. Otherwise the variant
+				// is chosen for the widest counter and the loading state, so it
+				// doesn't change while a page loads.
+				idle, loading := m, m
+				idle.loading, idle.loadErr = false, nil
+				loading.loading, loading.loadErr = true, nil
+				loadingHint := loading.renderHint()
+				if strings.HasSuffix(loadingHint, "…") || strings.HasSuffix(hint, "…") {
+					assert.Less(t, width, 48, hint)
+					return
+				}
+				assert.True(t, strings.Contains(hint, "hidden: ") || strings.Contains(hint, "columns hidden"), hint)
+				assert.Equal(t, idle.renderHint(), strings.Replace(loadingHint, " (loading…)", "", 1))
+			})
+		}
+	}
+}
+
+func TestListModelRelayoutsLoadedPageInNarrowTerminal(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	rows := wideListRows()
+	f := &runFetcher{ctx: t.Context(), exhausted: true}
+	m := newListModel(r, f, rows[1:], false)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	m = next.(listModel)
+	require.Equal(t, []string{"Accelerators"}, m.cols.hiddenNames())
+
+	next, _ = m.Update(moreRowsMsg{rows: rows[:1]})
+	m = next.(listModel)
+	assert.Equal(t, []string{"User", "Accelerators"}, m.cols.hiddenNames())
+	for line := range strings.SplitSeq(strings.TrimRight(m.View(), "\n"), "\n") {
+		assert.LessOrEqual(t, ansi.StringWidth(line), 100, line)
+	}
+}
+
+func TestListModelEnterOpensMLflowLogsWhenColumnHidden(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.Set(ctx, "BROWSER", "none")
+	r, _ := cmdio.NewRenderer(ctx, io.Discard)
+	f := &runFetcher{ctx: ctx, w: newTestWorkspaceClient(t, "https://x.test")}
+	m := newListModel(r, f, testListRows(), false)
+
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = next.(listModel)
+	require.False(t, m.cols.shown(columnMLflow))
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	require.NotNil(t, cmd)
+	cmd()
+	assert.Contains(t, stderr.String(), "https://h/ml/experiments/E/runs/04c41514fbb0/logs")
 }

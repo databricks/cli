@@ -190,7 +190,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-		m.cols = computeListCols(m.rows).fitWidth(m.width)
+		m.cols = layoutListCols(m.rows, m.width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
 		m.viewport.SetContent(m.wrappedDetail())
@@ -204,7 +204,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
-		m.cols = computeListCols(m.rows).fitWidth(m.width)
+		// A new page can only widen the natural columns, so the layout moves one
+		// way as pages load: a column may compact or disappear, never reappear.
+		m.cols = layoutListCols(m.rows, m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
@@ -361,18 +363,77 @@ func (m listModel) View() string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// renderHint is the faint one-line key legend, with the cursor position and the
-// paging state (loading / load failed).
+// Key legends for the hint line: the full one, and the keys alone for when the
+// full one leaves no room for the rest of the hint.
+const (
+	hintLegend      = "↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit"
+	hintLegendShort = "↑/↓ ←/→ ↵ i L q"
+)
+
+// renderHint is the faint one-line hint: the key legend, the cursor position,
+// the paging state (loading / load failed) and, in a narrow terminal, the
+// columns the layout has hidden. It must fit the terminal, or bubbletea cuts
+// off its end, so it gives up detail in steps: the legend shrinks to its keys,
+// then the hidden columns are counted instead of named, then the legend goes,
+// and as a last resort the line is truncated.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
+	hidden := m.cols.hiddenNames()
+	variants := []struct {
+		legend string
+		note   string
+	}{
+		{hintLegend, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, false)},
+		{"", hiddenNote(hidden, false)},
+	}
+	for _, v := range variants {
+		if m.width <= 0 || lipgloss.Width(m.hintText(v.legend, v.note, true)) <= m.width {
+			return faint.Render(m.hintText(v.legend, v.note, false))
+		}
+	}
+	last := variants[len(variants)-1]
+	return faint.Render(truncate(m.hintText(last.legend, last.note, false), m.width))
+}
+
+// hintText assembles the hint from its (possibly empty) legend and
+// hidden-columns note. With widest set, the row counter and paging state take
+// the widest form they have while pages load ("row N/N (loading…)"), so the
+// choice of variant doesn't change as the cursor moves or a page loads. A load
+// failure is permanent, so it is measured as is.
+func (m listModel) hintText(legend, note string, widest bool) string {
+	row, state := m.cursor+1, ""
 	switch {
 	case m.loadErr != nil:
-		hint += " (load failed)"
-	case m.loading:
-		hint += " (loading…)"
+		state = " (load failed)"
+	case widest, m.loading:
+		state = " (loading…)"
 	}
-	return faint.Render(hint)
+	if widest {
+		row = len(m.rows)
+	}
+	hint := fmt.Sprintf("row %d/%d%s%s", row, len(m.rows), state, note)
+	if legend == "" {
+		return hint
+	}
+	return legend + "  ·  " + hint
+}
+
+// hiddenNote is the hint's hidden-columns note: "" when every column is shown,
+// otherwise the hidden columns by name, or just their count when names is
+// false.
+func hiddenNote(hidden []string, names bool) string {
+	switch {
+	case len(hidden) == 0:
+		return ""
+	case names:
+		return "  ·  hidden: " + strings.Join(hidden, ", ")
+	case len(hidden) == 1:
+		return "  ·  1 column hidden"
+	default:
+		return fmt.Sprintf("  ·  %d columns hidden", len(hidden))
+	}
 }
 
 // fetchRunDetail returns a tea.Cmd that fetches run details in the background.
