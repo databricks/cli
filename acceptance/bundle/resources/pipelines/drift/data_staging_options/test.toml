@@ -1,0 +1,4 @@
+# Local only: a Lakeflow Connect pipeline needs a real UC connection object, which the
+# CI workspaces do not have. The fake server mirrors the backend by filling in
+# data_staging_options on create/update when ingestion_definition is set.
+RecordRequests = true

@@ -1,0 +1,19 @@
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Plan is a no-op: the backend-filled data_staging_options is a default, not drift"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp | jq '.plan | map_values({action, changes})'
+
+title "Redeploy is a no-op (no update call)"
+trace $CLI bundle deploy
+trace print_requests.py --sort //api/2.0/pipelines | contains.py '!"method": "PUT"' | gron.py | grep data_staging_options
+
+title "Explicitly configured data_staging_options still detects a remote change"
+explicit_id=$(read_id.py explicit_staging)
+edit_resource.py pipelines $explicit_id <<EOF
+r["ingestion_definition"]["data_staging_options"]["volume_name"] = "changed_volume"
+EOF
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp | jq '.plan | map_values({action, changes})'

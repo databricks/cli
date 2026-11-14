@@ -96,6 +96,17 @@ func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
 	if spec.Storage == "" && spec.Catalog == "" {
 		spec.Storage = "dbfs:/pipelines/" + pipelineId
 	}
+	// Lakeflow Connect fills in the staging location when it is omitted: the pipeline's
+	// destination catalog/schema plus a volume named after the pipeline id, so the config
+	// can never match it. See DataStagingOptions.VolumeName in the SDK. The volume is
+	// created in the destination catalog, so there is nothing to fill in without one.
+	if spec.IngestionDefinition != nil && spec.IngestionDefinition.DataStagingOptions == nil && spec.Catalog != "" {
+		spec.IngestionDefinition.DataStagingOptions = &pipelines.DataStagingOptions{
+			CatalogName: spec.Catalog,
+			SchemaName:  spec.Schema,
+			VolumeName:  "__databricks_ingestion_gateway_staging_data-" + pipelineId,
+		}
+	}
 }
 
 func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response {
