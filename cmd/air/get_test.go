@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -197,6 +199,66 @@ func getRunServer(t *testing.T, meCalls *atomic.Int32) *httptest.Server {
 	}))
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+// The text view's run-only lookups (the environment, via a second runs/get, and
+// the config export) must not wait for get-output. The get-output handler only
+// answers once both have arrived, so the test times out if they run after it.
+func TestGetTextOverlapsRunOnlyLookupsWithGetOutput(t *testing.T) {
+	run := jobs.Run{
+		RunId: 7,
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess},
+		Tasks: []jobs.RunTask{{
+			RunId: 70,
+			AiRuntimeTask: &jobs.AiRuntimeTask{
+				Experiment: "/Users/me@example.com/exp",
+				Deployments: []jobs.DeploymentSpec{{
+					CommandPath: "/Workspace/run/command.sh",
+					Compute:     jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xA10, AcceleratorCount: 1},
+				}},
+			},
+		}},
+	}
+	var runGets atomic.Int32
+	exported := make(chan struct{})
+	markExported := sync.OnceFunc(func() { close(exported) })
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/get":
+			runGets.Add(1)
+			_ = json.NewEncoder(w).Encode(run)
+		case "/api/2.0/workspace/export":
+			markExported()
+			_, _ = w.Write([]byte("command: python train.py\n"))
+		case "/api/2.2/jobs/runs/get-output":
+			select {
+			case <-exported:
+			case <-time.After(5 * time.Second):
+				t.Errorf("get-output answered before the config export started")
+			}
+			for deadline := time.Now().Add(5 * time.Second); runGets.Load() < 2 && time.Now().Before(deadline); {
+				time.Sleep(time.Millisecond)
+			}
+			if runGets.Load() < 2 {
+				t.Errorf("get-output answered before the environment lookup started")
+			}
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"1","mlflow_run_id":"r1"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	var out bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), w)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&out)
+
+	require.NoError(t, cmd.RunE(cmd, []string{"7"}))
+	assert.Contains(t, out.String(), "command: python train.py")
 }
 
 func runGetJSON(t *testing.T, w *databricks.WorkspaceClient) (string, error) {
