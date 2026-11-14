@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -94,6 +95,66 @@ func cachedRow(ctx context.Context, c *cache.Cache, host string, runID int64) (l
 // putRow caches a terminal run's base row and filter fields under its submit time.
 func putRow(ctx context.Context, c *cache.Cache, host string, runID int64, tasks []jobs.RunTask, submitTimeMs int64, row listRow, fields filterFields) {
 	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRunFromRow(row, tasks, fields, submitTimeMs))
+}
+
+// The Jobs scan builds its rows from runs/list on every call, so it caches only
+// the MLflow links of terminal runs, which cost a get-output and an MLflow
+// request per row. It uses its own component so its entries never stand in for
+// the index path's full rows.
+const listScanMLflowCacheComponent = "air-list-scan-mlflow-v1"
+
+// cachedMLflowLink is a terminal run's MLflow link fields, with the task runs
+// they were resolved from.
+type cachedMLflowLink struct {
+	MLflowURL     string         `json:"mlflow_url"`
+	MLflowLabel   string         `json:"mlflow_label"`
+	ExperimentURL string         `json:"experiment_url"`
+	Tasks         []jobs.RunTask `json:"tasks"`
+}
+
+func newScanMLflowCache(ctx context.Context) *cache.Cache {
+	return cache.NewCache(ctx, listScanMLflowCacheComponent, listCacheTTL, nil)
+}
+
+// applyCachedMLflowLinks fills terminal entries' MLflow fields from the cache.
+// An entry is used only while the run's task runs and attempts still match the
+// ones it was resolved from, so a run repaired after it was cached is refetched.
+func applyCachedMLflowLinks(ctx context.Context, c *cache.Cache, host string, entries []listedRun) {
+	for i := range entries {
+		if !entries[i].terminal {
+			continue
+		}
+		link, ok := cache.Get[cachedMLflowLink](ctx, c, listCacheKey{Host: host, RunID: entries[i].runID})
+		if !ok || !sameTaskRuns(link.Tasks, entries[i].tasks) {
+			continue
+		}
+		entries[i].row.MLflowURL = link.MLflowURL
+		entries[i].row.MLflowLabel = link.MLflowLabel
+		entries[i].row.ExperimentURL = link.ExperimentURL
+	}
+}
+
+// putMLflowLinks caches terminal entries that have an MLflow link.
+func putMLflowLinks(ctx context.Context, c *cache.Cache, host string, entries []listedRun) {
+	for _, e := range entries {
+		if !e.terminal || e.row.MLflowURL == "" || e.row.MLflowURL == "-" {
+			continue
+		}
+		cache.Put(ctx, c, listCacheKey{Host: host, RunID: e.runID}, cachedMLflowLink{
+			MLflowURL:     e.row.MLflowURL,
+			MLflowLabel:   e.row.MLflowLabel,
+			ExperimentURL: e.row.ExperimentURL,
+			Tasks:         e.tasks,
+		})
+	}
+}
+
+// sameTaskRuns reports whether two retryTasks lists name the same task runs and
+// attempts.
+func sameTaskRuns(a, b []jobs.RunTask) bool {
+	return slices.EqualFunc(a, b, func(x, y jobs.RunTask) bool {
+		return x.RunId == y.RunId && x.TaskKey == y.TaskKey && x.AttemptNumber == y.AttemptNumber
+	})
 }
 
 // updateCachedRow replaces the display row while preserving cache metadata.
