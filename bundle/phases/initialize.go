@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
@@ -24,6 +25,11 @@ import (
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
+
+	// Record the config before any mutator below fills in defaults. The Python
+	// mutator adds the resources Python defines.
+	b.Bitmap = bitmap.NewBuilder(bitmap.EmbeddedSchema())
+	b.Bitmap.Mark(b.Config.Value())
 
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
@@ -279,4 +285,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Executes the post_init script hook defined in the bundle configuration
 		scripts.Execute(config.ScriptPostInit),
 	)
+
+	// Variables have their final values now; record them for the fields that
+	// were set through a ${var.*} reference.
+	b.Bitmap.ResolveVariables(b.Config.Value())
 }

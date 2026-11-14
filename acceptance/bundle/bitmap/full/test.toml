@@ -1,0 +1,2 @@
+# The schema does not depend on the bundle or the DMS variant.
+EnvMatrix.DMS = []

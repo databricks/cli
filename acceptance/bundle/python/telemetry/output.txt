@@ -70,3 +70,9 @@ Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
     "schemas"
   ]
 }
+
+=== Bitmap includes resources defined in Python
+>>> uv run [UV_ARGS] -q [CLI] bundle bitmap bitmap -o text
+1 resources.pipelines
+1 resources.pipelines.*
+1 resources.pipelines.*.name

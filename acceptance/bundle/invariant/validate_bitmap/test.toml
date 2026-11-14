@@ -1,0 +1,5 @@
+# Nothing is deployed, so the local test server is enough.
+Cloud = false
+
+# Neither validate nor the bitmap uses the deployment metadata service.
+EnvMatrix.DMS = []

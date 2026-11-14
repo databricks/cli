@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -54,7 +53,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 		return false, fmt.Errorf("parsing terraform state: %w%s", err, migrationFailedHint)
 	}
 	if tfState == nil {
@@ -73,10 +72,10 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		}()
 	}
 	if hasWarnings {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
+		b.Telemetry.DirectMigrateWarnings = true
 	}
 	if err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 		return false, fmt.Errorf("converting terraform state to the direct engine: %w%s", err, migrationFailedHint)
 	}
 
@@ -84,7 +83,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	// record the recreate metric.
 	plan, err := checkPlanOnTempState(ctx, b, tempStatePath, cfg)
 	if err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
+		b.Telemetry.DirectMigratePlanError = true
 		return false, fmt.Errorf("the migrated state failed its plan check: %w%s", err, migrationFailedHint)
 	}
 
@@ -92,7 +91,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	// such a recreate is a genuine pending config change (the same one terraform would apply), and
 	// the command's approval flow gates it behind --auto-approve exactly like any other recreate.
 	if recreated := recreatedResources(plan); len(recreated) > 0 {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateRecreatePlanned, true)
+		b.Telemetry.DirectMigrateRecreatePlanned = true
 		log.Infof(ctx, "migration to the direct engine will recreate %v; the command's approval gates this", recreated)
 	}
 
@@ -168,11 +167,11 @@ func CommitMigration(ctx context.Context, b *bundle.Bundle) {
 func recordAutoMigrateSource(ctx context.Context, b *bundle.Bundle) {
 	switch {
 	case b.Config.Bundle.Engine != engine.EngineNotSet:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
+		b.Telemetry.DirectAutoMigrateViaConfig = true
 	case env.Get(ctx, engine.EnvVar) != "":
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
+		b.Telemetry.DirectAutoMigrateViaEnv = true
 	default:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
+		b.Telemetry.DirectAutoMigrateViaDefault = true
 	}
 }
 

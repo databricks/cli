@@ -15,6 +15,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
@@ -67,9 +68,11 @@ const terraformStateFilename = "terraform.tfstate"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount   int64
-	TargetCount              int64
-	DeploymentId             uuid.UUID
+	ConfigurationFileCount int64
+	TargetCount            int64
+	DeploymentId           uuid.UUID
+	// BoolValues holds bool keys that are not fields of Telemetry: the dynamic
+	// has_<task_type> keys and the local.cache.* keys written by libs/cache.
 	BoolValues               []protos.BoolMapEntry
 	ExecutionTimes           []protos.IntMapEntry
 	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
@@ -106,10 +109,6 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 			return
 		}
 	}
-	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
-}
-
-func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
@@ -230,6 +229,17 @@ type Bundle struct {
 	Cache *cache.Cache
 
 	Metrics Metrics
+
+	// Telemetry holds the boolean deploy telemetry flags; they feed both the
+	// deploy event's bool_values and the bundle bitmap.
+	Telemetry Telemetry
+
+	// Bitmap holds the config bits of the bundle bitmap: what users configure,
+	// not what the CLI derives. Initialize creates it from the loaded files with
+	// the selected target merged in, before it fills in defaults; the Python
+	// mutator adds the resources Python defines, and the end of Initialize adds
+	// the values of fields set through ${var.*} references.
+	Bitmap *bitmap.Builder
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
