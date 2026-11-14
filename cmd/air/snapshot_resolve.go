@@ -38,6 +38,20 @@ type snapshotPlan struct {
 	subtreePrefix string
 }
 
+// gitRequiredError is the error for packaging a code_source without a git binary, or
+// nil when the git-free fallback may package it. The fallback applies only to a
+// directory outside every repository with no git.* pin: packaging a repository's files
+// there would ignore its rules, so it fails early instead.
+func gitRequiredError(root string, ref *gitRef) error {
+	if ref != nil {
+		return fmt.Errorf("code_source.git is set, so packaging %s needs git on PATH; install git and retry", root)
+	}
+	if insideGitRepository(root) {
+		return fmt.Errorf("code_source at %s is in a git repository, so packaging it needs git on PATH; install git and retry", root)
+	}
+	return nil
+}
+
 // resolveSnapshotPlan decides how to package the snapshot (local-only):
 //   - git.commit  → pin the SHA (must exist locally) → git_archive.
 //   - git.branch  → the branch's local HEAD SHA → git_archive.
@@ -49,7 +63,11 @@ type snapshotPlan struct {
 // git.branch is an error: the committed HEAD wouldn't include the uncommitted changes.
 func resolveSnapshotPlan(ctx context.Context, git gitRepo, ref *gitRef, includePaths []string) (snapshotPlan, error) {
 	plan := snapshotPlan{includePaths: includePaths}
-	plan.isGitRepo = git.isRepository(ctx)
+	if gitInstalled() {
+		plan.isGitRepo = git.isRepository(ctx)
+	} else if err := gitRequiredError(git.path, ref); err != nil {
+		return snapshotPlan{}, err
+	}
 
 	// Plain-tar snapshots include working-tree changes, and commit-pinned snapshots
 	// intentionally exclude them, so neither needs a git status unless provenance
