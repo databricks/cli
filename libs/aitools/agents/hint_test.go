@@ -3,6 +3,7 @@ package agents
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -58,6 +59,22 @@ func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "installed_plugins.json"), []byte(body), 0o600))
+}
+
+// writeProjectPluginManifest writes a manifest with one project-scope install
+// covering projectPath. Marshaled, not interpolated, so Windows paths with
+// backslashes stay valid JSON.
+func writeProjectPluginManifest(t *testing.T, home, projectPath string) {
+	manifest, err := json.Marshal(map[string]any{
+		"plugins": map[string]any{
+			"databricks@m": []any{map[string]string{
+				"scope":       "project",
+				"projectPath": projectPath,
+			}},
+		},
+	})
+	require.NoError(t, err)
+	writePluginManifest(t, home, string(manifest))
 }
 
 func writeCanonicalSkill(t *testing.T, home, name string) {
@@ -242,10 +259,10 @@ func TestMaybeHint_AIRSkillDetection(t *testing.T) {
 			require.NoError(t, os.WriteFile(filepath.Join(dir, airSkillName), nil, 0o600))
 		}, true},
 		{"plugin for this project", func(t *testing.T, home, cwd string) {
-			writePluginManifest(t, home, `{"plugins":{"databricks@m":[{"scope":"project","projectPath":"`+cwd+`"}]}}`)
+			writeProjectPluginManifest(t, home, cwd)
 		}, false},
 		{"plugin for an unrelated project", func(t *testing.T, home, cwd string) {
-			writePluginManifest(t, home, `{"plugins":{"databricks@m":[{"scope":"project","projectPath":"`+t.TempDir()+`"}]}}`)
+			writeProjectPluginManifest(t, home, t.TempDir())
 		}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
