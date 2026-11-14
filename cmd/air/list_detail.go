@@ -23,6 +23,11 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 	}
 
 	data := buildGetData(run)
+	// As in `air get`: an ai_runtime_task run keeps its experiment, accelerators
+	// and config path on the task.
+	if genAIComputeTask(run) == nil {
+		enrichFromAiRuntimeTask(run, &data)
+	}
 	data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceIDForRunLink(ctx, w))
 	ids := mlflowIDs(ctx, w, run)
 	if ids != nil {
