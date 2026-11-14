@@ -706,7 +706,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_family_definition_overrides": {
                         "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
@@ -3420,7 +3420,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.",
+                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
                       }
                     },

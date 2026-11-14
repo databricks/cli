@@ -529,7 +529,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "$fields":
@@ -1973,7 +1973,7 @@ resources:
             Scope name requested by the user. Scope names are unique.
         "permissions":
           "description": |-
-            The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+            The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
           "$fields":
             "group_name":
               "description": |-
