@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/cmd/root"
@@ -386,7 +387,9 @@ func enrichRunDetails(ctx context.Context, w *databricks.WorkspaceClient, run *j
 	data.EnvironmentDisplay = orNA(version)
 	data.configBody = body
 	if len(raw) > 0 {
-		cfg := string(raw)
+		// Normalize CRLF so the machine-readable output is identical for the
+		// same config uploaded from Windows and Unix checkouts.
+		cfg := strings.ReplaceAll(string(raw), "\r\n", "\n")
 		data.Config = &cfg
 		data.ConfigSource = configSource(run, data)
 	}
