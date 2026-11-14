@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
@@ -271,9 +272,16 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	// MLflow links appear only in the text table, so the per-run get-output
 	// lookups are skipped for JSON output (which omits the column anyway).
 	if f.fetchMLflow {
+		scan, isScan := f.strategy.(*jobsScanStrategy)
+		if isScan {
+			applyCachedMLflowLinks(f.ctx, scan.mlflowCache, f.w.Config.Host, entries)
+		}
 		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, entries)
 		if s, ok := f.strategy.(*indexStrategy); ok {
 			s.cacheMLflowLinks(entries)
+		}
+		if isScan {
+			putMLflowLinks(f.ctx, scan.mlflowCache, f.w.Config.Host, entries)
 		}
 	}
 
@@ -296,6 +304,7 @@ type jobsScanStrategy struct {
 	filters     listFilters
 	host        string
 	workspaceID int64
+	mlflowCache *cache.Cache // terminal runs' MLflow links
 
 	scanned int
 }
@@ -319,6 +328,7 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 		userFilter:  q.userFilter,
 		currentUser: q.currentUser,
 		filters:     q.filters,
+		mlflowCache: newScanMLflowCache(ctx),
 		host:        w.Config.Host,
 		workspaceID: q.workspaceID,
 	}

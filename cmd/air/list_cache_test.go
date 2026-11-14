@@ -171,6 +171,72 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 	assert.Equal(t, []string{"70"}, outputRunIDs, "get-output must use the task run id")
 }
 
+func TestJobsScanCachesTerminalMLflowLinks(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// scanRun is a runs/list AIR run; one task run per attempt, newest last.
+	scanRun := func(id int64, state jobs.RunLifeCycleState, attempts ...int) jobs.BaseRun {
+		r := airBaseRun(id, "me@example.com", "GPU_1xA10", 1, "exp")
+		r.State = &jobs.RunState{LifeCycleState: state}
+		task := r.Tasks[0]
+		r.Tasks = nil
+		for _, a := range attempts {
+			task.RunId = id*10 + int64(a)
+			task.AttemptNumber = a
+			r.Tasks = append(r.Tasks, task)
+		}
+		return r
+	}
+	var runs []jobs.BaseRun
+	var outputHits, mlflowHits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/list":
+			_, _ = w.Write([]byte(runsListBody(t, "", runs...)))
+		case "/api/2.2/jobs/runs/get-output":
+			outputHits++
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"exp1","mlflow_run_id":"m-` + r.URL.Query().Get("run_id") + `"}}`))
+		case "/api/2.0/mlflow/runs/get":
+			mlflowHits++
+			_, _ = w.Write([]byte(`{"run":{"info":{"run_name":"training-run"}}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	list := func() []listRow {
+		rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+			userFilter: "me@example.com", fetchMLflow: true, limit: 10,
+		}).next(10)
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		return rows
+	}
+
+	// A terminal run's links are resolved once, then served from the cache.
+	runs = []jobs.BaseRun{scanRun(7, jobs.RunLifeCycleStateTerminated, 0)}
+	first := list()
+	assert.Equal(t, srv.URL+"/ml/experiments/exp1/runs/m-70/logs", first[0].MLflowURL)
+	assert.Equal(t, first, list())
+	assert.Equal(t, 1, outputHits)
+	assert.Equal(t, 1, mlflowHits)
+
+	// A repaired run has a new attempt, so its cached links are stale.
+	runs = []jobs.BaseRun{scanRun(7, jobs.RunLifeCycleStateTerminated, 0, 1)}
+	assert.Equal(t, srv.URL+"/ml/experiments/exp1/runs/m-71/logs", list()[0].MLflowURL)
+	assert.Equal(t, 2, outputHits)
+
+	// An active run is never served from the cache.
+	runs = []jobs.BaseRun{scanRun(8, jobs.RunLifeCycleStateRunning, 0)}
+	list()
+	list()
+	assert.Equal(t, 4, outputHits)
+
+	// The scan's entries never stand in for the index path's full rows.
+	_, _, _, ok := cachedRow(t.Context(), newListCache(t.Context()), srv.URL, 7)
+	assert.False(t, ok)
+}
+
 func TestIsTerminal(t *testing.T) {
 	assert.True(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}}))
 	assert.True(t, isTerminal(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError}}))
