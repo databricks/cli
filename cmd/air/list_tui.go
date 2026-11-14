@@ -190,7 +190,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-		m.cols = computeListCols(m.rows).fitWidth(m.width)
+		m.cols = layoutListCols(m.rows, m.width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
 		m.viewport.SetContent(m.wrappedDetail())
@@ -204,7 +204,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
-		m.cols = computeListCols(m.rows).fitWidth(m.width)
+		m.cols = layoutListCols(m.rows, m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
@@ -361,18 +361,31 @@ func (m listModel) View() string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// renderHint is the faint one-line key legend, with the cursor position and the
-// paging state (loading / load failed).
+// renderHint is the faint one-line key legend, with the cursor position, the
+// columns a narrow terminal has hidden, and the paging state (loading / load
+// failed). When the full legend and the hidden-column note don't both fit the
+// terminal, the legend shortens to its keys so the note stays visible.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
+	hint := m.hintText("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit")
+	if m.width > 0 && lipgloss.Width(hint) > m.width {
+		hint = m.hintText("↑/↓ ←/→ ↵ i L q")
+	}
+	return faint.Render(hint)
+}
+
+func (m listModel) hintText(legend string) string {
+	hint := fmt.Sprintf("%s  ·  row %d/%d", legend, m.cursor+1, len(m.rows))
+	if hidden := m.cols.hiddenNames(); len(hidden) > 0 {
+		hint += "  ·  hidden: " + strings.Join(hidden, ", ")
+	}
 	switch {
 	case m.loadErr != nil:
 		hint += " (load failed)"
 	case m.loading:
 		hint += " (loading…)"
 	}
-	return faint.Render(hint)
+	return hint
 }
 
 // fetchRunDetail returns a tea.Cmd that fetches run details in the background.
