@@ -1,0 +1,1 @@
+* A project folder after `-e` in job and pipeline environment dependencies, with optional extras such as `-e ./project[test]`, now maps to its deployed folder. Before, it failed with "unable to determine if ... is not a notebook". ([#7427](https://github.com/databricks/cli/pull/7427))

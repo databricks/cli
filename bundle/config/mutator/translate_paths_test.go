@@ -816,6 +816,54 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "https://foo@bar.test/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
+func TestTranslatePathEditableProjectFolder(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "project", "pyproject.toml"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
+
+	translate := func(ctx context.Context, dependencies ...string) (*bundle.Bundle, diag.Diagnostics) {
+		b := &bundle.Bundle{
+			SyncRootPath:   dir,
+			BundleRootPath: dir,
+			SyncRoot:       vfs.MustNew(dir),
+			Config: config.Root{
+				Workspace: config.Workspace{
+					FilePath: "/bundle",
+				},
+				Resources: config.Resources{
+					Pipelines: map[string]*resources.Pipeline{
+						"pipeline": {
+							CreatePipeline: pipelines.CreatePipeline{
+								Environment: &pipelines.PipelinesEnvironment{Dependencies: dependencies},
+							},
+						},
+					},
+				},
+			},
+		}
+		bundletest.SetLocation(b, ".", []diag.Location{{File: filepath.Join(dir, "fake.yml")}})
+		return b, bundle.ApplySeq(ctx, b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	}
+
+	ctx := t.Context()
+	b, diags := translate(ctx, "-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
+	require.NoError(t, diags.Error())
+	assert.Equal(t, []string{
+		"-e /bundle/project",
+		"-e /bundle/project[test]",
+		"-e /bundle",
+		"-e /bundle[test]",
+		"-r /bundle/requirements.txt",
+	}, b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies)
+
+	// -r takes a file, so a folder after it is still an error, also after the same folder after -e.
+	notebookErr := "unable to determine if " + filepath.Join(dir, "project") + " is not a notebook"
+	_, diags = translate(ctx, "-r ./project")
+	assert.ErrorContains(t, diags.Error(), notebookErr)
+	_, diags = translate(ctx, "-e ./project", "-r ./project")
+	assert.ErrorContains(t, diags.Error(), notebookErr)
+}
+
 func TestTranslatePathWithComplexVariables(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
