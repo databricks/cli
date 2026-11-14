@@ -1,0 +1,17 @@
+title "get (text): the first AI Runtime task, not the notebook prep task"
+trace $CLI air get 123
+
+title "get --task-key eval (text)"
+trace $CLI air get 123 --task-key eval
+
+title "get (json)"
+trace $CLI air get 123 -o json
+
+title "get --task-key eval (json)"
+trace $CLI air get 123 --task-key eval -o json
+
+title "get --task-key prep: not an AI Runtime task"
+errcode trace $CLI air get 123 --task-key prep
+
+title "get --task-key prep (json)"
+errcode trace $CLI air get 123 --task-key prep -o json

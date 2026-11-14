@@ -106,9 +106,11 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 	// The cache key excludes the filter, so a cached row is still run through the
 	// active filter; a non-matching hit is dropped, not re-fetched.
 	for _, id := range ids {
-		if row, fields, tasks, ok := cachedRow(s.ctx, s.cache, host, id); ok {
-			if s.filters.matchesFields(fields) {
-				rows = append(rows, listedRun{row: row, runID: id, tasks: tasks, terminal: true})
+		if cached, ok := cachedRows(s.ctx, s.cache, host, id); ok {
+			for _, c := range cached {
+				if s.filters.matchesFields(c.Fields) {
+					rows = append(rows, listedRun{row: c.toRow(), runID: id, taskKey: c.TaskKey, tasks: c.Tasks, terminal: true})
+				}
 			}
 			continue
 		}
@@ -120,16 +122,19 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		return nil, err
 	}
 	for _, run := range runs {
-		fields := filterFieldsFromRun(run)
-		if !s.filters.matchesFields(fields) {
-			continue
+		// One row per AI runtime task; the whole set is cached so a later lookup
+		// by run id can re-filter every task.
+		entries := buildListRows(run, s.host, s.workspaceID)
+		start, _ := jobTiming(run)
+		cached := make([]cachedRun, 0, len(entries))
+		for _, e := range entries {
+			cached = append(cached, cachedRunFromRow(e.entry.row, e.entry.tasks, e.fields, start))
+			if s.filters.matchesFields(e.fields) {
+				rows = append(rows, e.entry)
+			}
 		}
-		row := buildListRow(run, s.host, s.workspaceID)
-		tasks := retryTasks(run)
-		rows = append(rows, listedRun{row: row, runID: run.RunId, tasks: tasks, terminal: isTerminal(run)})
 		if isTerminal(run) {
-			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunId, tasks, start, row, fields)
+			putRows(s.ctx, s.cache, host, run.RunId, cached)
 		}
 	}
 
@@ -146,7 +151,7 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 func (s *indexStrategy) cacheMLflowLinks(entries []listedRun) {
 	for _, entry := range entries {
 		if entry.row.MLflowURL != "" && entry.row.MLflowURL != "-" {
-			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.row)
+			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.taskKey, entry.row)
 		}
 	}
 }

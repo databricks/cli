@@ -5,6 +5,7 @@
   "ts": "[TIMESTAMP]",
   "data": {
     "run_id": "123",
+    "task_key": "train",
     "status": "PENDING",
     "started_at": null,
     "duration_seconds": null,

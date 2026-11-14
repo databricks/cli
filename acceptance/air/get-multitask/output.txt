@@ -1,0 +1,113 @@
+
+=== get (text): the first AI Runtime task, not the notebook prep task
+
+>>> [CLI] air get 123
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Task          train                                           │
+│  Status        ● SUCCESS                                       │
+│  Submitted     2023-11-14 22:13 UTC                            │
+│  Retries       0                                               │
+│  Max Retries   0                                               │
+│  Duration      10s                                             │
+│  Experiment    air-byot-multitask-dag                          │
+│  MLflow Run    matmul-smoke                                    │
+│  User          user@example.com                                │
+│  Accelerators  1x A10                                          │
+│  Environment   5                                               │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
+
+=== get --task-key eval (text)
+
+>>> [CLI] air get 123 --task-key eval
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Task          eval                                            │
+│  Status        ● SUCCESS                                       │
+│  Submitted     2023-11-14 22:13 UTC                            │
+│  Retries       0                                               │
+│  Max Retries   2                                               │
+│  Duration      8s                                              │
+│  Experiment    eval-exp                                        │
+│  MLflow Run    matmul-smoke                                    │
+│  User          user@example.com                                │
+│  Accelerators  8x H100                                         │
+│  Environment   5                                               │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
+
+=== get (json)
+
+>>> [CLI] air get 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "task_key": "train",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 10,
+    "attempt_number": 0,
+    "experiment_name": "air-byot-multitask-dag",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null
+  }
+}
+
+=== get --task-key eval (json)
+
+>>> [CLI] air get 123 --task-key eval -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "task_key": "eval",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 8,
+    "attempt_number": 0,
+    "experiment_name": "eval-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null
+  }
+}
+
+=== get --task-key prep: not an AI Runtime task
+
+>>> [CLI] air get 123 --task-key prep
+Error: run 123 has no AI Runtime task "prep"; its AI Runtime tasks are: train, eval
+
+Exit code: 1
+
+=== get --task-key prep (json)
+
+>>> [CLI] air get 123 --task-key prep -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "run 123 has no AI Runtime task \"prep\"; its AI Runtime tasks are: train, eval",
+    "retryable": false
+  }
+}
+
+Exit code: 1
