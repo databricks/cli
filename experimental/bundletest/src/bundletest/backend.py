@@ -30,21 +30,34 @@ class RunResult:
     duration_seconds: float = 0.0  # wall-clock; only meaningful on the cloud backend
     run_id: str = ""
     error: str = ""  # failure detail when result_state == "FAILED"
+    backend: str = ""
+    resource_name: str = ""
+    task_key: str = ""
+    source_path: str = ""
 
     @property
     def succeeded(self) -> bool:
         return self.result_state == "SUCCESS"
 
 
-class JobRunFailed(Exception):
-    """A job run finished unsuccessfully and the caller did not opt out with ``check=False``.
+class JobRunFailed(AssertionError):
+    """A checked bundle job run that did not succeed."""
 
-    Raised at the handle layer (not the backends) so both tiers get it for free. Carries the
-    ``RunResult`` so a test that deliberately runs a failing job can still inspect it."""
-
-    def __init__(self, result: RunResult):
+    def __init__(self, name: str, result: RunResult):
+        detail = result.error or f"run finished in state {result.result_state}"
+        lines = [f"bundle job {name!r} failed"]
+        if result.task_key:
+            lines.append(f"  task: {result.task_key}")
+        if result.source_path:
+            lines.append(f"  source: {result.source_path}")
+        if result.backend:
+            lines.append(f"  backend: {result.backend}")
+        if result.run_id:
+            lines.append(f"  run id: {result.run_id}")
+        lines.extend((f"  error: {detail}", "  use check=False to inspect an expected failure"))
+        super().__init__("\n".join(lines))
+        self.name = name
         self.result = result
-        super().__init__(result.error or f"job run reported {result.result_state}")
 
 
 @runtime_checkable
