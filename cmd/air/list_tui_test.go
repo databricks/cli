@@ -534,10 +534,9 @@ func TestLayoutListCols(t *testing.T) {
 	}
 }
 
-// fullLabelListRows is wideListRows with MLflow labels at the full
-// mlflowColWidth, which is what list.go produces for every linked run: real
-// data never gets the short labels the other fixtures use, so compacting saves
-// only the 8 cells of Started.
+// fullLabelListRows is wideListRows with MLflow labels at mlflowColWidth, the
+// widest list.go produces and the usual case for a run named by MLflow. With
+// these labels compacting saves only the 8 cells of Started.
 func fullLabelListRows() []listRow {
 	rows := wideListRows()
 	for i := range rows {
@@ -596,6 +595,13 @@ func TestLayoutListColsMovesOneWayAsPagesLoad(t *testing.T) {
 	// The sample does cross a tier: the second page hides User at 100 columns.
 	assert.Equal(t, []string{"Accelerators"}, layoutListCols(rows[1:], 100).hiddenNames())
 	assert.Equal(t, []string{"User", "Accelerators"}, layoutListCols(rows, 100).hiddenNames())
+}
+
+func TestLayoutListColsCapsMLflowAtColumnWidth(t *testing.T) {
+	// A label wider than the column (none is built that way) never widens it.
+	rows := wideListRows()
+	rows[0].MLflowLabel = strings.Repeat("x", mlflowColWidth+5)
+	assert.Equal(t, mlflowColWidth, layoutListCols(rows, 120).mlflow)
 }
 
 func TestLayoutListColsMLflowFloorIsHeader(t *testing.T) {
@@ -706,7 +712,7 @@ func TestListModelHintFitsNarrowTerminal(t *testing.T) {
 	for len(rows) < 120 {
 		rows = append(rows, wideListRows()...)
 	}
-	for _, width := range []int{70, 75, 80, 100} {
+	for _, width := range []int{40, 46, 70, 75, 80, 100} {
 		for _, state := range []string{"idle", "loading", "failed"} {
 			t.Run(fmt.Sprintf("%d/%s", width, state), func(t *testing.T) {
 				f := &runFetcher{ctx: t.Context(), exhausted: true}
@@ -722,19 +728,30 @@ func TestListModelHintFitsNarrowTerminal(t *testing.T) {
 				m.cursor = len(rows) - 1
 				hint := m.renderHint()
 				assert.LessOrEqual(t, ansi.StringWidth(hint), width, hint)
+				// The row counter and paging state come first, so they survive
+				// every step down.
 				assert.Contains(t, hint, "row 120/120")
-				assert.True(t, strings.Contains(hint, "hidden: ") || strings.Contains(hint, "columns hidden"), hint)
 				switch state {
 				case "loading":
 					assert.Contains(t, hint, "(loading…)")
 				case "failed":
 					assert.Contains(t, hint, "(load failed)")
 				}
-				// The variant is chosen for the widest counter and the loading
-				// state, so it doesn't change while a page loads.
+				// Only the last-resort truncation, which needs a terminal
+				// narrower than the table's own minimum, can cut the note or
+				// make the idle and loading hints differ. Otherwise the variant
+				// is chosen for the widest counter and the loading state, so it
+				// doesn't change while a page loads.
 				idle, loading := m, m
-				idle.loading, loading.loading = false, true
-				assert.Equal(t, strings.Contains(idle.renderHint(), hintLegend), strings.Contains(loading.renderHint(), hintLegend))
+				idle.loading, idle.loadErr = false, nil
+				loading.loading, loading.loadErr = true, nil
+				loadingHint := loading.renderHint()
+				if strings.HasSuffix(loadingHint, "…") || strings.HasSuffix(hint, "…") {
+					assert.Less(t, width, 48, hint)
+					return
+				}
+				assert.True(t, strings.Contains(hint, "hidden: ") || strings.Contains(hint, "columns hidden"), hint)
+				assert.Equal(t, idle.renderHint(), strings.Replace(loadingHint, " (loading…)", "", 1))
 			})
 		}
 	}

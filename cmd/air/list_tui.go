@@ -374,8 +374,8 @@ const (
 // the paging state (loading / load failed) and, in a narrow terminal, the
 // columns the layout has hidden. It must fit the terminal, or bubbletea cuts
 // off its end, so it gives up detail in steps: the legend shrinks to its keys,
-// then the hidden columns are counted instead of named, and as a last resort
-// the line is truncated.
+// then the hidden columns are counted instead of named, then the legend goes,
+// and as a last resort the line is truncated.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
 	hidden := m.cols.hiddenNames()
@@ -386,6 +386,7 @@ func (m listModel) renderHint() string {
 		{hintLegend, hiddenNote(hidden, true)},
 		{hintLegendShort, hiddenNote(hidden, true)},
 		{hintLegendShort, hiddenNote(hidden, false)},
+		{"", hiddenNote(hidden, false)},
 	}
 	for _, v := range variants {
 		if m.width <= 0 || lipgloss.Width(m.hintText(v.legend, v.note, true)) <= m.width {
@@ -396,11 +397,11 @@ func (m listModel) renderHint() string {
 	return faint.Render(truncate(m.hintText(last.legend, last.note, false), m.width))
 }
 
-// hintText assembles the hint from its legend and hidden-columns note. With
-// widest set, the row counter and paging state take the widest form they have
-// while pages load ("row N/N (loading…)"), so the choice of variant doesn't
-// change as the cursor moves or a page loads. A load failure is permanent, so
-// it is measured as is.
+// hintText assembles the hint from its (possibly empty) legend and
+// hidden-columns note. With widest set, the row counter and paging state take
+// the widest form they have while pages load ("row N/N (loading…)"), so the
+// choice of variant doesn't change as the cursor moves or a page loads. A load
+// failure is permanent, so it is measured as is.
 func (m listModel) hintText(legend, note string, widest bool) string {
 	row, state := m.cursor+1, ""
 	switch {
@@ -412,7 +413,11 @@ func (m listModel) hintText(legend, note string, widest bool) string {
 	if widest {
 		row = len(m.rows)
 	}
-	return fmt.Sprintf("%s  ·  row %d/%d%s%s", legend, row, len(m.rows), state, note)
+	hint := fmt.Sprintf("row %d/%d%s%s", row, len(m.rows), state, note)
+	if legend == "" {
+		return hint
+	}
+	return legend + "  ·  " + hint
 }
 
 // hiddenNote is the hint's hidden-columns note: "" when every column is shown,
