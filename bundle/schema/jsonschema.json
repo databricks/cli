@@ -127,7 +127,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "query_text": {
                         "description": "Text of the query to be run.",
@@ -232,7 +232,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "resources": {
                         "description": "Resources for the app.",
@@ -565,7 +565,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_id": {
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
@@ -706,7 +706,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_family_definition_overrides": {
                         "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
@@ -814,7 +814,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_dashboard": {
                         "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
@@ -973,7 +973,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "retention_window_in_days": {
                         "description": "[Public Preview] The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
@@ -1261,7 +1261,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_space": {
                         "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
@@ -1356,7 +1356,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.InstancePoolPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "preloaded_docker_images": {
                         "description": "Custom Docker Image BYOC",
@@ -1519,7 +1519,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "queue": {
                         "description": "The queue settings of the job.",
@@ -1919,7 +1919,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
@@ -2000,7 +2000,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "Additional metadata for registered model.",
@@ -2167,7 +2167,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
@@ -2392,7 +2392,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
@@ -2881,7 +2881,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
                         "description": "[Beta] The major Postgres version number. The set of supported versions may vary; consult the API documentation for currently accepted values.",
@@ -3555,7 +3555,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "reyden_cluster_size_multiplier": {
                         "description": "[Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
@@ -3693,7 +3693,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
                         "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
