@@ -729,3 +729,49 @@ func TestConvertToDabsRejectsUnsupported(t *testing.T) {
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
 	})
 }
+
+// The getting-started Ray layout: the workload in ray/core snapshots its parent so it
+// can include the shared ray/ray_bootstrap.sh. The error names an --output-dir that
+// converts, and does not suggest editing a databricks.yml that was never written.
+func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
+	dir := t.TempDir()
+	recipe := filepath.Join(dir, "ray", "core")
+	require.NoError(t, os.MkdirAll(recipe, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ray", "ray_bootstrap.sh"), []byte("#!/bin/bash\n"), 0o600))
+	cfg := "experiment_name: ray-core\ncommand: bash ray_bootstrap.sh\n" +
+		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 2}\n" +
+		"code_source:\n  root_path: ..\n  include_paths: [ray_bootstrap.sh, core]\n"
+	path := filepath.Join(recipe, "workload.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, recipe)
+	require.ErrorContains(t, err, "not inside the bundle")
+	assert.Contains(t, err.Error(), "--output-dir "+dir+" ")
+	assert.NotContains(t, err.Error(), "sync.paths")
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+	inc := get(t, root, "artifacts."+codeSourceArtifactKey+".include").MustSequence()
+	require.Len(t, inc, 2)
+	assert.Equal(t, "ray/ray_bootstrap.sh", inc[0].MustString())
+	assert.Equal(t, "ray/core", inc[1].MustString())
+}
+
+// A git-pinned snapshot is archived from the bundle root, so a parent directory is
+// not offered as the bundle root.
+func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
+	outside := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
+	cfg := "experiment_name: outside\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  root_path: " + filepath.Join(outside, "src") + "\n  git:\n    commit: abc123\n"
+	path := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+	assert.NotContains(t, err.Error(), "--output-dir")
+}
