@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate -o json | jq '.resources.alerts.myalert | {display_name, file_path, query_text, custom_summary}'
+
+trace $CLI bundle deploy
+
+alert_id=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.id')
+
+add_repl "$alert_id" ALERT_ID
+
+trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state, custom_summary, query_text, warehouse_id}'
+
+title "assert that no permanent drift happens"
+trace $CLI bundle plan
+
+title "edit the .sql file and redeploy"
+cat > sql/failed_runs.sql <<SQL
+select 3
+SQL
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI alerts-v2 get-alert $alert_id | jq '{query_text}'
