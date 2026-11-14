@@ -1,10 +1,17 @@
 package configsync
 
 import (
+	"maps"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -297,4 +304,150 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
 	require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
 	assert.Contains(t, namedPerms, "description")
+}
+
+func TestExtractChangesDeclaredPermissions(t *testing.T) {
+	value, err := yamlloader.LoadYAML("databricks.yml", strings.NewReader(`
+resources:
+  jobs:
+    my_job:
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_VIEW
+          user_name: gone@example.com
+`))
+	require.NoError(t, err)
+	// FixPermissions adds the current user's entry, with no location.
+	value, err = dyn.Set(value, "resources.jobs.my_job.permissions", dyn.V(append(
+		value.Get("resources").Get("jobs").Get("my_job").Get("permissions").MustSequence(),
+		dyn.V(map[string]dyn.Value{"level": dyn.V("IS_OWNER"), "user_name": dyn.V("me@example.com")}),
+	)))
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(dyn.Value) (dyn.Value, error) { return value, nil }))
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.my_job": {},
+		"resources.jobs.my_job.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/jobs/123"},
+			Changes: deployplan.Changes{
+				"[user_name='viewer@example.com'].level": {
+					Action: deployplan.Update, Old: "CAN_VIEW", New: "CAN_VIEW", Remote: "CAN_MANAGE",
+				},
+				"[group_name='data-team']": {
+					Action: deployplan.Update,
+					Remote: dresources.StatePermission{Level: iam.PermissionLevelCanView, GroupName: "data-team"},
+				},
+				"[user_name='gone@example.com']": {
+					Action: deployplan.Update,
+					Old:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+					New:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+				},
+				"[user_name='me@example.com'].level": {
+					Action: deployplan.Update, Old: "IS_OWNER", New: "IS_OWNER", Remote: "CAN_MANAGE",
+				},
+				"object_id": {Action: deployplan.Update, Remote: "/jobs/456"},
+			},
+		},
+	}}
+
+	changes, err := ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.jobs.my_job": {
+			"permissions[user_name='viewer@example.com'].level": {Operation: OperationReplace, Value: "CAN_MANAGE"},
+			"permissions[group_name='data-team']": {
+				Operation: OperationAdd,
+				Value:     map[string]any{"level": "CAN_VIEW", "group_name": "data-team"},
+			},
+			"permissions[user_name='gone@example.com']": {Operation: OperationRemove},
+		},
+	}, changes)
+}
+
+func TestWithoutCurrentUserManage(t *testing.T) {
+	permissions := []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
+		{Level: iam.PermissionLevelCanManage, ServicePrincipalName: "me@example.com"},
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}
+
+	assert.Equal(t, []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}, withoutCurrentUserManage(permissions, "me@example.com"))
+}
+
+func TestUnmanagedPermissionsAdapters(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.Adapters = adapters
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.unmanaged":            {Action: deployplan.Skip},
+		"resources.jobs.declared":             {Action: deployplan.Skip},
+		"resources.jobs.declared.permissions": {Action: deployplan.Skip},
+		"resources.jobs.removed":              {Action: deployplan.Update},
+		"resources.jobs.removed.permissions":  {Action: deployplan.Delete},
+		"resources.jobs.not_deployed":         {Action: deployplan.Create},
+		"resources.pipelines.unmanaged":       {Action: deployplan.Skip},
+		"resources.secret_scopes.scope":       {Action: deployplan.Skip},
+		"resources.schemas.schema":            {Action: deployplan.Skip},
+		"resources.schemas.schema.grants":     {Action: deployplan.Skip},
+	}}
+
+	assert.ElementsMatch(t,
+		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.pipelines.unmanaged"},
+		slices.Collect(maps.Keys(unmanagedPermissionsAdapters(b, plan))),
+	)
+}
+
+func TestLookupDeployedFieldReadsRemoteState(t *testing.T) {
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.RemoteStateCache.Store("resources.model_serving_endpoints.my_endpoint",
+		&dresources.ModelServingEndpointRemote{EndpointId: "abc123"})
+
+	value, err := lookupDeployedField(b, "resources.model_serving_endpoints.my_endpoint", "endpoint_id")
+	require.NoError(t, err)
+	assert.Equal(t, "abc123", value)
+}
+
+func TestExtractChangesEmptyRemotePermissions(t *testing.T) {
+	value, err := yamlloader.LoadYAML("databricks.yml", strings.NewReader(`
+resources:
+  apps:
+    my_app:
+      permissions:
+        - level: CAN_USE
+          group_name: users
+`))
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(dyn.Value) (dyn.Value, error) { return value, nil }))
+
+	declared := []dresources.StatePermission{{Level: "CAN_USE", GroupName: "users"}}
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.apps.my_app": {},
+		"resources.apps.my_app.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/apps/my_app"},
+			Changes: deployplan.Changes{
+				"": {Action: deployplan.Update, Old: declared, New: declared},
+			},
+		},
+	}}
+
+	changes, err := ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.apps.my_app": {
+			"permissions[group_name='users']": {Operation: OperationRemove},
+		},
+	}, changes)
 }
