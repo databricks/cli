@@ -271,7 +271,8 @@ func TestJobRunStateOmitsEmptyLifecycle(t *testing.T) {
 func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	enabled := true
 	triggers := &resources.JobRunTriggersState{
-		OnFileChange: map[string]string{"*.txt": "hash"},
+		OnFileChange:  map[string]string{"*.txt": "hash"},
+		OnValueChange: []string{"resolved"},
 	}
 	input := &resources.JobRun{
 		Lifecycle: &resources.JobRunLifecycle{
@@ -286,6 +287,7 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	require.NotNil(t, state.Lifecycle.TriggersState)
 	assert.NotSame(t, triggers, state.Lifecycle.TriggersState)
 	assert.Equal(t, triggers.OnFileChange, state.Lifecycle.TriggersState.OnFileChange)
+	assert.Equal(t, triggers.OnValueChange, state.Lifecycle.TriggersState.OnValueChange)
 	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
 	assert.Empty(t, triggers.OnBundleDeploy)
 }

@@ -1,0 +1,64 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+changes() {
+    $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].changes'
+}
+
+title "first deploy triggers a run"
+trace $CLI bundle deploy
+trace read_id.py my_job
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "resolved values are stored in state in trigger order"
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state'
+
+title "redeploy with unchanged values plans nothing"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "changing one value re-fires"
+update_file.py databricks.yml "default: v1" "default: v2"
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
+title "removing the last on_value_change through a saved plan does not run"
+update_file.py databricks.yml ', {on_value_change: "${workspace.root_path}"}' ''
+trace $CLI bundle plan
+$CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //jobs/run-now
+
+title "re-adding it with an unchanged value does not re-fire"
+update_file.py databricks.yml '{on_value_change: "${var.number}"}' '{on_value_change: "${var.number}"}, {on_value_change: "${workspace.root_path}"}'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "removing an on_value_change that is not the last shifts the rest and re-fires"
+update_file.py databricks.yml ', {on_value_change: "${var.other}"}' ''
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "removing the remaining on_value_change entries does not run"
+update_file.py databricks.yml ', {on_value_change: "${var.stamp}"}, {on_value_change: "${var.number}"}, {on_value_change: "${workspace.root_path}"}' ''
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "file changes still re-fire after value triggers are removed"
+update_file.py watched.txt "v1" "v2"
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now

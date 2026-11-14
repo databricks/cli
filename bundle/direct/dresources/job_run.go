@@ -368,7 +368,9 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // result_state either, so the lifecycle state is what tells the two apart.
 // Removing a trigger drops the change and leaves the last fingerprint in state,
 // so re-adding the trigger only re-fires when the watched files changed
-// meanwhile. All other trigger changes recreate the run.
+// meanwhile. on_value_change values are compared by position, so removing the
+// last watches drops the change, and removing or reordering any other watch
+// re-fires. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch path.String() {
 	case "lifecycle":
@@ -386,6 +388,13 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		// As above: an emptied map is a removal, and pattern entries classify a map
 		// that still has both sides.
 		if isEmptyFileTriggerMap(change.New) || change.Old != nil {
+			change.Reason = deployplan.ReasonDrop
+		}
+	case "lifecycle.triggers_state.on_value_change":
+		// Lists of equal length are diffed per position, and any change there
+		// re-fires. A shorter list that keeps the leading values means watches
+		// were removed from the end.
+		if isLeadingValues(change.Old, change.New) {
 			change.Reason = deployplan.ReasonDrop
 		}
 	case "result_state":
@@ -419,6 +428,14 @@ func isEmptyFileTriggerMap(v any) bool {
 	}
 	m, ok := v.(map[string]string)
 	return ok && len(m) == 0
+}
+
+// isLeadingValues reports whether newV holds the leading values of oldV and fewer
+// of them (none, when newV is nil).
+func isLeadingValues(oldV, newV any) bool {
+	oldValues, _ := oldV.([]string)
+	newValues, _ := newV.([]string)
+	return len(newValues) < len(oldValues) && slices.Equal(oldValues[:len(newValues)], newValues)
 }
 
 func parseRunID(id string) (int64, error) {
