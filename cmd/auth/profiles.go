@@ -128,9 +128,11 @@ func newProfilesCommand() *cobra.Command {
 		Use:   "profiles",
 		Short: "Lists profiles from ~/.databrickscfg",
 		Annotations: map[string]string{
+			// With --skip-validate nothing is validated, so the Valid column is
+			// omitted instead of reporting NO for every profile.
 			"template": cmdio.Heredoc(`
-			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{header "Name"}}	{{header "Host"}}{{if not .SkipValidate}}	{{header "Valid"}}{{end}}
+			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}{{if not $.SkipValidate}}	{{bool .Valid}}{{end}}
 			{{end}}`),
 		},
 	}
@@ -175,8 +177,9 @@ func newProfilesCommand() *cobra.Command {
 		}
 		wg.Wait()
 		return cmdio.Render(cmd.Context(), struct {
-			Profiles []*profileMetadata `json:"profiles"`
-		}{profiles})
+			Profiles     []*profileMetadata `json:"profiles"`
+			SkipValidate bool               `json:"-"`
+		}{profiles, skipValidate})
 	}
 
 	return cmd
