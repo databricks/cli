@@ -1,0 +1,3 @@
+errcode trace $CLI bundle validate -t max_retries
+trace $CLI bundle validate -t retry_fields
+trace $CLI bundle validate -t valid
