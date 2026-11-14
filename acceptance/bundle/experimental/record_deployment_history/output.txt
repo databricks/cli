@@ -1,0 +1,8 @@
+
+=== record_deployment_history is unset by default
+>>> [CLI] bundle validate -o json
+null
+
+=== DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY enables record_deployment_history
+>>> [CLI] bundle validate -o json
+true

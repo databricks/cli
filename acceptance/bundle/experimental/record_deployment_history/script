@@ -1,0 +1,9 @@
+title "record_deployment_history is unset by default"
+
+trace $CLI bundle validate -o json | jq .experimental
+
+title "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY enables record_deployment_history"
+
+export DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true
+
+trace $CLI bundle validate -o json | jq .experimental.record_deployment_history
