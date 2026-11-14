@@ -90,9 +90,6 @@ var serverSideDefaults = map[string]any{
 	"resources.sql_warehouses.*.min_num_clusters": int64(1),
 	"resources.sql_warehouses.*.warehouse_type":   "CLASSIC",
 
-	// Terraform defaults
-	"resources.jobs.*.run_as": alwaysSkip,
-
 	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
 	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
 	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
