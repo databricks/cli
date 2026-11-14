@@ -247,6 +247,58 @@ func TestGetRunRejectsNonNumericWorkspaceID(t *testing.T) {
 	assert.Equal(t, jsonError{Code: "INVALID_ARGS", Kind: "PERMANENT", Message: `configured workspace_id "not-a-number" is not a numeric workspace ID`}, got.Error)
 }
 
+func TestGetRunJSONMLflowIDs(t *testing.T) {
+	tests := []struct {
+		name             string
+		getOutput        string
+		wantExperimentID *string
+		wantRunID        *string
+	}{
+		{
+			name:             "set when the run has MLflow IDs",
+			getOutput:        `{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1"}}`,
+			wantExperimentID: new("E1"),
+			wantRunID:        new("R1"),
+		},
+		{
+			name:      "null when the run has no MLflow IDs",
+			getOutput: `{}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/api/2.2/jobs/runs/get":
+					_, _ = w.Write([]byte(`{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}, "tasks": [{"run_id": 50}]}`))
+				case "/api/2.2/jobs/runs/get-output":
+					_, _ = w.Write([]byte(tc.getOutput))
+				default:
+					// SDK config discovery.
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "67890"})
+			require.NoError(t, err)
+
+			out, err := runGetJSON(t, w)
+			require.NoError(t, err)
+			var got struct {
+				Data struct {
+					MLflowURL          *string `json:"mlflow_url"`
+					MLflowExperimentID *string `json:"mlflow_experiment_id"`
+					MLflowRunID        *string `json:"mlflow_run_id"`
+				} `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(out), &got))
+			assert.Equal(t, tc.wantExperimentID, got.Data.MLflowExperimentID)
+			assert.Equal(t, tc.wantRunID, got.Data.MLflowRunID)
+			assert.Equal(t, tc.wantRunID == nil, got.Data.MLflowURL == nil, "the IDs must be null exactly when mlflow_url is")
+		})
+	}
+}
+
 func TestGetTemplateSweep(t *testing.T) {
 	out := renderGet(t, getData{
 		RunID:  "456",
@@ -324,6 +376,7 @@ func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
 	assert.JSONEq(t, `{
 		"run_id":"5","status":"FAILED","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
+		"mlflow_experiment_id":null,"mlflow_run_id":null,
 		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null
 	}`, string(body))
 
@@ -346,6 +399,7 @@ func TestBuildGetDataWaitingForComputeStatus(t *testing.T) {
 	assert.JSONEq(t, `{
 		"run_id":"8","status":"PENDING","started_at":null,"duration_seconds":null,
 		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
+		"mlflow_experiment_id":null,"mlflow_run_id":null,
 		"est_remaining_seconds":null,"est_percent_complete":null
 	}`, string(body))
 }

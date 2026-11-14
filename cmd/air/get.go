@@ -23,15 +23,17 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID             string  `json:"run_id"`
-	Status            string  `json:"status"`
-	StartedAt         *string `json:"started_at"`
-	DurationSeconds   *int64  `json:"duration_seconds"`
-	AttemptNumber     int     `json:"attempt_number"`
-	ExperimentName    *string `json:"experiment_name"`
-	DashboardURL      string  `json:"dashboard_url"`
-	MLflowURL         *string `json:"mlflow_url"`
-	TerminationReason *string `json:"termination_reason,omitempty"`
+	RunID              string  `json:"run_id"`
+	Status             string  `json:"status"`
+	StartedAt          *string `json:"started_at"`
+	DurationSeconds    *int64  `json:"duration_seconds"`
+	AttemptNumber      int     `json:"attempt_number"`
+	ExperimentName     *string `json:"experiment_name"`
+	DashboardURL       string  `json:"dashboard_url"`
+	MLflowURL          *string `json:"mlflow_url"`
+	MLflowExperimentID *string `json:"mlflow_experiment_id"`
+	MLflowRunID        *string `json:"mlflow_run_id"`
+	TerminationReason  *string `json:"termination_reason,omitempty"`
 	// StatusMessage is the progress message the text view shows as the status,
 	// set only while the run is unfinished.
 	StatusMessage *string `json:"status_message,omitempty"`
@@ -186,6 +188,8 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
+			data.MLflowExperimentID = &ids.ExperimentID
+			data.MLflowRunID = &ids.RunID
 			// A remaining-time estimate only makes sense while the run is still
 			// training; a terminal run is either done or stopped mid-progress.
 			if isRunning(run) {
