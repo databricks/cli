@@ -500,7 +500,7 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			change := &ChangeDesc{Action: deployplan.Recreate, Old: tt.old, New: tt.new}
-			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
+			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil, nil))
 			assert.Equal(t, tt.action, change.Action)
 			assert.Equal(t, tt.reason, change.Reason)
 		})
