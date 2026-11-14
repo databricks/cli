@@ -204,6 +204,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
+		// A new page can only widen the natural columns, so the layout moves one
+		// way as pages load: a column may compact or disappear, never reappear.
 		m.cols = layoutListCols(m.rows, m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
@@ -361,31 +363,72 @@ func (m listModel) View() string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// renderHint is the faint one-line key legend, with the cursor position, the
-// columns a narrow terminal has hidden, and the paging state (loading / load
-// failed). When the full legend and the hidden-column note don't both fit the
-// terminal, the legend shortens to its keys so the note stays visible.
+// Key legends for the hint line: the full one, and the keys alone for when the
+// full one leaves no room for the rest of the hint.
+const (
+	hintLegend      = "↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit"
+	hintLegendShort = "↑/↓ ←/→ ↵ i L q"
+)
+
+// renderHint is the faint one-line hint: the key legend, the cursor position,
+// the paging state (loading / load failed) and, in a narrow terminal, the
+// columns the layout has hidden. It must fit the terminal, or bubbletea cuts
+// off its end, so it gives up detail in steps: the legend shrinks to its keys,
+// then the hidden columns are counted instead of named, and as a last resort
+// the line is truncated.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := m.hintText("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit")
-	if m.width > 0 && lipgloss.Width(hint) > m.width {
-		hint = m.hintText("↑/↓ ←/→ ↵ i L q")
+	hidden := m.cols.hiddenNames()
+	variants := []struct {
+		legend string
+		note   string
+	}{
+		{hintLegend, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, false)},
 	}
-	return faint.Render(hint)
+	for _, v := range variants {
+		if m.width <= 0 || lipgloss.Width(m.hintText(v.legend, v.note, true)) <= m.width {
+			return faint.Render(m.hintText(v.legend, v.note, false))
+		}
+	}
+	last := variants[len(variants)-1]
+	return faint.Render(truncate(m.hintText(last.legend, last.note, false), m.width))
 }
 
-func (m listModel) hintText(legend string) string {
-	hint := fmt.Sprintf("%s  ·  row %d/%d", legend, m.cursor+1, len(m.rows))
-	if hidden := m.cols.hiddenNames(); len(hidden) > 0 {
-		hint += "  ·  hidden: " + strings.Join(hidden, ", ")
-	}
+// hintText assembles the hint from its legend and hidden-columns note. With
+// widest set, the row counter and paging state take the widest form they have
+// while pages load ("row N/N (loading…)"), so the choice of variant doesn't
+// change as the cursor moves or a page loads. A load failure is permanent, so
+// it is measured as is.
+func (m listModel) hintText(legend, note string, widest bool) string {
+	row, state := m.cursor+1, ""
 	switch {
 	case m.loadErr != nil:
-		hint += " (load failed)"
-	case m.loading:
-		hint += " (loading…)"
+		state = " (load failed)"
+	case widest, m.loading:
+		state = " (loading…)"
 	}
-	return hint
+	if widest {
+		row = len(m.rows)
+	}
+	return fmt.Sprintf("%s  ·  row %d/%d%s%s", legend, row, len(m.rows), state, note)
+}
+
+// hiddenNote is the hint's hidden-columns note: "" when every column is shown,
+// otherwise the hidden columns by name, or just their count when names is
+// false.
+func hiddenNote(hidden []string, names bool) string {
+	switch {
+	case len(hidden) == 0:
+		return ""
+	case names:
+		return "  ·  hidden: " + strings.Join(hidden, ", ")
+	case len(hidden) == 1:
+		return "  ·  1 column hidden"
+	default:
+		return fmt.Sprintf("  ·  %d columns hidden", len(hidden))
+	}
 }
 
 // fetchRunDetail returns a tea.Cmd that fetches run details in the background.

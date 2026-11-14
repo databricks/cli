@@ -23,6 +23,8 @@ const (
 	colBlue    = lipgloss.Color("#6CA8F0") // MLflow link
 )
 
+// mlflowColWidth is the MLflow column's width in a wide terminal, and the width
+// MLflow labels are cut to when the rows are built.
 const mlflowColWidth = 22
 
 // listStyles renders the runs table. The renderer carries the color profile, so
@@ -50,10 +52,8 @@ const (
 	columnAccel
 )
 
-// numListColumns is how many columns the table has.
 const numListColumns = int(columnAccel) + 1
 
-// listColumnNames are the header titles, indexed by listColumn.
 var listColumnNames = [numListColumns]string{
 	"Run ID", "Experiment", "Status", "Started", "Duration", "Progress", "MLflow", "User", "Accelerators",
 }
@@ -75,8 +75,7 @@ type listCols struct {
 // the row.
 const columnCap = 36
 
-// computeListCols sizes every column to its content: the layout of the one-shot
-// table, and the starting point for fitting the interactive one.
+// computeListCols sizes every column to its content.
 func computeListCols(rows []listRow) listCols {
 	c := listCols{
 		runID:      len("Run ID"),
@@ -109,7 +108,6 @@ const (
 	userMinWidth       = 8
 )
 
-// width is the cell width of col.
 func (c listCols) width(col listColumn) int {
 	switch col {
 	case columnRunID:
@@ -134,13 +132,11 @@ func (c listCols) width(col listColumn) int {
 	return 0
 }
 
-// shown reports whether col is part of the rendered table.
 func (c listCols) shown(col listColumn) bool {
 	return c.hidden&(1<<col) == 0
 }
 
-// hiddenNames lists the hidden columns' titles in table order; nil when every
-// column is shown.
+// hiddenNames lists the hidden columns' titles in table order.
 func (c listCols) hiddenNames() []string {
 	var names []string
 	for col := range listColumn(numListColumns) {
@@ -149,6 +145,11 @@ func (c listCols) hiddenNames() []string {
 		}
 	}
 	return names
+}
+
+// rightAligned reports whether col's cells are right-aligned (the numeric ones).
+func rightAligned(col listColumn) bool {
+	return col == columnDuration || col == columnProgress
 }
 
 // tableWidth is the full width of a rendered row: the gutter plus every shown
@@ -163,11 +164,12 @@ func (c listCols) tableWidth() int {
 	return w
 }
 
-// fitWidth shrinks the flexible columns (Experiment, User) until the table fits
-// in width cells, so a long value truncates instead of pushing the columns to
-// its right off screen. It takes from the wider column first and stops at the
-// floors: a terminal too narrow for the fixed columns still overflows. A width
-// of 0 means the terminal size is unknown and leaves the columns alone.
+// fitWidth shrinks the flexible columns (Experiment, and User unless it is
+// hidden) until the table fits in width cells, so a long value truncates instead
+// of pushing the columns to its right off screen. It takes from the wider column
+// first and stops at the floors: a terminal too narrow for the fixed columns
+// still overflows. A width of 0 means the terminal size is unknown and leaves
+// the columns alone.
 func (c listCols) fitWidth(width int) listCols {
 	if width <= 0 {
 		return c
@@ -201,15 +203,17 @@ func (c listCols) compact(rows []listRow) listCols {
 		c.started = max(c.started, lipgloss.Width(startedCompact(r)))
 		c.mlflow = max(c.mlflow, lipgloss.Width(mlflowLabel(r)))
 	}
+	c.mlflow = min(c.mlflow, mlflowColWidth)
 	return c
 }
 
 // layoutListCols lays the interactive table out for a terminal width cells
-// wide. Experiment and User shrink to their floors first; if the table is still
-// too wide the fixed columns compact, and then whole columns are hidden in
-// hideOrder until it fits. Each step gives its spare cells back to Experiment
-// and User. A terminal that fits today's table gets today's layout, and a width
-// of 0 (unknown) leaves the natural widths alone.
+// wide. Experiment and User shrink to their floors first. If the table is still
+// too wide, the fixed columns compact, and then whole columns are hidden in
+// hideOrder until it fits or none are left to hide; after each of those steps
+// Experiment and User are refitted, so they widen into any spare cells. A
+// terminal wide enough for the uncompacted table gets exactly that, and a
+// width of 0 (unknown) leaves the natural widths alone.
 func layoutListCols(rows []listRow, width int) listCols {
 	natural := computeListCols(rows)
 	if width <= 0 {
@@ -239,7 +243,7 @@ func (s listStyles) renderHeader(cols listCols) string {
 	cells := []string{pad(" ", 1, false)}
 	for col := range listColumn(numListColumns) {
 		if cols.shown(col) {
-			cells = append(cells, h(listColumnNames[col], cols.width(col), col == columnDuration || col == columnProgress))
+			cells = append(cells, h(listColumnNames[col], cols.width(col), rightAligned(col)))
 		}
 	}
 	// Trim trailing pad on the final column so rows carry no trailing whitespace.
@@ -287,9 +291,9 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 		case columnStarted:
 			return s.cell(base, cols.startedText(r), cols.started, fg(colN9), false, false, "")
 		case columnDuration:
-			return s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, "")
+			return s.cell(base, r.Duration, cols.duration, fg(colN9), rightAligned(col), false, "")
 		case columnProgress:
-			return s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), true, false, "")
+			return s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), rightAligned(col), false, "")
 		case columnMLflow:
 			return s.mlflowCell(base, cols.mlflow, r, selected, links)
 		case columnUser:
@@ -340,22 +344,19 @@ func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipglos
 // mlflowCell renders the MLflow column: a short, blue, underlined OSC 8
 // hyperlink (when links are enabled), or "-" when the run has no link.
 func (s listStyles) mlflowCell(base lipgloss.Style, width int, r listRow, selected, links bool) string {
-	if r.MLflowURL == "" || r.MLflowURL == "-" {
-		fg := colN9
-		if selected {
-			fg = colN12
-		}
-		return s.cell(base, "-", width, fg, false, false, "")
-	}
+	label := mlflowLabel(r)
 	fg := colBlue
+	if label == "-" {
+		fg = colN9
+	}
 	if selected {
 		fg = colN12
 	}
 	link := ""
-	if links {
+	if links && label != "-" {
 		link = r.MLflowURL
 	}
-	return s.cell(base, mlflowLabel(r), width, fg, false, true, link)
+	return s.cell(base, label, width, fg, false, label != "-", link)
 }
 
 // mlflowLabel is the text shown in the row's MLflow cell: its label, or "-"
@@ -403,21 +404,20 @@ func startedDisplay(r listRow) string {
 	return s
 }
 
-// startedCompact is the short form of the row's start timestamp for a narrow
-// terminal ("01-02 15:04"), or "-" when the run hasn't started. A timestamp too
-// short to carry a date and time is shown as is.
+// startedCompact is the short form of the row's ISO start timestamp for a
+// narrow terminal ("01-02 15:04"), or "-" when the run hasn't started. A value
+// that isn't an ISO timestamp is shown as is.
 func startedCompact(r listRow) string {
 	if r.StartedAt == nil {
 		return "-"
 	}
 	s := *r.StartedAt
-	if len(s) >= 16 {
+	if len(s) >= 16 && s[4] == '-' && s[7] == '-' && s[10] == 'T' {
 		return s[5:10] + " " + s[11:16]
 	}
 	return s
 }
 
-// startedText is the row's Started cell in the layout's long or compact form.
 func (c listCols) startedText(r listRow) string {
 	if c.compactStarted {
 		return startedCompact(r)
