@@ -180,6 +180,7 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 			EnvironmentKey string `json:"environment_key"`
 			Spec           struct {
 				EnvironmentVersion string `json:"environment_version"`
+				BaseEnvironment    string `json:"base_environment"`
 			} `json:"spec"`
 		} `json:"environments"`
 	}
@@ -192,6 +193,11 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 	}
 	for _, e := range resp.Environments {
 		if e.EnvironmentKey == aiRuntimeEnvironmentKey {
+			// buildRunEnvironment submits a databricks_ai_v* image as a base
+			// environment instead of an environment_version.
+			if version, ok := strings.CutPrefix(e.Spec.BaseEnvironment, workspaceBaseEnvironmentPrefix); ok {
+				return version
+			}
 			return e.Spec.EnvironmentVersion
 		}
 	}

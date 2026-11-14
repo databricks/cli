@@ -55,6 +55,31 @@ func TestConfigYAML(t *testing.T) {
 	})
 }
 
+func TestAiRuntimeEnvironmentVersion(t *testing.T) {
+	tests := []struct {
+		name string
+		spec string
+		want string
+	}{
+		{
+			name: "numeric version is read from environment_version",
+			spec: `{"environment_version": "6"}`,
+			want: "6",
+		},
+		{
+			name: "databricks_ai image is read from base_environment",
+			spec: `{"base_environment": "workspace-base-environments/databricks_ai_v6"}`,
+			want: "databricks_ai_v6",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := runGetServer(t, `{"run_id": 5, "environments": [{"environment_key": "default", "spec": `+tt.spec+`}]}`)
+			assert.Equal(t, tt.want, aiRuntimeEnvironmentVersion(t.Context(), newTestWorkspaceClient(t, srv.URL), 5))
+		})
+	}
+}
+
 func TestResolveConfigYAML(t *testing.T) {
 	ctx := t.Context()
 
