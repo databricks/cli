@@ -239,7 +239,15 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	venvPath := i.virtualEnvPath(ctx)
 	log.Debugf(ctx, "Creating Python Virtual Environment at: %s", venvPath)
 	sp.Update("Creating Virtual Environment with Python " + py.Version)
-	_, err = process.Background(ctx, []string{py.Path, "-m", "venv", venvPath})
+	venvArgs := []string{py.Path, "-m", "venv", venvPath}
+	// python -m venv does not replace existing interpreter symlinks unless --clear
+	// is passed. A leftover venv after Homebrew retires its Python then makes
+	// every later labs install fail on a dangling bin/python3.
+	if shouldRecreateVenv(venvPath, i.virtualEnvPython(ctx)) {
+		log.Infof(ctx, "Existing virtualenv at %s has a missing interpreter, recreating it", venvPath)
+		venvArgs = []string{py.Path, "-m", "venv", "--clear", venvPath}
+	}
+	_, err = process.Background(ctx, venvArgs)
 	if err != nil {
 		return fmt.Errorf("create venv: %w", err)
 	}
@@ -268,6 +276,14 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))
 	}
 	return i.installPythonDependencies(ctx, ".")
+}
+
+func shouldRecreateVenv(venvPath, pythonBin string) bool {
+	if _, err := os.Stat(venvPath); err != nil {
+		return false
+	}
+	_, err := os.Stat(pythonBin)
+	return err != nil
 }
 
 func (i *installer) installPythonDependencies(ctx context.Context, spec string) error {
