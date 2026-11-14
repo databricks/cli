@@ -115,6 +115,7 @@ type listModel struct {
 	cursor int
 	offset int // index of the first visible row
 	height int // terminal height, for windowing
+	width  int // terminal width, for fitting the flexible columns; 0 until known
 
 	mode          int            // modeList or modeDetail
 	viewport      viewport.Model // for detail pane
@@ -188,6 +189,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
+		m.width = msg.Width
+		m.cols = computeListCols(m.rows).fitWidth(m.width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
 		m.viewport.SetContent(m.wrappedDetail())
@@ -201,7 +204,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
-		m.cols = computeListCols(m.rows)
+		m.cols = computeListCols(m.rows).fitWidth(m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
@@ -347,7 +350,12 @@ func (m listModel) View() string {
 	visible := m.visibleCount()
 	lines := []string{m.styles.renderHeader(m.cols)}
 	for i := m.offset; i < m.offset+visible && i < len(m.rows); i++ {
-		lines = append(lines, m.styles.renderRow(m.cols, m.rows[i], i == m.cursor, m.links))
+		row := m.rows[i]
+		// Experiment names often share a prefix and differ at the end, so a
+		// shrunk cell keeps the end. The one-shot table keeps the start, so its
+		// output stays as scripts already see it.
+		row.Experiment = truncateStart(row.Experiment, m.cols.experiment)
+		lines = append(lines, m.styles.renderRow(m.cols, row, i == m.cursor, m.links))
 	}
 	lines = append(lines, m.renderHint())
 	return strings.Join(lines, "\n") + "\n"

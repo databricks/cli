@@ -69,6 +69,47 @@ func computeListCols(rows []listRow) listCols {
 	return c
 }
 
+// Floors for the flexible columns: narrow enough to give room back to the fixed
+// columns, wide enough that a truncated value is still recognizable.
+const (
+	experimentMinWidth = 12
+	userMinWidth       = 8
+)
+
+// tableWidth is the full width of a rendered row: every column plus the gutter
+// and the two-cell separators.
+func (c listCols) tableWidth() int {
+	const separators = 9 * 2
+	return 1 + c.runID + c.experiment + c.status + c.started + c.duration +
+		c.progress + mlflowColWidth + c.user + c.accel + separators
+}
+
+// fitWidth shrinks the flexible columns (Experiment, User) until the table fits
+// in width cells, so a long value truncates instead of pushing the columns to
+// its right off screen. It takes from the wider column first and stops at the
+// floors: a terminal too narrow for the fixed columns still overflows. A width
+// of 0 means the terminal size is unknown and leaves the columns alone.
+func (c listCols) fitWidth(width int) listCols {
+	if width <= 0 {
+		return c
+	}
+	experimentFloor := min(c.experiment, experimentMinWidth)
+	userFloor := min(c.user, userMinWidth)
+	for overflow := c.tableWidth() - width; overflow > 0; overflow-- {
+		canShrinkExperiment := c.experiment > experimentFloor
+		canShrinkUser := c.user > userFloor
+		switch {
+		case canShrinkExperiment && (!canShrinkUser || c.experiment >= c.user):
+			c.experiment--
+		case canShrinkUser:
+			c.user--
+		default:
+			return c
+		}
+	}
+	return c
+}
+
 // renderHeader renders the muted column-title row.
 func (s listStyles) renderHeader(cols listCols) string {
 	h := func(text string, width int, right bool) string {
