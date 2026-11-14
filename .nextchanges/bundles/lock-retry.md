@@ -1,0 +1,1 @@
+* Retry acquiring the deployment lock when the request fails with a transient server error or times out ("request timed out after ... of inactivity"). ([#7594](https://github.com/databricks/cli/pull/7594))

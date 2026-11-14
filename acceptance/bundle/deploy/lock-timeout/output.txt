@@ -1,0 +1,8 @@
+Warn: retrying after Post "[DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false": request timed out after 5s of inactivity
+Warn: retrying after Post "[DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false": request timed out after 5s of inactivity
+Error: Failed to acquire deployment lock: Post "[DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false": request timed out after 5s of inactivity
+Error: Post "[DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false": request timed out after 5s of inactivity
+
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock

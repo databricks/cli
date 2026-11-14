@@ -1,0 +1,46 @@
+
+=== Lock create is applied, but the response is a 504: the retry finds our own lock
+
+>>> [CLI] bundle deploy
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+["POST","false"]
+["POST","false"]
+
+=== Lock create is not applied and fails with a 504: the retry creates the lock
+
+>>> [CLI] bundle deploy
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+["POST","false"]
+["POST","false"]
+
+=== Every attempt returns a 504, but the first one is applied: reading the lock back finds it is ours
+
+>>> [CLI] bundle deploy
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+["POST","false"]
+["POST","false"]
+["POST","false"]
+
+=== Lock is held by another deployer: the retry gets a conflict and the error names the holder
+
+>>> [CLI] bundle deploy
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Error: Failed to acquire deployment lock: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+Error: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+
+
+Exit code: 1

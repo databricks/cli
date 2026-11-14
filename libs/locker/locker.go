@@ -147,29 +147,33 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
-	modes := []filer.WriteMode{
-		// Always create parent directory if it doesn't yet exist.
-		filer.CreateParentDirectories,
-	}
-
-	// Only overwrite lock file if `isForced`.
 	if isForced {
-		modes = append(modes, filer.OverwriteIfExists)
+		// Overwrite writes are already retried by the retrying filer.
+		err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories, filer.OverwriteIfExists)
+	} else {
+		// The retrying filer does not repeat writes that do not overwrite. Repeating this one is
+		// safe because the lock file carries our unique ID: if an attempt that failed with a
+		// transient error did create the file, the retry fails with fs.ErrExist and
+		// assertLockHeld below tells whether the lock is ours.
+		_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+			return struct{}{}, locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories)
+		})
 	}
 
-	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
-	if err != nil {
-		// If the write failed because the lock file already exists, don't return
-		// the error and instead fall through to [assertLockHeld] below.
-		// This function will return a more descriptive error message that includes
-		// details about the current holder of the lock.
-		if !errors.Is(err, fs.ErrExist) {
+	switch {
+	case err == nil || errors.Is(err, fs.ErrExist):
+		// If the lock file already exists, [assertLockHeld] returns a more descriptive
+		// error that names the current holder of the lock.
+		if err := locker.assertLockHeld(ctx); err != nil {
 			return err
 		}
-	}
-
-	err = locker.assertLockHeld(ctx)
-	if err != nil {
+	case retry.IsTransient(ctx, err):
+		// The last attempt may have been applied even though its response was lost. Read the
+		// lock back so that such a write does not leave behind a lock nobody releases.
+		if locker.assertLockHeld(ctx) != nil {
+			return err
+		}
+	default:
 		return err
 	}
 
