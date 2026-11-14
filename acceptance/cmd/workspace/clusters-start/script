@@ -1,0 +1,9 @@
+CLUSTER_ID=$($CLI clusters create --json '{"cluster_name": "test-cluster", "spark_version": "13.3.x-scala2.12", "node_type_id": "i3.xlarge", "num_workers": 1}' | jq -r '.cluster_id')
+echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
+
+title "Starting a cluster that is already running is a no-op, not an error\n"
+trace $CLI clusters start "$CLUSTER_ID" | jq '{cluster_id, state}'
+
+title "Starting a terminated cluster starts it\n"
+$CLI clusters delete "$CLUSTER_ID" > /dev/null
+trace $CLI clusters start "$CLUSTER_ID" | jq '{cluster_id, state}'

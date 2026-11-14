@@ -1,0 +1,1 @@
+Fixed `databricks clusters start` failing with `Cluster <id> is in unexpected state Running.` when the cluster is already running. The command is documented as a no-op for a cluster that is not terminated, so it now reports success and prints the cluster instead of erroring. ([#6288](https://github.com/databricks/cli/pull/6288))
