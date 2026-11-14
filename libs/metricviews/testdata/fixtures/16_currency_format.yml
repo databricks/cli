@@ -1,0 +1,13 @@
+version: 1.1
+
+source: main.sales.orders
+measures:
+  - name: total_revenue
+    expr: SUM(o_totalprice)
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 2
+      abbreviation: none

@@ -1,0 +1,7 @@
+version: 0.1
+source: my_table
+dimensions:
+  - name: name
+    expr: name
+  - name: ssn
+    expr: ssn

@@ -1,0 +1,12 @@
+version: 1.1
+
+source: main.sales.orders
+measures:
+  - name: file_size
+    expr: SUM(o_size)
+    format:
+      type: byte
+      decimal_places:
+        type: exact
+        places: 2
+      hide_group_separator: false

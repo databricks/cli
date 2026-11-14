@@ -1,0 +1,11 @@
+version: 1.1
+
+source: main.sales.orders
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+    synonyms: ["order_month", "month_of_order"]
+measures:
+  - name: count_orders
+    expr: COUNT(*)
+    synonyms: ["total_orders", "order_count"]

@@ -1,0 +1,36 @@
+version: 1.1
+
+source: |
+  SELECT *
+  FROM main.sales.orders
+  WHERE region = 'WEST'
+joins:
+  - name: orders
+    source: main.sales.lineitems
+    on: |
+      l_orderkey = o_orderkey
+      AND l_shipdate = o_orderdate
+filter: >
+  region = 'WEST'
+  AND o_totalprice > 1000
+  AND o_orderdate >= '2023-01-01'
+comment: |
+  This is a test metric view
+  with multi-line comment
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+  - name: concat
+    expr: >
+      string_column || '
+               '
+measures:
+  - name: count_orders
+    expr: COUNT(*)
+  - name: complex_calc
+    expr: |-
+      CASE
+        WHEN o_totalprice > 1000 THEN 'HIGH'
+        WHEN o_totalprice > 500 THEN 'MEDIUM'
+        ELSE 'LOW'
+      END
