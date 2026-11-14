@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -85,6 +88,40 @@ func TestRunSubmitTextOutput(t *testing.T) {
 	assert.NotContains(t, out, "View MLflow run at:")
 	assert.Zero(t, counts.runGet.Load(), "bare submission must not poll runs/get")
 	assert.Zero(t, counts.runGetOutput.Load(), "bare submission must not poll runs/get-output")
+}
+
+func TestCheckCodeSourceGit(t *testing.T) {
+	repo := newTestRepo(t)
+	sub := filepath.Join(repo, "sub")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+	plain := t.TempDir()
+	withCodeSource := func(root string, ref *gitRef) *runConfig {
+		return &runConfig{CodeSource: &codeSourceConfig{Snapshot: &snapshotSourceConfig{RootPath: root, Git: ref}}}
+	}
+	withoutGit(t)
+
+	err := checkCodeSourceGit(t.Context(), withCodeSource(".", nil), filepath.Join(sub, "workload.yaml"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is in a git repository")
+	assert.Contains(t, err.Error(), "needs git on PATH")
+	assert.NotContains(t, err.Error(), "exec:")
+
+	err = checkCodeSourceGit(t.Context(), withCodeSource(".", &gitRef{Branch: new("main")}), filepath.Join(plain, "workload.yaml"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "code_source.git is set")
+
+	require.NoError(t, checkCodeSourceGit(t.Context(), withCodeSource(".", nil), filepath.Join(plain, "workload.yaml")))
+
+	// Without code_source the git binary is never looked up, and its absence is not an error.
+	looked := false
+	orig := gitLookPath
+	gitLookPath = func(string) (string, error) {
+		looked = true
+		return "", exec.ErrNotFound
+	}
+	t.Cleanup(func() { gitLookPath = orig })
+	require.NoError(t, checkCodeSourceGit(t.Context(), &runConfig{}, filepath.Join(plain, "workload.yaml")))
+	assert.False(t, looked)
 }
 
 func TestWarnExperimentalContainers(t *testing.T) {

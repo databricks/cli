@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,20 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
+
+// checkCodeSourceGit fails before the config is validated or anything is packaged when
+// git is missing and the code_source cannot be packaged without it. Runs for dry runs too.
+func checkCodeSourceGit(ctx context.Context, cfg *runConfig, configPath string) error {
+	if cfg.CodeSource == nil || cfg.CodeSource.Snapshot == nil || gitInstalled() {
+		return nil
+	}
+	snap := cfg.CodeSource.Snapshot
+	root, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
+	if err != nil {
+		return err
+	}
+	return gitRequiredError(root, snap.Git)
+}
 
 // dryRunValidationTimeout bounds only the config:validate request.
 const dryRunValidationTimeout = 15 * time.Second
@@ -157,6 +172,9 @@ field, pass its path to -h as a separate argument:
 
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
+			return err
+		}
+		if err := checkCodeSourceGit(ctx, cfg, file); err != nil {
 			return err
 		}
 
