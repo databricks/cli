@@ -197,6 +197,9 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
+	// Exclude contains resources omitted from deployment.
+	Exclude []string
+
 	// MigratingToDirect is set when the existing state still uses terraform, so it is
 	// migrated to the direct engine in memory before the command runs (statemgmt.Migrate).
 	// Deploy and destroy commit the migration (statemgmt.CommitMigration); other commands

@@ -1775,7 +1775,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	// (e.g. skipped as empty) needs no ordering.
 	for _, entry := range p.Plan {
 		entry.DependsOn = slices.DeleteFunc(entry.DependsOn, func(dep deployplan.DependsOnEntry) bool {
-			return dep.Label == lifecycleDependsOnLabel && p.Plan[dep.Node] == nil
+			return dep.Label == deployplan.LifecycleDependsOnLabel && p.Plan[dep.Node] == nil
 		})
 	}
 
@@ -1879,8 +1879,6 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	return adapter, nil
 }
 
-const lifecycleDependsOnLabel = "depends_on"
-
 // LifecycleDependsOn returns the edges declared in lifecycle.depends_on of a resource,
 // given its config as returned by [config.Root.GetResourceConfig].
 func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.DependsOnEntry, error) {
@@ -1898,7 +1896,7 @@ func LifecycleDependsOn(configRoot *config.Root, inputConfig any) ([]deployplan.
 		if err != nil {
 			return nil, fmt.Errorf("lifecycle.depends_on: %w", err)
 		}
-		result = append(result, deployplan.DependsOnEntry{Node: target, Label: lifecycleDependsOnLabel})
+		result = append(result, deployplan.DependsOnEntry{Node: target, Label: deployplan.LifecycleDependsOnLabel})
 	}
 	return result, nil
 }

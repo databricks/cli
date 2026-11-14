@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy both jobs from the first snapshot"
+trace $CLI bundle deploy
+DEFERRED_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.deferred.id')
+ACTIVE_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.active.id')
+OLD_PATH=$($CLI jobs get "$DEFERRED_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+OLD_CONTENT_PATH="${OLD_PATH%/files/src/main.py}"
+
+title "Recreate the snapshot while excluding the deferred job"
+env -u MSYS_NO_PATHCONV update_file.py src/main.py "Hello from" "Hello again from"
+trace $CLI bundle deploy --exclude jobs.deferred
+DEFERRED_PATH=$($CLI jobs get "$DEFERRED_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+ACTIVE_PATH=$($CLI jobs get "$ACTIVE_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+if [ "$DEFERRED_PATH" != "$OLD_PATH" ] || [ "$ACTIVE_PATH" = "$OLD_PATH" ]; then
+    echo "ERROR: jobs do not reference the expected snapshots"
+    exit 1
+fi
+if ! $CLI workspace get-status "$OLD_CONTENT_PATH" > /dev/null; then
+    echo "ERROR: the excluded job's snapshot is missing"
+    exit 1
+fi
+echo "OK: excluded job keeps its existing snapshot; active job uses the new one"

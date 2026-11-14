@@ -1,0 +1,34 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan --exclude jobs.deferred
+trace $CLI bundle plan --exclude jobs.deferred --exclude deferred
+musterr trace $CLI bundle plan --exclude jobs.prerequisite
+musterr trace $CLI bundle deploy --exclude jobs.missing
+musterr trace $CLI bundle deploy --select jobs.deferred --exclude jobs.prerequisite
+musterr trace $CLI bundle deploy --exclude jobs.deferred --plan plan.json
+musterr trace env DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan --exclude jobs.deferred
+
+$CLI bundle plan --exclude jobs.deferred -o json > plan.json
+title "Deploy prerequisites with --exclude"
+if [ -n "$READPLAN" ]; then
+    $CLI bundle deploy --plan plan.json
+else
+    $CLI bundle deploy --exclude jobs.deferred
+fi
+replace_ids.py
+trace $CLI bundle summary
+trace print_requests.py --nostamp --sort //jobs
+
+title "Deploy deferred resource with --select"
+trace $CLI bundle deploy --select jobs.deferred
+# The deployed job still references its prerequisite until it is updated.
+envsubst '$UNIQUE_NAME' < databricks-removed.yml.tmpl > databricks.yml
+musterr trace $CLI bundle plan --exclude jobs.deferred
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan

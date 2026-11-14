@@ -33,6 +33,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	var quiet int
 	var readPlanPath string
 	var selectResources []string
+	var excludeResources []string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
@@ -44,6 +45,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -q prints only the summary, -qq prints only warnings and errors.")
 	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning.")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
+	cmd.Flags().StringSliceVar(&excludeResources, "exclude", nil, "Deploy all resources except the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 
@@ -54,6 +56,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 				utils.SetForceLock(cmd, b, forceLock)
 				b.AutoApprove = autoApprove
 				b.Select = selectResources
+				b.Exclude = excludeResources
 				b.Quiet = bundle.QuietLevel(quiet)
 
 				if cmd.Flag("compute-id").Changed {

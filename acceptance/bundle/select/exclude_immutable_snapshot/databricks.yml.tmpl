@@ -1,0 +1,31 @@
+bundle:
+  name: exclude-immutable-$UNIQUE_NAME
+
+workspace:
+  sync_mode: immutable
+
+resources:
+  jobs:
+    deferred:
+      name: deferred-$UNIQUE_NAME
+      tasks:
+        - task_key: run
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"
+
+    active:
+      name: active-$UNIQUE_NAME
+      tasks:
+        - task_key: run
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"

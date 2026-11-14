@@ -1,0 +1,4 @@
+Cloud = false
+RecordRequests = true
+EnvMatrix.READPLAN = ["", "1"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -33,9 +34,8 @@ type Plan struct {
 
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
-	// NotSelected is the number of resources removed by FilterToSelected via the
-	// --select flag. Serialized so the summary survives a deploy from a plan file
-	// (--plan); used only for summary reporting.
+	// NotSelected is the number of resources removed by --select or --exclude.
+	// Serialized so the summary survives a deploy from a plan file (--plan).
 	NotSelected int `json:"not_selected,omitempty"`
 
 	mutex   sync.Mutex `json:"-"`
@@ -163,6 +163,9 @@ type DependsOnEntry struct {
 	Node  string `json:"node"`
 	Label string `json:"label,omitempty"`
 }
+
+// LifecycleDependsOnLabel identifies dependencies that only order deployment.
+const LifecycleDependsOnLabel = "depends_on"
 
 type Changes map[string]*ChangeDesc
 
@@ -314,7 +317,7 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.lockmap.RUnlock(resourceKey)
 }
 
-// ResolveSelectors maps each --select selector to its plan key ("resources.type.name")
+// ResolveSelectors maps each resource selector to its plan key ("resources.type.name")
 // against resourceKeys of that same form. A selector is a qualified "type.name" or an
 // unqualified "name"; it errors on no match or, when unqualified, more than one.
 // Duplicate resourceKeys (a resource present in both config and state) collapse, so an
@@ -452,6 +455,75 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	}
 
 	p.NotSelected = before - len(p.Plan)
+	return nil
+}
+
+// FilterToExcluded removes the named resources and their child plan nodes. It
+// rejects exclusions that would break references in retained or deployed resources.
+func (p *Plan) FilterToExcluded(excluded []string, existingDependencies map[string][]DependsOnEntry) error {
+	resolved, err := ResolveSelectors(maps.Keys(p.Plan), excluded)
+	if err != nil {
+		return err
+	}
+
+	toRemove := make(map[string]struct{}, len(resolved))
+	for _, key := range resolved {
+		toRemove[key] = struct{}{}
+		for child := range p.Plan {
+			if strings.HasPrefix(child, key+".") {
+				toRemove[child] = struct{}{}
+			}
+		}
+	}
+
+	var conflicts []string
+	for key, entry := range p.Plan {
+		_, removed := toRemove[key]
+		dependencies := entry.DependsOn
+		if removed {
+			dependencies = existingDependencies[key]
+		}
+		for _, dep := range dependencies {
+			dependencyEntry, exists := p.Plan[dep.Node]
+			if !exists {
+				continue
+			}
+			_, dependencyRemoved := toRemove[dep.Node]
+			if removed == dependencyRemoved {
+				continue
+			}
+			if removed && dep.Label == LifecycleDependsOnLabel {
+				continue
+			}
+			dependent := strings.TrimPrefix(key, "resources.")
+			dependency := strings.TrimPrefix(dep.Node, "resources.")
+			reference := ""
+			if dep.Label != "" {
+				reference = " through " + dep.Label
+			}
+			if dependencyRemoved {
+				if entry.Action == Delete {
+					continue
+				}
+				conflicts = append(conflicts, fmt.Sprintf("cannot exclude %s: %s depends on it%s; also exclude %s or remove the dependency", dependency, dependent, reference, dependent))
+			} else {
+				// Recreating an immutable snapshot leaves its old path available.
+				if dependencyEntry.Action.KeepsID() || (dep.Node == resources.SnapshotKey && dependencyEntry.Action == Recreate) {
+					continue
+				}
+				conflicts = append(conflicts, fmt.Sprintf("cannot exclude %s: deployed %s still depends on %s%s, which is planned for %s; also exclude %s or update %s first", dependent, dependent, dependency, reference, dependencyEntry.Action, dependency, dependent))
+			}
+		}
+	}
+	if len(conflicts) > 0 {
+		slices.Sort(conflicts)
+		return errors.New(strings.Join(conflicts, "\n"))
+	}
+
+	for key := range toRemove {
+		delete(p.Plan, key)
+	}
+	p.NotSelected = len(toRemove)
 	return nil
 }
 
