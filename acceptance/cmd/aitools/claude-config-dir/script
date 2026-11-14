@@ -1,18 +1,18 @@
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
 
-# aitools commands skip the install hint; version exercises it without auth or network.
+# Only air subcommands print the install hint; air list against the mock server exercises it.
 sethome ./empty-home
 title "Plugin installed only in the custom config directory"
-trace CLAUDE_CONFIG_DIR=custom $CLI version
+trace CLAUDE_CONFIG_DIR=custom $CLI air list
 
 sethome ./installed-home
 title "Custom directory takes precedence over the default installation"
-trace CLAUDE_CONFIG_DIR=missing $CLI version
+trace CLAUDE_CONFIG_DIR=missing $CLI air list
 
 title "Empty override uses the default installation"
-trace CLAUDE_CONFIG_DIR= $CLI version
+trace CLAUDE_CONFIG_DIR= $CLI air list
 
 title "Unset override uses the default installation"
 unset CLAUDE_CONFIG_DIR
-trace $CLI version
+trace $CLI air list

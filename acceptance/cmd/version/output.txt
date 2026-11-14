@@ -35,9 +35,8 @@ Tip: coding agents detected without Databricks skills. Run 'databricks aitools i
   "development_build": true
 }
 
-=== version --check from Claude Code prints only the root hint
+=== version --check from Claude Code prints no hint
 
 >>> [CLI] version --check
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 Databricks CLI v[CLI_VERSION]
 This is a development build; skipping the update check.

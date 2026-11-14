@@ -23,8 +23,8 @@ func PrintSkillsTip(ctx context.Context) {
 
 // MaybeVersionCheckTip prints skillsTipText after `databricks version --check`
 // when a coding agent is detected without Databricks tooling. Claude Code
-// callers are skipped because MaybeHint already covers them, with its
-// per-session throttle. installedPlugins is a parameter because this package
+// callers are skipped because MaybeHint owns their hints, and it recommends a
+// skill only on the commands that skill helps with. installedPlugins is a parameter because this package
 // cannot import the installer; callers pass installer.InstalledPluginAgents,
 // which counts a plugin recorded in the CLI install state with or without a
 // known version. No telemetry is logged: `databricks version` never resolves

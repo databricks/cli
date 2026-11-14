@@ -5,15 +5,26 @@ unset CLAUDE_CODE_SESSION_ID
 # A host CLAUDE_CONFIG_DIR would move the plugin file away from the isolated HOME.
 unset CLAUDE_CONFIG_DIR
 
-title "hint printed on an authenticated command: one hint-shown event is uploaded"
-trace $CLI jobs list
+title "hint printed on an air command: one hint-shown event is uploaded"
+trace $CLI air list
 trace print_telemetry
 
-title "hint printed on a command that resolves no auth: nothing is uploaded"
+title "commands outside air print no hint and log no event"
+trace $CLI jobs list
+trace print_telemetry
 trace $CLI version
+
+title "previewing a skill with --path installs nothing, so air still hints"
+# The mock manifest serves only databricks-test.
+trace $CLI aitools install --path ./preview --skills databricks-test
+trace print_telemetry
+find preview -type f | sort
+rm -rf preview
+test -e "$HOME/.databricks/aitools" && echo "unexpected aitools state in HOME" || echo "no aitools state in HOME"
+trace $CLI air list
 trace print_telemetry
 
 title "plugin installed: no hint, no event"
 sethome ./installed-home
-trace $CLI jobs list
+trace $CLI air list
 trace print_telemetry
