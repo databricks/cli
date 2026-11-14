@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -35,8 +36,16 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
+// DMSBindMetadata holds the bound resource state and serial to publish after bind is committed.
+type DMSBindMetadata struct {
+	Serial        int
+	ResourceState dstate.ResourceEntry
+}
+
 // BindResult contains the result of a bind operation including any detected changes.
 type BindResult struct {
+	// DMSMetadata is nil when deployment history is disabled.
+	DMSMetadata *DMSBindMetadata
 	// HasChanges is true if deploying after bind would make changes to the resource
 	HasChanges bool
 	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
@@ -197,6 +206,15 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
+	var dmsMetadata *DMSBindMetadata
+	if b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
+		dmsMetadata = &DMSBindMetadata{Serial: b.StateDB.Data.Serial, ResourceState: resourceState}
+	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
@@ -208,6 +226,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 	// Check if the bound resource has changes
 	result := &BindResult{
+		DMSMetadata:   dmsMetadata,
 		HasChanges:    false,
 		Action:        deployplan.Skip,
 		Plan:          plan,

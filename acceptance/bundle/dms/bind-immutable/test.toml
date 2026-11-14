@@ -1,0 +1,4 @@
+# This test ensures that deployment history works with bind and immutable folders. This case is interesting
+# because by default we record the snapshot path in deploy, but that is not available during bind. So it's important
+# to ensure that we don't do that during deployment bind, and recording history continues to work.
+Cloud = false

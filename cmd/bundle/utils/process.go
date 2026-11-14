@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -32,14 +30,10 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
@@ -411,7 +405,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		if needDirectState && stateMode == dstate.WritingDeploymentHistoryOnly {
 			var err error
-			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+			dmsDeploymentID, dmsDeployment, err = dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -421,7 +415,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
 			// does not exist until a first deploy creates it, so it is left off here and the deploy
 			// phase stamps the created id.
-			lastVersionID, err := parseLastVersionID(dmsDeployment)
+			lastVersionID, err := dms.ParseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -637,53 +631,6 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
-//
-// TODO: a deployment is only usable when both the node and the service's record exist, and a
-// half-created one - node present, record missing - blocks the bundle here even though
-// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
-// that returns an empty id and version unless both halves are there, leaving the caller to call
-// CreateDeployment to create or finalize it.
-//
-// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
-// workspace lookup to turn the node into an id, then a get by that id.
-func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
-	nodePath := path.Join(statePath, dms.DeploymentNodeName)
-
-	obj, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
-		return w.Workspace.GetStatusByPath(ctx, nodePath)
-	})
-	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-		return "", nil, nil
-	}
-	if err != nil {
-		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
-	}
-	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
-	deployment, err := retry.With(ctx, retry.IsTransientRead, func() (*bundledeployments.Deployment, error) {
-		return w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-			Name: dms.DeploymentName(deploymentID),
-		})
-	})
-	if err != nil {
-		return "", nil, err
-	}
-	return deploymentID, deployment, nil
-}
-
-// parseLastVersionID parses the deployment's last recorded version, which the service reports
-// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
-func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
-	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
-		return 0, nil
-	}
-	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
-	}
-	return v, nil
-}
-
 // OpenDirectStateForRead opens the direct-engine state database read-only. When the bundle
 // records deployment history the local state file is only a tombstone, so the resources are
 // read from the deployment metadata service instead.
@@ -696,11 +643,11 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		return nil
 	}
 
-	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	dmsDeploymentID, dmsDeployment, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err
 	}
-	lastVersionID, err := parseLastVersionID(dmsDeployment)
+	lastVersionID, err := dms.ParseLastVersionID(dmsDeployment)
 	if err != nil {
 		return err
 	}
@@ -716,11 +663,11 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 
 // prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS.
 func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
-	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	id, deployment, err := dms.LookupDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}
-	lastVersion, err := parseLastVersionID(deployment)
+	lastVersion, err := dms.ParseLastVersionID(deployment)
 	if err != nil {
 		return nil, err
 	}

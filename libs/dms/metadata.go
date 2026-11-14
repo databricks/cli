@@ -1,12 +1,19 @@
 package dms
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // VersionType identifies the kind of deployment a version records.
@@ -66,6 +73,19 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 		stale = append(stale, "workspace_info")
 	}
 	return strings.Join(stale, ",")
+}
+
+// ParseLastVersionID parses the deployment's last recorded version, which the service reports
+// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
+func ParseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
+	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
+	}
+	return v, nil
 }
 
 // NextVersion is the version number this run will create, given the deployment's most recent
@@ -131,4 +151,41 @@ func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployme
 		}
 	}
 	return dep
+}
+
+// LookupDeployment resolves the deployment node under statePath and reads its DMS record.
+// A missing workspace node returns no deployment.
+//
+// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
+//
+// TODO: a deployment is only usable when both the node and the service's record exist, and a
+// half-created one - node present, record missing - blocks the bundle here even though
+// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
+// that returns an empty id and version unless both halves are there, leaving the caller to call
+// CreateDeployment to create or finalize it.
+//
+// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
+// workspace lookup to turn the node into an id, then a get by that id.
+func LookupDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, DeploymentNodeName)
+
+	obj, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
+		return w.Workspace.GetStatusByPath(ctx, nodePath)
+	})
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := retry.With(ctx, retry.IsTransientRead, func() (*bundledeployments.Deployment, error) {
+		return w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+			Name: DeploymentName(deploymentID),
+		})
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
 }
