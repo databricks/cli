@@ -1,0 +1,16 @@
+title "Deploy: source_code_path is sent on Create"
+trace $CLI bundle deploy
+trace print_requests.py //apps
+
+title "Change source_code_path: plan detects an update"
+trace update_file.py databricks.yml "source_code_path: ./app" "source_code_path: ./app2"
+trace $CLI bundle plan
+
+title "Redeploy: UpdateApp rejects source_code_path, so no app request is sent; the next Deploy applies it"
+trace $CLI bundle deploy
+trace print_requests.py //apps
+
+title "Change description: App Update omits source_code_path from the body and the update mask"
+trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace $CLI bundle deploy
+trace print_requests.py //apps

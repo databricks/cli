@@ -46,8 +46,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   },
   "source_code_path": {
     "action": "skip",
-    "reason": "no active deployment",
+    "reason": "spec:input_only",
     "old": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app",
-    "new": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app"
+    "new": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app",
+    "remote": ""
   }
 }

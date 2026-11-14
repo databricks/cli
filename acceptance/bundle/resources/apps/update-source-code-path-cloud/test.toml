@@ -1,0 +1,13 @@
+# Runs against a real workspace: production rejects source_code_path in the UpdateApp mask
+# (400 INVALID_PARAMETER_VALUE), so changing it on an existing app must not call UpdateApp.
+# Locally the fake server enforces the same rule; see libs/testserver/apps.go.
+Cloud = true
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
+
+# App deployment progress messages are non-deterministic on cloud (different status messages
+# per poll), so filter them out entirely.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""
