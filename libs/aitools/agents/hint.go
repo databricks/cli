@@ -63,6 +63,14 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 	if !cmdio.HasIO(ctx) {
 		return
 	}
+	if cmdio.GetInteractiveMode(ctx) != cmdio.InteractiveModeFull {
+		return
+	}
+	// Without a session ID we cannot throttle the hint reliably across CLI
+	// invocations, so stay quiet instead of printing it on every command.
+	if env.Get(ctx, claudeSessionEnv) == "" {
+		return
+	}
 	// Check the session throttle before the filesystem probe: once a session has
 	// been hinted, later commands short-circuit here and skip the plugin/skills
 	// detection. The throttle token is written only after a hint prints (below),
