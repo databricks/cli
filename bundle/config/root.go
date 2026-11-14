@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynloc"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -129,6 +131,10 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	v, err = rewriteShorthands(v)
 	if err != nil {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+	}
+	v, err = rewriteForEachTaskInputs(v)
+	if err != nil {
+		return nil, diag.FromErr(fmt.Errorf("failed to rewrite for_each_task.inputs in %s: %w", path, err))
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
@@ -550,6 +556,53 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 			}
 		}))
 	}))
+}
+
+// rewriteForEachTaskInputs encodes literal arrays before SDK string normalization.
+// A resource-level any shadow cannot cover this nested SDK field, so this runs
+// before typed normalization, unlike resource mutators after variable resolution.
+// Other kinds use normal validation; array references fail here.
+func rewriteForEachTaskInputs(v dyn.Value) (dyn.Value, error) {
+	inputs := dyn.NewPattern(
+		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+		dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("for_each_task"), dyn.Key("inputs"),
+	)
+	paths := &dyn.TrieNode{}
+	for _, prefix := range []dyn.Pattern{
+		nil,
+		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()),
+		dyn.NewPattern(dyn.Key("environments"), dyn.AnyKey()),
+	} {
+		if err := paths.Insert(prefix.Append(inputs...)); err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to match for_each_task.inputs: %w", err)
+		}
+	}
+	return dyn.Walk(v, func(p dyn.Path, input dyn.Value) (dyn.Value, error) {
+		if input.Kind() != dyn.KindSequence {
+			return input, nil
+		}
+		if _, ok := paths.SearchPath(p); !ok {
+			return input, nil
+		}
+
+		array, err := dyn.Walk(input, func(_ dyn.Path, value dyn.Value) (dyn.Value, error) {
+			if value.Kind() == dyn.KindTime {
+				return dyn.NewValue(value.MustTime().String(), value.Locations()), nil
+			}
+			return value, nil
+		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		data, err := json.Marshal(array.AsAny())
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("%s at %s: %w", p, input.Location(), err)
+		}
+		if ref, ok := dynvar.NewRef(dyn.V(string(data))); ok {
+			return dyn.InvalidValue, fmt.Errorf("%s at %s contains variable reference ${%s} in a YAML array; use a JSON string for interpolated inputs", p, input.Location(), ref.References()[0])
+		}
+		return dyn.NewValue(string(data), input.Locations()), nil
+	})
 }
 
 // validateVariableOverrides checks that all variables specified

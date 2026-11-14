@@ -1,0 +1,19 @@
+bundle:
+  name: for_each_inputs_array_reference
+
+variables:
+  item:
+    default: first
+
+resources:
+  jobs:
+    fan:
+      tasks:
+        - task_key: array_reference
+          for_each_task:
+            inputs:
+              - name: ${var.item}
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: /notebook
