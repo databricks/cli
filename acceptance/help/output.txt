@@ -181,7 +181,7 @@ Domains
   domains                                *Beta* Manage domains for organizing and discovering data assets.
 
 Developer Tools
-  air                                    *Public Preview* Run and manage AI Runtime training workloads
+  air                                    Run and manage AI Runtime workloads on serverless GPU compute
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory

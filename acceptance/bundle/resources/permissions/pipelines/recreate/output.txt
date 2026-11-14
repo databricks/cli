@@ -1,5 +1,6 @@
 
 === Deploy a pipeline with permissions
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created pipelines.foo
@@ -30,6 +31,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 pipelines foo.permissions id='/pipelines/[OLD_PIPELINE_ID]'
 
 === Switch from catalog to storage: the pipeline is recreated with a new ID
+
 >>> update_file.py databricks.yml catalog: main storage: dbfs:/my-storage
 
 >>> update_file.py databricks.yml target: ${resources.schemas.bar.name} #target: ${resources.schemas.bar.name}
@@ -46,6 +48,7 @@ pipelines foo.permissions id='/pipelines/[OLD_PIPELINE_ID]'
 }
 
 === Deploy recreates the pipeline and applies the permissions to the new one
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 
@@ -78,6 +81,7 @@ Resources: 1 created, 1 changed, 1 deleted, 1 unchanged
 }
 
 === The permissions are recorded under the new ID, so the next plan is a no-op
+
 >>> read_state.py pipelines foo.permissions id
 pipelines foo.permissions id='/pipelines/[NEW_PIPELINE_ID]'
 

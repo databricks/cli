@@ -1,5 +1,6 @@
 
 === variable file
+
 >>> [CLI] bundle validate -o json
 {
   "job_cluster_key": "mlops_stacks-cluster",
@@ -10,6 +11,7 @@
 }
 
 === variable file and variable flag
+
 >>> [CLI] bundle validate -o json --var=cluster_key=mlops_stacks-cluster-overriden
 {
   "job_cluster_key": "mlops_stacks-cluster-overriden",
@@ -20,6 +22,7 @@
 }
 
 === variable file and environment variable
+
 >>> BUNDLE_VAR_cluster_key=mlops_stacks-cluster-overriden [CLI] bundle validate -o json
 {
   "job_cluster_key": "mlops_stacks-cluster-overriden",
@@ -30,6 +33,7 @@
 }
 
 === variable has value in config file
+
 >>> [CLI] bundle validate -o json --target with_value
 {
   "job_cluster_key": "mlops_stacks-cluster-from-file",
@@ -40,6 +44,7 @@
 }
 
 === file cannot be parsed
+
 >>> errcode [CLI] bundle validate -o json --target invalid_json
 Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json:1:1: invalid character 'o' in literal false (expecting 'a')
 
@@ -54,6 +59,7 @@ Exit code: 1
 }
 
 === file has wrong structure
+
 >>> errcode [CLI] bundle validate -o json --target wrong_file_structure
 Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/wrong_file_structure/variable-overrides.json: invalid format
 
@@ -71,6 +77,7 @@ Exit code: 1
 }
 
 === file has variable that is complex but default is string
+
 >>> errcode [CLI] bundle validate -o json --target complex_to_string
 Error: variable cluster_key is not of type complex, but the value in the variable file is a complex type
 
@@ -85,6 +92,7 @@ Exit code: 1
 }
 
 === file has variable that is string but default is complex
+
 >>> errcode [CLI] bundle validate -o json --target string_to_complex
 Error: variable cluster is of type complex, but the value in the variable file is not a complex type
 
@@ -99,6 +107,7 @@ Exit code: 1
 }
 
 === variable is required but it's not provided in the file
+
 >>> errcode [CLI] bundle validate -o json --target without_defaults
 Error: no value assigned to required variable cluster. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_cluster environment variable, or .databricks/bundle/<target>/variable-overrides.json
 

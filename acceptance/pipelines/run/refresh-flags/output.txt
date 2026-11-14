@@ -1,31 +1,39 @@
 
 >>> [CLI] pipelines deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files...
 Created pipelines.my_pipeline
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WORKSPACE_ID]
+Created schemas.test_schema
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
+View your schema test_schema here: [DATABRICKS_URL]/explore/data/main/pipeline_refresh_[UNIQUE_NAME]?w=[WORKSPACE_ID]
 
-=== Running pipeline with --refresh flag and specific tables
->>> [CLI] pipelines run --refresh table1,table2
-Recommendation: This command runs the last deployed version of the code
+=== Initialize all tables with --full-refresh-all
 
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
-
-Update ID: [UUID][1]
-
-Update for pipeline completed successfully.
-
-Pipeline configurations for this update:
-• All tables are refreshed
+>>> run_pipeline --full-refresh-all
+• All tables are fully refreshed
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "development": true,
+    "full_refresh": true
+  }
+}
+
+=== Running pipeline with --refresh flag and specific tables
+
+>>> run_pipeline --refresh table1 table2
+• Refreshed [table1, table2]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
     "refresh_selection": [
       "table1",
       "table2"
@@ -33,50 +41,17 @@ Pipeline configurations for this update:
   }
 }
 
-=== Running pipeline with --full-refresh-all flag
->>> [CLI] pipelines run --full-refresh-all
-Recommendation: This command runs the last deployed version of the code
-
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][2]
-
-Update ID: [UUID][2]
-
-Update for pipeline completed successfully.
-
-Pipeline configurations for this update:
-• All tables are refreshed
-
->>> print_requests.py //pipelines
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID][0]/updates",
-  "body": {
-    "full_refresh": true
-  }
-}
-
 === Running pipeline with --full-refresh flag and specific tables
->>> [CLI] pipelines run --full-refresh table1,table2
-Recommendation: This command runs the last deployed version of the code
 
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][3]
-
-Update ID: [UUID][3]
-
-Update for pipeline completed successfully.
-
-Pipeline configurations for this update:
-• All tables are refreshed
+>>> run_pipeline --full-refresh table1 table2
+• Full refreshed [table1, table2]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "development": true,
     "full_refresh_selection": [
       "table1",
       "table2"
@@ -85,25 +60,17 @@ Pipeline configurations for this update:
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
->>> [CLI] pipelines run --full-refresh table1,table2 --refresh table3,table4
-Recommendation: This command runs the last deployed version of the code
 
-If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
-
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][4]
-
-Update ID: [UUID][4]
-
-Update for pipeline completed successfully.
-
-Pipeline configurations for this update:
-• All tables are refreshed
+>>> run_pipeline --full-refresh table:table1 table:table2 --refresh table:table3 table:table4
+• Refreshed [table3, table4]
+• Full refreshed [table1, table2]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "development": true,
     "full_refresh_selection": [
       "table1",
       "table2"
@@ -114,3 +81,263 @@ Pipeline configurations for this update:
     ]
   }
 }
+
+=== Refreshing tables and fully refreshing a source file together
+
+>>> run_pipeline --refresh table:table3 table:table4 --full-refresh file:pipeline_file.py
+• Refreshed [table3, table4]
+• Full refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ],
+    "refresh_selection": [
+      "table3",
+      "table4"
+    ]
+  }
+}
+
+=== Refreshing tables defined in a source file
+
+>>> run_pipeline --refresh file:pipeline_file.py
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Fully refreshing tables defined in a source file
+
+>>> run_pipeline --full-refresh file:pipeline_file.py
+• Full refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Refreshing a source notebook
+
+>>> run_pipeline --refresh file:src/pipeline_notebook.sql
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook"
+    ]
+  }
+}
+
+=== Refreshing an absolute workspace path
+
+>>> run_pipeline --refresh file:/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Refreshing from a subdirectory
+
+>>> withdir src run_pipeline --refresh file:../pipeline_file.py
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Bundle run supports both file flags
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook"
+    ],
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Refreshing a source file and fully refreshing tables together
+
+>>> run_pipeline --refresh file:pipeline_file.py --full-refresh table:table3 table:table4
+• Full refreshed [table3, table4]
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection": [
+      "table3",
+      "table4"
+    ],
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py"
+    ]
+  }
+}
+
+=== Rejecting missing sources and incompatible refresh modes
+
+>>> musterr [CLI] pipelines run --refresh table: --restart --no-wait
+Error: invalid --refresh: table: requires a table name
+
+>>> musterr [CLI] pipelines run --full-refresh file: --restart --no-wait
+Error: invalid --full-refresh: file: requires a source file path
+
+>>> musterr [CLI] pipelines run --refresh file:./missing.sql --no-wait
+Error: invalid --refresh: source file "./missing.sql" not found; use an existing source file
+
+>>> musterr [CLI] pipelines run --refresh file:pipeline_file.py --full-refresh-all --no-wait
+Error: cannot use --refresh or --full-refresh together with --full-refresh-all, these flags are mutually exclusive
+
+>>> musterr [CLI] pipelines run --full-refresh file:./missing.sql --restart --no-wait
+Error: invalid --full-refresh: source file "./missing.sql" not found; use an existing source file
+
+>>> print_requests.py //pipelines
+
+=== Rejecting mixed selectors before restarting the pipeline
+
+>>> musterr [CLI] pipelines run --refresh table:table1 file:pipeline_file.py --restart --no-wait
+Error: cannot mix table names and source files in --refresh; use only table names or only source files
+
+>>> musterr [CLI] pipelines run --full-refresh table:table2 file:pipeline_file.py --restart --no-wait
+Error: cannot mix table names and source files in --full-refresh; use only table names or only source files
+
+>>> print_requests.py //pipelines
+
+>>> musterr [CLI] bundle run my_pipeline --refresh table:table1 file:pipeline_file.py --restart --no-wait
+Error: cannot mix table names and source files in --refresh; use only table names or only source files
+
+>>> print_requests.py //pipelines
+
+=== Repeated table selectors and backtick quoting
+
+>>> run_pipeline --refresh table:table1 --refresh table2
+• Refreshed [table1, table2]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  }
+}
+
+>>> run_pipeline --full-refresh table:`table1` `table2`
+• Full refreshed [`table1`, `table2`]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection": [
+      "`table1`",
+      "`table2`"
+    ]
+  }
+}
+
+=== Selecting multiple source files
+
+>>> run_pipeline --refresh file:`pipeline_file.py` file:src/pipeline_notebook.sql
+• Refreshed tables defined in [/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py, /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py",
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook"
+    ]
+  }
+}
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true,
+    "full_refresh_selection_by_path": [
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/pipeline_file.py",
+      "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/[UNIQUE_NAME]/files/src/pipeline_notebook"
+    ]
+  }
+}
+
+=== Rejecting invalid selector syntax before restart
+>>> musterr [CLI] pipelines run --refresh table1,table2 --restart --no-wait
+Error: invalid argument "table1,table2" for "--refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas
+>>> musterr [CLI] pipelines run --full-refresh table1,table2 --restart --no-wait
+Error: invalid argument "table1,table2" for "--full-refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas
+>>> musterr [CLI] pipelines run --refresh table:`table1 --restart --no-wait
+Error: invalid argument "table:`table1" for "--refresh" flag: unclosed backtick in refresh selector
+>>> musterr [CLI] pipelines run --refresh  --restart --no-wait
+Error: invalid argument "" for "--refresh" flag: expected at least one table or file selector
+
+>>> musterr [CLI] pipelines run --refresh flow:ingest --restart --no-wait
+Error: invalid --refresh: flow selectors are not supported yet; select tables or files
+
+>>> print_requests.py //pipelines

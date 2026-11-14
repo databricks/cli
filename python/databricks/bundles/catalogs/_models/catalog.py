@@ -3,6 +3,10 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
+from databricks.bundles.catalogs._models.catalog_isolation_mode import (
+    CatalogIsolationMode,
+    CatalogIsolationModeParam,
+)
 from databricks.bundles.catalogs._models.encryption_settings import (
     EncryptionSettings,
     EncryptionSettingsParam,
@@ -53,6 +57,11 @@ class Catalog(Resource):
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
     """
     The Unity Catalog privileges to grant to principals on this securable.
+    """
+
+    isolation_mode: VariableOrOptional[CatalogIsolationMode] = None
+    """
+    Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -126,6 +135,11 @@ class CatalogDict(TypedDict, total=False):
     grants: VariableOrList[PrivilegeAssignmentParam]
     """
     The Unity Catalog privileges to grant to principals on this securable.
+    """
+
+    isolation_mode: VariableOrOptional[CatalogIsolationModeParam]
+    """
+    Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]

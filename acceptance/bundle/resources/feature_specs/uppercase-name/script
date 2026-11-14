@@ -1,0 +1,21 @@
+feature_spec_setup
+
+# No replace_ids.py, so the output shows the id in lowercase.
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering
+
+title "UC lowercases the name, so the id is lowercase"
+trace $CLI bundle summary -o json | jq .resources.feature_specs.spec1.id
+
+title "A plan on an unchanged bundle skips the name instead of recreating the feature spec"
+trace $CLI bundle plan -o json | jq '.plan | map_values({action, changes: (.changes // {} | map_values({action, reason}))})'
+trace $CLI bundle plan
+
+title "Renaming the feature spec still recreates it"
+trace update_file.py databricks.yml ".MySpec" ".MyOtherSpec"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //feature-engineering
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //feature-engineering

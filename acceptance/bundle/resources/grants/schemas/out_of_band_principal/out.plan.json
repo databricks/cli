@@ -18,6 +18,14 @@
         "name": "schema_out_of_band_principal_[UNIQUE_NAME]",
         "owner": "[USERNAME]",
         "schema_id": "[UUID][2]"
+      },
+      "changes": {
+        "schema_id": {
+          "action": "skip",
+          "reason": "internal_id",
+          "old": "[UUID][2]",
+          "remote": "[UUID][2]"
+        }
       }
     },
     "resources.schemas.grants_schema.grants": {

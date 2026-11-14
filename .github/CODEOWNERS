@@ -83,6 +83,11 @@
 
 /integration/cmd/environments/          @databricks/eng-deco-cli @databricks/eng-deco-ax
 
+# Setup-local files outside the local environments paths. These rules come
+# after /libs/telemetry/ because the last matching rule wins.
+/cmd/workspace/environments/overrides.go @databricks/eng-deco-cli @databricks/eng-deco-ax
+/libs/telemetry/protos/setup_local.go   @databricks/eng-deco-cli @databricks/eng-deco-ax
+
 # Internal
 /internal/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 

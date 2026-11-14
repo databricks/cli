@@ -1,5 +1,6 @@
 
 === Production target: update does not send development
+
 >>> [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/prod/files...
 Created pipelines.my_pipeline
@@ -19,6 +20,7 @@ Update ID: [UUID][1]
 }
 
 === Development target: update sends development: true
+
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev/files...
 Created pipelines.my_pipeline
@@ -40,6 +42,7 @@ Update ID: [UUID][3]
 }
 
 === Development target via pipelines run: update sends development: true
+
 >>> [CLI] pipelines run my_pipeline -t dev
 Recommendation: This command runs the last deployed version of the code
 
@@ -64,6 +67,7 @@ Pipeline configurations for this update:
 }
 
 === Development target with pipelines_development preset disabled: update does not send development
+
 >>> [CLI] bundle deploy -t dev_preset_off
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode/dev_preset_off/files...
 Created pipelines.my_pipeline

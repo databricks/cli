@@ -18,7 +18,7 @@ code is designed" never justifies a behavior on its own.
 ## 1. Collect the change
 
 The review target is `HEAD` unless you were given a commit. Set `TARGET` to it
-and `BASE` to its merge base with main:
+and `BASE` to its merge base with the PR's base branch:
 
 ```bash
 TARGET=HEAD
@@ -27,12 +27,36 @@ git diff --stat "$BASE" "$TARGET"
 git diff "$BASE" "$TARGET"
 ```
 
+For a stacked PR (`gh pr view --json baseRefName` is not `main`), fetch that
+branch and take `BASE` from `git merge-base "$TARGET" origin/<baseRefName>`
+instead, so the parent PR's hunks are not reviewed again here.
+
 If the change has a PR, read its title and description to learn the intent.
-Do not read existing review comments before forming your own view.
+Do not read existing review comments before forming your own view. List the
+hunks the description does not explain: a fix riding along with the main
+change belongs in its own PR (`AGENTS.md`: one change per PR), so ask for
+the split.
+
+When the description says the change addresses a review thread on another
+PR, that thread is part of the intent. Still form your own view first, then
+read it and check the new text answers the ask made there; if it answers a
+different question, say which.
+
+Judge the code at `TARGET`. Separately, check what a merge into the PR's
+base branch would hit: `git rev-list --count "$BASE"..origin/main` and
+`git merge-tree --write-tree "$TARGET" origin/main`, with
+`origin/<baseRefName>` in place of `origin/main` for a stacked PR, so a
+conflict the parent PR has with main is reported once, on the parent. GitHub
+flags the conflict too, but not where things went: if files the change
+touches were moved, split or deleted there, or a convention it follows
+changed (changelog location, test matrix variables), say so in the review
+body with the new location, so the author rebases before the next round.
+That is the only use of this check; do not re-review against main.
 
 Read every changed non-generated file in full at `TARGET`, not just the hunks
 (`git show "$TARGET":path`). Skim generated files (schemas, codegen output,
-acceptance test output) only to confirm they follow from the source change.
+acceptance test output) only to confirm they follow from the source change;
+CI already fails on stale generated output, so do not regenerate locally.
 Read the repo's agent rules that apply to the changed files, under
 `.agents/rules/` (testing, comments, language style guides).
 
@@ -50,6 +74,19 @@ For every new type, function, flag, env var, config field, or code path:
   change does by hand: reading env vars, parsing booleans, normalizing paths
   or hosts, formatting errors, retrying. In this repo, `libs/env` has `Get`,
   `Lookup` and `GetBool`.
+- When the change edits a constant, regex or literal, also grep a distinctive
+  fragment of the old value: copies of a constant do not share its name.
+  Under a "keep in sync with X" comment, check every copy, not only the ones
+  the comment lists, and check that the parity test has an input that
+  exercises the change.
+- For every new option, flag or branch, find the concrete input that makes
+  it do something (a file, a directory, an API response, a config value) and
+  confirm that input can still be produced at `TARGET`. A mechanism whose
+  trigger no longer exists is a finding.
+- When the change configures a pinned third-party action or tool, read that
+  tool's README or source at the pinned version
+  (`gh api repos/<owner>/<repo>/contents/README.md?ref=<sha>`) and verify
+  each option and default the change relies on.
 
 Note, for yourself, how the new code differs from each existing piece you
 find.
@@ -66,7 +103,11 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    edge cases: nil or empty values, errors that are dropped or wrapped
    inconsistently, loops and early returns, concurrency and shared state,
    resources that aren't closed, off-by-one and ordering assumptions, and
-   behavior that differs between platforms.
+   behavior that differs between platforms. For a new goroutine fan-out,
+   write down what bounds the number live at once and what each allocates;
+   if the change ships a benchmark, run it with `-benchmem`. For bundle
+   config changes, run the edge inputs through `bundle validate` in a
+   scratch directory and quote the real output in the comment.
    Table: `line | input or state | what happens | is that right?`
 2. **One mechanism per job.** Does the change add a second way to do
    something the codebase already does, or copy logic that now has to be kept
@@ -104,6 +145,9 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    Then check how the value is used: a presence-only check on an on/off
    switch means `false` and `0` turn it on. Check that new config fields
    follow how similar existing fields are declared, validated and documented.
+   A field that newly accepts another YAML kind (a sequence where only a
+   string was allowed) is new config API too: check that
+   `bundle/schema/jsonschema.json` was regenerated to match.
    Table: `line | name | user-facing word or internal term? | how the value is
    used | existing precedent`
 7. **Stored values over time.** For every value the change writes to state,
@@ -111,22 +155,32 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    and who reads it later. Ask whether it goes stale after the first write,
    whether comments and output describe that lifecycle correctly, and what
    should happen when the stored value disagrees with the source of truth
-   (often: an error, not a silent fallback).
+   (often: an error, not a silent fallback). A marker or feature flag the
+   code reads to decide whether to act is a stored value too: list who
+   writes it and whether the change's new write path sets it.
    Table: `value (line) | written when | updated when | read by | can it
    disagree with the source of truth, and what happens then?`
-8. **Every new doc comment.** List them:
+8. **Every new doc comment.** List them. For Go:
 
    ```bash
    git diff "$BASE" "$TARGET" -- '*.go' ':!*_test.go' | grep -E '^\+(//|func |type |var |const )'
    ```
 
+   `.agents/rules/comments.md` applies to Python, shell and YAML as well, so
+   when the change touches those, list their added comments the same way
+   (`'*.py'` with `^\+(#|def |class )`, `'*.sh'` and `'*.yml'` with `^\+#`).
+   Docstrings and `--help` text in `acceptance/bin/*.py` count, and so does
+   the doc comment of a new test function when the change is test-only;
+   otherwise those passes come up empty for exactly the changes where the
+   comment is the point.
    Each comment above a new top-level declaration goes in the table. It
    should say what is decided, from which input, and where the result comes
    from. Flag comments that are wrong, that blur similar nouns, or that
    describe the mechanism but not the intent. Offer the sharper sentence.
    Also look for code that works around surprising behavior of an API or
    tool (adds a suffix, strips a prefix, retries a specific error) without
-   a comment saying why; ask why it happens.
+   a comment saying why; ask why it happens. When a new comment states such
+   a quirk, check that the other callers of the same API agree with it.
    Table: `line | what the comment claims | what the code does | precise
    enough?`
 9. **Tests.** Review test code as carefully as the code under test.
@@ -135,29 +189,66 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      functions and helpers with unit tests next to the existing ones. Flag a
      unit test that should be an acceptance test, and logic with many input
      combinations that has no unit tests (name a case they would catch).
+   - Look at `gh pr checks` before running tests locally: the
+     `task test (linux, ...)` jobs run the whole suite and the windows and
+     macos cells always include the tests the PR changed, so a green build
+     shows them passing under the toolchain pinned in `go.mod`. No job runs
+     another Go version, so run the changed acceptance tests under one
+     (`GOTOOLCHAIN=goX.Y.Z` downloads it): a golden whose values change
+     across toolchains asserts the standard library, not the CLI, and would
+     fail only on the next `Bump Go toolchain` PR.
    - Does each new or changed test show the effect it claims? The output
      should include the state after the action (list or print it again after
      a sync, a deploy or a migration) and the exact value the change is
-     about, not just a successful exit.
+     about, not just a successful exit. For a test that pins a fix, read the
+     Regression test report comment on the PR first (`gh pr view --comments`):
+     it ran the changed acceptance tests against main and the latest release,
+     so a test under `regression=` or `unreleased=` fails without the fix,
+     and one under `coverage=` passes without it unless the fix is already
+     released. Revert the fix locally and run the test only when the report
+     cannot tell: a unit test, a test it did not select, or a released fix; a
+     variant that still passes does not assert the claim. For a test that
+     asserts an invariant over existing types or files, run a scratch
+     positive control to see the check fire, and compare the check with the
+     walker or helper the repo already uses for that traversal.
+   - When a script or helper changes only to keep goldens equal across
+     `EnvMatrix` variants (a `nostamp` pipe, a new scrub pattern), restore it
+     from `BASE` and run the variant it targets; a change that passes without
+     it is dead at this commit. For a change to a shared helper under
+     `acceptance/bin`, check that some golden shows each new option doing
+     something.
    - The fake server in `libs/testserver` only returns what its handlers were
      taught, so a test that records the request, or a handler that echoes a
      field back, shows what the CLI sends, not what the API accepts. When the
      change sends a new field, a new value format (paths, identifiers,
      durations) or a new call to a real API, and no test covering it has
-     `Cloud = true` (`Cloud` is inherited, so check `out.test.toml`) and the
-     description does not mention a run against a real workspace, ask whether
-     it was verified against one.
+     `Cloud = true` (`Cloud` is inherited, so check `out.test.toml`), look at
+     `gh pr checks` first: the PR cloud run selects the tests whose
+     directories changed (`DATABRICKS_TEST_SELECT_CHANGED`), so a passing
+     Integration Tests run answers the question for those. It does not cover
+     a test in another directory that picks the change up through a shared
+     template or helper; for that one, or when there is no cloud run and the
+     description does not mention a real workspace, ask whether it was
+     verified against one.
+   - In a `Cloud = true` test, scan the golden output for host-dependent
+     tokens (`?w=[WORKSPACE_ID]`, `?o=`) and check that a `Repls` entry
+     strips them; Azure and GCP hosts omit the workspace query parameter.
    - Are fixtures readable? Prefer generating archives and other binary
      inputs in the test script over committing opaque files.
    - Does the test reuse the repo's existing test helpers and scripts, and
      keep helpers that a planned follow-up will need again?
    - One long script that walks many failure modes is hard to review:
-     suggest splitting it by category.
+     suggest splitting it by category, unless its sections share setup that
+     is expensive to repeat in a cloud run (a deploy, a break-glass call).
 10. **User-facing text.** Read every new or changed changelog fragment
     (`.nextchanges/`), error message, warning and help text. It should be
     short, accurate and written for users, follow `.nextchanges/README.md`
     for changelog entries, and reuse an existing constant instead of
-    repeating the same text in several places.
+    repeating the same text in several places. When the change lifts or
+    alters a restriction, grep for the existing messages that describe the
+    old behavior (the refusal, its hint): no hunk touches them, yet the
+    change makes them wrong. When the change is user-visible and adds no
+    `.nextchanges/` fragment, ask for one.
 
 Skip formatting, naming of internal identifiers, anything a linter catches,
 and questions about defensive checks.
@@ -213,6 +304,11 @@ short list if there are several.
    comment on the first and list the other locations in that comment. The
    review body doesn't repeat inline comments; use it for cross-cutting asks
    (missing tests, a design question that spans files).
+5. If the PR already has review threads, yours or another reviewer's, read
+   them now. Drop a comment that repeats a point already raised there or
+   that the author already answered (verification evidence often lives in a
+   thread, not in the description), and add a short one where an earlier
+   ask was not addressed.
 
 ## 5. Output
 

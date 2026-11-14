@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -62,6 +63,9 @@ func indexAndGetServer(t *testing.T, refs []workflowRef, runs map[int64]jobs.Run
 	return srv, hits
 }
 
+// selfUser resolves the current user for a self-scoped listQuery.
+func selfUser() (string, error) { return "me@example.com", nil }
+
 func TestIndexStrategyOrdersAndLimits(t *testing.T) {
 	// Three runs, out of submit-time order; newest two should win, newest-first.
 	refs := []workflowRef{
@@ -78,7 +82,7 @@ func TestIndexStrategyOrdersAndLimits(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 2,
+		currentUser: selfUser, limit: 2,
 	})
 	rows, err := f.next(10)
 	require.NoError(t, err)
@@ -103,7 +107,7 @@ func TestIndexStrategyOverFetchesWithTaskFilter(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 1,
+		currentUser: selfUser, limit: 1,
 		filters: listFilters{Experiment: "qwen"},
 	})
 	rows, err := f.next(1)
@@ -123,7 +127,7 @@ func TestIndexStrategyDropsForbiddenAndMissing(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	})
 	rows, err := f.next(10)
 	require.NoError(t, err)
@@ -151,7 +155,7 @@ func TestIndexStrategyPropagatesServerError(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	})
 	_, err := f.next(10)
 	require.Error(t, err) // 500 is systemic, not an ACL drop
@@ -164,10 +168,10 @@ func TestNewListStrategyGate(t *testing.T) {
 		q         listQuery
 		wantIndex bool
 	}{
-		{"active default → scan", listQuery{activeOnly: true, userFilter: "me@example.com", currentUser: "me@example.com"}, false},
-		{"all-status self → index", listQuery{userFilter: "me@example.com", currentUser: "me@example.com", limit: 5}, true},
+		{"active default → scan", listQuery{activeOnly: true, currentUser: selfUser}, false},
+		{"all-status self → index", listQuery{currentUser: selfUser, limit: 5}, true},
 		{"all-status all-users → scan", listQuery{allUsers: true}, false},
-		{"all-status other user → scan", listQuery{userFilter: "other@example.com", currentUser: "me@example.com"}, false},
+		{"all-status other user → scan", listQuery{userFilter: "other@example.com"}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -196,7 +200,9 @@ func TestNewListStrategyFallsBackWhenIndexFails(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/api/2.2/jobs/runs/list" {
-			_, _ = fmt.Fprint(w, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp")))
+			_, _ = fmt.Fprint(w, runsListBody(t, "",
+				airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp"),
+				airBaseRun(2, "other@example.com", "GPU_1xH100", 1, "exp")))
 			return
 		}
 		_, _ = w.Write([]byte(`{}`))
@@ -205,9 +211,28 @@ func TestNewListStrategyFallsBackWhenIndexFails(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	})
 	rows, err := f.next(10)
 	require.NoError(t, err)
-	require.Len(t, rows, 1) // served by the Jobs scan fallback
+	// Served by the Jobs scan fallback, still scoped to the current user.
+	require.Len(t, rows, 1)
+	assert.Equal(t, "1", rows[0].RunID)
+}
+
+func TestIndexStrategySkipsUserLookup(t *testing.T) {
+	refs := []workflowRef{{jobRunID: 1, submitTimeMs: 1000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{1: indexRun(1, 1000_000)}, nil, nil)
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
+
+	// The index is already scoped to the caller, so it never needs the user name.
+	var lookups atomic.Int32
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		currentUser: func() (string, error) { lookups.Add(1); return "me@example.com", nil },
+		limit:       10,
+	})
+	rows, err := f.next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Zero(t, lookups.Load())
 }

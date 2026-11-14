@@ -1,5 +1,6 @@
 
 === Summary before deploy
+
 >>> [CLI] bundle summary -o json
 {
   "modified_status": "created",
@@ -23,6 +24,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === The create returns a long-running operation, and the created set is read back from it
+
 >>> print_requests.py --keep //materialization-sets
 {
   "method": "POST",
@@ -68,12 +70,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The server assigned a set id and a member id per member
+
 >>> [CLI] bundle summary -o json
 {
   "id": "[SET1_ID]"
 }
 
 === Redeploying with no config change must plan nothing
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
@@ -82,6 +86,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py //materialization-sets
 
 === The schedule state the server assigned must not read as drift
+
 >>> [CLI] bundle plan -o json
 
 >>> jq .plan | with_entries(select(.key | startswith("resources.materialization_sets"))) | map_values(.action) out.plan.json
@@ -90,6 +95,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 }
 
 === The delete returns a long-running operation too, which the destroy waits on
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.features.batchfeat

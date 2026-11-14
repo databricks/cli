@@ -88,14 +88,22 @@ func TestCancelArgs(t *testing.T) {
 func TestCancelRunInvalidID(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	for _, id := range []string{"abc", "0", "-1"} {
-		err := cancelRun(t.Context(), m.WorkspaceClient, id)
+		err := cancelRun(t.Context(), m.WorkspaceClient, id, false)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid run ID")
 	}
 }
 
+// expectAirRun stubs runs/get to return an AIR run for id.
+func expectAirRun(m *mocks.MockWorkspaceClient, id int64) {
+	run := airRun(id, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp")
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: id}).Return(&run, nil)
+}
+
 func TestCancelByIDSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAirRun(m, 123)
+	expectAirRun(m, 456)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 456}).Return(nil, nil)
 
@@ -112,7 +120,7 @@ func TestCancelByIDSuccess(t *testing.T) {
 
 func TestCancelByIDNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
 
 	var buf bytes.Buffer
 	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "5")
@@ -127,6 +135,7 @@ func TestCancelByIDNotFoundInvalidParam(t *testing.T) {
 	// The cancel endpoint reports an unknown run as 400 INVALID_PARAMETER_VALUE,
 	// which the SDK does not remap to ErrResourceDoesNotExist for this path.
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAirRun(m, 5)
 	apiErr := &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "Run 5 does not exist."}
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apiErr)
 
@@ -138,8 +147,9 @@ func TestCancelByIDNotFoundInvalidParam(t *testing.T) {
 
 func TestCancelPartialFailureJSON(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAirRun(m, 123)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
-	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(nil, apierr.ErrResourceDoesNotExist)
 
 	var buf bytes.Buffer
 	_, err := runCancel(t, m.WorkspaceClient, flags.OutputJSON, "", &buf, "123", "5")
@@ -156,6 +166,7 @@ func TestCancelPartialFailureJSON(t *testing.T) {
 
 func TestCancelByIDSuccessJSON(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAirRun(m, 123)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
 
 	var buf bytes.Buffer
@@ -170,12 +181,50 @@ func TestCancelByIDSuccessJSON(t *testing.T) {
 
 func TestCancelByIDGenericFailure(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
+	expectAirRun(m, 7)
 	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 7}).Return(nil, errors.New("boom"))
 
 	var buf bytes.Buffer
 	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "7")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "Failed to cancel run 7: boom")
+}
+
+func TestCancelByIDRejectsNonAirRun(t *testing.T) {
+	// A non-AIR run (e.g. a notebook job) is rejected without calling CancelRun;
+	// the mock fails the test on any unexpected CancelRun call. Other IDs in
+	// the same invocation are still cancelled.
+	m := mocks.NewMockWorkspaceClient(t)
+	notebookRun := &jobs.Run{RunId: 9, Tasks: []jobs.RunTask{{NotebookTask: &jobs.NotebookTask{NotebookPath: "/x"}}}}
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 9}).Return(notebookRun, nil)
+	expectAirRun(m, 123)
+	m.GetMockJobsAPI().EXPECT().CancelRun(mock.Anything, jobs.CancelRun{RunId: 123}).Return(nil, nil)
+
+	var buf bytes.Buffer
+	_, err := runCancel(t, m.WorkspaceClient, flags.OutputText, "", &buf, "9", "123")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	out := buf.String()
+	assert.Contains(t, out, "Failed to cancel run 9: run 9 is not an AI Runtime run")
+	assert.Contains(t, out, "databricks jobs cancel-run 9")
+	assert.Contains(t, out, "Successfully requested cancellation for run 123")
+	assert.Contains(t, out, "1 run(s) failed to cancel.")
+}
+
+func TestCancelByIDRejectsNonAirRunJSON(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 9}).Return(&jobs.Run{RunId: 9, Tasks: []jobs.RunTask{{}}}, nil)
+
+	var buf bytes.Buffer
+	_, err := runCancel(t, m.WorkspaceClient, flags.OutputJSON, "", &buf, "9")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got cancelEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Empty(t, got.Data.Cancelled)
+	require.Len(t, got.Data.Failed, 1)
+	assert.Equal(t, "9", got.Data.Failed[0].RunID)
+	assert.Contains(t, got.Data.Failed[0].Error, "not an AI Runtime run")
 }
 
 func TestCancelAllNoActiveRuns(t *testing.T) {

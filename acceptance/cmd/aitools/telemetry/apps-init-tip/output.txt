@@ -1,0 +1,30 @@
+
+=== apps init with flags prints the tip: one hint-shown event per hint printed
+
+>>> [CLI] apps init --template ./template --skip-install --name app-tip
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-tip
+  Files: 3
+
+Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.
+
+>>> print_telemetry
+{"command":"apps_init","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+{"command":"apps_init","exit_code":0,"aitools_hint_event":{"hint_kind":"APPS_INIT_TIP"}}
+
+=== plugin installed: no hint, no tip, no event
+
+>>> [CLI] apps init --template ./template --skip-install --name app-plugin
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-plugin
+  Files: 3
+
+
+>>> print_telemetry

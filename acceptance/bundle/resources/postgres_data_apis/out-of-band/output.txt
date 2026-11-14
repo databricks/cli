@@ -1,5 +1,6 @@
 
 === Deploy enables the Data API
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/oob-pg-data-api-[UNIQUE_NAME]/default/files...
 Created postgres_branches.production
@@ -26,6 +27,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change the spec out of band
+
 >>> [CLI] postgres update-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api spec --json {"spec": {"db_schemas": ["public"], "db_max_rows": 7}}
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
@@ -42,6 +44,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Plan detects the change from status, and deploy restores the config
+
 >>> [CLI] bundle plan
 update postgres_data_apis.my_data_api
 
@@ -72,9 +75,11 @@ Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === Disable the Data API out of band
+
 >>> [CLI] postgres delete-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 
 === Plan detects the Data API is gone and re-creates it
+
 >>> [CLI] bundle plan
 create postgres_data_apis.my_data_api
 

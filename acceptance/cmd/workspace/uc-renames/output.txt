@@ -1,5 +1,6 @@
 
 === Create a catalog with a schema, and a volume, a registered model and a secret in it
+
 >>> [CLI] catalogs create test_catalog_[UNIQUE_NAME]
 {
   "name": "test_catalog_[UNIQUE_NAME]"
@@ -26,10 +27,12 @@
 }
 
 === Creating a catalog under a taken name fails
+
 >>> musterr [CLI] catalogs create test_catalog_[UNIQUE_NAME]
 Error: Catalog 'test_catalog_[UNIQUE_NAME]' already exists
 
 === Renaming the volume lowercases the new name
+
 >>> [CLI] volumes update test_catalog_[UNIQUE_NAME].myschema.myvolume --new-name MyVolume2
 {
   "full_name": "test_catalog_[UNIQUE_NAME].myschema.myvolume2",
@@ -37,6 +40,7 @@ Error: Catalog 'test_catalog_[UNIQUE_NAME]' already exists
 }
 
 === Renaming the model keeps its full name in sync
+
 >>> [CLI] registered-models update test_catalog_[UNIQUE_NAME].myschema.mymodel --new-name mymodel2
 {
   "full_name": "test_catalog_[UNIQUE_NAME].myschema.mymodel2",
@@ -44,6 +48,7 @@ Error: Catalog 'test_catalog_[UNIQUE_NAME]' already exists
 }
 
 === Renaming the schema moves the volume, the model and the secret with it
+
 >>> [CLI] schemas update test_catalog_[UNIQUE_NAME].myschema --new-name myschema2
 {
   "full_name": "test_catalog_[UNIQUE_NAME].myschema2"
@@ -65,6 +70,7 @@ Error: Catalog 'test_catalog_[UNIQUE_NAME]' already exists
 }
 
 === Renaming the catalog moves everything in it
+
 >>> [CLI] catalogs update test_catalog_[UNIQUE_NAME] --new-name test_catalog_renamed_[UNIQUE_NAME]
 {
   "name": "test_catalog_renamed_[UNIQUE_NAME]"

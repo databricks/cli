@@ -1,4 +1,4 @@
-title "Distinct UUIDs are numbered\n"
+title "Distinct UUIDs are numbered"
 # Distinct UUIDs get a stable [N] suffix in order of first appearance, so a golden
 # pins which value appears where; a repeated UUID keeps its number.
 echo "first:       11111111-1111-1111-1111-111111111111"

@@ -87,6 +87,7 @@
     "catalog_name": "mycat",
     "name": "myvol",
     "schema_name": "myschema",
+    "volume_id": "[UUID][3]",
     "volume_type": "MANAGED"
    }
   }

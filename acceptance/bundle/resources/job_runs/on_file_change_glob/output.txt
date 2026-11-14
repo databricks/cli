@@ -1,5 +1,6 @@
 
 === deploy hashes the matched files
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
 Created jobs.my_job
@@ -127,10 +128,12 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === editing a gitignored file does not re-fire
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === removing one pattern does not re-fire
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

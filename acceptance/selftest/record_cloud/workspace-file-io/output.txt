@@ -1,5 +1,6 @@
 
 === create a folder
+
 >>> [CLI] workspace mkdirs /Users/[USERNAME]/[UNIQUE_NAME]
 
 >>> print_requests
@@ -20,6 +21,7 @@
 }
 
 === upload a file
+
 >>> [CLI] workspace import /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt --format AUTO --file ./hello.txt
 
 >>> print_requests
@@ -34,6 +36,7 @@
 }
 
 === list the folder
+
 >>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME] --output json
 {
   "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt",
@@ -50,6 +53,7 @@
 }
 
 === stat the file
+
 >>> [CLI] workspace get-status /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
 {
   "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt",
@@ -66,6 +70,7 @@
 }
 
 === download the file
+
 >>> [CLI] workspace export /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt --format AUTO --file ./hello2.txt
 
 >>> cat hello2.txt
@@ -82,6 +87,7 @@ hello, world
 }
 
 === delete the file
+
 >>> [CLI] workspace delete /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
 
 >>> print_requests
@@ -94,6 +100,7 @@ hello, world
 }
 
 === stat the file again
+
 >>> [CLI] workspace get-status /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
 Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt) doesn't exist.
 
@@ -109,10 +116,12 @@ Exit code: 1
 }
 
 === list the folder
+
 >>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME]
 ID  Type  Language  Path
 
 === delete the folder
+
 >>> [CLI] workspace delete /Users/[USERNAME]/[UNIQUE_NAME]
 
 >>> print_requests
@@ -132,6 +141,7 @@ ID  Type  Language  Path
 }
 
 === list the folder again
+
 >>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME]
 Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]) doesn't exist.
 

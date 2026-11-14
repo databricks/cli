@@ -1,10 +1,12 @@
 
 === Replay a prior terraform deployment (captured from a real terraform run)
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> print_migration_telemetry
 
 === Inject GET failure so the migration plan check fails: migration hard-errors (no terraform fallback)
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct musterr [CLI] bundle deploy
 Warn: migration to direct: cannot plan resources.jobs.test_job: reading id="[TEST_JOB_ID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[TEST_JOB_ID]
 HTTP Status: 403 Forbidden
@@ -19,6 +21,7 @@ The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migr
 direct_migrate_plan_error true
 
 === Local state was NOT rewritten (still terraform)
+
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
 
@@ -27,6 +30,7 @@ ID                   Type  Language  Path
 [OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Retry: plan check passes this time, migration succeeds
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -38,6 +42,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 direct_migrated_via_env true
 
 === Local state is now direct
+
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
 .databricks/bundle/default/terraform/terraform.tfstate.backup

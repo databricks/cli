@@ -1,5 +1,6 @@
 
 === Create accepts a minimal body; the server materializes the rest
+
 >>> [CLI] postgres get-project projects/factcheck-star-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
@@ -24,6 +25,7 @@
 }
 
 === update_mask=* with a partial body (omits history_retention_duration + default_endpoint_settings)
+
 >>> [CLI] postgres update-project projects/factcheck-star-[UNIQUE_NAME] * --json {"spec":{"display_name":"changed","pg_version":16}}
 Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
 
@@ -45,6 +47,7 @@ Exit code: 1
 }
 
 === Set default_endpoint_settings to a non-default value (leaf mask)
+
 >>> [CLI] postgres get-project projects/factcheck-star-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-star-[UNIQUE_NAME]",
@@ -87,6 +90,7 @@ Exit code: 1
 }
 
 === update_mask=* with a body that now omits the non-default default_endpoint_settings
+
 >>> [CLI] postgres update-project projects/factcheck-star-[UNIQUE_NAME] * --json {"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}
 Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
 

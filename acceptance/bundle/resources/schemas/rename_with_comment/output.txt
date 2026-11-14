@@ -1,0 +1,54 @@
+
+=== Deploy a schema with a comment
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the schema and change its comment in one deploy: both go in one PATCH
+
+>>> update_file.py databricks.yml test-schema- test-schema-renamed-
+
+>>> update_file.py databricks.yml comment: c1 comment: c2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
+  "body": {
+    "comment": "c2",
+    "custom_max_retention_hours": 0,
+    "new_name": "test-schema-renamed-[UNIQUE_NAME]"
+  }
+}
+
+=== Both landed, so the redeploy is a no-op
+
+>>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "comment": "c2",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

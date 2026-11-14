@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.vs_endpoint
@@ -8,9 +9,11 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Simulate remote endpoint deletion (index is orphaned, still exists by name)
+
 >>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]
 
 === Plan must cascade-recreate the index because its endpoint is being recreated
+
 >>> [CLI] bundle plan
 create vector_search_endpoints.vs_endpoint
 recreate vector_search_indexes.my_index
@@ -18,6 +21,7 @@ recreate vector_search_indexes.my_index
 Plan: 2 to add, 0 to change, 1 to delete, 0 unchanged
 
 === Deploy recreates endpoint and rebinds index
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default/files...
 

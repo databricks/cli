@@ -4,34 +4,34 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy 1: create the cluster with azure_attributes but no spot_bid_max_price\n"
+title "Deploy 1: create the cluster with azure_attributes but no spot_bid_max_price"
 trace $CLI bundle deploy -qq
-title "azure_attributes sent on create (spot_bid_max_price absent):\n"
+title "azure_attributes sent on create (spot_bid_max_price absent):"
 print_requests.py //clusters/create | jq '.body.azure_attributes'
 
-title "Now the user adds an explicit spot_bid_max_price: 0 to the config\n"
+title "Now the user adds an explicit spot_bid_max_price: 0 to the config"
 update_file.py databricks.yml "#spot_bid_max_price: 0" "spot_bid_max_price: 0"
 
-title "Deploy 2: bundle should detect and apply the spot_bid_max_price change\n"
+title "Deploy 2: bundle should detect and apply the spot_bid_max_price change"
 trace $CLI bundle plan
-title "spot_bid_max_price change in the plan:\n"
+title "spot_bid_max_price change in the plan:"
 $CLI bundle plan -o json | jq '.plan[].changes["azure_attributes.spot_bid_max_price"]'
 trace $CLI bundle deploy -qq
 
-title "azure_attributes sent on update (empty means the change was NOT applied):\n"
+title "azure_attributes sent on update (empty means the change was NOT applied):"
 print_requests.py //clusters/edit | jq '.body.azure_attributes'
 
-title "Deploy 3: no config change, should converge to a no-op\n"
+title "Deploy 3: no config change, should converge to a no-op"
 trace $CLI bundle plan
 
-title "Now the user removes spot_bid_max_price again\n"
+title "Now the user removes spot_bid_max_price again"
 update_file.py databricks.yml "spot_bid_max_price: 0" "#spot_bid_max_price: 0"
 
-title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
+title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it"
 trace $CLI bundle plan
-title "spot_bid_max_price change in the plan:\n"
+title "spot_bid_max_price change in the plan:"
 $CLI bundle plan -o json | jq '.plan[].changes["azure_attributes.spot_bid_max_price"]'
 trace $CLI bundle deploy -qq
 
-title "Deploy 5: no config change, should converge to a no-op\n"
+title "Deploy 5: no config change, should converge to a no-op"
 trace $CLI bundle plan

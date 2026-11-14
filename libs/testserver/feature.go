@@ -23,6 +23,9 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 		}
 	}
 
+	// UC normalizes feature names to lowercase.
+	feature.FullName = strings.ToLower(feature.FullName)
+
 	parts := strings.Split(feature.FullName, ".")
 	if len(parts) != 3 {
 		return Response{

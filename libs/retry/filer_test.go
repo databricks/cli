@@ -166,3 +166,23 @@ func (f *sequenceFiler) Delete(ctx context.Context, path string, mode ...filer.D
 	f.errs = f.errs[1:]
 	return err
 }
+
+func TestFilerExceptWritesRetriesReads(t *testing.T) {
+	f := &readFiler{failures: 1, err: errTransient}
+	_, err := FilerExceptWrites(f).Stat(testContext(t), "a")
+	require.NoError(t, err)
+	assert.Equal(t, 2, f.calls)
+}
+
+func TestFilerExceptWritesDoesNotRetryWrites(t *testing.T) {
+	f := &flakyFiler{failures: 100, err: errTransient}
+	err := FilerExceptWrites(f).Write(testContext(t), "a", strings.NewReader("x"), filer.OverwriteIfExists)
+	require.Error(t, err)
+	assert.Len(t, f.bodies, 1)
+}
+
+func TestFilerExceptWritesRetriesDelete(t *testing.T) {
+	f := &readFiler{failures: 1, err: errTransient}
+	require.NoError(t, FilerExceptWrites(f).Delete(testContext(t), "a"))
+	assert.Equal(t, 2, f.calls)
+}

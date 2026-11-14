@@ -8,8 +8,10 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -30,6 +32,9 @@ type getData struct {
 	DashboardURL      string  `json:"dashboard_url"`
 	MLflowURL         *string `json:"mlflow_url"`
 	TerminationReason *string `json:"termination_reason,omitempty"`
+	// StatusMessage is the progress message the text view shows as the status,
+	// set only while the run is unfinished.
+	StatusMessage *string `json:"status_message,omitempty"`
 	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
 	// estimate for a running run, or null when one can't be made (see
 	// estimateTrainingETA).
@@ -99,16 +104,28 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 		fmt.Errorf("failed to verify authentication: %w", err))
 }
 
+// credentialError tells a bad credential apart from missing access after a call
+// fails with 401/403. MustWorkspaceClient only attaches credentials (it does not
+// check a PAT server-side), so the Me() probe runs here, only on failure. It
+// returns the probe's error when the credentials themselves fail, or nil.
+func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err error) error {
+	if !errors.Is(err, apierr.ErrUnauthenticated) && !errors.Is(err, apierr.ErrPermissionDenied) {
+		return nil
+	}
+	_, meErr := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	return meErr
+}
+
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show status, configuration, and timing details for a specified run",
-		Long: `Show status, configuration, and timing details for a specified run.
+		Short: "Show a run's status, configuration, and timing",
+		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},
@@ -136,17 +153,11 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// Validate authentication against the workspace before fetching or
-		// rendering anything. MustWorkspaceClient's Config.Authenticate only
-		// attaches credentials (e.g. it does not check a PAT server-side), so
-		// without this a bad credential would surface as a confusing failure
-		// mid-render instead of a clear "not authenticated" error here.
-		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			return authError(ctx, cmd, err)
-		}
-
 		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 		if err != nil {
+			if credErr := credentialError(ctx, w, err); credErr != nil {
+				return authError(ctx, cmd, credErr)
+			}
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
@@ -156,16 +167,22 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				fmt.Errorf("failed to get status for run %d: %w", runID, err))
 		}
 
-		workspaceID, err := w.CurrentWorkspaceID(ctx)
+		// Prefer the configured workspace ID; only look it up when it is unset.
+		id, err := auth.ResolveWorkspaceID(ctx, w)
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to get workspace id for run %d: %w", runID, err))
 		}
+		workspaceID, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("configured workspace_id %q is not a numeric workspace ID", id))
+		}
 
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
-		ids := mlflowIDsFromOutput(taskOutput)
+		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
+		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
@@ -180,6 +197,13 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 					data.ProgressDisplay = eta.detailed()
 				}
 			}
+		}
+		statusMessage := ""
+		if taskOutput != nil && run.State != nil && run.State.ResultState == "" {
+			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+		}
+		if statusMessage != "" {
+			data.StatusMessage = &statusMessage
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
@@ -197,10 +221,6 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 			// job run link and render the foreach summary table (getTemplate).
 			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 			return renderEnvelope(ctx, data)
-		}
-		statusMessage := ""
-		if taskOutput != nil {
-			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
 		}
 		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
@@ -249,7 +269,7 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 func buildGetData(run *jobs.Run) getData {
 	data := getData{
 		RunID:             strconv.FormatInt(run.RunId, 10),
-		Status:            runStatus(run.State),
+		Status:            displayRunStatus(run),
 		DisplayStatus:     displayRunStatus(run),
 		TerminationReason: terminationReason(run),
 		StartedAt:         startedAt(run),

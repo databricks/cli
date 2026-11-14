@@ -41,6 +41,7 @@ create postgres_roles.owner
 Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 === Deploy enables the Data API
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-data-api-[UNIQUE_NAME]/default/files...
 Created postgres_branches.production
@@ -90,10 +91,12 @@ Resources:
       Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/production/roles/app-owner
 
 === Plan after deploy shows no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 === Removing the resource turns off the Data API but keeps the database
+
 >>> [CLI] bundle plan
 delete postgres_data_apis.my_data_api
 

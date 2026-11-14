@@ -1,5 +1,6 @@
 
 === Initial deployment with STANDARD endpoint_type
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
@@ -8,6 +9,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change endpoint_type (recreates endpoint; index recreate cascade is not yet implemented)
+
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
 
 >>> [CLI] bundle plan
@@ -128,6 +130,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === Re-plan exposes the leftover drift: the index still points at the old endpoint UUID
+
 >>> [CLI] bundle plan
 recreate vector_search_indexes.my_index
 

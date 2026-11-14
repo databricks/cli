@@ -1,5 +1,6 @@
 
 === Deploying with an immutable folder records the resolved snapshot path as the deployment's file_path
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.foo
@@ -15,6 +16,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A new snapshot moves file_path, which is then updated on the deployment
+
 >>> [CLI] bundle deploy
 Recreated internal_immutable_snapshots.immutable
 Updated jobs.foo
@@ -30,6 +32,7 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 }
 
 === An unchanged snapshot keeps the recorded file_path
+
 >>> [CLI] bundle deploy
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged

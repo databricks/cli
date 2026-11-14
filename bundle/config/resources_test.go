@@ -390,6 +390,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		FeatureSpecs: map[string]*resources.FeatureSpec{
+			"my_feature_spec": {
+				FeatureSpec: ml.FeatureSpec{
+					Name: "main.myschema.my_feature_spec",
+				},
+			},
+		},
 		PostgresDataApis: map[string]*resources.PostgresDataApi{
 			"my_postgres_data_api": {
 				PostgresDataApiConfig: resources.PostgresDataApiConfig{
@@ -429,6 +436,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeature(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockFeatureEngineeringAPI().EXPECT().GetMaterializationSet(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockFeatureEngineeringAPI().EXPECT().GetFeatureSpec(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)

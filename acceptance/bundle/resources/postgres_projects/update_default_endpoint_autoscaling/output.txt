@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
@@ -7,6 +8,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change one field inside default_endpoint_settings
+
 >>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
 
 >>> [CLI] bundle plan
@@ -30,6 +32,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Plan again: the change must leave no drift behind
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

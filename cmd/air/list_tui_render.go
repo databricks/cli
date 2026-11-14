@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 )
 
@@ -64,6 +65,47 @@ func computeListCols(rows []listRow) listCols {
 		c.progress = max(c.progress, lipgloss.Width(progressDisplay(r)))
 		c.user = min(columnCap, max(c.user, lipgloss.Width(r.User)))
 		c.accel = max(c.accel, lipgloss.Width(r.Accelerators))
+	}
+	return c
+}
+
+// Floors for the flexible columns: narrow enough to give room back to the fixed
+// columns, wide enough that a truncated value is still recognizable.
+const (
+	experimentMinWidth = 12
+	userMinWidth       = 8
+)
+
+// tableWidth is the full width of a rendered row: every column plus the gutter
+// and the two-cell separators.
+func (c listCols) tableWidth() int {
+	const separators = 9 * 2
+	return 1 + c.runID + c.experiment + c.status + c.started + c.duration +
+		c.progress + mlflowColWidth + c.user + c.accel + separators
+}
+
+// fitWidth shrinks the flexible columns (Experiment, User) until the table fits
+// in width cells, so a long value truncates instead of pushing the columns to
+// its right off screen. It takes from the wider column first and stops at the
+// floors: a terminal too narrow for the fixed columns still overflows. A width
+// of 0 means the terminal size is unknown and leaves the columns alone.
+func (c listCols) fitWidth(width int) listCols {
+	if width <= 0 {
+		return c
+	}
+	experimentFloor := min(c.experiment, experimentMinWidth)
+	userFloor := min(c.user, userMinWidth)
+	for overflow := c.tableWidth() - width; overflow > 0; overflow-- {
+		canShrinkExperiment := c.experiment > experimentFloor
+		canShrinkUser := c.user > userFloor
+		switch {
+		case canShrinkExperiment && (!canShrinkUser || c.experiment >= c.user):
+			c.experiment--
+		case canShrinkUser:
+			c.user--
+		default:
+			return c
+		}
 	}
 	return c
 }
@@ -142,11 +184,12 @@ func listRowStatus(r listRow) string {
 	return r.Status
 }
 
-// cell renders one padded, colored cell. The text is truncated to width, then
-// padded with (background-only) spaces so columns align even when the text is
-// styled or hyperlinked.
+// cell renders one padded, colored cell. The text is stripped of control
+// characters (it may come from the server, or from a cache written before this
+// stripping existed), truncated to width, then padded with (background-only)
+// spaces so columns align even when the text is styled or hyperlinked.
 func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipgloss.Color, right, underline bool, link string) string {
-	text = truncate(text, width)
+	text = truncate(stripControl(text), width)
 	style := base.Foreground(fg)
 	if underline {
 		style = style.Underline(true)
@@ -241,11 +284,29 @@ func pad(s string, n int, right bool) string {
 
 // truncate shortens s to a visible width of n, appending "…" on overflow.
 func truncate(s string, n int) string {
-	if lipgloss.Width(s) <= n {
+	return ansi.Truncate(s, n, "…")
+}
+
+// truncateStart shortens s to a visible width of n, keeping its end behind a
+// leading "…" on overflow.
+func truncateStart(s string, n int) string {
+	width := lipgloss.Width(s)
+	if width <= n {
 		return s
 	}
 	if n <= 1 {
+		return truncate(s, n)
+	}
+	// TruncateLeft never splits a character, so a cut that lands inside a
+	// two-cell character leaves the result one cell too wide.
+	cut := width - (n - 1)
+	out := ansi.TruncateLeft(s, cut, "…")
+	if lipgloss.Width(out) > n {
+		out = ansi.TruncateLeft(s, cut+1, "…")
+	}
+	// TruncateLeft drops the "…" when nothing of s is left.
+	if out == "" {
 		return "…"
 	}
-	return string([]rune(s)[:n-1]) + "…"
+	return out
 }

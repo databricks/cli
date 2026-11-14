@@ -4,9 +4,9 @@
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]
 {
   "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
-  "current_branch": "main",
+  "current_branch": "[BRANCH]",
   "latest_commit": "[COMMIT_SHA]",
-  "origin_url": "https://github.com/databricks/bundle-examples"
+  "origin_url": "https://github.com/databricks/databricks-empty-ide-project"
 }
 
 === a subdirectory of it, which resolves to the same root
@@ -14,9 +14,9 @@
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]/subdir
 {
   "worktree_root": "/Workspace/Repos/[USERNAME]/test-repo-[UNIQUE_NAME]",
-  "current_branch": "main",
+  "current_branch": "[BRANCH]",
   "latest_commit": "[COMMIT_SHA]",
-  "origin_url": "https://github.com/databricks/bundle-examples"
+  "origin_url": "https://github.com/databricks/databricks-empty-ide-project"
 }
 
 === the root of a Git folder outside /Repos
@@ -24,9 +24,9 @@
 >>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]
 {
   "worktree_root": "/Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]",
-  "current_branch": "main",
+  "current_branch": "[BRANCH]",
   "latest_commit": "[COMMIT_SHA]",
-  "origin_url": "https://github.com/databricks/bundle-examples"
+  "origin_url": "https://github.com/databricks/databricks-empty-ide-project"
 }
 
 === a path in no Git folder at all

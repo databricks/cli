@@ -35,6 +35,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update name
+
 >>> update_file.py databricks.yml myvolume mynewvolume
 
 >>> [CLI] bundle plan

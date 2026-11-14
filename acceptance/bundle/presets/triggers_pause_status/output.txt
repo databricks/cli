@@ -1,0 +1,68 @@
+
+=== Target: no_preset
+
+>>> [CLI] bundle validate -t no_preset -o json
+{
+  "file_arrival": [
+    null
+  ],
+  "mixed_cron": [
+    null,
+    "UNPAUSED"
+  ],
+  "table_update": [
+    null,
+    "PAUSED"
+  ]
+}
+
+=== Target: paused
+
+>>> [CLI] bundle validate -t paused -o json
+{
+  "file_arrival": [
+    "PAUSED"
+  ],
+  "mixed_cron": [
+    "PAUSED",
+    "UNPAUSED"
+  ],
+  "table_update": [
+    "PAUSED",
+    "PAUSED"
+  ]
+}
+
+=== Target: unpaused
+
+>>> [CLI] bundle validate -t unpaused -o json
+{
+  "file_arrival": [
+    "UNPAUSED"
+  ],
+  "mixed_cron": [
+    "UNPAUSED",
+    "UNPAUSED"
+  ],
+  "table_update": [
+    "UNPAUSED",
+    "PAUSED"
+  ]
+}
+
+=== Target: dev
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "file_arrival": [
+    "PAUSED"
+  ],
+  "mixed_cron": [
+    "PAUSED",
+    "UNPAUSED"
+  ],
+  "table_update": [
+    "PAUSED",
+    "PAUSED"
+  ]
+}

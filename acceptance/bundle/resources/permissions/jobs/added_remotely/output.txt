@@ -56,6 +56,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 }
 
 === Add permissions out of band
+
 >>> [CLI] permissions set jobs [JOB_WITH_PERMISSIONS_ID] --json @remote_add.json
 {
   "access_control_list": [

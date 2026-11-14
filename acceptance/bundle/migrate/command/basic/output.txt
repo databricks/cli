@@ -22,6 +22,7 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]"
 
 === Should show that it's already migrated
+
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
 Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
@@ -68,6 +69,7 @@ Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID][5] interactive/none engine/direct lineage/5MDu0ewFJPg auth/pat"
 
 === Should show that it's already migrated
+
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
 Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
@@ -80,10 +82,12 @@ resources.json: remote direct state serial=6 lineage="[UUID][2]"
 [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID][2]"
 
 === Extra plan: should have no drift
+
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 === Update databricks.yml, run plan & update
+
 >>> update_file.py databricks.yml Migration Migrated
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
@@ -102,6 +106,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
 === Different target, still on the terraform state from a prior deployment
+
 >>> replay_tfstate.py .databricks/terraform-prod-requests.json .databricks/terraform-prod.tfstate -t prod
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod

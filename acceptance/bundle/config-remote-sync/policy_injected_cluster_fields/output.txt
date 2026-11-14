@@ -5,6 +5,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Policy values alone do not need to be synced
+
 >>> [CLI] bundle config-remote-sync
 No changes detected.
 
@@ -35,6 +36,7 @@ Resource: resources.jobs.job1
          - job_cluster_key: shared
 
 === Synced config deploys and converges under the policy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Files: 1 uploaded, 0 deleted

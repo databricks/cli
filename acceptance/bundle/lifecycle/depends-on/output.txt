@@ -1,5 +1,6 @@
 
 === Plan records the edges
+
 >>> [CLI] bundle plan -o json
 {
   "resources.jobs.a_job": [
@@ -38,6 +39,7 @@
 }
 
 === Deploy creates dependencies first
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.a_job
@@ -53,6 +55,7 @@ Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 POST /api/2.2/jobs/create a_job
 
 === Destroy deletes dependents first
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.a_job

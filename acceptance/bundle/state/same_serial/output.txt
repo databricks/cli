@@ -1,5 +1,6 @@
 
 === If serial is the same, refuse to proceed
+
 >>> musterr [CLI] bundle deploy
 Error: same serial number in terraform and direct states
 

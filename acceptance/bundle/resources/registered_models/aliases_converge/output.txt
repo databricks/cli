@@ -2,6 +2,7 @@
 >>> export COMMENT=original comment
 
 === Initial deployment with aliases set: the model is created, but has no version 1 for the alias yet
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
 Error: cannot create resources.registered_models.my_registered_model: waiting after creating id=main.default.my-registered-model-aliases-[UNIQUE_NAME]: Model version 1 of registered model main.default.my-registered-model-aliases-[UNIQUE_NAME] does not exist. (404 RESOURCE_DOES_NOT_EXIST)
@@ -14,12 +15,14 @@ API message: Model version 1 of registered model main.default.my-registered-mode
 Files: 2 uploaded, 0 deleted
 
 === The model is tracked: the next plan retries the alias as an update instead of creating the model again
+
 >>> [CLI] bundle plan
 update registered_models.my_registered_model
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === A training run registers version 1, and the deploy sets the alias
+
 >>> register_model_version main.default.my-registered-model-aliases-[UNIQUE_NAME]
 1
 
@@ -38,10 +41,12 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 ]
 
 === Plan is a no-op: the fields the backend fills in on the alias do not drift
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Edit the comment: an in-place update, not a recreate
+
 >>> [CLI] bundle plan
 update registered_models.my_registered_model
 
@@ -54,6 +59,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Re-plan after the edit converges: no further changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
