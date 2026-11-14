@@ -2,18 +2,6 @@
 === Deploy with a CAN_MANAGE permission entry
 
 >>> [CLI] bundle deploy
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - service_principal_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:8:3
-
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
 Created jobs.my_job.permissions
@@ -33,18 +21,6 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 >>> [CLI] bundle destroy --auto-approve
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - service_principal_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:8:3
-
 The following resources will be deleted:
   delete resources.jobs.my_job
 
