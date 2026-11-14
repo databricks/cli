@@ -1,0 +1,19 @@
+{
+  "datasets": [
+    {
+      "name": "summary",
+      "displayName": "Order summary",
+      "queryLines": [
+        "SELECT order_count, total_revenue\n",
+        "FROM main.bundletest_cloud.order_summary"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "main",
+      "displayName": "Overview",
+      "layout": []
+    }
+  ]
+}

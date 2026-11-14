@@ -304,7 +304,9 @@ def make_backend(kind: str, **kwargs: Any) -> Backend:
 
         return DuckDBBackend(**kwargs)
     if kind == "cloud":
-        raise NotImplementedError("the cloud backend arrives in a follow-up PR on top of this base branch")
+        from bundletest.backends.cloud import CloudBackend
+
+        return CloudBackend(**kwargs)
     raise ValueError(f"unknown backend {kind!r} (expected 'local' or 'cloud')")
 
 
