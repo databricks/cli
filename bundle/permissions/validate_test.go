@@ -8,11 +8,18 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateSharedRootPermissionsForShared(t *testing.T) {
+func applyValidate(t *testing.T, b *bundle.Bundle) diag.Diagnostics {
+	t.Helper()
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	return bundle.Apply(t.Context(), b, ValidateWorkspaceSharedPermissions())
+}
+
+func TestValidateWorkspaceSharedPermissions_RootShared_NoWarningWithUsersManage(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -21,45 +28,77 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, GroupName: "users"},
 			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
-				},
-			},
 		},
 	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
+	diags := applyValidate(t, b)
 	require.Empty(t, diags)
 }
 
-func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
+func TestValidateWorkspaceSharedPermissions_StateShared_WarnWithoutUsersManage(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Workspace/Shared/foo/bar",
+				RootPath:  "/Workspace/Users/user@example.test",
+				StatePath: "/Workspace/Shared/state",
 			},
 			Permissions: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
-				},
+				{Level: CAN_MANAGE, UserName: "user@example.test"},
 			},
 		},
 	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
+	diags := applyValidate(t, b)
 	require.Len(t, diags, 1)
-	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
-	require.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "state path")
+	assert.Contains(t, diags[0].Summary, "/Workspace/Shared/state")
+}
+
+func TestValidateWorkspaceSharedPermissions_StateShared_NoWarningWithUsersManage(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath:  "/Workspace/Users/user@example.test",
+				StatePath: "/Workspace/Shared/state",
+			},
+			Permissions: []resources.Permission{
+				{Level: CAN_MANAGE, GroupName: "users"},
+			},
+		},
+	}
+	diags := applyValidate(t, b)
+	require.Empty(t, diags)
+}
+
+func TestValidateWorkspaceSharedPermissions_NoSharedPaths_NoWarning(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath:  "/Workspace/Users/user@example.test/bundle",
+				StatePath: "/Workspace/Users/user@example.test/other-state",
+			},
+		},
+	}
+	diags := applyValidate(t, b)
+	require.Empty(t, diags)
+}
+
+func TestStatePathUnderRootPath(t *testing.T) {
+	cases := []struct {
+		name      string
+		rootPath  string
+		statePath string
+		want      bool
+	}{
+		{name: "default nested state", rootPath: "/Workspace/Users/me/bundle", statePath: "/Workspace/Users/me/bundle/state", want: true},
+		{name: "equal paths", rootPath: "/Workspace/Users/me/bundle", statePath: "/Workspace/Users/me/bundle", want: true},
+		{name: "separate folder", rootPath: "/Workspace/Users/me/bundle", statePath: "/Workspace/Shared/state", want: false},
+		{name: "sibling prefix is not nested", rootPath: "/Workspace/Users/me/bundle", statePath: "/Workspace/Users/me/bundle-2/state", want: false},
+		{name: "empty state defaults to nested", rootPath: "/Workspace/Users/me/bundle", statePath: "", want: true},
+		{name: "empty root defaults to nested", rootPath: "", statePath: "/Workspace/Shared/state", want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, statePathUnderRootPath(tc.rootPath, tc.statePath))
+		})
+	}
 }
