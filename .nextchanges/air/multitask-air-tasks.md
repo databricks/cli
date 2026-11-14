@@ -1,0 +1,1 @@
+* `air list` and `air get` now read the AI Runtime task wherever it sits in a multi-task job (for example after a notebook prep task) instead of the first task; a job with several AI Runtime tasks lists one row per task, `air get` gains `--task-key`, and both commands report `task_key` in JSON output. ([#7632](https://github.com/databricks/cli/pull/7632))
