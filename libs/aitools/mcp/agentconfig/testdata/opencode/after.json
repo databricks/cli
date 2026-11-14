@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "opencode",
+  "mcp": {
+    "servers": {
+      "other": {
+        "type": "local",
+        "command": ["npx", "-y", "other-mcp"]
+      },
+      "genie_one_mcp-dogfood": {
+        "command": [
+          "/opt/databricks/bin/databricks",
+          "aitools",
+          "mcp",
+          "serve",
+          "--profile",
+          "dogfood",
+          "--service",
+          "system.ai.genie_one_mcp",
+          "--agent",
+          "opencode"
+        ],
+        "type": "local"
+      }
+    }
+  }
+}
