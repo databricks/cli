@@ -1,0 +1,3 @@
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
+# The principals in this test do not exist in a real workspace.
+Cloud = false

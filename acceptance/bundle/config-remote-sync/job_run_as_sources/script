@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Change run_as remotely"
+edit_resource.py jobs "$(read_id.py inherited_to_user)" <<'PY'
+r["run_as"] = {"user_name": "second-user@example.com"}
+PY
+edit_resource.py jobs "$(read_id.py inherited_to_sp)" <<'PY'
+r["run_as"] = {"service_principal_name": "11111111-2222-3333-4444-555555555555"}
+PY
+edit_resource.py jobs "$(read_id.py variable_to_user)" <<'PY'
+r["run_as"] = {"user_name": "second-user@example.com"}
+PY
+edit_resource.py jobs "$(read_id.py target_override_to_group)" <<'PY'
+r["run_as"] = {"group_name": "data-engineers"}
+PY
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Second sync is a no-op"
+trace $CLI bundle config-remote-sync
+
+title "Plan after sync"
+trace $CLI bundle plan
