@@ -1,0 +1,8 @@
+title "get (text): control characters are stripped from the Metadata box"
+trace $CLI air get 123
+
+title "list (text): control characters are stripped from the table"
+trace $CLI air list --all-users
+
+title "list (json): strings are passed through as the server sent them"
+trace $CLI air list --all-users -o json
