@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -45,7 +46,7 @@ func TestExecuteEnrichesAuthErrors(t *testing.T) {
 		return nil
 	}
 
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, nil)
 	require.Error(t, err)
 
 	output := stderr.String()
@@ -71,7 +72,7 @@ func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {
 	}
 	cmd.SetErr(stderr)
 
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, nil)
 	require.Error(t, err)
 
 	output := stderr.String()
@@ -144,7 +145,7 @@ func TestExecuteAppendsAccountHostHint(t *testing.T) {
 				return nil
 			}
 
-			err := Execute(t.Context(), cmd)
+			err := Execute(t.Context(), cmd, nil)
 			require.Error(t, err)
 
 			output := stderr.String()
@@ -173,7 +174,24 @@ func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 	}
 	cmd.SetErr(stderr)
 
-	err := Execute(ctx, cmd)
+	err := Execute(ctx, cmd, nil)
 	require.Error(t, err)
 	assert.Empty(t, stderr.String())
+}
+
+func TestExecuteWithNilArgsRunsWithoutArgs(t *testing.T) {
+	processArgs := os.Args
+	t.Cleanup(func() { os.Args = processArgs })
+	os.Args = []string{"databricks", "process-arg"}
+
+	var got []string
+	cmd := &cobra.Command{
+		Use: "test",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			got = args
+			return nil
+		},
+	}
+	require.NoError(t, Execute(t.Context(), cmd, nil))
+	assert.Empty(t, got)
 }
