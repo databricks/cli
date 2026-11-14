@@ -324,3 +324,42 @@ func TestSnapshotFiles_RejectsIncludePathsMatchingNothing(t *testing.T) {
 	assert.Contains(t, err.Error(), "contains no files")
 	assert.Contains(t, err.Error(), "include_paths")
 }
+
+func TestSnapshotFiles_RejectsIncludePathMatchingNothingAlongsideOthers(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "ray_bootstrap.sh", "#!/bin/bash\n")
+	writeRepoFile(t, repo, "my-job/main.py", "print(1)\n")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"ray_bootstrap.sh", "my_job"}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "include_paths select no files")
+	assert.Contains(t, err.Error(), ": my_job.")
+	assert.NotContains(t, err.Error(), "ray_bootstrap.sh")
+}
+
+func TestSnapshotFiles_RejectsIncludePathWhoseFilesAreIgnored(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, ".gitignore", "build/\n")
+	writeRepoFile(t, repo, "main.py", "print(1)\n")
+	writeRepoFile(t, repo, "build/out.bin", "x")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"main.py", "build"}, true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ": build.")
+	assert.Contains(t, err.Error(), "check-ignore -v")
+}
+
+func TestSnapshotFiles_AcceptsIncludePathForms(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "src/model.py", "print()")
+	writeRepoFile(t, repo, "README.md", "readme")
+	writeRepoFile(t, repo, "notes.txt", "notes")
+
+	files, err := snapshotFiles(t.Context(), repo, []string{"./src/", "README.md", "*.txt"}, false)
+	require.NoError(t, err)
+	var rels []string
+	for _, file := range files {
+		rels = append(rels, filepath.ToSlash(file.rel))
+	}
+	assert.ElementsMatch(t, []string{"src/model.py", "README.md", "notes.txt"}, rels)
+}

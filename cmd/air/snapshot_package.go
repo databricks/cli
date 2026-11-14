@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -193,7 +194,37 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 	if len(files) == 0 {
 		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
 	}
+	if unmatched := unmatchedIncludePaths(includePaths, files); len(unmatched) > 0 {
+		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that each path exists under root_path and is not ignored by git (`git check-ignore -v <path>`)", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "))
+	}
 	return files, nil
+}
+
+// unmatchedIncludePaths returns the include_paths entries that select none of files.
+// git ls-files ignores a pathspec that matches nothing, so a mistyped entry would be
+// left out of the snapshot and the run would fail on the node after compute was
+// provisioned. Entries with glob characters are skipped because git matches them as
+// patterns rather than as path prefixes.
+func unmatchedIncludePaths(includePaths []string, files []snapshotFile) []string {
+	var unmatched []string
+	for _, p := range includePaths {
+		if strings.ContainsAny(p, "*?[") {
+			continue
+		}
+		prefix := path.Clean(filepath.ToSlash(p))
+		matched := prefix == "."
+		for _, file := range files {
+			rel := filepath.ToSlash(file.rel)
+			if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			unmatched = append(unmatched, p)
+		}
+	}
+	return unmatched
 }
 
 // emptySnapshotError explains why no file was selected for the snapshot. An empty
