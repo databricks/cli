@@ -1,12 +1,17 @@
 package apps
 
 import (
+	"bytes"
 	"crypto/tls"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,4 +98,49 @@ func TestBuildSourceFilter(t *testing.T) {
 
 	_, err = buildSourceFilter([]string{"foo"})
 	require.Error(t, err)
+}
+
+func TestWarnIfMultiInstanceAppLogs(t *testing.T) {
+	cmd := &cobra.Command{}
+	stderr := &bytes.Buffer{}
+	cmd.SetErr(stderr)
+
+	warnIfMultiInstanceAppLogs(cmd, "my-app", &apps.App{ComputeMaxInstances: 2})
+
+	assert.Contains(t, stderr.String(), `Warning: app "my-app" is configured to run up to 2 instances`)
+	assert.Contains(t, stderr.String(), "streams logs from one app instance selected for this session")
+	assert.Contains(t, stderr.String(), "Use app telemetry to view logs from all instances or a specific live or historical instance.")
+}
+
+func TestWarnIfMultiInstanceAppLogsSkipsSingleInstanceApps(t *testing.T) {
+	for _, app := range []*apps.App{
+		{},
+		{ComputeMinInstances: 1, ComputeMaxInstances: 1},
+	} {
+		cmd := &cobra.Command{}
+		stderr := &bytes.Buffer{}
+		cmd.SetErr(stderr)
+
+		warnIfMultiInstanceAppLogs(cmd, "my-app", app)
+
+		assert.Empty(t, stderr.String())
+	}
+}
+
+func TestLogStreamRoutingCookie(t *testing.T) {
+	cookie := logStreamRoutingCookie(&apps.App{ComputeMinInstances: 1, ComputeMaxInstances: 3})
+
+	value := strings.TrimPrefix(cookie, appRouterCookieName+"=")
+	require.NotEqual(t, cookie, value)
+	_, err := uuid.Parse(value)
+	require.NoError(t, err)
+}
+
+func TestLogStreamRoutingCookieSkipsSingleInstanceApps(t *testing.T) {
+	for _, app := range []*apps.App{
+		{},
+		{ComputeMinInstances: 1, ComputeMaxInstances: 1},
+	} {
+		assert.Empty(t, logStreamRoutingCookie(app))
+	}
 }
