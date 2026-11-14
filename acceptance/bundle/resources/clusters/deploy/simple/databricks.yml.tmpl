@@ -12,6 +12,7 @@ resources:
       node_type_id: $NODE_TYPE_ID
       instance_pool_id: $TEST_INSTANCE_POOL_ID
       num_workers: 2
+      data_security_mode: USER_ISOLATION
       spark_conf:
         "spark.executor.memory": "2g"
 
