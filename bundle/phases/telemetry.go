@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
+	libgit "github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -232,15 +233,16 @@ func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
 }
 
 // bundleGitInfo builds the git metadata for the deploy event, or nil when the
-// bundle root is not inside a git repository. OriginURL already has credentials
-// stripped by the load_git_details mutator.
+// bundle root is not inside a git repository. OriginURL is stripped here because
+// only the local .git route strips it upstream; a value from bundle.git.origin_url
+// or from the workspace API for a Git folder is passed through as written.
 func bundleGitInfo(b *bundle.Bundle) *protos.BundleGitInfo {
 	git := b.Config.Bundle.Git
 	if git.Branch == "" && git.Commit == "" && git.OriginURL == "" {
 		return nil
 	}
 	return &protos.BundleGitInfo{
-		OriginURL: git.OriginURL,
+		OriginURL: libgit.StripURLCredentials(git.OriginURL),
 		Branch:    git.Branch,
 		Commit:    git.Commit,
 	}
