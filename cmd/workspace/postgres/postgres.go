@@ -874,7 +874,7 @@ func newCreateDatabase() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID used to identify and manage the Database resource through the API.`)
 	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
@@ -1412,7 +1412,7 @@ func newCreateRole() *cobra.Command {
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createRoleReq.ReplaceExisting, "replace-existing", createRoleReq.ReplaceExisting, `If true, update the role if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
+	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID used to identify and manage the Role resource through the API.`)
 	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -2314,7 +2314,11 @@ func newDeleteEndpoint() *cobra.Command {
 
   Arguments:
     NAME: The full resource path of the endpoint to delete. Format:
-      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
+      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
+
+      Read-write endpoints currently cannot be deleted directly. Their deletion
+      is managed by the parent branch. To avoid compute costs, set disabled to
+      true on the endpoint.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

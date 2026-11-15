@@ -68,6 +68,13 @@ type ResourceLifecycleConfig struct {
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
 
+	// InternalIDField: the state field holding the backend's own ID for the resource, which a rename
+	// keeps (a volume's volume_id). Config never sets it: the framework records it from the remote
+	// state on every save and skips its changes in the plan. When the resource is missing from its
+	// recorded ID, the plan looks for it at the ID IDFromState gives it and takes what it finds only
+	// if this field matches. Requires IDFromState and DoUpdateWithID.
+	InternalIDField string `yaml:"internal_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -155,6 +162,7 @@ const (
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
+	InternalIDField:       "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,

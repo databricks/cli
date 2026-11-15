@@ -1,7 +1,9 @@
 package aircmd
 
 import (
+	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -27,7 +29,49 @@ func TestNewHelpMetadata(t *testing.T) {
 	cmd := New()
 
 	assert.Equal(t, "development", cmd.GroupID)
-	assert.Equal(t, "Run and manage AI Runtime training workloads", cmd.Short)
+	assert.Equal(t, "Run and manage AI Runtime workloads on serverless GPU compute", cmd.Short)
+}
+
+// TestNewGroupsSubcommands asserts every subcommand is listed under a help
+// heading, so none falls into cobra's catch-all "Additional Commands".
+func TestNewGroupsSubcommands(t *testing.T) {
+	cmd := New()
+	groups := map[string]string{}
+	for _, g := range cmd.Groups() {
+		groups[g.ID] = g.Title
+	}
+	for _, c := range cmd.Commands() {
+		assert.Contains(t, groups, c.GroupID, "subcommand %q has no help group", c.Name())
+	}
+	assert.Equal(t, capacityGroupID, findSubcommand(t, cmd, "pools").GroupID)
+	assert.Equal(t, runGroupID, findSubcommand(t, cmd, "run").GroupID)
+}
+
+func TestHelpFooterOnlyOnAirCommand(t *testing.T) {
+	cmd := New()
+	var airOut bytes.Buffer
+	cmd.SetOut(&airOut)
+	cmd.HelpFunc()(cmd, nil)
+	assert.Contains(t, airOut.String(), "Learn more:")
+	assert.Contains(t, airOut.String(), "databricks air run -h config")
+
+	list := findSubcommand(t, cmd, "list")
+	var listOut bytes.Buffer
+	list.SetOut(&listOut)
+	list.HelpFunc()(list, nil)
+	assert.True(t, strings.HasPrefix(listOut.String(), "List active runs"))
+	assert.NotContains(t, listOut.String(), "Learn more:")
+}
+
+func findSubcommand(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
+	t.Helper()
+	for _, c := range parent.Commands() {
+		if c.Name() == name {
+			return c
+		}
+	}
+	t.Fatalf("subcommand %q not found", name)
+	return nil
 }
 
 func TestRunErrorIncludesDebugTip(t *testing.T) {

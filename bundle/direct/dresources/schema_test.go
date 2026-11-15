@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,13 +14,14 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	adapter := (*ResourceSchema)(nil).New(client)
 	ctx := t.Context()
 
-	config := &catalog.CreateSchema{
+	config := &SchemaState{
 		CatalogName:     "main",
 		Name:            "test_schema",
 		Comment:         "original comment",
 		Properties:      map[string]string{"key": "value"},
 		StorageRoot:     "",
 		ForceSendFields: nil,
+		SchemaId:        "",
 	}
 
 	id, _, err := adapter.DoCreate(ctx, config)

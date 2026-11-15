@@ -1,0 +1,1 @@
+* `databricks aitools install` and `databricks aitools update` now wait up to 20 seconds instead of 5 for a coding agent's CLI to answer the plugin capability check, so a slow first start is less likely to report the agent as unavailable. ([#7472](https://github.com/databricks/cli/pull/7472))

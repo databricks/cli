@@ -76,3 +76,8 @@ Exit code: 1
 Error: invalid --node -1: must not be negative
 
 Exit code: 1
+
+=== out-of-range node
+
+>>> [CLI] air logs 123 --node 1
+Error: invalid --node 1: run has 1 node(s), indexed 0 to 0

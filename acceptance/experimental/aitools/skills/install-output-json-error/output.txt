@@ -6,7 +6,8 @@
   "scope": "global",
   "agents": [],
   "error": "skill \"nonexistent\" not found",
-  "error_category": "SKILL_NOT_FOUND"
+  "error_category": "SKILL_NOT_FOUND",
+  "recovery": "Run 'databricks aitools list' to see the available skills."
 }
 
 Exit code: 1

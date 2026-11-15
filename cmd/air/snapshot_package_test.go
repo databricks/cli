@@ -285,3 +285,42 @@ func TestSnapshotFilesCapturesModeTypeAndSymlinkTarget(t *testing.T) {
 	assert.NotZero(t, os.FileMode(byName["current"].mode)&os.ModeSymlink)
 	assert.Equal(t, "run.sh", byName["current"].linkTarget)
 }
+
+// ignoredProject returns a project dir that an enclosing repo's .gitignore excludes.
+func ignoredProject(t *testing.T) string {
+	t.Helper()
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	writeRepoFile(t, repo, ".gitignore", ".scratch/\n")
+	writeRepoFile(t, repo, ".scratch/proj/main.py", "print(1)\n")
+	return filepath.Join(repo, ".scratch", "proj")
+}
+
+func TestSnapshotFiles_RejectsGitIgnoredRoot(t *testing.T) {
+	project := ignoredProject(t)
+
+	_, err := snapshotFiles(t.Context(), project, nil, true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.Contains(t, err.Error(), "ignored by git")
+	// The matching rule and the command to inspect it are both named.
+	assert.Contains(t, err.Error(), ".gitignore:1:.scratch/")
+	assert.Contains(t, err.Error(), "check-ignore -v")
+}
+
+func TestSnapshotFiles_RejectsEmptyDirectory(t *testing.T) {
+	_, err := snapshotFiles(t.Context(), t.TempDir(), nil, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.NotContains(t, err.Error(), "ignored by git")
+}
+
+func TestSnapshotFiles_RejectsIncludePathsMatchingNothing(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "a.txt", "1")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"missing"}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.Contains(t, err.Error(), "include_paths")
+}

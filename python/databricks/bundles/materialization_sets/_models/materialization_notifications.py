@@ -24,8 +24,7 @@ class MaterializationNotifications:
     """
     :meta private: [EXPERIMENTAL]
 
-    Notifications for the jobs and pipelines that materialize the features in a set, one field per
-    trigger.
+    Notifications for the jobs and pipelines that materialize features, one field per trigger.
     """
 
     on_failure: VariableOrOptional[MaterializationFailureNotification] = None

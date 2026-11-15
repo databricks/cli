@@ -184,7 +184,8 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 // convertPlanChange converts a plan change at fullPath, returning nil when there is nothing to
 // write back.
 func convertPlanChange(fullPath string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
-	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
+	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
+		!keepSkippedRunAsChange(fullPath, changeDesc) {
 		return nil, nil
 	}
 

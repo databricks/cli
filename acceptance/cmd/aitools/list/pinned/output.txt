@@ -24,7 +24,7 @@
 
 === A pinned version skips the latest-release lookup
 
->>> print_requests.py --get
+>>> print_requests.py --get ^//telemetry-ext ^//.well-known
 {
   "method": "GET",
   "path": "/v0.2.32/manifest.json"

@@ -7,7 +7,9 @@ cleanup() {
 trap cleanup EXIT
 
 print_app_requests() {
-    print_requests.py //apps
+    # --unique: appdeploy.Deploy retries POST .../deployments after waiting when the first
+    # attempt fails, so on cloud the same request is occasionally recorded twice.
+    print_requests.py //apps --unique
 }
 
 title "(started omitted) -> deploy: app created with no_compute=true, no start/stop requests"

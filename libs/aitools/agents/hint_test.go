@@ -8,46 +8,22 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// agentEnvVars are the env vars useragent.AgentProvider() inspects. Kept in
-// sync with listKnownAgents() in the SDK plus the AGENT/AI_AGENT fallbacks
-// (mirrors acceptance/acceptance_test.go).
-var agentEnvVars = []string{
-	"AGENT", "AI_AGENT", "AMP_CURRENT_THREAD_ID", "ANTIGRAVITY_AGENT",
-	"AUGMENT_AGENT", "CLAUDECODE", "CLINE_ACTIVE", "CODEX_CI", "COPILOT_CLI",
-	"CURSOR_AGENT", "GEMINI_CLI", "GOOSE_TERMINAL", "KIRO", "OPENCLAW_SHELL",
-	"OPENCODE", "VSCODE_AGENT", "WINDSURF_AGENT",
-}
-
-// clearAgentEnv unsets every agent-detection env var (restoring them after the
-// test) so the host agent driving this test binary does not leak into
-// AgentProvider(). t.Setenv cannot unset, hence the manual save/restore.
-func clearAgentEnv(t *testing.T) {
-	for _, v := range agentEnvVars {
-		if orig, ok := os.LookupEnv(v); ok {
-			t.Cleanup(func() { os.Setenv(v, orig) }) //nolint:usetesting // restoring, not setting fresh
-			os.Unsetenv(v)                           //nolint:usetesting // t.Setenv cannot unset
-		}
-	}
-}
-
 // setClaudeAgent makes useragent.AgentProvider() report Claude Code for this
-// test. It clears the ambient agent env, sets CLAUDECODE, and resets the SDK's
-// process-global cache, so these tests must not run in parallel. The cleanup
-// clears the cache again so the value never leaks into another test.
+// test, with the host's environment cleared. These tests must not run in
+// parallel (see testutil.SetAgentEnv).
 func setClaudeAgent(t *testing.T) {
-	clearAgentEnv(t)
-	t.Setenv("CLAUDECODE", "1")
-	useragent.ClearCache()
-	t.Cleanup(useragent.ClearCache)
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
 }
 
 // claudeCtx returns a context with a captured stderr buffer and an isolated
@@ -72,22 +48,35 @@ func writeCanonicalSkill(t *testing.T, home, name string) {
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks", "aitools", "skills", name), 0o755))
 }
 
+// hintKinds returns the kinds of the hint-shown events buffered on ctx,
+// failing on any other event so a stray event cannot hide behind the filter.
+func hintKinds(t *testing.T, ctx context.Context) []protos.AitoolsHintKind {
+	var out []protos.AitoolsHintKind
+	for _, e := range telemetry.BufferedEvents(ctx) {
+		require.NotNil(t, e.AitoolsHintEvent, "unexpected non-hint event: %+v", e)
+		out = append(out, e.AitoolsHintEvent.HintKind)
+	}
+	return out
+}
+
 func TestMaybeHint_HumanCallerSilent(t *testing.T) {
 	// No agent env: AgentProvider() == "", so no hint even with nothing installed.
-	clearAgentEnv(t)
-	useragent.ClearCache()
-	t.Cleanup(useragent.ClearCache)
+	testutil.SetAgentEnv(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
 	MaybeHint(ctx, regularCmd())
 	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_ClaudeNotInstalledHints(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
 	MaybeHint(ctx, regularCmd())
 	assert.Contains(t, stderr.String(), hintText)
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
@@ -97,9 +86,11 @@ func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
 	// The core regression: a plugin install writes only Claude's manifest, no
 	// skills subdir. Detection must treat it as installed.
 	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
+	ctx = telemetry.WithNewLogger(ctx)
 
 	MaybeHint(ctx, regularCmd())
 	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestClaudeToolingInstalled_LogsPluginVersion(t *testing.T) {
@@ -191,6 +182,7 @@ func TestMaybeHint_NonDatabricksSkillStillHints(t *testing.T) {
 func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
 
 	parent := &cobra.Command{Use: aiToolsCommandName}
 	child := &cobra.Command{Use: "install"}
@@ -198,6 +190,7 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 
 	MaybeHint(ctx, child)
 	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_NoIONoPanic(t *testing.T) {
@@ -205,7 +198,9 @@ func TestMaybeHint_NoIONoPanic(t *testing.T) {
 	// Bare context without cmdio installed: cobra resolves --help and bare
 	// invocations before PersistentPreRunE runs, so HasIO can be false here.
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
 	assert.NotPanics(t, func() { MaybeHint(ctx, regularCmd()) })
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_ThrottledPerSession(t *testing.T) {
@@ -217,15 +212,17 @@ func TestMaybeHint_ThrottledPerSession(t *testing.T) {
 		ctx = env.WithUserHomeDir(ctx, home)
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
-		return ctx, stderr
+		return telemetry.WithNewLogger(ctx), stderr
 	}
 
 	ctx1, stderr1 := newCtx()
 	MaybeHint(ctx1, regularCmd())
 	assert.Contains(t, stderr1.String(), hintText)
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx1))
 
-	// Same session id, second command: must stay quiet.
+	// Same session id, second command: must stay quiet and log nothing.
 	ctx2, stderr2 := newCtx()
 	MaybeHint(ctx2, regularCmd())
 	assert.Empty(t, stderr2.String())
+	assert.Empty(t, hintKinds(t, ctx2))
 }

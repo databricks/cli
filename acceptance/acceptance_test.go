@@ -539,14 +539,14 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		if cloudEnv != "" {
 			namedCloud = getCloudEnvBase(cloudEnv)
 		}
-		named, summary, unmatched, err := selection.FromCommitMessage(".", testDirsSet, namedCloud)
+		commit, err := selection.FromCommitMessage(".", testDirsSet, namedCloud)
 		require.NoError(t, err)
-		namedTests = named
+		namedTests = commit.Named
 		if len(namedTests) > 0 {
-			t.Log(summary)
+			t.Log(commit.Summary())
 		}
-		for _, name := range unmatched {
-			t.Logf("WARNING: %q in the last commit message matches no acceptance test", name)
+		for _, warning := range commit.Warnings() {
+			t.Log("WARNING: " + warning)
 		}
 	}
 	subset.changed = changedTests
@@ -610,7 +610,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, namedTests.Has(dir))
+			skipReason := getSkipReason(&config, configPath, namedTests.Exact(dir))
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -745,7 +745,8 @@ func isSelectedVariant(changedTests map[string][]string, namedTests selection.Na
 }
 
 // Return a reason to skip the test. Empty string means "don't skip". named is set for a test
-// the last commit message names, which runs on cloud even if it is CloudSlow.
+// the last commit message names by its own name (not by a path above it), which runs on cloud
+// even if it is CloudSlow.
 func getSkipReason(config *internal.TestConfig, configPath string, named bool) string {
 	if Forcerun {
 		return ""

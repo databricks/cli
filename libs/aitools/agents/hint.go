@@ -2,13 +2,14 @@ package agents
 
 import (
 	"context"
-	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
@@ -49,8 +50,9 @@ const hintSessionTTL = time.Hour
 // tooling when Claude Code drives the CLI without it installed. It is a no-op
 // for human callers, other agents, aitools commands themselves, when there is
 // no output stream, once the tooling is present, and when the session was
-// hinted within the last hintSessionTTL. Best-effort: it writes only to stderr
-// and never fails the command.
+// hinted within the last hintSessionTTL. Best-effort: it never fails the
+// command. Besides the stderr line, it logs a telemetry event for each hint
+// shown, which makes a command that resolved auth upload telemetry at exit.
 func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 	if useragent.AgentProvider() != claudeAgentProvider {
 		return
@@ -72,6 +74,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command) {
 		return
 	}
 	cmdio.LogString(ctx, hintText)
+	logHintShown(ctx, protos.AitoolsHintKindInstallText)
 	recordSessionHint(ctx)
 }
 
@@ -110,12 +113,7 @@ func claudeToolingInstalled(ctx context.Context) bool {
 	// The canonical dir always holds a real databricks* subdir after a skills
 	// install, regardless of whether the agent copy is a symlink or a copy. The
 	// legacy dir is checked too so users of an older install aren't hinted.
-	home, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return false
-	}
-	return HasDatabricksSkillsIn(filepath.Join(home, CanonicalSkillsDir)) ||
-		HasDatabricksSkillsIn(filepath.Join(home, LegacySkillsDir))
+	return hasSharedSkills(ctx)
 }
 
 // alreadyHintedThisSession reports whether this Claude session was hinted
@@ -141,4 +139,18 @@ func recordSessionHint(ctx context.Context) {
 	}
 	c := cache.NewCache(ctx, hintCacheComponent, hintSessionTTL, nil)
 	cache.Put(ctx, c, session, true)
+}
+
+// logHintShown records that a recommendation to install Databricks AI tools of
+// the given kind was shown. Call it once per hint shown; for a prompt, call it
+// before asking so a declined prompt still counts. The upload's
+// ExecutionContext.Command names the command the hint was shown on.
+//
+// The event is buffered and uploaded by cmd/root at exit, which needs resolved
+// auth: a hint shown on a command that never resolves auth (e.g. `databricks
+// version`) is not uploaded.
+func logHintShown(ctx context.Context, kind protos.AitoolsHintKind) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		AitoolsHintEvent: &protos.AitoolsHintEvent{HintKind: kind},
+	})
 }

@@ -16,14 +16,15 @@ func setupUninstallMock(t *testing.T) *[]installer.UninstallOptions {
 	t.Cleanup(func() { uninstallSkillsFn = orig })
 
 	var calls []installer.UninstallOptions
-	uninstallSkillsFn = func(_ context.Context, opts installer.UninstallOptions) error {
+	uninstallSkillsFn = func(_ context.Context, opts installer.UninstallOptions) (*installer.UninstallResult, error) {
 		calls = append(calls, opts)
-		return nil
+		return &installer.UninstallResult{}, nil
 	}
 	return &calls
 }
 
 func TestUninstallScopeFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	tests := []struct {
 		name      string
 		args      []string
@@ -66,6 +67,7 @@ func TestUninstallScopeFlag(t *testing.T) {
 }
 
 func TestUninstallAgentsFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	calls := setupUninstallMock(t)
 
@@ -81,6 +83,7 @@ func TestUninstallAgentsFlag(t *testing.T) {
 }
 
 func TestUninstallUnknownAgentErrors(t *testing.T) {
+	noTelemetryAuth(t)
 	setupTestAgents(t)
 	setupUninstallMock(t)
 

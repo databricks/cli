@@ -90,7 +90,8 @@ type FileRecord struct {
 // LoadState reads install state from the given directory.
 // Returns (nil, nil) when the state file does not exist.
 func LoadState(dir string) (*InstallState, error) {
-	data, err := os.ReadFile(filepath.Join(dir, stateFileName))
+	path := filepath.Join(dir, stateFileName)
+	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
@@ -100,7 +101,7 @@ func LoadState(dir string) (*InstallState, error) {
 
 	var state InstallState
 	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, fmt.Errorf("failed to parse state file: %w", err)
+		return nil, &StateError{Path: path, Err: fmt.Errorf("failed to parse state file: %w", err)}
 	}
 	migrateState(&state)
 	return &state, nil

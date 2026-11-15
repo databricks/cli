@@ -17,6 +17,9 @@
     }
   },
   "remote_state": {
+    "attributes": {
+      "createdb": true
+    },
     "create_time": "[TIMESTAMP]",
     "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
@@ -35,19 +38,11 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "attributes": {
-      "action": "update",
-      "old": {
-        "createdb": true
-      },
-      "new": {
-        "createdb": false
-      }
-    },
     "attributes.createdb": {
       "action": "update",
       "old": true,
-      "new": false
+      "new": false,
+      "remote": true
     },
     "postgres_role": {
       "action": "skip",

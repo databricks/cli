@@ -17,7 +17,7 @@ cleanupRemoveVolume() {
 }
 trap cleanupRemoveVolume EXIT
 
-trace $CLI bundle deployment bind volume1 "${VOLUME_FULL_NAME}" --auto-approve
+trace $CLI bundle deployment bind volume1 "${VOLUME_FULL_NAME}"
 
 trace $CLI bundle deploy
 

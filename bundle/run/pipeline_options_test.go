@@ -1,12 +1,85 @@
 package run
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPipelineOptionsPathSelectionsPayload(t *testing.T) {
+	tests := []struct {
+		name     string
+		opts     PipelineOptions
+		expected string
+	}{
+		{
+			name: "file selections for both refresh modes",
+			opts: PipelineOptions{
+				RefreshByPath:     []string{"/Workspace/Shared/source.sql"},
+				FullRefreshByPath: []string{"/Workspace/Shared/notebook"},
+			},
+			expected: `{"refresh_selection_by_path":["/Workspace/Shared/source.sql"],"full_refresh_selection_by_path":["/Workspace/Shared/notebook"]}`,
+		},
+		{
+			name: "table refresh and file full-refresh",
+			opts: PipelineOptions{
+				Refresh:           []string{"catalog.schema.table1"},
+				FullRefreshByPath: []string{"/Workspace/Shared/notebook"},
+			},
+			expected: `{"refresh_selection":["catalog.schema.table1"],"full_refresh_selection_by_path":["/Workspace/Shared/notebook"]}`,
+		},
+		{
+			name: "file refresh and table full-refresh",
+			opts: PipelineOptions{
+				RefreshByPath: []string{"/Workspace/Shared/source.sql"},
+				FullRefresh:   []string{"catalog.schema.table2"},
+			},
+			expected: `{"refresh_selection_by_path":["/Workspace/Shared/source.sql"],"full_refresh_selection":["catalog.schema.table2"]}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := tt.opts.toPayload(&resources.Pipeline{}, "pipeline-id", false)
+			require.NoError(t, err)
+			data, err := json.Marshal(payload)
+			require.NoError(t, err)
+			assert.JSONEq(t, tt.expected, string(data))
+		})
+	}
+}
+
+func TestPipelineOptionsRejectMixedSelectors(t *testing.T) {
+	tests := []struct {
+		name string
+		opts PipelineOptions
+	}{
+		{
+			name: "--refresh",
+			opts: PipelineOptions{
+				Refresh:       []string{"table1"},
+				RefreshByPath: []string{"/Workspace/Shared/source.sql"},
+			},
+		},
+		{
+			name: "--full-refresh",
+			opts: PipelineOptions{
+				FullRefresh:       []string{"table1"},
+				FullRefreshByPath: []string{"/Workspace/Shared/source.sql"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := tt.opts.toPayload(nil, "pipeline-id", false)
+			require.ErrorContains(t, err, "cannot mix table names and source files in "+tt.name)
+			assert.Nil(t, payload)
+		})
+	}
+}
 
 func setupPipelineOptions(t *testing.T) (*flag.FlagSet, *PipelineOptions) {
 	var fs flag.FlagSet
@@ -24,7 +97,7 @@ func TestPipelineOptionsRefreshAll(t *testing.T) {
 
 func TestPipelineOptionsRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--refresh=arg1,arg2,arg3`})
+	err := fs.Parse([]string{`--refresh=arg1 arg2 arg3`})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.Refresh)
 }
@@ -38,7 +111,7 @@ func TestPipelineOptionsFullRefreshAll(t *testing.T) {
 
 func TestPipelineOptionsFullRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--full-refresh=arg1,arg2,arg3`})
+	err := fs.Parse([]string{`--full-refresh=arg1 arg2 arg3`})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.FullRefresh)
 }
@@ -53,9 +126,9 @@ func TestPipelineOptionsValidateOnly(t *testing.T) {
 func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	args := []string{
 		`--refresh-all`,
-		`--refresh=arg1,arg2,arg3`,
+		`--refresh=arg1 arg2 arg3`,
 		`--full-refresh-all`,
-		`--full-refresh=arg1,arg2,arg3`,
+		`--full-refresh=arg1 arg2 arg3`,
 		`--validate-only`,
 	}
 	for _, arg := range args {
@@ -69,7 +142,7 @@ func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 
 func TestPipelineOptionsValidateSuccessWithRefreshAndFullRefresh(t *testing.T) {
 	fs, opts := setupPipelineOptions(t)
-	err := fs.Parse([]string{`--refresh=arg1,arg2`, `--full-refresh=arg3,arg4`})
+	err := fs.Parse([]string{`--refresh=arg1 arg2`, `--full-refresh=arg3 arg4`})
 	require.NoError(t, err)
 	err = opts.Validate(nil)
 	assert.NoError(t, err)
@@ -113,6 +186,11 @@ func TestPipelineOptionsValidateFailureWithRefreshAndMutuallyExclusiveFlags(t *t
 			fs, opts := setupPipelineOptions(t)
 			err := fs.Parse([]string{refreshArg, exclusiveArg})
 			require.NoError(t, err)
+			err = opts.Validate(nil)
+			assert.ErrorContains(t, err, "cannot use --refresh or --full-refresh together with")
+
+			opts.RefreshByPath, opts.Refresh = opts.Refresh, nil
+			opts.FullRefreshByPath, opts.FullRefresh = opts.FullRefresh, nil
 			err = opts.Validate(nil)
 			assert.ErrorContains(t, err, "cannot use --refresh or --full-refresh together with")
 		}
