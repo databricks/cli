@@ -667,7 +667,15 @@ func configSchema() configField {
       accelerator_type: GPU_1xA10
     code_source:
       root_path: .
-    command: python "$CODE_SOURCE_PATH/train.py"`,
+    command: python "$CODE_SOURCE_PATH/train.py"
+
+  Set on every node (use in command and training code):
+    CODE_SOURCE_PATH              Extracted code_source directory
+    MLFLOW_RUN_ID                 MLflow run created for this job; log metrics and artifacts to it
+    NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
+    WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
+    MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
+    HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
