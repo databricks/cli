@@ -1,7 +1,13 @@
 # Creating the pipeline fails unless its run_as principal can already create tables in the
 # schema, so the pipeline must be deployed after the grants it relies on.
 # See https://github.com/databricks/cli/issues/4573
-export RUN_AS_SP="${TEST_SP_APPLICATION_ID:-6f1c2b3a-4d5e-4f60-8a7b-9c0d1e2f3a4b}"
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_SP_APPLICATION_ID="22222222-2222-2222-2222-222222222222"
+fi
+
+add_repl "$TEST_SP_APPLICATION_ID" TEST_SP_APPLICATION_ID
+
+export RUN_AS_SP="$TEST_SP_APPLICATION_ID"
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
@@ -10,13 +16,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "The grants of a referenced catalog or schema become an implicit lifecycle.depends_on"
+title "The grants of a referenced schema become an implicit lifecycle.depends_on"
 trace $CLI bundle validate -o json | jq '.resources | map_values(map_values(.lifecycle.depends_on))'
 
 title "The plan orders dependents after the grants"
 trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
 
 trace $CLI bundle deploy
-trace print_requests.py --summary //unity-catalog/catalogs //unity-catalog/schemas //unity-catalog/permissions //pipelines
+# The catalog PATCH is excluded because its order relative to the schema is not fixed.
+trace print_requests.py --summary //unity-catalog/schemas //unity-catalog/permissions/schema //pipelines
 
 trace $CLI bundle plan
