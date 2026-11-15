@@ -363,3 +363,72 @@ func TestSnapshotFiles_AcceptsIncludePathForms(t *testing.T) {
 	}
 	assert.ElementsMatch(t, []string{"src/model.py", "README.md", "notes.txt"}, rels)
 }
+
+func TestSnapshotFiles_IncludePathMatching(t *testing.T) {
+	tests := []struct {
+		name         string
+		includePaths []string
+		want         []string // selected files; nil when an error is expected
+		wantErr      string
+	}{
+		{name: "root", includePaths: []string{"."}, want: []string{"README.md", "b.txt", "data_v2/a.csv", "notes.txt", "src/model.py", "src/tests/test_model.py"}},
+		{name: "root with slash", includePaths: []string{"./"}, want: []string{"README.md", "b.txt", "data_v2/a.csv", "notes.txt", "src/model.py", "src/tests/test_model.py"}},
+		{name: "root and a file", includePaths: []string{".", "README.md"}, want: []string{"README.md", "b.txt", "data_v2/a.csv", "notes.txt", "src/model.py", "src/tests/test_model.py"}},
+		{name: "question mark glob", includePaths: []string{"note?.txt"}, want: []string{"notes.txt"}},
+		{name: "bracket glob", includePaths: []string{"[ab].txt"}, want: []string{"b.txt"}},
+		{name: "exclude magic", includePaths: []string{"src", ":!src/tests"}, want: []string{"src/model.py"}},
+		{name: "long exclude magic", includePaths: []string{"src", ":(exclude)src/tests"}, want: []string{"src/model.py"}},
+		{name: "prefix of another directory", includePaths: []string{"data_v2", "data"}, wantErr: ": data."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := t.TempDir()
+			for _, f := range []string{"README.md", "b.txt", "data_v2/a.csv", "notes.txt", "src/model.py", "src/tests/test_model.py"} {
+				writeRepoFile(t, repo, f, "x")
+			}
+
+			files, err := snapshotFiles(t.Context(), repo, tt.includePaths, false)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "include_paths select no files")
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			var rels []string
+			for _, file := range files {
+				rels = append(rels, filepath.ToSlash(file.rel))
+			}
+			assert.ElementsMatch(t, tt.want, rels)
+		})
+	}
+}
+
+// git lists a nested repository as a single directory entry, which the tarball
+// writer skips, so it must not count as a match or as a file.
+func TestSnapshotFiles_NestedRepoSelectsNoFiles(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "train.py", "print(1)\n")
+	nested := filepath.Join(repo, "my_lib")
+	writeRepoFile(t, nested, "lib.py", "x = 1\n")
+	runGit(t, nested, "init", "-q")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"train.py", "my_lib"}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ": my_lib.")
+
+	_, err = snapshotFiles(t.Context(), repo, []string{"my_lib"}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+}
+
+func TestSnapshotFiles_RejectsPathspecOutsideRoot(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "secret/key.txt", "s")
+	writeRepoFile(t, repo, "proj/main.py", "print(1)\n")
+	commitAll(t, repo, "init")
+
+	_, err := snapshotFiles(t.Context(), filepath.Join(repo, "proj"), []string{"main.py", ":(top)secret"}, true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "outside root_path")
+}

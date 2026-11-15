@@ -169,12 +169,22 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
 		}
+		// Pathspec magic such as ":(top)x" or ":/x" can select files above root_path.
+		if !filepath.IsLocal(filepath.FromSlash(name)) {
+			return nil, fmt.Errorf("code_source include_paths select %q, which is outside root_path %s", name, filepath.ToSlash(repoPath))
+		}
 		info, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
+		}
+		// git lists a nested repository or a submodule as a directory, which tarpack
+		// does not pack; keep the listing to what lands in the archive so the empty
+		// and include_paths checks below see the same thing.
+		if !info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0 {
+			continue
 		}
 		linkTarget := ""
 		if info.Mode()&os.ModeSymlink != 0 {
@@ -195,20 +205,19 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
 	}
 	if unmatched := unmatchedIncludePaths(includePaths, files); len(unmatched) > 0 {
-		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that each path exists under root_path and is not ignored by git (`git check-ignore -v <path>`)", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "))
+		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v <file>` shows the rule for a file); empty directories, nested git repositories and submodules add no files", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "))
 	}
 	return files, nil
 }
 
-// unmatchedIncludePaths returns the include_paths entries that select none of files.
-// git ls-files ignores a pathspec that matches nothing, so a mistyped entry would be
-// left out of the snapshot and the run would fail on the node after compute was
-// provisioned. Entries with glob characters are skipped because git matches them as
-// patterns rather than as path prefixes.
+// unmatchedIncludePaths returns the plain-path include_paths entries that select none
+// of files. git ls-files drops a pathspec that matches nothing, so a mistyped entry
+// would silently be missing from the snapshot. Entries git reads as patterns are left
+// to git, since a path-prefix comparison cannot evaluate them.
 func unmatchedIncludePaths(includePaths []string, files []snapshotFile) []string {
 	var unmatched []string
 	for _, p := range includePaths {
-		if strings.ContainsAny(p, "*?[") {
+		if isPathspecPattern(p) {
 			continue
 		}
 		prefix := path.Clean(filepath.ToSlash(p))
@@ -225,6 +234,13 @@ func unmatchedIncludePaths(includePaths []string, files []snapshotFile) []string
 		}
 	}
 	return unmatched
+}
+
+// isPathspecPattern reports whether git matches p as a pattern rather than as a
+// literal path: pathspec magic (":!x", ":(exclude)x", ":/x", ...) or a glob. git
+// treats a backslash as an escape; on Windows ToSlash turns it into a separator first.
+func isPathspecPattern(p string) bool {
+	return strings.HasPrefix(p, ":") || strings.ContainsAny(filepath.ToSlash(p), `*?[\`)
 }
 
 // emptySnapshotError explains why no file was selected for the snapshot. An empty
