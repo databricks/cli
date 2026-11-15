@@ -65,6 +65,19 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
+=== torch import on the Standard environment warns before submitting
+
+>>> [CLI] air run -f torch-standard.yaml --dry-run
+Warning: train.py imports torch, but environment version 6 (Standard) does not include PyTorch, so the run would fail after waiting for a GPU. Set environment.version: databricks_ai_v6, or add torch to environment.dependencies.
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== the Databricks AI environment provides torch, so no warning
+
+>>> [CLI] air run -f torch-databricks-ai.yaml --dry-run
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
 === git.remote is rejected
 
 >>> [CLI] air run -f git-remote.yaml --dry-run

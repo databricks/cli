@@ -160,6 +160,10 @@ field, pass its path to -h as a separate argument:
 			return err
 		}
 
+		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
+			cmdio.LogString(ctx, msg)
+		}
+
 		if dryRun {
 			// Local and credential-free, so it runs before workspace validation.
 			var snapshotFileCount *int

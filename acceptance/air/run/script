@@ -33,6 +33,12 @@ echo 'print(1)' > .scratch/proj/main.py
 errcode trace $CLI air run -f ignored-root.yaml --dry-run
 rm -fr .git .gitignore .scratch
 
+title "torch import on the Standard environment warns before submitting"
+trace $CLI air run -f torch-standard.yaml --dry-run
+
+title "the Databricks AI environment provides torch, so no warning"
+trace $CLI air run -f torch-databricks-ai.yaml --dry-run
+
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run
 
