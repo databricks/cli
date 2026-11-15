@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
@@ -730,37 +732,62 @@ func TestConvertToDabsRejectsUnsupported(t *testing.T) {
 	})
 }
 
-// The getting-started Ray layout: the workload in ray/core snapshots its parent so it
-// can include the shared ray/ray_bootstrap.sh. The error names an --output-dir that
-// converts, and does not suggest editing a databricks.yml that was never written.
-func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
-	dir := t.TempDir()
-	recipe := filepath.Join(dir, "ray", "core")
-	require.NoError(t, os.MkdirAll(recipe, 0o700))
+// rayLayoutConfig writes ray/<recipe>/workload.yaml under dir, snapshotting its parent
+// (root_path: ..) to include the shared ray/ray_bootstrap.sh, and loads it.
+func rayLayoutConfig(t *testing.T, dir, recipe string) (*runConfig, string) {
+	t.Helper()
+	recipeDir := filepath.Join(dir, "ray", recipe)
+	require.NoError(t, os.MkdirAll(recipeDir, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "ray", "ray_bootstrap.sh"), []byte("#!/bin/bash\n"), 0o600))
-	cfg := "experiment_name: ray-core\ncommand: bash ray_bootstrap.sh\n" +
+	cfg := "experiment_name: ray-" + recipe + "\ncommand: bash ray_bootstrap.sh\n" +
 		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 2}\n" +
-		"code_source:\n  root_path: ..\n  include_paths: [ray_bootstrap.sh, core]\n"
-	path := filepath.Join(recipe, "workload.yaml")
+		"code_source:\n  root_path: ..\n  include_paths: [ray_bootstrap.sh, " + recipe + "]\n"
+	path := filepath.Join(recipeDir, "workload.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
+	return loaded, path
+}
 
-	_, _, err = convertToDabs(t.Context(), loaded, path, recipe)
+// A workload whose root_path is its parent directory gets an --output-dir that
+// converts it, not advice to edit a databricks.yml that was never written.
+func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
+	dir := t.TempDir()
+	loaded, path := rayLayoutConfig(t, dir, "core")
+
+	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "not inside the bundle")
-	assert.Contains(t, err.Error(), "--output-dir "+dir+" ")
+	assert.Contains(t, err.Error(), fmt.Sprintf("(%q)", filepath.Join(dir, "ray")))
+	assert.Contains(t, err.Error(), "--output-dir "+shellquote.BashArg(dir)+" ")
+	assert.Contains(t, err.Error(), "or move the code inside the bundle directory")
 	assert.NotContains(t, err.Error(), "sync.paths")
 
 	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
 	require.NoError(t, err)
+	assert.Equal(t, ".", get(t, root, "artifacts."+codeSourceArtifactKey+".path").MustString())
 	inc := get(t, root, "artifacts."+codeSourceArtifactKey+".include").MustSequence()
 	require.Len(t, inc, 2)
 	assert.Equal(t, "ray/ray_bootstrap.sh", inc[0].MustString())
 	assert.Equal(t, "ray/core", inc[1].MustString())
 }
 
-// A git-pinned snapshot is archived from the bundle root, so a parent directory is
-// not offered as the bundle root.
+// Sibling workloads that share a code directory would all be sent to its parent, and
+// converting a second one there would replace the first bundle. Once the parent holds
+// a databricks.yml, it is not suggested.
+func TestConvertToDabsCodeOutsideBundleSkipsParentWithBundle(t *testing.T) {
+	dir := t.TempDir()
+	rayLayoutConfig(t, dir, "core")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("bundle:\n  name: ray-core\n"), 0o600))
+	loaded, path := rayLayoutConfig(t, dir, "data")
+
+	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+	assert.Contains(t, err.Error(), fmt.Sprintf("%q already holds a databricks.yml", dir))
+	assert.NotContains(t, err.Error(), "--output-dir "+shellquote.BashArg(dir)+" ")
+}
+
+// A git-pinned snapshot is archived from the bundle root, and a parent of the code
+// directory may be outside the repository, so no parent is offered.
 func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	outside := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
@@ -773,5 +800,6 @@ func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 
 	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "not inside the bundle")
+	assert.Contains(t, err.Error(), "; move the code inside the bundle directory")
 	assert.NotContains(t, err.Error(), "--output-dir")
 }

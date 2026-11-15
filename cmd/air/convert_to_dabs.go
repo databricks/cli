@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
 
@@ -264,15 +265,28 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		remedy := "move the code inside the bundle directory"
-		// As in codeArtifactFor, only a working-tree snapshot can be bundled from a
-		// parent directory of the code.
-		if snap.Git == nil {
-			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", filepath.Dir(root), remedy)
-		}
-		return "", fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and bundle deploy only packages code inside the bundle; %s", snap.RootPath, root, bundleDir, remedy)
+		return "", codeOutsideBundleError(snap, root, bundleDir)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
+}
+
+// codeOutsideBundleError explains a code directory outside the bundle directory. For
+// a working-tree snapshot it names the code directory's parent as an --output-dir,
+// unless that parent already holds a bundle: sibling workloads that share a code
+// directory would each be sent there and replace one another's bundle. As in
+// codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
+// repository.
+func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) error {
+	remedy := "move the code inside the bundle directory"
+	if snap.Git == nil {
+		parent := filepath.Dir(root)
+		if _, err := os.Stat(filepath.Join(parent, "databricks.yml")); err == nil {
+			remedy = fmt.Sprintf("%q already holds a databricks.yml, and converting there would replace that bundle; pass --output-dir with another directory that contains the code directory, or %s", parent, remedy)
+		} else {
+			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", shellquote.BashArg(parent), remedy)
+		}
+	}
+	return fmt.Errorf("code_source root_path %q (%q) is not inside the bundle directory %q, and the bundle convert-to-dabs writes packages only code inside its directory; %s", snap.RootPath, root, bundleDir, remedy)
 }
 
 // nv builds a dyn.Value at "position" n: yamlsaver orders a map's keys by their
