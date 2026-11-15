@@ -182,8 +182,12 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 			// No lock, or the read failed too: the write error says more.
 			return err
 		}
-		if err := locker.checkHolder(activeLockState); err != nil {
-			return err
+		if holderErr := locker.checkHolder(activeLockState); holderErr != nil {
+			if isForced {
+				// The holder error suggests --force-lock, which is already in use.
+				return err
+			}
+			return holderErr
 		}
 	default:
 		return err

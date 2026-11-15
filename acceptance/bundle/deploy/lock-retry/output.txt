@@ -74,3 +74,22 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 ["POST","true"]
 ["POST","true"]
 ["POST","true"]
+
+=== Forced lock over another deployer's lock, every overwrite attempt returns a 504 and is not applied: the error is the 504
+
+>>> [CLI] bundle deploy --force-lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Error: Failed to acquire deployment lock: Fault injected by test.
+Error: Fault injected by test. (504 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=true
+HTTP Status: 504 Gateway Timeout
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+Exit code: 1
+["POST","true"]
+["POST","true"]
+["POST","true"]
