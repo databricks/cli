@@ -35,7 +35,8 @@ const defaultDlRuntimeImage = "CLIENT-GPU-6"
 const aiRuntimeEnvironmentKey = "default"
 
 // workspaceBaseEnvironmentPrefix is the name prefix of every workspace base
-// environment, Databricks-provided (databricks_ai_v*) or custom (dbe_<uuid>).
+// environment, for example the Databricks-provided databricks_ai_v6 or a custom
+// dbe_<uuid>.
 const workspaceBaseEnvironmentPrefix = "workspace-base-environments/"
 
 // dlRuntimeImage resolves the bare runtime channel (config version, else env,
