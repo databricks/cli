@@ -105,6 +105,11 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return locker.checkHolder(activeLockState)
+}
+
+// checkHolder returns a descriptive error naming the holder if activeLockState is not ours.
+func (locker *Locker) checkHolder(activeLockState *LockState) error {
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
 		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
@@ -170,8 +175,14 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		}
 	case retry.IsTransientRead(ctx, err):
 		// The last attempt may have been applied even though its response was lost. Read the
-		// lock back so that such a write does not leave behind a lock nobody releases.
-		if locker.assertLockHeld(ctx) != nil {
+		// lock back so that such a write does not leave behind a lock nobody releases. This
+		// covers forced locks too, whose overwrite the retrying filer retried on its own.
+		activeLockState, readErr := locker.GetActiveLockState(ctx)
+		if readErr != nil {
+			// No lock, or the read failed too: the write error says more.
+			return err
+		}
+		if err := locker.checkHolder(activeLockState); err != nil {
 			return err
 		}
 	default:

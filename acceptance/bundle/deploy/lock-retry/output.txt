@@ -44,3 +44,33 @@ conflict with the other deployment if it is still active
 
 
 Exit code: 1
+
+=== Lock is held by another deployer and every attempt returns a 504: reading the lock back names the holder
+
+>>> [CLI] bundle deploy
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Error: Failed to acquire deployment lock: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+Error: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+
+
+Exit code: 1
+["POST","false"]
+["POST","false"]
+["POST","false"]
+
+=== Forced lock, every overwrite attempt returns a 504 but is applied: reading the lock back finds it is ours
+
+>>> [CLI] bundle deploy --force-lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+["POST","true"]
+["POST","true"]
+["POST","true"]
