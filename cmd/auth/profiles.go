@@ -138,7 +138,7 @@ func newProfilesCommand() *cobra.Command {
 	}
 
 	var skipValidate bool
-	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column is omitted and JSON valid is always false)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
@@ -177,8 +177,9 @@ func newProfilesCommand() *cobra.Command {
 		}
 		wg.Wait()
 		return cmdio.Render(cmd.Context(), struct {
-			Profiles     []*profileMetadata `json:"profiles"`
-			SkipValidate bool               `json:"-"`
+			Profiles []*profileMetadata `json:"profiles"`
+			// Used only by the text template; kept out of JSON so its shape stays stable.
+			SkipValidate bool `json:"-"`
 		}{profiles, skipValidate})
 	}
 
