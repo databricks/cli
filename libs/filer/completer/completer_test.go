@@ -89,7 +89,8 @@ func TestFilerCompleterWindowsSeparator(t *testing.T) {
 	completer.SetIsLocalPath(true)
 	completions, directive, err := completer.CompletePath("dir/")
 
-	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dbfs:/"}, completions)
+	// The typed "dir/" is kept so the completions still extend it.
+	assert.Equal(t, []string{"dir/dirA\\", "dir/dirB\\", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 	assert.NoError(t, err)
 }

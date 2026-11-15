@@ -42,13 +42,20 @@ func (c *completer) SetIsLocalPath(i bool) {
 
 func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, error) {
 	trailingSeparator := "/"
+	separators := "/"
 	joinFunc := path.Join
 
 	// Use filepath functions if we are in a local path.
 	if c.isLocalPath {
 		joinFunc = filepath.Join
 		trailingSeparator = string(filepath.Separator)
+		separators += trailingSeparator
 	}
+
+	// Shells only offer completions that start with the word being completed,
+	// so keep the directory part of p as typed. Joining it with the entry name
+	// would clean it and turn "./sr" into "src", which the shell then discards.
+	typedDir := p[:strings.LastIndexAny(p, separators)+1]
 
 	// If the user is TAB-ing their way through a path and the
 	// path ends in a trailing slash, we should list nested directories.
@@ -70,8 +77,7 @@ func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, 
 			continue
 		}
 
-		// Join directory path and entry name
-		completion := joinFunc(dirPath, entry.Name())
+		completion := typedDir + entry.Name()
 
 		// Prepend prefix if it has been set
 		if c.prefix != "" {
