@@ -328,9 +328,11 @@ func parseDescribeResult(result *sqlexec.Result) (columns, types []string) {
 		}
 		colName := row[0]
 		colType := row[1]
-		// skip partition/metadata rows (they start with #)
+		// The column list ends at the first blank or "#" row. The sections that
+		// follow ("# Partition Information", "# Clustering Information", ...)
+		// repeat columns already listed above.
 		if strings.HasPrefix(colName, "#") || colName == "" {
-			continue
+			break
 		}
 		columns = append(columns, colName)
 		types = append(types, colType)

@@ -2,7 +2,6 @@
 COLUMNS:
   id: bigint
   region: string
-  region: string
 
 
 === wire SQL
@@ -10,4 +9,4 @@ COLUMNS:
 >>> print_requests.py --sort //api/2.0/sql/statements
 DESCRIBE TABLE `main`.`default`.`events`
 SELECT * FROM `main`.`default`.`events` LIMIT 5
-SELECT COUNT(*) AS total_rows, SUM(CASE WHEN `id` IS NULL THEN 1 ELSE 0 END) AS `id_nulls`, SUM(CASE WHEN `region` IS NULL THEN 1 ELSE 0 END) AS `region_nulls`, SUM(CASE WHEN `region` IS NULL THEN 1 ELSE 0 END) AS `region_nulls` FROM `main`.`default`.`events`
+SELECT COUNT(*) AS total_rows, SUM(CASE WHEN `id` IS NULL THEN 1 ELSE 0 END) AS `id_nulls`, SUM(CASE WHEN `region` IS NULL THEN 1 ELSE 0 END) AS `region_nulls` FROM `main`.`default`.`events`

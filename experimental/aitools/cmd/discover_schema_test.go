@@ -51,13 +51,19 @@ func TestQuoteTableName(t *testing.T) {
 }
 
 func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
+	// DESCRIBE TABLE lists partition columns in the main section and then
+	// repeats them under "# Partition Information".
 	result := &sqlexec.Result{
 		Rows: [][]string{
 			{"id", "BIGINT", ""},
 			{"name", "STRING", ""},
-			{"# Partition Information", "", ""},
 			{"region", "STRING", ""},
-			{"", "STRING", ""},
+			{"# Partition Information", "", ""},
+			{"# col_name", "data_type", "comment"},
+			{"region", "STRING", ""},
+			{"", "", ""},
+			{"# Clustering Information", "", ""},
+			{"name", "STRING", ""},
 		},
 	}
 
