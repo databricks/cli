@@ -26,6 +26,13 @@ git add src
 git commit -qm 'Add src'
 trace $CLI air run -f with-code-source.yaml --dry-run
 
+title "include_paths entry that selects no files is rejected"
+musterr trace $CLI air run -f include-unmatched.yaml --dry-run
+
+title "include_paths pathspec that selects files outside root_path is rejected"
+# :(top) resolves against the repository root, so from root_path src it selects ../valid.yaml.
+musterr trace $CLI air run -f include-outside-root.yaml --dry-run
+
 title "git-ignored root_path is rejected instead of selecting no files"
 echo '.scratch/' > .gitignore
 mkdir -p .scratch/proj
