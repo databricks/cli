@@ -15,22 +15,16 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Run URL: [DATABRICKS_URL]/jobs/[JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
+Error: resource my_job is not a pipeline
 
-[TIMESTAMP] "My Job" RUNNING
-[TIMESTAMP] "My Job" TERMINATED SUCCESS
+Exit code: 1
 
 === Completion only offers pipelines
 
 >>> [CLI] __complete pipelines dry-run ,
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
-
-CLI Version: [CLI_VERSION]
-
-Panic Payload: internal error: must call InitContext() first
-
+my_pipeline
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp
 
 === Dry running the pipeline KEY
 
@@ -44,13 +38,6 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
 Update ID: [UUID][1]
 
 === Only the pipeline update is requested, with validate_only set
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
-  "body": {
-    "job_id": [JOB_ID]
-  }
-}
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID][0]/updates",
