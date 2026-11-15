@@ -15,23 +15,23 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-type captureGrantsDependencies struct{}
+type capturePipelineDependencies struct{}
 
-// CaptureGrantsDependencies makes a resource that depends on another resource also depend on
+// CapturePipelineDependencies makes a resource that depends on another resource also depend on
 // that resource's grants, because creating some resources requires the grants to be in place:
 // a pipeline cannot be created before its run_as principal has CREATE TABLE on the target
 // schema. The dependency is added to lifecycle.depends_on, and skipped when it would create a
 // cycle, e.g. when a schema grants privileges to the service principal of an app that refers
 // to the schema.
-func CaptureGrantsDependencies() bundle.Mutator {
-	return &captureGrantsDependencies{}
+func CapturePipelineDependencies() bundle.Mutator {
+	return &capturePipelineDependencies{}
 }
 
-func (m *captureGrantsDependencies) Name() string {
-	return "CaptureGrantsDependencies"
+func (m *capturePipelineDependencies) Name() string {
+	return "CapturePipelineDependencies"
 }
 
-func (m *captureGrantsDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	graph, err := dependencyGraph(b)
 	if err != nil {
 		return diag.FromErr(err)

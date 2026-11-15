@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCaptureGrantsDependencies(t *testing.T) {
+func TestCapturePipelineDependencies(t *testing.T) {
 	grants := func(principal string) []catalog.PrivilegeAssignment {
 		return []catalog.PrivilegeAssignment{{Principal: principal, Privileges: []catalog.Privilege{catalog.PrivilegeCreateTable}}}
 	}
@@ -119,7 +119,7 @@ func TestCaptureGrantsDependencies(t *testing.T) {
 
 			// Normalization runs more than once, so applying the mutator again must not add anything.
 			for range 2 {
-				diags := bundle.Apply(t.Context(), b, CaptureGrantsDependencies())
+				diags := bundle.Apply(t.Context(), b, CapturePipelineDependencies())
 				require.NoError(t, diags.Error())
 
 				actual := make(map[string][]resources.DependsOn)
