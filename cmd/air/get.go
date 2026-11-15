@@ -23,14 +23,18 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID              string  `json:"run_id"`
-	Status             string  `json:"status"`
-	StartedAt          *string `json:"started_at"`
-	DurationSeconds    *int64  `json:"duration_seconds"`
-	AttemptNumber      int     `json:"attempt_number"`
-	ExperimentName     *string `json:"experiment_name"`
-	DashboardURL       string  `json:"dashboard_url"`
-	MLflowURL          *string `json:"mlflow_url"`
+	RunID           string  `json:"run_id"`
+	Status          string  `json:"status"`
+	StartedAt       *string `json:"started_at"`
+	DurationSeconds *int64  `json:"duration_seconds"`
+	AttemptNumber   int     `json:"attempt_number"`
+	ExperimentName  *string `json:"experiment_name"`
+	DashboardURL    string  `json:"dashboard_url"`
+	MLflowURL       *string `json:"mlflow_url"`
+	// MLflowExperimentID and MLflowRunID identify the MLflow run MLflowURL links
+	// to. For a finished run whose last retry never started an MLflow run, they
+	// come from the newest earlier retry that has one. Like MLflowURL, they are
+	// null both when there is no MLflow run yet and when a get-output call fails.
 	MLflowExperimentID *string `json:"mlflow_experiment_id"`
 	MLflowRunID        *string `json:"mlflow_run_id"`
 	TerminationReason  *string `json:"termination_reason,omitempty"`

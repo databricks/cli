@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -178,14 +179,25 @@ func TestGetRunNotFoundJSON(t *testing.T) {
 	assert.Equal(t, jsonError{Code: "NOT_FOUND", Kind: "NOT_FOUND", Message: "run 5 not found: check the run ID and that it is a job run ID"}, got.Error)
 }
 
-// getRunServer serves a terminal runs/get and a /Me that reports workspace
-// 12345 in the X-Databricks-Org-Id header. *meCalls counts /Me requests.
-func getRunServer(t *testing.T, meCalls *atomic.Int32) *httptest.Server {
+const succeededRun = `{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}}`
+
+// getRunServer serves run from runs/get, outputs[task run ID] from
+// runs/get-output (a 500 for a task run with no entry), and a /Me that reports
+// workspace 12345 in the X-Databricks-Org-Id header. *meCalls counts /Me
+// requests.
+func getRunServer(t *testing.T, meCalls *atomic.Int32, run string, outputs map[string]string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
-			_, _ = w.Write([]byte(`{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}}`))
+			_, _ = w.Write([]byte(run))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			output, ok := outputs[r.URL.Query().Get("run_id")]
+			if !ok {
+				w.WriteHeader(http.StatusInternalServerError)
+				output = `{"error_code": "INTERNAL_ERROR", "message": "get-output failed"}`
+			}
+			_, _ = w.Write([]byte(output))
 		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
 			meCalls.Add(1)
 			w.Header().Set("X-Databricks-Org-Id", "12345")
@@ -212,7 +224,7 @@ func runGetJSON(t *testing.T, w *databricks.WorkspaceClient) (string, error) {
 
 func TestGetRunURLUsesConfiguredWorkspaceID(t *testing.T) {
 	var meCalls atomic.Int32
-	srv := getRunServer(t, &meCalls)
+	srv := getRunServer(t, &meCalls, succeededRun, nil)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "67890"})
 	require.NoError(t, err)
 
@@ -226,7 +238,7 @@ func TestGetRunURLLooksUpUnsetWorkspaceID(t *testing.T) {
 	// The SDK also reads the workspace ID from the environment.
 	t.Setenv("DATABRICKS_WORKSPACE_ID", "")
 	var meCalls atomic.Int32
-	srv := getRunServer(t, &meCalls)
+	srv := getRunServer(t, &meCalls, succeededRun, nil)
 
 	out, err := runGetJSON(t, newTestWorkspaceClient(t, srv.URL))
 	require.NoError(t, err)
@@ -236,7 +248,7 @@ func TestGetRunURLLooksUpUnsetWorkspaceID(t *testing.T) {
 
 func TestGetRunRejectsNonNumericWorkspaceID(t *testing.T) {
 	var meCalls atomic.Int32
-	srv := getRunServer(t, &meCalls)
+	srv := getRunServer(t, &meCalls, succeededRun, nil)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "not-a-number"})
 	require.NoError(t, err)
 
@@ -248,53 +260,78 @@ func TestGetRunRejectsNonNumericWorkspaceID(t *testing.T) {
 }
 
 func TestGetRunJSONMLflowIDs(t *testing.T) {
+	const (
+		succeededTaskRun = `{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}, "tasks": [{"run_id": 50}]}`
+		outputWithIDs    = `{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1"}}`
+	)
 	tests := []struct {
-		name             string
-		getOutput        string
-		wantExperimentID *string
-		wantRunID        *string
+		name    string
+		run     string
+		outputs map[string]string
+		// wantExperimentID and wantRunID are the IDs the JSON names, or empty
+		// when all three MLflow fields must be null.
+		wantExperimentID string
+		wantRunID        string
 	}{
 		{
-			name:             "set when the run has MLflow IDs",
-			getOutput:        `{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1"}}`,
-			wantExperimentID: new("E1"),
-			wantRunID:        new("R1"),
+			name:             "set for a finished run",
+			run:              succeededTaskRun,
+			outputs:          map[string]string{"50": outputWithIDs},
+			wantExperimentID: "E1",
+			wantRunID:        "R1",
 		},
 		{
-			name:      "null when the run has no MLflow IDs",
-			getOutput: `{}`,
+			name:             "set while the run is running",
+			run:              `{"run_id": 5, "state": {"life_cycle_state": "RUNNING"}, "tasks": [{"run_id": 50}]}`,
+			outputs:          map[string]string{"50": outputWithIDs},
+			wantExperimentID: "E1",
+			wantRunID:        "R1",
+		},
+		{
+			name: "from an earlier retry when the last retry never started",
+			run: `{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+				"tasks": [{"task_key": "train", "run_id": 50}, {"task_key": "train", "run_id": 51, "attempt_number": 1}]}`,
+			outputs: map[string]string{
+				"50": `{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R0"}}`,
+				"51": `{}`,
+			},
+			wantExperimentID: "E1",
+			wantRunID:        "R0",
+		},
+		{
+			name:    "null when the run has no MLflow run",
+			run:     succeededTaskRun,
+			outputs: map[string]string{"50": `{}`},
+		},
+		{
+			// No output for task run 50, so its get-output fails.
+			name: "null when get-output fails",
+			run:  succeededTaskRun,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/api/2.2/jobs/runs/get":
-					_, _ = w.Write([]byte(`{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}, "tasks": [{"run_id": 50}]}`))
-				case "/api/2.2/jobs/runs/get-output":
-					_, _ = w.Write([]byte(tc.getOutput))
-				default:
-					// SDK config discovery.
-					_, _ = w.Write([]byte(`{}`))
-				}
-			}))
-			t.Cleanup(srv.Close)
+			srv := getRunServer(t, new(atomic.Int32), tc.run, tc.outputs)
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token", WorkspaceID: "67890"})
 			require.NoError(t, err)
 
 			out, err := runGetJSON(t, w)
 			require.NoError(t, err)
+			// Decode into a map, which tells a missing key from null.
 			var got struct {
-				Data struct {
-					MLflowURL          *string `json:"mlflow_url"`
-					MLflowExperimentID *string `json:"mlflow_experiment_id"`
-					MLflowRunID        *string `json:"mlflow_run_id"`
-				} `json:"data"`
+				Data map[string]any `json:"data"`
 			}
 			require.NoError(t, json.Unmarshal([]byte(out), &got))
-			assert.Equal(t, tc.wantExperimentID, got.Data.MLflowExperimentID)
-			assert.Equal(t, tc.wantRunID, got.Data.MLflowRunID)
-			assert.Equal(t, tc.wantRunID == nil, got.Data.MLflowURL == nil, "the IDs must be null exactly when mlflow_url is")
+			maps.DeleteFunc(got.Data, func(key string, _ any) bool { return !strings.HasPrefix(key, "mlflow_") })
+			want := map[string]any{"mlflow_url": nil, "mlflow_experiment_id": nil, "mlflow_run_id": nil}
+			if tc.wantRunID != "" {
+				want = map[string]any{
+					"mlflow_url":           srv.URL + "/ml/experiments/" + tc.wantExperimentID + "/runs/" + tc.wantRunID + "/logs",
+					"mlflow_experiment_id": tc.wantExperimentID,
+					"mlflow_run_id":        tc.wantRunID,
+				}
+			}
+			assert.Equal(t, want, got.Data)
 		})
 	}
 }
