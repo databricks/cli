@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/shellquote"
@@ -758,7 +760,9 @@ func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
 	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "not inside the bundle")
 	assert.Contains(t, err.Error(), fmt.Sprintf("(%q)", filepath.Join(dir, "ray")))
-	assert.Contains(t, err.Error(), "--output-dir "+shellquote.BashArg(dir)+" ")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
 	assert.Contains(t, err.Error(), "or move the code inside the bundle directory")
 	assert.NotContains(t, err.Error(), "sync.paths")
 
@@ -773,17 +777,35 @@ func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
 
 // Sibling workloads that share a code directory would all be sent to its parent, and
 // converting a second one there would replace the first bundle. Once the parent holds
-// a databricks.yml, it is not suggested.
+// a bundle, under any of the names DABs accepts, it is not suggested.
 func TestConvertToDabsCodeOutsideBundleSkipsParentWithBundle(t *testing.T) {
-	dir := t.TempDir()
-	rayLayoutConfig(t, dir, "core")
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("bundle:\n  name: ray-core\n"), 0o600))
-	loaded, path := rayLayoutConfig(t, dir, "data")
+	for _, name := range config.FileNames {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			rayLayoutConfig(t, dir, "core")
+			require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("bundle:\n  name: ray-core\n"), 0o600))
+			loaded, path := rayLayoutConfig(t, dir, "data")
+
+			_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+			require.ErrorContains(t, err, "not inside the bundle")
+			assert.Contains(t, err.Error(), fmt.Sprintf("%q already holds a bundle (%s)", dir, name))
+			assert.NotContains(t, err.Error(), "to write the bundle to the code directory's parent")
+		})
+	}
+}
+
+// The suggested directory is quoted for the user's shell, so a parent whose path
+// has a space pastes as one argument.
+func TestConvertToDabsCodeOutsideBundleQuotesOutputDir(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my recipes")
+	loaded, path := rayLayoutConfig(t, dir, "core")
 
 	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "not inside the bundle")
-	assert.Contains(t, err.Error(), fmt.Sprintf("%q already holds a databricks.yml", dir))
-	assert.NotContains(t, err.Error(), "--output-dir "+shellquote.BashArg(dir)+" ")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	require.NotEqual(t, dir, quoted)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
 }
 
 // A git-pinned snapshot is archived from the bundle root, and a parent of the code

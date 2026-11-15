@@ -77,3 +77,18 @@ func WindowsArg(s string) (string, bool) {
 	trailing := len(s) - len(strings.TrimRight(s, `\`))
 	return `"` + s + strings.Repeat(`\`, trailing) + `"`, true
 }
+
+// Arg quotes a flag value for the shell a user on goos pastes a printed command
+// into, only when it needs it, so the common case stays readable: cmd.exe or
+// PowerShell on Windows, a POSIX shell elsewhere. It reports false for a value no
+// quoting keeps literal there, and for any value with a control character: a line
+// break in a pasted command runs what follows it.
+func Arg(goos, value string) (string, bool) {
+	if goos == "windows" {
+		return WindowsArg(value)
+	}
+	if strings.ContainsFunc(value, unicode.IsControl) {
+		return "", false
+	}
+	return BashArg(value), true
+}

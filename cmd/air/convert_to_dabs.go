@@ -8,9 +8,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -280,13 +282,26 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) 
 	remedy := "move the code inside the bundle directory"
 	if snap.Git == nil {
 		parent := filepath.Dir(root)
-		if _, err := os.Stat(filepath.Join(parent, "databricks.yml")); err == nil {
-			remedy = fmt.Sprintf("%q already holds a databricks.yml, and converting there would replace that bundle; pass --output-dir with another directory that contains the code directory, or %s", parent, remedy)
+		if name := bundleFileIn(parent); name != "" {
+			remedy = fmt.Sprintf("%q already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", parent, name, remedy)
+		} else if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok {
+			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", quoted, remedy)
 		} else {
-			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", shellquote.BashArg(parent), remedy)
+			remedy = "pass --output-dir with the code directory's parent, or " + remedy
 		}
 	}
 	return fmt.Errorf("code_source root_path %q (%q) is not inside the bundle directory %q, and the bundle convert-to-dabs writes packages only code inside its directory; %s", snap.RootPath, root, bundleDir, remedy)
+}
+
+// bundleFileIn returns the name of the bundle configuration file in dir, or "" when
+// it has none.
+func bundleFileIn(dir string) string {
+	for _, name := range config.FileNames {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			return name
+		}
+	}
+	return ""
 }
 
 // nv builds a dyn.Value at "position" n: yamlsaver orders a map's keys by their
