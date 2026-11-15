@@ -138,7 +138,7 @@ func newProfilesCommand() *cobra.Command {
 	}
 
 	var skipValidate bool
-	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column is omitted and JSON valid is always false)")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column is omitted and JSON \"valid\" is always false)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
