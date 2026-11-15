@@ -12,7 +12,8 @@ import (
 var errMultipleStatements = errors.New("input contains multiple statements (a ';' separates two or more statements)")
 
 // checkSingleStatement walks sql and returns errMultipleStatements if a
-// statement-terminating ';' is found anywhere except trailing whitespace.
+// statement-terminating ';' is followed by anything other than whitespace
+// and comments.
 //
 // The scanner ignores ';' inside:
 //   - single-quoted strings ('a;b', SQL standard doubled-quote escape)
@@ -35,12 +36,13 @@ func checkSingleStatement(sql string) error {
 
 		switch c {
 		case ';':
-			// A ';' that's not at end-of-trimmed-input is a separator.
-			if i < end-1 {
+			// A ';' followed only by whitespace and comments terminates the
+			// sole statement; Postgres does not count the empty remainder
+			// as another statement.
+			if !onlyWhitespaceAndComments(s, i+1, end) {
 				return errMultipleStatements
 			}
-			// Trailing ';' is fine.
-			i++
+			return nil
 
 		case '\'':
 			// Single-quoted string. SQL standard escape is '' (doubled).
@@ -101,6 +103,23 @@ func scanQuoted(s string, start, end int, quote byte) int {
 		i++
 	}
 	return end
+}
+
+func onlyWhitespaceAndComments(s string, start, end int) bool {
+	i := start
+	for i < end {
+		switch {
+		case s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n':
+			i++
+		case s[i] == '-' && i+1 < end && s[i+1] == '-':
+			i = scanLineComment(s, i, end)
+		case s[i] == '/' && i+1 < end && s[i+1] == '*':
+			i = scanBlockComment(s, i, end)
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func scanLineComment(s string, start, end int) int {

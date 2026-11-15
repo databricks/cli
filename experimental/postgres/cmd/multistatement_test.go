@@ -35,6 +35,12 @@ func TestCheckSingleStatement(t *testing.T) {
 		{name: "semi inside line comment then real semi", input: "SELECT 1 -- ; \n; SELECT 2", wantErr: true},
 		{name: "semi inside dollar then real semi", input: "SELECT $$a;b$$; SELECT 2", wantErr: true},
 
+		{name: "trailing line comment after semi", input: "SELECT 1; -- done", wantErr: false},
+		{name: "trailing block comment after semi", input: "SELECT 1; /* done */\n", wantErr: false},
+		{name: "comment line after semi", input: "SELECT 1;\n-- end\n", wantErr: false},
+		{name: "comment then second statement", input: "SELECT 1; -- x\nSELECT 2", wantErr: true},
+		{name: "block comment then second statement", input: "SELECT 1; /* x */ SELECT 2", wantErr: true},
+
 		{name: "leading whitespace", input: "  ;", wantErr: false},
 		{name: "empty input", input: "", wantErr: false},
 		{name: "only whitespace", input: "  \n\t  ", wantErr: false},
