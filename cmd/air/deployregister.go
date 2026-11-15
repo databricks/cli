@@ -164,7 +164,7 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) r
 func registerUntilReady(ctx context.Context, w *databricks.WorkspaceClient, req registerModelPackageRequest, interval time.Duration, progress func(*registerModelPackageResponse)) (*registerModelPackageResponse, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
+		return nil, withCode(codeInternalError, false, fmt.Errorf("failed to create API client: %w", err))
 	}
 	p := modelServingPoller{api: apiClient, headers: auth.WorkspaceIDHeaders(w.Config), interval: interval}
 	var last *registerModelPackageResponse
@@ -180,6 +180,11 @@ func registerUntilReady(ctx context.Context, w *databricks.WorkspaceClient, req 
 		}
 		if resp.weightsState() == stagingStateFailed {
 			return &resp, errStagingFailed
+		}
+		// Only a checkpoint waits on staging; repeating any other registration
+		// would resend its files to no effect.
+		if req.Checkpoint == nil {
+			return &resp, fmt.Errorf("version %s of %s isn't ready after registering", stripControl(resp.ModelVersion), req.RegisteredModel)
 		}
 		// Only the first request restages a failed checkpoint: repeating it would
 		// restart a staging that keeps failing instead of reporting the failure.

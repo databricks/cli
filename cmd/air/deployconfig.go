@@ -250,10 +250,11 @@ func (c *deployConfig) validateSource() error {
 			return errors.New("code_source.include_paths is required: list the files and directories to send, e.g. include_paths: [agent.py, tools]")
 		}
 		// git reads a leading ':' as pathspec magic, such as ":!x" for everything
-		// but x, which would send files the list doesn't name.
+		// but x, and expands globs, either of which would send files the list
+		// doesn't name; padding would match nothing.
 		for _, p := range c.CodeSource.IncludePaths {
-			if strings.HasPrefix(strings.TrimSpace(p), ":") {
-				return fmt.Errorf("code_source.include_paths must name files and directories, got %q", p)
+			if strings.HasPrefix(p, ":") || strings.ContainsAny(p, "*?[") || p != strings.TrimSpace(p) {
+				return fmt.Errorf("code_source.include_paths must name files and directories, without patterns or surrounding spaces, got %q", p)
 			}
 		}
 		snapshot := snapshotSourceConfig{RootPath: c.CodeSource.RootPath, IncludePaths: c.CodeSource.IncludePaths}

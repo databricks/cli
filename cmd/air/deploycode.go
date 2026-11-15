@@ -101,15 +101,17 @@ func ignoredTrackedFiles(ctx context.Context, root string, files []snapshotFile)
 		paths.WriteString(filepath.ToSlash(f.rel))
 		paths.WriteByte(0)
 	}
+	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, "git", "-C", root, "check-ignore", "--no-index", "-z", "--stdin")
 	cmd.Stdin = &paths
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	// check-ignore exits 1 when no path is ignored.
 	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 1 {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w", err)
+		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 	var ignored []string
 	for raw := range bytes.SplitSeq(out, []byte{0}) {

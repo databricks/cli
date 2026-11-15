@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -40,13 +41,34 @@ func getEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name string
 	return endpoint, err
 }
 
-// waitNotUpdating waits until the endpoint has no update in progress. The SDK's
-// wait stops at the first failed poll, so a transient failure starts it again:
-// an endpoint can take many minutes to start. Creates and config updates aren't
-// repeated this way, since a repeat after an applied write would fail.
+// waitNotUpdating waits until the endpoint has no update in progress, calling
+// progress on every poll. It polls as the SDK's WaitGetServingEndpointNotUpdating
+// does, except that each poll repeats a transient failure, which ends the SDK's
+// wait: an endpoint can take many minutes to start. Creates and config updates
+// aren't repeated this way, since a repeat after an applied write would fail.
 func waitNotUpdating(ctx context.Context, w *databricks.WorkspaceClient, name string, progress func(*serving.ServingEndpointDetailed)) (*serving.ServingEndpointDetailed, error) {
-	return retry.With(ctx, retry.IsTransientRead, func() (*serving.ServingEndpointDetailed, error) {
-		return w.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, untilDeadline(ctx), progress)
+	return retries.Poll(ctx, untilDeadline(ctx), func() (*serving.ServingEndpointDetailed, *retries.Err) {
+		endpoint, err := retry.With(ctx, retry.IsTransientRead, func() (*serving.ServingEndpointDetailed, error) {
+			return w.ServingEndpoints.GetByName(ctx, name)
+		})
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		if progress != nil {
+			progress(endpoint)
+		}
+		var state serving.EndpointStateConfigUpdate
+		if endpoint.State != nil {
+			state = endpoint.State.ConfigUpdate
+		}
+		switch state {
+		case serving.EndpointStateConfigUpdateNotUpdating:
+			return endpoint, nil
+		case serving.EndpointStateConfigUpdateUpdateFailed, serving.EndpointStateConfigUpdateUpdateCanceled:
+			return nil, retries.Halt(fmt.Errorf("the endpoint's update ended in %s; check its events and logs in the Serving UI", state))
+		default:
+			return nil, retries.Continues(string(state))
+		}
 	})
 }
 
@@ -131,8 +153,9 @@ func waitServes(ctx context.Context, w *databricks.WorkspaceClient, name string,
 	return checkServes(endpoint, entity)
 }
 
-// errEndpointNotReady reports an endpoint that serves the version but isn't ready,
-// which running air deploy again doesn't change.
+// errEndpointNotReady reports an endpoint that serves the version but isn't ready.
+// Running air deploy again doesn't make it ready; it reports success once the
+// endpoint recovers, so the error isn't marked retryable.
 var errEndpointNotReady = errors.New("endpoint isn't ready")
 
 // checkServes returns endpoint if it serves only entity and is ready to serve.

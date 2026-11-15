@@ -27,8 +27,11 @@ type fakeEndpoints struct {
 	writes     []string
 	// rawWrites holds the body of every create and config update, as sent.
 	rawWrites []string
-	// failGets is how many GETs answer 500 before the endpoint is served again.
-	failGets int
+	// gets counts the GETs of an existing endpoint. Those numbered in failOnGets
+	// answer 500, and from readyAfterGets on (when set) the endpoint is ready.
+	gets           int
+	failOnGets     map[int]bool
+	readyAfterGets int
 }
 
 func newFakeEndpoints(t *testing.T, existing *serving.ServingEndpointDetailed) *fakeEndpoints {
@@ -66,11 +69,16 @@ func (f *fakeEndpoints) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.endpoint.PendingConfig = nil
 		f.endpoint.State = &f.finalState
 	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, servingEndpointsPath+"/"):
-		if f.failGets > 0 && f.endpoint != nil {
-			f.failGets--
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"error_code": "INTERNAL_ERROR", "message": "Something went wrong."}`))
-			return
+		if f.endpoint != nil {
+			f.gets++
+			if f.failOnGets[f.gets] {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error_code": "INTERNAL_ERROR", "message": "Something went wrong."}`))
+				return
+			}
+			if f.readyAfterGets > 0 && f.gets >= f.readyAfterGets {
+				f.endpoint.State = &readyState
+			}
 		}
 		if f.endpoint == nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -252,16 +260,19 @@ func TestCheckEndpointAllowsAMissingEndpoint(t *testing.T) {
 	assert.NoError(t, checkEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", "main.models.qwen"))
 }
 
-func TestServeOnEndpointWaitsThroughATransientFailure(t *testing.T) {
+func TestServeOnEndpointWaitsThroughTransientFailures(t *testing.T) {
 	fake := newFakeEndpoints(t, nil)
-	// The create succeeds; the first poll of the wait then fails.
-	fake.failGets = 1
+	// The endpoint starts over three polls, and the first GET of each fails: more
+	// failures than one request may retry, spread over the wait.
+	fake.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateInProgress}
+	fake.failOnGets = map[int]bool{1: true, 3: true, 5: true}
+	fake.readyAfterGets = 6
 	srv := fake.start()
 
 	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"create"}, fake.writes)
-	assert.Zero(t, fake.failGets)
+	assert.Equal(t, 6, fake.gets)
 }
 
 func TestServeOnEndpointReportsAFailedUpdate(t *testing.T) {

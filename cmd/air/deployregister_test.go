@@ -196,6 +196,15 @@ func TestRegisterUntilReadyRetriesTransientErrors(t *testing.T) {
 	assert.Len(t, fake.statusRequests, 2)
 }
 
+func TestRegisterUntilReadyDoesNotRepeatANotReadyModelFromCode(t *testing.T) {
+	fake := newFakeModelServing(t, `{"model_id": "m-2", "registered_model": "a.b.c", "model_version": "1", "ready": false}`)
+	req := registerModelPackageRequest{RegisteredModel: "a.b.c", IdempotencyKey: "k", Code: &modelPackageCode{EntryFile: "agent.py"}}
+
+	_, _, err := registerTestCheckpoint(t, fake, req)
+	assert.ErrorContains(t, err, "version 1 of a.b.c isn't ready after registering")
+	assert.Len(t, fake.requests(), 1)
+}
+
 func TestRegisterUntilReadyGivesUpOnPersistentErrors(t *testing.T) {
 	fake := newFakeModelServing(t, serverErrorResponse)
 
