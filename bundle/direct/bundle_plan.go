@@ -225,8 +225,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		if entry.Action == deployplan.Delete {
 			id := b.StateDB.GetResourceID(resourceKey)
 			if id == "" {
-				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
-				return false
+				// An empty-ID entry from an older partial-recreate failure (see the
+				// Create path below): its resource was deleted and never re-created,
+				// so there is nothing to delete remotely; applying only drops the entry.
+				entry.Gone = true
+				return true
 			}
 
 			if !adapter.HasDoDelete() {

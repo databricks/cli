@@ -20,26 +20,18 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/empty-id-in-state/default/files...
-Error: cannot plan resources.jobs.bar: internal error, missing in state
-
-Error: planning failed
-
+Created jobs.foo
 Files: 1 uploaded, 0 deleted
-
-Exit code: 1
-["resources.jobs.bar","resources.jobs.baz","resources.jobs.foo"]
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+["resources.jobs.baz","resources.jobs.foo"]
 
 === An empty-ID entry on destroy
 
 >>> [CLI] bundle destroy --auto-approve
-Error: cannot plan resources.jobs.bar: internal error, missing in state
+The following resources will be deleted:
+  delete resources.jobs.foo
 
-Error: cannot plan resources.jobs.baz: internal error, missing in state
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/empty-id-in-state/default
 
-Error: cannot plan resources.jobs.foo: internal error, missing in state
-
-Error: planning failed
-
-
-Exit code: 1
-["resources.jobs.bar","resources.jobs.baz","resources.jobs.foo"]
+Destroy: 1 deleted
+no state file
