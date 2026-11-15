@@ -3,13 +3,15 @@
 Loading app 'myapp' configuration
 Creating bundle configuration
 File successfully saved to app.yml
+Inlined and removed app.yml
 Bundle configuration created at databricks.yml
 Binding bundle to existing app
 Successfully bound to app 'myapp'
 Deploying bundle
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/myapp/default/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Updated apps.app
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Bundle deployed successfully
 Starting app
 ✓ Getting the status of the app myapp
@@ -24,7 +26,6 @@ App started successfully
 You can now deploy changes with: databricks bundle deploy
 
 >>> ls out
-app.yml
 databricks.yml
 
 >>> cat out/databricks.yml
@@ -37,6 +38,13 @@ workspace:
 resources:
   apps:
     app:
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: GREETING
+            value: hello
       name: myapp
       description: ""
       source_code_path: .
