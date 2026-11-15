@@ -1,0 +1,16 @@
+
+>>> [CLI] labs install foo --offline
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: interface conversion: interface {} is string, not bool
+
+Stack Trace:
+Exit code: 1
+
+>>> find home/.databricks/labs/foo -type f
+home/.databricks/labs/foo/cache/databrickslabs-foo-releases.json
+home/.databricks/labs/foo/lib/labs.yml
