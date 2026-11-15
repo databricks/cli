@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -17,12 +18,10 @@ import (
 
 type capturePipelineDependencies struct{}
 
-// CapturePipelineDependencies makes a resource that depends on another resource also depend on
-// that resource's grants, because creating some resources requires the grants to be in place:
-// a pipeline cannot be created before its run_as principal has CREATE TABLE on the target
-// schema. The dependency is added to lifecycle.depends_on, and skipped when it would create a
-// cycle, e.g. when a schema grants privileges to the service principal of an app that refers
-// to the schema.
+// CapturePipelineDependencies makes a pipeline wait for the grants and permissions of the resources
+// it refers to, directly or through lifecycle.depends_on, so a pipeline is not created before the
+// privileges it depends on are in place. A dependency that would create a cycle is skipped, e.g.
+// when an app refers to the pipeline and its service principal is granted on the pipeline's schema.
 func CapturePipelineDependencies() bundle.Mutator {
 	return &capturePipelineDependencies{}
 }
@@ -37,37 +36,22 @@ func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundl
 		return diag.FromErr(err)
 	}
 
-	// Resources are visited in a fixed order because an added dependency can rule out a later
-	// one: with two of them forming a cycle together, the same one must be skipped on every run.
-	added := make(map[string][]string)
-	for _, node := range slices.Sorted(maps.Keys(graph)) {
-		// Grants and permissions have no lifecycle.
-		if strings.Contains(config.GetResourceTypeFromKey(node), ".") {
-			continue
-		}
-
-		// The grants appended below are not visited: range evaluates the slice once.
+	// Pipelines are visited in a fixed order, so the same cycle-forming dependency is skipped on every run.
+	for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Pipelines)) {
+		p := b.Config.Resources.Pipelines[key]
+		node := "resources.pipelines." + key
 		for _, dep := range graph[node] {
-			grants := dep + ".grants"
-			if _, ok := graph[grants]; !ok || slices.Contains(graph[node], grants) || reaches(graph, grants, node) {
-				continue
+			for _, sub := range []string{".grants", ".permissions"} {
+				target := dep + sub
+				if _, ok := graph[target]; !ok || slices.Contains(graph[node], target) || reaches(graph, target, node) {
+					continue
+				}
+				graph[node] = append(graph[node], target)
+				p.Lifecycle.DependsOn = append(p.Lifecycle.DependsOn, resources.DependsOn{Resource: strings.TrimPrefix(target, "resources.")})
 			}
-			graph[node] = append(graph[node], grants)
-			added[node] = append(added[node], grants)
 		}
 	}
-
-	resources := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(root, resources, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			grants := added[p.String()]
-			if len(grants) == 0 {
-				return v, nil
-			}
-			return appendDependsOn(v, grants)
-		})
-	})
-	return diag.FromErr(err)
+	return nil
 }
 
 // dependencyGraph returns, for every resource and its grants or permissions, the nodes it depends
@@ -148,25 +132,4 @@ func reaches(graph map[string][]string, from, to string) bool {
 		stack = append(stack, graph[n]...)
 	}
 	return false
-}
-
-// appendDependsOn appends lifecycle.depends_on entries for the given nodes to a resource.
-func appendDependsOn(resource dyn.Value, nodes []string) (dyn.Value, error) {
-	lifecycle := dyn.GetValue(resource, "lifecycle")
-	if lifecycle.Kind() != dyn.KindMap {
-		lifecycle = dyn.V(dyn.NewMapping())
-	}
-
-	entries, _ := dyn.GetValue(lifecycle, "depends_on").AsSequence()
-	for _, node := range nodes {
-		entries = append(entries, dyn.V(map[string]dyn.Value{
-			"resource": dyn.V(strings.TrimPrefix(node, "resources.")),
-		}))
-	}
-
-	lifecycle, err := dyn.Set(lifecycle, "depends_on", dyn.V(entries))
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-	return dyn.Set(resource, "lifecycle", lifecycle)
 }
