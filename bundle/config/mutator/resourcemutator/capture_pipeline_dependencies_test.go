@@ -24,15 +24,15 @@ func TestCapturePipelineDependencies(t *testing.T) {
 	// A pipeline that refers to the schema. A constructor, because the mutator writes to the
 	// pipeline and a shared pointer would leak lifecycle.depends_on between cases.
 	pipeline := func() *resources.Pipeline {
-		return &resources.Pipeline{CreatePipeline: pipelines.CreatePipeline{
+		return &resources.Pipeline{
 			Catalog: "${resources.schemas.src.catalog_name}",
 			Schema:  "${resources.schemas.src.name}",
-		}}
+		}
 	}
 	// A job with permissions, referred to by name.
 	job := func(permissions []resources.JobPermission) *resources.Job {
 		return &resources.Job{
-			JobSettings: jobs.JobSettings{Name: "job"},
+			Name:        "job",
 			Permissions: permissions,
 		}
 	}
