@@ -71,6 +71,11 @@ func TestAiRuntimeEnvironmentVersion(t *testing.T) {
 			spec: `{"base_environment": "workspace-base-environments/databricks_ai_v6"}`,
 			want: "databricks_ai_v6",
 		},
+		{
+			name: "custom workspace base environment is read from base_environment",
+			spec: `{"base_environment": "workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7"}`,
+			want: "dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -209,12 +214,13 @@ func TestRenderFieldsStripsControlCharacters(t *testing.T) {
 		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
 		user:         "user\x1b[31m@example.com",
 		accelerators: "1x A10",
-		environment:  "4",
+		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
 	})
 
 	assert.Contains(t, out, "Experiment    experiment")
 	assert.Contains(t, out, "MLflow Run    runname")
 	assert.Contains(t, out, "User          user@example.com")
+	assert.Contains(t, out, "Environment   databricks_ai_v6")
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 }
