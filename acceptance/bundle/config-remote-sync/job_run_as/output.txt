@@ -1,0 +1,73 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.user_to_creator
+Created jobs.user_to_sp
+Created jobs.user_to_user
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change run_as remotely
+
+=== Detect and save changes
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 3 resource(s):
+
+Resource: resources.jobs.user_to_creator
+  run_as.user_name: replace
+
+Resource: resources.jobs.user_to_sp
+  run_as.service_principal_name: add
+  run_as.user_name: remove
+
+Resource: resources.jobs.user_to_user
+  run_as.user_name: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -7,5 +7,5 @@
+       name: user-to-user-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        user_name: second-user@example.com
+       tasks:
+         - task_key: main
+@@ -16,5 +16,5 @@
+       name: user-to-creator-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        user_name: [USERNAME]
+       tasks:
+         - task_key: main
+@@ -25,5 +25,5 @@
+       name: user-to-sp-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        service_principal_name: [UUID]
+       tasks:
+         - task_key: main
+
+=== Second sync is a no-op
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Plan after sync
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.user_to_creator
+  delete resources.jobs.user_to_sp
+  delete resources.jobs.user_to_user
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted
