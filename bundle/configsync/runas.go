@@ -8,12 +8,8 @@ import "github.com/databricks/cli/bundle/deployplan"
 // and dropping it while removing the old key leaves "run_as: {}".
 const jobRunAsChildPattern = "resources.jobs.*.run_as.*"
 
-func isJobRunAsKey(path string) bool {
-	return matchPattern(jobRunAsChildPattern, path)
-}
-
 // keepSkippedRunAsChange reports whether a run_as change the plan skipped as a
 // backend default should still be considered for syncing.
 func keepSkippedRunAsChange(path string, cd *deployplan.ChangeDesc) bool {
-	return cd.Reason == deployplan.ReasonBackendDefault && isJobRunAsKey(path)
+	return cd.Reason == deployplan.ReasonBackendDefault && matchPattern(jobRunAsChildPattern, path)
 }

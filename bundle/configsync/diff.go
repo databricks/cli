@@ -162,11 +162,15 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 					!keepSkippedRunAsChange(fullPath, changeDesc) {
 					continue
 				}
-				if skipByLifecycle(resourceKey, path, changeDesc) {
+				synced, skip, err := applyLifecycle(resourceKey, path, changeDesc)
+				if err != nil {
+					return nil, fmt.Errorf("failed to apply lifecycle rules for path %s: %w", path, err)
+				}
+				if skip {
 					continue
 				}
 
-				change, err := convertChangeDesc(fullPath, changeDesc)
+				change, err := convertChangeDesc(fullPath, synced)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
