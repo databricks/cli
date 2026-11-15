@@ -1,0 +1,14 @@
+# Test: apps import of an app whose source contains app.yml.
+# Expected: app.yml contents are inlined into databricks.yml as `config` and app.yml is removed.
+APP_PATH="/Workspace/Users/$CURRENT_USER_NAME/myapp"
+$CLI workspace import-dir src "$APP_PATH" > /dev/null
+$CLI apps create myapp > /dev/null
+$CLI apps deploy myapp --source-code-path "$APP_PATH" > /dev/null
+
+trace $CLI apps import --name myapp --output-dir out
+
+trace ls out
+
+trace cat out/databricks.yml
+
+rm -rf out
