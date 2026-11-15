@@ -205,7 +205,7 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
 	}
 	if unmatched := unmatchedIncludePaths(includePaths, files); len(unmatched) > 0 {
-		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v <file>` shows the rule for a file); empty directories, nested git repositories and submodules add no files", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "))
+		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that these paths exist under root_path and hold files git does not ignore%s; empty directories, nested git repositories and submodules add no files", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "), ignoreRuleHint(isGitRepo))
 	}
 	return files, nil
 }
@@ -258,7 +258,16 @@ func emptySnapshotError(ctx context.Context, repoPath string, includePaths []str
 		}
 	}
 	if len(includePaths) > 0 {
-		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and are not ignored by git (`git check-ignore -v <path>`)", prefix, strings.Join(includePaths, ", "))
+		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and hold files git does not ignore%s; empty directories, nested git repositories and submodules add no files", prefix, strings.Join(includePaths, ", "), ignoreRuleHint(isGitRepo))
 	}
-	return fmt.Errorf("%s: the directory is empty or all of its files are excluded by .gitignore rules (`git check-ignore -v <path>` shows the rule for a file). Check code_source.root_path", prefix)
+	return fmt.Errorf("%s: the directory is empty, holds only nested git repositories or submodules, or all of its files are excluded by .gitignore rules%s. Check code_source.root_path", prefix, ignoreRuleHint(isGitRepo))
+}
+
+// ignoreRuleHint points at git's ignore-rule lookup, which only works inside a git
+// repository.
+func ignoreRuleHint(isGitRepo bool) string {
+	if !isGitRepo {
+		return ""
+	}
+	return " (`git check-ignore -v <file>` shows the rule for a file)"
 }

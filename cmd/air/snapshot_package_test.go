@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -431,4 +432,29 @@ func TestSnapshotFiles_RejectsPathspecOutsideRoot(t *testing.T) {
 	_, err := snapshotFiles(t.Context(), filepath.Join(repo, "proj"), []string{"main.py", ":(top)secret"}, true)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "outside root_path")
+}
+
+// git reads a backslash in a pathspec as an escape, so the entry is a pattern and is
+// left to git. On Windows a backslash is a path separator instead.
+func TestSnapshotFiles_AcceptsBackslashEscapedIncludePath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a backslash is a path separator on Windows")
+	}
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "my file.txt", "x")
+	writeRepoFile(t, repo, "other.txt", "x")
+
+	files, err := snapshotFiles(t.Context(), repo, []string{`my\ file.txt`}, false)
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	assert.Equal(t, "my file.txt", filepath.ToSlash(files[0].rel))
+}
+
+func TestSnapshotFiles_OmitsIgnoreRuleHintOutsideGit(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "main.py", "print(1)\n")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"main.py", "missing"}, false)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "check-ignore")
 }
