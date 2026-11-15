@@ -270,10 +270,10 @@ func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
 
 // effectiveIdempotencyToken resolves the token sent to validation and submit:
 // the --idempotency-key flag wins, then the config's token, else a generated one.
-func effectiveIdempotencyToken(flag string, cfg *runConfig) string {
+func effectiveIdempotencyToken(flag string, configured *string) string {
 	token := flag
-	if token == "" && cfg.IdempotencyToken != nil {
-		token = *cfg.IdempotencyToken
+	if token == "" && configured != nil {
+		token = *configured
 	}
 	if token == "" {
 		token = uuid.New().String()
@@ -345,7 +345,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 	containers := submittedContainers(cfg, funcDir)
-	token := effectiveIdempotencyToken(idempotencyKey, cfg)
+	token := effectiveIdempotencyToken(idempotencyKey, cfg.IdempotencyToken)
 
 	deps, _ := cfg.inlineDependencies()
 

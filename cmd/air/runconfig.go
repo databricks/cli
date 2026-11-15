@@ -119,16 +119,8 @@ func (c *runConfig) validate() error {
 		}
 	}
 
-	if err := validateSecretRefs(c.Secrets); err != nil {
+	if err := validateEnvironmentVariables(c.EnvVariables, c.Secrets); err != nil {
 		return err
-	}
-
-	// A name can't be both a plain env var and a secret: the precedence would be
-	// ambiguous and could leak the secret. Sorted for a stable error.
-	for _, name := range slices.Sorted(maps.Keys(c.EnvVariables)) {
-		if _, ok := c.Secrets[name]; ok {
-			return fmt.Errorf("%q is set in both env_variables and secrets; remove it from one", name)
-		}
 	}
 
 	if c.CodeSource != nil {
@@ -331,6 +323,23 @@ func validateCommand(v string) error {
 	lineCount := strings.Count(v, "\n") + 1
 	if lineCount > 1000 {
 		return fmt.Errorf("command is too long (%d lines); maximum is 1000 lines — move complex logic into a script in your code_source", lineCount)
+	}
+	return nil
+}
+
+// validateEnvironmentVariables checks the env_variables and secrets of a config:
+// secret references use the "scope/key" format, and no name is in both.
+func validateEnvironmentVariables(envVariables, secrets map[string]string) error {
+	if err := validateSecretRefs(secrets); err != nil {
+		return err
+	}
+
+	// A name can't be both a plain env var and a secret: the precedence would be
+	// ambiguous and could leak the secret. Sorted for a stable error.
+	for _, name := range slices.Sorted(maps.Keys(envVariables)) {
+		if _, ok := secrets[name]; ok {
+			return fmt.Errorf("%q is set in both env_variables and secrets; remove it from one", name)
+		}
 	}
 	return nil
 }
@@ -608,13 +617,16 @@ func (p *permission) validate() error {
 // or bare `compute`).
 const configHelpRoot = "config"
 
+// runCommandPath is the command whose -h documents runConfig.
+const runCommandPath = "databricks air run"
+
 // writeConfigFieldHelp resolves a dotted config path and writes its docs.
 func writeConfigFieldHelp(w io.Writer, path string) error {
 	field, err := resolveConfigField(path)
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field, nil)
+	renderConfigField(w, runCommandPath, field, nil)
 	return nil
 }
 
@@ -675,8 +687,13 @@ func configSchema() configField {
 // resolveConfigField resolves a dotted YAML path against the run config schema.
 // The leading "config." is optional; an empty path describes the whole schema.
 func resolveConfigField(path string) (configField, error) {
+	return resolveSchemaField(configSchema(), path)
+}
+
+// resolveSchemaField resolves a dotted YAML path against a config schema rooted
+// at root, as resolveConfigField does for the run config.
+func resolveSchemaField(root configField, path string) (configField, error) {
 	trimmed := strings.TrimPrefix(strings.TrimPrefix(path, configHelpRoot), ".")
-	root := configSchema()
 	if trimmed == "" {
 		return root, nil
 	}
@@ -867,7 +884,8 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
+// command is the command whose -h documents the schema.
+func renderConfigField(w io.Writer, command string, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
@@ -916,8 +934,9 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 			fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 		}
 	}
-	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
-	if f.path == configHelpRoot {
+	fmt.Fprintf(w, "\nFor details on a field, run \"%s -h %s.<field>\".\n", command, f.path)
+	// The skill writes run YAML, so only `air run -h config` points at it.
+	if f.path == configHelpRoot && command == runCommandPath {
 		fmt.Fprint(w, agentSkillHelp)
 	}
 }

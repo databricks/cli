@@ -1057,14 +1057,14 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 
 	for _, p := range []string{"code_source.type", "code_source.snapshot.root_path"} {
 		t.Run(p+" compatibility override", func(t *testing.T) {
-			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}, configSchema()))
 			_, err := resolveConfigField(p)
 			require.Error(t, err)
 		})
 	}
 	for _, p := range paths {
 		t.Run(p, func(t *testing.T) {
-			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}, configSchema()))
 			// The help path accepts the same field (free-form sub-paths resolve to
 			// the map itself, which is the schema's most specific node).
 			_, err := resolveConfigField(p)
@@ -1075,7 +1075,7 @@ func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	}
 
 	// A field unknown to one is unknown to the other.
-	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}))
+	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}, configSchema()))
 	_, err := resolveConfigField("compute.bogus")
 	require.Error(t, err)
 }
