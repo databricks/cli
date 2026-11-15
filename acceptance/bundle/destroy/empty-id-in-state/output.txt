@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/empty-id-in-state/default/files...
+Created jobs.bar
+Created jobs.baz
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== An empty-ID entry for a resource in config is planned as a create
+
+>>> [CLI] bundle plan
+create jobs.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== An empty-ID entry for a resource removed from config
+
+>>> cp databricks_no_bar.yml databricks.yml
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/empty-id-in-state/default/files...
+Error: cannot plan resources.jobs.bar: internal error, missing in state
+
+Error: planning failed
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+["resources.jobs.bar","resources.jobs.baz","resources.jobs.foo"]
+
+=== An empty-ID entry on destroy
+
+>>> [CLI] bundle destroy --auto-approve
+Error: cannot plan resources.jobs.bar: internal error, missing in state
+
+Error: cannot plan resources.jobs.baz: internal error, missing in state
+
+Error: cannot plan resources.jobs.foo: internal error, missing in state
+
+Error: planning failed
+
+
+Exit code: 1
+["resources.jobs.bar","resources.jobs.baz","resources.jobs.foo"]
