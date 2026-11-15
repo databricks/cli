@@ -6,7 +6,7 @@ https://github.com/databricks/cli
 
 CLI Version: [CLI_VERSION]
 
-Panic Payload: interface conversion: interface {} is string, not bool
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
 
 Stack Trace:
 Exit code: 1
