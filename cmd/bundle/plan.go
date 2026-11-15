@@ -31,12 +31,14 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	var quiet int
 	var clusterId string
 	var selectResources []string
+	var excludeResources []string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -q prints only the summary, -qq prints nothing on success.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
+	cmd.Flags().StringSliceVar(&excludeResources, "exclude", nil, "Plan all resources except the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
@@ -47,6 +49,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 				b.Select = selectResources
+				b.Exclude = excludeResources
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId
@@ -104,7 +107,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
-			if len(selectResources) > 0 {
+			if len(selectResources) > 0 || len(excludeResources) > 0 {
 				fmt.Fprintf(out, ", %d not selected", plan.NotSelected)
 			}
 			fmt.Fprintln(out)

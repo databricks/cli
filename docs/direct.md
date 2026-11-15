@@ -62,6 +62,12 @@ New bundles use the direct engine, so no configuration is needed. The migrate co
 
 Setting `bundle.engine` (or `targets.*.engine`) or `DATABRICKS_BUNDLE_ENGINE` to "terraform" is an error. To keep using Terraform, use Databricks CLI v1.19.x.
 
+### Deploying all but selected resources
+
+Use `databricks bundle deploy --exclude genie_spaces.my_space` to deploy the other resources first, then `databricks bundle deploy --select genie_spaces.my_space` when its prerequisites are ready. `databricks bundle plan --exclude genie_spaces.my_space` previews the first stage. You can save that filtered plan with `-o json > plan.json` and apply it with `databricks bundle deploy --plan plan.json`.
+
+Both selectors accept a unique resource name or a qualified `type.name`, and can be repeated or comma-separated. Unknown or ambiguous names fail. Excluding a resource also excludes its grants and permissions. If a resource kept in the plan depends on an excluded resource, the command fails with both names, even when the retained resource is unchanged. Deleting or replacing a resource still referenced by an excluded deployed resource fails when the old reference would become invalid, based on the recorded state dependencies. Recreating an immutable bundle snapshot keeps its old path available, so excluded jobs can keep using it while other jobs move to the new snapshot. Ordering-only `lifecycle.depends_on` entries do not retain a prerequisite's ID when their dependent resource is excluded. `--exclude` cannot be combined with `--select` or passed when applying a saved `--plan`.
+
 ## Differences from terraform
 
 ### Diff calculation
