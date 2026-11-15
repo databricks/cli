@@ -304,6 +304,11 @@ func TestGetRunJSONMLflowIDs(t *testing.T) {
 			outputs: map[string]string{"50": `{}`},
 		},
 		{
+			name:    "null when the output has only an experiment ID",
+			run:     succeededTaskRun,
+			outputs: map[string]string{"50": `{"ai_runtime_task_output": {"mlflow_experiment_id": "E1"}}`},
+		},
+		{
 			// No output for task run 50, so its get-output fails.
 			name: "null when get-output fails",
 			run:  succeededTaskRun,

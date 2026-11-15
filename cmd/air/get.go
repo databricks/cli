@@ -34,7 +34,7 @@ type getData struct {
 	// MLflowExperimentID and MLflowRunID identify the MLflow run MLflowURL links
 	// to. For a finished run whose last retry never started an MLflow run, they
 	// come from the newest earlier retry that has one. Like MLflowURL, they are
-	// null both when there is no MLflow run yet and when a get-output call fails.
+	// null whenever no MLflow run is found, including when a get-output call fails.
 	MLflowExperimentID *string `json:"mlflow_experiment_id"`
 	MLflowRunID        *string `json:"mlflow_run_id"`
 	TerminationReason  *string `json:"termination_reason,omitempty"`
