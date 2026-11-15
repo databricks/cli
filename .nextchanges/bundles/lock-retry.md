@@ -1,1 +1,1 @@
-* Retry acquiring the deployment lock when the request fails with a transient server error, times out ("request timed out after ... of inactivity") or loses its connection ("unexpected EOF"). ([#7594](https://github.com/databricks/cli/pull/7594))
+* Retry creating the deployment lock (without `--force-lock`) when the request fails with a transient server error, times out ("request timed out after ... of inactivity") or loses its connection ("unexpected EOF"). ([#7594](https://github.com/databricks/cli/pull/7594))

@@ -153,7 +153,8 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	}
 
 	if isForced {
-		// Overwrite writes are already retried by the retrying filer.
+		// The retrying filer already retries overwrite writes, on the errors [retry.IsTransient]
+		// covers; an "unexpected EOF" is not retried there, only read back below.
 		err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories, filer.OverwriteIfExists)
 	} else {
 		// The retrying filer does not repeat writes that do not overwrite. Repeating this one is
@@ -176,7 +177,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	case retry.IsTransientRead(ctx, err):
 		// The last attempt may have been applied even though its response was lost. Read the
 		// lock back so that such a write does not leave behind a lock nobody releases. This
-		// covers forced locks too, whose overwrite the retrying filer retried on its own.
+		// covers forced locks too.
 		activeLockState, readErr := locker.GetActiveLockState(ctx)
 		if readErr != nil {
 			// No lock, or the read failed too: the write error says more.
