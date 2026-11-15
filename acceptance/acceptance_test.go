@@ -255,7 +255,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
-	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go and
+	// listKnownMetaHarnesses() in useragent/meta_harness.go,
 	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
 	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
@@ -273,6 +274,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"GEMINI_CLI",
 		"GOOSE_TERMINAL",
 		"KIRO",
+		"OMNIGENT",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
 		"PI_CODING_AGENT",
