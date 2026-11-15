@@ -298,3 +298,44 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
 	assert.Contains(t, namedPerms, "description")
 }
+
+func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.genie_spaces.my_space": {
+			Changes: deployplan.Changes{
+				// OverrideChangeDesc promotes etag drift to an update for deploy.
+				"etag":  {Action: deployplan.Update, Old: "1", Remote: "2"},
+				"title": {Action: deployplan.Update, Old: "a", New: "a", Remote: "b"},
+			},
+		},
+		"resources.pipelines.my_pipeline": {
+			Changes: deployplan.Changes{
+				// Not one of the backend default's allowed values, so it is a real edit.
+				"configuration['spark.sql.ansi.enabled']": {Action: deployplan.Update, Old: "true", Remote: "false"},
+			},
+		},
+		"resources.jobs.my_job": {
+			Changes: deployplan.Changes{
+				// input_only: never returned by GET, so a local edit would be removed.
+				"trigger.table_update.condition": {Action: deployplan.Update, Old: "ANY_UPDATED", New: "ALL_UPDATED"},
+				// Backend default the config no longer sets.
+				"format": {Action: deployplan.Update, Old: "MULTI_TASK", Remote: "MULTI_TASK"},
+				// A principal kind switch must still be synced.
+				"run_as.service_principal_name": {Action: deployplan.Skip, Reason: deployplan.ReasonBackendDefault, Remote: "sp"},
+			},
+		},
+	}}
+
+	changes, err := ExtractChanges(t.Context(), &bundle.Bundle{}, plan)
+	require.NoError(t, err)
+
+	assert.Equal(t, ResourceChanges{
+		"title": {Operation: OperationReplace, Value: "b"},
+	}, changes["resources.genie_spaces.my_space"])
+	assert.Equal(t, ResourceChanges{
+		"configuration['spark.sql.ansi.enabled']": {Operation: OperationAdd, Value: "false", LocalEdit: true},
+	}, changes["resources.pipelines.my_pipeline"])
+	assert.Equal(t, ResourceChanges{
+		"run_as.service_principal_name": {Operation: OperationAdd, Value: "sp"},
+	}, changes["resources.jobs.my_job"])
+}
