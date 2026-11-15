@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
@@ -15,16 +16,24 @@ import (
 // registerModelPackagePath registers a model whose files Model Serving writes. It
 // runs as the caller and is idempotent per key: a repeat request with the same key
 // and inputs continues the registration, and finalizes a checkpoint's version once
-// its weights are staged.
+// its weights are staged. Staging never finalizes the version by itself.
 const registerModelPackagePath = "/api/2.0/serving-endpoints:registerModelPackage"
 
-// registrationPollInterval is how often air deploy repeats the registration while
-// a checkpoint's weights are staged.
+// stagingStatusPath reports the recorded staging progress of a model version, a
+// read.
+const stagingStatusPath = "/api/2.0/serving-endpoints:checkModelDeploymentStagingStatus"
+
+// registrationPollInterval is how often air deploy checks on a checkpoint's
+// weights while they are staged.
 const registrationPollInterval = 15 * time.Second
 
-// stagingStateFailed is the ModelDeploymentStagingStatus state of an artifact that
-// failed to stage and won't be retried automatically.
-const stagingStateFailed = "FAILED"
+// ModelDeploymentStagingStatus states air deploy acts on.
+const (
+	// stagingStateInProgress: an upload is queued, running or waiting to be retried.
+	stagingStateInProgress = "IN_PROGRESS"
+	// stagingStateFailed: the upload failed and won't be retried automatically.
+	stagingStateFailed = "FAILED"
+)
 
 // registerModelPackageRequest is the RegisterModelPackageRequest body. Exactly one
 // of Checkpoint, Code and SavedModel is set.
@@ -86,6 +95,17 @@ type artifactStagingStatus struct {
 	State string `json:"state,omitempty"`
 }
 
+// stagingStatusRequest is the CheckModelDeploymentStagingStatusRequest body.
+type stagingStatusRequest struct {
+	Model        string `json:"model"`
+	ModelVersion string `json:"model_version"`
+}
+
+// stagingStatusResponse is the CheckModelDeploymentStagingStatusResponse body.
+type stagingStatusResponse struct {
+	Status *modelStagingStatus `json:"status,omitempty"`
+}
+
 // weightsState is the staging state of a checkpoint's weights, or "" when the
 // response reports none.
 func (r *registerModelPackageResponse) weightsState() string {
@@ -134,22 +154,26 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) r
 	return req
 }
 
-// registerUntilReady sends req until the version it registers is ready to serve,
-// calling progress with every response. A checkpoint's version becomes ready once
-// its weights are staged; the other sources are ready after the first request.
-// It returns errStagingFailed, with the last response, when staging the weights
-// failed.
+// registerUntilReady registers req's version and waits until it is ready to
+// serve, calling progress with every registration response and staging update.
+// The other sources are ready after the first request. A checkpoint's version
+// becomes ready once its weights are staged: while they copy, it polls the staging
+// status, a read, then repeats the registration, which finalizes the version. On
+// error it returns the last response it got, nil before the first one, and
+// errStagingFailed when staging failed.
 func registerUntilReady(ctx context.Context, w *databricks.WorkspaceClient, req registerModelPackageRequest, interval time.Duration, progress func(*registerModelPackageResponse)) (*registerModelPackageResponse, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
-	headers := auth.WorkspaceIDHeaders(w.Config)
+	p := modelServingPoller{api: apiClient, headers: auth.WorkspaceIDHeaders(w.Config), interval: interval}
+	var last *registerModelPackageResponse
 	for {
 		var resp registerModelPackageResponse
-		if err := apiClient.Do(ctx, http.MethodPost, registerModelPackagePath, headers, nil, req, &resp); err != nil {
-			return nil, err
+		if err := p.post(ctx, registerModelPackagePath, req, &resp); err != nil {
+			return last, err
 		}
+		last = &resp
 		progress(&resp)
 		if resp.Ready {
 			return &resp, nil
@@ -160,13 +184,50 @@ func registerUntilReady(ctx context.Context, w *databricks.WorkspaceClient, req 
 		// Only the first request restages a failed checkpoint: repeating it would
 		// restart a staging that keeps failing instead of reporting the failure.
 		req.RetryFailedStaging = false
-
-		timer := time.NewTimer(interval)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return &resp, ctx.Err()
-		case <-timer.C:
+		if err := p.waitForStaging(ctx, &resp, progress); err != nil {
+			return &resp, err
 		}
 	}
+}
+
+// modelServingPoller sends the requests of a registration that can take many
+// minutes.
+type modelServingPoller struct {
+	api      *client.DatabricksClient
+	headers  map[string]string
+	interval time.Duration
+}
+
+// waitForStaging polls the staging status of resp's version, updating resp, until
+// its weights are no longer being copied.
+func (p modelServingPoller) waitForStaging(ctx context.Context, resp *registerModelPackageResponse, progress func(*registerModelPackageResponse)) error {
+	statusReq := stagingStatusRequest{Model: resp.RegisteredModel, ModelVersion: resp.ModelVersion}
+	for {
+		if err := sleepOrCancel(ctx, p.interval); err != nil {
+			return err
+		}
+		if resp.weightsState() != stagingStateInProgress {
+			return nil
+		}
+		var status stagingStatusResponse
+		if err := p.post(ctx, stagingStatusPath, statusReq, &status); err != nil {
+			return err
+		}
+		resp.StagingStatus = status.Status
+		progress(resp)
+		if resp.weightsState() != stagingStateInProgress {
+			return nil
+		}
+	}
+}
+
+// post sends a request, repeating it after a transient failure the SDK doesn't
+// retry: a wait of many minutes outlasts the SDK's own retries. Both requests air
+// deploy polls with are safe to repeat, the registration because it is
+// idempotent per key.
+func (p modelServingPoller) post(ctx context.Context, path string, body, out any) error {
+	_, err := retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {
+		return struct{}{}, p.api.Do(ctx, http.MethodPost, path, p.headers, nil, body, out)
+	})
+	return err
 }

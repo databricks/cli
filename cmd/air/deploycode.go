@@ -1,9 +1,12 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -30,28 +33,31 @@ const pythonCacheDir = "__pycache__"
 var codePathSegmentRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]*$`) })
 
 // collectModelCode reads a model from code from code_source: model.entry and the
-// other files a code_source snapshot would include, as UTF-8 text. Files git
-// ignores aren't sent, and nor are hidden files and directories or __pycache__
-// directories, whose names the server can't place or which hold no source.
-// configPath locates a relative code_source.root_path.
-//
-// The files are stored in the model version, where anyone who can read the model
-// can read them. Outside a git repository no .gitignore filters them, so the user
-// must list them in code_source.include_paths.
+// other files under code_source.include_paths, as UTF-8 text, selected as a
+// code_source snapshot selects them. Files git ignores aren't sent, and nor are
+// hidden files and directories or __pycache__ directories, whose names the
+// server can't place or which hold no source. configPath locates a relative
+// code_source.root_path.
 func collectModelCode(ctx context.Context, cfg *deployConfig, configPath string) (*modelPackageCode, error) {
 	root, err := resolveRootPath(ctx, cfg.CodeSource.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return nil, err
 	}
 	isGitRepo := newGitRepo(root).isRepository(ctx)
-	if !isGitRepo && len(cfg.CodeSource.IncludePaths) == 0 {
-		return nil, fmt.Errorf("code_source.include_paths is required because %s isn't in a git repository: air deploy stores the files in the model version, so list the ones to send, e.g. include_paths: [%s]", filepath.ToSlash(root), *cfg.Model.Entry)
-	}
 	files, err := snapshotFiles(ctx, root, cfg.CodeSource.IncludePaths, isGitRepo)
 	if err != nil {
 		return nil, err
 	}
 	files = slices.DeleteFunc(files, skippedCodeFile)
+	if isGitRepo {
+		ignored, err := ignoredTrackedFiles(ctx, root, files)
+		if err != nil {
+			return nil, err
+		}
+		if len(ignored) > 0 {
+			return nil, fmt.Errorf("code_source file %s matches a .gitignore rule but is tracked by git; air deploy doesn't send ignored files, so leave it out of code_source.include_paths or stop tracking it", ignored[0])
+		}
+	}
 
 	code := &modelPackageCode{EntryFile: *cfg.Model.Entry, Environment: cfg.servingEnvironment()}
 	if cfg.Task != nil {
@@ -84,6 +90,34 @@ func collectModelCode(ctx context.Context, cfg *deployConfig, configPath string)
 		return nil, fmt.Errorf("model.entry %s isn't among the files code_source sends from %s; check that it exists, isn't ignored by git and is under code_source.include_paths", code.EntryFile, filepath.ToSlash(root))
 	}
 	return code, nil
+}
+
+// ignoredTrackedFiles returns the files that a .gitignore rule matches although
+// git tracks them: ls-files lists tracked files whatever the rules say, and the
+// rules are the user's statement of what not to share.
+func ignoredTrackedFiles(ctx context.Context, root string, files []snapshotFile) ([]string, error) {
+	var paths bytes.Buffer
+	for _, f := range files {
+		paths.WriteString(filepath.ToSlash(f.rel))
+		paths.WriteByte(0)
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "check-ignore", "--no-index", "-z", "--stdin")
+	cmd.Stdin = &paths
+	out, err := cmd.Output()
+	// check-ignore exits 1 when no path is ignored.
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 1 {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w", err)
+	}
+	var ignored []string
+	for raw := range bytes.SplitSeq(out, []byte{0}) {
+		if len(raw) > 0 {
+			ignored = append(ignored, string(raw))
+		}
+	}
+	return ignored, nil
 }
 
 // checkCodeFiles checks the files to send against the server's limits, from

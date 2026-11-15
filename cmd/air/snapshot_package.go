@@ -146,7 +146,9 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("failed to initialize temporary git metadata: %w: %s", err, strings.TrimSpace(string(output)))
 		}
-		args = []string{"--git-dir", gitDir, "--work-tree", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
+		// -C makes ls-files list paths relative to repoPath; without it they are
+		// relative to the process's working directory, which may be a subdirectory.
+		args = []string{"-C", repoPath, "--git-dir", gitDir, "--work-tree", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
 	}
 
 	if len(includePaths) > 0 {

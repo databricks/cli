@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -32,6 +34,38 @@ var (
 	errDeployTimedOut    = errors.New("air deploy timed out")
 )
 
+// JSON error codes of air deploy's own failures; API errors keep the server's.
+const (
+	codeInvalidArgs   = "INVALID_ARGS"
+	codeInterrupted   = "INTERRUPTED"
+	codeTimeout       = "TIMEOUT"
+	codeStagingFailed = "STAGING_FAILED"
+	// codeEndpointNotReady: the endpoint serves the version but isn't ready, which
+	// running air deploy again doesn't change.
+	codeEndpointNotReady = "ENDPOINT_NOT_READY"
+	codeInternalError    = "INTERNAL_ERROR"
+)
+
+// apiErrorCodeRe matches an error code the server sent. The SDK fills ErrorCode
+// with "" or "<nil>" when the response body has none.
+var apiErrorCodeRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Z][A-Z_]*$`) })
+
+// deployError carries the JSON error code and retryability of a failure whose
+// message is err's.
+type deployError struct {
+	code      string
+	retryable bool
+	err       error
+}
+
+func (e *deployError) Error() string { return e.err.Error() }
+
+func (e *deployError) Unwrap() error { return e.err }
+
+func withCode(code string, retryable bool, err error) error {
+	return &deployError{code: code, retryable: retryable, err: err}
+}
+
 // deployResult is the JSON payload for `air deploy`.
 type deployResult struct {
 	Status string `json:"status"`
@@ -51,9 +85,12 @@ type deployResult struct {
 
 // deployOptions are the `air deploy` flags.
 type deployOptions struct {
-	file               string
-	overrides          []string
-	dryRun             bool
+	file      string
+	overrides []string
+	dryRun    bool
+	// idempotencyKeySet records an explicit --idempotency-key, so an empty value
+	// (say, from an unset shell variable) fails instead of registering anew.
+	idempotencyKeySet  bool
 	idempotencyKey     string
 	retryFailedStaging bool
 	timeout            time.Duration
@@ -139,6 +176,7 @@ its path to -h as a separate argument:
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		opts.idempotencyKeySet = cmd.Flags().Changed("idempotency-key")
 		err := runDeploy(cmd, opts, pollInterval)
 		if err == nil {
 			return nil
@@ -157,17 +195,17 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 	ctx := cmd.Context()
 	cfg, err := loadDeployConfig(ctx, opts.file, opts.overrides)
 	if err != nil {
-		return err
+		return withCode(codeInvalidArgs, false, err)
 	}
 	if err := validateDeployFlags(cfg, opts); err != nil {
-		return err
+		return withCode(codeInvalidArgs, false, err)
 	}
 
 	var code *modelPackageCode
 	if cfg.Model.Type == modelTypeCode {
 		code, err = collectModelCode(ctx, cfg, opts.file)
 		if err != nil {
-			return err
+			return withCode(codeInvalidArgs, false, err)
 		}
 	}
 
@@ -186,6 +224,9 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 	if cfg.registers() {
 		// Fail on an endpoint air deploy won't change before copying any weights.
 		if err := checkEndpoint(ctx, w, cfg.Endpoint, cfg.RegisteredModel); err != nil {
+			if stopped := deployStopped(ctx, err); stopped != nil {
+				return fmt.Errorf("%w while checking endpoint %s, before registering anything", stopped, cfg.Endpoint)
+			}
 			return err
 		}
 		result.IdempotencyKey = effectiveIdempotencyToken(opts.idempotencyKey, cfg.IdempotencyToken)
@@ -196,7 +237,7 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 		result.ModelVersion, result.ModelID = resp.ModelVersion, resp.ModelID
 		result.EnvironmentStagingFailed = resp.environmentState() == stagingStateFailed
 		if !jsonOut {
-			cmdio.LogString(ctx, fmt.Sprintf("Version %s of %s is ready.", resp.ModelVersion, cfg.RegisteredModel))
+			cmdio.LogString(ctx, fmt.Sprintf("Version %s of %s is ready.", stripControl(resp.ModelVersion), cfg.RegisteredModel))
 			if result.EnvironmentStagingFailed {
 				cmdio.LogString(ctx, "Warning: the version's serving environment couldn't be prepared ahead of time, so the endpoint can be slower to start, or fail to start.")
 			}
@@ -206,21 +247,24 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 	}
 
 	entity := cfg.servedEntity(result.ModelVersion)
-	endpoint, err := serveVersion(ctx, w, cfg.Endpoint, entity, !jsonOut)
+	_, err = serveVersion(ctx, w, cfg.Endpoint, entity, !jsonOut)
 	if err != nil {
 		resume := deployResumeCommand(w.Config.Profile, opts, result.IdempotencyKey)
 		if stopped := deployStopped(ctx, err); stopped != nil {
 			return fmt.Errorf("%w while waiting for endpoint %s, which keeps updating. To continue, run:\n  %s", stopped, cfg.Endpoint, resume)
 		}
+		if errors.Is(err, errEndpointNotReady) {
+			return err
+		}
 		return fmt.Errorf("serving version %s of %s on endpoint %s failed: %w\n\nTo try again without registering another version, run:\n  %s", result.ModelVersion, cfg.RegisteredModel, cfg.Endpoint, err, resume)
 	}
 	result.Status = "READY"
-	result.EndpointURL = endpointInvocationsURL(w.Config.Host, endpoint.Name)
+	result.EndpointURL = endpointInvocationsURL(w.Config.Host, cfg.Endpoint)
 	if jsonOut {
 		return renderEnvelope(ctx, result)
 	}
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "Endpoint %s serves version %s of %s.\n", endpoint.Name, result.ModelVersion, cfg.RegisteredModel)
+	fmt.Fprintf(out, "Endpoint %s serves version %s of %s.\n", cfg.Endpoint, result.ModelVersion, cfg.RegisteredModel)
 	fmt.Fprintln(out, "Query it at: "+result.EndpointURL)
 	return nil
 }
@@ -248,9 +292,9 @@ func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPacka
 // registerDeployment registers the version and waits until it is ready, showing
 // progress on a spinner when show is true. Its errors say how to continue.
 func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg *deployConfig, opts deployOptions, code *modelPackageCode, key string, pollInterval time.Duration, show bool) (*registerModelPackageResponse, error) {
-	if show {
-		cmdio.LogString(ctx, fmt.Sprintf("Registering a version of %s with idempotency key %s", cfg.RegisteredModel, key))
-	}
+	// Printed to stderr in every output mode, before the first request, so a run
+	// that is killed can still be continued with this key.
+	cmdio.LogString(ctx, fmt.Sprintf("Registering a version of %s with idempotency key %s", cfg.RegisteredModel, key))
 	req := cfg.registrationRequest(key, code)
 	req.RetryFailedStaging = opts.retryFailedStaging
 
@@ -272,12 +316,22 @@ func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 		if cfg.Model.Path != nil {
 			source = "the weights in " + *cfg.Model.Path
 		}
-		return nil, fmt.Errorf("copying %s into version %s of %s failed. Check that you can read every file, then run:\n  %s --retry-failed-staging", source, resp.ModelVersion, cfg.RegisteredModel, resume)
+		return nil, withCode(codeStagingFailed, true, fmt.Errorf("copying %s into version %s of %s failed. Check that you can read every file, then run:\n  %s --retry-failed-staging", source, stripControl(resp.ModelVersion), cfg.RegisteredModel, resume))
 	}
 	if stopped := deployStopped(ctx, err); stopped != nil {
-		return nil, fmt.Errorf("%w while registering a version of %s. Copying a checkpoint's weights continues, and the version is finalized when you continue. To continue, run:\n  %s", stopped, cfg.RegisteredModel, resume)
+		continuing := ""
+		if resp != nil && resp.weightsState() != "" {
+			continuing = " Copying the weights continues, and the version is finalized when you continue."
+		}
+		return nil, fmt.Errorf("%w while registering a version of %s.%s To continue, run:\n  %s", stopped, cfg.RegisteredModel, continuing, resume)
 	}
-	return nil, fmt.Errorf("registering a version of %s with idempotency key %s failed: %w", cfg.RegisteredModel, key, err)
+	failed := fmt.Errorf("registering a version of %s with idempotency key %s failed: %w", cfg.RegisteredModel, key, err)
+	// A retryable failure is retried with the same key, so no other version is
+	// registered.
+	if _, retryable := deployErrorCode(err); retryable {
+		return nil, fmt.Errorf("%w\n\nTo try again, run:\n  %s", failed, resume)
+	}
+	return nil, failed
 }
 
 // deployStopped returns why air deploy stopped waiting, or nil if it didn't. The
@@ -297,17 +351,27 @@ func deployStopped(ctx context.Context, err error) error {
 }
 
 // deployErrorCode classifies a failed deployment for the JSON error envelope.
+// Failures that aren't the user's input or the server's answer, such as a lost
+// connection or a failed endpoint update, are worth retrying with the printed
+// command.
 func deployErrorCode(err error) (code string, retryable bool) {
 	switch {
 	case errors.Is(err, errDeployInterrupted):
-		return "INTERRUPTED", true
+		return codeInterrupted, true
 	case errors.Is(err, errDeployTimedOut):
-		return "TIMEOUT", true
+		return codeTimeout, true
 	}
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode != "" {
-		return apiErr.ErrorCode, apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= http.StatusInternalServerError
+	if coded, ok := errors.AsType[*deployError](err); ok {
+		return coded.code, coded.retryable
 	}
-	return "INVALID_ARGS", false
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		retryable = apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= http.StatusInternalServerError
+		if !apiErrorCodeRe().MatchString(apiErr.ErrorCode) {
+			return codeInternalError, retryable
+		}
+		return apiErr.ErrorCode, retryable
+	}
+	return codeInternalError, true
 }
 
 // validateDeployFlags rejects flags the config's model source can't use.
@@ -315,7 +379,7 @@ func validateDeployFlags(cfg *deployConfig, opts deployOptions) error {
 	if opts.timeout <= 0 {
 		return fmt.Errorf("--timeout must be positive, got %s", opts.timeout)
 	}
-	if opts.idempotencyKey != "" {
+	if opts.idempotencyKeySet {
 		if !cfg.registers() {
 			return errors.New("--idempotency-key applies only when air deploy registers a version; model.type is registered")
 		}
@@ -333,9 +397,9 @@ func validateDeployFlags(cfg *deployConfig, opts deployOptions) error {
 func registrationProgress(cfg *deployConfig, resp *registerModelPackageResponse) string {
 	state := resp.weightsState()
 	if state == "" {
-		return fmt.Sprintf("Registering version %s of %s…", resp.ModelVersion, cfg.RegisteredModel)
+		return fmt.Sprintf("Registering version %s of %s…", stripControl(resp.ModelVersion), cfg.RegisteredModel)
 	}
-	return fmt.Sprintf("Copying the weights into version %s of %s (%s)…", resp.ModelVersion, cfg.RegisteredModel, state)
+	return fmt.Sprintf("Copying the weights into version %s of %s (%s)…", stripControl(resp.ModelVersion), cfg.RegisteredModel, stripControl(state))
 }
 
 // serveVersion serves entity on the endpoint, showing the endpoint's state on a

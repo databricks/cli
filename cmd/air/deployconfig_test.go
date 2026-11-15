@@ -33,6 +33,7 @@ model:
 task: agent/v1/responses
 code_source:
   root_path: .
+  include_paths: [agent.py, tools]
 environment:
   version: 5
   dependencies: [mlflow==3.5.0]
@@ -155,9 +156,11 @@ func TestDeployConfigValidation(t *testing.T) {
 		{"agent task on a checkpoint", replaceFirst("task: llm/v1/chat", "task: agent/v1/responses"), `task of a checkpoint must be one of llm/v1/chat, llm/v1/completions, llm/v1/embeddings, got "agent/v1/responses"`},
 		{"zero environment version", replaceFirst("  dependencies: [einops==0.8.0]", "  version: 0"), "environment.version must be a serverless environment version"},
 		{"empty dependency", replaceFirst("[einops==0.8.0]", `[""]`), "environment.dependencies[0] cannot be empty"},
-		{"no endpoint", dropLine("endpoint:"), "endpoint is required"},
+		{"no endpoint", dropLine("endpoint:"), `endpoint must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
+		{"endpoint with a path", replaceFirst("endpoint: qwen-chat", "endpoint: x/../../jobs"), "endpoint must be a serving endpoint name"},
 		{"no compute", dropBlock("compute:"), "compute: section is required"},
-		{"no workload size", dropLine("  workload_size:"), "compute.workload_size is required"},
+		{"no workload size", dropLine("  workload_size:"), `compute.workload_size must be one of Small, Medium, Large, got ""`},
+		{"lowercase workload size", replaceFirst("workload_size: Small", "workload_size: medium"), "compute.workload_size must be one of Small, Medium, Large"},
 		{"secret without key", replaceFirst("llm/hf_token", "llm"), "expected format 'scope/key'"},
 		{"env var and secret", replaceFirst("LOG_LEVEL: info", "HF_TOKEN: x"), `"HF_TOKEN" is set in both env_variables and secrets`},
 		{"bad idempotency token", appendText("idempotency_token: a b\n"), "idempotency_token must be 1 to 128 letters"},
@@ -185,6 +188,8 @@ func TestDeployConfigSourceFields(t *testing.T) {
 		{"code with command", "model: {type: code, entry: agent.py}\ncode_source: {root_path: .}\ncommand: x\n", "command can't be set when model.type is code"},
 		{"code entry in a directory", "model: {type: code, entry: src/agent.py}\ncode_source: {root_path: .}\n", "model.entry must name a .py file directly under code_source.root_path"},
 		{"code entry not python", "model: {type: code, entry: agent.ipynb}\ncode_source: {root_path: .}\n", "model.entry must name a .py file"},
+		{"code without include_paths", "model: {type: code, entry: agent.py}\ncode_source: {root_path: .}\n", "code_source.include_paths is required: list the files and directories to send"},
+		{"code include pathspec magic", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\":!creds.json\"]}\n", `code_source.include_paths must name files and directories, got ":!creds.json"`},
 		{"code include traversal", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [../x]}\n", "code_source.include_paths cannot contain '..' traversal"},
 		{"saved model with task", "model: {type: saved_model_dir, path: /Volumes/a/b/c/m}\ntask: llm/v1/chat\n", "task can't be set when model.type is saved_model_dir"},
 		{"saved model with environment", "model: {type: saved_model_dir, path: /Volumes/a/b/c/m}\nenvironment: {version: 6}\n", "environment can't be set when model.type is saved_model_dir"},

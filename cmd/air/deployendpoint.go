@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -30,11 +31,23 @@ func (c *deployConfig) servedEntity(version string) serving.ServedEntityInput {
 
 // getEndpoint returns the endpoint named name, or nil if it doesn't exist.
 func getEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name string) (*serving.ServingEndpointDetailed, error) {
-	endpoint, err := w.ServingEndpoints.GetByName(ctx, name)
+	endpoint, err := retry.With(ctx, retry.IsTransientRead, func() (*serving.ServingEndpointDetailed, error) {
+		return w.ServingEndpoints.GetByName(ctx, name)
+	})
 	if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 		return nil, nil
 	}
 	return endpoint, err
+}
+
+// waitNotUpdating waits until the endpoint has no update in progress. The SDK's
+// wait stops at the first failed poll, so a transient failure starts it again:
+// an endpoint can take many minutes to start. Creates and config updates aren't
+// repeated this way, since a repeat after an applied write would fail.
+func waitNotUpdating(ctx context.Context, w *databricks.WorkspaceClient, name string, progress func(*serving.ServingEndpointDetailed)) (*serving.ServingEndpointDetailed, error) {
+	return retry.With(ctx, retry.IsTransientRead, func() (*serving.ServingEndpointDetailed, error) {
+		return w.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, untilDeadline(ctx), progress)
+	})
 }
 
 // checkEndpoint fails when the endpoint named name, if it exists, serves
@@ -51,11 +64,13 @@ func checkEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name, mod
 
 // checkReplaceable fails unless the endpoint serves at most one entity, a version
 // of model, in its current and pending configs. Replacing anything else would
-// remove another model or a traffic split the user didn't ask to change.
+// remove another model or a traffic split the user didn't ask to change. The
+// endpoint lists every served model under served_entities too (served_models
+// mirrors it), so served_entities covers both.
 func checkReplaceable(endpoint *serving.ServingEndpointDetailed, model string) error {
 	for _, served := range [][]serving.ServedEntityOutput{currentEntities(endpoint), pendingEntities(endpoint)} {
 		if len(served) > 1 || (len(served) == 1 && !strings.EqualFold(served[0].EntityName, model)) {
-			return fmt.Errorf("endpoint %s serves %s, and air deploy replaces only a single version of %s; set endpoint to another name, or change this endpoint with databricks serving-endpoints update-config", endpoint.Name, describeEntities(served), model)
+			return withCode(codeInvalidArgs, false, fmt.Errorf("endpoint %s serves %s, and air deploy replaces only a single version of %s; set endpoint to another name, or change this endpoint with databricks serving-endpoints update-config", stripControl(endpoint.Name), describeEntities(served), model))
 		}
 	}
 	return nil
@@ -85,7 +100,7 @@ func serveOnEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name st
 			return waitServes(ctx, w, name, entity, progress)
 		}
 		// The endpoint takes no other update until this one finishes.
-		endpoint, err = w.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, untilDeadline(ctx), progress)
+		endpoint, err = waitNotUpdating(ctx, w, name, progress)
 		if err != nil {
 			return nil, err
 		}
@@ -109,20 +124,25 @@ func serveOnEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name st
 // waitServes waits until the endpoint's update finishes, then checks that it
 // serves entity.
 func waitServes(ctx context.Context, w *databricks.WorkspaceClient, name string, entity serving.ServedEntityInput, progress func(*serving.ServingEndpointDetailed)) (*serving.ServingEndpointDetailed, error) {
-	endpoint, err := w.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, untilDeadline(ctx), progress)
+	endpoint, err := waitNotUpdating(ctx, w, name, progress)
 	if err != nil {
 		return nil, err
 	}
 	return checkServes(endpoint, entity)
 }
 
+// errEndpointNotReady reports an endpoint that serves the version but isn't ready,
+// which running air deploy again doesn't change.
+var errEndpointNotReady = errors.New("endpoint isn't ready")
+
 // checkServes returns endpoint if it serves only entity and is ready to serve.
 func checkServes(endpoint *serving.ServingEndpointDetailed, entity serving.ServedEntityInput) (*serving.ServingEndpointDetailed, error) {
+	name := stripControl(endpoint.Name)
 	if !servesOnly(currentEntities(endpoint), entity) {
-		return nil, fmt.Errorf("endpoint %s was changed to serve %s while air deploy waited for it", endpoint.Name, describeEntities(currentEntities(endpoint)))
+		return nil, fmt.Errorf("endpoint %s was changed to serve %s while air deploy waited for it", name, describeEntities(currentEntities(endpoint)))
 	}
 	if endpoint.State == nil || endpoint.State.Ready != serving.EndpointStateReadyReady {
-		return nil, fmt.Errorf("endpoint %s serves version %s of %s but isn't ready; check its events in the Serving UI", endpoint.Name, entity.EntityVersion, entity.EntityName)
+		return nil, withCode(codeEndpointNotReady, false, fmt.Errorf("%w: endpoint %s serves version %s of %s but isn't ready; check its events and logs in the Serving UI", errEndpointNotReady, name, entity.EntityVersion, entity.EntityName))
 	}
 	return endpoint, nil
 }
@@ -152,11 +172,12 @@ func describeEntities(served []serving.ServedEntityOutput) string {
 	}
 	names := make([]string, 0, len(served))
 	for _, s := range served {
+		name := stripControl(s.EntityName)
 		if s.EntityVersion == "" {
-			names = append(names, s.EntityName)
+			names = append(names, name)
 			continue
 		}
-		names = append(names, fmt.Sprintf("version %s of %s", s.EntityVersion, s.EntityName))
+		names = append(names, fmt.Sprintf("version %s of %s", stripControl(s.EntityVersion), name))
 	}
 	return strings.Join(names, " and ")
 }

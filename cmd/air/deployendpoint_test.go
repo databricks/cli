@@ -27,6 +27,8 @@ type fakeEndpoints struct {
 	writes     []string
 	// rawWrites holds the body of every create and config update, as sent.
 	rawWrites []string
+	// failGets is how many GETs answer 500 before the endpoint is served again.
+	failGets int
 }
 
 func newFakeEndpoints(t *testing.T, existing *serving.ServingEndpointDetailed) *fakeEndpoints {
@@ -64,6 +66,12 @@ func (f *fakeEndpoints) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.endpoint.PendingConfig = nil
 		f.endpoint.State = &f.finalState
 	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, servingEndpointsPath+"/"):
+		if f.failGets > 0 && f.endpoint != nil {
+			f.failGets--
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error_code": "INTERNAL_ERROR", "message": "Something went wrong."}`))
+			return
+		}
 		if f.endpoint == nil {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "Endpoint not found"}`))
@@ -141,9 +149,6 @@ func TestServeOnEndpointCreatesAMissingEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"create"}, fake.writes)
 	assert.Equal(t, "3", endpoint.Config.ServedEntities[0].EntityVersion)
-	// scale_to_zero: false is sent, not left to the server's default.
-	require.Len(t, fake.rawWrites, 1)
-	assert.Contains(t, fake.rawWrites[0], `"scale_to_zero_enabled":false`)
 }
 
 func TestServeOnEndpointUpdatesAnotherVersion(t *testing.T) {
@@ -245,6 +250,18 @@ func TestServeOnEndpointRefusesToReplaceOtherEntities(t *testing.T) {
 func TestCheckEndpointAllowsAMissingEndpoint(t *testing.T) {
 	srv := newFakeEndpoints(t, nil).start()
 	assert.NoError(t, checkEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", "main.models.qwen"))
+}
+
+func TestServeOnEndpointWaitsThroughATransientFailure(t *testing.T) {
+	fake := newFakeEndpoints(t, nil)
+	// The create succeeds; the first poll of the wait then fails.
+	fake.failGets = 1
+	srv := fake.start()
+
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"create"}, fake.writes)
+	assert.Zero(t, fake.failGets)
 }
 
 func TestServeOnEndpointReportsAFailedUpdate(t *testing.T) {

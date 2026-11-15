@@ -126,16 +126,23 @@ func TestCollectModelCodeLeavesOutIgnoredFiles(t *testing.T) {
 	assert.Equal(t, []string{"agent.py", "tools/a.py"}, codeFilePaths(code))
 }
 
-func TestCollectModelCodeOutsideGitNeedsIncludePaths(t *testing.T) {
-	cfg, configPath := codeTreeConfig(t, t.TempDir(), map[string]string{"agent.py": "x\n", "credentials.json": "{}\n"})
-	_, err := collectModelCode(t.Context(), cfg, configPath)
-	assert.ErrorContains(t, err, "code_source.include_paths is required because")
-	assert.ErrorContains(t, err, "isn't in a git repository")
+func TestCollectModelCodeRefusesTrackedIgnoredFiles(t *testing.T) {
+	cfg, configPath := writeCodeTree(t, map[string]string{"agent.py": "x\n", "creds.json": "{}\n"})
+	repo := cfg.CodeSource.RootPath
+	commitAll(t, repo, "init")
+	writeRepoFile(t, repo, ".gitignore", "creds.json\n")
+	cfg.CodeSource.IncludePaths = []string{"agent.py", "creds.json"}
 
-	cfg.CodeSource.IncludePaths = []string{"agent.py"}
+	_, err := collectModelCode(t.Context(), cfg, configPath)
+	assert.ErrorContains(t, err, "code_source file creds.json matches a .gitignore rule but is tracked by git")
+}
+
+func TestCollectModelCodeOutsideGit(t *testing.T) {
+	cfg, configPath := codeTreeConfig(t, t.TempDir(), map[string]string{"agent.py": "x\n", "tools/a.py": "a\n", "credentials.json": "{}\n"})
+	cfg.CodeSource.IncludePaths = []string{"agent.py", "tools"}
 	code, err := collectModelCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"agent.py"}, codeFilePaths(code))
+	assert.Equal(t, []string{"agent.py", "tools/a.py"}, codeFilePaths(code))
 }
 
 func TestCollectModelCodeChecksSizesBeforeReading(t *testing.T) {

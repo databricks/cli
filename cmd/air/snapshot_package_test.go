@@ -324,3 +324,21 @@ func TestSnapshotFiles_RejectsIncludePathsMatchingNothing(t *testing.T) {
 	assert.Contains(t, err.Error(), "contains no files")
 	assert.Contains(t, err.Error(), "include_paths")
 }
+
+func TestSnapshotFilesOutsideGitFromASubdirectory(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoFile(t, dir, ".gitignore", "/creds.json\n")
+	writeRepoFile(t, dir, "creds.json", "{}")
+	writeRepoFile(t, dir, "agent.py", "x")
+	writeRepoFile(t, dir, "tools/a.py", "a")
+	// The listing must be relative to the root, not to the working directory.
+	t.Chdir(filepath.Join(dir, "tools"))
+
+	files, err := snapshotFiles(t.Context(), dir, nil, false)
+	require.NoError(t, err)
+	var rels []string
+	for _, f := range files {
+		rels = append(rels, filepath.ToSlash(f.rel))
+	}
+	assert.ElementsMatch(t, []string{".gitignore", "agent.py", "tools/a.py"}, rels)
+}

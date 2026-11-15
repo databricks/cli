@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http/httptest"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -28,7 +30,7 @@ import (
 // withDeadline returns the test's context with a deadline, which air deploy
 // always sets from --timeout.
 func withDeadline(t *testing.T) context.Context {
-	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	ctx, cancel := context.WithTimeout(fastRetries(t.Context()), time.Minute)
 	t.Cleanup(cancel)
 	return ctx
 }
@@ -52,7 +54,12 @@ func runDeployCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL, con
 		require.NoError(t, cmd.Flags().Set(flagValues[i], flagValues[i+1]))
 	}
 
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, nil, buf, buf, "", ""))
+	// JSON tests parse buf, so stderr's progress lines go elsewhere.
+	var stderr io.Writer = buf
+	if out == flags.OutputJSON {
+		stderr = io.Discard
+	}
+	ctx := cmdio.InContext(fastRetries(t.Context()), cmdio.NewIO(t.Context(), out, nil, buf, stderr, "", ""))
 	if srvURL != "" {
 		ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
 	}
@@ -91,6 +98,9 @@ func TestDeployCheckpointJSON(t *testing.T) {
 	served := endpoints.endpoint.Config.ServedEntities[0]
 	assert.Equal(t, "3", served.EntityVersion)
 	assert.Equal(t, map[string]string{"LOG_LEVEL": "info", "HF_TOKEN": "{{secrets/llm/hf_token}}"}, served.EnvironmentVars)
+	// scale_to_zero: false is sent, not left to the server's default.
+	require.Len(t, endpoints.rawWrites, 1)
+	assert.Contains(t, endpoints.rawWrites[0], `"scale_to_zero_enabled":false`)
 }
 
 func TestDeployCheckpointText(t *testing.T) {
@@ -132,6 +142,20 @@ func TestDeployUsesTheConfigTokenThenANewKey(t *testing.T) {
 	assert.NotContains(t, []string{"from-config", "from-flag"}, bodies[2].IdempotencyKey)
 }
 
+func TestDeployPrintsTheKeyBeforeRegisteringInJSONMode(t *testing.T) {
+	srv, _ := deployServer(t, newFakeEndpoints(t, nil), conflictResponse)
+
+	var stdout, stderr bytes.Buffer
+	cmd := withOutput(newDeployCommandWithPollInterval(time.Millisecond), flags.OutputJSON)
+	require.NoError(t, cmd.Flags().Set("file", writeConfigFile(t, "deploy.yaml", checkpointDeployConfig)))
+	require.NoError(t, cmd.Flags().Set("idempotency-key", "key-1"))
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &stdout, &stderr, "", ""))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL)))
+	require.ErrorIs(t, cmd.RunE(cmd, nil), root.ErrAlreadyPrinted)
+	assert.Equal(t, "Registering a version of main.models.qwen with idempotency key key-1\n", stderr.String())
+	assert.Contains(t, stdout.String(), `"code": "RESOURCE_CONFLICT"`)
+}
+
 func TestDeployRetriesFailedStagingOnce(t *testing.T) {
 	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingInProgress, stagingReady)
 
@@ -154,7 +178,7 @@ func TestDeployFailedStagingSaysHowToRetry(t *testing.T) {
 }
 
 func TestDeployReportsRegistrationErrors(t *testing.T) {
-	srv, _ := deployServer(t, newFakeEndpoints(t, nil), "")
+	srv, _ := deployServer(t, newFakeEndpoints(t, nil), conflictResponse)
 
 	var buf bytes.Buffer
 	err := runDeployCmd(t, flags.OutputText, &buf, srv.URL, checkpointDeployConfig, "idempotency-key", "key-1")
@@ -162,7 +186,7 @@ func TestDeployReportsRegistrationErrors(t *testing.T) {
 }
 
 func TestDeployReportsErrorsAsJSON(t *testing.T) {
-	srv, _ := deployServer(t, newFakeEndpoints(t, nil), "")
+	srv, _ := deployServer(t, newFakeEndpoints(t, nil), conflictResponse)
 
 	var buf bytes.Buffer
 	err := runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, checkpointDeployConfig)
@@ -190,6 +214,56 @@ func TestDeployChecksTheEndpointBeforeRegistering(t *testing.T) {
 	err := runDeployCmd(t, flags.OutputText, &buf, srv.URL, checkpointDeployConfig)
 	assert.ErrorContains(t, err, "endpoint qwen-chat serves version 5 of main.models.llama")
 	assert.Empty(t, fake.requests())
+}
+
+func TestDeployReportsAnEndpointThatIsNotReady(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	endpoints.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating}
+	srv, _ := deployServer(t, endpoints, stagingReady)
+
+	var buf bytes.Buffer
+	err := runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, checkpointDeployConfig, "idempotency-key", "key-1")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	// Running air deploy again doesn't make the endpoint ready, so nothing says to.
+	assert.Equal(t, "ENDPOINT_NOT_READY", got.Error.Code)
+	assert.False(t, got.Error.Retryable)
+	assert.NotContains(t, got.Error.Message, "run:")
+}
+
+func TestDeployTimesOutWhileCopyingTheWeights(t *testing.T) {
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingInProgress)
+	fake.statuses = []string{statusInProgress}
+
+	// Polls are spaced as the SDK's rate limiter allows, so the deadline, not the
+	// limiter, stops the wait.
+	var buf bytes.Buffer
+	cmd := withOutput(newDeployCommandWithPollInterval(100*time.Millisecond), flags.OutputJSON)
+	require.NoError(t, cmd.Flags().Set("file", writeConfigFile(t, "deploy.yaml", checkpointDeployConfig)))
+	require.NoError(t, cmd.Flags().Set("idempotency-key", "key-1"))
+	require.NoError(t, cmd.Flags().Set("timeout", "500ms"))
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, io.Discard, "", ""))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL)))
+	require.ErrorIs(t, cmd.RunE(cmd, nil), root.ErrAlreadyPrinted)
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, "TIMEOUT", got.Error.Code)
+	assert.True(t, got.Error.Retryable)
+	assert.Contains(t, got.Error.Message, "air deploy timed out while registering a version of main.models.qwen. Copying the weights continues")
+	assert.Contains(t, got.Error.Message, " --idempotency-key key-1")
+	assert.Len(t, fake.requests(), 1)
+}
+
+func TestDeployRetryableRegistrationFailureSaysHowToRetry(t *testing.T) {
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), serverErrorResponse)
+
+	var buf bytes.Buffer
+	err := runDeployCmd(t, flags.OutputText, &buf, srv.URL, checkpointDeployConfig, "idempotency-key", "key-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed: Something went wrong.\n\nTo try again, run:\n  databricks air deploy -f ")
+	assert.Contains(t, err.Error(), " --idempotency-key key-1")
+	assert.Len(t, fake.requests(), retry.MaxRetries+1)
 }
 
 func TestDeployEndpointFailureSaysHowToRetry(t *testing.T) {
@@ -291,6 +365,7 @@ func TestDeployFlagValidation(t *testing.T) {
 		{"bad key", checkpointDeployConfig, []string{"idempotency-key", "a/b"}, "--idempotency-key must be 1 to 128 letters"},
 		{"retry for a registered version", registered, []string{"retry-failed-staging", "true"}, "--retry-failed-staging applies only to a checkpoint"},
 		{"zero timeout", checkpointDeployConfig, []string{"timeout", "0s"}, "--timeout must be positive"},
+		{"empty key", checkpointDeployConfig, []string{"idempotency-key", ""}, `--idempotency-key must be 1 to 128 letters, digits, '.', '_' or '-', got ""`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -331,19 +406,25 @@ func TestDeployStopped(t *testing.T) {
 
 func TestDeployErrorCode(t *testing.T) {
 	for _, tt := range []struct {
+		name      string
 		err       error
 		code      string
 		retryable bool
 	}{
-		{fmt.Errorf("x: %w", errDeployInterrupted), "INTERRUPTED", true},
-		{fmt.Errorf("x: %w", errDeployTimedOut), "TIMEOUT", true},
-		{fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "TEMPORARILY_UNAVAILABLE", StatusCode: 503}), "TEMPORARILY_UNAVAILABLE", true},
-		{fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", StatusCode: 400}), "INVALID_PARAMETER_VALUE", false},
-		{errors.New("model: section is required"), "INVALID_ARGS", false},
+		{"interrupted", fmt.Errorf("x: %w", errDeployInterrupted), "INTERRUPTED", true},
+		{"timed out", fmt.Errorf("x: %w", errDeployTimedOut), "TIMEOUT", true},
+		{"invalid input", withCode(codeInvalidArgs, false, errors.New("model: section is required")), "INVALID_ARGS", false},
+		{"staging failed", withCode(codeStagingFailed, true, errors.New("copying failed")), "STAGING_FAILED", true},
+		{"server unavailable", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "TEMPORARILY_UNAVAILABLE", StatusCode: 503}), "TEMPORARILY_UNAVAILABLE", true},
+		{"bad request", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", StatusCode: 400}), "INVALID_PARAMETER_VALUE", false},
+		{"5xx without a body", &apierr.APIError{StatusCode: 502}, "INTERNAL_ERROR", true},
+		{"error body without a code", &apierr.APIError{ErrorCode: "<nil>", StatusCode: 400}, "INTERNAL_ERROR", false},
+		{"lost connection", errors.New("connection reset by peer"), "INTERNAL_ERROR", true},
+		{"endpoint not ready", withCode(codeEndpointNotReady, false, errEndpointNotReady), "ENDPOINT_NOT_READY", false},
 	} {
 		code, retryable := deployErrorCode(tt.err)
-		assert.Equal(t, tt.code, code, tt.err.Error())
-		assert.Equal(t, tt.retryable, retryable, tt.err.Error())
+		assert.Equal(t, tt.code, code, tt.name)
+		assert.Equal(t, tt.retryable, retryable, tt.name)
 	}
 }
 
