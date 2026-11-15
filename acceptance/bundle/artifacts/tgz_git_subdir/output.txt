@@ -1,0 +1,17 @@
+
+>>> errcode [CLI] bundle deploy
+Building from_git...
+Building from_git_include...
+Error: git archive main:src: exit status 128: fatal: pathspec 'main.py' did not match any files
+
+
+
+Exit code: 1
+
+=== Contents of from_git.tgz
+
+=== Contents of from_git_include.tgz
+(not built)
+
+=== Contents of from_worktree.tgz
+(not built)
