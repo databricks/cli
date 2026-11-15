@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,7 +61,7 @@ func TestTarballFromGitArchivesRef(t *testing.T) {
 	runGit(t, repo, "add", "-A")
 	runGit(t, repo, "commit", "-qm", "init")
 
-	b := &bundle.Bundle{SyncRootPath: repo}
+	b := &bundle.Bundle{SyncRootPath: repo, WorktreeRoot: vfs.MustNew(repo)}
 	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf bytes.Buffer
@@ -94,7 +95,7 @@ func TestTarballFromGitIsReproducible(t *testing.T) {
 	runGit(t, repo, "add", "-A")
 	runGit(t, repo, "commit", "-qm", "init")
 
-	b := &bundle.Bundle{SyncRootPath: repo}
+	b := &bundle.Bundle{SyncRootPath: repo, WorktreeRoot: vfs.MustNew(repo)}
 	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf1, buf2 bytes.Buffer

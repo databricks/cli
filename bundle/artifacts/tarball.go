@@ -171,18 +171,22 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	if ref == "" {
 		return errors.New("git artifact: specify git.commit or git.branch")
 	}
-	relBase, err := codeRel(b, a)
+	// Run git from the worktree root with `path` relative to it: <ref>:<path> resolves
+	// from the repository root, and git archive drops entries outside the working
+	// directory, so running from a bundle nested in the repo yields a wrong or empty tree.
+	gitRoot := b.WorktreeRoot.Native()
+	relBase, err := filepath.Rel(gitRoot, a.Path)
 	if err != nil {
-		return err
+		return fmt.Errorf("artifact path %q: %w", a.Path, err)
 	}
 	treeish := ref
 	if relBase != "." {
 		// The tree at <ref>:<path>, so entries come out relative to `path`.
-		treeish = ref + ":" + relBase
+		treeish = ref + ":" + filepath.ToSlash(relBase)
 	}
 	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
 	// --format=tar.gz gzip is single-threaded, whereas pgzip spreads it across cores.
-	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar", treeish}
+	args := []string{"-C", gitRoot, "archive", "--format=tar", treeish}
 	if len(a.Include) > 0 {
 		args = append(args, "--")
 		args = append(args, a.Include...)
