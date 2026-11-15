@@ -154,8 +154,9 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		// The retrying filer does not repeat writes that do not overwrite. Repeating this one is
 		// safe because the lock file carries our unique ID: if an attempt that failed with a
 		// transient error did create the file, the retry fails with fs.ErrExist and
-		// assertLockHeld below tells whether the lock is ours.
-		_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		// assertLockHeld below tells whether the lock is ours. That holds for a connection cut
+		// mid-response ("unexpected EOF") too, so this uses the wider check meant for reads.
+		_, err = retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {
 			return struct{}{}, locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories)
 		})
 	}
@@ -167,7 +168,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		if err := locker.assertLockHeld(ctx); err != nil {
 			return err
 		}
-	case retry.IsTransient(ctx, err):
+	case retry.IsTransientRead(ctx, err):
 		// The last attempt may have been applied even though its response was lost. Read the
 		// lock back so that such a write does not leave behind a lock nobody releases.
 		if locker.assertLockHeld(ctx) != nil {
