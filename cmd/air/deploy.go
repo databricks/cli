@@ -289,7 +289,7 @@ func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPacka
 	return nil
 }
 
-// registerDeployment registers the version and waits until it is ready, showing
+// registerDeployment registers the version and makes it ready to serve, showing
 // progress on a spinner when show is true. Its errors say how to continue.
 func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg *deployConfig, opts deployOptions, code *modelPackageCode, key string, pollInterval time.Duration, show bool) (*registerModelPackageResponse, error) {
 	// Printed to stderr in every output mode, before the first request, so a run
@@ -306,7 +306,7 @@ func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 			sp.Update(registrationProgress(cfg, resp))
 		}
 	}
-	resp, err := registerUntilReady(ctx, w, req, pollInterval, progress)
+	resp, err := registerAndFinalize(ctx, w, req, pollInterval, progress)
 	if err == nil {
 		return resp, nil
 	}
@@ -320,10 +320,17 @@ func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	}
 	if stopped := deployStopped(ctx, err); stopped != nil {
 		continuing := ""
-		if resp != nil && resp.weightsState() != "" {
-			continuing = " Copying the weights continues, and the version is finalized when you continue."
+		switch {
+		case resp == nil:
+		case resp.weightsState() == stagingStateSucceeded:
+			continuing = " The weights are copied, so continuing finalizes the version."
+		case resp.weightsState() != "":
+			continuing = " Copying the weights continues meanwhile."
 		}
 		return nil, fmt.Errorf("%w while registering a version of %s.%s To continue, run:\n  %s", stopped, cfg.RegisteredModel, continuing, resume)
+	}
+	if _, ok := errors.AsType[*finalizeError](err); ok {
+		return nil, fmt.Errorf("finalizing version %s of %s failed: %w\n\nTo try again, run:\n  %s", stripControl(resp.ModelVersion), cfg.RegisteredModel, err, resume)
 	}
 	failed := fmt.Errorf("registering a version of %s with idempotency key %s failed: %w", cfg.RegisteredModel, key, err)
 	// A retryable failure is retried with the same key, so no other version is
@@ -396,8 +403,11 @@ func validateDeployFlags(cfg *deployConfig, opts deployOptions) error {
 // registrationProgress describes a registration response on the spinner.
 func registrationProgress(cfg *deployConfig, resp *registerModelPackageResponse) string {
 	state := resp.weightsState()
-	if state == "" {
+	switch state {
+	case "":
 		return fmt.Sprintf("Registering version %s of %s…", stripControl(resp.ModelVersion), cfg.RegisteredModel)
+	case stagingStateSucceeded:
+		return fmt.Sprintf("Finalizing version %s of %s…", stripControl(resp.ModelVersion), cfg.RegisteredModel)
 	}
 	return fmt.Sprintf("Copying the weights into version %s of %s (%s)…", stripControl(resp.ModelVersion), cfg.RegisteredModel, stripControl(state))
 }

@@ -35,8 +35,9 @@ func withDeadline(t *testing.T) context.Context {
 	return ctx
 }
 
-// deployServer serves registerModelPackage with responses and the serving
-// endpoints API from endpoints.
+// deployServer serves registerModelPackage with responses, the staging status
+// and finalizeModelPackage with their defaults, and the serving endpoints API
+// from endpoints.
 func deployServer(t *testing.T, endpoints *fakeEndpoints, responses ...string) (*httptest.Server, *fakeModelServing) {
 	t.Helper()
 	fake := newFakeModelServing(t, responses...)
@@ -70,7 +71,7 @@ func runDeployCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL, con
 
 func TestDeployCheckpointJSON(t *testing.T) {
 	endpoints := newFakeEndpoints(t, nil)
-	srv, fake := deployServer(t, endpoints, stagingInProgress, stagingReady)
+	srv, fake := deployServer(t, endpoints, stagingInProgress)
 
 	var buf bytes.Buffer
 	err := runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, checkpointDeployConfig, "idempotency-key", "key-1")
@@ -91,9 +92,9 @@ func TestDeployCheckpointJSON(t *testing.T) {
 	}, got.Data)
 
 	bodies := fake.requests()
-	require.Len(t, bodies, 2)
+	require.Len(t, bodies, 1)
 	assert.Equal(t, "key-1", bodies[0].IdempotencyKey)
-	assert.Equal(t, bodies[0], bodies[1])
+	assert.Equal(t, []finalizeModelPackageRequest{{RegisteredModel: "main.models.qwen", ModelVersion: "3"}}, fake.finalizeRequests)
 	assert.Equal(t, []string{"create"}, endpoints.writes)
 	served := endpoints.endpoint.Config.ServedEntities[0]
 	assert.Equal(t, "3", served.EntityVersion)
@@ -156,15 +157,14 @@ func TestDeployPrintsTheKeyBeforeRegisteringInJSONMode(t *testing.T) {
 	assert.Contains(t, stdout.String(), `"code": "RESOURCE_CONFLICT"`)
 }
 
-func TestDeployRetriesFailedStagingOnce(t *testing.T) {
-	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingInProgress, stagingReady)
+func TestDeploySendsRetryFailedStaging(t *testing.T) {
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingInProgress)
 
 	var buf bytes.Buffer
 	require.NoError(t, runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, checkpointDeployConfig, "retry-failed-staging", "true"))
 	bodies := fake.requests()
-	require.Len(t, bodies, 2)
+	require.Len(t, bodies, 1)
 	assert.True(t, bodies[0].RetryFailedStaging)
-	assert.False(t, bodies[1].RetryFailedStaging)
 }
 
 func TestDeployFailedStagingSaysHowToRetry(t *testing.T) {
@@ -253,6 +253,28 @@ func TestDeployTimesOutWhileCopyingTheWeights(t *testing.T) {
 	assert.Contains(t, got.Error.Message, "air deploy timed out while registering a version of main.models.qwen. Copying the weights continues")
 	assert.Contains(t, got.Error.Message, " --idempotency-key key-1")
 	assert.Len(t, fake.requests(), 1)
+	assert.Empty(t, fake.finalizeRequests)
+}
+
+func TestDeployFinalizeFailureSaysHowToRetry(t *testing.T) {
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingSucceeded)
+	fake.finalizations = []string{notFinalizableResponse}
+
+	var buf bytes.Buffer
+	err := runDeployCmd(t, flags.OutputText, &buf, srv.URL, checkpointDeployConfig, "idempotency-key", "key-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "finalizing version 3 of main.models.qwen failed: Version 3 of model main.models.qwen can't be finalized yet")
+	assert.Contains(t, err.Error(), "To try again, run:\n  databricks air deploy -f ")
+	assert.Contains(t, err.Error(), " --idempotency-key key-1")
+}
+
+func TestDeployWarnsWhenTheFinalizedEnvironmentFailedToStage(t *testing.T) {
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), stagingInProgress)
+	fake.finalizations = []string{strings.Replace(finalizedResponse, `"environment_artifact": {"state": "IN_PROGRESS"}`, `"environment_artifact": {"state": "FAILED"}`, 1)}
+
+	var buf bytes.Buffer
+	require.NoError(t, runDeployCmd(t, flags.OutputText, &buf, srv.URL, checkpointDeployConfig))
+	assert.Contains(t, buf.String(), "Warning: the version's serving environment couldn't be prepared ahead of time")
 }
 
 func TestDeployRetryableRegistrationFailureSaysHowToRetry(t *testing.T) {
