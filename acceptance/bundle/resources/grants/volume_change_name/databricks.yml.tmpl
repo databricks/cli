@@ -15,12 +15,3 @@ resources:
         - principal: deco-test-user@databricks.com
           privileges:
             - READ_VOLUME
-  registered_models:
-    model1:
-      catalog_name: main
-      schema_name: ${resources.schemas.schema1.name}
-      name: mymodel
-      grants:
-        - principal: deco-test-user@databricks.com
-          privileges:
-            - APPLY_TAG
