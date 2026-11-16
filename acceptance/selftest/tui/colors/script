@@ -15,4 +15,4 @@ title "--lipgloss prints both swatch rows"
 trace $CLI selftest tui colors --lipgloss 2>&1 | contains.py 'truecolor:' '256-color:'
 
 title "Unknown stream is rejected"
-errcode trace $CLI selftest tui colors --stream file
+musterr trace $CLI selftest tui colors --stream file

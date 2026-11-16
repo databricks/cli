@@ -1,2 +1,2 @@
 title "Unknown field type is rejected"
-errcode trace $CLI selftest tui huh --field bogus
+musterr trace $CLI selftest tui huh --field bogus

@@ -9,11 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// profileEnvVars are the variables cmdio and lipgloss consult when deciding
-// on color and background, so a mismatch in a live terminal can be traced.
+// profileEnvVars are the variables cmdio, lipgloss and termenv consult when
+// deciding on color and background, so a mismatch in a live terminal can be
+// traced. COLORFGBG is the termenv background fallback on terminals.
 var profileEnvVars = []string{
 	"TERM", "COLORTERM", "CLICOLOR", "CLICOLOR_FORCE", "NO_COLOR",
-	"CI", "TERM_PROGRAM", "WT_SESSION",
+	"COLORFGBG", "CI", "TERM_PROGRAM", "WT_SESSION",
 }
 
 func newProfileCmd() *cobra.Command {

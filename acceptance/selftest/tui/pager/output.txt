@@ -7,23 +7,24 @@ item-0001  RUNNING
 item-0002  TERMINATED
 item-0003  PENDING
 
+=== --header replaces the Name column header
+
+>>> [CLI] selftest tui pager --items 2 --header Workspace
+Workspace  State
+item-0001  RUNNING
+item-0002  TERMINATED
+
 === An injected error after 2 rows is returned
 
 >>> [CLI] selftest tui pager --items 5 --fail-after 2
 Error: injected iterator error after 2 rows
-
-Exit code: 1
 
 === --fail-after 0 fails on the first Next
 
 >>> [CLI] selftest tui pager --items 5 --fail-after 0
 Error: injected iterator error after 0 rows
 
-Exit code: 1
-
 === Negative --items is rejected
 
 >>> [CLI] selftest tui pager --items -1
 Error: --items must be non-negative, got -1
-
-Exit code: 1

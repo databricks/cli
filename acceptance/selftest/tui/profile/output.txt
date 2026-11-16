@@ -10,6 +10,7 @@ env:
   CLICOLOR=(unset or empty)
   CLICOLOR_FORCE=(unset or empty)
   NO_COLOR=(unset or empty)
+  COLORFGBG=(unset or empty)
   CI=(unset or empty)
   TERM_PROGRAM=(unset or empty)
   WT_SESSION=(unset or empty)
@@ -25,6 +26,7 @@ env:
   CLICOLOR=(unset or empty)
   CLICOLOR_FORCE=(unset or empty)
   NO_COLOR=1
+  COLORFGBG=(unset or empty)
   CI=(unset or empty)
   TERM_PROGRAM=(unset or empty)
   WT_SESSION=(unset or empty)

@@ -61,8 +61,8 @@ Uses the same tea.Program options as cmdio's prompts, so the output shows how
 this terminal encodes Esc, Alt+x, Shift+Enter, Ctrl+H vs Backspace, AltGr and
 bracketed paste. Exits on two Ctrl+C presses or after --timeout.
 
-With --raw, bubbletea is bypassed: stdin is put in raw mode and each chunk of
-bytes read is printed as hex and quoted text.`,
+With --raw, bubbletea is bypassed: when stdin is a terminal it is put in raw
+mode, and each chunk of bytes read is printed as hex and quoted text.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			in := cmd.InOrStdin()
@@ -70,6 +70,8 @@ bytes read is printed as hex and quoted text.`,
 			if raw {
 				return runRawKeys(cmd.Context(), in, out, timeout)
 			}
+			// Mirrors cmdio's runTUI options. cmdio does not expose a way to run a
+			// custom model, so keep these in sync with libs/cmdio/io.go.
 			p := tea.NewProgram(&keysModel{out: out},
 				tea.WithInput(in),
 				tea.WithOutput(out),
@@ -85,19 +87,29 @@ bytes read is printed as hex and quoted text.`,
 	}
 	cmd.Flags().BoolVar(&raw, "raw", false, "bypass bubbletea and print the raw bytes read from stdin")
 	cmd.Flags().DurationVar(&timeout, "timeout", 0, "exit after this duration (0 waits for Ctrl+C)")
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if timeout < 0 {
+			return fmt.Errorf("--timeout must not be negative, got %s", timeout)
+		}
+		return nil
+	}
 	return cmd
 }
 
-// runRawKeys reads stdin in raw mode without bubbletea. The reader goroutine
-// may stay blocked on Read after return; the process exits right after the
-// command finishes, so that is harmless.
+// runRawKeys reads stdin in raw mode without bubbletea. After an early return
+// the reader goroutine can be blocked on Read or on sending a chunk; the
+// process exits once the command finishes, so it does not need to be joined.
 func runRawKeys(ctx context.Context, in io.Reader, out io.Writer, timeout time.Duration) error {
+	// Raw mode clears OPOST, so "\n" would not return the carriage. Print
+	// "\r\n" in that case so each line starts at column 0.
+	eol := "\n"
 	if f, ok := in.(*os.File); ok && cmdio.IsInputTTY(ctx) {
 		state, err := term.MakeRaw(int(f.Fd()))
 		if err != nil {
 			return err
 		}
 		defer func() { _ = term.Restore(int(f.Fd()), state) }()
+		eol = "\r\n"
 	}
 
 	chunks := make(chan []byte)
@@ -129,7 +141,7 @@ func runRawKeys(ctx context.Context, in io.Reader, out io.Writer, timeout time.D
 	for {
 		select {
 		case chunk := <-chunks:
-			fmt.Fprintf(out, "raw bytes=% x text=%q\n", chunk, string(chunk))
+			fmt.Fprintf(out, "raw bytes=% x text=%q%s", chunk, string(chunk), eol)
 			for _, b := range chunk {
 				if b == 0x03 {
 					ctrlC++

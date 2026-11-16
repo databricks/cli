@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strconv"
@@ -39,29 +40,19 @@ are visible.`,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			// Default keeps the historical cmdio.LogString path, which writes to stderr.
-			var line func(string)
-			var w io.Writer
-			switch stream {
-			case "stdout":
+			w := cmd.ErrOrStderr()
+			if stream == "stdout" {
 				w = cmd.OutOrStdout()
-			default:
-				w = cmd.ErrOrStderr()
-			}
-			if stream == "" {
-				line = func(s string) { cmdio.LogString(ctx, s) }
-			} else {
-				line = func(s string) { fmt.Fprintln(w, s) }
 			}
 
 			swatch := "the quick brown fox jumps over the lazy dog"
-			line("red:     " + cmdio.Red(ctx, swatch))
-			line("green:   " + cmdio.Green(ctx, swatch))
-			line("yellow:  " + cmdio.Yellow(ctx, swatch))
-			line("blue:    " + cmdio.Blue(ctx, swatch))
-			line("cyan:    " + cmdio.Cyan(ctx, swatch))
-			line("hiblack: " + cmdio.HiBlack(ctx, swatch))
-			line("hiblue:  " + cmdio.HiBlue(ctx, swatch))
+			writeLine(ctx, stream, w, "red:     "+cmdio.Red(ctx, swatch))
+			writeLine(ctx, stream, w, "green:   "+cmdio.Green(ctx, swatch))
+			writeLine(ctx, stream, w, "yellow:  "+cmdio.Yellow(ctx, swatch))
+			writeLine(ctx, stream, w, "blue:    "+cmdio.Blue(ctx, swatch))
+			writeLine(ctx, stream, w, "cyan:    "+cmdio.Cyan(ctx, swatch))
+			writeLine(ctx, stream, w, "hiblack: "+cmdio.HiBlack(ctx, swatch))
+			writeLine(ctx, stream, w, "hiblue:  "+cmdio.HiBlue(ctx, swatch))
 
 			if !swatches {
 				return nil
@@ -76,12 +67,22 @@ are visible.`,
 				index := 16 + i*7
 				ansi256 = append(ansi256, r.NewStyle().Background(lipgloss.Color(strconv.Itoa(index))).Render("  "))
 			}
-			line("truecolor: " + strings.Join(truecolor, ""))
-			line("256-color: " + strings.Join(ansi256, ""))
+			writeLine(ctx, stream, w, "truecolor: "+strings.Join(truecolor, ""))
+			writeLine(ctx, stream, w, "256-color: "+strings.Join(ansi256, ""))
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&stream, "stream", "", "write output to stdout or stderr (default: cmdio.LogString, stderr)")
 	cmd.Flags().BoolVar(&swatches, "lipgloss", false, "also print truecolor and 256-color swatches")
 	return cmd
+}
+
+// writeLine keeps the default stream on cmdio.LogString so the default output
+// stays exactly as it was before --stream existed.
+func writeLine(ctx context.Context, stream string, w io.Writer, s string) {
+	if stream == "" {
+		cmdio.LogString(ctx, s)
+		return
+	}
+	fmt.Fprintln(w, s)
 }
