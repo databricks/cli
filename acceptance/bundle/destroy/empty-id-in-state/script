@@ -18,10 +18,10 @@ trace $CLI bundle plan
 title "An empty-ID entry for a resource removed from config"
 blank_id bar
 trace cp databricks_no_bar.yml databricks.yml
-errcode trace $CLI bundle deploy
+trace $CLI bundle deploy
 show_state
 
 title "An empty-ID entry on destroy"
 blank_id baz
-errcode trace $CLI bundle destroy --auto-approve
+trace $CLI bundle destroy --auto-approve
 show_state
