@@ -115,7 +115,7 @@ func TestCatalogsCreate_DefaultsIsolationModeToOpen(t *testing.T) {
 	response := workspace.CatalogsCreate(Request{Body: []byte(createCatalogRequest)})
 	require.Equal(t, 0, response.StatusCode)
 
-	info, ok := response.Body.(catalog.CatalogInfo)
+	info, ok := response.Body.(fakeCatalog)
 	require.True(t, ok)
 	assert.Equal(t, catalog.CatalogIsolationModeOpen, info.IsolationMode)
 }
