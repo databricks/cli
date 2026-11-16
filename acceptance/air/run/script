@@ -33,6 +33,16 @@ echo 'print(1)' > .scratch/proj/main.py
 errcode trace $CLI air run -f ignored-root.yaml --dry-run
 rm -fr .git .gitignore .scratch
 
+title "a non-git root_path selects the same files when run from its subdirectory"
+# sub/main.py shadows main.py; a listing relative to the working directory would pick 1 file.
+mkdir -p proj/sub proj/data
+echo 'print(1)' > proj/main.py
+echo 'print(2)' > proj/sub/main.py
+echo 'a,b' > proj/data/x.csv
+cp non-git-subdir.yaml proj/sub/workload.yaml
+(cd proj/sub && trace $CLI air run -f workload.yaml --dry-run)
+rm -fr proj
+
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run
 
