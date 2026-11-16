@@ -499,6 +499,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+
+			if err := direct.CheckSensitivePlanValues(ctx, &b.Config, plan, variables); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
 		}
 
 		// Reject an unknown --select before PreDeployChecks and the predeploy script

@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
@@ -69,9 +70,105 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// CheckSensitivePlanValues rejects a saved plan that cannot be applied until its sensitive values are
+// supplied again, and returns one error that lists every problem. When the plan has a sensitive
+// resource, every sensitive variable of the bundle must be set with --var or BUNDLE_VAR_<name>, since
+// telling used variables from unused ones needs reference resolution.
+func CheckSensitivePlanValues(ctx context.Context, root *config.Root, plan *deployplan.Plan, flagVars []string) error {
+	adapters, err := dresources.InitAll(nil)
+	if err != nil {
+		return err
+	}
+
+	var problems []string
+	needsValues := false
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[resourceKey]
+		if entry.NewState == nil {
+			continue
+		}
+		adapter, ok := adapters[config.GetResourceTypeFromKey(resourceKey)]
+		if !ok {
+			problems = append(problems, fmt.Sprintf("resource %s: unknown resource type", resourceKey))
+			continue
+		}
+		if len(adapter.GetSensitiveFields()) == 0 {
+			continue
+		}
+		needsValues = true
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("resource %s: %s", resourceKey, err))
+			continue
+		}
+		paths, err := sensitivePaths(adapter)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("resource %s: %s", resourceKey, err))
+			continue
+		}
+		for _, path := range paths {
+			planned, err := structaccess.Get(sv.Value, path)
+			if err != nil {
+				continue
+			}
+			if _, err := sensitiveConfigValue(root, resourceKey, path, planned); err != nil {
+				problems = append(problems, err.Error())
+			}
+		}
+	}
+
+	var missing []string
+	if needsValues {
+		for name, v := range root.Variables {
+			if v == nil || !config.IsExplicitlyEnabled(v.Sensitive) || variableSupplied(ctx, name, flagVars) {
+				continue
+			}
+			missing = append(missing, name)
+		}
+		slices.Sort(missing)
+	}
+	if len(missing) > 0 {
+		problems = append(problems, missingVariablesError(missing))
+	}
+
+	if len(problems) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(problems, "; "))
+}
+
+// missingVariablesError names the sensitive variables that have no --var or BUNDLE_VAR_ value.
+func missingVariablesError(missing []string) string {
+	const overrides = "the variable-overrides file is not read for sensitive variables"
+	if len(missing) == 1 {
+		name := missing[0]
+		return fmt.Sprintf("sensitive variable %s has no value; pass it with --var %s=... or BUNDLE_VAR_%s when deploying from a saved plan (%s)", name, name, name, overrides)
+	}
+	return fmt.Sprintf("sensitive variables %s have no value; pass each with --var NAME=... or BUNDLE_VAR_NAME when deploying from a saved plan (%s)", strings.Join(missing, ", "), overrides)
+}
+
+// variableSupplied reports whether a sensitive variable has a value from --var or BUNDLE_VAR_<name>.
+// The resolved value also carries values from the variable-overrides file, so the check reads only
+// flags and the environment. A --var given with an empty value wins over the environment.
+func variableSupplied(ctx context.Context, name string, flagVars []string) bool {
+	flagged, found := "", false
+	for _, assignment := range flagVars {
+		key, value, _ := strings.Cut(assignment, "=")
+		if key == name {
+			flagged, found = value, true
+		}
+	}
+	if found {
+		return flagged != ""
+	}
+	value, _ := env.Lookup(ctx, "BUNDLE_VAR_"+name)
+	return value != ""
+}
+
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan. The sensitive
+// values the plan redacted are restored from root, the current config.
 // StateDB must already be open for write before calling this function.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, root *config.Root) error {
 	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
@@ -101,6 +198,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			sv, err := entry.NewState.ToStructVar(adapter.StateType())
 			if err != nil {
 				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+			}
+			if err := restoreSensitiveFields(adapter, resourceKey, sv.Value, root); err != nil {
+				return err
 			}
 			b.StateCache.Store(resourceKey, sv)
 		}
@@ -510,7 +610,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			entry.Remote = ch.Old
 			if !structdiff.IsEqual(entry.New, ch.New) {
 				// this is not fatal (may result in unexpected drift or undetected change but not incorrect deploy), but good to log this
-				log.Warnf(ctx, "unexpected local and remote diffs (%T, %T); entry=%v ch=%v", entry.New, ch.New, entry, ch)
+				log.Warnf(ctx, "unexpected local and remote diffs at %s (%T, %T)", ch.Path, entry.New, ch.New)
 			}
 		}
 	}
@@ -1700,8 +1800,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		})
 
 		// Store an unredacted copy in the cache so Apply can deploy with the
-		// actual values. The original newStateConfig is redacted below and used
-		// only for the plan output.
+		// actual values. newStateConfig is serialised into the plan and redacted there.
 		stateType := adapter.StateType()
 		cacheCopyPtr := reflect.New(stateType.Elem())
 		cacheCopyPtr.Elem().Set(reflect.ValueOf(newStateConfig).Elem())
@@ -1710,20 +1809,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			Refs:  refs,
 		})
 
-		// Redact sensitive fields before serialising. Sensitive values always come
-		// from bundle variables (enforced by ValidateSecretValueIsVariable), which
-		// are resolved before plan time, so SyncToJSON (called when cross-resource
-		// refs are resolved during planNode) will never re-serialise these fields.
-		if err := redactStruct(adapter, newStateConfig); err != nil {
-			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
-		}
-
 		newState := &structvar.StructVar{
 			Value: newStateConfig,
 			Refs:  refs,
 		}
 
-		// Convert to JSON for serialization in plan (values already redacted above).
+		// Convert to JSON for serialization in plan.
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)

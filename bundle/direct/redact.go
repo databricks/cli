@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -11,6 +12,19 @@ import (
 )
 
 const sensitiveRedactedValue = "[redacted]"
+
+// sensitivePaths parses the sensitive field paths of the adapter.
+func sensitivePaths(adapter *dresources.Adapter) ([]*structpath.PathNode, error) {
+	var paths []*structpath.PathNode
+	for _, field := range adapter.GetSensitiveFields() {
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			return nil, fmt.Errorf("parsing sensitive field path %q: %w", field, err)
+		}
+		paths = append(paths, path)
+	}
+	return paths, nil
+}
 
 // redactSensitiveFields replaces (or zeros) scalar fields in s (a pointer to a typed struct)
 // that the adapter marks as sensitive. replacement is what to set the field to; pass
@@ -20,13 +34,11 @@ func redactSensitiveFields(adapter *dresources.Adapter, s any, replacement strin
 		return nil
 	}
 
-	fields := adapter.GetSensitiveFields()
-	for _, field := range fields {
-		path, err := structpath.ParsePath(field)
-		if err != nil {
-			return fmt.Errorf("parsing sensitive field path %q: %w", field, err)
-		}
-
+	paths, err := sensitivePaths(adapter)
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
 		fv, err := structaccess.Get(s, path)
 		if err != nil {
 			continue
@@ -76,11 +88,27 @@ func redactChanges(adapter *dresources.Adapter, changes deployplan.Changes) erro
 	return nil
 }
 
-// redactPlanEntry redacts sensitive fields from remote_state and changes of a plan
-// entry. new_state is already redacted before serialization in makePlan.
+// redactPlanEntry redacts new_state, remote_state and changes of a plan entry. It runs once planning
+// is done: reference resolution re-serializes new_state from the unredacted cache, and apply reads
+// that cache, so the plan must not be serialized after this.
 func redactPlanEntry(adapter *dresources.Adapter, entry *deployplan.PlanEntry) error {
 	if len(adapter.GetSensitiveFields()) == 0 {
 		return nil
+	}
+
+	if entry.NewState != nil {
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
+			return fmt.Errorf("redacting new_state: %w", err)
+		}
+		if err := redactStruct(adapter, sv.Value); err != nil {
+			return fmt.Errorf("redacting new_state: %w", err)
+		}
+		redacted, err := sv.ToJSON()
+		if err != nil {
+			return fmt.Errorf("redacting new_state: %w", err)
+		}
+		*entry.NewState = *redacted
 	}
 
 	if entry.RemoteState != nil {
@@ -95,5 +123,55 @@ func redactPlanEntry(adapter *dresources.Adapter, entry *deployplan.PlanEntry) e
 		}
 	}
 
+	return nil
+}
+
+// sensitiveConfigValue returns the value the config sets for a sensitive field, which a deploy sends.
+// The config value is used whenever it is set. An empty config value is an error only when the plan
+// holds the field non-zero, since the plan then expects a value the config cannot supply. A field
+// that is zero in both is output-only and yields "".
+func sensitiveConfigValue(root *config.Root, resourceKey string, path *structpath.PathNode, planned any) (string, error) {
+	rc, err := root.GetResourceConfig(resourceKey)
+	if err != nil {
+		return "", err
+	}
+	var value string
+	if rc != nil {
+		if v, err := structaccess.Get(rc, path); err == nil {
+			value, _ = v.(string)
+		}
+	}
+	if value != "" || planned == nil || planned == "" {
+		return value, nil
+	}
+	if rc == nil {
+		return "", fmt.Errorf("resource %s is not in the config; run 'bundle plan' again", resourceKey)
+	}
+	return "", fmt.Errorf("resource %s: the config has no value for sensitive field %s; pass the value", resourceKey, path)
+}
+
+// restoreSensitiveFields replaces the sensitive values in s, a saved plan's state, with the values
+// the current config sets. CheckSensitivePlanValues runs the same rule before the plan is approved.
+func restoreSensitiveFields(adapter *dresources.Adapter, resourceKey string, s any, root *config.Root) error {
+	paths, err := sensitivePaths(adapter)
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
+		planned, err := structaccess.Get(s, path)
+		if err != nil {
+			continue
+		}
+		value, err := sensitiveConfigValue(root, resourceKey, path, planned)
+		if err != nil {
+			return err
+		}
+		if value == "" {
+			continue
+		}
+		if err := structaccess.Set(s, path, value); err != nil {
+			return fmt.Errorf("resource %s: restoring sensitive field %s: %w", resourceKey, path, err)
+		}
+	}
 	return nil
 }
