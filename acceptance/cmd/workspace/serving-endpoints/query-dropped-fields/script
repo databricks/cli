@@ -1,0 +1,5 @@
+title "Fields the output doesn't show are named on stderr; stdout is unchanged"
+trace $CLI serving-endpoints query chat-endpoint --json '{"messages": [{"role": "user", "content": "hi"}]}'
+
+title "No warning when nothing is dropped"
+trace $CLI serving-endpoints query custom-endpoint --json '{"dataframe_records": [{"text": "I love this"}]}'

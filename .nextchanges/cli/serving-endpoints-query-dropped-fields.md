@@ -1,0 +1,1 @@
+* `serving-endpoints query` now prints a warning on stderr that names the response fields its output leaves out (for example `choices[].finish_reason`), and how to see the full response with `databricks api post`. The output itself is unchanged.
