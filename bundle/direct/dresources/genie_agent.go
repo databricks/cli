@@ -73,7 +73,9 @@ func genieAgentBody(config *resources.GenieAgentConfig) genieagents.GenieAgent {
 
 // responseToGenieAgentConfig converts a returned GenieAgent into the bundle
 // state. The server-derived name, etag, timestamps and effective_parent_path
-// have no config counterpart and are dropped here.
+// have no config counterpart and are dropped here. GET returns the parent path
+// without the /Workspace prefix, so ensureWorkspacePrefix re-adds it to match
+// the local configuration (same handling as ResourceGenieSpace).
 func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieAgentConfig {
 	definition := agent.Definition
 	return &resources.GenieAgentConfig{
@@ -82,7 +84,7 @@ func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieA
 		Description:     agent.Description,
 		Definition:      &definition,
 		WarehouseId:     agent.WarehouseId,
-		ParentPath:      agent.ParentPath,
+		ParentPath:      ensureWorkspacePrefix(agent.ParentPath),
 		ForceSendFields: nil,
 	}
 }
@@ -103,9 +105,10 @@ func (r *ResourceGenieAgent) DoRead(ctx context.Context, id string) (*resources.
 // workspace resource folder (workspace.resource_path), which does not exist on
 // a first deploy, so create retries once after mkdirs. ResourceGenieSpace.DoCreate
 // handles the same condition the same way; isMissingGenieParentPathError
-// recognises the two shapes the Genie backend uses for a missing folder. That
-// the Agents API surfaces one of those shapes is confirmed by the lifecycle
-// test's cloud run.
+// recognises the two shapes the Genie backend uses for a missing folder. The
+// Agents API is expected to surface the standard 404 RESOURCE_DOES_NOT_EXIST
+// shape, which apierr.IsMissing catches; the legacy 400 shape is kept for
+// parity with genie_spaces on the same backend object.
 func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.GenieAgentConfig) (string, *resources.GenieAgentConfig, error) {
 	req := genieagents.CreateGenieAgentRequest{
 		GenieAgent:      genieAgentBody(config),
@@ -132,8 +135,7 @@ func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.Gen
 // every updatable field (display_name, description, warehouse_id, definition,
 // parent_path), taking each field's value from the body even when unset there,
 // so removing a field from config clears it. definition is replaced as a whole;
-// paths within it are not supported. The lifecycle acceptance test exercises
-// this mask against a real workspace.
+// paths within it are not supported.
 //
 // Etag is intentionally left empty (here and in DoDelete): it guards concurrent
 // definition edits, which a serial bundle deploy does not have. Drift is

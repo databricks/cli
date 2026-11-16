@@ -32,9 +32,9 @@ type GenieAgentConfig struct {
 	Description string `json:"description,omitempty"`
 	// Warehouse associated with the Genie Agent.
 	WarehouseId string `json:"warehouse_id"`
-	// The workspace folder to create the Genie Agent in. If omitted, the
-	// caller's home folder is used. On update, setting it moves the agent and
-	// clearing it does not.
+	// The workspace folder to create the Genie Agent in. Defaults to the
+	// bundle's workspace resource path (${workspace.resource_path}). On update,
+	// setting it moves the agent and clearing it does not.
 	ParentPath string `json:"parent_path,omitempty"`
 	// The definition of the Genie Agent: its sample questions, data sources,
 	// instructions, and benchmarks. Must set at least one field. Replaced as a

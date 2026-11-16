@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -56,8 +57,11 @@ func (s *FakeWorkspace) GenieAgentCreate(req Request) Response {
 
 	agent := body
 	agent.Name = "agents/" + agentId
-	agent.ParentPath = parentPath
-	agent.EffectiveParentPath = parentPath
+	// Strip the /Workspace prefix from parent_path before storing. This matches
+	// the remote behavior: the GET API returns parent_path without the prefix,
+	// mirroring GenieSpaceCreate.
+	agent.ParentPath = trimWorkspacePrefix(parentPath)
+	agent.EffectiveParentPath = agent.ParentPath
 	agent.CreateTime = sdktime.New(time.Now())
 	agent.UpdateTime = sdktime.New(time.Now())
 	agent.Etag = "1"
@@ -98,14 +102,15 @@ func (s *FakeWorkspace) GenieAgentUpdate(req Request) Response {
 	// update_mask "*" replaces every updatable field with the body's value and
 	// keeps the server-assigned ones. Setting parent_path moves the agent;
 	// clearing it does not (the stored folder is untouched, only the field is
-	// cleared, matching the update_mask contract).
+	// cleared, matching the update_mask contract). The stored path drops the
+	// /Workspace prefix, mirroring GenieSpaceUpdate.
 	agent.DisplayName = body.DisplayName
 	agent.Description = body.Description
 	agent.Definition = body.Definition
 	agent.WarehouseId = body.WarehouseId
-	agent.ParentPath = body.ParentPath
+	agent.ParentPath = trimWorkspacePrefix(body.ParentPath)
 	if body.ParentPath != "" {
-		agent.EffectiveParentPath = body.ParentPath
+		agent.EffectiveParentPath = agent.ParentPath
 	}
 	agent.UpdateTime = sdktime.New(time.Now())
 
@@ -129,6 +134,16 @@ func (s *FakeWorkspace) GenieAgentDelete(req Request) Response {
 	return Response{
 		StatusCode: 200,
 	}
+}
+
+// trimWorkspacePrefix drops the /Workspace prefix from a parent_path before it
+// is stored, matching GenieSpaceCreate/GenieSpaceUpdate: the GET API returns
+// parent_path without the prefix.
+func trimWorkspacePrefix(parentPath string) string {
+	if strings.HasPrefix(parentPath, "/Workspace/") {
+		return strings.TrimPrefix(parentPath, "/Workspace")
+	}
+	return parentPath
 }
 
 // getGenieAgent returns a copy of the stored agent, or a 404 response.

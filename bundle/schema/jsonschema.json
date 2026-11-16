@@ -1261,7 +1261,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
-                        "description": "Workspace folder in which to create the Genie Agent. If omitted, the caller's home folder is used. On update, setting it moves the agent and clearing it does not.",
+                        "description": "Workspace folder in which to create the Genie Agent. Defaults to the bundle's workspace resource path (${workspace.resource_path}). On update, setting it moves the agent and clearing it does not.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {

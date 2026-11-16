@@ -9,9 +9,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "name": "agents/[AGENT_ID]",
   "display_name": "test_agent_[UNIQUE_NAME]",
-  "description": "Agent grounded in sales tables",
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
-  "etag": "1"
+  "description": "Agent grounded in taxi trip data",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
 >>> [CLI] bundle plan
@@ -19,7 +18,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Update description in place
 
->>> update_file.py databricks.yml Agent grounded in sales tables Agent grounded in sales tables, updated
+>>> update_file.py databricks.yml Agent grounded in taxi trip data Agent grounded in taxi trip data, updated
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
@@ -31,9 +30,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "name": "agents/[AGENT_ID]",
   "display_name": "test_agent_[UNIQUE_NAME]",
-  "description": "Agent grounded in sales tables, updated",
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
-  "etag": "1"
+  "description": "Agent grounded in taxi trip data, updated",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
 >>> [CLI] bundle plan

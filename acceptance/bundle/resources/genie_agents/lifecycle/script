@@ -18,7 +18,7 @@ trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
 trace $CLI bundle plan
 
 title "Update description in place"
-trace update_file.py databricks.yml "Agent grounded in sales tables" "Agent grounded in sales tables, updated"
+trace update_file.py databricks.yml "Agent grounded in taxi trip data" "Agent grounded in taxi trip data, updated"
 trace $CLI bundle deploy
 trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
 

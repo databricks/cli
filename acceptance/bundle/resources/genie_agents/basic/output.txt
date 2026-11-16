@@ -8,15 +8,15 @@
       "sample_questions": [
         {
           "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
-          "question": "What were total sales last month?"
+          "question": "What was the average trip distance last month?"
         }
       ]
     },
     "data_sources": {
       "tables": [
         {
-          "description": "One row per order, with order date and amount.",
-          "identifier": "main.sales.orders"
+          "description": "One row per taxi trip, with pickup and drop-off times.",
+          "identifier": "samples.nyctaxi.trips"
         }
       ]
     }
@@ -74,15 +74,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
         "sample_questions": [
           {
             "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
-            "question": "What were total sales last month?"
+            "question": "What was the average trip distance last month?"
           }
         ]
       },
       "data_sources": {
         "tables": [
           {
-            "description": "One row per order, with order date and amount.",
-            "identifier": "main.sales.orders"
+            "description": "One row per taxi trip, with pickup and drop-off times.",
+            "identifier": "samples.nyctaxi.trips"
           }
         ]
       }
@@ -112,15 +112,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
         "sample_questions": [
           {
             "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
-            "question": "What were total sales last month?"
+            "question": "What was the average trip distance last month?"
           }
         ]
       },
       "data_sources": {
         "tables": [
           {
-            "description": "One row per order, with order date and amount.",
-            "identifier": "main.sales.orders"
+            "description": "One row per taxi trip, with pickup and drop-off times.",
+            "identifier": "samples.nyctaxi.trips"
           }
         ]
       }
@@ -147,8 +147,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
   "display_name": "my-agent",
   "description": "COMMENT1",
-  "warehouse_id": "test-warehouse-id",
-  "etag": "1"
+  "warehouse_id": "test-warehouse-id"
 }
 
 === Update description (should update in place, not recreate)
@@ -174,15 +173,15 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
         "sample_questions": [
           {
             "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
-            "question": "What were total sales last month?"
+            "question": "What was the average trip distance last month?"
           }
         ]
       },
       "data_sources": {
         "tables": [
           {
-            "description": "One row per order, with order date and amount.",
-            "identifier": "main.sales.orders"
+            "description": "One row per taxi trip, with pickup and drop-off times.",
+            "identifier": "samples.nyctaxi.trips"
           }
         ]
       }
@@ -199,8 +198,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
   "display_name": "my-agent",
   "description": "COMMENT2",
-  "warehouse_id": "test-warehouse-id",
-  "etag": "1"
+  "warehouse_id": "test-warehouse-id"
 }
 
 === Change the identity field (should plan a recreate)
@@ -239,15 +237,15 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
         "sample_questions": [
           {
             "id": "01f0a1b2c3d4e5f60718293a4b5c6d7f",
-            "question": "What were total sales last month?"
+            "question": "What was the average trip distance last month?"
           }
         ]
       },
       "data_sources": {
         "tables": [
           {
-            "description": "One row per order, with order date and amount.",
-            "identifier": "main.sales.orders"
+            "description": "One row per taxi trip, with pickup and drop-off times.",
+            "identifier": "samples.nyctaxi.trips"
           }
         ]
       }
