@@ -174,6 +174,12 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	// include pathspecs relative to it, wherever it sits in the repository. Archiving a
 	// commit (not a <ref>:<path> tree) also stamps entries with the commit time, which
 	// keeps the tarball reproducible.
+	// git archive run from a directory the ref doesn't have (uncommitted, or added
+	// after an older ref) succeeds with an empty archive, so check that it exists.
+	verify := exec.CommandContext(ctx, "git", "-C", a.Path, "rev-parse", "--verify", "--quiet", ref+":./")
+	if err := verify.Run(); err != nil {
+		return fmt.Errorf("git artifact: %s is not in the tree of %s; commit it or pick a ref that contains it", a.Path, ref)
+	}
 	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
 	// --format=tar.gz gzip is single-threaded, whereas pgzip spreads it across cores.
 	args := []string{"-C", a.Path, "archive", "--format=tar", ref}
@@ -191,7 +197,7 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		gzw.Close()
-		return fmt.Errorf("git archive %s: %w: %s", ref, err, stderr.String())
+		return fmt.Errorf("git archive %s in %s: %w: %s", ref, a.Path, err, stderr.String())
 	}
 	return gzw.Close()
 }

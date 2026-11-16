@@ -152,3 +152,25 @@ func TestTarballFromGitSubdirIsReproducible(t *testing.T) {
 	}
 	assert.Equal(t, []string{"main.py"}, names)
 }
+
+// TestTarballFromGitRejectsPathMissingFromRef: git archive run from a directory the
+// ref doesn't contain succeeds with an empty archive, which must not be uploaded.
+func TestTarballFromGitRejectsPathMissingFromRef(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "README"), []byte("x\n"), 0o644))
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "init")
+	src := filepath.Join(repo, "src")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "main.py"), []byte("print('x')\n"), 0o644))
+
+	b := &bundle.Bundle{SyncRootPath: repo}
+	a := &config.Artifact{Path: src, Git: &config.ArtifactGit{Commit: "HEAD"}}
+
+	var buf bytes.Buffer
+	err := tarballFromGit(t.Context(), b, a, &buf)
+	assert.ErrorContains(t, err, "is not in the tree of HEAD")
+}
