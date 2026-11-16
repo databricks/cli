@@ -22,3 +22,20 @@ func TestSelectModelNoColor(t *testing.T) {
 	assert.Contains(t, v, ansiBold)
 	assert.Contains(t, v, ansiUnderline)
 }
+
+func TestRunSelectNoColor(t *testing.T) {
+	opts := SelectOptions{Label: "Pick", Items: []Tuple{{"a", "1"}, {"b", "2"}}}
+	run := func(c *cmdIO) error {
+		_, err := RunSelect(InContext(t.Context(), c), opts)
+		return err
+	}
+
+	assert.Contains(t, runWithKeys(t, false, "\r", run), ansiBlue)
+
+	// NO_COLOR: the prompt still runs, without the blue "?", but the cursor
+	// row keeps its bold and underline.
+	out := runWithKeys(t, true, "\r", run)
+	assert.NotContains(t, out, ansiBlue)
+	assert.Contains(t, out, ansiBold)
+	assert.Contains(t, out, ansiUnderline)
+}

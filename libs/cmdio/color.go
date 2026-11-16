@@ -142,8 +142,8 @@ func PadLeft(s string, n int) string {
 }
 
 // NewRenderer returns a lipgloss renderer targeting w, along with whether w
-// supports color. cmdio's decision wins in both directions, so lipgloss
-// output agrees with the rest of cmdio's output:
+// supports color. The renderer's profile starts from termenv's probe of w and
+// is adjusted where cmdio knows better:
 //   - when w doesn't support color (NO_COLOR, TERM=dumb, or w is piped or
 //     redirected) the renderer is forced to the Ascii profile so every Style
 //     it mints emits no SGR escapes;

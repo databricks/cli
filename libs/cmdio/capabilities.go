@@ -70,8 +70,8 @@ func (c Capabilities) SupportsStdoutColor() bool {
 	return c.stdoutIsTTY && c.colorAllowed()
 }
 
-// SupportsStderrColor is the stderr counterpart of SupportsStdoutColor;
-// prompts and spinners render to stderr.
+// SupportsStderrColor is the stderr counterpart of SupportsStdoutColor.
+// Prompts use it; they render to stderr.
 func (c Capabilities) SupportsStderrColor() bool {
 	return c.stderrIsTTY && c.colorAllowed()
 }
