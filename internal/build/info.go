@@ -186,5 +186,3 @@ func parseBool(s string) bool {
 func parseTime(s string) time.Time {
 	return time.Unix(parseInt(s), 0)
 }
-
-// Throwaway labeler probe; this PR is not meant to merge.
