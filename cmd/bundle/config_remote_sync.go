@@ -18,6 +18,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -179,6 +181,18 @@ Examples:
 		})
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
+			// Failing to load or select the target returns before the auth config is
+			// set; resolve it here so those failures are still reported.
+			if !cmdctx.HasConfigUsed(cmd.Context()) {
+				if client, clientErr := b.WorkspaceClientE(cmd.Context()); clientErr == nil {
+					cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), client.Config))
+				}
+			}
+		}
+
+		// The diagnostics are already on stderr; record the first one instead of the sentinel.
+		if errors.Is(err, root.ErrAlreadyPrinted) {
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(logdiag.GetFirstErrorSummary(cmd.Context()))
 		}
 
 		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)
