@@ -1,10 +1,29 @@
 bundle:
   name: test-pipeline-run-flags
 
+variables:
+  unique_name:
+    description: Unique name for test resources
+
+workspace:
+  root_path: ~/.bundle/${bundle.name}/${var.unique_name}
+
+presets:
+  pipelines_development: true
+
 resources:
+  schemas:
+    test_schema:
+      name: pipeline_refresh_${var.unique_name}
+      catalog_name: main
   pipelines:
     my_pipeline:
-      name: test-pipeline-flags
+      name: test-pipeline-flags-${var.unique_name}
+      catalog: main
+      schema: ${resources.schemas.test_schema.name}
+      serverless: true
       libraries:
         - file:
             path: pipeline_file.py
+        - notebook:
+            path: src/pipeline_notebook.sql

@@ -1,11 +1,11 @@
-title "A variable used as the value of a secret is sensitive and redacted in validate -o json\n"
+title "A variable used as the value of a secret is sensitive and redacted in validate -o json"
 withdir redact trace $CLI bundle validate -o json | contains.py '!dummy-credential' | jq '{variables, resources}'
 
-title "Sensitive variable used in non-sensitive resource fields\n"
+title "Sensitive variable used in non-sensitive resource fields"
 withdir invalid-resource-field musterr trace $CLI bundle validate
 
-title "Sensitive variable used in the default of a non-sensitive variable\n"
+title "Sensitive variable used in the default of a non-sensitive variable"
 withdir invalid-variable musterr trace $CLI bundle validate
 
-title "Sensitive variable passed as the value of a non-sensitive variable\n"
+title "Sensitive variable passed as the value of a non-sensitive variable"
 withdir redact musterr trace $CLI bundle validate --var 'target_schema=${var.api_credential}'

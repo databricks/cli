@@ -2,6 +2,8 @@ package dresources
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -173,6 +176,25 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	}
 }
 
+func TestAppUpdateMask_ComputeSizeFollowsBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		computeSize apps.ComputeSize
+		wantCompute bool
+	}{
+		{name: "declared", computeSize: apps.ComputeSizeLarge, wantCompute: true},
+		{name: "undeclared", computeSize: "", wantCompute: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mask := strings.Split(appUpdateMask(&apps.App{ComputeSize: tt.computeSize}), ",")
+			assert.Equal(t, tt.wantCompute, slices.Contains(mask, "compute_size"))
+			assert.Contains(t, mask, "description")
+			assert.Contains(t, mask, "compute_min_instances")
+		})
+	}
+}
+
 // TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
 // appRequestBody removes SourceCodePath from ForceSendFields even when the plan
 // JSON round-trip has forced it in — reproduces the v1.14.0 regression where
@@ -204,4 +226,25 @@ func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 
 	// Other ForceSendFields entries must be preserved.
 	assert.Contains(t, body.ForceSendFields, "Name")
+}
+
+func TestWithMissingServicePrincipalHint(t *testing.T) {
+	assert.NoError(t, withMissingServicePrincipalHint(nil, "myapp"))
+
+	other := errors.New("some other error")
+	assert.Same(t, other, withMissingServicePrincipalHint(other, "myapp"))
+
+	apiErr := &apierr.APIError{
+		StatusCode: 400,
+		ErrorCode:  "BAD_REQUEST",
+		Message:    "App: myapp's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.",
+	}
+	computeErr := errors.New("failed to reach ACTIVE, got ERROR: App service principal does not exist or is deleted, application cannot run without a valid service principal. Please delete the app and re-create it.")
+	capitalizedErr := errors.New("Service principal does not exist or is deleted")
+
+	for _, err := range []error{apiErr, fmt.Errorf("wrapped: %w", apiErr), computeErr, capitalizedErr} {
+		got := withMissingServicePrincipalHint(err, "myapp")
+		assert.ErrorIs(t, got, err)
+		assert.Contains(t, got.Error(), `delete it with "databricks apps delete myapp"`)
+	}
 }

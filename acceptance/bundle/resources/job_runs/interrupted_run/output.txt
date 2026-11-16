@@ -1,5 +1,6 @@
 
 === the deploy stops waiting before the run finishes
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
 Created jobs.my_job
@@ -15,6 +16,7 @@ Files: 1 uploaded, 0 deleted
 Exit code: 1
 
 === the abandoned run is still tracked
+
 >>> read_id.py my_job
 [MY_JOB_ID]
 
@@ -32,6 +34,7 @@ Exit code: 1
 }
 
 === a run that is still going is skipped
+
 >>> jq .plan["resources.job_runs.my_run"] tmp.plan.json
 {
   "depends_on": [
@@ -61,12 +64,14 @@ Exit code: 1
 }
 
 === Badness: the next deploy does not wait for that run
+
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 === the same run is still tracked, and nothing was cancelled, deleted or triggered
+
 >>> read_state.py job_runs my_run id result_state
 job_runs my_run id='[MY_RUN_ID]' result_state=None
 

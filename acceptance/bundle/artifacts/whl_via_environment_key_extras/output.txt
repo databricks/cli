@@ -3,6 +3,7 @@
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting the environments dependency to keep its [train] extras suffix
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body [OUTPUT_DIR]/out.requests.txt
 {
   "deployment": {
@@ -41,5 +42,6 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 }
 
 === Expecting 1 wheel to be uploaded under its bare filename (no extras)
+
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"

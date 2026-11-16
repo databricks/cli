@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -40,7 +41,7 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 }
 
 func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
-	return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	return b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 }
 
 func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

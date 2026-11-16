@@ -8,6 +8,7 @@ host = https://dev.cloud.databricks.com
 token = dev-pat-token
 
 === Logout without --delete — should report no changes for non-U2M profile
+
 >>> [CLI] auth logout --profile dev --auto-approve
 No tokens to clear for profile "dev". Use --delete to remove it from the config file.
 
@@ -20,6 +21,7 @@ host = https://dev.cloud.databricks.com
 token = dev-pat-token
 
 === Logout with --delete — should delete the profile
+
 >>> [CLI] auth logout --profile dev --auto-approve --delete
 Deleted profile "dev" with no tokens to clear.
 

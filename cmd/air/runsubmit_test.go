@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -353,6 +354,8 @@ func TestStageRunArtifactsOverlapsLaunchAndSnapshot(t *testing.T) {
 }
 
 func TestSubmitWorkload(t *testing.T) {
+	// A workspace ID in the developer's environment would replace the test server's in the run link.
+	t.Setenv("DATABRICKS_WORKSPACE_ID", "")
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -382,7 +385,7 @@ func TestSubmitWorkload(t *testing.T) {
 	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
-	assert.Contains(t, dashboardURL, "/jobs/runs/777")
+	assert.Equal(t, server.URL+"/jobs/runs/777?o="+strconv.Itoa(testserver.TestWorkspaceID), dashboardURL)
 	assert.Equal(t, "idem-key", validatedToken)
 
 	// The submitted payload is a native ai_runtime_task pointing at the uploaded
@@ -712,6 +715,45 @@ containers:
 		assert.Equal(t, name, container["name"])
 		assert.True(t, strings.HasSuffix(container["command_path"].(string), "/containers/"+name+"/command.sh"))
 	}
+}
+
+// An unresolved workspace ID yields a link without ?o=, looked up before the run is created.
+func TestSubmitWorkloadWithoutWorkspaceID(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	// Register before AddDefaultHandlers: the router is first-wins, so these must claim the routes ahead of the default handlers.
+	var workspaceIDLookups, lookupsBeforeSubmit atomic.Int32
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		// The workspace ID lookup is the /Me call without attributes; answering it
+		// without the X-Databricks-Org-Id header makes the lookup fail.
+		if req.URL.Query().Get("attributes") == "" {
+			workspaceIDLookups.Add(1)
+		}
+		return req.Workspace.MeUser(req.Token)
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		lookupsBeforeSubmit.Store(workspaceIDLookups.Load())
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	// The test server's host metadata supplies a workspace ID; drop it to force the lookup.
+	w.Config.WorkspaceID = ""
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	runID, runURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+	assert.Equal(t, int64(777), runID)
+	assert.Equal(t, server.URL+"/jobs/runs/777", runURL)
+	assert.Equal(t, int32(1), lookupsBeforeSubmit.Load(), "the workspace ID must be resolved before the run is created")
+	assert.Equal(t, int32(1), workspaceIDLookups.Load())
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via libs/filer,

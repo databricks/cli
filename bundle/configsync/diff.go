@@ -157,12 +157,20 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
+				fullPath := resourceKey + "." + path
+				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
+					!keepSkippedRunAsChange(fullPath, changeDesc) {
+					continue
+				}
+				synced, err := applyLifecycle(resourceKey, path, changeDesc)
+				if err != nil {
+					return nil, fmt.Errorf("failed to apply lifecycle rules for path %s: %w", path, err)
+				}
+				if synced == nil {
 					continue
 				}
 
-				fullPath := resourceKey + "." + path
-				change, err := convertChangeDesc(fullPath, changeDesc)
+				change, err := convertChangeDesc(fullPath, synced)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}

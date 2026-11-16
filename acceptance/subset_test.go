@@ -45,6 +45,9 @@ type subsetSelector struct {
 	// changed maps test dir -> variant filters for added/modified tests (nil filters
 	// means all variants of that dir are changed). Same shape as changedTests.
 	changed map[string][]string
+
+	// named holds the tests the last commit message names, also always kept.
+	named selection.Named
 }
 
 // newSubsetSelector reads the subset env vars. Subsetting is disabled in update mode
@@ -82,7 +85,7 @@ func (s subsetSelector) skipReason(dir string, envset []string) string {
 	if !s.enabled {
 		return ""
 	}
-	if s.isChanged(dir, envset) {
+	if s.isChanged(dir, envset) || s.named.Matches(dir, envset) {
 		return ""
 	}
 	id := dir

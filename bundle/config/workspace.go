@@ -38,7 +38,7 @@ type Workspace struct {
 
 	// Azure specific attributes.
 	AzureResourceID  string `json:"azure_workspace_resource_id,omitempty"`
-	AzureUseMSI      bool   `json:"azure_use_msi,omitempty"`
+	AzureUseMSI      *bool  `json:"azure_use_msi,omitempty"`
 	AzureClientID    string `json:"azure_client_id,omitempty"`
 	AzureTenantID    string `json:"azure_tenant_id,omitempty"`
 	AzureEnvironment string `json:"azure_environment,omitempty"`
@@ -50,7 +50,7 @@ type Workspace struct {
 	// detected automatically from /.well-known/databricks-config. The field is
 	// retained so existing databricks.yml files using it still validate against
 	// the bundle schema.
-	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
+	ExperimentalIsUnifiedHost *bool  `json:"experimental_is_unified_host,omitempty"`
 	AccountID                 string `json:"account_id,omitempty"`
 	WorkspaceID               string `json:"workspace_id,omitempty"`
 
@@ -162,7 +162,7 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 
 		// Azure
 		AzureResourceID:  w.AzureResourceID,
-		AzureUseMSI:      w.AzureUseMSI,
+		AzureUseMSI:      IsExplicitlyEnabled(w.AzureUseMSI),
 		AzureClientID:    w.AzureClientID,
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,

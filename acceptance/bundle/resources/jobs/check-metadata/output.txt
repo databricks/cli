@@ -1,5 +1,6 @@
 
 === First summary, should not have id and modified_status should be created
+
 >>> [CLI] bundle summary -o json
 {
   "id": null,
@@ -14,6 +15,7 @@ Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Second summary, should have id and modified status should be absent
+
 >>> [CLI] bundle summary -o json
 
 >>> cat out.summary.json
@@ -33,6 +35,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Read metadata object from the workspace
+
 >>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json
 
 >>> cat metadata.json
@@ -69,6 +72,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "extra": {}
 }
 === Check that metadata contains created job ids
+
 >>> cat metadata.json
           "id": "[JOB_1_ID]",
 
@@ -76,6 +80,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
           "id": "[JOB_2_ID]",
 
 === Check that metadata contains bundle name, target, and mode
+
 >>> cat metadata.json
 "deploy-jobs-check-metadata-[UNIQUE_NAME]"
 

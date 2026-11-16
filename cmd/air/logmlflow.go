@@ -58,12 +58,12 @@ func volumeArtifactRoot(root string) (string, bool) {
 
 // chunkFilePattern matches a log chunk file (logs-<index>.chunk.txt); group 1 is
 // the chunk index. The sidecar splits stdout into 4MB chunks, index ascending.
-var chunkFilePattern = regexp.MustCompile(`^logs-(\d+)\.chunk\.txt$`)
+var chunkFilePattern = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^logs-(\d+)\.chunk\.txt$`) })
 
 // oldFormatNodeDir matches a bare per-node log dir (logs/node_<n>). The
 // attempt-prefixed layout nests these under logs/attempt_<n>/, so a bare
 // logs/node_<n> only appears in the old layout.
-var oldFormatNodeDir = regexp.MustCompile(`^logs/node_\d+$`)
+var oldFormatNodeDir = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^logs/node_\d+$`) })
 
 // artifactDownloadClient fetches pre-signed artifact URLs with connect and
 // response-header timeouts, so a stalled storage backend can't hang the command.
@@ -268,7 +268,7 @@ func discoverAttemptPrefix(ctx context.Context, w *databricks.WorkspaceClient, m
 
 	attemptDir := fmt.Sprintf("logs/attempt_%d", attempt)
 	for _, f := range files {
-		if oldFormatNodeDir.MatchString(f.Path) {
+		if oldFormatNodeDir().MatchString(f.Path) {
 			return false, nil
 		}
 		if f.Path == attemptDir {
@@ -307,7 +307,7 @@ func listLogChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 	var chunks []logChunk
 	for _, f := range files {
 		base := path.Base(f.Path)
-		m := chunkFilePattern.FindStringSubmatch(base)
+		m := chunkFilePattern().FindStringSubmatch(base)
 		if m == nil {
 			continue
 		}

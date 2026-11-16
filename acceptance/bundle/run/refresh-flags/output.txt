@@ -6,15 +6,16 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Running pipeline with --refresh flag and specific tables
->>> [CLI] bundle run my_pipeline --refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-Update ID: [UUID]
+>>> [CLI] bundle run my_pipeline --refresh table1 table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
+
+Update ID: [UUID][1]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "refresh_selection": [
       "table1",
@@ -24,30 +25,32 @@ Update ID: [UUID]
 }
 
 === Running pipeline with --full-refresh-all flag
->>> [CLI] bundle run my_pipeline --full-refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-Update ID: [UUID]
+>>> [CLI] bundle run my_pipeline --full-refresh-all
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][2]
+
+Update ID: [UUID][2]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh": true
   }
 }
 
 === Running pipeline with --full-refresh flag and specific tables
->>> [CLI] bundle run my_pipeline --full-refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-Update ID: [UUID]
+>>> [CLI] bundle run my_pipeline --full-refresh table1 table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][3]
+
+Update ID: [UUID][3]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -57,15 +60,16 @@ Update ID: [UUID]
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
->>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-Update ID: [UUID]
+>>> [CLI] bundle run my_pipeline --full-refresh table1 table2 --refresh table3 table4
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][4]
+
+Update ID: [UUID][4]
 
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -77,3 +81,53 @@ Update ID: [UUID]
     ]
   }
 }
+
+=== Repeated refresh flags
+
+>>> [CLI] bundle run my_pipeline --refresh table1 --refresh table:table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][5]
+
+Update ID: [UUID][5]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "body": {
+    "refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  }
+}
+
+=== Quoted table selectors
+
+>>> [CLI] bundle run my_pipeline --refresh table:`table1` `table2`
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][6]
+
+Update ID: [UUID][6]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "body": {
+    "refresh_selection": [
+      "`table1`",
+      "`table2`"
+    ]
+  }
+}
+
+=== Invalid refresh syntax is rejected before restart
+>>> musterr [CLI] bundle run my_pipeline --refresh table1,table2 --restart --no-wait
+Error: invalid argument "table1,table2" for "--refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas
+>>> musterr [CLI] bundle run my_pipeline --full-refresh table1,table2 --restart --no-wait
+Error: invalid argument "table1,table2" for "--full-refresh" flag: comma-separated selectors are no longer supported; separate selectors with spaces inside quotes, or repeat the flag; use backticks for literal commas
+>>> musterr [CLI] bundle run my_pipeline --refresh table:`table1 --restart --no-wait
+Error: invalid argument "table:`table1" for "--refresh" flag: unclosed backtick in refresh selector
+>>> musterr [CLI] bundle run my_pipeline --refresh  --restart --no-wait
+Error: invalid argument "" for "--refresh" flag: expected at least one table or file selector
+
+>>> print_requests.py //pipelines

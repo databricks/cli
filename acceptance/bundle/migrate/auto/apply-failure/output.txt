@@ -1,10 +1,12 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> update_file.py databricks.yml Test Auto-Migrate Apply Failure Test Auto-Migrate Apply Failure (updated)
 
 === Migrating deploy: migration commits (point of no return), then the job apply fails
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -36,6 +38,7 @@ ID                   Type  Language  Path
 [OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
 
 === Retry finishes the apply on the already-migrated direct state (no re-migration)
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.test_job

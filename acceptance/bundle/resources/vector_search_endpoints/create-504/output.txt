@@ -1,0 +1,89 @@
+
+=== A 504 before the endpoint is created: the create is retried
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-[UNIQUE_NAME]/default/files...
+Warn: deploying resources.vector_search_endpoints.my_endpoint: retrying after 504 Gateway Timeout from POST /api/2.0/vector-search/endpoints
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //vector-search/endpoints
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+=== A 504 after the endpoint is created: the retry finds it and uses it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-[UNIQUE_NAME]/default/files...
+Warn: deploying resources.vector_search_endpoints.my_endpoint: retrying after 504 Gateway Timeout from POST /api/2.0/vector-search/endpoints
+Warn: deploying resources.vector_search_endpoints.my_endpoint: vector search endpoint "vs-endpoint-[UNIQUE_NAME]" was created by an earlier attempt that failed with a transient error, using it
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //vector-search/endpoints
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

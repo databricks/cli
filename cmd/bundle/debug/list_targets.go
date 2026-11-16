@@ -59,7 +59,7 @@ func collectTargets(cfg *config.Root) []targetInfo {
 			result = append(result, info)
 			continue
 		}
-		info.Default = t.Default
+		info.Default = config.IsExplicitlyEnabled(t.Default)
 		info.Mode = t.Mode
 		targetEngine := rootEngine
 		if t.Bundle != nil && t.Bundle.Engine != engine.EngineNotSet {

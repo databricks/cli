@@ -404,7 +404,7 @@ func TestGetOps_PyDABs(t *testing.T) {
 		Config: config.Root{
 			Experimental: &config.Experimental{
 				PyDABs: config.PyDABs{
-					Enabled: true,
+					Enabled: new(true),
 				},
 			},
 		},

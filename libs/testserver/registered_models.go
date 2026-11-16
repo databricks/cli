@@ -77,23 +77,44 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
+	if updateRequest.NewName != "" && updateRequest.Name != "" {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "UpdateRegisteredModel Both new_name and name cannot be specified.",
+			},
+		}
+	}
+
 	// The update API ignores aliases; they are set through the alias endpoints.
 	delete(fields, "aliases")
 	applyUpdatedFields(&existing, updateRequest, fields)
 
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
-
-		// Delete the old entry and set full name to the new name
-		delete(s.RegisteredModels, fullName)
-		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
 	}
 
 	existing.UpdatedAt = nowMilli()
-	s.RegisteredModels[fullName] = existing
+	existing = s.moveRegisteredModel(fullName, existing)
 	return Response{
 		Body: existing,
 	}
+}
+
+// moveRegisteredModel stores the model under the full name its catalog, schema and name now give it,
+// keeping its versions, as UC does when the model or its parent is renamed.
+func (s *FakeWorkspace) moveRegisteredModel(oldFullName string, model catalog.RegisteredModelInfo) catalog.RegisteredModelInfo {
+	delete(s.RegisteredModels, oldFullName)
+	model.FullName = model.CatalogName + "." + model.SchemaName + "." + model.Name
+	s.RegisteredModels[model.FullName] = model
+
+	versions, ok := s.RegisteredModelVersions[oldFullName]
+	if ok {
+		delete(s.RegisteredModelVersions, oldFullName)
+		s.RegisteredModelVersions[model.FullName] = versions
+	}
+	return model
 }
 
 // RegisteredModelsGet mirrors UC, which lists a model's aliases only when include_aliases is set.

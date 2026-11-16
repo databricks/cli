@@ -1,5 +1,6 @@
 
 === Create accepts a minimal body; the server materializes the rest
+
 >>> [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
@@ -24,6 +25,7 @@
 }
 
 === update_mask=spec with a partial body (omits history_retention_duration + default_endpoint_settings)
+
 >>> [CLI] postgres update-project projects/factcheck-spec-[UNIQUE_NAME] spec --json {"spec":{"display_name":"changed","pg_version":16}}
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
@@ -63,6 +65,7 @@
 }
 
 === Set default_endpoint_settings to a non-default value (leaf mask)
+
 >>> [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
@@ -105,6 +108,7 @@
 }
 
 === update_mask=spec with a body that now omits the non-default default_endpoint_settings
+
 >>> [CLI] postgres update-project projects/factcheck-spec-[UNIQUE_NAME] spec --json {"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",

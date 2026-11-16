@@ -1,0 +1,13 @@
+bundle:
+  name: test-pipeline-test-immutable
+
+workspace:
+  sync_mode: immutable
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-test-immutable
+      libraries:
+        - file:
+            path: pipeline_file.py

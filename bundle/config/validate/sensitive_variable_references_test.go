@@ -20,8 +20,8 @@ func sensitiveVariablesBundle() *bundle.Bundle {
 	return &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
-				"secret":       {Sensitive: true},
-				"other_secret": {Sensitive: true, Default: "placeholder"},
+				"secret":       {Sensitive: new(true)},
+				"other_secret": {Sensitive: new(true), Default: "placeholder"},
 				"plain":        {Default: "placeholder"},
 			},
 			Resources: config.Resources{
@@ -109,7 +109,7 @@ func TestSensitiveVariableReferencesInfersFromSensitiveResourceField(t *testing.
 	})
 
 	assert.Empty(t, SensitiveVariableReferences().Apply(t.Context(), b))
-	assert.True(t, b.Config.Variables["plain"].Sensitive)
+	assert.True(t, config.IsExplicitlyEnabled(b.Config.Variables["plain"].Sensitive))
 	v, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("variables.plain.sensitive"))
 	require.NoError(t, err)
 	assert.Equal(t, true, v.AsAny())

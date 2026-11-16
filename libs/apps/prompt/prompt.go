@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -850,6 +851,39 @@ func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, requir
 // PromptForUCFunction shows a three-step picker for UC functions: catalog -> schema -> function.
 func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptUCResource(ctx, r, required, "UC Function", "Fetching functions...", ListFunctionsInSchema)
+}
+
+const browseCatalogsID = "__browse_catalogs__"
+
+// listSystemAIModelServices lists system.ai model services plus the browse entry; no access yields only the latter.
+func listSystemAIModelServices(ctx context.Context) (*PagedFetcher, error) {
+	items, err := ListModelServicesInSchema(ctx, "system", "ai")
+	if errors.Is(err, apierr.ErrPermissionDenied) || errors.Is(err, apierr.ErrNotFound) {
+		items, err = nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{Items: append(items, ListItem{ID: browseCatalogsID, Label: "Browse other catalogs..."})}, nil
+}
+
+// PromptForModelService opens on system.ai, since paging to the system catalog is slow in large workspaces.
+func PromptForModelService(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	f, err := getFetcherByKey(ctx, cacheKeySystemAIModels, "Fetching model services...", listSystemAIModelServices)
+	if err != nil {
+		return nil, err
+	}
+	value := browseCatalogsID
+	if len(f.Items) > 1 {
+		value, err = PromptFromList(ctx, resourceTitle("Select Model Service", r), "", f.Items, required)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if value == browseCatalogsID {
+		return promptUCResource(ctx, r, required, "Model Service", "Fetching model services...", ListModelServicesInSchema)
+	}
+	return singleValueResult(r, value), nil
 }
 
 // PromptForUCConnection shows a picker for UC connections.

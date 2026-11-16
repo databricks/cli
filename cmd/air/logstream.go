@@ -87,6 +87,8 @@ var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable; fallin
 // same flags. windowMinutes and tailLines are mutually exclusive.
 type logRequest struct {
 	runID int64
+	// runURL preserves the URL already shown by air run --watch.
+	runURL string
 	// node is the node index to fetch; node 0 always exists.
 	node int
 	// nodeSet distinguishes an explicit --node 0 from the default, so a download

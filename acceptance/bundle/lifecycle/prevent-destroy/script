@@ -12,8 +12,8 @@ update_file.py resources/pipeline.yml '      catalog: main' '      storage: "dbf
 trace errcode $CLI bundle plan >>out.txt 2>&1
 trace musterr $CLI bundle deploy -qq >>out.txt 2>&1
 
-# Changing the schema name, deploy must fail because schema will be recreated
-update_file.py resources/schema.yml 'name: test-schema' 'name: test-schema-new'
+# Changing the schema catalog, deploy must fail because schema will be recreated
+update_file.py resources/schema.yml 'catalog_name: "test-catalog"' 'catalog_name: "test-catalog-new"'
 trace errcode $CLI bundle plan >>out.txt 2>&1
 trace musterr $CLI bundle deploy -qq >>out.txt 2>&1
 

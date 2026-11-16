@@ -1,5 +1,6 @@
 
 === A model created outside the bundle, with versions 1 and 2 registered the way mlflow.register_model does
+
 >>> [CLI] registered-models create --json {"name": "test-registered-model-[UNIQUE_NAME]", "catalog_name": "main", "schema_name": "default"}
 {
   "full_name": "main.default.test-registered-model-[UNIQUE_NAME]"
@@ -16,6 +17,7 @@
 }
 
 === Bind reports the comment and aliases the deploy will set
+
 >>> musterr [CLI] bundle deployment bind model1 main.default.test-registered-model-[UNIQUE_NAME]
 Plan: update resources.registered_models.model1
 
@@ -32,6 +34,7 @@ Successfully bound registered_model with an id 'main.default.test-registered-mod
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Deploy sets them
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated registered_models.model1
@@ -80,6 +83,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Redeploy is a no-op
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -142,7 +143,7 @@ func stripYAMLComments(node *yaml.Node) {
 	}
 }
 
-var runtimeVersionRe = regexp.MustCompile(`^[0-9]+$`)
+var runtimeVersionRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[0-9]+$`) })
 
 const databricksAIPrefix = "databricks_ai_v"
 
@@ -153,7 +154,7 @@ func validateRuntimeVersion(version, source string) (string, error) {
 	if usesDatabricksAI {
 		numeric = strings.TrimPrefix(normalized, databricksAIPrefix)
 	}
-	if !runtimeVersionRe.MatchString(numeric) {
+	if !runtimeVersionRe().MatchString(numeric) {
 		return "", fmt.Errorf("unsupported client image version %q in %s: version must be an integer, optionally prefixed with databricks_ai_v", version, source)
 	}
 	if !usesDatabricksAI {

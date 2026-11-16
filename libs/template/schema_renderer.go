@@ -135,6 +135,11 @@ func RenderSchema(ctx context.Context, reader Reader, input RenderSchemaInput) (
 			if def, ok := prop["default"].(string); ok {
 				rendered, err := renderString(def)
 				if err != nil {
+					// bundle init doesn't use the default of an input that has a value, so it
+					// can't fail there. Keep the default as written instead of failing here.
+					if supplied {
+						continue
+					}
 					return nil, fmt.Errorf("property %s default: %w", propName, err)
 				}
 				prop["default"] = rendered

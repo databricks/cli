@@ -1,16 +1,18 @@
 
 === submit with a git code_source
+
 >>> [CLI] air run -f run.yaml
 Submitting experiment: submit-smoke
 Uploading [SNAPSHOT_TARBALL]...
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks air logs 555
 
 === the ai_runtime_task and additive job + experiment permission grants
+
 >>> print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
 {
   "method": "GET",
@@ -78,7 +80,7 @@ Stream logs after submission using:
         }
       }
     ],
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][0]",
     "run_name": "submit-smoke",
     "tasks": [
       {
@@ -106,16 +108,18 @@ Stream logs after submission using:
 }
 
 === submit a B300 workload with AI Runtime 6
+
 >>> [CLI] air run -f b300.yaml
 Submitting experiment: b300-submit-smoke
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks air logs 555
 
 === the B300 accelerator and runtime reach the submit payload
+
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",
@@ -129,7 +133,7 @@ Stream logs after submission using:
         }
       }
     ],
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][1]",
     "run_name": "b300-submit-smoke",
     "tasks": [
       {
@@ -155,16 +159,18 @@ Stream logs after submission using:
 }
 
 === submit an RTX6000 workload with AI Runtime 6
+
 >>> [CLI] air run -f rtx6000.yaml
 Submitting experiment: rtx6000-submit-smoke
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks air logs 555
 
 === the RTX6000 accelerator and runtime reach the submit payload
+
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",
@@ -178,7 +184,7 @@ Stream logs after submission using:
         }
       }
     ],
-    "idempotency_token": "[UUID]",
+    "idempotency_token": "[UUID][2]",
     "run_name": "rtx6000-submit-smoke",
     "tasks": [
       {

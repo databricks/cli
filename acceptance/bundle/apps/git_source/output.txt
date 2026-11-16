@@ -1,5 +1,6 @@
 
 === Validate bundle configuration
+
 >>> [CLI] bundle validate
 Name: app-git-source-[UNIQUE_NAME]
 Target: default
@@ -10,12 +11,14 @@ Workspace:
 Validation OK!
 
 === Plan bundle deployment
+
 >>> [CLI] bundle plan
 create apps.my_app
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 === Deploy bundle
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
 Created apps.my_app
@@ -33,6 +36,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Get app details and verify git_source configuration
+
 >>> [CLI] bundle summary --output json
 
 >>> [CLI] apps get [APP_NAME] --output json
@@ -47,10 +51,12 @@ You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 }
 
 === Verify no drift after deployment
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Run the app to verify it works
+
 >>> cat tmp.app-run
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
@@ -59,12 +65,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Update git_source branch and redeploy
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Verify config update was applied
+
 >>> [CLI] apps get [APP_NAME] --output json
 {
   "name": "[APP_NAME]",

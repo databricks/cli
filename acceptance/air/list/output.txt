@@ -1,10 +1,12 @@
 
 === list (text)
+
 >>> [CLI] air list
    Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
    334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
 
 === list (json)
+
 >>> [CLI] air list -o json
 {
   "v": 1,
@@ -17,18 +19,25 @@
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",
-        "is_sweep": false
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
       }
     ]
   }
 }
 
 === list --all-status (text, via AiTrainingService index)
+
 >>> [CLI] air list --all-status
    Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
    334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
 
 === list --all-status (json)
+
 >>> [CLI] air list --all-status -o json
 {
   "v": 1,
@@ -41,7 +50,12 @@
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",
-        "is_sweep": false
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
       }
     ]
   }

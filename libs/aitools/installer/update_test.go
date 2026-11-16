@@ -23,9 +23,8 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 
 	src := &mockManifestSource{manifest: testManifest()}
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no skills or plugins installed")
-	assert.Contains(t, err.Error(), "databricks aitools install")
+	assert.ErrorIs(t, err, ErrNothingInstalled)
+	assert.EqualError(t, err, "no skills or plugins installed. Run 'databricks aitools install' to install")
 }
 
 func TestUpdateLegacyInstallDetected(t *testing.T) {
@@ -38,9 +37,8 @@ func TestUpdateLegacyInstallDetected(t *testing.T) {
 
 	src := &mockManifestSource{manifest: testManifest()}
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "previous install without state tracking")
-	assert.Contains(t, err.Error(), "refresh before updating")
+	assert.EqualError(t, err, "found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
+	assert.ErrorIs(t, err, ErrLegacyInstall)
 }
 
 func TestUpdateAlreadyUpToDate(t *testing.T) {

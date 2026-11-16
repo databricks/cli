@@ -35,6 +35,7 @@ func TestBuildWorkspaceURLPathBasedResources(t *testing.T) {
 		{"clusters", "0123-456789-abc", "https://myworkspace.databricks.com/compute/clusters/0123-456789-abc"},
 		{"registered_models", "catalog.schema.model", "https://myworkspace.databricks.com/explore/data/models/catalog/schema/model"},
 		{"features", "catalog.schema.feature", "https://myworkspace.databricks.com/explore/data/features/catalog/schema/feature"},
+		{"feature_specs", "catalog.schema.spec", "https://myworkspace.databricks.com/explore/data/functions/catalog/schema/spec"},
 	}
 
 	for _, tt := range tests {
@@ -68,7 +69,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
 	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", "")
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
-	assert.ErrorContains(t, err, "alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses")
+	assert.ErrorContains(t, err, "alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, feature_specs, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses")
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
@@ -117,6 +118,7 @@ func TestWorkspaceOpenCommandCompletion(t *testing.T) {
 		"database_catalogs",
 		"database_instances",
 		"experiments",
+		"feature_specs",
 		"features",
 		"genie_spaces",
 		"instance_pools",
@@ -154,7 +156,7 @@ func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
 func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 	cmd := newWorkspaceOpenCommand()
 
-	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses.")
+	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, feature_specs, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses.")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789")
 	assert.Contains(t, cmd.Long, "databricks experimental open notebooks /Users/user@example.com/my-notebook")
 	assert.Contains(t, cmd.Long, "databricks experimental open registered_models catalog.schema.my_model")

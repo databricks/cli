@@ -38,6 +38,8 @@ type BundleDeployEvent struct {
 	// Per-resource-type metadata (counts and state-size statistics).
 	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
+	DeploymentHistory *BundleDeploymentHistory `json:"deployment_history,omitempty"`
+
 	// Usage of Python support (PyDABs). Set only when the bundle declares
 	// Python resource loaders or mutators.
 	Pydabs *BundleDeployPydabs `json:"pydabs,omitempty"`
@@ -51,6 +53,11 @@ type BundleDeployEvent struct {
 	// from a local checkout. A deployment attribute, not git metadata, so it sits
 	// beside Git rather than inside it.
 	FromWorkspaceFolder bool `json:"from_workspace_folder,omitempty"`
+
+	// Whether the bundle root is inside a git repository, regardless of
+	// `bundle.git` overrides. A pointer so that false is sent explicitly, and
+	// the field is omitted only when git detection did not run or failed.
+	InGitRepo *bool `json:"in_git_repo,omitempty"`
 
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
@@ -68,6 +75,27 @@ type BundleGitInfo struct {
 
 	// Full SHA of the HEAD commit deployed.
 	Commit string `json:"commit,omitempty"`
+}
+
+// BundleDeploymentHistory measures history recording for one deployment version.
+type BundleDeploymentHistory struct {
+	// Number of resource operations staged for this deployment version.
+	StagedOperationCount int64 `json:"staged_operation_count"`
+	// Peak number of queued resource keys, excluding the in-flight upload.
+	PeakPendingUpdateCount int64 `json:"peak_pending_update_count"`
+	// Resource operations still queued when Drain ends, excluding the active upload.
+	QueuedUpdateCountAtTimeout int64 `json:"queued_update_count_at_timeout"`
+	// Failed update-building or upload attempts.
+	// Later successful updates do not clear the count.
+	RecordingAttemptFailureCount int64 `json:"recording_attempt_failure_count"`
+	// Successful upload attempts. Repeated updates to a resource count separately.
+	RecordingAttemptSuccessCount int64 `json:"recording_attempt_success_count"`
+	// Resource operations whose final history update uploaded successfully.
+	OperationRecordingSuccessCount int64 `json:"operation_recording_success_count"`
+	// Resource operations whose final history update failed to build or upload.
+	OperationRecordingFailureCount int64 `json:"operation_recording_failure_count"`
+	// Staged resource operations with no completed final history update.
+	OperationRecordingPendingCount int64 `json:"operation_recording_pending_count"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There

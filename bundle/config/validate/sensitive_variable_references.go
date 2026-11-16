@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -105,7 +106,7 @@ func inferSensitiveVariables(b *bundle.Bundle, refs []variableReference) error {
 		for _, r := range refs {
 			// A reference to an undeclared variable is reported by variable resolution.
 			v, ok := b.Config.Variables[r.name]
-			if !ok || v.Sensitive || !isSensitiveResourceField(r.path) {
+			if !ok || config.IsExplicitlyEnabled(v.Sensitive) || !isSensitiveResourceField(r.path) {
 				continue
 			}
 			var err error
@@ -120,7 +121,7 @@ func inferSensitiveVariables(b *bundle.Bundle, refs []variableReference) error {
 
 func isSensitiveVariable(b *bundle.Bundle, name string) bool {
 	v, ok := b.Config.Variables[name]
-	return ok && v.Sensitive
+	return ok && config.IsExplicitlyEnabled(v.Sensitive)
 }
 
 // referencedVariable returns the variable a reference like "var.foo" or

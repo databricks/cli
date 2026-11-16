@@ -1,4 +1,4 @@
-title "a repository with a remote: branch, commit and origin URL come from .git\n"
+title "a repository with a remote: branch, commit and origin URL come from .git"
 mkdir withremote
 cd withremote
 cp ../databricks.yml .
@@ -8,7 +8,7 @@ trace $CLI bundle validate -o json | jq .bundle.git
 cd ..
 rm -fr withremote
 
-title "a malformed .git: the worktree root is still found, with no metadata\n"
+title "a malformed .git: the worktree root is still found, with no metadata"
 mkdir broken
 cd broken
 cp ../databricks.yml .

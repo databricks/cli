@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,8 +15,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -991,4 +994,113 @@ password = pass
 	assert.Empty(t, w.Config.Profile)
 	assert.Equal(t, "https://env.test", w.Config.Host)
 	assert.Equal(t, "env-token", w.Config.Token)
+}
+
+// hostMetadataResolution is what a host-metadata resolution saw on its context.
+type hostMetadataResolution struct {
+	logger *slog.Logger
+	err    error
+}
+
+// recordHostMetadataResolutions replaces the host-metadata resolver factory
+// with one that records the logger and the error on the context each
+// resolution receives.
+func recordHostMetadataResolutions(t *testing.T) *[]hostMetadataResolution {
+	var seen []hostMetadataResolution
+	orig := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = orig })
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return func(ctx context.Context, host string) (*config.HostMetadata, error) {
+			seen = append(seen, hostMetadataResolution{log.GetLogger(ctx), ctx.Err()})
+			return nil, nil
+		}
+	}
+	return &seen
+}
+
+// The resolution logs through the command's logger but otherwise keeps the
+// SDK's context, so the request is not tied to the command's cancellation:
+// the command's context is canceled up front and the resolver must not see it.
+func TestMustClientResolvesHostMetadataWithCommandLogger(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		env     map[string]string
+		mustAny func(cmd *cobra.Command, args []string) error
+	}{
+		{
+			name:    "workspace",
+			env:     map[string]string{"DATABRICKS_HOST": "https://ws.test", "DATABRICKS_TOKEN": "t"},
+			mustAny: MustWorkspaceClient,
+		},
+		{
+			name:    "account",
+			env:     map[string]string{"DATABRICKS_HOST": "https://accounts.cloud.databricks.test", "DATABRICKS_TOKEN": "t", "DATABRICKS_ACCOUNT_ID": "1111"},
+			mustAny: MustAccountClient,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			seen := recordHostMetadataResolutions(t)
+
+			logger := slog.New(slog.DiscardHandler)
+			ctx, cancel := context.WithCancel(log.NewContext(cmdio.MockDiscard(t.Context()), logger))
+			cancel()
+			cmd := New(SkipLoadBundle(ctx))
+			require.NoError(t, tc.mustAny(cmd, nil))
+			require.NotEmpty(t, *seen)
+			for _, r := range *seen {
+				assert.Same(t, logger, r.logger)
+				assert.NoError(t, r.err)
+			}
+		})
+	}
+}
+
+// The SDK already skips the factory when there is no host; this guards the
+// wrapper against calling it eagerly at bind time, which would create the
+// host-metadata cache directories on every client attempt.
+func TestBindHostMetadataLoggerDefersFactoryCall(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "missing.databrickscfg"))
+	factoryCalls := 0
+	orig := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = orig })
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		factoryCalls++
+		return nil
+	}
+
+	cmd := New(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
+	require.Error(t, MustWorkspaceClient(cmd, nil))
+	assert.Zero(t, factoryCalls)
+}
+
+// The SDK's factory contract lets a factory return nil to fall through to the
+// SDK's own fetch; the wrapper must honor that rather than call a nil resolver.
+func TestBindHostMetadataLoggerFallsBackToSDKFetch(t *testing.T) {
+	fetches := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			fetches++
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("{}"))
+	}))
+	t.Cleanup(server.Close)
+
+	testutil.CleanupEnvironment(t)
+	t.Setenv("DATABRICKS_HOST", server.URL)
+	t.Setenv("DATABRICKS_TOKEN", "t")
+	orig := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = orig })
+	config.DefaultHostMetadataResolverFactory = func(*config.Config) config.HostMetadataResolver {
+		return nil
+	}
+
+	cmd := New(SkipLoadBundle(cmdio.MockDiscard(t.Context())))
+	require.NoError(t, MustWorkspaceClient(cmd, nil))
+	assert.Equal(t, 1, fetches)
 }

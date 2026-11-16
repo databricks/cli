@@ -1,0 +1,13 @@
+feature_spec_setup
+
+trace $CLI bundle deploy
+
+title "Reorder the lists whose order means nothing: no changes"
+envsubst < reordered.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+
+title "Also reorder the lookup keys, which must follow the table's primary key: recreate"
+envsubst < reordered-lookup-keys.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve

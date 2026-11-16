@@ -9,6 +9,6 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 print_requests.py //cluster > out.requests.json
 
-title "Cluster should exist after bundle deployment:\n"
+title "Cluster should exist after bundle deployment:"
 CLUSTER_ID=`read_id.py test_cluster`
 $CLI clusters get "${CLUSTER_ID}" | gron.py | grep json.gcp_attributes > out.result.txt

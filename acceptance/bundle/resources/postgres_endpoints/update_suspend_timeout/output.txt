@@ -1,5 +1,6 @@
 
 === Initial deployment with suspend_timeout_duration: 300s
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
@@ -24,9 +25,11 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change suspend_timeout_duration to 600s
+
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
 === Plan and deploy
+
 >>> [CLI] bundle plan
 update postgres_endpoints.my_endpoint
 

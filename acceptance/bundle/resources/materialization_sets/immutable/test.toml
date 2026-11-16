@@ -1,10 +1,6 @@
 # Creates its own schema and deletes it on exit. Override MATSET_CATALOG where `main` is absent.
 Cloud = true
 
-# Both legs run locally. A cloud run must select the DMS= leg: the bundle deployments API
-# rejects features. and materialization_sets. as resource-type prefixes.
-EnvMatrix.DMS = ["", "true"]
-
 Ignore = [
     ".databricks",
     "databricks.yml",
@@ -20,11 +16,6 @@ New = '[UUID]'
 [[Repls]]
 Old = 'https://[a-z0-9.-]+\.cloud\.databricks\.com'
 New = '[DATABRICKS_URL]'
-
-# Fake SQL endpoint so create_table.py works against the local test server too.
-[[Server]]
-Pattern = "POST /api/2.0/sql/statements/"
-Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
 
 # The cleanup drops the source table; the fake has no delete handler for one.
 [[Server]]

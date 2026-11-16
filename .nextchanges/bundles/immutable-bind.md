@@ -1,0 +1,1 @@
+* Fix `bundle deployment bind` (and `bundle generate --bind`) failing with `no such node "resources.internal_immutable_snapshots.immutable"` when `workspace.sync_mode` is `immutable`, as reported in [#7306](https://github.com/databricks/cli/issues/7306). ([#7329](https://github.com/databricks/cli/pull/7329))

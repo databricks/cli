@@ -1,0 +1,22 @@
+
+=== hint printed on an authenticated command: one hint-shown event is uploaded
+
+>>> [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+=== hint printed on a command that resolves no auth: nothing is uploaded
+
+>>> [CLI] version
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
+
+>>> print_telemetry
+
+=== plugin installed: no hint, no event
+
+>>> [CLI] jobs list
+
+>>> print_telemetry

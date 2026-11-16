@@ -76,7 +76,7 @@ Examples:
 			skippedChanges []configsync.SkippedChange
 		)
 
-		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			ReadState:  true,
 			Build:      true,
 			AlwaysPull: true,
@@ -174,6 +174,9 @@ Examples:
 				return nil
 			},
 		})
+		if b != nil {
+			stats.InGitRepo = b.InGitRepo
+		}
 
 		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)
 	}

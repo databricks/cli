@@ -1,0 +1,35 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "compute_size": "LARGE",
+    "description": "my_app_description",
+    "name": "myappname"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myappname/update",
+  "body": {
+    "app": {
+      "compute_size": "LARGE",
+      "description": "MY_APP_DESCRIPTION",
+      "name": "myappname"
+    },
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myappname/update",
+  "body": {
+    "app": {
+      "description": "MY_APP_DESCRIPTION_2",
+      "name": "myappname"
+    },
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
+  }
+}

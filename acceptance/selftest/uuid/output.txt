@@ -1,0 +1,5 @@
+
+=== Distinct UUIDs are numbered
+first:       [UUID][0]
+second:      [UUID][1]
+first again: [UUID][0]

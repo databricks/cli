@@ -4,7 +4,7 @@ sethome "./home"
 # key that is not a recognized SDK config attribute.
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "Initial profile\n"
+title "Initial profile"
 cat "./home/.databrickscfg"
 
 # Use a fake browser that performs a GET on the authorization URL
@@ -14,5 +14,5 @@ export BROWSER="browser.py"
 title "Run auth login (no --configure-cluster or --configure-serverless)"
 trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT
 
-title "Profile after auth login — all non-auth fields should be preserved\n"
+title "Profile after auth login — all non-auth fields should be preserved"
 cat "./home/.databrickscfg"

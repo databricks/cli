@@ -118,7 +118,7 @@ func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if b.IsSourceLinkedDeployment() {
 		if path.String() == "workspace.file_path" {
-			return dyn.V(b.SyncRootPath), nil
+			return dyn.V(b.RemoteFilePath()), nil
 		}
 	}
 	// Future opportunity: if we lookup this path in both the given root
