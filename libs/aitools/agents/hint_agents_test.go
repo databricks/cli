@@ -75,7 +75,12 @@ var agentDetectEnv = map[string]string{
 // with the host's agent and hint env cleared (see testutil.SetAgentEnv).
 func setAgentEnv(t *testing.T, envVar string) {
 	testutil.SetAgentEnv(t, envVar, "1")
-	unsetEnv(t, append([]string{"CODEX_THREAD_ID"}, hintEnvVars...))
+}
+
+// writeCanonicalSkill creates a skill in the shared ~/.databricks/aitools/skills
+// store, which no agent loads by itself.
+func writeCanonicalSkill(t *testing.T, home, name string) {
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks", "aitools", "skills", name), 0o755))
 }
 
 // agentCtx returns a hint test context whose agent config dirs all resolve
