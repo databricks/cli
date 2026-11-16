@@ -47,6 +47,10 @@ Dependencies:
           # toolchain bumps as well as PRs that add or change a dependency.
           - '**/go.mod'
           - '**/go.sum'
+          # Python lock files: uv projects and uv script locks. Not '**/*.lock',
+          # which also matches deploy.lock and yarn.lock test fixtures.
+          - '**/uv.lock'
+          - '**/*.py.lock'
 
 PyDABs:
   - any:
