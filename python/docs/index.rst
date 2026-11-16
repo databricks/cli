@@ -34,6 +34,15 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.model_serving_endpoints
    databricks.bundles.models
    databricks.bundles.pipelines
+   databricks.bundles.postgres_branches
+   databricks.bundles.postgres_catalogs
+   databricks.bundles.postgres_data_apis
+   databricks.bundles.postgres_databases
+   databricks.bundles.postgres_endpoints
+   databricks.bundles.postgres_projects
+   databricks.bundles.postgres_roles
+   databricks.bundles.postgres_snapshot_schedules
+   databricks.bundles.postgres_synced_tables
    databricks.bundles.quality_monitors
    databricks.bundles.registered_models
    databricks.bundles.schemas
