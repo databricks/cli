@@ -307,3 +307,20 @@ func TestMaybeHint_UnwritableCacheSkipsHint(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
+
+func TestMaybeHint_DisabledCacheSkipsHint(t *testing.T) {
+	// The portable twin of TestMaybeHint_UnwritableCacheSkipsHint: with caching
+	// off no marker reads back, so the hint is skipped rather than repeated.
+	setAgentEnv(t, "CODEX_CI")
+	home, cacheDir := t.TempDir(), t.TempDir()
+
+	for range 2 {
+		ctx, stderr := agentCtx(t, home, cacheDir)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
+		ctx = telemetry.WithNewLogger(ctx)
+		ctx = env.Set(ctx, "CODEX_THREAD_ID", "thread-1")
+		MaybeHint(ctx, regularCmd(), noPluginRecorded)
+		assert.Empty(t, stderr.String())
+		assert.Empty(t, telemetry.BufferedEvents(ctx))
+	}
+}

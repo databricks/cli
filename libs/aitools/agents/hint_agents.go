@@ -11,7 +11,8 @@ import (
 // in the shells it spawns. Only verified variables are listed; an agent missing
 // here is throttled per machine instead (see agentInstallHint).
 var agentSessionEnv = map[string]string{
-	// Set by codex-cli (0.166.0) for every shell tool call, next to CODEX_CI.
+	// Set by codex-cli (0.166.0) for every shell tool call, next to CODEX_CI:
+	// https://github.com/openai/codex/blob/main/codex-rs/core/src/exec_env.rs
 	NameCodex: "CODEX_THREAD_ID",
 }
 
@@ -21,22 +22,24 @@ var agentSessionEnv = map[string]string{
 type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 
 // agentInstallHint returns the hint for a non-Claude registry agent. The text
-// keeps Claude Code's imperative wording (hintText) and names the agent and
-// scope, so the install acts on the calling agent and never stops at the agent
-// picker or the scope prompt when the agent's shell is a terminal.
+// is hintText plus --agents and --scope. An agent caller never sees install's
+// prompts (installPromptsSupported), so --agents is what matters: it targets
+// the calling agent even when it isn't detected on this machine, instead of
+// every detected one. --scope global only makes the non-interactive default
+// explicit.
 //
 // The hint is gated on the agent's own tooling (Agent.DatabricksTooling, with
 // pluginRecorded as the plugin source for Codex and Copilot). A plugin
-// installed with the agent's own CLI rather than `databricks aitools install`
-// leaves no trace there for those two, so their users are hinted; the
-// throttle bounds that to once per session or per TTL.
+// installed outside `databricks aitools install` (with the Codex or Copilot
+// CLI, or from Cursor itself) leaves no trace there, so those users are
+// hinted; the throttle bounds that to once per session or per TTL.
 func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 	return &agentHint{
 		installed: func(ctx context.Context) bool {
 			recorded := func() bool { return pluginRecorded(ctx, a.Name) }
 			return a.DatabricksTooling(ctx, recorded) != ToolingNone
 		},
-		text:             "Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents " + a.Name + " --scope global",
+		text:             hintText + " --agents " + a.Name + " --scope global",
 		textKind:         protos.AitoolsHintKindAgentInstallText,
 		sessionEnv:       agentSessionEnv[a.Name],
 		sessionKeyPrefix: a.Name + ":session:",

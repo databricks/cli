@@ -108,7 +108,8 @@ type agentHint struct {
 
 	// sessionKeyPrefix namespaces the session id in the throttle key, so one
 	// agent's marker never silences another agent that reuses the same id.
-	// Empty for Claude Code, whose key is the raw session id.
+	// Empty for Claude Code, whose key stays the raw session id so its
+	// throttle is unchanged.
 	sessionKeyPrefix string
 
 	// fallbackKey keys the throttle when there is no session id, so the hint
@@ -118,8 +119,8 @@ type agentHint struct {
 
 	// durableThrottle prints the text only once its throttle marker is
 	// persisted (see claimHintMarker), so an unwritable cache can't turn the
-	// hint into a line on every command. False for
-	// Claude Code, whose marker write stays best-effort.
+	// hint into a line on every command. False for Claude Code, whose marker
+	// write stays best-effort so its existing throttle behaviour is unchanged.
 	durableThrottle bool
 
 	// native returns a line the agent itself acts on (for Claude Code, its
@@ -310,8 +311,7 @@ func claudeToolingInstalled(ctx context.Context) bool {
 }
 
 // throttleKey returns the cache key throttling the hint: the session id behind
-// sessionKeyPrefix (Claude's key is the raw id and must not change), else
-// fallbackKey. "" means no throttle.
+// sessionKeyPrefix, else fallbackKey. "" means no throttle.
 func (h *agentHint) throttleKey(ctx context.Context) string {
 	if session := sessionID(ctx, h.sessionEnv); session != "" {
 		return h.sessionKeyPrefix + session
