@@ -2,13 +2,13 @@
 === Help
 
 >>> [CLI] sandbox fs cat --help
-Show file content. Use SANDBOX:/absolute/path for sandbox paths.
+Show file content. Use <sandbox-id>:/absolute/path for sandbox paths.
 
 Usage:
   databricks sandbox fs cat FILE_PATH [flags]
 
 Examples:
-  databricks sandbox fs cat my-sandbox:/tmp/file
+  databricks sandbox fs cat happy-panda-1234:/tmp/file
 
 Flags:
   -h, --help[=true|false]   help for cat

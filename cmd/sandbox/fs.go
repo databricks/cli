@@ -18,7 +18,7 @@ import (
 // and keeps its description of how directories are copied.
 const sandboxCpLong = `Copy files and directories between your local filesystem and sandboxes.
 
-  Use SANDBOX:/absolute/path for sandbox paths.
+  Use <sandbox-id>:/absolute/path for sandbox paths.
 
   Recursively copying a directory will copy all files inside directory
   at SOURCE_PATH to the directory at TARGET_PATH.
@@ -31,13 +31,13 @@ const sandboxCpLong = `Copy files and directories between your local filesystem 
 
 // sandboxFsExamples are shown in each command's help.
 var sandboxFsExamples = map[string]string{
-	"cp": `  databricks sandbox fs cp ./file my-sandbox:/tmp/file
-  databricks sandbox fs cp --overwrite ./file my-sandbox:/tmp/file
-  databricks sandbox fs cp -r my-sandbox:/tmp/dir ./local/dir`,
-	"ls":    `  databricks sandbox fs ls my-sandbox:/tmp`,
-	"cat":   `  databricks sandbox fs cat my-sandbox:/tmp/file`,
-	"mkdir": `  databricks sandbox fs mkdir my-sandbox:/tmp/a/b`,
-	"rm":    `  databricks sandbox fs rm -r my-sandbox:/tmp/dir`,
+	"cp": `  databricks sandbox fs cp ./file happy-panda-1234:/tmp/file
+  databricks sandbox fs cp --overwrite ./file happy-panda-1234:/tmp/file
+  databricks sandbox fs cp -r happy-panda-1234:/tmp/dir ./local/dir`,
+	"ls":    `  databricks sandbox fs ls happy-panda-1234:/tmp`,
+	"cat":   `  databricks sandbox fs cat happy-panda-1234:/tmp/file`,
+	"mkdir": `  databricks sandbox fs mkdir happy-panda-1234:/tmp/a/b`,
+	"rm":    `  databricks sandbox fs rm -r happy-panda-1234:/tmp/dir`,
 }
 
 func newFsCommand() *cobra.Command {
@@ -47,20 +47,20 @@ func newFsCommand() *cobra.Command {
 	cmd.GroupID = ""
 	cmd.Long = `Transfer files between your local filesystem and sandboxes.
 
-Use SANDBOX:/absolute/path for sandbox paths. SANDBOX can be an ID or a
-name from the local cache populated by sandbox list. Paths without a
-sandbox prefix refer to the local filesystem.`
+Use <sandbox-id>:/absolute/path for sandbox paths. A sandbox name from the
+local cache populated by sandbox list also works in place of the ID. Paths
+without a sandbox prefix refer to the local filesystem.`
 	for _, sub := range cmd.Commands() {
-		sub.Long = sub.Short + " Use SANDBOX:/absolute/path for sandbox paths."
+		sub.Long = sub.Short + " Use <sandbox-id>:/absolute/path for sandbox paths."
 		if sub.Name() == "cp" {
 			sub.Long = sandboxCpLong
 		}
 		sub.Example = sandboxFsExamples[sub.Name()]
 		sub.ValidArgsFunction = completeSandboxPaths(sub.ValidArgsFunction)
 	}
-	cmd.Example = `  databricks sandbox fs cp -r my-sandbox:/foo/bar ./local/output
-  databricks sandbox fs cp ./file my-sandbox:/tmp/file --overwrite
-  databricks sandbox fs ls my-sandbox:/tmp`
+	cmd.Example = `  databricks sandbox fs cp -r happy-panda-1234:/foo/bar ./local/output
+  databricks sandbox fs cp ./file happy-panda-1234:/tmp/file --overwrite
+  databricks sandbox fs ls happy-panda-1234:/tmp`
 	return cmd
 }
 
@@ -71,7 +71,7 @@ func sandboxFilerForPath(ctx context.Context, fullPath string) (filer.Filer, str
 		return f, name, err
 	}
 	if identifier == "" {
-		return nil, "", errors.New("empty sandbox identifier: use SANDBOX:/path")
+		return nil, "", errors.New("empty sandbox ID: use <sandbox-id>:/path")
 	}
 	if !path.IsAbs(name) {
 		return nil, "", fmt.Errorf("sandbox path must be absolute: use %s:/path", identifier)

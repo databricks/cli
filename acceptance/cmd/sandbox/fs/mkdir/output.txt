@@ -2,7 +2,7 @@
 === Help
 
 >>> [CLI] sandbox fs mkdir --help
-Make directories. Use SANDBOX:/absolute/path for sandbox paths.
+Make directories. Use <sandbox-id>:/absolute/path for sandbox paths.
 
 Usage:
   databricks sandbox fs mkdir DIR_PATH [flags]
@@ -11,7 +11,7 @@ Aliases:
   mkdir, mkdirs
 
 Examples:
-  databricks sandbox fs mkdir my-sandbox:/tmp/a/b
+  databricks sandbox fs mkdir happy-panda-1234:/tmp/a/b
 
 Flags:
   -h, --help[=true|false]   help for mkdir

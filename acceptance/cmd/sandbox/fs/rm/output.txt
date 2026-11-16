@@ -2,13 +2,13 @@
 === Help
 
 >>> [CLI] sandbox fs rm --help
-Remove files and directories. Use SANDBOX:/absolute/path for sandbox paths.
+Remove files and directories. Use <sandbox-id>:/absolute/path for sandbox paths.
 
 Usage:
   databricks sandbox fs rm PATH [flags]
 
 Examples:
-  databricks sandbox fs rm -r my-sandbox:/tmp/dir
+  databricks sandbox fs rm -r happy-panda-1234:/tmp/dir
 
 Flags:
   -h, --help[=true|false]        help for rm

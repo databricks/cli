@@ -2,13 +2,13 @@
 === Help
 
 >>> [CLI] sandbox fs ls --help
-Lists files. Use SANDBOX:/absolute/path for sandbox paths.
+Lists files. Use <sandbox-id>:/absolute/path for sandbox paths.
 
 Usage:
   databricks sandbox fs ls DIR_PATH [flags]
 
 Examples:
-  databricks sandbox fs ls my-sandbox:/tmp
+  databricks sandbox fs ls happy-panda-1234:/tmp
 
 Flags:
       --absolute[=true|false]   Displays absolute paths.

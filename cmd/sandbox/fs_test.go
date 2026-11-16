@@ -15,7 +15,7 @@ func TestSandboxFsRejectsInvalidRemotePaths(t *testing.T) {
 		err   string
 	}{
 		{"my-sandbox:relative", "sandbox path must be absolute: use my-sandbox:/path"},
-		{":/tmp/file", "empty sandbox identifier: use SANDBOX:/path"},
+		{":/tmp/file", "empty sandbox ID: use <sandbox-id>:/path"},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
 			ctx, _ := cmdio.NewTestContextWithStdout(t.Context())

@@ -4,7 +4,7 @@
 >>> [CLI] sandbox fs cp --help
 Copy files and directories between your local filesystem and sandboxes.
 
-  Use SANDBOX:/absolute/path for sandbox paths.
+  Use <sandbox-id>:/absolute/path for sandbox paths.
 
   Recursively copying a directory will copy all files inside directory
   at SOURCE_PATH to the directory at TARGET_PATH.
@@ -18,9 +18,9 @@ Usage:
   databricks sandbox fs cp SOURCE_PATH TARGET_PATH [flags]
 
 Examples:
-  databricks sandbox fs cp ./file my-sandbox:/tmp/file
-  databricks sandbox fs cp --overwrite ./file my-sandbox:/tmp/file
-  databricks sandbox fs cp -r my-sandbox:/tmp/dir ./local/dir
+  databricks sandbox fs cp ./file happy-panda-1234:/tmp/file
+  databricks sandbox fs cp --overwrite ./file happy-panda-1234:/tmp/file
+  databricks sandbox fs cp -r happy-panda-1234:/tmp/dir ./local/dir
 
 Flags:
       --concurrency int          number of parallel copy operations (default 8)
