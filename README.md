@@ -5,6 +5,8 @@
 
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 
+test
+
 ## Installation
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
