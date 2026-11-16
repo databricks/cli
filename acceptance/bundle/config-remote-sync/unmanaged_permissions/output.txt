@@ -6,6 +6,29 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add permissions remotely to resources that declare none
 
+=== An ACL that cannot be read is reported as skipped
+
+>>> [CLI] bundle config-remote-sync --select-ids jobs:[MY_JOB_ID] -o json
+{
+  "status": "success",
+  "skippedChanges": null
+}
+
+>>> [CLI] bundle config-remote-sync -o json
+{
+  "status": "partial",
+  "changes": [
+    "resources.jobs.my_job"
+  ],
+  "skippedChanges": [
+    {
+      "resourceKey": "resources.pipelines.my_pipeline",
+      "reason": "permissions_permission_denied",
+      "error": "Fault injected by test."
+    }
+  ]
+}
+
 === Detect and save changes
 Detected changes in 2 resource(s):
 

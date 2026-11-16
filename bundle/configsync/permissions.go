@@ -2,6 +2,7 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -13,10 +14,10 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"golang.org/x/sync/errgroup"
 )
@@ -25,25 +26,26 @@ const permissionsReadLimit = 10
 
 // addPermissionsChanges adds remote permission changes to the permissions field of their
 // resource: per principal where the config declares permissions, and as a whole for deployed
-// resources that declare none.
-func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundle, plan *deployplan.Plan) error {
+// resources that declare none. It returns the resources whose permissions could not be read.
+func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundle, plan *deployplan.Plan) ([]SkippedChange, error) {
 	for resourceKey, entry := range plan.Plan {
 		if err := addDeclaredPermissionsChanges(changes, b, resourceKey, entry); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	for resourceKey, permissions := range readUnmanagedPermissions(ctx, b, plan) {
+	unmanaged, skipped := readUnmanagedPermissions(ctx, b, plan)
+	for resourceKey, permissions := range unmanaged {
 		value, err := normalizeValue(permissions)
 		if err != nil {
-			return fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
+			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
 		}
 		changes.set(resourceKey, "permissions", &ConfigChangeDesc{
 			Operation: OperationAdd,
 			Value:     value,
 		})
 	}
-	return nil
+	return skipped, nil
 }
 
 // addDeclaredPermissionsChanges turns the plan's changes to a resource's permissions into
@@ -123,34 +125,46 @@ func (c Changes) set(resourceKey, fieldPath string, change *ConfigChangeDesc) {
 
 // readUnmanagedPermissions reads the remote permissions of deployed resources whose config
 // declares none, keyed by resource. They are imported as a whole: the current ACL cannot tell
-// grants made before the deployment from the ones made since.
-func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) map[string][]dresources.StatePermission {
+// grants made before the deployment from the ones made since. A resource whose ACL cannot be
+// read is returned as skipped, so the rest of the sync still goes through.
+func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (map[string][]dresources.StatePermission, []SkippedChange) {
 	var mu sync.Mutex
 	var g errgroup.Group
 	g.SetLimit(permissionsReadLimit)
 	result := make(map[string][]dresources.StatePermission)
+	var skipped []SkippedChange
 	currentUser := currentUserName(b)
 
 	for resourceKey, adapter := range unmanagedPermissionsAdapters(b, plan) {
 		g.Go(func() error {
 			permissions, err := readPermissions(ctx, b, adapter, resourceKey)
+			mu.Lock()
+			defer mu.Unlock()
 			if err != nil {
-				// A user who can deploy a resource is not necessarily allowed to read its ACL.
-				log.Warnf(ctx, "reading permissions of %s: %s", resourceKey, err)
+				skipped = append(skipped, permissionsReadSkip(resourceKey, err))
 				return nil
 			}
 			permissions = withoutCurrentUserManage(permissions, currentUser)
 			if len(permissions) > 0 {
-				mu.Lock()
 				result[resourceKey] = permissions
-				mu.Unlock()
 			}
 			return nil
 		})
 	}
 
 	_ = g.Wait()
-	return result
+	slices.SortFunc(skipped, func(a, b SkippedChange) int { return strings.Compare(a.ResourceKey, b.ResourceKey) })
+	return result, skipped
+}
+
+// permissionsReadSkip reports a resource whose ACL could not be read. A user who can deploy a
+// resource is not necessarily allowed to read its ACL.
+func permissionsReadSkip(resourceKey string, err error) SkippedChange {
+	reason := SkipReasonPermissionsReadFailed
+	if errors.Is(err, apierr.ErrPermissionDenied) {
+		reason = SkipReasonPermissionsPermissionDenied
+	}
+	return SkippedChange{ResourceKey: resourceKey, Reason: reason, Error: err.Error()}
 }
 
 // unmanagedPermissionsAdapters returns the permissions adapter of every deployed resource whose

@@ -25,6 +25,11 @@ $CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
   {"permission_level":"CAN_VIEW","group_name":"users"}
 ]}' > /dev/null
 
+title "An ACL that cannot be read is reported as skipped"
+fault.py "GET /api/2.0/permissions/pipelines/$pipeline_id" 403 0 2 PERMISSION_DENIED
+trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" -o json | jq '{status, skippedChanges}'
+trace $CLI bundle config-remote-sync -o json | jq '{status, changes: (.changes | keys), skippedChanges}'
+
 title "Detect and save changes"
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save

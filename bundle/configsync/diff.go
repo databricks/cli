@@ -138,8 +138,8 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
+// plan, and the resources whose remote permissions could not be read.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
@@ -159,7 +159,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 			for path, changeDesc := range entry.Changes {
 				change, err := convertPlanChange(resourceKey+"."+path, changeDesc, b.Config.Presets.NamePrefix)
 				if err != nil {
-					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
+					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change != nil {
 					resourceChanges[path] = change
@@ -174,11 +174,12 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	if err := addPermissionsChanges(ctx, changes, b, plan); err != nil {
-		return nil, err
+	skipped, err := addPermissionsChanges(ctx, changes, b, plan)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return changes, nil
+	return changes, skipped, nil
 }
 
 // convertPlanChange converts a plan change at fullPath, returning nil when there is nothing to

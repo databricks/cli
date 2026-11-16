@@ -1,6 +1,7 @@
 package configsync
 
 import (
+	"errors"
 	"maps"
 	"slices"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -256,10 +258,11 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
-// ExtractChanges must skip permissions/grants sub-resources: they are emitted as
-// their own plan keys but cannot be written back to YAML, and resolving them
-// (e.g. the server-populated object_id field, or a bundle-level permissions entry
-// with no per-resource YAML node) otherwise fails the whole sync.
+// ExtractChanges must not return permissions/grants sub-resources under their own
+// plan keys: their fields (e.g. the server-populated object_id) have no source
+// location, so resolving them would fail the whole sync. Permissions are written
+// under their parent resource instead (see TestExtractChangesDeclaredPermissions),
+// and grants are skipped.
 func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	ctx := t.Context()
 
@@ -289,7 +292,7 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 		},
 	}}
 
-	changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
+	changes, _, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
 	require.NoError(t, err)
 
 	_, hasPerms := changes["resources.jobs.my_job.permissions"]
@@ -353,7 +356,7 @@ resources:
 		},
 	}}
 
-	changes, err := ExtractChanges(t.Context(), b, plan)
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	assert.Equal(t, Changes{
 		"resources.jobs.my_job": {
@@ -381,6 +384,21 @@ func TestWithoutCurrentUserManage(t *testing.T) {
 		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
 		{Level: iam.PermissionLevelCanView, GroupName: "users"},
 	}, withoutCurrentUserManage(permissions, "me@example.com"))
+}
+
+func TestPermissionsReadSkip(t *testing.T) {
+	denied := &apierr.APIError{StatusCode: 403, ErrorCode: "PERMISSION_DENIED", Message: "no access"}
+	assert.Equal(t, SkippedChange{
+		ResourceKey: "resources.jobs.my_job",
+		Reason:      SkipReasonPermissionsPermissionDenied,
+		Error:       "no access",
+	}, permissionsReadSkip("resources.jobs.my_job", denied))
+
+	assert.Equal(t, SkippedChange{
+		ResourceKey: "resources.jobs.my_job",
+		Reason:      SkipReasonPermissionsReadFailed,
+		Error:       "unexpected object_id",
+	}, permissionsReadSkip("resources.jobs.my_job", errors.New("unexpected object_id")))
 }
 
 func TestUnmanagedPermissionsAdapters(t *testing.T) {
@@ -443,7 +461,7 @@ resources:
 		},
 	}}
 
-	changes, err := ExtractChanges(t.Context(), b, plan)
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	assert.Equal(t, Changes{
 		"resources.apps.my_app": {
