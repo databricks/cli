@@ -207,3 +207,5 @@ func TestGetSanitizedVersion(t *testing.T) {
 		})
 	}
 }
+
+// Throwaway labeler probe; this PR is not meant to merge.
