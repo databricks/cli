@@ -2,6 +2,7 @@ package serving_endpoints
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -100,4 +101,38 @@ func TestWaitProgressPrintsChangesWithoutTTY(t *testing.T) {
 
 	assert.Equal(t, "iris-1: Container image creation pending (0s)\niris-1: Provisioning (0s)\n", stderr.String())
 	assert.Empty(t, stdout.String())
+}
+
+func TestWaitProgressExplain(t *testing.T) {
+	waitErr := errors.New("failed to reach NOT_UPDATING, got UPDATE_FAILED: current status: UPDATE_FAILED")
+
+	t.Run("adds entity state and log commands", func(t *testing.T) {
+		// Shape of a real endpoint whose container build failed.
+		p := &waitProgress{endpoint: &serving.ServingEndpointDetailed{
+			Name:  "my-endpoint",
+			State: &serving.EndpointState{ConfigUpdate: serving.EndpointStateConfigUpdateUpdateFailed},
+			PendingConfig: &serving.EndpointPendingConfig{ServedEntities: []serving.ServedEntityOutput{
+				entity("bad_model-1", serving.ServedModelStateDeploymentDeploymentFailed,
+					"Container build failed. Cause: user_pip_resolution. See Build Logs for details."),
+			}},
+		}}
+		err := p.explain("my-endpoint", waitErr)
+		assert.ErrorIs(t, err, waitErr)
+		assert.Equal(t, waitErr.Error()+`
+bad_model-1: Container build failed. Cause: user_pip_resolution. See Build Logs for details.
+  build logs:  databricks serving-endpoints build-logs my-endpoint bad_model-1
+  server logs: databricks serving-endpoints logs my-endpoint bad_model-1`, err.Error())
+	})
+
+	t.Run("no poll result keeps the error", func(t *testing.T) {
+		p := &waitProgress{}
+		assert.Equal(t, waitErr, p.explain("my-endpoint", waitErr))
+	})
+
+	t.Run("entities without state keep the error", func(t *testing.T) {
+		p := &waitProgress{endpoint: &serving.ServingEndpointDetailed{
+			PendingConfig: &serving.EndpointPendingConfig{ServedEntities: []serving.ServedEntityOutput{{Name: "m-1"}}},
+		}}
+		assert.Equal(t, waitErr, p.explain("my-endpoint", waitErr))
+	})
 }
