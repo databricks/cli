@@ -1036,6 +1036,8 @@ func runTest(t *testing.T,
 		}
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
+		// The directory name does not say which variant it is; tools/coverpack.py reads the test name from here.
+		testutil.WriteFile(t, filepath.Join(coverDir, "name"), t.Name())
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 

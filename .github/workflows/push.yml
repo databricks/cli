@@ -157,8 +157,25 @@ jobs:
             git fetch --no-tags --unshallow origin
           fi
 
+      # Coverage for the CI dashboard: on Linux, for every push to main, and for a PR
+      # whose head commit message has "with-coverage" (to try a change to it). The
+      # directories are outside the checkout, so that the check for new files below
+      # does not see them. The PR's head commit is there after the fetch above.
+      - name: Decide whether to collect coverage
+        id: cover
+        if: ${{ matrix.os.name == 'linux' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ] || git log -1 --format=%B "$HEAD_SHA" | grep -q 'with-coverage'; then
+            echo "unit=$RUNNER_TEMP/cover-unit" >> "$GITHUB_OUTPUT"
+            echo "acc=$RUNNER_TEMP/cover-acc" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run tests
         env:
+          CLI_GOCOVERDIR_UNIT: ${{ steps.cover.outputs.unit }}
+          CLI_GOCOVERDIR: ${{ steps.cover.outputs.acc }}
           ENVFILTER: ${{ matrix.deployment.envfilter }}
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
@@ -183,6 +200,26 @@ jobs:
           path: test-output.json
           if-no-files-found: warn
           retention-days: 7
+
+      # Failed tests count too: their coverage is as real as that of the ones that passed.
+      - name: Pack coverage
+        if: ${{ always() && steps.cover.outputs.acc != '' }}
+        env:
+          META: '{"sha": "${{ github.event.pull_request.head.sha || github.sha }}", "os": "${{ matrix.os.name }}", "cell": "${{ matrix.deployment.name }}", "pr": ${{ github.event.pull_request.number || 'null' }}}'
+        run: |
+          uv run tools/coverpack.py --unit "${{ steps.cover.outputs.unit }}" --acc "${{ steps.cover.outputs.acc }}" \
+            --meta "$META" -o "$RUNNER_TEMP/coverage.txt.zst"
+
+      - name: Upload coverage
+        if: ${{ always() && steps.cover.outputs.acc != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-${{ matrix.os.name }}-${{ matrix.deployment.name }}
+          path: ${{ runner.temp }}/coverage.txt.zst
+          if-no-files-found: warn
+          retention-days: 7
+          # Already compressed.
+          compression-level: 0
 
       # `task test` prints a lot of output that GitHub is slow to render, so
       # surface just the failed test names on the job summary page (and in this
