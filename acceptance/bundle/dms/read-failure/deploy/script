@@ -1,0 +1,19 @@
+deploy_recorded foo
+
+title "Plan with a failed read: the job keeps the deployment id the lookup found, so nothing changes"
+fail_deployment_read
+trace $CLI bundle plan
+rm -f "$OUT_REQUESTS"
+
+title "Deploy with a failed read: no history is recorded, so no second deployment is created, and the job keeps its deployment id"
+trace update_file.py databricks.yml 'name: foo' 'name: renamed'
+fail_deployment_read
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+trace $CLI jobs get "$foo_id" | jq .settings.deployment
+
+title "The next deploy resumes history on the same deployment and stamps the new version"
+trace update_file.py databricks.yml 'name: renamed' 'name: resumed'
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+trace $CLI jobs get "$foo_id" | jq .settings.deployment
