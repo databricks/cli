@@ -2,7 +2,7 @@ package agents
 
 import (
 	"context"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -253,12 +253,14 @@ func claudeNativeHintLine(ctx context.Context) string {
 // inCI reports whether the CLI runs in CI: the generic CI variable set to
 // anything but an explicit false (some providers set it to their own name), or
 // any provider the SDK detects for its user agent (e.g. Azure Pipelines'
-// TF_BUILD, which doesn't set CI).
+// TF_BUILD, which doesn't set CI). The false values are the ones env.GetBool
+// accepts; GetBool itself can't be used because it also maps a provider name
+// to false.
 func inCI(ctx context.Context) bool {
-	if v := env.Get(ctx, ciEnv); v != "" {
-		if b, err := strconv.ParseBool(v); err != nil || b {
-			return true
-		}
+	switch strings.ToLower(env.Get(ctx, ciEnv)) {
+	case "", "0", "f", "false", "no", "off":
+	default:
+		return true
 	}
 	return useragent.CiCdProvider() != ""
 }
@@ -291,8 +293,12 @@ func isAIToolsCommand(cmd *cobra.Command) bool {
 // in its own locations (see Agent.DatabricksTooling): the databricks plugin, or
 // databricks skills in Claude's skills dirs. Skills present only in the shared
 // ~/.databricks/aitools/skills store don't count, because Claude Code doesn't
-// load them from there. Any read/parse failure reports false, so an unreadable
-// state errs toward hinting.
+// load them from there. A plugin recorded with project or local scope counts
+// only when the CLI's working directory is inside the recorded project: Claude
+// Code loads it from the directory it started in, which the CLI can't see, so
+// a session started in the project that runs `cd /tmp/x && databricks ...` is
+// hinted. Any read/parse failure reports false, so an unreadable state errs
+// toward hinting.
 func claudeToolingInstalled(ctx context.Context) bool {
 	claude := ByName(NameClaudeCode)
 	if claude == nil {
@@ -302,10 +308,9 @@ func claudeToolingInstalled(ctx context.Context) bool {
 	}
 	// Claude Code's own manifest decides, so the CLI's install record is never
 	// consulted for it.
-	tooling := claude.DatabricksTooling(ctx, func() bool { return false })
+	tooling := claude.DatabricksTooling(ctx, noRecordedPlugin)
 	if tooling == ToolingPlugin {
-		version, _ := claude.DatabricksPluginVersion(ctx)
-		log.Debugf(ctx, "Databricks plugin detected for Claude Code (version %q); skipping install hint", version)
+		log.Debugf(ctx, "Databricks plugin detected for Claude Code; skipping install hint")
 	}
 	return tooling != ToolingNone
 }

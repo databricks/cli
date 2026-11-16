@@ -93,6 +93,10 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 	return ToolingNone
 }
 
+// noRecordedPlugin is the pluginRecorded argument to DatabricksTooling for
+// callers that don't consult the CLI install record.
+func noRecordedPlugin() bool { return false }
+
 // projectDirs returns cwd and each of its parents up to the repository root,
 // the nearest directory holding .git (a file in a git worktree, so the walk
 // stops at the worktree root). Claude Code loads project skills the same way,
