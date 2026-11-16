@@ -104,7 +104,6 @@ func (r *Runner) RunBackground() {
 	cli := cmd.New(r.ctx)
 	cli.SetOut(stdoutW)
 	cli.SetErr(stderrW)
-	cli.SetArgs(r.args)
 	if r.stdinW != nil {
 		cli.SetIn(r.stdinR)
 	}
@@ -123,7 +122,7 @@ func (r *Runner) RunBackground() {
 
 	// Run command in background.
 	go func() {
-		err := root.Execute(ctx, cli)
+		err := root.Execute(ctx, cli, r.args)
 		if err != nil {
 			if r.Verbose {
 				r.Logf("Error running command: %s", err)
@@ -181,13 +180,12 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	cli := cmd.New(r.ctx)
 	cli.SetOut(&stdout)
 	cli.SetErr(&stderr)
-	cli.SetArgs(r.args)
 
 	if r.Verbose {
 		r.Logf("  args: %s", strings.Join(r.args, ", "))
 	}
 
-	err := root.Execute(r.ctx, cli)
+	err := root.Execute(r.ctx, cli, r.args)
 	if err != nil {
 		if r.Verbose {
 			r.Logf(" error: %s", err)
