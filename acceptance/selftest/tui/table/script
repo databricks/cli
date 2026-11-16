@@ -1,0 +1,3 @@
+title "Flag validation runs before the TTY is needed"
+errcode trace $CLI selftest tui table --cols 0
+errcode trace $CLI selftest tui table --rows -1

@@ -1,0 +1,7 @@
+
+=== Unknown field type is rejected
+
+>>> [CLI] selftest tui huh --field bogus
+Error: --field must be one of input, select, confirm, multiselect, got "bogus"
+
+Exit code: 1

@@ -1,0 +1,5 @@
+title "Piped stdout and stderr never get color"
+trace $CLI selftest tui profile
+
+title "NO_COLOR is reported in the env section"
+trace NO_COLOR=1 $CLI selftest tui profile
