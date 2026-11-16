@@ -17,7 +17,7 @@ class GcpPubsub:
 
     subscription_name: VariableOrOptional[str] = None
     """
-    The Pub/Sub subscription name in the format projects/{project}/subscriptions/{subscription name}.
+    The Pub/Sub subscription name in the format `projects/{project}/subscriptions/{subscription name}`.
     Only required for provided_pubsub.
     """
 
@@ -34,7 +34,7 @@ class GcpPubsubDict(TypedDict, total=False):
 
     subscription_name: VariableOrOptional[str]
     """
-    The Pub/Sub subscription name in the format projects/{project}/subscriptions/{subscription name}.
+    The Pub/Sub subscription name in the format `projects/{project}/subscriptions/{subscription name}`.
     Only required for provided_pubsub.
     """
 

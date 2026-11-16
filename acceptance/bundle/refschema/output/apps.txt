@@ -26,6 +26,9 @@ resources.apps.*.active_deployment.health_check	*apps.AppHealthCheck	ALL
 resources.apps.*.active_deployment.health_check.path	string	ALL
 resources.apps.*.active_deployment.health_check.timeout	*duration.Duration	ALL
 resources.apps.*.active_deployment.mode	apps.AppDeploymentMode	ALL
+resources.apps.*.active_deployment.scan_omitted_count_is_lower_bound	bool	ALL
+resources.apps.*.active_deployment.scan_omitted_findings_count	int	ALL
+resources.apps.*.active_deployment.scan_status	apps.AppDeploymentScanStatus	ALL
 resources.apps.*.active_deployment.source_code_path	string	ALL
 resources.apps.*.active_deployment.status	*apps.AppDeploymentStatus	ALL
 resources.apps.*.active_deployment.status.message	string	ALL
@@ -168,6 +171,9 @@ resources.apps.*.pending_deployment.health_check	*apps.AppHealthCheck	ALL
 resources.apps.*.pending_deployment.health_check.path	string	ALL
 resources.apps.*.pending_deployment.health_check.timeout	*duration.Duration	ALL
 resources.apps.*.pending_deployment.mode	apps.AppDeploymentMode	ALL
+resources.apps.*.pending_deployment.scan_omitted_count_is_lower_bound	bool	ALL
+resources.apps.*.pending_deployment.scan_omitted_findings_count	int	ALL
+resources.apps.*.pending_deployment.scan_status	apps.AppDeploymentScanStatus	ALL
 resources.apps.*.pending_deployment.source_code_path	string	ALL
 resources.apps.*.pending_deployment.status	*apps.AppDeploymentStatus	ALL
 resources.apps.*.pending_deployment.status.message	string	ALL

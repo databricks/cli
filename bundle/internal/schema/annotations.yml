@@ -289,18 +289,6 @@ resources:
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
       "$fields":
-        "app_status":
-          "description": |-
-            PLACEHOLDER
-        "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "compute_size":
-          "description": |-
-            PLACEHOLDER
-        "compute_status":
-          "description": |-
-            PLACEHOLDER
         "config":
           "description": |-
             PLACEHOLDER
@@ -321,98 +309,13 @@ resources:
                 "value_from":
                   "description": |-
                     PLACEHOLDER
-        "effective_budget_policy_id":
-          "description": |-
-            PLACEHOLDER
         "effective_resources":
           "$fields":
-            "app":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "database":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "database_name":
-                  "description": |-
-                    PLACEHOLDER
-                "instance_name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "experiment":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "experiment_id":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
             "genie_space":
-              "description": |-
-                PLACEHOLDER
               "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "space_id":
-                  "description": |-
-                    PLACEHOLDER
-            "job":
-              "description": |-
-                PLACEHOLDER
-            "postgres":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "branch":
-                  "description": |-
-                    PLACEHOLDER
-                "database":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "secret":
-              "description": |-
-                PLACEHOLDER
-            "serving_endpoint":
-              "description": |-
-                PLACEHOLDER
-            "sql_warehouse":
-              "description": |-
-                PLACEHOLDER
-            "uc_securable":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_full_name":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_type":
-                  "description": |-
-                    PLACEHOLDER
-        "effective_usage_policy_id":
-          "description": |-
-            PLACEHOLDER
         "git_source":
           "description": |-
             Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
@@ -421,12 +324,6 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "oauth2_app_client_id":
-          "description": |-
-            PLACEHOLDER
-        "oauth2_app_integration_id":
-          "description": |-
-            PLACEHOLDER
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -457,27 +354,6 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "service_principal_client_id":
-          "description": |-
-            PLACEHOLDER
-        "service_principal_id":
-          "description": |-
-            PLACEHOLDER
-        "service_principal_name":
-          "description": |-
-            PLACEHOLDER
-        "source_code_path":
-          "description": |-
-            PLACEHOLDER
-        "telemetry_export_destinations":
-          "description": |-
-            PLACEHOLDER
-        "usage_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "user_api_scopes":
-          "description": |-
-            PLACEHOLDER
     "catalogs":
       "description": |-
         PLACEHOLDER
@@ -770,15 +646,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "create_database_if_not_exists":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "uid":
-          "description": |-
-            PLACEHOLDER
     "database_instances":
       "description": |-
         PLACEHOLDER
@@ -2093,13 +1963,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "data_synchronization_status":
-          "$fields":
-            "last_sync":
-              "$fields":
-                "delta_table_sync_info":
-                  "description": |-
-                    PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

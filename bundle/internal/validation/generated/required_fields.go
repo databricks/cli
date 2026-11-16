@@ -141,6 +141,7 @@ var RequiredFields = map[string][]string{
 	"resources.features.*.lifecycle.depends_on[*]":                              {"resource"},
 	"resources.features.*.source.delta_table_source":                            {"full_name"},
 	"resources.features.*.source.feature_view_source.feature_references[*]":     {"feature"},
+	"resources.features.*.source.iceberg_table_source":                          {"full_name"},
 	"resources.features.*.source.kafka_source":                                  {"name"},
 	"resources.features.*.source.kafka_source.entity_column_identifiers[*]":     {"variant_expr_path"},
 	"resources.features.*.source.kafka_source.timeseries_column_identifier":     {"variant_expr_path"},
