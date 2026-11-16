@@ -40,6 +40,12 @@ func TestCheckSingleStatement(t *testing.T) {
 		{name: "comment line after semi", input: "SELECT 1;\n-- end\n", wantErr: false},
 		{name: "comment then second statement", input: "SELECT 1; -- x\nSELECT 2", wantErr: true},
 		{name: "block comment then second statement", input: "SELECT 1; /* x */ SELECT 2", wantErr: true},
+		{name: "CR ends line comment after semi", input: "SELECT 1; -- x\rSELECT 2", wantErr: true},
+		{name: "CR ends line comment before semi", input: "SELECT 1 -- x\r; SELECT 2", wantErr: true},
+		{name: "repeated trailing semicolons", input: "SELECT 1;;", wantErr: false},
+		{name: "spaced trailing semicolons", input: "SELECT 1; ;", wantErr: false},
+		{name: "semicolon after trailing comment", input: "SELECT 1; -- a\n;", wantErr: false},
+		{name: "form feed after semi", input: "SELECT 1;\f", wantErr: false},
 
 		{name: "leading whitespace", input: "  ;", wantErr: false},
 		{name: "empty input", input: "", wantErr: false},

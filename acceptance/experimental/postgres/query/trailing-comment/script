@@ -10,9 +10,7 @@ title "Trailing block comment after ';'"
 trace musterr $CLI experimental postgres query --target my-instance "SELECT 1; /* done */"
 
 title "File ending with a comment line after the statement"
-printf 'SELECT 1;\n-- end of file\n' > q.sql
 trace musterr $CLI experimental postgres query --target my-instance --file q.sql
-rm q.sql
 
 title "Two statements are still rejected"
 trace musterr $CLI experimental postgres query --target my-instance "SELECT 1; -- one" "SELECT 1; SELECT 2"

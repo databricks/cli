@@ -12,8 +12,8 @@ import (
 var errMultipleStatements = errors.New("input contains multiple statements (a ';' separates two or more statements)")
 
 // checkSingleStatement walks sql and returns errMultipleStatements if a
-// statement-terminating ';' is followed by anything other than whitespace
-// and comments.
+// statement-terminating ';' is followed by anything other than whitespace,
+// comments and further ';'. Postgres drops the empty statements those form.
 //
 // The scanner ignores ';' inside:
 //   - single-quoted strings ('a;b', SQL standard doubled-quote escape)
@@ -27,22 +27,21 @@ var errMultipleStatements = errors.New("input contains multiple statements (a ';
 // a real Postgres tokenizer.
 func checkSingleStatement(sql string) error {
 	s := sql
-	// Trim trailing whitespace once so a single trailing ';' is allowed.
-	end := len(strings.TrimRight(s, " \t\r\n"))
+	end := len(s)
 
+	terminated := false
 	i := 0
 	for i < end {
 		c := s[i]
 
+		if terminated && !isSQLSpace(c) && c != ';' && !startsComment(s, i, end) {
+			return errMultipleStatements
+		}
+
 		switch c {
 		case ';':
-			// A ';' followed only by whitespace and comments terminates the
-			// sole statement; Postgres does not count the empty remainder
-			// as another statement.
-			if !onlyWhitespaceAndComments(s, i+1, end) {
-				return errMultipleStatements
-			}
-			return nil
+			terminated = true
+			i++
 
 		case '\'':
 			// Single-quoted string. SQL standard escape is '' (doubled).
@@ -105,26 +104,21 @@ func scanQuoted(s string, start, end int, quote byte) int {
 	return end
 }
 
-func onlyWhitespaceAndComments(s string, start, end int) bool {
-	i := start
-	for i < end {
-		switch {
-		case s[i] == ' ' || s[i] == '\t' || s[i] == '\r' || s[i] == '\n':
-			i++
-		case s[i] == '-' && i+1 < end && s[i+1] == '-':
-			i = scanLineComment(s, i, end)
-		case s[i] == '/' && i+1 < end && s[i+1] == '*':
-			i = scanBlockComment(s, i, end)
-		default:
-			return false
-		}
-	}
-	return true
+// isSQLSpace reports whether c is whitespace to the Postgres lexer.
+func isSQLSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v'
 }
 
+// startsComment reports whether a "--" or "/*" comment starts at s[i].
+func startsComment(s string, i, end int) bool {
+	return i+1 < end && ((s[i] == '-' && s[i+1] == '-') || (s[i] == '/' && s[i+1] == '*'))
+}
+
+// scanLineComment advances past a "--" comment opened at s[start]. Like the
+// Postgres lexer, it ends the comment at either '\n' or '\r'.
 func scanLineComment(s string, start, end int) int {
 	i := start + 2
-	for i < end && s[i] != '\n' {
+	for i < end && s[i] != '\n' && s[i] != '\r' {
 		i++
 	}
 	return i
