@@ -1,0 +1,2 @@
+RecordRequests = true
+Env.BUNDLE_VAR_api_header = "dummy-header"
