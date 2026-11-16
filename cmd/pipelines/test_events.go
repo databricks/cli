@@ -154,6 +154,8 @@ type testRun struct {
 	fatalError string
 	// verdictError is the service's verdict that tests failed, if the update reported it.
 	verdictError string
+	// noTestsMessage is printed when no tests were collected. It names what was run.
+	noTestsMessage string
 }
 
 // testVerdictErrorPrefix starts the message of the error by which the service reports that tests
@@ -172,7 +174,7 @@ func isTestVerdict(e *pipelines.ErrorDetail) bool {
 }
 
 func newTestRun() *testRun {
-	return &testRun{seen: map[string]bool{}, byID: map[string]*testCaseResult{}}
+	return &testRun{seen: map[string]bool{}, byID: map[string]*testCaseResult{}, noTestsMessage: noTestsCollectedMessage(nil, nil)}
 }
 
 // add records an event and returns the case it gave a final outcome to, if any.

@@ -231,6 +231,15 @@ func (t testTarget) shortTestID(id string) string {
 	return relativeTestID(t.projectFolder, id)
 }
 
+// shortSelections returns the selections as shortTestID shows them.
+func (t testTarget) shortSelections() []string {
+	var short []string
+	for _, s := range t.selections {
+		short = append(short, t.shortTestID(s))
+	}
+	return short
+}
+
 func (t testTarget) printHeader(out io.Writer, updateID string) {
 	if t.key != "" {
 		fmt.Fprintf(out, "Pipeline: %s (%s)\n", t.key, t.pipelineID)
@@ -509,6 +518,7 @@ update starts. To stop the update, run 'pipelines stop'.`,
 		}
 
 		run := newTestRun()
+		run.noTestsMessage = noTestsCollectedMessage(target.shortSelections(), pytestArgs)
 		printer := &testProgressPrinter{out: out, shortID: target.shortTestID}
 		state, err := waitForTestUpdate(ctx, target.w, target.pipelineID, updateID, run, printer)
 		if err != nil {
