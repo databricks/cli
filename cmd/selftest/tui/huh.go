@@ -1,0 +1,79 @@
+package tui
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/spf13/cobra"
+)
+
+func newHuhCmd() *cobra.Command {
+	var field string
+	cmd := &cobra.Command{
+		Use:   "huh",
+		Short: "Run one huh form field with the appkit theme",
+		Args:  cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch field {
+			case "input", "select", "confirm", "multiselect":
+				return nil
+			default:
+				return fmt.Errorf("--field must be one of input, select, confirm, multiselect, got %q", field)
+			}
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			theme := prompt.AppkitTheme()
+			features := databricksFeatures[:5]
+			options := make([]huh.Option[string], 0, len(features))
+			for _, name := range features {
+				options = append(options, huh.NewOption(name, name))
+			}
+
+			var (
+				text   string
+				choice string
+				yes    bool
+				picked []string
+				group  huh.Field
+			)
+			switch field {
+			case "input":
+				group = huh.NewInput().Title("Enter a value").Value(&text)
+			case "select":
+				group = huh.NewSelect[string]().Title("Pick an item").Options(options...).Value(&choice)
+			case "confirm":
+				group = huh.NewConfirm().Title("Continue?").Value(&yes)
+			case "multiselect":
+				group = huh.NewMultiSelect[string]().Title("Pick items").Options(options...).Value(&picked)
+			}
+
+			if err := huh.NewForm(huh.NewGroup(group)).WithTheme(theme).Run(); err != nil {
+				return err
+			}
+
+			var answer string
+			switch field {
+			case "input":
+				answer = text
+			case "select":
+				answer = choice
+			case "confirm":
+				answer = strconv.FormatBool(yes)
+			case "multiselect":
+				answer = fmt.Sprint(picked)
+			}
+			cmdio.LogString(ctx, "answer: "+answer)
+
+			r, _ := cmdio.NewRenderer(ctx, cmd.ErrOrStderr())
+			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", r.HasDarkBackground()))
+			cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%+v", theme.Focused.BlurredButton.GetForeground()))
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&field, "field", "input", "field type: input, select, confirm or multiselect")
+	return cmd
+}

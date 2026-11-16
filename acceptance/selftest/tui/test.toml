@@ -1,0 +1,12 @@
+# Pin the color and terminal env so the profile output does not depend on the host.
+Env.TERM = "xterm-256color"
+Env.COLORTERM = ""
+Env.CLICOLOR = ""
+Env.CLICOLOR_FORCE = ""
+Env.NO_COLOR = ""
+Env.CI = ""
+Env.TERM_PROGRAM = ""
+Env.WT_SESSION = ""
+
+# Only the non-interactive paths run here. The keys, table and huh commands need a
+# TTY for their live behaviour, which is checked by hand under a PTY.

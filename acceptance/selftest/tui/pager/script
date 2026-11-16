@@ -1,0 +1,11 @@
+title "Non-interactive output uses the non-paged renderer"
+trace $CLI selftest tui pager --items 3
+
+title "An injected error after 2 rows is returned"
+errcode trace $CLI selftest tui pager --items 5 --fail-after 2
+
+title "--fail-after 0 fails on the first Next"
+errcode trace $CLI selftest tui pager --items 5 --fail-after 0
+
+title "Negative --items is rejected"
+errcode trace $CLI selftest tui pager --items -1

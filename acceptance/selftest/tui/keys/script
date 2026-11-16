@@ -1,0 +1,8 @@
+title "Each decoded key is printed; two Ctrl+C exit"
+printf 'a\x03\x03' | trace $CLI selftest tui keys --timeout 5s 2>&1 | contains.py 'key="a" type=-1 runes="a"' 'key="ctrl+c" type=3'
+
+title "--raw prints the bytes read from stdin"
+printf 'ab\x03\x03' | trace $CLI selftest tui keys --raw 2>&1
+
+title "--timeout exits without any input"
+sleep 2 | trace $CLI selftest tui keys --timeout 1s 2>&1 | contains.py '!key='

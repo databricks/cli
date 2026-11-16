@@ -1,0 +1,5 @@
+
+=== --duration splits the total across the spinner messages
+
+>>> [CLI] selftest tui spinner --duration 500ms
+Spinner test complete

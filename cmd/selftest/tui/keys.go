@@ -1,0 +1,150 @@
+package tui
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/spf13/cobra"
+	"golang.org/x/term"
+)
+
+// keysExitCtrlC is the number of Ctrl+C presses that end the keys program.
+// A single press is recorded like any other key so it can be inspected.
+const keysExitCtrlC = 2
+
+// keysModel prints one line per key message. It draws nothing itself so the
+// output stays a plain log of decoded input. Lines are written directly from
+// Update: tea.Println runs its commands concurrently, so the order is not kept.
+type keysModel struct {
+	out   io.Writer
+	ctrlC int
+}
+
+func (m *keysModel) Init() tea.Cmd { return nil }
+
+func (m *keysModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return m, nil
+	}
+	line := fmt.Sprintf("key=%q type=%d runes=%q alt=%t paste=%t",
+		key.String(), key.Type, string(key.Runes), key.Alt, key.Paste)
+	fmt.Fprintln(m.out, line)
+	if key.Type == tea.KeyCtrlC {
+		m.ctrlC++
+		if m.ctrlC >= keysExitCtrlC {
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m *keysModel) View() string { return "" }
+
+func newKeysCmd() *cobra.Command {
+	var (
+		raw     bool
+		timeout time.Duration
+	)
+	cmd := &cobra.Command{
+		Use:   "keys",
+		Short: "Print each key message bubbletea decodes from stdin",
+		Long: `Print one line per key message that bubbletea decodes from stdin.
+
+Uses the same tea.Program options as cmdio's prompts, so the output shows how
+this terminal encodes Esc, Alt+x, Shift+Enter, Ctrl+H vs Backspace, AltGr and
+bracketed paste. Exits on two Ctrl+C presses or after --timeout.
+
+With --raw, bubbletea is bypassed: stdin is put in raw mode and each chunk of
+bytes read is printed as hex and quoted text.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			in := cmd.InOrStdin()
+			out := cmd.ErrOrStderr()
+			if raw {
+				return runRawKeys(cmd.Context(), in, out, timeout)
+			}
+			p := tea.NewProgram(&keysModel{out: out},
+				tea.WithInput(in),
+				tea.WithOutput(out),
+				tea.WithoutSignalHandler(),
+			)
+			if timeout > 0 {
+				timer := time.AfterFunc(timeout, p.Quit)
+				defer timer.Stop()
+			}
+			_, err := p.Run()
+			return err
+		},
+	}
+	cmd.Flags().BoolVar(&raw, "raw", false, "bypass bubbletea and print the raw bytes read from stdin")
+	cmd.Flags().DurationVar(&timeout, "timeout", 0, "exit after this duration (0 waits for Ctrl+C)")
+	return cmd
+}
+
+// runRawKeys reads stdin in raw mode without bubbletea. The reader goroutine
+// may stay blocked on Read after return; the process exits right after the
+// command finishes, so that is harmless.
+func runRawKeys(ctx context.Context, in io.Reader, out io.Writer, timeout time.Duration) error {
+	if f, ok := in.(*os.File); ok && cmdio.IsInputTTY(ctx) {
+		state, err := term.MakeRaw(int(f.Fd()))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = term.Restore(int(f.Fd()), state) }()
+	}
+
+	chunks := make(chan []byte)
+	readErr := make(chan error, 1)
+	go func() {
+		buf := make([]byte, 256)
+		for {
+			n, err := in.Read(buf)
+			if n > 0 {
+				chunk := make([]byte, n)
+				copy(chunk, buf[:n])
+				chunks <- chunk
+			}
+			if err != nil {
+				readErr <- err
+				return
+			}
+		}
+	}()
+
+	var timeoutC <-chan time.Time
+	if timeout > 0 {
+		timer := time.NewTimer(timeout)
+		defer timer.Stop()
+		timeoutC = timer.C
+	}
+
+	ctrlC := 0
+	for {
+		select {
+		case chunk := <-chunks:
+			fmt.Fprintf(out, "raw bytes=% x text=%q\n", chunk, string(chunk))
+			for _, b := range chunk {
+				if b == 0x03 {
+					ctrlC++
+				}
+			}
+			if ctrlC >= keysExitCtrlC {
+				return nil
+			}
+		case err := <-readErr:
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
+		case <-timeoutC:
+			return nil
+		}
+	}
+}

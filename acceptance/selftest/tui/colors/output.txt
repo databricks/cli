@@ -1,0 +1,62 @@
+
+=== Default stream is stderr, so stdout is empty
+
+>>> [CLI] selftest tui colors
+red:     the quick brown fox jumps over the lazy dog
+green:   the quick brown fox jumps over the lazy dog
+yellow:  the quick brown fox jumps over the lazy dog
+blue:    the quick brown fox jumps over the lazy dog
+cyan:    the quick brown fox jumps over the lazy dog
+hiblack: the quick brown fox jumps over the lazy dog
+hiblue:  the quick brown fox jumps over the lazy dog
+
+=== --stream stdout writes the swatches to stdout
+red:     the quick brown fox jumps over the lazy dog
+green:   the quick brown fox jumps over the lazy dog
+yellow:  the quick brown fox jumps over the lazy dog
+blue:    the quick brown fox jumps over the lazy dog
+cyan:    the quick brown fox jumps over the lazy dog
+hiblack: the quick brown fox jumps over the lazy dog
+hiblue:  the quick brown fox jumps over the lazy dog
+
+=== --stream stderr writes to stderr
+red:     the quick brown fox jumps over the lazy dog
+green:   the quick brown fox jumps over the lazy dog
+yellow:  the quick brown fox jumps over the lazy dog
+blue:    the quick brown fox jumps over the lazy dog
+cyan:    the quick brown fox jumps over the lazy dog
+hiblack: the quick brown fox jumps over the lazy dog
+hiblue:  the quick brown fox jumps over the lazy dog
+
+=== Piped output has no escape codes, even with --lipgloss
+
+>>> NO_COLOR=1 [CLI] selftest tui colors --lipgloss
+red:     the quick brown fox jumps over the lazy dog
+green:   the quick brown fox jumps over the lazy dog
+yellow:  the quick brown fox jumps over the lazy dog
+blue:    the quick brown fox jumps over the lazy dog
+cyan:    the quick brown fox jumps over the lazy dog
+hiblack: the quick brown fox jumps over the lazy dog
+hiblue:  the quick brown fox jumps over the lazy dog
+truecolor:                                                                 
+256-color:                                                                 
+
+=== --lipgloss prints both swatch rows
+
+>>> [CLI] selftest tui colors --lipgloss
+red:     the quick brown fox jumps over the lazy dog
+green:   the quick brown fox jumps over the lazy dog
+yellow:  the quick brown fox jumps over the lazy dog
+blue:    the quick brown fox jumps over the lazy dog
+cyan:    the quick brown fox jumps over the lazy dog
+hiblack: the quick brown fox jumps over the lazy dog
+hiblue:  the quick brown fox jumps over the lazy dog
+truecolor:                                                                 
+256-color:                                                                 
+
+=== Unknown stream is rejected
+
+>>> [CLI] selftest tui colors --stream file
+Error: --stream must be stdout or stderr, got "file"
+
+Exit code: 1
