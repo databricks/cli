@@ -93,4 +93,13 @@ jobs:
           run_id=$(jq -er '.workflow_run_id | select(type == "number")' "$RUNNER_TEMP/review-run.json")
           echo "[Review run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
           echo 'To request another review, comment `/review` on the PR.' >> "$GITHUB_STEP_SUMMARY"
-          gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status
+          # A newly dispatched run can briefly return 404 before GitHub indexes it.
+          for attempt in {1..12}; do
+            if gh run view "$run_id" --repo databricks-eng/eng-dev-ecosystem --json databaseId >/dev/null 2>&1; then
+              gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Dispatched review $run_id did not become visible within one minute."
+          exit 1
