@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"maps"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -29,6 +30,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -365,6 +367,20 @@ func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
 	return strings.Join(append(parts, "--resume", updateID), " ")
 }
 
+// withActiveUpdateHint adds the next steps to a Start Update error that says the pipeline already
+// has an active update. The update ID is not read from the message, which is the service's text.
+func withActiveUpdateHint(cmd *cobra.Command, t testTarget, err error) error {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode != http.StatusConflict {
+		return err
+	}
+	hint := "Wait for it to finish, or pass its update ID to --resume to read its results"
+	if t.key != "" {
+		hint = fmt.Sprintf("Wait for it to finish, run '%s stop %s' to cancel it, or pass its update ID to --resume to read its results", cmd.Parent().CommandPath(), shellquote.BashArg(t.key))
+	}
+	return fmt.Errorf("%w\n%s", err, hint)
+}
+
 // notifyTestInterrupt returns a context that the first Ctrl+C or SIGTERM cancels; the CLI root
 // installs no signal handler of its own. It stops listening on that first signal, so that a second
 // one ends the process, as notifyInterrupt in cmd/air/run.go does. The caller must call stop.
@@ -617,7 +633,7 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 			var err error
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return err
+				return withActiveUpdateHint(cmd, target, err)
 			}
 		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
 			return err
@@ -640,10 +656,11 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		state, err := waitForTestUpdate(waitCtx, target.w, target.pipelineID, updateID, run, printer, timedOut)
 		if err != nil {
 			isTimeout := errors.Is(err, errTestWaitTimeout)
-			if !isTimeout && waitCtx.Err() == nil {
-				return err
-			}
 			resumeCmd := target.resumeCommand(cmd, updateID)
+			if !isTimeout && waitCtx.Err() == nil {
+				// The SDK client already retries transient errors, so the read failed for good.
+				return fmt.Errorf("%w; the update keeps running, to get its results run: %s", err, resumeCmd)
+			}
 			if isTimeout {
 				return fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, timeout, resumeCmd)
 			}
@@ -651,6 +668,10 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		}
 		incompleteReason := run.incompleteReason(state)
 		renderTestResult(out, run, incompleteReason, target.shortTestID)
+		// Events can still arrive after the update ends, so the results can be read again later.
+		if incompleteReason != "" {
+			fmt.Fprintf(out, "To read the results again, run: %s\n", target.resumeCommand(cmd, updateID))
+		}
 		renderTestSummaryLine(out, run, incompleteReason)
 		return testRunError(updateID, state, run, incompleteReason)
 	}

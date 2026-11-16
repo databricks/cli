@@ -3,6 +3,7 @@
 
 >>> musterr [CLI] pipelines test --pipeline-id [UUID][0]
 Error: An active update '[UUID][1]' already exists for pipeline '[UUID][2]'.
+Wait for it to finish, or pass its update ID to --resume to read its results
 
 >>> print_requests.py //updates
 {

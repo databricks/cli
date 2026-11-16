@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/testserver"
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 
@@ -376,4 +377,19 @@ func TestCheckTestUpdateWithoutTestOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NoError(t, checkTestUpdate(t.Context(), w, "p1", updateID))
+}
+
+func TestWithActiveUpdateHint(t *testing.T) {
+	parent := &cobra.Command{Use: "pipelines"}
+	cmd := &cobra.Command{Use: "test"}
+	parent.AddCommand(cmd)
+	conflict := &apierr.APIError{StatusCode: http.StatusConflict, ErrorCode: "RESOURCE_CONFLICT", Message: "An active update already exists."}
+
+	err := withActiveUpdateHint(cmd, testTarget{key: "my_pipeline"}, conflict)
+	assert.ErrorIs(t, err, conflict)
+	assert.EqualError(t, err, "An active update already exists.\nWait for it to finish, run 'pipelines stop my_pipeline' to cancel it, or pass its update ID to --resume to read its results")
+
+	// Other errors are returned as they are.
+	other := &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "bad request"}
+	assert.Same(t, other, withActiveUpdateHint(cmd, testTarget{key: "my_pipeline"}, other))
 }
