@@ -1,1 +1,0 @@
-* Pipelines now wait for the grants and permissions of the resources they refer to or list in `lifecycle.depends_on`, so a pipeline whose run_as principal is granted access to its schema in the same bundle no longer fails with `User does not have CREATE TABLE on Schema`.
