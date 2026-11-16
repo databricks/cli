@@ -32,6 +32,8 @@ type waitProgress struct {
 		Close()
 	}
 	last string
+	// endpoint is the most recent poll result, used to explain a failed wait.
+	endpoint *serving.ServingEndpointDetailed
 }
 
 func newWaitProgress(ctx context.Context) *waitProgress {
@@ -43,6 +45,7 @@ func newWaitProgress(ctx context.Context) *waitProgress {
 }
 
 func (p *waitProgress) report(ctx context.Context, i *serving.ServingEndpointDetailed) {
+	p.endpoint = i
 	msg := endpointProgressMessage(i)
 	line := fmt.Sprintf("%s (%s)", msg, time.Since(p.start).Truncate(time.Second))
 	if p.spinner != nil {
@@ -67,35 +70,67 @@ func (p *waitProgress) close() {
 	}
 }
 
+// explain adds what the last poll said about each served entity to a failed or
+// timed-out wait, with the commands that show its logs. The generated error is
+// only "failed to reach NOT_UPDATING, got UPDATE_FAILED", even when an entity's
+// state already names the cause (for example a pip resolution failure), and in
+// a terminal the spinner that showed that state is gone by then.
+func (p *waitProgress) explain(endpointName string, err error) error {
+	var details []string
+	for _, e := range servedEntities(p.endpoint) {
+		if e.Name == "" || e.State == nil {
+			continue
+		}
+		state := e.State.DeploymentStateMessage
+		if state == "" {
+			state = string(e.State.Deployment)
+		}
+		details = append(details,
+			fmt.Sprintf("%s: %s", e.Name, state),
+			fmt.Sprintf("  build logs:  databricks serving-endpoints build-logs %s %s", endpointName, e.Name),
+			fmt.Sprintf("  server logs: databricks serving-endpoints logs %s %s", endpointName, e.Name))
+	}
+	if len(details) == 0 {
+		return err
+	}
+	return fmt.Errorf("%w\n%s", err, strings.Join(details, "\n"))
+}
+
+// servedEntities returns the entities of the pending config, or of the active
+// config when nothing is pending.
+func servedEntities(i *serving.ServingEndpointDetailed) []serving.ServedEntityOutput {
+	switch {
+	case i == nil:
+		return nil
+	case i.PendingConfig != nil:
+		return i.PendingConfig.ServedEntities
+	case i.Config != nil:
+		return i.Config.ServedEntities
+	}
+	return nil
+}
+
 // endpointProgressMessage describes where the endpoint is in its update. It
 // prefers the per-entity state of the pending config, falls back to the active
 // config, and falls back to the generated "current status" text when no entity
 // reports a state.
 func endpointProgressMessage(i *serving.ServingEndpointDetailed) string {
 	var parts []string
-	if i != nil {
-		var entities []serving.ServedEntityOutput
-		if i.PendingConfig != nil {
-			entities = i.PendingConfig.ServedEntities
-		} else if i.Config != nil {
-			entities = i.Config.ServedEntities
+	for _, e := range servedEntities(i) {
+		if e.State == nil {
+			continue
 		}
-		for _, e := range entities {
-			if e.State == nil {
-				continue
-			}
-			state := e.State.DeploymentStateMessage
-			if state == "" {
-				state = string(e.State.Deployment)
-			}
-			if state == "" {
-				continue
-			}
-			if e.Name != "" {
-				state = e.Name + ": " + state
-			}
-			parts = append(parts, state)
+		state := e.State.DeploymentStateMessage
+		if state == "" {
+			state = string(e.State.Deployment)
 		}
+		if state == "" {
+			continue
+		}
+		if e.Name != "" {
+			state = e.Name + ": " + state
+		}
+		parts = append(parts, state)
 	}
 	if len(parts) > 0 {
 		return strings.Join(parts, "; ")
@@ -173,7 +208,7 @@ func createOverride(createCmd *cobra.Command, createReq *serving.CreateServingEn
 		}).GetWithTimeout(timeout)
 		p.close()
 		if err != nil {
-			return err
+			return p.explain(createReq.Name, err)
 		}
 		return cmdio.Render(ctx, info)
 	}
@@ -207,7 +242,7 @@ func updateConfigOverride(updateConfigCmd *cobra.Command, updateConfigReq *servi
 		}).GetWithTimeout(timeout)
 		p.close()
 		if err != nil {
-			return err
+			return p.explain(updateConfigReq.Name, err)
 		}
 		return cmdio.Render(ctx, info)
 	}

@@ -1,0 +1,1 @@
+* When `serving-endpoints create` or `update-config` fails or times out while waiting, the error now includes each served entity's last deployment state (for example `Container build failed. Cause: user_pip_resolution.`) and the `build-logs` and `logs` commands that show more.
