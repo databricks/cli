@@ -846,13 +846,14 @@ func TestTranslatePathEditableProjectFolder(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	b, diags := translate(ctx, "-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "-r ./requirements.txt")
+	b, diags := translate(ctx, "-e ./project", "-e ./project[test]", "-e .", "-e .[test]", "--editable ./project[test]", "-r ./requirements.txt")
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{
 		"-e /bundle/project",
 		"-e /bundle/project[test]",
 		"-e /bundle",
 		"-e /bundle[test]",
+		"--editable /bundle/project[test]",
 		"-r /bundle/requirements.txt",
 	}, b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies)
 

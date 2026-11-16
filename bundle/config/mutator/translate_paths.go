@@ -161,11 +161,11 @@ func (t *translateContext) rewritePath(
 	localPath = filepath.ToSlash(localPath)
 	localRelPath = filepath.ToSlash(localRelPath)
 
-	// The path after -e can also be a project folder, with optional extras such as ./project[test].
+	// The path after -e or --editable can also be a project folder, with optional extras such as ./project[test].
 	// The result is not cached: the cache key has no flag, so a later "-r ./project" would get the
 	// "-e" result instead of its error.
-	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && flag == "-e" {
-		if interp, ok := t.translateEditableFolder(localRelPath); ok {
+	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && (flag == "-e" || flag == "--editable") {
+		if interp, ok := t.translateEditableFolder(flag, localRelPath); ok {
 			return interp, nil
 		}
 	}
@@ -259,9 +259,9 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
-// translateEditableFolder maps a project folder after -e, with optional extras such as [test], to
-// its deployed folder. It reports false if the path is not a folder in the sync root.
-func (t *translateContext) translateEditableFolder(localRelPath string) (string, bool) {
+// translateEditableFolder maps a project folder after flag (-e or --editable), with optional extras
+// such as [test], to its deployed folder. It reports false if the path is not a folder in the sync root.
+func (t *translateContext) translateEditableFolder(flag, localRelPath string) (string, bool) {
 	folder, extras := localRelPath, ""
 	if i := strings.LastIndex(localRelPath, "["); i > 0 && strings.HasSuffix(localRelPath, "]") {
 		folder, extras = localRelPath[:i], localRelPath[i:]
@@ -270,7 +270,7 @@ func (t *translateContext) translateEditableFolder(localRelPath string) (string,
 	if err != nil || !info.IsDir() {
 		return "", false
 	}
-	return "-e " + path.Join(t.remoteRoot, folder) + extras, true
+	return flag + " " + path.Join(t.remoteRoot, folder) + extras, true
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
