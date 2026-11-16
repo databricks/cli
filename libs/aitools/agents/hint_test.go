@@ -225,6 +225,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 		{cobra.ShellCompRequestCmd, true},
 		{"version", true},
 		{"authz", false},
+		{"bundle help", false},
 		{"current-user", false},
 		{"clusters list", false},
 		{"jobs run-now", false},

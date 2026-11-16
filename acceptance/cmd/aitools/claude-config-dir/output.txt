@@ -17,7 +17,7 @@ ID    Name                State
 === Exempt commands never hint, even without the tooling
 
 >>> CLAUDE_CONFIG_DIR=missing [CLI] current-user me
-"[USERNAME]"
+json.userName = "[USERNAME]";
 
 === Empty override uses the default installation
 

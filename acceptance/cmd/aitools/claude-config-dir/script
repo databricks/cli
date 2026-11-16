@@ -12,7 +12,7 @@ title "Custom directory takes precedence over the default installation"
 trace CLAUDE_CONFIG_DIR=missing $CLI clusters list
 
 title "Exempt commands never hint, even without the tooling"
-trace CLAUDE_CONFIG_DIR=missing $CLI current-user me | jq .userName
+trace CLAUDE_CONFIG_DIR=missing $CLI current-user me | gron.py | grep userName
 
 title "Empty override uses the default installation"
 trace CLAUDE_CONFIG_DIR= $CLI clusters list
