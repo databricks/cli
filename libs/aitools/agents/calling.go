@@ -62,9 +62,10 @@ func (t Tooling) String() string {
 // record. For Codex and Copilot, pluginRecorded (the CLI install state) is the
 // only plugin source, so it misses plugins installed with the agent's own CLI
 // and includes plugins later removed with it. The shared skills store is not consulted: it cannot attribute skills.
-// The install hint's airSkillAvailable differs on purpose: it looks for the AI
-// Runtime skill only (the plugin counts either way), so another Databricks
-// skill never silences a hint about this one.
+// The install hint's airSkillAvailable (used on `databricks air` subcommands)
+// differs on purpose: it looks for the AI Runtime skill only (the plugin
+// counts either way), so another Databricks skill never silences a hint about
+// that one.
 func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() bool) Tooling {
 	// An unknown working directory skips the project lookups below.
 	cwd := ""

@@ -36,61 +36,24 @@ func setClaudeAgent(t *testing.T) {
 	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
 }
 
-// claudeCtx returns a context with a captured, non-TTY stderr buffer (what a
-// coding agent's shell tool gives the CLI) and an isolated HOME + cache dir,
-// so detection and the session throttle read only the test's temp state. home
-// is returned so the test can drop fixtures under it.
+// claudeCtx returns a context with a captured stderr buffer and an isolated
+// HOME + cache dir, so detection and the session throttle read only the test's
+// temp state. home is returned so the test can drop fixtures under it.
 func claudeCtx(t *testing.T, home string) (context.Context, *bytes.Buffer) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = env.WithUserHomeDir(ctx, home)
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
 	// Throttle markers live in the file cache, which a host could disable.
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
-	return telemetry.WithNewLogger(ctx), stderr
+	return ctx, stderr
 }
 
-// commandAt builds the command tree for a space-separated path under a
-// "databricks" root and returns the leaf, so ancestry checks see the same
-// shape as the real CLI.
-func commandAt(path string) *cobra.Command {
-	cmd := &cobra.Command{Use: "databricks"}
-	for name := range strings.FieldsSeq(path) {
-		child := &cobra.Command{Use: name}
-		cmd.AddCommand(child)
-		cmd = child
-	}
-	return cmd
-}
-
-func airCmd() *cobra.Command { return commandAt("air list") }
+func regularCmd() *cobra.Command { return &cobra.Command{Use: "current-user"} }
 
 func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "installed_plugins.json"), []byte(body), 0o600))
-}
-
-// writeProjectPluginManifest writes a manifest with one project-scope install
-// covering projectPath. Marshaled, not interpolated, so Windows paths with
-// backslashes stay valid JSON.
-func writeProjectPluginManifest(t *testing.T, home, projectPath string) {
-	manifest, err := json.Marshal(map[string]any{
-		"plugins": map[string]any{
-			"databricks@m": []any{map[string]string{
-				"scope":       "project",
-				"projectPath": projectPath,
-			}},
-		},
-	})
-	require.NoError(t, err)
-	writePluginManifest(t, home, string(manifest))
-}
-
-// writeClaudeSkill puts a skill dir in Claude Code's own skills dir. It is a
-// real dir rather than the installer's symlink so the fixture needs no symlink
-// privilege on Windows; skill detection treats both alike.
-func writeClaudeSkill(t *testing.T, home, name string) {
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "skills", name), 0o755))
 }
 
 // hintKinds returns the kinds of the hint-shown events buffered on ctx,
@@ -104,80 +67,30 @@ func hintKinds(t *testing.T, ctx context.Context) []protos.AitoolsHintKind {
 	return out
 }
 
-// assertHinted checks for exactly one hint line and one hint-shown event of
-// kind INSTALL_TEXT.
-func assertHinted(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
-	t.Helper()
-	assert.Equal(t, airHintText+"\n", stderr.String())
-	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
-}
-
-// assertSilent checks for no hint line and no telemetry event.
-func assertSilent(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
-	t.Helper()
-	assert.Empty(t, stderr.String())
-	assert.Empty(t, hintKinds(t, ctx))
-}
-
-func TestAIRHintText(t *testing.T) {
-	// The hint names the skill, says what it is for, and offers both the install
-	// and a no-install preview, on one line.
-	assert.Contains(t, airHintText, "install the databricks-ai-runtime skill")
-	assert.Contains(t, airHintText, "workload configuration and run debugging")
-	assert.Contains(t, airHintText, "databricks aitools install --skills-only --skills databricks-ai-runtime")
-	assert.Contains(t, airHintText, "replace --skills-only with --path <dir>")
-	assert.NotContains(t, airHintText, "\n")
+// writeClaudeSkill puts a skill dir in Claude Code's own skills dir. It is a
+// real dir rather than the installer's symlink so the fixture needs no symlink
+// privilege on Windows; HasDatabricksSkillsIn treats both alike.
+func writeClaudeSkill(t *testing.T, home, name string) {
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "skills", name), 0o755))
 }
 
 func TestMaybeHint_HumanCallerSilent(t *testing.T) {
 	// No agent env: AgentProvider() == "", so no hint even with nothing installed.
 	testutil.SetAgentEnv(t)
-	ctx, stderr := claudeCtx(t, t.TempDir())
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assertSilent(t, ctx, stderr)
-}
-
-// Every air subcommand, at any depth, gets the skill-specific hint.
-func TestMaybeHint_AIRSubcommandsHint(t *testing.T) {
-	setClaudeAgent(t)
-	for _, path := range []string{
-		"air run", "air get", "air list", "air logs", "air cancel",
-		"air convert-to-dabs", "air images", "air images push", "air pools", "air pools list",
-	} {
-		t.Run(path, func(t *testing.T) {
-			ctx, stderr := claudeCtx(t, t.TempDir())
-			MaybeHint(ctx, commandAt(path), noPluginRecorded)
-			assertHinted(t, ctx, stderr)
-		})
-	}
-}
-
-// Commands outside air are never hinted, including the auth and version
-// commands the generic hint used to fire on.
-func TestMaybeHint_NonAIRCommandsSilent(t *testing.T) {
-	setClaudeAgent(t)
-	for _, path := range []string{
-		"auth profiles", "auth token", "current-user me", "clusters list", "jobs list",
-		"bundle deploy", "workspace list", "version", "aitools install",
-		"experimental aitools install",
-		// The bare air node only renders help; its footer carries the tip.
-		"air",
-		// The hidden alias that points users at `databricks air`.
-		"experimental air",
-	} {
-		t.Run(path, func(t *testing.T) {
-			ctx, stderr := claudeCtx(t, t.TempDir())
-			MaybeHint(ctx, commandAt(path), noPluginRecorded)
-			assertSilent(t, ctx, stderr)
-		})
-	}
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.WithUserHomeDir(ctx, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_ClaudeNotInstalledHints(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assert.Contains(t, stderr.String(), airHintText)
+	ctx = telemetry.WithNewLogger(ctx)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Contains(t, stderr.String(), hintText)
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
 }
 
@@ -185,33 +98,18 @@ func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	ctx, stderr := claudeCtx(t, home)
-	// A plugin install writes only Claude's manifest, no skills subdir, and
-	// bundles every Databricks skill including databricks-ai-runtime.
+	// The core regression: a plugin install writes only Claude's manifest, no
+	// skills subdir. Detection must treat it as installed.
 	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
+	ctx = telemetry.WithNewLogger(ctx)
 
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assertSilent(t, ctx, stderr)
-}
-
-func TestAIRSkillAvailable_LogsPluginDetection(t *testing.T) {
-	t.Chdir(t.TempDir())
-	home := t.TempDir()
-	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
-
-	// Capture debug output by installing a text logger on the context.
-	var buf bytes.Buffer
-	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: log.LevelDebug})
-	ctx := log.NewContext(t.Context(), slog.New(handler))
-	ctx = env.WithUserHomeDir(ctx, home)
-
-	assert.True(t, airSkillAvailable(ctx))
-
-	assert.Contains(t, buf.String(), "Databricks plugin active for Claude Code")
-	assert.Contains(t, buf.String(), "skipping AI Runtime skill hint")
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 // A project or local plugin only loads inside its own project, so elsewhere
-// Claude Code still lacks the skill and gets the hint.
+// Claude Code still lacks the tooling and gets the hint.
 func TestMaybeHint_ProjectPluginCountsOnlyInItsProject(t *testing.T) {
 	project, other := t.TempDir(), t.TempDir()
 	for _, tc := range []struct {
@@ -233,14 +131,31 @@ func TestMaybeHint_ProjectPluginCountsOnlyInItsProject(t *testing.T) {
 			writePluginManifest(t, home, string(manifest))
 			t.Chdir(project)
 
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
 			if tc.wantHint {
-				assertHinted(t, ctx, stderr)
+				assert.Contains(t, stderr.String(), hintText)
 			} else {
-				assertSilent(t, ctx, stderr)
+				assert.Empty(t, stderr.String())
 			}
 		})
 	}
+}
+
+func TestClaudeToolingInstalled_LogsPluginDetected(t *testing.T) {
+	// Clears the host's CLAUDE_CONFIG_DIR, which would move the manifest.
+	testutil.SetAgentEnv(t)
+	home := t.TempDir()
+	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
+
+	// Capture debug output by installing a text logger on the context.
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: log.LevelDebug})
+	ctx := log.NewContext(t.Context(), slog.New(handler))
+	ctx = env.WithUserHomeDir(ctx, home)
+
+	assert.True(t, claudeToolingInstalled(ctx))
+
+	assert.Contains(t, buf.String(), "Databricks plugin detected for Claude Code; skipping install hint")
 }
 
 func TestMaybeHint_CustomClaudeConfigDir(t *testing.T) {
@@ -269,11 +184,11 @@ func TestMaybeHint_CustomClaudeConfigDir(t *testing.T) {
 				writePluginManifest(t, home, manifest)
 			}
 
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
 			if tc.wantHint {
-				assertHinted(t, ctx, stderr)
+				assert.Contains(t, stderr.String(), hintText)
 			} else {
-				assertSilent(t, ctx, stderr)
+				assert.Empty(t, stderr.String())
 			}
 		})
 	}
@@ -283,10 +198,10 @@ func TestMaybeHint_SkillsInstalledSilent(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	ctx, stderr := claudeCtx(t, home)
-	writeClaudeSkill(t, home, airSkillName)
+	writeClaudeSkill(t, home, "databricks")
 
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assertSilent(t, ctx, stderr)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr.String())
 }
 
 func TestMaybeHint_SharedStoreOnlyStillHints(t *testing.T) {
@@ -297,10 +212,10 @@ func TestMaybeHint_SharedStoreOnlyStillHints(t *testing.T) {
 			setClaudeAgent(t)
 			home := t.TempDir()
 			ctx, stderr := claudeCtx(t, home)
-			require.NoError(t, os.MkdirAll(filepath.Join(home, dir, airSkillName), 0o755))
+			require.NoError(t, os.MkdirAll(filepath.Join(home, dir, "databricks"), 0o755))
 
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
-			assert.Equal(t, airHintText+"\n", stderr.String())
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, hintText+"\n", stderr.String())
 		})
 	}
 }
@@ -311,34 +226,22 @@ func TestMaybeHint_NonDatabricksSkillStillHints(t *testing.T) {
 	ctx, stderr := claudeCtx(t, home)
 	writeClaudeSkill(t, home, "some-other-skill")
 
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assert.Contains(t, stderr.String(), airHintText)
-}
-
-// Other Databricks skills, even in Claude Code's own skills dir, do not
-// silence the hint: they don't cover air, and the hint recommends installing
-// exactly the AI Runtime skill.
-func TestMaybeHint_OtherDatabricksSkillStillHints(t *testing.T) {
-	setClaudeAgent(t)
-	home := t.TempDir()
-	ctx, stderr := claudeCtx(t, home)
-	writeClaudeSkill(t, home, "databricks")
-	writeClaudeSkill(t, home, "databricks-jobs")
-
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assertHinted(t, ctx, stderr)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Contains(t, stderr.String(), hintText)
 }
 
 func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
 
 	parent := &cobra.Command{Use: aiToolsCommandName}
 	child := &cobra.Command{Use: "install"}
 	parent.AddCommand(child)
 
 	MaybeHint(ctx, child, noPluginRecorded)
-	assertSilent(t, ctx, stderr)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
 }
 
 func TestMaybeHint_NoIONoPanic(t *testing.T) {
@@ -347,71 +250,475 @@ func TestMaybeHint_NoIONoPanic(t *testing.T) {
 	// invocations before PersistentPreRunE runs, so HasIO can be false here.
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
-	assert.NotPanics(t, func() { MaybeHint(ctx, airCmd(), noPluginRecorded) })
+	assert.NotPanics(t, func() { MaybeHint(ctx, regularCmd(), noPluginRecorded) })
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
-// With a session id the first air command in the session is hinted and later
-// ones stay quiet until the marker expires; without one (older Claude Code)
-// every air command is hinted. Both cases run with a non-TTY stderr, which is
-// how a coding agent's shell tool runs the CLI.
-func TestMaybeHint_SessionThrottle(t *testing.T) {
+func TestMaybeHint_ThrottledPerSession(t *testing.T) {
 	setClaudeAgent(t)
+	home := t.TempDir()
+	cacheDir := t.TempDir()
+	newCtx := func() (context.Context, *bytes.Buffer) {
+		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+		ctx = env.WithUserHomeDir(ctx, home)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
+		return telemetry.WithNewLogger(ctx), stderr
+	}
+
+	ctx1, stderr1 := newCtx()
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Contains(t, stderr1.String(), hintText)
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx1))
+
+	// Same session id, second command: must stay quiet and log nothing.
+	ctx2, stderr2 := newCtx()
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr2.String())
+	assert.Empty(t, hintKinds(t, ctx2))
+}
+
+// wantNativeHint is the exact line Claude Code parses; see
+// https://code.claude.com/docs/en/plugins/cli-hints. Spelled out rather than built
+// from constants so a change to the plugin id or marketplace fails here.
+const wantNativeHint = `<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />`
+
+func TestClaudeNativeHint_Format(t *testing.T) {
+	assert.Equal(t, wantNativeHint, claudeNativeHint)
+}
+
+// authDockerCmd returns `auth docker <use>` as a leaf command.
+func authDockerCmd(use string) *cobra.Command {
+	auth := &cobra.Command{Use: authCommandName}
+	docker := &cobra.Command{Use: "docker"}
+	leaf := &cobra.Command{Use: use}
+	auth.AddCommand(docker)
+	docker.AddCommand(leaf)
+	return leaf
+}
+
+func TestSelfExecEnv(t *testing.T) {
+	assert.Equal(t, []string{"A=1", selfExecEnv + "=1"}, SelfExecEnv([]string{"A=1"}))
+}
+
+func TestMaybeHint_NativeHint(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
-		session    string
-		wantSecond bool
+		env        map[string]string
+		setup      func(t *testing.T, home string)
+		cmd        func() *cobra.Command
+		wantStderr string
 	}{
-		{"session id: first air command only", "session-abc", false},
-		{"no session id: every air command", "", true},
+		{
+			name:       "claude child session prints native then text",
+			env:        map[string]string{claudeChildSessionEnv: "1"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			name:       "no child session prints text only",
+			wantStderr: hintText + "\n",
+		},
+		{
+			name:       "CI prints text only",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "true"},
+			wantStderr: hintText + "\n",
+		},
+		{
+			name:       "CI=false still prints native",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "false"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			name:       "CI=no still prints native",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "no"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			name:       "CI=OFF still prints native",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "OFF"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			// Some providers set CI to their own name.
+			name:       "CI set to a provider name prints text only",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "woodpecker"},
+			wantStderr: hintText + "\n",
+		},
+		{
+			// Azure Pipelines sets TF_BUILD but not CI.
+			name:       "CI provider without CI var prints text only",
+			env:        map[string]string{claudeChildSessionEnv: "1", "TF_BUILD": "True"},
+			wantStderr: hintText + "\n",
+		},
+		{
+			name: "plugin installed prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			setup: func(t *testing.T, home string) {
+				writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
+			},
+		},
+		{
+			name: "skills installed prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			setup: func(t *testing.T, home string) {
+				writeClaudeSkill(t, home, "databricks")
+			},
+		},
+		{
+			name: "auth token prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			cmd: func() *cobra.Command {
+				parent := &cobra.Command{Use: authCommandName}
+				child := &cobra.Command{Use: "token [PROFILE]"}
+				parent.AddCommand(child)
+				return child
+			},
+		},
+		{
+			name:       "other auth command still hints",
+			env:        map[string]string{claudeChildSessionEnv: "1"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+			cmd: func() *cobra.Command {
+				parent := &cobra.Command{Use: authCommandName}
+				child := &cobra.Command{Use: "profiles"}
+				parent.AddCommand(child)
+				return child
+			},
+		},
+		{
+			name: "auth docker token prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			cmd:  func() *cobra.Command { return authDockerCmd("token") },
+		},
+		{
+			name:       "other auth docker command still hints",
+			env:        map[string]string{claudeChildSessionEnv: "1"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+			cmd:        func() *cobra.Command { return authDockerCmd("configure [PROFILE]") },
+		},
+		{
+			// On air subcommands the text is the AI Runtime skill line.
+			name:       "air command prints native then air text",
+			env:        map[string]string{claudeChildSessionEnv: "1"},
+			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
+			cmd:        func() *cobra.Command { return airCmd() },
+		},
+		{
+			name: "air command with the skill installed prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			cmd:  func() *cobra.Command { return airCmd() },
+			setup: func(t *testing.T, home string) {
+				writeClaudeSkill(t, home, airSkillName)
+			},
+		},
+		{
+			// air images push runs `auth docker configure` and embeds its
+			// output in an error; the child must add nothing to it.
+			name: "CLI self-exec child prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1", selfExecEnv: "1"},
+		},
+		{
+			name: "aitools command prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			cmd: func() *cobra.Command {
+				parent := &cobra.Command{Use: aiToolsCommandName}
+				child := &cobra.Command{Use: "install"}
+				parent.AddCommand(child)
+				return child
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
 			home := t.TempDir()
-			cacheDir := t.TempDir()
-			newCtx := func() (context.Context, *bytes.Buffer) {
-				ctx, stderr := claudeCtx(t, home)
-				ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
-				if tc.session != "" {
-					ctx = env.Set(ctx, claudeSessionEnv, tc.session)
-				}
-				return ctx, stderr
+			ctx, stderr := claudeCtx(t, home)
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			// CiCdProvider caches its first answer process-wide.
+			useragent.ClearCache()
+			if tc.setup != nil {
+				tc.setup(t, home)
+			}
+			cmd := regularCmd()
+			if tc.cmd != nil {
+				cmd = tc.cmd()
 			}
 
-			// A non-air command first must not use up the session's hint.
-			ctx0, stderr0 := newCtx()
-			MaybeHint(ctx0, commandAt("auth profiles"), noPluginRecorded)
-			assertSilent(t, ctx0, stderr0)
-
-			ctx1, stderr1 := newCtx()
-			MaybeHint(ctx1, commandAt("air list"), noPluginRecorded)
-			assertHinted(t, ctx1, stderr1)
-
-			ctx2, stderr2 := newCtx()
-			MaybeHint(ctx2, commandAt("air run"), noPluginRecorded)
-			if tc.wantSecond {
-				assertHinted(t, ctx2, stderr2)
-			} else {
-				assertSilent(t, ctx2, stderr2)
-			}
+			MaybeHint(ctx, cmd, noPluginRecorded)
+			assert.Equal(t, tc.wantStderr, stderr.String())
 		})
 	}
 }
 
-func TestMaybeHint_OtherSessionStillHinted(t *testing.T) {
+func TestMaybeHint_NativeHintSilentForOtherCallers(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		agentEnv []string
+		wantText string
+	}{
+		{"human", nil, ""},
+		// Other agents get only their own text hint.
+		{"other agent", []string{"CURSOR_AGENT", "1"}, agentInstallHint(ByName(NameCursor), noPluginRecorded).text + "\n"},
+		{"multiple agents", []string{"CLAUDECODE", "1", "CURSOR_AGENT", "1"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.SetAgentEnv(t, tc.agentEnv...)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			// Even with Claude's child-session marker present, only a sole
+			// Claude Code caller gets the native hint.
+			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, tc.wantText, stderr.String())
+		})
+	}
+}
+
+func TestMaybeHint_NativeHintThrottledPerSession(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	cacheDir := t.TempDir()
-	for _, session := range []string{"session-a", "session-b"} {
-		ctx, stderr := claudeCtx(t, home)
+	newCtx := func() (context.Context, *bytes.Buffer) {
+		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+		ctx = env.WithUserHomeDir(ctx, home)
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
-		ctx = env.Set(ctx, claudeSessionEnv, session)
-		MaybeHint(ctx, airCmd(), noPluginRecorded)
-		assertHinted(t, ctx, stderr)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
+		ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+		return ctx, stderr
+	}
+
+	ctx1, stderr1 := newCtx()
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr1.String())
+
+	// Same session, second command: both lines stay quiet, so the tag doesn't
+	// reach a downstream reader such as `2>&1 | jq` on every command.
+	ctx2, stderr2 := newCtx()
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr2.String())
+
+	// Another session: both lines print again.
+	ctx3, stderr3 := newCtx()
+	ctx3 = env.Set(ctx3, claudeSessionEnv, "session-def")
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr3.String())
+}
+
+func TestMaybeHint_NativeHintSilentOnTerminal(t *testing.T) {
+	// The fakes make one stream look like a terminal, as in tmux or screen
+	// started from inside Claude Code, where nothing strips the tag. A person
+	// typing there has the terminal on stdin even when the output is piped, as
+	// in `databricks ... 2>&1 | less`.
+	for _, tc := range []struct {
+		name                  string
+		stdin, stdout, stderr bool
+	}{
+		{name: "stdin", stdin: true},
+		{name: "stdout", stdout: true},
+		{name: "stderr", stderr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			stderr := &bytes.Buffer{}
+			var in io.Reader
+			out := io.Discard
+			var errOut io.Writer = stderr
+			if tc.stdin {
+				in = cmdio.FakeTTYReader(&bytes.Buffer{})
+			}
+			if tc.stdout {
+				out = cmdio.FakeTTY(out)
+			}
+			if tc.stderr {
+				errOut = cmdio.FakeTTY(errOut)
+			}
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, in, out, errOut, "", ""))
+			ctx = env.WithUserHomeDir(ctx, t.TempDir())
+			ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
+			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, hintText+"\n", stderr.String())
+		})
+	}
+}
+
+func TestAgentHint_NativeLineNilIsEmpty(t *testing.T) {
+	h := &agentHint{}
+	assert.Empty(t, h.nativeLine(t.Context()))
+}
+
+func TestHintForAgent(t *testing.T) {
+	claude := hintForAgent(claudeAgentProvider, noPluginRecorded)
+	require.NotNil(t, claude)
+	assert.Equal(t, hintText, claude.text)
+	assert.Equal(t, claudeSessionEnv, claude.sessionEnv)
+
+	assert.Nil(t, hintForAgent("", noPluginRecorded))
+	assert.Nil(t, hintForAgent("multiple", noPluginRecorded))
+	assert.Nil(t, hintForAgent("windsurf", noPluginRecorded))
+
+	cursor := hintForAgent("cursor", noPluginRecorded)
+	require.NotNil(t, cursor)
+	assert.Equal(t, protos.AitoolsHintKindAgentInstallText, cursor.textKind)
+	assert.Nil(t, cursor.native)
+}
+
+func TestMaybeHint_LogsEventsOncePerSession(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	cacheDir := t.TempDir()
+	newCtx := func(childSession bool) (context.Context, *bytes.Buffer) {
+		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+		ctx = telemetry.WithNewLogger(ctx)
+		ctx = env.WithUserHomeDir(ctx, home)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
+		if childSession {
+			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+		}
+		return ctx, stderr
+	}
+
+	ctx1, _ := newCtx(true)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Equal(t, []protos.AitoolsHintKind{
+		protos.AitoolsHintKindClaudeCodeNative,
+		protos.AitoolsHintKindInstallText,
+	}, hintKinds(t, ctx1))
+	events := telemetry.BufferedEvents(ctx1)
+	require.Len(t, events, 2)
+
+	// Throttled for the session: nothing prints and nothing logs, so the
+	// command doesn't pay for a telemetry upload at exit.
+	ctx2, stderr2 := newCtx(true)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr2.String())
+	assert.Empty(t, telemetry.BufferedEvents(ctx2))
+
+	// Throttled and not a Claude Code subprocess: nothing prints, nothing logs.
+	ctx3, stderr3 := newCtx(false)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr3.String())
+	assert.Empty(t, telemetry.BufferedEvents(ctx3))
+}
+
+func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	ctx, _ := claudeCtx(t, home)
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
+
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+}
+
+// --- AI Runtime skill hint on air subcommands ---
+
+// commandAt builds the command tree for a space-separated path under a
+// "databricks" root and returns the leaf, so ancestry checks see the same
+// shape as the real CLI.
+func commandAt(path string) *cobra.Command {
+	cmd := &cobra.Command{Use: "databricks"}
+	for name := range strings.FieldsSeq(path) {
+		child := &cobra.Command{Use: name}
+		cmd.AddCommand(child)
+		cmd = child
+	}
+	return cmd
+}
+
+func airCmd() *cobra.Command { return commandAt("air list") }
+
+// writeProjectPluginManifest writes a manifest with one project-scope install
+// covering projectPath. Marshaled, not interpolated, so Windows paths with
+// backslashes stay valid JSON.
+func writeProjectPluginManifest(t *testing.T, home, projectPath string) {
+	manifest, err := json.Marshal(map[string]any{
+		"plugins": map[string]any{
+			"databricks@claude-plugins-official": []any{map[string]string{
+				"scope":       "project",
+				"projectPath": projectPath,
+			}},
+		},
+	})
+	require.NoError(t, err)
+	writePluginManifest(t, home, string(manifest))
+}
+
+// assertAIRHinted checks for exactly the AI Runtime skill line and one
+// hint-shown event of kind INSTALL_TEXT.
+func assertAIRHinted(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
+	t.Helper()
+	assert.Equal(t, airHintText+"\n", stderr.String())
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
+}
+
+// assertNothingHinted checks for no hint line and no telemetry event.
+func assertNothingHinted(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
+	t.Helper()
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+func TestAIRHintText(t *testing.T) {
+	// The hint names the skill, says what it is for, and offers both the install
+	// and a no-install preview, on one line.
+	assert.Contains(t, airHintText, "install the databricks-ai-runtime skill")
+	assert.Contains(t, airHintText, "workload configuration and run debugging")
+	assert.Contains(t, airHintText, "databricks aitools install --skills-only --skills databricks-ai-runtime")
+	assert.Contains(t, airHintText, "replace --skills-only with --path <dir>")
+	assert.NotContains(t, airHintText, "\n")
+}
+
+// TestMaybeHint_NonAIRCommandsKeepGenericHint pins the scoping: outside air,
+// Claude Code gets the generic install hint it always got, never the AI
+// Runtime skill line.
+func TestMaybeHint_NonAIRCommandsKeepGenericHint(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"auth profiles", "current-user me", "clusters list", "jobs list",
+		"bundle deploy", "workspace list", "version",
+		// The bare air node only renders help (the footer carries the tip), and
+		// the hidden alias points users at `databricks air`; neither is an air
+		// subcommand, so they keep the generic hint.
+		"air",
+		"experimental air",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assert.Equal(t, hintText+"\n", stderr.String())
+			assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
+			assert.NotContains(t, stderr.String(), airHintText)
+		})
+	}
+}
+
+// Every runnable air subcommand, at any depth, gets the skill-specific hint.
+func TestMaybeHint_AIRSubcommandsHint(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"air run", "air get", "air list", "air logs", "air cancel",
+		"air convert-to-dabs", "air images", "air images push", "air pools", "air pools list",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assertAIRHinted(t, ctx, stderr)
+		})
 	}
 }
 
 // Only the databricks-ai-runtime skill itself, in a location Claude Code loads
-// for this working directory, silences the hint.
+// for this working directory, silences the skill hint.
 func TestMaybeHint_AIRSkillDetection(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
@@ -453,15 +760,16 @@ func TestMaybeHint_AIRSkillDetection(t *testing.T) {
 			setClaudeAgent(t)
 			home := t.TempDir()
 			ctx, stderr := claudeCtx(t, home)
+			ctx = telemetry.WithNewLogger(ctx)
 			cwd, err := os.Getwd()
 			require.NoError(t, err)
 			tc.setup(t, home, cwd)
 
 			MaybeHint(ctx, airCmd(), noPluginRecorded)
 			if tc.wantHint {
-				assertHinted(t, ctx, stderr)
+				assertAIRHinted(t, ctx, stderr)
 			} else {
-				assertSilent(t, ctx, stderr)
+				assertNothingHinted(t, ctx, stderr)
 			}
 		})
 	}
@@ -473,6 +781,7 @@ func TestMaybeHint_AIRSkillInRepositoryRoot(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	ctx, stderr := claudeCtx(t, home)
+	ctx = telemetry.WithNewLogger(ctx)
 	root, err := os.Getwd()
 	require.NoError(t, err)
 	require.NoError(t, os.MkdirAll(filepath.Join(root, ".claude", "skills", airSkillName), 0o755))
@@ -481,329 +790,83 @@ func TestMaybeHint_AIRSkillInRepositoryRoot(t *testing.T) {
 	t.Chdir(sub)
 
 	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assertSilent(t, ctx, stderr)
+	assertNothingHinted(t, ctx, stderr)
 }
 
-// wantNativeHint is the exact line Claude Code parses; see
-// https://code.claude.com/docs/en/plugins/cli-hints. Spelled out rather than built
-// from constants so a change to the plugin id or marketplace fails here.
-const wantNativeHint = `<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />`
+func TestAIRSkillAvailable_LogsPluginDetection(t *testing.T) {
+	// Clears the host's CLAUDE_CONFIG_DIR, which would move the manifest.
+	testutil.SetAgentEnv(t)
+	t.Chdir(t.TempDir())
+	home := t.TempDir()
+	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
 
-func TestClaudeNativeHint_Format(t *testing.T) {
-	assert.Equal(t, wantNativeHint, claudeNativeHint)
+	// Capture debug output by installing a text logger on the context.
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: log.LevelDebug})
+	ctx := log.NewContext(t.Context(), slog.New(handler))
+	ctx = env.WithUserHomeDir(ctx, home)
+
+	assert.True(t, airSkillAvailable(ctx))
+
+	assert.Contains(t, buf.String(), "Databricks plugin active for Claude Code")
+	assert.Contains(t, buf.String(), "skipping AI Runtime skill hint")
 }
 
-// authDockerCmd returns `auth docker <use>` as a leaf command.
-func authDockerCmd(use string) *cobra.Command {
-	auth := &cobra.Command{Use: "auth"}
-	docker := &cobra.Command{Use: "docker"}
-	leaf := &cobra.Command{Use: use}
-	auth.AddCommand(docker)
-	docker.AddCommand(leaf)
-	return leaf
-}
-
-func TestSelfExecEnv(t *testing.T) {
-	assert.Equal(t, []string{"A=1", selfExecEnv + "=1"}, SelfExecEnv([]string{"A=1"}))
-}
-
-func TestMaybeHint_NativeHint(t *testing.T) {
-	for _, tc := range []struct {
-		name       string
-		env        map[string]string
-		setup      func(t *testing.T, home string)
-		cmd        func() *cobra.Command
-		wantStderr string
-	}{
-		{
-			name:       "claude child session prints native then text",
-			env:        map[string]string{claudeChildSessionEnv: "1"},
-			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
-		},
-		{
-			name:       "no child session prints text only",
-			wantStderr: airHintText + "\n",
-		},
-		{
-			name:       "CI prints text only",
-			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "true"},
-			wantStderr: airHintText + "\n",
-		},
-		{
-			name:       "CI=false still prints native",
-			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "false"},
-			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
-		},
-		{
-			name:       "CI=no still prints native",
-			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "no"},
-			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
-		},
-		{
-			name:       "CI=OFF still prints native",
-			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "OFF"},
-			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
-		},
-		{
-			// Some providers set CI to their own name.
-			name:       "CI set to a provider name prints text only",
-			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "woodpecker"},
-			wantStderr: airHintText + "\n",
-		},
-		{
-			// Azure Pipelines sets TF_BUILD but not CI.
-			name:       "CI provider without CI var prints text only",
-			env:        map[string]string{claudeChildSessionEnv: "1", "TF_BUILD": "True"},
-			wantStderr: airHintText + "\n",
-		},
-		{
-			name: "plugin installed prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			setup: func(t *testing.T, home string) {
-				writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
-			},
-		},
-		{
-			name: "skill installed prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			setup: func(t *testing.T, home string) {
-				writeClaudeSkill(t, home, airSkillName)
-			},
-		},
-		{
-			// Commands outside air never hint, credential helpers included.
-			name: "auth token prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd: func() *cobra.Command {
-				parent := &cobra.Command{Use: "auth"}
-				child := &cobra.Command{Use: "token [PROFILE]"}
-				parent.AddCommand(child)
-				return child
-			},
-		},
-		{
-			name: "other auth command prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd: func() *cobra.Command {
-				parent := &cobra.Command{Use: "auth"}
-				child := &cobra.Command{Use: "profiles"}
-				parent.AddCommand(child)
-				return child
-			},
-		},
-		{
-			name: "auth docker token prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd:  func() *cobra.Command { return authDockerCmd("token") },
-		},
-		{
-			name: "other auth docker command prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd:  func() *cobra.Command { return authDockerCmd("configure [PROFILE]") },
-		},
-		{
-			// air images push runs `auth docker configure` and embeds its
-			// output in an error; the child must add nothing to it.
-			name: "CLI self-exec child prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1", selfExecEnv: "1"},
-		},
-		{
-			name: "aitools command prints nothing",
-			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd: func() *cobra.Command {
-				parent := &cobra.Command{Use: aiToolsCommandName}
-				child := &cobra.Command{Use: "install"}
-				parent.AddCommand(child)
-				return child
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			setClaudeAgent(t)
-			home := t.TempDir()
-			ctx, stderr := claudeCtx(t, home)
-			for k, v := range tc.env {
-				t.Setenv(k, v)
-			}
-			// CiCdProvider caches its first answer process-wide.
-			useragent.ClearCache()
-			if tc.setup != nil {
-				tc.setup(t, home)
-			}
-			cmd := airCmd()
-			if tc.cmd != nil {
-				cmd = tc.cmd()
-			}
-
-			MaybeHint(ctx, cmd, noPluginRecorded)
-			assert.Equal(t, tc.wantStderr, stderr.String())
-		})
-	}
-}
-
-func TestMaybeHint_NativeHintSilentForOtherCallers(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		agentEnv []string
-		wantText string
-	}{
-		{"human", nil, ""},
-		// Other agents get only their own text hint.
-		{"other agent", []string{"CURSOR_AGENT", "1"}, agentInstallHint(ByName(NameCursor), noPluginRecorded).text + "\n"},
-		{"multiple agents", []string{"CLAUDECODE", "1", "CURSOR_AGENT", "1"}, ""},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			testutil.SetAgentEnv(t, tc.agentEnv...)
-			ctx, stderr := claudeCtx(t, t.TempDir())
-			// Even with Claude's child-session marker present, only a sole
-			// Claude Code caller gets the native hint.
-			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
-
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
-			assert.Equal(t, tc.wantText, stderr.String())
-		})
-	}
-}
-
-func TestMaybeHint_NativeHintThrottledPerSession(t *testing.T) {
+// With a session id the first hinted command is the only one; without one
+// (older Claude Code) every air command is hinted. The throttle is shared with
+// the generic hint, so a hint already shown on a non-air command also silences
+// the air one for the rest of the session.
+func TestMaybeHint_AIRSessionThrottle(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	cacheDir := t.TempDir()
 	newCtx := func() (context.Context, *bytes.Buffer) {
-		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-		ctx = env.WithUserHomeDir(ctx, home)
+		ctx, stderr := claudeCtx(t, home)
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
-		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
-		ctx = env.Set(ctx, claudeChildSessionEnv, "1")
-		return telemetry.WithNewLogger(ctx), stderr
+		ctx = telemetry.WithNewLogger(ctx)
+		return ctx, stderr
 	}
 
 	ctx1, stderr1 := newCtx()
 	MaybeHint(ctx1, airCmd(), noPluginRecorded)
-	assert.Equal(t, wantNativeHint+"\n"+airHintText+"\n", stderr1.String())
+	assertAIRHinted(t, ctx1, stderr1)
 
-	// Same session, second command: both lines stay quiet, so the tag doesn't
-	// reach a downstream reader such as `2>&1 | jq` on every command.
+	// Same session, second air command: stays quiet.
 	ctx2, stderr2 := newCtx()
-	MaybeHint(ctx2, airCmd(), noPluginRecorded)
-	assert.Empty(t, stderr2.String())
+	MaybeHint(ctx2, commandAt("air run"), noPluginRecorded)
+	assertNothingHinted(t, ctx2, stderr2)
 
-	// Another session: both lines print again.
+	// Another session: the air hint prints again.
 	ctx3, stderr3 := newCtx()
 	ctx3 = env.Set(ctx3, claudeSessionEnv, "session-def")
-	MaybeHint(ctx3, airCmd(), noPluginRecorded)
-	assert.Equal(t, wantNativeHint+"\n"+airHintText+"\n", stderr3.String())
+	MaybeHint(ctx3, commandAt("air run"), noPluginRecorded)
+	assertAIRHinted(t, ctx3, stderr3)
+
+	// A generic hint shown on a non-air command consumes the same session's
+	// marker, so a later air command stays quiet.
+	ctx4, stderr4 := newCtx()
+	ctx4 = env.Set(ctx4, claudeSessionEnv, "session-ghi")
+	MaybeHint(ctx4, commandAt("auth profiles"), noPluginRecorded)
+	assert.Equal(t, hintText+"\n", stderr4.String())
+	ctx5, stderr5 := newCtx()
+	ctx5 = env.Set(ctx5, claudeSessionEnv, "session-ghi")
+	MaybeHint(ctx5, airCmd(), noPluginRecorded)
+	assertNothingHinted(t, ctx5, stderr5)
 }
 
-func TestMaybeHint_NativeHintSilentOnTerminal(t *testing.T) {
-	// The fakes make one stream look like a terminal, as in tmux or screen
-	// started from inside Claude Code, where nothing strips the tag. A person
-	// typing there has the terminal on stdin even when the output is piped, as
-	// in `databricks ... 2>&1 | less`.
-	for _, tc := range []struct {
-		name                  string
-		stdin, stdout, stderr bool
-	}{
-		{name: "stdin", stdin: true},
-		{name: "stdout", stdout: true},
-		{name: "stderr", stderr: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			setClaudeAgent(t)
-			stderr := &bytes.Buffer{}
-			var in io.Reader
-			out := io.Discard
-			var errOut io.Writer = stderr
-			if tc.stdin {
-				in = cmdio.FakeTTYReader(&bytes.Buffer{})
-			}
-			if tc.stdout {
-				out = cmdio.FakeTTY(out)
-			}
-			if tc.stderr {
-				errOut = cmdio.FakeTTY(errOut)
-			}
-			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, in, out, errOut, "", ""))
-			ctx = env.WithUserHomeDir(ctx, t.TempDir())
-			ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
-			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
+func TestHintForCommand(t *testing.T) {
+	air := hintForCommand(airCmd(), claudeAgentProvider, noPluginRecorded)
+	require.NotNil(t, air)
+	assert.Equal(t, airHintText, air.text)
 
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
-			assert.Equal(t, airHintText+"\n", stderr.String())
-		})
-	}
-}
+	// Outside air Claude Code keeps the generic hint.
+	regular := hintForCommand(regularCmd(), claudeAgentProvider, noPluginRecorded)
+	require.NotNil(t, regular)
+	assert.Equal(t, hintText, regular.text)
 
-func TestAgentHint_NativeLineNilIsEmpty(t *testing.T) {
-	h := &agentHint{}
-	assert.Empty(t, h.nativeLine(t.Context()))
-}
-
-func TestHintForAgent(t *testing.T) {
-	claude := hintForAgent(claudeAgentProvider, noPluginRecorded)
-	require.NotNil(t, claude)
-	assert.Equal(t, airHintText, claude.text)
-	assert.Equal(t, claudeSessionEnv, claude.sessionEnv)
-
-	assert.Nil(t, hintForAgent("", noPluginRecorded))
-	assert.Nil(t, hintForAgent("multiple", noPluginRecorded))
-	assert.Nil(t, hintForAgent("windsurf", noPluginRecorded))
-
-	cursor := hintForAgent("cursor", noPluginRecorded)
+	// Other agents are untouched on air subcommands.
+	cursor := hintForCommand(airCmd(), "cursor", noPluginRecorded)
 	require.NotNil(t, cursor)
-	assert.Equal(t, protos.AitoolsHintKindAgentInstallText, cursor.textKind)
-	assert.Nil(t, cursor.native)
-}
-
-func TestMaybeHint_LogsEventsOncePerSession(t *testing.T) {
-	setClaudeAgent(t)
-	home := t.TempDir()
-	cacheDir := t.TempDir()
-	newCtx := func(childSession bool) (context.Context, *bytes.Buffer) {
-		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-		ctx = telemetry.WithNewLogger(ctx)
-		ctx = env.WithUserHomeDir(ctx, home)
-		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
-		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
-		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
-		if childSession {
-			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
-		}
-		return ctx, stderr
-	}
-
-	ctx1, _ := newCtx(true)
-	MaybeHint(ctx1, airCmd(), noPluginRecorded)
-	assert.Equal(t, []protos.AitoolsHintKind{
-		protos.AitoolsHintKindClaudeCodeNative,
-		protos.AitoolsHintKindInstallText,
-	}, hintKinds(t, ctx1))
-	events := telemetry.BufferedEvents(ctx1)
-	require.Len(t, events, 2)
-
-	// Throttled for the session: nothing prints and nothing logs, so the
-	// command doesn't pay for a telemetry upload at exit.
-	ctx2, stderr2 := newCtx(true)
-	MaybeHint(ctx2, airCmd(), noPluginRecorded)
-	assert.Empty(t, stderr2.String())
-	assert.Empty(t, telemetry.BufferedEvents(ctx2))
-
-	// Throttled and not a Claude Code subprocess: nothing prints, nothing logs.
-	ctx3, stderr3 := newCtx(false)
-	MaybeHint(ctx3, airCmd(), noPluginRecorded)
-	assert.Empty(t, stderr3.String())
-	assert.Empty(t, telemetry.BufferedEvents(ctx3))
-}
-
-func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
-	setClaudeAgent(t)
-	home := t.TempDir()
-	ctx, _ := claudeCtx(t, home)
-	ctx = telemetry.WithNewLogger(ctx)
-	ctx = env.Set(ctx, claudeChildSessionEnv, "1")
-	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
-
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	assert.Equal(t, agentInstallHint(ByName(NameCursor), noPluginRecorded).text, cursor.text)
 }

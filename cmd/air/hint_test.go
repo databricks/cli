@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,16 +17,16 @@ import (
 
 // airUnderRoot mounts the real air tree under a root whose pre-run hook only
 // records that it ran, mirroring where cmd/root calls agents.MaybeHint.
-func airUnderRoot(preRunCalled *bool) (*cobra.Command, *cobra.Command) {
-	root := &cobra.Command{Use: "databricks"}
-	root.AddGroup(&cobra.Group{ID: "development", Title: "Developer Tools"})
-	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+func airUnderRoot(ctx context.Context, preRunCalled *bool) (*cobra.Command, *cobra.Command) {
+	dummy := &cobra.Command{Use: "databricks"}
+	dummy.AddGroup(&cobra.Group{ID: "development", Title: "Developer Tools"})
+	dummy.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		*preRunCalled = true
 		return nil
 	}
-	air := New()
-	root.AddCommand(air)
-	return root, air
+	air := root.NewCommand(ctx, Spec)
+	dummy.AddCommand(air)
+	return dummy, air
 }
 
 // TestBareAirAndHelpShowFooterWithoutPreRun pins why the footer, not the
@@ -34,7 +35,7 @@ func TestBareAirAndHelpShowFooterWithoutPreRun(t *testing.T) {
 	for _, args := range [][]string{{"air"}, {"air", "--help"}} {
 		t.Run(args[len(args)-1], func(t *testing.T) {
 			preRunCalled := false
-			root, _ := airUnderRoot(&preRunCalled)
+			root, _ := airUnderRoot(t.Context(), &preRunCalled)
 			var out bytes.Buffer
 			root.SetOut(&out)
 			root.SetErr(&out)
@@ -51,8 +52,7 @@ func TestBareAirAndHelpShowFooterWithoutPreRun(t *testing.T) {
 // subcommand is covered without listing it here.
 func TestRunnableAirCommandsGetSkillHint(t *testing.T) {
 	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
-	preRunCalled := false
-	_, air := airUnderRoot(&preRunCalled)
+	_, air := airUnderRoot(t.Context(), new(bool))
 	assert.False(t, air.Runnable(), "bare air renders help; the footer covers it")
 
 	var runnable []string

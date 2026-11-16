@@ -1,38 +1,38 @@
 
 === Plugin installed only in the custom config directory
 
->>> CLAUDE_CONFIG_DIR=custom [CLI] air list
-No active runs found. Use --all-status to include runs that are no longer active.
+>>> CLAUDE_CONFIG_DIR=custom [CLI] version
+Databricks CLI v[CLI_VERSION]
 
 === Custom directory takes precedence over the default installation
 
->>> CLAUDE_CONFIG_DIR=missing [CLI] air list
+>>> CLAUDE_CONFIG_DIR=missing [CLI] version
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
-Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
-No active runs found. Use --all-status to include runs that are no longer active.
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
 
 === Empty override uses the default installation
 
->>> CLAUDE_CONFIG_DIR= [CLI] air list
-No active runs found. Use --all-status to include runs that are no longer active.
+>>> CLAUDE_CONFIG_DIR= [CLI] version
+Databricks CLI v[CLI_VERSION]
 
 === Unset override uses the default installation
 
->>> [CLI] air list
-No active runs found. Use --all-status to include runs that are no longer active.
+>>> [CLI] version
+Databricks CLI v[CLI_VERSION]
 
 === Outside a Claude Code subprocess only the text hint prints
 
->>> CLAUDE_CODE_CHILD_SESSION= [CLI] air list
-Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
-No active runs found. Use --all-status to include runs that are no longer active.
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] version
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
 
 === Within one session both lines print once, so 2>&1 pipelines see them only on the first command
 
->>> [CLI] air list
+>>> [CLI] version
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
-Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
-No active runs found. Use --all-status to include runs that are no longer active.
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Databricks CLI v[CLI_VERSION]
 
->>> [CLI] air list
-No active runs found. Use --all-status to include runs that are no longer active.
+>>> [CLI] version
+Databricks CLI v[CLI_VERSION]

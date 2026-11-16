@@ -118,7 +118,7 @@ func TestAgentCtxIgnoresProjectSkillsAroundTheTest(t *testing.T) {
 
 	setAgentEnv(t, agentDetectEnv[NameGemini])
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
 	assert.Equal(t, agentInstallHint(gemini, noPluginRecorded).text+"\n", stderr.String())
 }
 
@@ -142,7 +142,7 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 			t.Run("not installed hints", func(t *testing.T) {
 				ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
 				ctx = telemetry.WithNewLogger(ctx)
-				MaybeHint(ctx, airCmd(), noPluginRecorded)
+				MaybeHint(ctx, regularCmd(), noPluginRecorded)
 				assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
 
 				events := telemetry.BufferedEvents(ctx)
@@ -157,7 +157,7 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 				ctx, stderr := agentCtx(t, home, t.TempDir())
 				ctx = telemetry.WithNewLogger(ctx)
 				writeAgentSkill(t, ctx, home, a)
-				MaybeHint(ctx, airCmd(), noPluginRecorded)
+				MaybeHint(ctx, regularCmd(), noPluginRecorded)
 				assert.Empty(t, stderr.String())
 				assert.Empty(t, telemetry.BufferedEvents(ctx))
 			})
@@ -168,18 +168,18 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 				home := t.TempDir()
 				ctx, stderr := agentCtx(t, home, t.TempDir())
 				writeCanonicalSkill(t, home, "databricks")
-				MaybeHint(ctx, airCmd(), noPluginRecorded)
+				MaybeHint(ctx, regularCmd(), noPluginRecorded)
 				assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
 			})
 
 			t.Run("throttled per machine without session id", func(t *testing.T) {
 				home, cacheDir := t.TempDir(), t.TempDir()
 				ctx1, stderr1 := agentCtx(t, home, cacheDir)
-				MaybeHint(ctx1, airCmd(), noPluginRecorded)
+				MaybeHint(ctx1, regularCmd(), noPluginRecorded)
 				assert.NotEmpty(t, stderr1.String())
 
 				ctx2, stderr2 := agentCtx(t, home, cacheDir)
-				MaybeHint(ctx2, airCmd(), noPluginRecorded)
+				MaybeHint(ctx2, regularCmd(), noPluginRecorded)
 				assert.Empty(t, stderr2.String())
 			})
 		})
@@ -203,7 +203,7 @@ func TestMaybeHint_RecordedPluginSilent(t *testing.T) {
 			}
 			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
 			ctx = telemetry.WithNewLogger(ctx)
-			MaybeHint(ctx, airCmd(), recorded)
+			MaybeHint(ctx, regularCmd(), recorded)
 			assert.Empty(t, stderr.String())
 			assert.Empty(t, telemetry.BufferedEvents(ctx))
 			assert.Equal(t, []string{name}, asked)
@@ -217,7 +217,7 @@ func TestMaybeHint_CodexThrottledPerThread(t *testing.T) {
 	run := func(thread string) string {
 		ctx, stderr := agentCtx(t, home, cacheDir)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", thread)
-		MaybeHint(ctx, airCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded)
 		return stderr.String()
 	}
 
@@ -232,7 +232,7 @@ func TestMaybeHint_NoInstallTargetSilent(t *testing.T) {
 		t.Run(envVar, func(t *testing.T) {
 			setAgentEnv(t, envVar)
 			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
 			assert.Empty(t, stderr.String())
 		})
 	}
@@ -242,15 +242,15 @@ func TestMaybeHint_MultipleAgentsSilent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	t.Setenv("CURSOR_AGENT", "1")
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
 	assert.Empty(t, stderr.String())
 }
 
 func TestMaybeHint_AgentAuthTokenSilent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	parent := &cobra.Command{Use: "auth"}
-	child := &cobra.Command{Use: "token"}
+	parent := &cobra.Command{Use: authCommandName}
+	child := &cobra.Command{Use: tokenCommandName}
 	parent.AddCommand(child)
 	MaybeHint(ctx, child, noPluginRecorded)
 	assert.Empty(t, stderr.String())
@@ -274,13 +274,13 @@ func TestMaybeHint_SessionMarkersAreIsolatedPerAgent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := agentCtx(t, home, cacheDir)
 	ctx = env.Set(ctx, claudeSessionEnv, "shared-id")
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
-	require.Contains(t, stderr.String(), airHintText)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	require.Contains(t, stderr.String(), hintText)
 
 	setAgentEnv(t, "CODEX_CI")
 	ctx, stderr = agentCtx(t, home, cacheDir)
 	ctx = env.Set(ctx, "CODEX_THREAD_ID", "shared-id")
-	MaybeHint(ctx, airCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
 	assert.Equal(t, agentInstallHint(ByName(NameCodex), noPluginRecorded).text+"\n", stderr.String())
 }
 
@@ -304,7 +304,7 @@ func TestMaybeHint_UnwritableCacheSkipsHint(t *testing.T) {
 		ctx, stderr := agentCtx(t, t.TempDir(), readOnly)
 		ctx = telemetry.WithNewLogger(ctx)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", "thread-1")
-		MaybeHint(ctx, airCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded)
 		assert.Empty(t, stderr.String())
 		assert.Empty(t, telemetry.BufferedEvents(ctx))
 	}
@@ -324,8 +324,25 @@ func TestMaybeHint_DisabledCacheSkipsHint(t *testing.T) {
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
 		ctx = telemetry.WithNewLogger(ctx)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", "thread-1")
-		MaybeHint(ctx, airCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded)
 		assert.Empty(t, stderr.String())
 		assert.Empty(t, telemetry.BufferedEvents(ctx))
+	}
+}
+
+// Non-Claude agents keep their generic install hint on `databricks air`
+// subcommands too: the aitools installer has no per-agent AI Runtime variant
+// to offer them, so the air scoping only changes Claude Code's hint.
+func TestMaybeHint_AgentInstallHintUnchangedOnAIR(t *testing.T) {
+	for _, a := range Registry {
+		if a.Name == NameClaudeCode {
+			continue
+		}
+		t.Run(a.Name, func(t *testing.T) {
+			setAgentEnv(t, agentDetectEnv[a.Name])
+			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
+			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
+		})
 	}
 }
