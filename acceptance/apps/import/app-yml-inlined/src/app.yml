@@ -1,4 +1,0 @@
-command: ["python", "app.py"]
-env:
-  - name: GREETING
-    value: hello

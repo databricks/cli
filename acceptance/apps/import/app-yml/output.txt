@@ -3,13 +3,27 @@
 Loading app 'myapp' configuration
 Creating bundle configuration
 File successfully saved to app.yml
+Inlined and removed app.yml
 Bundle configuration created at databricks.yml
 Binding bundle to existing app
+Warning: Use 'value_from' instead of 'valueFrom'
+  at resources.apps.app.config.env[1]
+  in databricks.yml:18:13
+
+The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.
+
 Successfully bound to app 'myapp'
 Deploying bundle
+Warning: Use 'value_from' instead of 'valueFrom'
+  at resources.apps.app.config.env[1]
+  in databricks.yml:18:13
+
+The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/myapp/default/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Updated apps.app
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Bundle deployed successfully
 Starting app
 ✓ Getting the status of the app myapp
@@ -24,7 +38,6 @@ App started successfully
 You can now deploy changes with: databricks bundle deploy
 
 >>> ls out
-app.yml
 databricks.yml
 
 >>> cat out/databricks.yml
@@ -37,23 +50,46 @@ workspace:
 resources:
   apps:
     app:
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: GREETING
+            value: hello
+          - name: WAREHOUSE_ID
+            valueFrom: sql-warehouse
+          - name: PYTHON_VERSION
+            value: 3.1
       name: myapp
       description: ""
       source_code_path: .
 
->>> cat out/app.yml
-command:
-  - python
-  - app.py
-env:
-  - name: GREETING
-    value: hello
-  - name: WAREHOUSE_ID
-    valueFrom: sql-warehouse
-  - name: PYTHON_VERSION
-    value: 3.10
-
 === App config the bundle deploys (app.yml, if kept, is uploaded with the source)
 
 >>> [CLI] bundle validate -o json
-null
+Warning: Use 'value_from' instead of 'valueFrom'
+  at resources.apps.app.config.env[1]
+  in databricks.yml:18:13
+
+The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.
+
+{
+  "command": [
+    "python",
+    "app.py"
+  ],
+  "env": [
+    {
+      "name": "GREETING",
+      "value": "hello"
+    },
+    {
+      "name": "WAREHOUSE_ID"
+    },
+    {
+      "name": "PYTHON_VERSION",
+      "value": "3.1"
+    }
+  ]
+}
