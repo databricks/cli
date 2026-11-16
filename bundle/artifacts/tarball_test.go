@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,7 +61,7 @@ func TestTarballFromGitArchivesRef(t *testing.T) {
 	runGit(t, repo, "add", "-A")
 	runGit(t, repo, "commit", "-qm", "init")
 
-	b := &bundle.Bundle{SyncRootPath: repo, WorktreeRoot: vfs.MustNew(repo)}
+	b := &bundle.Bundle{SyncRootPath: repo}
 	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf bytes.Buffer
@@ -95,7 +95,7 @@ func TestTarballFromGitIsReproducible(t *testing.T) {
 	runGit(t, repo, "add", "-A")
 	runGit(t, repo, "commit", "-qm", "init")
 
-	b := &bundle.Bundle{SyncRootPath: repo, WorktreeRoot: vfs.MustNew(repo)}
+	b := &bundle.Bundle{SyncRootPath: repo}
 	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf1, buf2 bytes.Buffer
@@ -105,4 +105,50 @@ func TestTarballFromGitIsReproducible(t *testing.T) {
 	assert.Equal(t, buf1.Bytes(), buf2.Bytes(), "identical tree must compress to identical bytes")
 	// Round-trips through gzip and carries the packed file.
 	assert.Equal(t, "print('x')", strings.TrimSpace(tarEntries(t, buf1.Bytes())["train.py"]))
+}
+
+// TestTarballFromGitSubdirIsReproducible covers a `path` below the repository root:
+// entries are relative to `path` and carry the commit time, not the current time,
+// so rebuilding the same commit gives the same bytes.
+func TestTarballFromGitSubdirIsReproducible(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	runGit(t, repo, "config", "core.autocrlf", "false")
+	src := filepath.Join(repo, "proj", "src")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "main.py"), []byte("print('x')\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "unrelated.py"), []byte("print('y')\n"), 0o644))
+	runGit(t, repo, "add", "-A")
+	commitTime := time.Unix(1700000000, 0)
+	cmd := exec.Command("git", "commit", "-qm", "init")
+	cmd.Dir = repo
+	cmd.Env = append(os.Environ(), "GIT_COMMITTER_DATE=@1700000000 +0000", "GIT_AUTHOR_DATE=@1700000000 +0000")
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git commit: %s", out)
+
+	b := &bundle.Bundle{SyncRootPath: filepath.Join(repo, "proj")}
+	a := &config.Artifact{Path: src, Git: &config.ArtifactGit{Commit: "HEAD"}}
+
+	var buf bytes.Buffer
+	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf))
+
+	gzr, err := gzip.NewReader(bytes.NewReader(buf.Bytes()))
+	require.NoError(t, err)
+	tr := tar.NewReader(gzr)
+	var names []string
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err)
+		if hdr.Typeflag == tar.TypeXGlobalHeader {
+			continue
+		}
+		names = append(names, hdr.Name)
+		assert.True(t, commitTime.Equal(hdr.ModTime), "%s: mtime %v, want commit time %v", hdr.Name, hdr.ModTime, commitTime)
+	}
+	assert.Equal(t, []string{"main.py"}, names)
 }

@@ -160,9 +160,8 @@ func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifac
 }
 
 // tarballFromGit snapshots a git ref via `git archive`, so the archive reflects the
-// committed tree at that ref. Entries are named relative to `path` (the tree at
-// `<ref>:<path>`); `include`, when set, scopes the archived pathspecs. Commit wins over
-// Branch.
+// committed tree at that ref. Entries are named relative to `path`; `include`, when
+// set, scopes the archived pathspecs. Commit wins over Branch.
 func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w io.Writer) error {
 	ref := a.Git.Commit
 	if ref == "" {
@@ -171,22 +170,13 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	if ref == "" {
 		return errors.New("git artifact: specify git.commit or git.branch")
 	}
-	// Run git from the worktree root with `path` relative to it: <ref>:<path> resolves
-	// from the repository root, and git archive drops entries outside the working
-	// directory, so running from a bundle nested in the repo yields a wrong or empty tree.
-	gitRoot := b.WorktreeRoot.Native()
-	relBase, err := filepath.Rel(gitRoot, a.Path)
-	if err != nil {
-		return fmt.Errorf("artifact path %q: %w", a.Path, err)
-	}
-	treeish := ref
-	if relBase != "." {
-		// The tree at <ref>:<path>, so entries come out relative to `path`.
-		treeish = ref + ":" + filepath.ToSlash(relBase)
-	}
+	// Run from `path`: git archive then keeps only that directory, with entries and
+	// include pathspecs relative to it, wherever it sits in the repository. Archiving a
+	// commit (not a <ref>:<path> tree) also stamps entries with the commit time, which
+	// keeps the tarball reproducible.
 	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
 	// --format=tar.gz gzip is single-threaded, whereas pgzip spreads it across cores.
-	args := []string{"-C", gitRoot, "archive", "--format=tar", treeish}
+	args := []string{"-C", a.Path, "archive", "--format=tar", ref}
 	if len(a.Include) > 0 {
 		args = append(args, "--")
 		args = append(args, a.Include...)
@@ -201,7 +191,7 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		gzw.Close()
-		return fmt.Errorf("git archive %s: %w: %s", treeish, err, stderr.String())
+		return fmt.Errorf("git archive %s: %w: %s", ref, err, stderr.String())
 	}
 	return gzw.Close()
 }
