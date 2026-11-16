@@ -41,10 +41,13 @@ class TestBuildCliWheels(unittest.TestCase):
             wheels = sorted(p.name for p in out.glob("*.whl"))
             self.assertEqual(len(wheels), len(b.PLATFORMS))
             self.assertIn("databricks-1.23.0-py3-none-win_amd64.whl", wheels)
-            with zipfile.ZipFile(out / "databricks-1.23.0-py3-none-macosx_11_0_arm64.whl") as z:
+            with zipfile.ZipFile(out / "databricks-1.23.0-py3-none-macosx_13_0_arm64.whl") as z:
                 script = z.getinfo("databricks-1.23.0.data/scripts/databricks")
                 self.assertEqual(script.external_attr >> 16, 0o100755)
-                self.assertIn("Tag: py3-none-macosx_11_0_arm64", z.read("databricks-1.23.0.dist-info/WHEEL").decode())
+                self.assertIn("Tag: py3-none-macosx_13_0_arm64", z.read("databricks-1.23.0.dist-info/WHEEL").decode())
+                metadata = z.read("databricks-1.23.0.dist-info/METADATA").decode()
+                self.assertTrue(metadata.startswith("Metadata-Version: 2.4\n"))
+                self.assertIn("License-File: LICENSE\n", metadata)
 
 
 if __name__ == "__main__":

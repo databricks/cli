@@ -42,8 +42,10 @@ Source: https://github.com/databricks/cli
 PLATFORMS = {
     ("linux", "amd64"): "manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64",
     ("linux", "arm64"): "manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64",
-    ("darwin", "amd64"): "macosx_11_0_x86_64",
-    ("darwin", "arm64"): "macosx_11_0_arm64",
+    # Go 1.27 binaries require macOS 13 (LC_BUILD_VERSION minos); a lower tag
+    # would install a binary that cannot start on older macOS.
+    ("darwin", "amd64"): "macosx_13_0_x86_64",
+    ("darwin", "arm64"): "macosx_13_0_arm64",
     ("windows", "amd64"): "win_amd64",
     ("windows", "arm64"): "win_arm64",
 }
@@ -111,12 +113,13 @@ def build_wheel(
     data_dir = f"{DIST_NAME}-{version}.data"
 
     metadata = (
-        "Metadata-Version: 2.1\n"
+        # 2.4 is the first version that allows License-File; PyPI validates this.
+        "Metadata-Version: 2.4\n"
         f"Name: {DIST_NAME}\n"
         f"Version: {version}\n"
         f"Summary: {SUMMARY}\n"
-        "Home-page: https://github.com/databricks/cli\n"
-        "License: Databricks License\n"
+        "Project-URL: Source, https://github.com/databricks/cli\n"
+        "Project-URL: Documentation, https://docs.databricks.com/dev-tools/cli/\n"
         "License-File: LICENSE\n"
         "Description-Content-Type: text/markdown\n"
         f"\n{DESCRIPTION}"
