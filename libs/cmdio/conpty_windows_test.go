@@ -87,3 +87,11 @@ func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
 	assert.Equal(t, termenv.ANSI, r.ColorProfile())
 	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
 }
+
+func TestNewRendererMSYSPipeHonorsCLICOLOR(t *testing.T) {
+	t.Setenv("CLICOLOR", "0")
+	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty1-to-master", os.Getpid()+3))
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
+	r, _ := NewRenderer(ctx, f)
+	assert.Equal(t, termenv.Ascii, r.ColorProfile())
+}

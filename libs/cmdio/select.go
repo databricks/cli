@@ -43,30 +43,39 @@ const (
 // (NO_COLOR) the color helpers pass text through unchanged; bold, faint,
 // italic and underline are not colors and always apply.
 func promptFuncMap(color bool) template.FuncMap {
-	c := func(code string) func(any) string {
-		if !color {
-			return func(v any) string { return fmt.Sprint(v) }
-		}
-		return promptANSI(code)
-	}
 	return template.FuncMap{
 		"bold":      promptANSI(ansiBold),
 		"faint":     promptANSI(ansiFaint),
 		"italic":    promptANSI(ansiItalic),
 		"underline": promptANSI(ansiUnderline),
-		"red":       c(ansiRed),
-		"green":     c(ansiGreen),
-		"yellow":    c(ansiYellow),
-		"blue":      c(ansiBlue),
-		"magenta":   c(ansiMagenta),
-		"cyan":      c(ansiCyan),
+		"red":       promptANSI(colorCode(color, ansiRed)),
+		"green":     promptANSI(colorCode(color, ansiGreen)),
+		"yellow":    promptANSI(colorCode(color, ansiYellow)),
+		"blue":      promptANSI(colorCode(color, ansiBlue)),
+		"magenta":   promptANSI(colorCode(color, ansiMagenta)),
+		"cyan":      promptANSI(colorCode(color, ansiCyan)),
 	}
 }
 
+// promptANSI wraps a value in an SGR code. An empty code (a color with color
+// off) passes the value through unchanged.
 func promptANSI(prefix string) func(any) string {
+	if prefix == "" {
+		return func(v any) string { return fmt.Sprint(v) }
+	}
 	return func(v any) string {
 		return prefix + fmt.Sprint(v) + ansiReset
 	}
+}
+
+// colorCode returns code, or "" with color off. Prompts use it for colors
+// only: bold, faint, italic and underline are not colors, so NO_COLOR keeps
+// them.
+func colorCode(color bool, code string) string {
+	if !color {
+		return ""
+	}
+	return code
 }
 
 // SelectOptions configures an interactive single-choice picker shown by

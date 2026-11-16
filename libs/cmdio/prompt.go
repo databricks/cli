@@ -97,14 +97,6 @@ func newPromptModel(opts PromptOptions, color bool) *promptModel {
 	}
 }
 
-// paint returns the color code, or "" with color off.
-func (m *promptModel) paint(code string) string {
-	if !m.color {
-		return ""
-	}
-	return code
-}
-
 func (m *promptModel) value() string {
 	return string(m.runes)
 }
@@ -114,12 +106,12 @@ func (m *promptModel) value() string {
 // blank before that.
 func (m *promptModel) glyph() string {
 	if m.validate == nil || m.validate(m.value()) == nil {
-		return ansiBold + m.paint(ansiGreen) + glyphValid + ansiReset
+		return ansiBold + colorCode(m.color, ansiGreen) + glyphValid + ansiReset
 	}
 	if !m.touched {
 		return glyphBlank
 	}
-	return ansiBold + m.paint(ansiRed) + glyphInvalid + ansiReset
+	return ansiBold + colorCode(m.color, ansiRed) + glyphInvalid + ansiReset
 }
 
 func (m *promptModel) Init() tea.Cmd { return nil }
@@ -256,7 +248,7 @@ func (m *promptModel) View() string {
 	if m.submitErr != nil {
 		// Validation error line captured at the failed Enter; cleared on
 		// the next edit.
-		line += "\n" + m.paint(ansiRed) + ">> " + m.submitErr.Error() + ansiReset
+		line += "\n" + colorCode(m.color, ansiRed) + ">> " + m.submitErr.Error() + ansiReset
 	}
 	return line
 }
