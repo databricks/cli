@@ -675,7 +675,10 @@ func configSchema() configField {
     NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
     WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
     MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
-    HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set`,
+    HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set
+
+  mlflow.start_run() attaches to MLFLOW_RUN_ID. The Hugging Face Trainer starts
+  it on its own, so don't also call mlflow.start_run() when you use the Trainer.`,
 		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
 	}
 }
