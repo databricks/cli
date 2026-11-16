@@ -70,3 +70,9 @@ backend_defaults:
   # s.SchemaPath("event_log", "schema").SetComputed()
   - field: event_log.catalog
   - field: event_log.schema
+
+  # Lakeflow Connect fills in the staging location when it is omitted: the destination
+  # catalog/schema and a __databricks_ingestion_gateway_staging_data-<pipeline-id> volume.
+  # The value embeds the pipeline's own id, so no config can match it and it cannot be
+  # pinned with values. An explicitly configured data_staging_options still compares as usual.
+  - field: ingestion_definition.data_staging_options

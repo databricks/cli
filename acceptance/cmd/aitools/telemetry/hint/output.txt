@@ -1,15 +1,18 @@
 
-=== hint printed on an authenticated command: one hint-shown event is uploaded
+=== hint printed on an authenticated command: one hint-shown event per printed line is uploaded
 
 >>> [CLI] jobs list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 
 >>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"CLAUDE_CODE_NATIVE"}}
 {"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 
 === hint printed on a command that resolves no auth: nothing is uploaded
 
 >>> [CLI] version
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 Databricks CLI v[CLI_VERSION]
 

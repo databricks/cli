@@ -1,9 +1,16 @@
 package sandbox
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -149,4 +156,94 @@ func TestRemoveSandboxKeepsGatewayHostWhileSandboxesRemain(t *testing.T) {
 	require.NoError(t, setGatewayHost(ctx, "p", "gw.example.test"))
 	require.NoError(t, removeSandbox(ctx, "p", "drop"))
 	assert.Equal(t, "gw.example.test", getGatewayHost(ctx, "p"))
+}
+
+// newLookupAPI returns a sandbox API whose GET for testSandboxID answers with status.
+func newLookupAPI(t *testing.T, status int) *sandboxAPI {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			assert.NoError(t, json.NewEncoder(w).Encode(map[string]string{
+				"oidc_endpoint": "https://workspace.example.test/oidc",
+			}))
+			return
+		}
+		assert.Equal(t, sandboxPath(testSandboxID), r.URL.Path)
+		w.WriteHeader(status)
+		if status == http.StatusOK {
+			assert.NoError(t, json.NewEncoder(w).Encode(sandboxEntry{SandboxID: testSandboxID, Status: "Running"}))
+			return
+		}
+		_, _ = io.WriteString(w, `{"error_code": "ERROR", "message": "lookup failed"}`)
+	}))
+	t.Cleanup(server.Close)
+
+	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+	api, err := newSandboxAPI(workspaceClient)
+	require.NoError(t, err)
+	return api
+}
+
+func TestResolveSandboxUsesDefault(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	ctx = cmdio.MockDiscard(ctx)
+	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
+
+	got, sb, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", "")
+	require.NoError(t, err)
+	assert.Equal(t, testSandboxID, got)
+	assert.Equal(t, "Running", sb.Status)
+}
+
+func TestResolveSandboxClearsMissingDefault(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	ctx = cmdio.MockDiscard(ctx)
+	require.NoError(t, setDefault(ctx, "profile", testSandboxID))
+
+	_, _, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", "")
+	assert.ErrorContains(t, err, `saved default "`+testSandboxID+`" no longer exists (cleared)`)
+	assert.Empty(t, getDefault(ctx, "profile"))
+}
+
+func TestResolveSandboxRejectsUnknownID(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	ctx = cmdio.MockDiscard(ctx)
+
+	_, _, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusNotFound), "profile", testSandboxID)
+	assert.ErrorContains(t, err, `no sandbox named "`+testSandboxID+`"`)
+}
+
+func TestResolveSandboxFailsOnRejectedLookup(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	ctx = cmdio.MockDiscard(ctx)
+
+	_, _, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusBadRequest), "profile", testSandboxID)
+	assert.ErrorContains(t, err, "failed to look up sandbox "+testSandboxID)
+}
+
+func TestResolveSandboxContinuesOnOtherLookupErrors(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	ctx = cmdio.MockDiscard(ctx)
+
+	got, sb, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusForbidden), "profile", testSandboxID)
+	require.NoError(t, err)
+	assert.Equal(t, testSandboxID, got)
+	assert.Nil(t, sb)
+}
+
+func TestResolveSandboxRejectsIDsThatAreNotOneSegment(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	for _, id := range []string{".", "..", "a/../../api/2.0", `a\..\b`} {
+		t.Run(id, func(t *testing.T) {
+			_, _, err := resolveSandbox(ctx, nil, "profile", id)
+			assert.EqualError(t, err, fmt.Sprintf("invalid sandbox ID %q", id))
+		})
+	}
+}
+
+func TestResolveSandboxRequiresDefault(t *testing.T) {
+	ctx, _ := stateCtx(t)
+
+	_, _, err := resolveSandbox(ctx, nil, "profile", "")
+	assert.ErrorContains(t, err, "no default sandbox configured")
 }

@@ -51,6 +51,7 @@ resources.jobs.*.environments[*].spec.client	string	ALL
 resources.jobs.*.environments[*].spec.dependencies	[]string	ALL
 resources.jobs.*.environments[*].spec.dependencies[*]	string	ALL
 resources.jobs.*.environments[*].spec.environment_version	string	ALL
+resources.jobs.*.environments[*].spec.image_uri	string	ALL
 resources.jobs.*.environments[*].spec.java_dependencies	[]string	ALL
 resources.jobs.*.environments[*].spec.java_dependencies[*]	string	ALL
 resources.jobs.*.environments[*].spec.project_environment	string	ALL

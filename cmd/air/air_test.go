@@ -117,3 +117,12 @@ func TestRunErrorOmitsDebugTipWhenDebugEnabled(t *testing.T) {
 	assert.Same(t, originalErr, err)
 	assert.NotContains(t, err.Error(), "use the --debug flag")
 }
+
+func TestRunHelpPointsToAgentSkill(t *testing.T) {
+	run := findSubcommand(t, New(), "run")
+	var out bytes.Buffer
+	run.SetOut(&out)
+	run.HelpFunc()(run, nil)
+	assert.Contains(t, out.String(), "databricks-ai-runtime skill")
+	assert.Contains(t, out.String(), "  "+skillInstallCommand+"\n")
+}

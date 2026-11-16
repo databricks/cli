@@ -1,5 +1,10 @@
 export CLAUDECODE=1
+# Claude Code sets CLAUDE_CODE_CHILD_SESSION in the commands it runs, which
+# enables the native <claude-code-hint> line; CI suppresses it.
+export CLAUDE_CODE_CHILD_SESSION=1
 unset CLAUDE_CODE_SESSION_ID
+# CI and the CI/CD provider markers the SDK detects (GitHub Actions sets both).
+unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID
 
 # aitools commands skip the install hint; version exercises it without auth or network.
 sethome ./empty-home
@@ -16,3 +21,15 @@ trace CLAUDE_CONFIG_DIR= $CLI version
 title "Unset override uses the default installation"
 unset CLAUDE_CONFIG_DIR
 trace $CLI version
+
+sethome ./empty-home
+title "Outside a Claude Code subprocess only the text hint prints"
+trace CLAUDE_CODE_CHILD_SESSION= $CLI version
+
+# The session throttle lives in the file cache, which a host could disable.
+export DATABRICKS_CACHE_ENABLED=true
+title "Within one session both lines print once, so 2>&1 pipelines see them only on the first command"
+export CLAUDE_CODE_SESSION_ID=session-1
+trace $CLI version
+trace $CLI version
+unset CLAUDE_CODE_SESSION_ID

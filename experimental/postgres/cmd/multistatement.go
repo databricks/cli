@@ -12,13 +12,14 @@ import (
 var errMultipleStatements = errors.New("input contains multiple statements (a ';' separates two or more statements)")
 
 // checkSingleStatement walks sql and returns errMultipleStatements if a
-// statement-terminating ';' is found anywhere except trailing whitespace.
+// statement-terminating ';' is followed by anything other than whitespace,
+// comments and further ';'. Postgres drops the empty statements those form.
 //
 // The scanner ignores ';' inside:
 //   - single-quoted strings ('a;b', SQL standard doubled-quote escape)
 //   - double-quoted identifiers ("col;name")
-//   - line comments (-- ... \n)
-//   - block comments (/* ... */, non-nesting)
+//   - line comments (-- ... up to \n or \r)
+//   - block comments (/* ... */, nesting as in Postgres)
 //   - dollar-quoted bodies ($tag$ ... $tag$, optional tag)
 //
 // Over-rejection on weird syntactic edge cases is acceptable: users get a
@@ -26,20 +27,20 @@ var errMultipleStatements = errors.New("input contains multiple statements (a ';
 // a real Postgres tokenizer.
 func checkSingleStatement(sql string) error {
 	s := sql
-	// Trim trailing whitespace once so a single trailing ';' is allowed.
-	end := len(strings.TrimRight(s, " \t\r\n"))
+	end := len(s)
 
+	terminated := false
 	i := 0
 	for i < end {
 		c := s[i]
 
+		if terminated && !isSQLSpace(c) && c != ';' && !startsComment(s, i, end) {
+			return errMultipleStatements
+		}
+
 		switch c {
 		case ';':
-			// A ';' that's not at end-of-trimmed-input is a separator.
-			if i < end-1 {
-				return errMultipleStatements
-			}
-			// Trailing ';' is fine.
+			terminated = true
 			i++
 
 		case '\'':
@@ -103,21 +104,46 @@ func scanQuoted(s string, start, end int, quote byte) int {
 	return end
 }
 
+// isSQLSpace reports whether c is whitespace to the Postgres lexer.
+func isSQLSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v'
+}
+
+// startsComment reports whether a "--" or "/*" comment starts at s[i].
+func startsComment(s string, i, end int) bool {
+	return i+1 < end && ((s[i] == '-' && s[i+1] == '-') || (s[i] == '/' && s[i+1] == '*'))
+}
+
+// scanLineComment advances past a "--" comment opened at s[start]. Like the
+// Postgres lexer, it ends the comment at either '\n' or '\r'.
 func scanLineComment(s string, start, end int) int {
 	i := start + 2
-	for i < end && s[i] != '\n' {
+	for i < end && s[i] != '\n' && s[i] != '\r' {
 		i++
 	}
 	return i
 }
 
+// scanBlockComment advances past a "/*" comment opened at s[start]. Postgres
+// nests block comments, so the comment ends at the "*/" that closes the
+// outermost "/*". Returns end if unterminated.
 func scanBlockComment(s string, start, end int) int {
+	depth := 1
 	i := start + 2
 	for i+1 < end {
-		if s[i] == '*' && s[i+1] == '/' {
-			return i + 2
+		switch {
+		case s[i] == '/' && s[i+1] == '*':
+			depth++
+			i += 2
+		case s[i] == '*' && s[i+1] == '/':
+			depth--
+			i += 2
+			if depth == 0 {
+				return i
+			}
+		default:
+			i++
 		}
-		i++
 	}
 	return end
 }

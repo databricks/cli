@@ -1,0 +1,11 @@
+bundle:
+  name: empty-id-in-state
+
+resources:
+  jobs:
+    foo:
+      name: foo
+    bar:
+      name: bar
+    baz:
+      name: baz

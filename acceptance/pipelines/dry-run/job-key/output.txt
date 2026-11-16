@@ -1,0 +1,47 @@
+
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dry-run-job-key/default/files...
+Created jobs.my_job
+Created pipelines.my_pipeline
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+View your job my_job here: [DATABRICKS_URL]/jobs/[JOB_ID]?w=[WORKSPACE_ID]
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WORKSPACE_ID]
+
+=== Dry running a job KEY
+
+>>> [CLI] pipelines dry-run my_job
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Error: resource my_job is not a pipeline
+
+Exit code: 1
+
+=== Completion only offers pipelines
+
+>>> [CLI] __complete pipelines dry-run ,
+my_pipeline
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+=== Dry running the pipeline KEY
+
+>>> [CLI] pipelines dry-run my_pipeline
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID][0]/updates/[UUID][1]
+
+Update ID: [UUID][1]
+
+=== Only the pipeline update is requested, with validate_only set
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "body": {
+    "validate_only": true
+  }
+}

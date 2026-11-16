@@ -480,7 +480,8 @@ func TestLogsCommandRepeatsRunLinkAfterStreaming(t *testing.T) {
 					assert.Contains(t, buf.String(), `"line":"step 2"`)
 					assert.NotContains(t, buf.String(), "View job run at:")
 				} else {
-					assert.Equal(t, "step 1\nstep 2\n\nView job run at: "+srv.URL+"/jobs/runs/777\n", buf.String())
+					// stderr shares buf and is not a TTY, so the waiting status prints as a line.
+					assert.Equal(t, "Waiting for run to start (node 0)...\nstep 1\nstep 2\n\nView job run at: "+srv.URL+"/jobs/runs/777\n", buf.String())
 				}
 			})
 		}

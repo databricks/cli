@@ -167,7 +167,7 @@ func newDeleteCredential() *cobra.Command {
 
 	var deleteCredentialReq catalog.DeleteCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
+	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force deletion even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 
 	cmd.Use = "delete-credential NAME_ARG"
 	cmd.Short = `Delete a credential.`
