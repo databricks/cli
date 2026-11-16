@@ -118,7 +118,7 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"B300 zero", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_8xB300"}, "must be positive"},
 		{"B300 negative", computeConfig{NumAccelerators: -8, AcceleratorType: "GPU_8xB300"}, "must be positive"},
 		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("normal")}, ""},
-		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.pool_id"},
+		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.accelerator_pool_id"},
 		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},
 	}
 	for _, tt := range tests {
@@ -132,4 +132,42 @@ func TestComputeConfigValidate(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
+}
+
+func TestComputeConfigAcceleratorPool(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		poolID, legacyID *string
+		want             *string
+		wantErr          string
+	}{
+		{name: "omitted"},
+		{name: "explicit", poolID: new("pool-1"), want: new("pool-1")},
+		{name: "legacy", legacyID: new("pool-1"), want: new("pool-1")},
+		{name: "both", poolID: new("pool-1"), legacyID: new("pool-1"), want: new("pool-1")},
+		{name: "trimmed", poolID: new(" pool-1 "), legacyID: new("pool-1"), want: new("pool-1")},
+		{name: "conflict", poolID: new("pool-1"), legacyID: new("pool-2"), wantErr: "must match"},
+		{name: "empty", poolID: new(""), wantErr: "compute.accelerator_pool_id cannot be empty"},
+		{name: "blank", poolID: new("  "), wantErr: "compute.accelerator_pool_id cannot be empty"},
+		{name: "maximum length", poolID: new(strings.Repeat("x", 255)), want: new(strings.Repeat("x", 255))},
+		{name: "too long", poolID: new(strings.Repeat("x", 256)), wantErr: "compute.accelerator_pool_id must be 255 characters or less"},
+		{name: "invalid alias", poolID: new("pool-1"), legacyID: new(""), wantErr: "compute.pool_id cannot be empty"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: tc.poolID, PoolID: tc.legacyID}
+			err := cfg.validate()
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, cfg.acceleratorPoolID())
+		})
+	}
+}
+
+func TestComputeConfigPriorityWithAcceleratorPool(t *testing.T) {
+	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new("pool-1"), PriorityClass: new("normal")}
+	require.NoError(t, cfg.validate())
+	assert.Equal(t, "NORMAL", *cfg.PriorityClass)
 }

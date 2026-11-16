@@ -302,8 +302,9 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
 		"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
 	}
-	if cfg.Compute.PoolID != nil {
-		compute["provisioned_capacity_id"] = nv(*cfg.Compute.PoolID, 3)
+	// Bundles still use the legacy field supported by their current schema.
+	if poolID := cfg.Compute.acceleratorPoolID(); poolID != nil {
+		compute["provisioned_capacity_id"] = nv(*poolID, 3)
 	}
 	deployment := map[string]dyn.Value{
 		"command_path": nv(localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)), 1),

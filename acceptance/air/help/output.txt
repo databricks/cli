@@ -111,7 +111,7 @@ View GPU pools provisioned for your workspace.
 
 A GPU pool is dedicated accelerator capacity that your Databricks account team
 provisions. Pools are optional: a run uses one only when its YAML sets
-compute.pool_id.
+compute.accelerator_pool_id.
 
 Usage:
   databricks air pools [flags]

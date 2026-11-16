@@ -793,7 +793,7 @@ func TestResolveConfigField_Containers(t *testing.T) {
 	compute, err := resolveConfigField("config.compute")
 	require.NoError(t, err)
 	assert.Equal(t, "object", compute.typeName)
-	require.Len(t, compute.children, 4)
+	require.Len(t, compute.children, 5)
 }
 
 func TestResolveConfigField_Errors(t *testing.T) {
@@ -905,12 +905,13 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	// Pool fields are set apart from the fields every run needs.
 	var compute strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&compute, "config.compute"))
-	fields, capacity, found := strings.Cut(compute.String(), "  Provisioned capacity (optional):\n")
+	fields, capacity, found := strings.Cut(compute.String(), "  GPU Pools (optional):\n")
 	require.True(t, found)
-	assert.Contains(t, fields, "  Fields:\n    num_accelerators  (required) ")
-	assert.Contains(t, fields, "    accelerator_type  (required) ")
+	assert.Contains(t, fields, "  Fields:\n    num_accelerators     (required) ")
+	assert.Contains(t, fields, "    accelerator_type     (required) ")
 	assert.NotContains(t, fields, "pool_id")
 	assert.Contains(t, capacity, "    pool_id ")
+	assert.Contains(t, capacity, "    accelerator_pool_id ")
 	assert.Contains(t, capacity, "    priority_class ")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
@@ -1215,5 +1216,26 @@ func assertNoInlineDocsLinks(t *testing.T, f configField) {
 	assert.NotContains(t, f.help, "docs.databricks.com", "%s: use the docs tag instead of an inline link", f.path)
 	for _, c := range f.children {
 		assertNoInlineDocsLinks(t, c)
+	}
+}
+
+func TestLoadRunConfigAcceleratorPool(t *testing.T) {
+	for _, tc := range []struct {
+		name, fields, wantErr string
+	}{
+		{name: "explicit", fields: "  accelerator_pool_id: pool-1\n"},
+		{name: "legacy", fields: "  pool_id: pool-1\n"},
+		{name: "both", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n"},
+		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: "must match"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tc.fields))
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, new("pool-1"), cfg.Compute.acceleratorPoolID())
+		})
 	}
 }

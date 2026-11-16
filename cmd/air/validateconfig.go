@@ -280,9 +280,7 @@ func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath stri
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
 		compute["accelerator_count"] = cfg.Compute.NumAccelerators
-		// Wire field stays provisioned_capacity_id (the backend name); the YAML
-		// field is pool_id.
-		putOpt(compute, "provisioned_capacity_id", cfg.Compute.PoolID)
+		putOpt(compute, "accelerator_pool_id", cfg.Compute.acceleratorPoolID())
 	}
 	deployment := map[string]any{"compute": compute}
 	if len(containers) == 0 {
@@ -305,7 +303,7 @@ func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath stri
 	}
 	if cfg.Compute != nil {
 		// priority_class rides on the ai_runtime_task (task-level), not the deployment
-		// compute where provisioned_capacity_id lives.
+		// compute where accelerator_pool_id lives.
 		putOpt(task, "priority_class", cfg.Compute.PriorityClass)
 	}
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)

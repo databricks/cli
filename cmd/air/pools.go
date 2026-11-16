@@ -21,7 +21,7 @@ import (
 )
 
 // A "GPU pool" is a pre-provisioned AI Runtime accelerator reservation — the
-// same reservation a run targets via compute.provisioned_capacity_id. "GPU
+// same reservation a run targets via compute.accelerator_pool_id. "GPU
 // pool" (or "pool") is the product-facing name used across the Compute page and
 // this CLI. The backend still models and serves these as AiWorkflowService
 // ProvisionedCapacity resources, so the endpoint path and the wire structs
@@ -189,7 +189,7 @@ func newPoolsCommand() *cobra.Command {
 
 A GPU pool is dedicated accelerator capacity that your Databricks account team
 provisions. Pools are optional: a run uses one only when its YAML sets
-compute.pool_id.`,
+compute.accelerator_pool_id.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
 

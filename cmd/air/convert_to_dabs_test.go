@@ -110,7 +110,7 @@ command: python train.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1
-  pool_id: capacity-1
+  accelerator_pool_id: capacity-1
 max_retries: 2
 timeout_minutes: 30
 mlflow_run_name: run-42

@@ -222,8 +222,8 @@ func injectContainers(body map[string]any, containers []submittedContainer) erro
 
 // injectPoolFields sets the pool-only fields the SDK does not model onto the
 // decoded submit body: priority_class rides directly on the ai_runtime_task,
-// while provisioned_capacity_id (the wire name for the pool) rides on the
-// deployment's compute spec. Each is set only when non-empty.
+// while accelerator_pool_id rides on the deployment's compute spec.
+// Each is set only when non-empty.
 func injectPoolFields(body map[string]any, poolID, priorityClass string) error {
 	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
 	if err != nil {
@@ -245,7 +245,7 @@ func injectPoolFields(body map[string]any, poolID, priorityClass string) error {
 		if !ok {
 			return errors.New("AIR submit payload is missing deployment compute")
 		}
-		computeSpec["provisioned_capacity_id"] = poolID
+		computeSpec["accelerator_pool_id"] = poolID
 	}
 	return nil
 }
@@ -435,11 +435,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
-	// The pool id is sent on the wire as provisioned_capacity_id (the backend's
-	// name for a GPU pool); only the user-facing YAML field is pool_id.
 	poolID := ""
-	if cfg.Compute.PoolID != nil {
-		poolID = *cfg.Compute.PoolID
+	if selectedPoolID := cfg.Compute.acceleratorPoolID(); selectedPoolID != nil {
+		poolID = *selectedPoolID
 	}
 	priorityClass := ""
 	if cfg.Compute.PriorityClass != nil {
