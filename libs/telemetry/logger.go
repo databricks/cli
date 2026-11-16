@@ -114,13 +114,9 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
 	}
 
-	protoLogs := make([]string, len(l.logs))
-	for i, log := range l.logs {
-		b, err := json.Marshal(log)
-		if err != nil {
-			return fmt.Errorf("failed to marshal log: %w", err)
-		}
-		protoLogs[i] = string(b)
+	protoLogs, err := marshalLogs(l.logs)
+	if err != nil {
+		return err
 	}
 
 	if !cmdctx.HasConfigUsed(ctx) {
@@ -313,6 +309,38 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 	}
 	r.Header = authReq.Header
 	return nil
+}
+
+// Send uploads logs in a single request and returns an error unless all of them
+// were accepted. It is meant for events the user explicitly asked to send, so
+// unlike Upload it does not honor DATABRICKS_CLI_DISABLE_TELEMETRY or run in the
+// background after the command.
+func Send(ctx context.Context, apiClient *client.DatabricksClient, logs []protos.FrontendLog) error {
+	protoLogs, err := marshalLogs(logs)
+	if err != nil {
+		return err
+	}
+
+	resp, err := attempt(ctx, apiClient, protoLogs)
+	if err != nil {
+		return err
+	}
+	if resp.NumProtoSuccess < int64(len(protoLogs)) {
+		return fmt.Errorf("only %d of %d logs were accepted", resp.NumProtoSuccess, len(protoLogs))
+	}
+	return nil
+}
+
+func marshalLogs(logs []protos.FrontendLog) ([]string, error) {
+	protoLogs := make([]string, len(logs))
+	for i, log := range logs {
+		b, err := json.Marshal(log)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal log: %w", err)
+		}
+		protoLogs[i] = string(b)
+	}
+	return protoLogs, nil
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {

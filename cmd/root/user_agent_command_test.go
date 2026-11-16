@@ -24,9 +24,9 @@ func TestWithCommandInUserAgent(t *testing.T) {
 	root.AddCommand(hello)
 	hello.AddCommand(world)
 
-	assert.Equal(t, "root", commandString(root))
-	assert.Equal(t, "hello", commandString(hello))
-	assert.Equal(t, "hello_world", commandString(world))
+	assert.Equal(t, "root", CommandString(root))
+	assert.Equal(t, "hello", CommandString(hello))
+	assert.Equal(t, "hello_world", CommandString(world))
 
 	ctx := withCommandInUserAgent(t.Context(), world)
 
