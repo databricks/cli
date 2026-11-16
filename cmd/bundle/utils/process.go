@@ -189,6 +189,25 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+
+	// needsState is narrower than shouldReadState: it drops the pull-only flags
+	// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
+	// and display the state without triggering a migration, and adds PostStateFunc for
+	// commands that operate on the state (destroy, run). It gates migrating and opening
+	// the direct state.
+	needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
+
+	// A command that reads and operates on the state always runs on the direct engine: a
+	// Terraform state is migrated first, and a failed migration is fatal. Tag the user agent
+	// before initialization so the requests made while initializing and pulling the state
+	// carry the engine too, not only those made after the state is resolved.
+	engineTaggedUpfront := shouldReadState && needsState
+	if engineTaggedUpfront {
+		ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
+		cmd.SetContext(ctx)
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -239,8 +258,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
-
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
@@ -250,11 +267,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		b.MigratingToDirect = !stateDesc.Engine.IsDirect()
 
-		// Tag the user agent with the engine this run actually uses. On the auto-migration
-		// path the engine is only final after the migration runs (below), so leave it unset
-		// here and tag there; setting it once rather than appending avoids a stale
-		// engine/terraform tag alongside engine/direct.
-		if !b.MigratingToDirect {
+		// Pull-only commands were not tagged up front: tag them with the engine this run
+		// actually uses. On the auto-migration path the engine is only final after the
+		// migration runs (below), so leave it unset here and tag there; setting it once
+		// rather than appending avoids a stale engine/terraform tag alongside engine/direct.
+		if !b.MigratingToDirect && !engineTaggedUpfront {
 			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 		}
 		ctx = WithLineage(ctx, stateDesc)
@@ -328,13 +345,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// and state opening still happen in this single block.
 	var plan *deployplan.Plan
 	if shouldReadState {
-		// needsState is narrower than shouldReadState: it drops the pull-only flags
-		// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
-		// and display the state without triggering a migration, and adds PostStateFunc for
-		// commands that operate on the state (destroy, run). It gates migrating and opening
-		// the direct state.
-		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
-
 		// Migrate a Terraform state to the direct engine: the direct engine is the only engine,
 		// so when the existing state still uses Terraform, convert it so the run proceeds on the
 		// direct engine. Migrate is in-memory and reversible - nothing is written or pushed - so
@@ -353,7 +363,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// after the pull on the auto-migration path (see above) because the engine is only
 		// final here, after the migration ran, was skipped, or fell back. Setting it once
 		// (rather than appending) avoids a stale engine/terraform tag alongside engine/direct.
-		if b.MigratingToDirect {
+		if b.MigratingToDirect && !engineTaggedUpfront {
 			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 			cmd.SetContext(ctx)
 		}
