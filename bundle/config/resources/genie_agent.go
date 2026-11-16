@@ -23,7 +23,9 @@ import (
 type GenieAgentConfig struct {
 	// Client-specified ID for the agent: 32 lowercase hexadecimal characters
 	// (a UUID without dashes), not all zeros. Assigned by the server if
-	// omitted. Immutable: changing it recreates the resource.
+	// omitted. Immutable: changing it recreates the resource. After bundle destroy
+	// or deletion, the agent remains in trash with its ID reserved until
+	// permanently removed. Omit this field to let the server assign an ID.
 	GenieAgentId string `json:"genie_agent_id,omitempty"`
 	// Display name of the Genie Agent. Must be unique within its folder. The
 	// maximum length is 63 characters.

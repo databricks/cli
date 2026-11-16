@@ -9,12 +9,37 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] genie-agents delete-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
 
-=== Plan should detect the resource is gone and re-create it
+=== Plan detects the resource is gone
 
 >>> [CLI] bundle plan
 create genie_agents.agent1
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== Deploy cannot reuse the pinned ID
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot create resources.genie_agents.agent1: Genie Agent 01f0a1b2c3d4e5f60718293a4b5c6d7e already exists (409 ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/genie/agents?genie_agent_id=01f0a1b2c3d4e5f60718293a4b5c6d7e
+HTTP Status: 409 Conflict
+API error_code: ALREADY_EXISTS
+API message: Genie Agent 01f0a1b2c3d4e5f60718293a4b5c6d7e already exists
+
+Files: 0 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot create resources.genie_agents.agent1: Genie Agent 01f0a1b2c3d4e5f60718293a4b5c6d7e already exists (409 ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/genie/agents?genie_agent_id=01f0a1b2c3d4e5f60718293a4b5c6d7e
+HTTP Status: 409 Conflict
+API error_code: ALREADY_EXISTS
+API message: Genie Agent 01f0a1b2c3d4e5f60718293a4b5c6d7e already exists
+
+Files: 1 uploaded, 0 deleted
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default

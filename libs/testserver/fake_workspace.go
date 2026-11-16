@@ -234,6 +234,7 @@ type FakeWorkspace struct {
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	GenieAgents           map[string]genieagents.GenieAgent
+	GenieAgentIDsInTrash  map[string]bool
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
 	PurgedAlertIDs        map[string]bool
@@ -556,6 +557,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		GenieAgents:           map[string]genieagents.GenieAgent{},
+		GenieAgentIDsInTrash:  map[string]bool{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,

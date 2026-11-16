@@ -1253,7 +1253,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "genie_agent_id": {
-                        "description": "Client-specified ID for the agent: 32 lowercase hexadecimal characters (a UUID without dashes), not all zeros. Assigned by the server if omitted. Immutable: changing this field recreates the resource.",
+                        "description": "Client-specified ID for the agent: 32 lowercase hexadecimal characters (a UUID without dashes), not all zeros. Assigned by the server if omitted. Immutable: changing this field recreates the resource. After bundle destroy or deletion, the agent remains in trash with its ID reserved until permanently removed. Omit this field to let the server assign an ID.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {

@@ -73,9 +73,8 @@ func genieAgentBody(config *resources.GenieAgentConfig) genieagents.GenieAgent {
 
 // responseToGenieAgentConfig converts a returned GenieAgent into the bundle
 // state. The server-derived name, etag, timestamps and effective_parent_path
-// have no config counterpart and are dropped here. GET returns the parent path
-// without the /Workspace prefix, so ensureWorkspacePrefix re-adds it to match
-// the local configuration (same handling as ResourceGenieSpace).
+// have no config counterpart and are dropped here. The API returns parent_path
+// exactly as submitted; effective_parent_path may omit /Workspace and is ignored.
 func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieAgentConfig {
 	definition := agent.Definition
 	return &resources.GenieAgentConfig{
@@ -84,7 +83,7 @@ func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieA
 		Description:     agent.Description,
 		Definition:      &definition,
 		WarehouseId:     agent.WarehouseId,
-		ParentPath:      ensureWorkspacePrefix(agent.ParentPath),
+		ParentPath:      agent.ParentPath,
 		ForceSendFields: nil,
 	}
 }

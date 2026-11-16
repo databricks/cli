@@ -2,10 +2,12 @@ AGENT="01f0a1b2c3d4e5f60718293a4b5c6d7e"
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Create the object outside the bundle with the CLI's own create command.
-trace $CLI genie-agents create-genie-agent --json '{
+# Create the object outside the bundle in the same folder as its local config.
+AGENT_CONFIG=$(cat <<EOF
+{
   "display_name": "bound-agent",
   "warehouse_id": "test-warehouse-id",
+  "parent_path": "/Users/$CURRENT_USER_NAME",
   "definition": {
     "config": {
       "sample_questions": [
@@ -13,7 +15,10 @@ trace $CLI genie-agents create-genie-agent --json '{
       ]
     }
   }
-}' --genie-agent-id "$AGENT" | agent_fields
+}
+EOF
+)
+trace $CLI genie-agents create-genie-agent --json "$AGENT_CONFIG" --genie-agent-id "$AGENT" | agent_fields
 
 trace $CLI bundle deployment bind agent1 "$AGENT" --auto-approve
 

@@ -2,6 +2,7 @@
 >>> [CLI] genie-agents create-genie-agent --json {
   "display_name": "bound-agent",
   "warehouse_id": "test-warehouse-id",
+  "parent_path": "/Users/[USERNAME]",
   "definition": {
     "config": {
       "sample_questions": [
