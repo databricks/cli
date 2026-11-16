@@ -26,6 +26,15 @@ AIR:
           - 'cmd/air/**'
           - 'acceptance/air/**'
 
+aitools:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'cmd/aitools/**'
+          - 'libs/aitools/**'
+          - 'experimental/aitools/**'
+          - 'acceptance/cmd/aitools/**'
+          - 'acceptance/experimental/aitools/**'
+
 auth:
   - changed-files:
       - any-glob-to-any-file:
