@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
@@ -1968,6 +1969,7 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
+	cmd.Env = autoinstall.ChildEnv()
 	return cmd.Run()
 }
 
@@ -1997,6 +1999,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
+		cmd.Env = autoinstall.ChildEnv()
 		return cmd.Run()
 	default:
 		return nil

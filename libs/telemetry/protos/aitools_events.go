@@ -160,3 +160,59 @@ type AitoolsCommandEvent struct {
 	// omitted when none or both scopes are selected.
 	Scope AitoolsInstallScope `json:"scope,omitempty"`
 }
+
+// AitoolsAutoInstallOutcome mirrors AitoolsAutoInstallOutcome.Type: how the
+// automatic installation of Databricks AI tools on the first run of a new CLI
+// version ended.
+type AitoolsAutoInstallOutcome string
+
+const (
+	AitoolsAutoInstallOutcomeUnspecified AitoolsAutoInstallOutcome = "TYPE_UNSPECIFIED"
+	// The tools were installed, or an existing installation was updated.
+	AitoolsAutoInstallOutcomeInstalled AitoolsAutoInstallOutcome = "INSTALLED"
+	// The run was in CI (the CI env var is set).
+	AitoolsAutoInstallOutcomeSkippedCI AitoolsAutoInstallOutcome = "SKIPPED_CI"
+	// The user turned auto-install off: DATABRICKS_AITOOLS_AUTO_INSTALL=false,
+	// `aitools auto-install disable`, a global `aitools uninstall`, or "no"
+	// to the skills prompt of `apps init`.
+	AitoolsAutoInstallOutcomeSkippedOptOut AitoolsAutoInstallOutcome = "SKIPPED_OPTOUT"
+	// The machine is in the holdout cohort.
+	AitoolsAutoInstallOutcomeSkippedHoldout AitoolsAutoInstallOutcome = "SKIPPED_HOLDOUT"
+	// No supported coding agent has a config directory on the machine.
+	AitoolsAutoInstallOutcomeSkippedNoAgents AitoolsAutoInstallOutcome = "SKIPPED_NO_AGENTS"
+	// The attempt failed or timed out; a later run of the same version retries.
+	AitoolsAutoInstallOutcomeFailed AitoolsAutoInstallOutcome = "FAILED"
+	// The attempt failed and was the last one this CLI version gets.
+	AitoolsAutoInstallOutcomeRetriesExhausted AitoolsAutoInstallOutcome = "RETRIES_EXHAUSTED"
+)
+
+// AitoolsHoldoutArm mirrors AitoolsHoldoutArm.Type: the auto-install
+// experiment arm of the machine, from a stable per-machine bucket.
+type AitoolsHoldoutArm string
+
+const (
+	AitoolsHoldoutArmUnspecified AitoolsHoldoutArm = "TYPE_UNSPECIFIED"
+	// The machine never auto-installs (control group).
+	AitoolsHoldoutArmHoldout AitoolsHoldoutArm = "HOLDOUT"
+	// The machine auto-installs.
+	AitoolsHoldoutArmTreatment AitoolsHoldoutArm = "TREATMENT"
+)
+
+// AitoolsAutoInstallEvent is emitted when the CLI decides about installing
+// Databricks AI tools on the first run of a new version: once per version and
+// machine, plus once per retry after a failed attempt. A version whose outcome
+// is settled emits nothing, and so does a run that the remote gate turns off;
+// the CI and opt-out checks come before the gate, so they are emitted either
+// way. An install with no tools installed yet also emits an
+// AitoolsInstallEvent with Trigger AUTO_FIRST_RUN.
+type AitoolsAutoInstallEvent struct {
+	Outcome    AitoolsAutoInstallOutcome `json:"outcome"`
+	HoldoutArm AitoolsHoldoutArm         `json:"holdout_arm"`
+
+	// Whether the run could prompt (cmdio.IsPromptSupported and no coding
+	// agent detected). A measurable false, so no omitempty.
+	Interactive bool `json:"interactive"`
+
+	// Set for FAILED and RETRIES_EXHAUSTED.
+	ErrorCategory AitoolsErrorCategory `json:"error_category,omitempty"`
+}

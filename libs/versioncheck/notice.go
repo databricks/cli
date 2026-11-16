@@ -243,7 +243,7 @@ func notifyEnabled(ctx context.Context, cmd *cobra.Command) bool {
 
 func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions {
 	optedOut, _ := env.GetBool(ctx, disableEnv)
-	ci, _ := env.GetBool(ctx, ciEnv)
+	ci := InCI(ctx)
 	cacheDisabled := false
 	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {
 		cacheDisabled = true
@@ -265,6 +265,12 @@ func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions 
 		jsonOutput:       isJSONOutput(cmd),
 		exemptCommand:    isExemptCommand(cmd),
 	}
+}
+
+// InCI reports whether the CLI runs in continuous integration.
+func InCI(ctx context.Context) bool {
+	ci, _ := env.GetBool(ctx, ciEnv)
+	return ci
 }
 
 func isJSONOutput(cmd *cobra.Command) bool {

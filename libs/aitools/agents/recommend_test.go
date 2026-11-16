@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/telemetry"
@@ -133,6 +134,11 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	assert.NoError(t, <-errc)
 	// The prompt is logged when shown, so a declined prompt still counts.
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitPrompt}, hintKinds(t, ctx))
+	// The "no" also keeps the automatic install from installing.
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.True(t, state.OptedOut)
+	assert.True(t, autoinstall.Declined())
 }
 
 func TestMaybeVersionCheckTip(t *testing.T) {

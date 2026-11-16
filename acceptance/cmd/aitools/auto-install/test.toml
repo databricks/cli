@@ -1,11 +1,15 @@
 # Automatic installation of Databricks AI tools on the first run of a new CLI
 # version. The mock server replaces raw.githubusercontent.com (skills manifest
-# and files).
+# and files) and the GitHub API (latest skills release).
 Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_CLI_GITHUB_API_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_SKILLS_REF = "test-ref"
+RecordRequests = true
 
 Ignore = [
     "home",
+    "holdout-home",
+    "no-agents-home",
 ]
 
 [[Server]]
@@ -33,3 +37,7 @@ name: databricks-test
 
 # Test skill
 '''
+
+[[Server]]
+Pattern = "GET /broken-ref/manifest.json"
+Response.StatusCode = 500

@@ -21,8 +21,9 @@ tools (skills and plugins) for the coding agents already on this machine, as
 installation, as 'databricks aitools update' does. It never runs in CI and only
 touches the global scope.
 
-It stays off after 'databricks aitools auto-install disable' or a global-scope
-'databricks aitools uninstall', until 'databricks aitools auto-install enable'.
+It stays off after 'databricks aitools auto-install disable', a global-scope
+'databricks aitools uninstall', or a "no" to the skills prompt of
+'databricks apps init', until 'databricks aitools auto-install enable'.
 Setting ` + autoinstall.EnvVar + `=false turns it off in that environment.`,
 	}
 	cmd.AddCommand(newAutoInstallToggleCmd(true))

@@ -42,9 +42,7 @@ type pluginMigrationResult struct {
 }
 
 func NewUpdateCmd() *cobra.Command {
-	var check, force, noNew, noPrune bool
-	var skillsFlag, scopeFlag string
-	var projectFlag, globalFlag bool
+	var f updateFlags
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -58,212 +56,228 @@ preview what would change without downloading.
 The command exits with code 1 when every update or check it attempts fails.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			globalDir, err := installer.GlobalSkillsDir(ctx)
-			if err != nil {
-				return err
-			}
-			projectDir, err := installer.ProjectSkillsDir(ctx)
-			if err != nil {
-				return err
-			}
-
-			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
-			if err != nil {
-				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
-			}
-			// Record a scope flag before resolving, so a scope error still reports it.
-			funnel := funnelFrom(ctx)
-			funnel.setScope(explicitScope(projectFlag, globalFlag))
-
-			scopes, err := resolveScopeForUpdate(ctx, projectFlag, globalFlag, globalDir, projectDir)
-			if err != nil {
-				return err
-			}
-			// The scope enum has no "both"; a run over both scopes reports none.
-			if len(scopes) == 1 {
-				funnel.setScope(scopes[0])
-			}
-
-			installed := agents.DetectInstalled(ctx)
-			src := &installer.GitHubManifestSource{}
-			skills := splitAndTrim(skillsFlag)
-
-			// The plugin version recorded on update tracks the skills release.
-			// Tolerate a resolution error (skip plugin updates, still do skills).
-			ref, _, refErr := updateGetSkillsRefFn(ctx)
-
-			// A failed or skipped plugin update, or a check whose manifest could
-			// not be fetched, is only a warning, unless every attempt failed and
-			// nothing else ran. A plugin record for an agent this CLI does not know
-			// is not an attempt: no command can act on it.
-			// firstErr is the first failure of any kind; firstAttemptErr the first
-			// one of an attempt (a record of an unknown agent is not one).
-			var firstErr, firstAttemptErr error
-			updatedAnything := false
-
-			for _, scope := range scopes {
-				if len(scopes) > 1 {
-					cmdio.LogString(ctx, fmt.Sprintf("Updating %s skills...", scope))
-				}
-
-				dir := globalDir
-				if scope == installer.ScopeProject {
-					dir = projectDir
-				}
-				state, err := installer.LoadState(dir)
-				if err != nil {
-					return err
-				}
-				// A scope with something installed fetches releases and runs agent
-				// CLIs, so the run waits for the telemetry auth. Without state the
-				// run only reports that nothing (or a legacy install) is there.
-				if state != nil {
-					waitForTelemetryAuth(ctx)
-				}
-
-				if check && refErr == nil && state != nil && len(state.Plugins) > 0 {
-					printPluginCheckResults(ctx, state, installer.DisplaySkillsVersion(ref))
-					updatedAnything = true
-				}
-
-				migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
-				if err != nil {
-					return err
-				}
-				if check {
-					printPluginMigrationCheckResults(ctx, migrationCandidates)
-				}
-
-				// Without a ref the recorded plugins are skipped (with --check,
-				// not checked).
-				if refErr != nil && state != nil && hasKnownPluginRecord(state) {
-					firstAttemptErr = cmp.Or(firstAttemptErr, refErr)
-					firstErr = cmp.Or(firstErr, refErr)
-				}
-
-				// Update plugin agents through their own CLI (check mode skips this).
-				if !check && refErr == nil {
-					pluginUpdates, err := updatePluginsFn(ctx, scope, ref)
-					if err != nil {
-						return err
-					}
-					for _, pu := range pluginUpdates {
-						if pu.Err != nil {
-							if !errors.Is(pu.Err, installer.ErrUnknownAgent) {
-								firstAttemptErr = cmp.Or(firstAttemptErr, pu.Err)
-							}
-							firstErr = cmp.Or(firstErr, pu.Err)
-							continue
-						}
-						updatedAnything = true
-						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
-					}
-
-					migrated, err := migrateLegacyRawSkillsToPlugins(ctx, scope, ref, migrationCandidates)
-					if err != nil {
-						return err
-					}
-					if migrated {
-						updatedAnything = true
-						state, err = installer.LoadState(dir)
-						if err != nil {
-							return err
-						}
-					}
-				}
-
-				// Reconcile file skills for non-plugin agents. Skip entirely for a
-				// pure-plugin install (no file skills to maintain); keep calling for
-				// no-state installs so the "no skills or plugins installed" guidance still fires.
-				if state == nil || len(state.Skills) > 0 {
-					opts := installer.UpdateOptions{
-						Check:   check,
-						Force:   force,
-						NoNew:   noNew,
-						NoPrune: noPrune,
-						Scope:   scope,
-					}
-					opts.Skills = skills
-
-					targetAgents := installed
-					if scope == installer.ScopeProject {
-						cwd, err := os.Getwd()
-						if err != nil {
-							return err
-						}
-						targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
-					}
-
-					fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
-					// Raw skills an earlier install gave an agent that now has the
-					// plugin would show every skill twice, so remove them as
-					// install does when it keeps the plugin.
-					if !check {
-						for _, a := range manifestPlugins {
-							if err := updateCleanupLegacyFn(ctx, a, scope); err != nil {
-								log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", a.DisplayName, err)
-							}
-						}
-					}
-					// The plugin agents left no agent that can take file skills in
-					// this scope, so there is nothing to reconcile. Without this, a
-					// project whose only project-capable agent has the plugin would
-					// fail the update with "no agents support project-scoped skills".
-					// Without install state the reconcile still runs, for the
-					// "no skills or plugins installed" and legacy-install guidance.
-					if state != nil && len(manifestPlugins) > 0 && !slices.ContainsFunc(fileAgents, func(a *agents.Agent) bool {
-						return scope != installer.ScopeProject || a.SupportsProjectScope
-					}) {
-						continue
-					}
-
-					result, err := updateSkillsFn(ctx, src, fileAgents, opts)
-					if err != nil {
-						return err
-					}
-					if result != nil && result.CheckErr != nil {
-						firstAttemptErr = cmp.Or(firstAttemptErr, result.CheckErr)
-						firstErr = cmp.Or(firstErr, result.CheckErr)
-					} else {
-						updatedAnything = true
-					}
-					// A check that could not fetch the manifest has nothing to report.
-					if result != nil && result.CheckErr == nil && (check || len(result.Updated) > 0 || len(result.Added) > 0 || len(result.Removed) > 0) {
-						text := installer.FormatUpdateResult(result, check)
-						if text != "No changes." || len(migrationCandidates) == 0 {
-							cmdio.LogString(ctx, text)
-						}
-					}
-				}
-			}
-			if firstErr != nil && !updatedAnything {
-				if firstAttemptErr == nil {
-					// Only unknown-agent records: warned about above, but not a run
-					// that failed to do what it could.
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(firstErr))
-					return nil
-				}
-				if check {
-					return fmt.Errorf("nothing was checked: %w", firstAttemptErr)
-				}
-				return fmt.Errorf("nothing was updated: %w", firstAttemptErr)
-			}
-			return nil
+			return runUpdate(cmd.Context(), f)
 		},
 	}
 
-	cmd.Flags().BoolVar(&check, "check", false, "Show what would be updated without downloading")
-	cmd.Flags().BoolVar(&force, "force", false, "Re-download even if versions match")
-	cmd.Flags().BoolVar(&noNew, "no-new", false, "Don't auto-install new skills from manifest")
-	cmd.Flags().BoolVar(&noPrune, "no-prune", false, "Keep skills that vanished from the manifest instead of removing them")
-	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to update (comma-separated)")
-	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Update scope: project, global, or both")
-	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
-	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills")
+	cmd.Flags().BoolVar(&f.check, "check", false, "Show what would be updated without downloading")
+	cmd.Flags().BoolVar(&f.force, "force", false, "Re-download even if versions match")
+	cmd.Flags().BoolVar(&f.noNew, "no-new", false, "Don't auto-install new skills from manifest")
+	cmd.Flags().BoolVar(&f.noPrune, "no-prune", false, "Keep skills that vanished from the manifest instead of removing them")
+	cmd.Flags().StringVar(&f.skills, "skills", "", "Specific skills to update (comma-separated)")
+	cmd.Flags().StringVar(&f.scope, "scope", "", "Update scope: project, global, or both")
+	cmd.Flags().BoolVar(&f.project, "project", false, "Update project-scoped skills")
+	cmd.Flags().BoolVar(&f.global, "global", false, "Update globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
 	return instrumentCommand(cmd, protos.AitoolsCommandUpdate)
+}
+
+// updateFlags are the flags of `databricks aitools update`.
+type updateFlags struct {
+	check, force, noNew, noPrune bool
+	skills, scope                string
+	project, global              bool
+	// keepModified is not a flag: auto-install sets it (see
+	// installer.UpdateOptions.KeepModified).
+	keepModified bool
+}
+
+// runUpdate is the body of `databricks aitools update`. Auto-install runs it
+// too, to update an existing installation.
+func runUpdate(ctx context.Context, f updateFlags) error {
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		return err
+	}
+	projectDir, err := installer.ProjectSkillsDir(ctx)
+	if err != nil {
+		return err
+	}
+
+	projectFlag, globalFlag, err := parseScopeFlag(f.scope, f.project, f.global, true)
+	if err != nil {
+		return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
+	}
+	// Record a scope flag before resolving, so a scope error still reports it.
+	funnel := funnelFrom(ctx)
+	funnel.setScope(explicitScope(projectFlag, globalFlag))
+
+	scopes, err := resolveScopeForUpdate(ctx, projectFlag, globalFlag, globalDir, projectDir)
+	if err != nil {
+		return err
+	}
+	// The scope enum has no "both"; a run over both scopes reports none.
+	if len(scopes) == 1 {
+		funnel.setScope(scopes[0])
+	}
+
+	installed := agents.DetectInstalled(ctx)
+	src := &installer.GitHubManifestSource{}
+	skills := splitAndTrim(f.skills)
+
+	// The plugin version recorded on update tracks the skills release.
+	// Tolerate a resolution error (skip plugin updates, still do skills).
+	ref, _, refErr := updateGetSkillsRefFn(ctx)
+
+	// A failed or skipped plugin update, or a check whose manifest could
+	// not be fetched, is only a warning, unless every attempt failed and
+	// nothing else ran. A plugin record for an agent this CLI does not know
+	// is not an attempt: no command can act on it.
+	// firstErr is the first failure of any kind; firstAttemptErr the first
+	// one of an attempt (a record of an unknown agent is not one).
+	var firstErr, firstAttemptErr error
+	updatedAnything := false
+
+	for _, scope := range scopes {
+		if len(scopes) > 1 {
+			cmdio.LogString(ctx, fmt.Sprintf("Updating %s skills...", scope))
+		}
+
+		dir := globalDir
+		if scope == installer.ScopeProject {
+			dir = projectDir
+		}
+		state, err := installer.LoadState(dir)
+		if err != nil {
+			return err
+		}
+		// A scope with something installed fetches releases and runs agent
+		// CLIs, so the run waits for the telemetry auth. Without state the
+		// run only reports that nothing (or a legacy install) is there.
+		if state != nil {
+			waitForTelemetryAuth(ctx)
+		}
+
+		if f.check && refErr == nil && state != nil && len(state.Plugins) > 0 {
+			printPluginCheckResults(ctx, state, installer.DisplaySkillsVersion(ref))
+			updatedAnything = true
+		}
+
+		migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
+		if err != nil {
+			return err
+		}
+		if f.check {
+			printPluginMigrationCheckResults(ctx, migrationCandidates)
+		}
+
+		// Without a ref the recorded plugins are skipped (with --check,
+		// not checked).
+		if refErr != nil && state != nil && hasKnownPluginRecord(state) {
+			firstAttemptErr = cmp.Or(firstAttemptErr, refErr)
+			firstErr = cmp.Or(firstErr, refErr)
+		}
+
+		// Update plugin agents through their own CLI (check mode skips this).
+		if !f.check && refErr == nil {
+			pluginUpdates, err := updatePluginsFn(ctx, scope, ref)
+			if err != nil {
+				return err
+			}
+			for _, pu := range pluginUpdates {
+				if pu.Err != nil {
+					if !errors.Is(pu.Err, installer.ErrUnknownAgent) {
+						firstAttemptErr = cmp.Or(firstAttemptErr, pu.Err)
+					}
+					firstErr = cmp.Or(firstErr, pu.Err)
+					continue
+				}
+				updatedAnything = true
+				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
+			}
+
+			migrated, err := migrateLegacyRawSkillsToPlugins(ctx, scope, ref, migrationCandidates)
+			if err != nil {
+				return err
+			}
+			if migrated {
+				updatedAnything = true
+				state, err = installer.LoadState(dir)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// Reconcile file skills for non-plugin agents. Skip entirely for a
+		// pure-plugin install (no file skills to maintain); keep calling for
+		// no-state installs so the "no skills or plugins installed" guidance still fires.
+		if state == nil || len(state.Skills) > 0 {
+			opts := installer.UpdateOptions{
+				Check:   f.check,
+				Force:   f.force,
+				NoNew:   f.noNew,
+				NoPrune: f.noPrune,
+				Scope:   scope,
+
+				KeepModified: f.keepModified,
+			}
+			opts.Skills = skills
+
+			targetAgents := installed
+			if scope == installer.ScopeProject {
+				cwd, err := os.Getwd()
+				if err != nil {
+					return err
+				}
+				targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
+			}
+
+			fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
+			// Raw skills an earlier install gave an agent that now has the
+			// plugin would show every skill twice, so remove them as
+			// install does when it keeps the plugin.
+			if !f.check {
+				for _, a := range manifestPlugins {
+					if err := updateCleanupLegacyFn(ctx, a, scope); err != nil {
+						log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", a.DisplayName, err)
+					}
+				}
+			}
+			// The plugin agents left no agent that can take file skills in
+			// this scope, so there is nothing to reconcile. Without this, a
+			// project whose only project-capable agent has the plugin would
+			// fail the update with "no agents support project-scoped skills".
+			// Without install state the reconcile still runs, for the
+			// "no skills or plugins installed" and legacy-install guidance.
+			if state != nil && len(manifestPlugins) > 0 && !slices.ContainsFunc(fileAgents, func(a *agents.Agent) bool {
+				return scope != installer.ScopeProject || a.SupportsProjectScope
+			}) {
+				continue
+			}
+
+			result, err := updateSkillsFn(ctx, src, fileAgents, opts)
+			if err != nil {
+				return err
+			}
+			if result != nil && result.CheckErr != nil {
+				firstAttemptErr = cmp.Or(firstAttemptErr, result.CheckErr)
+				firstErr = cmp.Or(firstErr, result.CheckErr)
+			} else {
+				updatedAnything = true
+			}
+			// A check that could not fetch the manifest has nothing to report.
+			if result != nil && result.CheckErr == nil && (f.check || len(result.Updated) > 0 || len(result.Added) > 0 || len(result.Removed) > 0) {
+				text := installer.FormatUpdateResult(result, f.check)
+				if text != "No changes." || len(migrationCandidates) == 0 {
+					cmdio.LogString(ctx, text)
+				}
+			}
+		}
+	}
+	if firstErr != nil && !updatedAnything {
+		if firstAttemptErr == nil {
+			// Only unknown-agent records: warned about above, but not a run
+			// that failed to do what it could.
+			funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(firstErr))
+			return nil
+		}
+		if f.check {
+			return fmt.Errorf("nothing was checked: %w", firstAttemptErr)
+		}
+		return fmt.Errorf("nothing was updated: %w", firstAttemptErr)
+	}
+	return nil
 }
 
 func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state *installer.InstallState) ([]pluginMigrationCandidate, error) {
