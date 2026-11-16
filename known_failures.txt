@@ -22,5 +22,6 @@ acceptance TestAccept/bundle/resources/postgres_synced_tables/recreate/DMS=true
 acceptance TestAccept/bundle/resources/apps/lifecycle-started/DMS=
 acceptance TestAccept/bundle/resources/apps/lifecycle-started/DMS=true
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=true
+acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=  # go/cli/dashboard/error/657, same backend bug (deploy after start fails), added 2026-11-16
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=true
