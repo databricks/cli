@@ -10,6 +10,8 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 // aiTrainingWorkflowsPath is the AiTrainingService index of the caller's own AIR
@@ -71,11 +73,31 @@ type aiTrainingWorkflowsResponse struct {
 	NextPageToken     string               `json:"next_page_token"`
 }
 
+// The index is an optimization with a Jobs-scan fallback, so a slow or hung
+// index page should fail fast rather than ride the SDK defaults (a 60s request
+// timeout retried for up to 5 minutes). These bound each page request.
+const (
+	aiTrainingIndexRequestTimeout = 15 * time.Second
+	aiTrainingIndexRetryTimeout   = 15 * time.Second
+)
+
+// newAiTrainingIndexClient returns an API client for the index with the shorter
+// per-request timeout and retry window. It leaves w.Config untouched.
+func newAiTrainingIndexClient(w *databricks.WorkspaceClient) (*client.DatabricksClient, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	clientCfg.HTTPTimeout = aiTrainingIndexRequestTimeout
+	clientCfg.RetryTimeout = aiTrainingIndexRetryTimeout
+	return client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
+}
+
 // listAiTrainingWorkflows pages the index and returns every workflow ref the
 // caller owns. Pagination stops at the end or when a page token repeats, which
 // guards against a stuck or cycling cursor without an arbitrary page cap.
 func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient, activeOnly bool) ([]workflowRef, error) {
-	apiClient, err := client.New(w.Config)
+	apiClient, err := newAiTrainingIndexClient(w)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
