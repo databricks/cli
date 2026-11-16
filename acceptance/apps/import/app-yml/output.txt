@@ -53,7 +53,7 @@ env:
   - name: PYTHON_VERSION
     value: 3.10
 
-=== App config the bundle deploys (app.yml, if kept, is uploaded with the source)
+=== App config the bundle deploys
 
 >>> [CLI] bundle validate -o json
 null
