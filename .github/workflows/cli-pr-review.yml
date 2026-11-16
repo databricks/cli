@@ -9,7 +9,7 @@ on:
     types: [created]
 
 jobs:
-  review:
+  validate:
     if: |
       github.repository == 'databricks/cli' && (
         (github.event_name == 'pull_request_target' &&
@@ -24,13 +24,13 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
-    timeout-minutes: 45
-    environment:
-      name: test-trigger-is
-      deployment: false
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
+    outputs:
+      eligible: ${{ steps.request.outputs.eligible }}
+      pr_number: ${{ steps.request.outputs.pr_number }}
 
     steps:
       # Check real repo access: membership labels can be hidden from Apps.
@@ -65,9 +65,22 @@ jobs:
             fi
           done
           echo "eligible=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
+  review:
+    needs: validate
+    if: needs.validate.outputs.eligible == 'true' && github.ref == 'refs/heads/main'
+    # Cross-org dispatch needs the same approved network as integration tests.
+    runs-on:
+      group: databricks-release-runner-group-emu-access
+      labels: linux-ubuntu-latest-emu-access
+    timeout-minutes: 45
+    permissions: {}
+    environment:
+      name: test-trigger-is
+      deployment: false
+    steps:
       - name: Generate backend dispatch token
-        if: steps.request.outputs.eligible == 'true'
         id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -78,10 +91,9 @@ jobs:
           permission-actions: write
 
       - name: Dispatch and wait for this review
-        if: steps.request.outputs.eligible == 'true'
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_NUMBER: ${{ needs.validate.outputs.pr_number }}
         run: |-
           set -euo pipefail
           # This API version returns the exact run, even when other PRs trigger reviews.

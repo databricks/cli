@@ -19,8 +19,10 @@ cancels any unfinished backend review for that PR. The bot posts native inline
 comments; it posts nothing when there are no findings. If the PR changes before
 publication, the backend discards that outdated review.
 
-The trigger runs trusted workflow code and never checks out the PR. The backend
-in `databricks-eng/eng-dev-ecosystem` independently validates the author and PR,
+The trigger runs trusted workflow code and never checks out the PR. A read-only
+job validates access before the dispatcher can use its credential environment
+and EMU-access runner. The backend in `databricks-eng/eng-dev-ecosystem`
+independently validates the author and PR,
 reads source snapshots with restricted tools, and publishes through a separate
 job. Reviews provide advisory feedback; the trigger does not approve or merge PRs.
 
