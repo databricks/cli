@@ -215,8 +215,9 @@ func TestLogsSkipsNodeValidationWhenNodeCountCannotBeResolved(t *testing.T) {
 	}
 }
 
-// completedRunLogsServer serves the auth probe, a terminal runs/get, and a
-// single page of Bricklens logs (newest-first, as the tail fetch requests).
+// completedRunLogsServer serves a terminal runs/get and a single page of
+// Bricklens logs (newest-first, as the tail fetch requests). A successful fetch
+// never needs the Me() credential probe, so the server fails the test on one.
 func completedRunLogsServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -235,9 +236,12 @@ func completedRunLogsServer(t *testing.T) *httptest.Server {
 				{"time_unix_nano": 2000000000, "body": "line two", "node_index": 0},
 				{"time_unix_nano": 1000000000, "body": "line one", "node_index": 0}
 			]}`))
+		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
+			t.Errorf("unexpected Me() probe on a successful logs fetch")
+			w.WriteHeader(http.StatusInternalServerError)
 		default:
-			// Me() probe and SDK config discovery.
-			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+			// SDK config discovery.
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	t.Cleanup(srv.Close)
@@ -390,6 +394,7 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 	var buf bytes.Buffer
 	client := newTestWorkspaceClient(t, srv.URL)
 	client.Config.Profile = "team profile"
+	client.Config.WorkspaceID = "42"
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", ""))
 	ctx = cmdctx.SetWorkspaceClient(ctx, client)
 	cmd := withOutput(newLogsCommand(), flags.OutputText)
@@ -398,7 +403,7 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 
 	err := cmd.RunE(cmd, []string{"5"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	assert.Contains(t, buf.String(), "Streaming logs interrupted.")
+	assert.Contains(t, buf.String(), "View job run at: "+srv.URL+"/jobs/runs/5?o=42\n\nStreaming logs interrupted.")
 	assert.Contains(t, buf.String(), "To check status:\ndatabricks air get 5 -p 'team profile'")
 	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks air logs 5 -p 'team profile'")
 }
@@ -451,4 +456,47 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	// Exactly one runs/get: the initial status resolve in runLogs. The static
 	// streamer must not re-poll (that is the loop this test guards against).
 	assert.Equal(t, 1, getRunHits)
+}
+
+func TestLogsCommandRepeatsRunLinkAfterStreaming(t *testing.T) {
+	for _, result := range []string{"SUCCESS", "FAILED"} {
+		for _, output := range []flags.Output{flags.OutputText, flags.OutputJSON} {
+			t.Run(result+"/"+string(output), func(t *testing.T) {
+				srv := watchServer(t, result)
+				var buf bytes.Buffer
+				ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &buf, &buf, "", ""))
+				ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+				cmd := withOutput(newLogsCommand(), output)
+				cmd.SetContext(ctx)
+				cmd.SetOut(&buf)
+
+				err := cmd.RunE(cmd, []string{"777"})
+				if result == "FAILED" {
+					require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+				} else {
+					require.NoError(t, err)
+				}
+				if output == flags.OutputJSON {
+					assert.Contains(t, buf.String(), `"line":"step 2"`)
+					assert.NotContains(t, buf.String(), "View job run at:")
+				} else {
+					assert.Equal(t, "step 1\nstep 2\n\nView job run at: "+srv.URL+"/jobs/runs/777\n", buf.String())
+				}
+			})
+		}
+	}
+}
+
+func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
+	srv := watchServer(t, "SUCCESS")
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	runURL := srv.URL + "/jobs/runs/777?o=42"
+
+	err := runLogs(ctx, cmd, logRequest{runID: 777, runURL: runURL, attempt: -1, tailLines: -1})
+	require.NoError(t, err)
+	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
 }

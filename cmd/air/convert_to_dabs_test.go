@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -628,13 +629,17 @@ func TestConvertToDabsIncludePathsDirectories(t *testing.T) {
 
 // root_path "." (the code source is the whole bundle directory) has no basename to
 // nest the archive under, and an include rooted at "." would sweep the bundle's own
-// generated files into the tarball — so a git/include snapshot there is rejected with
-// a message pointing at a subdirectory. (A plain snapshot with root_path "." is not an
-// artifact case and is unaffected.)
+// generated files into the tarball, so every snapshot there is rejected. Only a
+// working-tree snapshot is offered --output-dir: a git snapshot is archived from the
+// bundle root, which a parent directory would move outside the repository.
 func TestConvertToDabsDotRootPathRejected(t *testing.T) {
-	for _, tc := range []struct{ name, snap string }{
-		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n"},
-		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n"},
+	for _, tc := range []struct {
+		name, snap        string
+		wantOutputDirHint bool
+	}{
+		{"plain", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n", true},
+		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n", true},
+		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -648,6 +653,68 @@ func TestConvertToDabsDotRootPathRejected(t *testing.T) {
 
 			_, _, err = convertToDabs(t.Context(), loaded, path, dir)
 			require.ErrorContains(t, err, "resolves to the bundle root")
+			require.ErrorContains(t, err, "subdirectory")
+			if tc.wantOutputDirHint {
+				require.ErrorContains(t, err, "--output-dir")
+			} else {
+				require.NotContains(t, err.Error(), "--output-dir")
+			}
+		})
+	}
+}
+
+// The --output-dir remedy the rejection suggests: with the bundle rooted at the
+// parent, the code dir has a basename to nest under and converts.
+func TestConvertToDabsDotRootPathWithParentOutputDir(t *testing.T) {
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "proj")
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+	cfg := "experiment_name: dot\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, parent)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "proj", inc[0].MustString())
+}
+
+func TestRetryDefaultsNote(t *testing.T) {
+	note := retryDefaultsNote(&runConfig{})
+	assert.Contains(t, note, "max_retries: 3")
+	assert.Contains(t, note, "retry_on_timeout: true")
+
+	// An explicit value, including 0, is the user's own: nothing to explain.
+	assert.Empty(t, retryDefaultsNote(&runConfig{MaxRetries: new(0)}))
+	assert.Empty(t, retryDefaultsNote(&runConfig{MaxRetries: new(2)}))
+}
+
+func TestConvertToDabsCommandPrintsRetryNoteOnlyWhenUnset(t *testing.T) {
+	for _, tc := range []struct {
+		name, extra string
+		wantNote    bool
+	}{
+		{"unset", "", true},
+		{"zero", "max_retries: 0\n", false},
+		{"set", "max_retries: 2\n", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeConfigFile(t, "run.yaml", minimalConfig+tc.extra)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			cmd := newConvertToDabsCommand()
+			cmd.SetContext(ctx)
+			require.NoError(t, cmd.RunE(cmd, []string{path}))
+
+			assert.Contains(t, stderr.String(), "Wrote a Databricks Asset Bundle")
+			assert.Equal(t, tc.wantNote, strings.Contains(stderr.String(), "does not set max_retries"))
 		})
 	}
 }

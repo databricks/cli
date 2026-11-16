@@ -170,6 +170,7 @@ func TestDurationSeconds(t *testing.T) {
 func TestDashboardURL(t *testing.T) {
 	// The ?o= workspace id and a trailing-slash-trimmed host, matching Python.
 	assert.Equal(t, "https://example.test/jobs/runs/123?o=42", dashboardURL("https://example.test/", 123, 42))
+	assert.Equal(t, "https://example.test/jobs/runs/123", dashboardURL("https://example.test/", 123, 0))
 }
 
 func TestLatestAttemptNumber(t *testing.T) {

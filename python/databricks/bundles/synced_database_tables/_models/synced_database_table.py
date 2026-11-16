@@ -22,7 +22,13 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SyncedDatabaseTable(Resource):
-    """"""
+    """
+    A synced table is a Postgres table in a Lakebase database instance that Databricks keeps in sync
+    with a source table in Unity Catalog. A data synchronization pipeline loads the source data and
+    then applies later changes according to the scheduling policy, so the table can serve low-latency
+    queries without a hand-built ETL process. For an overview, see
+    https://docs.databricks.com/aws/en/oltp/projects/sync-tables.
+    """
 
     name: VariableOr[str]
     """
@@ -53,12 +59,12 @@ class SyncedDatabaseTable(Resource):
     
     When creating a synced table in a standard catalog, this field is required.
     In this scenario, specifying this field will allow targeting an arbitrary postgres database.
-    Note that this has implications for the `create_database_objects_is_missing` field in `spec`.
+    If this database does not exist yet, it is created when `create_database_objects_if_missing` in `spec` is true.
     """
 
     spec: VariableOrOptional[SyncedTableSpec] = None
     """
-    [Public Preview] Specification of a synced database table.
+    [Public Preview] Specifies the source table, the key columns and how the data synchronization pipeline runs.
     """
 
     @classmethod
@@ -101,12 +107,12 @@ class SyncedDatabaseTableDict(TypedDict, total=False):
     
     When creating a synced table in a standard catalog, this field is required.
     In this scenario, specifying this field will allow targeting an arbitrary postgres database.
-    Note that this has implications for the `create_database_objects_is_missing` field in `spec`.
+    If this database does not exist yet, it is created when `create_database_objects_if_missing` in `spec` is true.
     """
 
     spec: VariableOrOptional[SyncedTableSpecParam]
     """
-    [Public Preview] Specification of a synced database table.
+    [Public Preview] Specifies the source table, the key columns and how the data synchronization pipeline runs.
     """
 
 

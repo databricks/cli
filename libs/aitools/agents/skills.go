@@ -38,7 +38,11 @@ func HasDatabricksToolingInstalled(ctx context.Context) bool {
 		cwd = resolvePath(wd)
 	}
 	for _, a := range installed {
-		if a.pluginInstalls == nil || !a.databricksPluginActiveIn(ctx, cwd) {
+		if a.pluginInstalls == nil {
+			return false
+		}
+		// An unreadable manifest counts as no plugin, as before.
+		if active, _ := a.DatabricksPluginActiveIn(ctx, cwd); !active {
 			return false
 		}
 	}

@@ -1,0 +1,23 @@
+
+=== Trailing line comment after ';'
+
+>>> musterr [CLI] experimental postgres query --target my-instance SELECT 1; -- done
+Error: database instance "my-instance" is not ready for accepting connections (state: STOPPED)
+
+=== Trailing block comment after ';'
+
+>>> musterr [CLI] experimental postgres query --target my-instance SELECT 1; /* done */
+Error: database instance "my-instance" is not ready for accepting connections (state: STOPPED)
+
+=== File ending with a comment line after the statement
+
+>>> musterr [CLI] experimental postgres query --target my-instance --file q.sql
+Error: database instance "my-instance" is not ready for accepting connections (state: STOPPED)
+
+=== Two statements are still rejected
+
+>>> musterr [CLI] experimental postgres query --target my-instance SELECT 1; -- one SELECT 1; SELECT 2
+Error: argv[2]: input contains multiple statements (a ';' separates two or more statements)
+This command runs one statement per input. To run multiple statements:
+  - Pass each as a separate positional:  query "SELECT 1" "SELECT 2"
+  - Pass each in its own --file:         query --file q1.sql --file q2.sql

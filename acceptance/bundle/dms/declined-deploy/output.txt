@@ -48,7 +48,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_declined_deploy_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -66,7 +66,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
@@ -90,7 +90,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][1]",
  "serial": 1,
  "features": {
   "deployment_history_shadow": {}
@@ -100,7 +100,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
    "__id__": "main.dms_declined_deploy_schema_[UNIQUE_NAME]",
    "state": {
     "catalog_name": "main",
-    "name": "dms_declined_deploy_schema_[UNIQUE_NAME]"
+    "name": "dms_declined_deploy_schema_[UNIQUE_NAME]",
+    "schema_id": "[UUID][0]"
    }
   }
  }

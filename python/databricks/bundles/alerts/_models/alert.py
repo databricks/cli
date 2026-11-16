@@ -40,7 +40,10 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class Alert(Resource):
-    """"""
+    """
+    A SQL alert. An alert runs a query on a schedule, evaluates the result against a condition,
+    and notifies users or notification destinations when the condition is met.
+    """
 
     display_name: VariableOr[str]
     """
@@ -48,6 +51,9 @@ class Alert(Resource):
     """
 
     evaluation: VariableOr[AlertV2Evaluation]
+    """
+    Condition evaluated against the query result, and who is notified when it is met.
+    """
 
     query_text: VariableOr[str]
     """
@@ -55,6 +61,9 @@ class Alert(Resource):
     """
 
     schedule: VariableOr[CronSchedule]
+    """
+    Schedule on which the alert runs its query and evaluates the condition.
+    """
 
     warehouse_id: VariableOr[str]
     """
@@ -63,19 +72,18 @@ class Alert(Resource):
 
     custom_description: VariableOrOptional[str] = None
     """
-    Custom description for the alert. Interpreted according to `custom_template_format`.
+    Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.
+    The available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.
     """
 
     custom_summary: VariableOrOptional[str] = None
     """
-    Custom summary for the alert. Interpreted according to `custom_template_format`.
+    Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormat] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Public Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -131,9 +139,9 @@ class Alert(Resource):
 
     run_as_user_name: VariableOrOptional[str] = None
     """
-    [DEPRECATED] The run as username or application ID of service principal.
+    [DEPRECATED] Deprecated: Use `run_as` field instead. This field will be removed in a future release.
+    The run as username or application ID of service principal.
     On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.
-    Deprecated: Use `run_as` field instead. This field will be removed in a future release.
     """
 
     @classmethod
@@ -153,6 +161,9 @@ class AlertDict(TypedDict, total=False):
     """
 
     evaluation: VariableOr[AlertV2EvaluationParam]
+    """
+    Condition evaluated against the query result, and who is notified when it is met.
+    """
 
     query_text: VariableOr[str]
     """
@@ -160,6 +171,9 @@ class AlertDict(TypedDict, total=False):
     """
 
     schedule: VariableOr[CronScheduleParam]
+    """
+    Schedule on which the alert runs its query and evaluates the condition.
+    """
 
     warehouse_id: VariableOr[str]
     """
@@ -168,19 +182,18 @@ class AlertDict(TypedDict, total=False):
 
     custom_description: VariableOrOptional[str]
     """
-    Custom description for the alert. Interpreted according to `custom_template_format`.
+    Custom description for the alert, used as the notification body. Interpreted according to `custom_template_format`.
+    The available template variables are listed at https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates.
     """
 
     custom_summary: VariableOrOptional[str]
     """
-    Custom summary for the alert. Interpreted according to `custom_template_format`.
+    Custom summary for the alert, used as the notification subject. Interpreted according to `custom_template_format`.
     """
 
     custom_template_format: VariableOrOptional[CustomTemplateFormatParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The format used to interpret the `custom_summary` and `custom_description` templates.
+    [Public Preview] The format used to interpret the `custom_summary` and `custom_description` templates.
     
     `HTML` treats both templates as HTML with Mustache `{{VARIABLE_NAME}}` placeholders.
     `MARKDOWN` treats them as Markdown with allowlisted `@VARIABLE_NAME` placeholders and converts
@@ -236,9 +249,9 @@ class AlertDict(TypedDict, total=False):
 
     run_as_user_name: VariableOrOptional[str]
     """
-    [DEPRECATED] The run as username or application ID of service principal.
+    [DEPRECATED] Deprecated: Use `run_as` field instead. This field will be removed in a future release.
+    The run as username or application ID of service principal.
     On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.
-    Deprecated: Use `run_as` field instead. This field will be removed in a future release.
     """
 
 

@@ -275,6 +275,27 @@ func buildUpdateSkillSet(state *InstallState, manifest *Manifest, opts UpdateOpt
 	return skillSet
 }
 
+// HasUntrackedSkills reports whether the global scope has skills on disk but no
+// state file: from an install that predates state tracking, or from a first
+// install that failed before it saved state. Only the global scope is checked,
+// so a first project install interrupted the same way is not detected. A state
+// file that can't be read counts as no: the caller's next state load reports
+// that error itself.
+func HasUntrackedSkills(ctx context.Context, cliScope string) bool {
+	if cliScope != ScopeGlobal {
+		return false
+	}
+	dir, err := GlobalSkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		return false
+	}
+	return state == nil && hasLegacyInstall(ctx, dir)
+}
+
 // hasLegacyInstall checks both canonical and legacy dirs for skills on disk without state.
 func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 	if hasSkillsOnDisk(globalDir) {

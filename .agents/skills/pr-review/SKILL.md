@@ -37,6 +37,11 @@ hunks the description does not explain: a fix riding along with the main
 change belongs in its own PR (`AGENTS.md`: one change per PR), so ask for
 the split.
 
+When the description says the change addresses a review thread on another
+PR, that thread is part of the intent. Still form your own view first, then
+read it and check the new text answers the ask made there; if it answers a
+different question, say which.
+
 Judge the code at `TARGET`. Separately, check what a merge into the PR's
 base branch would hit: `git rev-list --count "$BASE"..origin/main` and
 `git merge-tree --write-tree "$TARGET" origin/main`, with

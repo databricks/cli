@@ -1,5 +1,10 @@
 # Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
 sethome home
+# Agent config overrides from the host would make auto-detection find agents
+# outside the isolated HOME; keep every agent's config dir inside it.
+unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
+export XDG_CONFIG_HOME="${USERPROFILE:-$HOME}/.config"
+export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
 mkdir -p "${USERPROFILE:-$HOME}/.cursor"
 
 # Only runs past the plan confirmation are here: a run that ends earlier (a
@@ -21,4 +26,8 @@ trace print_telemetry
 
 title "a named agent skipped for the scope takes its category from the agent's outcome"
 musterr trace $CLI aitools install --skills-only --scope=project --agents=cursor
+trace print_telemetry
+
+title "a detected agent skipped for the scope prints its recovery step and exits 1 with nothing installed"
+musterr trace $CLI aitools install --skills-only --scope=project
 trace print_telemetry

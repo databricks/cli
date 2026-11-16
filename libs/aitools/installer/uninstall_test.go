@@ -424,11 +424,14 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	claudeLink := filepath.Join(tmp, ".claude", "skills", "databricks-sql")
 	cursorLink := filepath.Join(tmp, ".cursor", "skills", "databricks-sql")
 
-	// Only Claude Code has the skill: there is nothing to remove for Cursor.
+	// Only Claude Code has the skill: there is nothing to remove for Cursor,
+	// so the run does not claim it uninstalled anything.
 	installSQLSkillForAgent(t, ctx, agents.NameClaudeCode)
-	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameCursor}})
+	outCtx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	result, err := UninstallSkillsWithResult(outCtx, UninstallOptions{Agents: []string{agents.NameCursor}})
 	require.NoError(t, err)
-	assert.Equal(t, 0, result.SkillsRemoved)
+	assert.Equal(t, 0, result.SkillsChanged)
+	assert.NotContains(t, stderr.String(), "Uninstalled")
 	_, err = os.Lstat(claudeLink)
 	assert.NoError(t, err)
 
@@ -445,17 +448,26 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	}
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameCursor}})
 	require.NoError(t, err)
-	assert.Equal(t, 0, result.SkillsRemoved)
+	assert.Equal(t, 0, result.SkillsChanged)
 	require.Len(t, result.SkillFailures, 1)
 	assert.ErrorIs(t, result.SkillFailures[0], fs.ErrPermission)
 	_, err = os.Lstat(claudeLink)
 	assert.NoError(t, err)
+
+	// Both targeted, but Cursor's entry cannot be removed: Claude Code's copy
+	// is gone, so the run changed the skill.
+	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameClaudeCode, agents.NameCursor}})
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.SkillsChanged)
+	_, err = os.Lstat(claudeLink)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 	removeAllFn = orig
+	installSQLSkillForAgent(t, ctx, agents.NameClaudeCode)
 
 	// Both have it: removed for Cursor, kept for Claude Code.
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameCursor}})
 	require.NoError(t, err)
-	assert.Equal(t, 1, result.SkillsRemoved)
+	assert.Equal(t, 1, result.SkillsChanged)
 	assert.Empty(t, result.SkillFailures)
 	_, err = os.Lstat(cursorLink)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
@@ -463,11 +475,11 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Full uninstall whose canonical dir removal fails: nothing counts as
-	// removed and the failure is reported.
+	// changed and the failure is reported.
 	removeAllFn = func(string) error { return fs.ErrPermission }
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, 0, result.SkillsRemoved)
+	assert.Equal(t, 0, result.SkillsChanged)
 	require.Len(t, result.SkillFailures, 1)
 	assert.ErrorIs(t, result.SkillFailures[0], fs.ErrPermission)
 	removeAllFn = orig
@@ -479,12 +491,12 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: schemaVersionV2, Skills: map[string]string{"databricks-sql": "0.1.0"}}))
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, 1, result.SkillsRemoved)
+	assert.Equal(t, 1, result.SkillsChanged)
 	assert.Empty(t, result.SkillFailures)
 }
 
 // A targeted agent whose entry cannot be removed keeps the skill, so the skill
-// does not count as removed even though no other agent has it and its
+// does not count as changed even though no other agent has it and its
 // canonical dir is deleted.
 func TestUninstallDoesNotCountSkillWithFailedTargetedRemoval(t *testing.T) {
 	tmp := setupTestHome(t)
@@ -504,11 +516,42 @@ func TestUninstallDoesNotCountSkillWithFailedTargetedRemoval(t *testing.T) {
 		}
 		return orig(path)
 	}
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameCursor}})
 	require.NoError(t, err)
-	assert.Equal(t, 0, result.SkillsRemoved)
+	assert.Equal(t, 0, result.SkillsChanged)
 	require.Len(t, result.SkillFailures, 1)
 	assert.ErrorIs(t, result.SkillFailures[0], fs.ErrPermission)
+	// Nothing was removed, so the run must not claim it uninstalled the skill.
+	assert.NotContains(t, stderr.String(), "Uninstalled")
+}
+
+// Without --agents, removing an agent's symlink is a change even when the
+// canonical dir cannot be removed, the same rule the --agents path follows.
+func TestUninstallCountsRemovedSymlinkAsChange(t *testing.T) {
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	canonicalDir := filepath.Join(globalDir, "databricks-sql")
+	require.NoError(t, os.MkdirAll(canonicalDir, 0o755))
+	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: 1, Release: "v0.1.0", LastUpdated: time.Now(), Skills: map[string]string{"databricks-sql": "0.1.0"}}))
+	agentSkillsDir := filepath.Join(tmp, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(agentSkillsDir, 0o755))
+	link := filepath.Join(agentSkillsDir, "databricks-sql")
+	require.NoError(t, os.Symlink(canonicalDir, link))
+
+	orig := removeAllFn
+	t.Cleanup(func() { removeAllFn = orig })
+	removeAllFn = func(string) error { return fs.ErrPermission }
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.SkillsChanged)
+	require.Len(t, result.SkillFailures, 1)
+	assert.ErrorIs(t, result.SkillFailures[0], fs.ErrPermission)
+	_, err = os.Lstat(link)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
 }
 
 // installSQLSkillForAgent installs the databricks-sql test skill for one agent.

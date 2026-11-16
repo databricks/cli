@@ -20,7 +20,10 @@ func TestListCacheRoundTrip(t *testing.T) {
 	_, _, _, ok := cachedRow(ctx, c, "https://host.test", 42)
 	require.False(t, ok, "miss before write")
 
-	row := listRow{RunID: "42", Experiment: "exp", Status: "SUCCESS"}
+	row := listRow{
+		RunID: "42", Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
+		AcceleratorType: new("GPU_1xA10"), NumAccelerators: new(1), DashboardURL: "https://host.test/jobs/runs/42?o=1", Experiment: "exp",
+	}
 	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
 	tasks := []jobs.RunTask{{RunId: 420, TaskKey: "train"}, {RunId: 421, TaskKey: "train", AttemptNumber: 1}}
 	putRow(ctx, c, "https://host.test", 42, tasks, 1700000000000, row, fields)
@@ -56,7 +59,7 @@ func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {
 	putRow(ctx, newListCache(ctx), host, 7, []jobs.RunTask{{RunId: 70}}, 1000_000, listRow{RunID: "7", Status: "SUCCESS"}, filterFields{})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	})
 	rows, err := f.next(10)
 	require.NoError(t, err)
@@ -79,7 +82,7 @@ func TestIndexStrategyFiltersCachedRow(t *testing.T) {
 		filterFields{Experiment: "bar"})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 		filters: listFilters{Experiment: "foo"},
 	})
 	rows, err := f.next(10)
@@ -101,7 +104,7 @@ func TestIndexStrategyServesMatchingCachedRow(t *testing.T) {
 		filterFields{Experiment: "foo"})
 
 	f := newRunFetcher(ctx, newTestWorkspaceClient(t, host), listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 		filters: listFilters{Experiment: "foo"},
 	})
 	rows, err := f.next(10)
@@ -146,7 +149,7 @@ func TestIndexStrategyCachesMLflowEnrichment(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	query := listQuery{
-		userFilter: "me@example.com", currentUser: "me@example.com", limit: 10,
+		currentUser: selfUser, limit: 10,
 	}
 	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), query).next(10)
 	require.NoError(t, err)

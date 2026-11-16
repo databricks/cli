@@ -3,6 +3,7 @@ package aitools
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -67,15 +68,16 @@ func (f *commandFunnel) step(ctx context.Context, s protos.AitoolsCommandStep) {
 }
 
 // finish logs the FINISHED event for a run that returned err: SUCCESS for nil,
-// NOTHING_TO_DO when update or uninstall found nothing installed (the command
-// still exits non-zero), CANCELLED when the user aborted a prompt or picked no
-// agents, FAILURE otherwise. No-op once the run has finished, so it is safe to
-// defer after an explicit finishWith.
+// NOTHING_TO_DO when update or uninstall found nothing installed, or an install
+// found no skill in the release it can install (the command still exits
+// non-zero), CANCELLED when the user aborted a prompt or picked no agents,
+// FAILURE otherwise. No-op once the run has finished, so it is safe to defer
+// after an explicit finishWith.
 func (f *commandFunnel) finish(ctx context.Context, err error) {
 	switch {
 	case err == nil:
 		f.finishWith(ctx, protos.AitoolsCommandOutcomeSuccess, protos.AitoolsErrorCategoryUnspecified)
-	case errors.Is(err, installer.ErrNothingInstalled):
+	case errors.Is(err, installer.ErrNothingInstalled), errors.Is(err, installer.ErrNoSkillsResolved):
 		f.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
 	case errors.Is(err, huh.ErrUserAborted):
 		f.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUserAborted)
@@ -87,8 +89,9 @@ func (f *commandFunnel) finish(ctx context.Context, err error) {
 }
 
 // finishWith logs the FINISHED event with an explicit outcome, for runs whose
-// returned error does not tell it: a nil return without success (declined
-// confirm, nothing to act on, nothing installed) or a named agent's failure.
+// returned error does not tell it: a nil return without success (a declined
+// confirm, nothing to act on), a failure already reported per agent, or a run
+// with no agent detected, which fails but had nothing to act on.
 func (f *commandFunnel) finishWith(ctx context.Context, outcome protos.AitoolsCommandOutcome, category protos.AitoolsErrorCategory) {
 	if f.finished {
 		return
@@ -175,25 +178,29 @@ func deliverySteps(outcomes []agentOutcome) []protos.AitoolsCommandStep {
 	return steps
 }
 
-// nothingInstalledCategory reports whether a run that returned no error still
-// installed nothing for any agent (e.g. the only detected agent's plugin
-// install failed, which is a warning, not an error), and if so the category of
-// the first agent that failed or was skipped. The funnel records such a run as
-// FAILURE rather than SUCCESS. That includes a non-interactive run whose
-// detected agents are all skipped for the scope (UNSUPPORTED_SCOPE): it set
-// up nothing it was asked to. An interactive run never gets here for them,
-// because the picker offers no skipped agent and the run finishes NOTHING_TO_DO
-// before the plan.
-func nothingInstalledCategory(outcomes []agentOutcome) (protos.AitoolsErrorCategory, bool) {
-	if len(outcomes) == 0 {
-		return "", false
-	}
+// anyInstalled reports whether at least one agent was set up: installed, or
+// left with the databricks plugin it already had.
+func anyInstalled(outcomes []agentOutcome) bool {
+	return slices.ContainsFunc(outcomes, func(o agentOutcome) bool {
+		return o.status == outcomeInstalled || o.status == outcomeKept
+	})
+}
+
+// onlyKeptPlugins reports whether a run installed nothing and failed for no
+// agent, because each agent it set up kept the plugin it already had. The
+// funnel records such a run as NOTHING_TO_DO rather than SUCCESS.
+func onlyKeptPlugins(outcomes []agentOutcome) bool {
+	kept := false
 	for _, o := range outcomes {
-		if o.status == outcomeInstalled {
-			return "", false
+		switch o.status {
+		case outcomeInstalled, outcomeFailed:
+			return false
+		case outcomeKept:
+			kept = true
+		case outcomeSkipped:
 		}
 	}
-	return firstFailureCategory(outcomes), true
+	return kept
 }
 
 // firstFailureCategory returns the category of the first agent that failed or

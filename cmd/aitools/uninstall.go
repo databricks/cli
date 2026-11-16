@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -24,7 +25,9 @@ func NewUninstallCmd() *cobra.Command {
 		Short: "Uninstall Databricks skills and plugins",
 		Long: `Remove installed Databricks skills and plugins from all coding agents.
 
-By default, removes all skills. Use --skills to remove specific skills only.`,
+By default, removes all skills. Use --skills to remove specific skills only.
+
+The command exits with code 1 when every removal it attempts fails.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -104,16 +107,22 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 			if err != nil {
 				return err
 			}
-			// A plugin or skill that could not be removed is only a warning.
+			// A plugin or skill that could not be removed is only a warning, unless
+			// no copy of any skill and no plugin was removed at all. A plugin record
+			// for an agent this CLI does not know is not an attempt: no command can
+			// act on it.
 			failures := slices.Concat(result.PluginFailures, result.SkillFailures)
-			if result.PluginsRemoved == 0 && result.SkillsRemoved == 0 {
-				if len(failures) > 0 {
-					// Every removal failed: FAILURE, though it exits 0.
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(failures[0]))
-				} else {
-					// E.g. --agents names agents that have none of the skills.
-					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
+			if result.PluginsRemoved == 0 && result.SkillsChanged == 0 {
+				if i := slices.IndexFunc(failures, func(err error) bool { return !errors.Is(err, installer.ErrUnknownAgent) }); i >= 0 {
+					return fmt.Errorf("could not remove any skill or plugin: %w", failures[i])
 				}
+				if len(failures) > 0 {
+					// Only unknown-agent records: warned about above.
+					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(failures[0]))
+					return nil
+				}
+				// E.g. --agents names agents that have none of the skills.
+				funnel.finishWith(ctx, protos.AitoolsCommandOutcomeNothingToDo, protos.AitoolsErrorCategoryUnspecified)
 			}
 			return nil
 		},

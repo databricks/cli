@@ -18,7 +18,7 @@ var agentSessionEnv = map[string]string{
 
 // PluginRecordedFunc reports whether the CLI install state records a
 // databricks plugin install for the named agent. The installer package owns
-// that state and provides it (installer.GlobalPluginRecorded).
+// that state and provides it (installer.PluginRecorded for the global scope).
 type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 
 // agentInstallHint returns the hint for a non-Claude registry agent. The text

@@ -142,7 +142,8 @@ func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 
 // fetchMLflowRunName fetches a run's MLflow run_name via the MLflow REST API,
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
-// enrichment.
+// enrichment. The name is stripped of control characters here, before it is
+// shortened to a column width or cached, so no caller can show it raw.
 func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
 	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
 	if err != nil {
@@ -152,18 +153,20 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 	if resp.Run == nil || resp.Run.Info == nil {
 		return ""
 	}
-	return resp.Run.Info.RunName
+	return stripControl(resp.Run.Info.RunName)
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
-// "...{last 8 of run id}" when the name is unknown. Mirrors Python's
-// _get_mlflow_run_name (cli_display.py).
-func mlflowRunLabel(name, mlflowRunID string) string {
-	if name != "" {
-		return name
+// its run ID when the name is unknown. A label wider than width keeps its end
+// behind a leading "…", because run names often share a prefix and differ at
+// the end. A width of 0 or less means no limit.
+func mlflowRunLabel(name, mlflowRunID string, width int) string {
+	label := name
+	if label == "" {
+		label = mlflowRunID
 	}
-	if len(mlflowRunID) > 8 {
-		return "..." + mlflowRunID[len(mlflowRunID)-8:]
+	if width <= 0 {
+		return label
 	}
-	return "..." + mlflowRunID
+	return truncateStart(label, width)
 }

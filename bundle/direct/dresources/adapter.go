@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
@@ -74,7 +75,7 @@ type IResource interface {
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *VolumeState) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
 	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
@@ -85,7 +86,7 @@ type IResource interface {
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *SchemaState, entry *PlanEntry) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
@@ -118,6 +119,12 @@ type IResource interface {
 	// (returned by GET, not 404) that rejects a second DELETE.
 	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
 	IsGone(remoteState any) bool
+
+	// [Optional] IDFromState returns the ID the state gives the resource, for resource types whose ID
+	// is built from their own fields (a UC full name). With it, an update_id that only follows a
+	// parent's rename is applied without calling DoUpdateWithID (see PlanEntry.StateOnly).
+	// Example: func (*ResourceVolume) IDFromState(state *VolumeState) string
+	IDFromState(state any) string
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -141,10 +148,14 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
+	idFromState        *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
 	keyedSlices             map[string]any
+
+	// internalIDPath is InternalIDField, parsed; nil for a resource type without one.
+	internalIDPath *structpath.PathNode
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -182,6 +193,8 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
+		idFromState:             nil,
+		internalIDPath:          nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -308,6 +321,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.idFromState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IDFromState")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -400,6 +418,24 @@ func (a *Adapter) validate() error {
 
 	if a.isGone != nil {
 		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
+	}
+
+	if a.idFromState != nil {
+		validations = append(validations, "IDFromState state", a.idFromState.InTypes[0], stateType)
+	}
+
+	if a.resourceConfig != nil && a.resourceConfig.InternalIDField != "" {
+		if a.idFromState == nil || a.doUpdateWithID == nil {
+			return errors.New("internal_id_field requires IDFromState and DoUpdateWithID")
+		}
+		path, err := structpath.ParsePath(a.resourceConfig.InternalIDField)
+		if err != nil {
+			return fmt.Errorf("internal_id_field: %w", err)
+		}
+		if err := structaccess.ValidatePath(stateType, path); err != nil {
+			return fmt.Errorf("internal_id_field: %w", err)
+		}
+		a.internalIDPath = path
 	}
 
 	if a.doUpdateWithID != nil {
@@ -725,6 +761,58 @@ func (a *Adapter) IsGone(remoteState any) bool {
 		return false
 	}
 	return outs[0].(bool)
+}
+
+// HasIDFromState reports whether the resource implements IDFromState.
+func (a *Adapter) HasIDFromState() bool {
+	return a.idFromState != nil
+}
+
+// HasInternalID reports whether the resource records an internal ID (see InternalIDField).
+func (a *Adapter) HasInternalID() bool {
+	return a.internalIDPath != nil
+}
+
+// IsInternalIDField reports whether path is the resource's internal ID field. It matches by
+// prefix, like the field rules do.
+func (a *Adapter) IsInternalIDField(path *structpath.PathNode) bool {
+	return a.internalIDPath != nil && path.HasPrefix(a.internalIDPath)
+}
+
+// IDFromState returns the ID the state gives the resource; see IResource.IDFromState.
+func (a *Adapter) IDFromState(state any) (string, error) {
+	outs, err := a.idFromState.Call(state)
+	if err != nil {
+		return "", err
+	}
+	return outs[0].(string), nil
+}
+
+// InternalID returns the internal ID recorded in state (see InternalIDField).
+func (a *Adapter) InternalID(state any) (string, error) {
+	value, err := structaccess.Get(state, a.internalIDPath)
+	if err != nil || value == nil {
+		return "", err
+	}
+	id, _ := value.(string)
+	return id, nil
+}
+
+// RecordInternalID copies the internal ID from remoteState into state, which is about to be saved.
+// Config never sets it, so without this the saved state would lose it.
+func (a *Adapter) RecordInternalID(state, remoteState any) error {
+	if a.internalIDPath == nil || remoteState == nil || reflect.ValueOf(remoteState).IsNil() {
+		return nil
+	}
+	remapped, err := a.RemapState(remoteState)
+	if err != nil {
+		return err
+	}
+	id, err := a.InternalID(remapped)
+	if err != nil || id == "" {
+		return err
+	}
+	return structaccess.Set(state, a.internalIDPath, id)
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.
