@@ -3,6 +3,7 @@
 package network_policies
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,24 +18,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "network-policies",
-		Short: `These APIs manage network policies for this account.`,
-		Long: `These APIs manage network policies for this account. Network policies control
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "network-policies",
+	Short:   `These APIs manage network policies for this account.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage network policies for this account. Network policies control
   which network destinations can be accessed from the Databricks environment.
   Each Databricks account includes a default policy named 'default-policy'.
   'default-policy' is associated with any workspace lacking an explicit network
   policy assignment, and is automatically associated with each newly created
   workspace. 'default-policy' is reserved and cannot be deleted, but it can be
-  updated to customize the default network access rules for your account.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  updated to customize the default network access rules for your account.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateNetworkPolicyRpc())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-network-policy-rpc command

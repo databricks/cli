@@ -389,7 +389,7 @@ func TestTargetFlagFull(t *testing.T) {
 	initTargetFlag(cmd)
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd, []string{"version", "--target", "development"})
+	err := execute(ctx, cmd, []string{"version", "--target", "development"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))
@@ -400,7 +400,7 @@ func TestTargetFlagShort(t *testing.T) {
 	initTargetFlag(cmd)
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd, []string{"version", "-t", "production"})
+	err := execute(ctx, cmd, []string{"version", "-t", "production"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "production", getTarget(cmd))
@@ -413,7 +413,7 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	initEnvironmentFlag(cmd)
 
 	ctx := t.Context()
-	err := Execute(ctx, cmd, []string{"version", "--environment", "development"})
+	err := execute(ctx, cmd, []string{"version", "--environment", "development"})
 	assert.NoError(t, err)
 
 	assert.Equal(t, "development", getTarget(cmd))

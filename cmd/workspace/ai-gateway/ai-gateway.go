@@ -3,6 +3,7 @@
 package ai_gateway
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,22 +20,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ai-gateway",
-		Short: `Govern AI workloads in Unity Catalog.`,
-		Long: `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ai-gateway",
+	Short:   `Govern AI workloads in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
   securables that bring centralized access control, lineage, and auditing to
   AI-serving entities: model services (governed access to foundation models and
   external LLMs), model provider services (governed resources for external model
-  providers), and MCP services (governed Model Context Protocol servers).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  providers), and MCP services (governed Model Context Protocol servers).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateMcpService())
@@ -66,8 +71,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-mcp-service command

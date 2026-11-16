@@ -15,22 +15,23 @@ package workspace
 import (
 	{{- range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
-	"github.com/spf13/cobra"
+	"github.com/databricks/cli/cmd/root"
 
 	groups "github.com/databricks/cli/cmd/workspace/groups"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	users "github.com/databricks/cli/cmd/workspace/users"
 )
 
-func All() []*cobra.Command {
-	var out []*cobra.Command
+// All returns the specs of the workspace commands.
+func All() []root.CommandSpec {
+	var out []root.CommandSpec
 
 	{{range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) -}}
-	out = append(out, {{.SnakeName}}.New())
+	out = append(out, {{.SnakeName}}.Spec)
 	{{end}}{{end}}{{end}}
-    out = append(out, groups.New())
-    out = append(out, service_principals.New())
-    out = append(out, users.New())
+    out = append(out, groups.Spec)
+    out = append(out, service_principals.Spec)
+    out = append(out, users.Spec)
 
 	return out
 }

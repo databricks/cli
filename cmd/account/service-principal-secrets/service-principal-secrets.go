@@ -3,6 +3,7 @@
 package service_principal_secrets
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "service-principal-secrets",
-		Short: `These APIs enable administrators to manage service principal secrets.`,
-		Long: `These APIs enable administrators to manage service principal secrets.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "service-principal-secrets",
+	Short:   `These APIs enable administrators to manage service principal secrets.`,
+	GroupID: "oauth2",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs enable administrators to manage service principal secrets.
 
   You can use the generated secrets to obtain OAuth access tokens for a service
   principal, which can then be used to access Databricks Accounts and Workspace
@@ -33,14 +39,13 @@ func New() *cobra.Command {
   information, see [Databricks Terraform Provider].
 
   [Authentication using OAuth tokens for service principals]: https://docs.databricks.com/dev-tools/authentication-oauth.html
-  [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`,
-		GroupID: "oauth2",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

@@ -3,6 +3,7 @@
 package personal_compute
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,18 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "personal-compute",
-		Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
-		Long: `The Personal Compute enablement setting lets you control which users can use
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "personal-compute",
+	Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Personal Compute enablement setting lets you control which users can use
   the Personal Compute default policy to create compute resources. By default
   all users in all workspaces have access (ON), but you can change the setting
   to instead let individual workspaces configure access control (DELEGATE).
@@ -29,16 +37,13 @@ func New() *cobra.Command {
   There is only one instance of this setting per account. Since this setting has
   a default value, this setting is present on all accounts even though it's
   never set on a given account. Deletion reverts the value of the setting back
-  to the default value.`,
+  to the default value.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

@@ -3,6 +3,7 @@
 package workspace_iam_v2
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,19 +21,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspace-iam-v2",
-		Short: `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
-		Long: `These APIs are used to manage identities and the workspace access of these
-  identities in Databricks.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-iam-v2",
+	Short:   `These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs are used to manage identities and the workspace access of these
+  identities in Databricks.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectGroupMemberProxy())
@@ -79,8 +84,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-direct-group-member-proxy command

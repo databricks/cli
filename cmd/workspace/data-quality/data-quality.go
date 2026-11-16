@@ -3,6 +3,7 @@
 package data_quality
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "data-quality",
-		Short: `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
-		Long: `Manage the data quality of Unity Catalog objects (currently support schema
-  and table)`,
-		GroupID: "dataquality",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "data-quality",
+	Short:   `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
+	GroupID: "dataquality",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage the data quality of Unity Catalog objects (currently support schema
+  and table)`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelRefresh())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-refresh command
