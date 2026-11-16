@@ -28,6 +28,17 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
+	// UC names the model by its short name here (verified on AWS).
+	if _, ok := s.RegisteredModels[fullName]; ok {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "RESOURCE_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Routine or Model '%s' already exists", createRequest.Name),
+			},
+		}
+	}
+
 	registeredModel := catalog.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
 		Comment:         createRequest.Comment,
