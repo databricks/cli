@@ -233,9 +233,10 @@ func gitInstalled() bool {
 
 // listFilesWithoutGit is the fallback for a directory outside any repository when git
 // is not on PATH. It walks the tree applying libs/git's ignore rules (the root and
-// nested .gitignore files, info/exclude and core.excludesFile from config), lists
-// regular files and symlinks without following symlinks, and emits a nested repository
-// as one "dir/" entry, as git does.
+// nested .gitignore files and core.excludesFile from config), lists regular files and
+// symlinks without following symlinks, and emits a nested repository as one "dir/"
+// entry, as git does. libs/git.FileSet is not used because it drops symlinks and walks
+// into nested repositories.
 //
 // Known differences from `git ls-files --others --exclude-standard`, which only matter
 // on hosts without git (with git on PATH the git listing is used unchanged):
@@ -279,6 +280,10 @@ func listFilesWithoutGit(ctx context.Context, repoPath string, includePaths []st
 				names = append(names, name+"/")
 				return fs.SkipDir
 			}
+			return nil
+		}
+		// git lists only what it can track; sockets and FIFOs would also block packaging.
+		if !d.Type().IsRegular() && d.Type()&fs.ModeSymlink == 0 {
 			return nil
 		}
 		ignored, err := repo.Ignore(name)

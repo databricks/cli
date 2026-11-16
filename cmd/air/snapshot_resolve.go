@@ -40,8 +40,9 @@ type snapshotPlan struct {
 
 // gitRequiredError is the error for packaging a code_source without a git binary, or
 // nil when the git-free fallback may package it. The fallback applies only to a
-// directory outside every repository with no git.* pin: packaging a repository's files
-// there would ignore its rules, so it fails early instead.
+// directory outside every repository with no git.* pin. Inside a repository it fails
+// early: without git the index can't be read, so tracked files that match .gitignore
+// would silently drop out of the snapshot.
 func gitRequiredError(root string, ref *gitRef) error {
 	if ref != nil {
 		return fmt.Errorf("code_source.git is set, so packaging %s needs git on PATH; install git and retry", root)
