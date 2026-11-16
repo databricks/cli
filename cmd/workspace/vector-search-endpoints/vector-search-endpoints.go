@@ -79,8 +79,8 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
-	cmd.Flags().Int64Var(&createEndpointReq.TargetQps, "target-qps", createEndpointReq.TargetQps, `Target QPS for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `Budget policy to attribute the endpoint's usage to.`)
+	cmd.Flags().Int64Var(&createEndpointReq.TargetQps, "target-qps", createEndpointReq.TargetQps, `Target queries per second (QPS) for the endpoint.`)
 	cmd.Flags().StringVar(&createEndpointReq.UsagePolicyId, "usage-policy-id", createEndpointReq.UsagePolicyId, `The usage policy id to be applied once we've migrated to usage policies.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
@@ -90,8 +90,15 @@ func newCreateEndpoint() *cobra.Command {
   Create a new endpoint.
 
   Arguments:
-    NAME: Name of the AI Search endpoint
-    ENDPOINT_TYPE: Type of endpoint
+    NAME: Name of the AI Search endpoint. The name must be unique within the
+      workspace, have at most 50 characters, contain only lowercase letters,
+      digits, hyphens, underscores and periods, and start and end with a letter
+      or digit.
+    ENDPOINT_TYPE: Type of endpoint to create. STANDARD endpoints are optimized for
+      low-latency queries and support Target QPS scaling. STORAGE_OPTIMIZED
+      endpoints hold much larger indexes and index faster, with higher query
+      latency. See
+      https://docs.databricks.com/aws/en/ai-search/ai-search#endpoint-options.
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -505,7 +512,9 @@ func newPatchEndpoint() *cobra.Command {
 
 Update an endpoint.
 
-  Update an endpoint
+  Update the Target QPS of a STANDARD endpoint. The response is the updated
+  endpoint; its scaling_info shows whether the resulting scaling change is
+  applied or still in progress.
 
   Arguments:
     ENDPOINT_NAME: Name of the AI Search endpoint`
@@ -866,7 +875,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 
 Update the budget policy of an endpoint.
 
-  Update the budget policy of an endpoint
+  Update the budget policy that the endpoint's usage is attributed to.
 
   Arguments:
     ENDPOINT_NAME: Name of the AI Search endpoint

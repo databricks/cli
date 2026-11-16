@@ -94,10 +94,10 @@ Usage:
   databricks apps update NAME [flags]
 
 Flags:
-      --budget-policy-id string       
+      --budget-policy-id string       ID of the serverless budget policy that the app's compute usage is attributed to.
       --compute-max-instances int     Maximum number of app instances the app is configured to run.
       --compute-min-instances int     Minimum number of app instances the app is configured to run.
-      --compute-size ComputeSize      Supported values: [LARGE, MEDIUM, XLARGE]
+      --compute-size ComputeSize      Size of the compute instances the app runs on. Supported values: [LARGE, MEDIUM, XLARGE]
       --description string            The description of the app.
       --forward-user-access-token     Forward the user's access token to the app.
       --git-auto-deploy               Automatically redeploy the app on pushes to the configured Git branch. Requires --git-url and --git-provider.
@@ -109,9 +109,9 @@ Flags:
       --git-url string                URL of the Git repository the app deploys from.
   -h, --help                          help for update
       --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-      --source-code-path string       
+      --source-code-path string       Workspace file system path of the app source code.
       --space string                  Name of the space this app belongs to.
-      --usage-policy-id string
+      --usage-policy-id string        ID of the usage policy that the app's compute usage is attributed to.
 
 Global Flags:
       --debug            enable debug logging

@@ -46,6 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteSpace())
 	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetAppDeploymentScanFinding())
 	cmd.AddCommand(newGetDeployment())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
@@ -53,12 +54,14 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetSpaceOperation())
 	cmd.AddCommand(newGetUpdate())
 	cmd.AddCommand(newList())
+	cmd.AddCommand(newListAppDeploymentScanFindings())
 	cmd.AddCommand(newListDeployments())
 	cmd.AddCommand(newListSpaces())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdateAppDeploymentScanFinding())
 	cmd.AddCommand(newUpdateAppThumbnail())
 	cmd.AddCommand(newUpdatePermissions())
 	cmd.AddCommand(newUpdateSpace())
@@ -98,10 +101,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
+	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, `ID of the serverless budget policy that the app's compute usage is attributed to.`)
 	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
 	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Size of the compute instances the app runs on. Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
@@ -112,10 +115,10 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
-	cmd.Flags().StringVar(&createReq.App.SourceCodePath, "source-code-path", createReq.App.SourceCodePath, ``)
+	cmd.Flags().StringVar(&createReq.App.SourceCodePath, "source-code-path", createReq.App.SourceCodePath, `Workspace file system path of the app source code.`)
 	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
-	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
+	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, `ID of the usage policy that the app's compute usage is attributed to.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -374,8 +377,12 @@ func newCreateUpdate() *cobra.Command {
   method.
 
   Arguments:
-    APP_NAME:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+    APP_NAME: The name of the app to update.
+    UPDATE_MASK: Comma-separated names of the app fields to update, such as description
+      or resources. A field named in the mask but absent from app is
+      cleared, except compute_size, which resets to MEDIUM.
+
+      The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
@@ -481,7 +488,7 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete an app.`
 	cmd.Long = `Delete an app.
 
-  Deletes an app.
+  Deletes an app and the dedicated service principal created for it.
 
   Arguments:
     NAME: The name of the app.`
@@ -846,6 +853,68 @@ func newGet() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getOverrides {
 		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+// start get-app-deployment-scan-finding command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getAppDeploymentScanFindingOverrides []func(
+	*cobra.Command,
+	*apps.GetAppDeploymentScanFindingRequest,
+)
+
+func newGetAppDeploymentScanFinding() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getAppDeploymentScanFindingReq apps.GetAppDeploymentScanFindingRequest
+
+	cmd.Use = "get-app-deployment-scan-finding NAME"
+	cmd.Short = `*Beta* Get an app deployment scan finding.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an app deployment scan finding.
+
+  Retrieves a single security scan finding for an app deployment.
+
+  Arguments:
+    NAME: The resource name of the finding, in the form
+      apps/{app}/deployments/{deployment}/scanFindings/{finding_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getAppDeploymentScanFindingReq.Name = args[0]
+
+		response, err := w.Apps.GetAppDeploymentScanFinding(ctx, getAppDeploymentScanFindingReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getAppDeploymentScanFindingOverrides {
+		fn(cmd, &getAppDeploymentScanFindingReq)
 	}
 
 	return cmd
@@ -1284,6 +1353,84 @@ func newList() *cobra.Command {
 	return cmd
 }
 
+// start list-app-deployment-scan-findings command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listAppDeploymentScanFindingsOverrides []func(
+	*cobra.Command,
+	*apps.ListAppDeploymentScanFindingsRequest,
+)
+
+func newListAppDeploymentScanFindings() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listAppDeploymentScanFindingsReq apps.ListAppDeploymentScanFindingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAppDeploymentScanFindingsLimit int
+
+	cmd.Flags().IntVar(&listAppDeploymentScanFindingsReq.PageSize, "page-size", listAppDeploymentScanFindingsReq.PageSize, `Upper bound for the number of findings returned.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAppDeploymentScanFindingsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAppDeploymentScanFindingsReq.PageToken, "page-token", listAppDeploymentScanFindingsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-app-deployment-scan-findings PARENT"
+	cmd.Short = `*Beta* List app deployment scan findings.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List app deployment scan findings.
+
+  Lists the security scan findings for an app deployment.
+
+  Arguments:
+    PARENT: The parent deployment whose findings to list, in the form
+      apps/{app}/deployments/{deployment}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listAppDeploymentScanFindingsReq.Parent = args[0]
+
+		response := w.Apps.ListAppDeploymentScanFindings(ctx, listAppDeploymentScanFindingsReq)
+		if listAppDeploymentScanFindingsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAppDeploymentScanFindingsLimit)
+		}
+		if listAppDeploymentScanFindingsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAppDeploymentScanFindingsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listAppDeploymentScanFindingsOverrides {
+		fn(cmd, &listAppDeploymentScanFindingsReq)
+	}
+
+	return cmd
+}
+
 // start list-deployments command
 
 // Slice with functions to override default command behavior.
@@ -1695,10 +1842,10 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
+	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, `ID of the serverless budget policy that the app's compute usage is attributed to.`)
 	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances the app is configured to run.`)
 	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances the app is configured to run.`)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Size of the compute instances the app runs on. Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
 	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
@@ -1709,10 +1856,10 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
-	cmd.Flags().StringVar(&updateReq.App.SourceCodePath, "source-code-path", updateReq.App.SourceCodePath, ``)
+	cmd.Flags().StringVar(&updateReq.App.SourceCodePath, "source-code-path", updateReq.App.SourceCodePath, `Workspace file system path of the app source code.`)
 	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
-	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
+	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, `ID of the usage policy that the app's compute usage is attributed to.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"
@@ -1769,6 +1916,93 @@ func newUpdate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateOverrides {
 		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+// start update-app-deployment-scan-finding command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateAppDeploymentScanFindingOverrides []func(
+	*cobra.Command,
+	*apps.UpdateAppDeploymentScanFindingRequest,
+)
+
+func newUpdateAppDeploymentScanFinding() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateAppDeploymentScanFindingReq apps.UpdateAppDeploymentScanFindingRequest
+	updateAppDeploymentScanFindingReq.AppDeploymentScanFinding = apps.AppDeploymentScanFinding{}
+	var updateAppDeploymentScanFindingJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateAppDeploymentScanFindingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().Var(&updateAppDeploymentScanFindingReq.AppDeploymentScanFinding.Status, "status", `The triage status of the finding. Supported values: [SCAN_FINDING_STATUS_IGNORED, SCAN_FINDING_STATUS_IN_PROGRESS, SCAN_FINDING_STATUS_RESOLVED]`)
+
+	cmd.Use = "update-app-deployment-scan-finding NAME UPDATE_MASK"
+	cmd.Short = `*Beta* Update an app deployment scan finding.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update an app deployment scan finding.
+
+  Updates the triage status (resolved / ignored / in-progress) of a single scan
+  finding.
+
+  Arguments:
+    NAME: The resource name of the finding, in the form
+      apps/{app}/deployments/{deployment}/scanFindings/{finding_id}.
+    UPDATE_MASK: The fields to update. Must be exactly status, the only updatable field
+      on a scan finding.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateAppDeploymentScanFindingJson.Unmarshal(&updateAppDeploymentScanFindingReq.AppDeploymentScanFinding)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateAppDeploymentScanFindingReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateAppDeploymentScanFindingReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		response, err := w.Apps.UpdateAppDeploymentScanFinding(ctx, updateAppDeploymentScanFindingReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateAppDeploymentScanFindingOverrides {
+		fn(cmd, &updateAppDeploymentScanFindingReq)
 	}
 
 	return cmd

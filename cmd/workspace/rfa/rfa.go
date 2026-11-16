@@ -162,8 +162,10 @@ Get Access Request Destinations.
   "registered_model", and "volume".
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable.
-    FULL_NAME: The full name of the securable.`
+    SECURABLE_TYPE: The type of the securable. Matching is case-insensitive, and hyphens may
+      replace underscores in multi-word types.
+    FULL_NAME: The full name of the securable: the names of its parents followed by its
+      own name, separated by dots, for example main.sales.orders for a table.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -235,24 +237,17 @@ Update Access Request Destinations.
   maximum of 5 emails and 5 external notification destinations (Slack, Microsoft
   Teams, Generic Webhook, Databricks App Slack/Teams, Asana, ServiceNow, and
   EventBridge destinations) can be assigned to a securable. If a URL destination
-  is assigned, no other destinations can be set.
+  is assigned, no other destinations can be set. An update replaces every
+  destination assigned directly to the securable in this workspace. An empty
+  list removes them all.
 
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".
 
   Arguments:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.
+    UPDATE_MASK: The paths of the field mask are not evaluated, because an update always
+      replaces the full list of destinations.
     SECURABLE: The securable for which the access request destinations are being modified
       or read.`
 

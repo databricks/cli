@@ -140,7 +140,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a notification destination.`
 	cmd.Long = `Delete a notification destination.
 
-  Deletes a notification destination. Requires workspace admin permissions.`
+  Deletes a notification destination. Requires workspace admin permissions.
+
+  Arguments:
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -195,7 +198,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a notification destination.`
 	cmd.Long = `Get a notification destination.
 
-  Gets a notification destination.`
+  Gets a notification destination by ID. Workspace admins also receive its
+  config.
+
+  Arguments:
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -251,7 +258,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of notification destinations to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -264,7 +271,8 @@ func newList() *cobra.Command {
 	cmd.Short = `List notification destinations.`
 	cmd.Long = `List notification destinations.
 
-  Lists notification destinations.`
+  Lists the notification destinations in the workspace. Results never include a
+  destination's config; workspace admins can retrieve it with Get.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -328,10 +336,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a notification destination.
 
   Updates a notification destination. Requires workspace admin permissions. At
-  least one field is required in the request body.
+  least one field is required in the request body. A config provided in the
+  request replaces the existing one.
 
   Arguments:
-    ID: UUID identifying notification destination.`
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
