@@ -1,7 +1,7 @@
 trace $CLI pipelines deploy
 rm "$OUT_REQUESTS"
 
-title "Local test paths are not supported with workspace.sync_mode immutable"
+title "Relative test paths are rejected with workspace.sync_mode immutable"
 trace musterr $CLI pipelines test my_pipeline tests/test_orders.py::test_backfill
 
 title "Absolute workspace paths and running all tests still work"

@@ -113,7 +113,7 @@ func TestBundleTestSelectionPath(t *testing.T) {
 
 	// A path outside the synchronized files is an error. The error shows forward slashes.
 	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, filepath.Join("..", "tests"))
-	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
+	assert.ErrorContains(t, err, "is not in the files synced from "+filepath.ToSlash(syncRoot))
 }
 
 func TestNotPipelineKeyError(t *testing.T) {

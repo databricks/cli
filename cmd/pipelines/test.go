@@ -120,7 +120,7 @@ func bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath string) (string, er
 	}
 	rel, err := filepath.Rel(syncRoot, localPath)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", fmt.Errorf("%s is outside the synchronized bundle files in %s", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
+		return "", fmt.Errorf("%s is not in the files synced from %s; pass its /Workspace path", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
 	}
 	return path.Join(filesRoot, filepath.ToSlash(rel)), nil
 }
@@ -142,7 +142,7 @@ func bundleFilesRoot(b *bundle.Bundle) string {
 // under filesRoot. The path must exist locally, so that a typo fails before compute starts.
 func bundleTestSelectionPath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
 	if filesRoot == "" {
-		return "", errors.New("local test paths are not supported with workspace.sync_mode immutable; pass an absolute workspace path")
+		return "", errors.New("relative test paths need synced local files, but workspace.sync_mode is immutable; pass the /Workspace path")
 	}
 	workspacePath, err := bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
 	if err != nil {
@@ -306,7 +306,7 @@ func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args 
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
-		Short: "*Preview* Run the tests of a pipeline",
+		Short: "*Experimental* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
 
 This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
