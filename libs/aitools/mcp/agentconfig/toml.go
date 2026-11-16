@@ -112,6 +112,12 @@ func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []stri
 	if err != nil {
 		return err
 	}
+	// Checked before the [root] table is added to the ranges below, so that its
+	// header cannot stand in for the server's own tables.
+	if found && len(ranges) == 0 {
+		return fmt.Errorf("server %q is not defined by its own [%s] tables (inline table or dotted keys), so it cannot be edited; edit it by hand",
+			name, strings.Join(append(root, name), "."))
+	}
 	// The [root] table goes with its last server, the same as the container of a
 	// JSON file. Only the server is left in the table when it is found.
 	if entry == nil && found {
@@ -123,10 +129,6 @@ func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []stri
 			ranges = append(ranges, tableBlocks(lines, func(parts []string) bool { return slices.Equal(parts, root) })...)
 			slices.SortFunc(ranges, func(a, b lineRange) int { return a.start - b.start })
 		}
-	}
-	if found && len(ranges) == 0 {
-		return fmt.Errorf("server %q is not defined by its own [%s] tables (inline table or dotted keys), so it cannot be edited; edit it by hand",
-			name, strings.Join(append(root, name), "."))
 	}
 	// BurntSushi accepts a table header added to an inline table, which TOML
 	// does not, so the root table must have a header of its own before we add to it.

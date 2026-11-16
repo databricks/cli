@@ -124,6 +124,15 @@ func (d *jsonDoc) entry(root []string, name string) (map[string]any, bool, error
 		if err := checkUnique(obj); err != nil {
 			return nil, false, err
 		}
+		// Nested objects, such as env, are checked too: a duplicate there would be
+		// patched in one place and read from another.
+		for _, m := range obj.Members {
+			if nested, ok := m.Value.Value.(*hujson.Object); ok {
+				if err := checkUnique(nested); err != nil {
+					return nil, false, err
+				}
+			}
+		}
 	}
 	entry, ok := decodeObject(&member.Value)
 	if !ok {
@@ -250,7 +259,9 @@ func (d *jsonDoc) update(root []string, name string, entry map[string]any, keys 
 func (d *jsonDoc) sync(path []string, have any, inFile bool, want any, inWant bool, depth int) error {
 	parent, key := path[:len(path)-1], path[len(path)-1]
 	if !inWant {
-		return d.remove(parent, key)
+		// Only the member goes. An object it empties stays, as claude mcp add writes it.
+		_, err := d.drop(parent, key)
+		return err
 	}
 	haveObj, haveIsObj := have.(map[string]any)
 	wantObj, wantIsObj := want.(map[string]any)
@@ -279,12 +290,21 @@ func (d *jsonDoc) sync(path []string, have any, inFile bool, want any, inWant bo
 	if err != nil {
 		return err
 	}
+	before, err := d.object(parent)
+	if err != nil {
+		return err
+	}
+	emptied := len(before.Members) == 0
 	if err := d.apply([]patch{{op: opAdd, path: jsonPointer(path...), value: value}}); err != nil {
 		return err
 	}
 	obj, err := d.object(parent)
 	if err != nil {
 		return err
+	}
+	// An object that was empty keeps its closing brace on its own line, as set lays it out.
+	if emptied {
+		obj.AfterExtra = relayout(obj.AfterExtra, d.nl+indent(depth-1))
 	}
 	place(obj, key, depth, true, d.nl)
 	return nil
@@ -363,37 +383,47 @@ func indent(depth int) string {
 	return strings.Repeat("  ", depth)
 }
 
-// remove deletes name under root. A missing name is a no-op. Removing the last
-// member keeps the file's trailing-comma state: a strict file gets no comma after
-// the member that becomes last. An object that the removal leaves empty is
-// removed from its parent too, and so on up to the root object, which stays. A
-// file that had no such object before an add gets back its bytes.
+// remove deletes the server name under root and prunes the containers that the
+// removal leaves empty: each object up to the root object is removed from its
+// parent in turn, and the root object stays. A file that had no such object before
+// an add gets back its bytes. A missing name is a no-op.
 func (d *jsonDoc) remove(root []string, name string) error {
+	obj, err := d.drop(root, name)
+	if err != nil || obj == nil || len(obj.Members) > 0 {
+		return err
+	}
+	if len(root) > 0 {
+		return d.remove(root[:len(root)-1], root[len(root)-1])
+	}
+	// The root object is left empty. Its layout goes, so it reads {} as an empty
+	// file did, unless a comment sits inside it.
+	if len(bytes.TrimSpace(obj.AfterExtra)) == 0 {
+		obj.AfterExtra = nil
+	}
+	return nil
+}
+
+// drop deletes name under root and returns the object at root after the removal.
+// It returns nil when root is absent or name is not a member of it. Removing the
+// last member keeps the file's trailing-comma state: a strict file gets no comma
+// after the member that becomes last. Nothing else is pruned, so an object left
+// empty stays.
+func (d *jsonDoc) drop(root []string, name string) (*hujson.Object, error) {
 	obj, err := d.object(root)
 	if err != nil || obj == nil || findMember(obj, name) == nil {
-		return err
+		return nil, err
 	}
 	trailing := hasTrailingComma(obj)
 	if err := d.apply([]patch{{op: opRemove, path: jsonPointer(append(root, name)...)}}); err != nil {
-		return err
+		return nil, err
 	}
 	obj, err = d.object(root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	setTrailingComma(obj, trailing)
 	useLineEnding(obj, d.nl)
-	if len(obj.Members) == 0 {
-		if len(root) > 0 {
-			return d.remove(root[:len(root)-1], root[len(root)-1])
-		}
-		// The root object is left empty. Its layout goes, so it reads {} as an
-		// empty file did, unless a comment sits inside it.
-		if len(bytes.TrimSpace(obj.AfterExtra)) == 0 {
-			obj.AfterExtra = nil
-		}
-	}
-	return nil
+	return obj, nil
 }
 
 // hasTrailingComma reports whether the last member of obj is followed by a

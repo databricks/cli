@@ -86,13 +86,20 @@ func ownedKeys(spec *mcpconfig.Spec) []string {
 }
 
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
-// env. An entry this CLI wrote gets its launch keys updated, and its other keys
-// are kept. A foreign entry is replaced only when force is set. The file is left
-// alone when the entry already matches. cmd must be the databricks binary, or
-// the entry could never be recognized as ours. It returns the config file path.
+// env. The only variable env may set is pinnedEnv, since other variables are the
+// user's and no later write could remove them. An entry this CLI wrote gets its
+// launch keys updated, and its other keys are kept. A foreign entry is replaced
+// only when force is set. The file is left alone when the entry already matches.
+// cmd must be the databricks binary, or the entry could never be recognized as
+// ours. It returns the config file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
 	if err := checkName(name); err != nil {
 		return "", "", err
+	}
+	for k := range env {
+		if k != pinnedEnv {
+			return "", "", fmt.Errorf("server %q: env may only set %s, got %q", name, pinnedEnv, k)
+		}
 	}
 	spec, err := specOf(a)
 	if err != nil {

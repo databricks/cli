@@ -720,6 +720,81 @@ func TestUpsertKeepsUserEnvironmentOpenCode(t *testing.T) {
 	assert.Equal(t, map[string]any{"HTTPS_PROXY": "http://proxy.test"}, entryOf(t, ctx, a, testName)["environment"])
 }
 
+// TestUpsertUnpinKeepsEnvClaude checks that unpinning the only variable leaves the
+// env table of a Claude Code entry in place, since claude mcp add always writes
+// it. The next identical write then reports unchanged.
+func TestUpsertUnpinKeepsEnvClaude(t *testing.T) {
+	ctx := testHome(t)
+	a := agents.ByName(agents.NameClaudeCode)
+	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), map[string]string{pinnedEnv: "/cfg"}, false)
+	require.NoError(t, err)
+
+	_, status, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	assert.Equal(t, map[string]any{}, entryOf(t, ctx, a, testName)["env"])
+
+	_, status, err = Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUnchanged, status)
+}
+
+// TestUpsertPinIntoEmptyEnvLayout checks that pinning a variable into an existing
+// empty env table keeps the closing brace on its own line, as a new env is laid out.
+func TestUpsertPinIntoEmptyEnvLayout(t *testing.T) {
+	ctx := testHome(t)
+	a := agents.ByName(agents.NameClaudeCode)
+	path, err := a.MCP.Path(ctx)
+	require.NoError(t, err)
+	args, err := json.Marshal(testArgs("test"))
+	require.NoError(t, err)
+	writeFile(t, path, []byte(`{"mcpServers":{"`+testName+`":{"type":"stdio","command":"`+testCmd+`","args":`+string(args)+`,"env":{}}}}`), 0o600)
+
+	_, status, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), map[string]string{pinnedEnv: "/cfg"}, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusUpdated, status)
+	assert.Equal(t, map[string]any{pinnedEnv: "/cfg"}, entryOf(t, ctx, a, testName)["env"])
+	assert.Regexp(t, `"/cfg"\n\s+}`, string(readFile(t, path)))
+	requireStrictJSON(t, string(readFile(t, path)))
+}
+
+// TestUpsertRejectsEnvOtherThanPin checks that Upsert refuses an env variable other
+// than the pinned one, since such a variable could never be removed by a later write.
+func TestUpsertRejectsEnvOtherThanPin(t *testing.T) {
+	ctx := testHome(t)
+	a := agents.ByName(agents.NameClaudeCode)
+	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), map[string]string{"HTTPS_PROXY": "http://proxy.test"}, false)
+	assert.ErrorContains(t, err, "env may only set "+pinnedEnv)
+}
+
+// TestUpsertRejectsDuplicateEnvKey checks that a duplicate key in an env table is
+// refused before any write, as a duplicate server key is.
+func TestUpsertRejectsDuplicateEnvKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "mcp_config.json")
+	args, err := json.Marshal(testArgs("test"))
+	require.NoError(t, err)
+	data := `{"mcpServers":{"` + testName + `":{"command":"` + testCmd + `","args":` + string(args) + `,"env":{"DATABRICKS_CONFIG_FILE":"/a","DATABRICKS_CONFIG_FILE":"/b"}}}}`
+	writeFile(t, path, []byte(data), 0o600)
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+
+	_, _, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), map[string]string{pinnedEnv: "/new"}, false)
+	assert.ErrorContains(t, err, "duplicate key")
+	assert.Equal(t, data, string(readFile(t, path)))
+}
+
+// TestRemoveInlineServerTOMLKeepsFile checks that Remove refuses a server defined
+// inline under [mcp_servers], as Upsert does, and leaves the table and its comment.
+func TestRemoveInlineServerTOMLKeepsFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	before := "[mcp_servers]\n# note\n" + testName + ` = { command = "` + testCmd + `", args = ["aitools", "mcp", "serve"] }` + "\n"
+	writeFile(t, path, []byte(before), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, err := Remove(t.Context(), a, testName)
+	assert.ErrorContains(t, err, "edit it by hand")
+	assert.Equal(t, before, string(readFile(t, path)))
+}
+
 // TestUpsertKeepsTypeWhenBuilderDoesNotWriteIt checks that a "type" key is the
 // user's for agents whose builder never writes one, so an update keeps it.
 func TestUpsertKeepsTypeWhenBuilderDoesNotWriteIt(t *testing.T) {

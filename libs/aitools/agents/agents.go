@@ -216,6 +216,7 @@ var Registry = []*Agent{
 		// Cursor has a databricks plugin, but it can't be installed headlessly, so
 		// the CLI treats Cursor as a skills-only agent (Plugin nil) rather than
 		// referencing a plugin it can't act on.
+		// Cursor's global MCP file. See https://cursor.com/docs/context/mcp.
 		MCP: &mcpconfig.Spec{
 			Path:   homeSubdir(".cursor", "mcp.json"),
 			Format: mcpconfig.FormatJSON,
