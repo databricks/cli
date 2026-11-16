@@ -24,9 +24,8 @@ const (
 	// It names the skill and what it buys the agent, so a coding agent can tell
 	// the hint is about the task at hand rather than generic setup, and offers a
 	// --path preview so the agent can read the skill without installing anything.
-	airHintText = "Tip: the " + airSkillName + " skill is not installed. It documents the air workload YAML, GPU types, secrets, and how to follow and debug runs. " +
-		"Install it: databricks aitools install --skills-only --skills " + airSkillName +
-		" (to read it first without installing: databricks aitools install --path <dir> --skills " + airSkillName + ")"
+	airHintText = "Tip: install the " + airSkillName + " skill for workload configuration and run debugging: databricks aitools install --skills-only --skills " + airSkillName +
+		". To preview it first, replace --skills-only with --path <dir>."
 
 	// claudeAgentProvider is the useragent.AgentProvider() value for Claude Code.
 	// The SDK maps the CLAUDECODE env var to this product name. The hint is

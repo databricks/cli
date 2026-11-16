@@ -79,7 +79,7 @@ func TestRunnableAirCommandsGetSkillHint(t *testing.T) {
 					ctx = env.WithUserHomeDir(ctx, t.TempDir())
 					ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
 					agents.MaybeHint(ctx, sub)
-					assert.Contains(t, stderr.String(), "the databricks-ai-runtime skill is not installed")
+					assert.Contains(t, stderr.String(), "install the databricks-ai-runtime skill")
 				})
 			}
 			visit(sub)

@@ -110,10 +110,10 @@ func assertSilent(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
 func TestAIRHintText(t *testing.T) {
 	// The hint names the skill, says what it is for, and offers both the install
 	// and a no-install preview, on one line.
-	assert.Contains(t, airHintText, "databricks-ai-runtime skill is not installed")
-	assert.Contains(t, airHintText, "workload YAML")
+	assert.Contains(t, airHintText, "install the databricks-ai-runtime skill")
+	assert.Contains(t, airHintText, "workload configuration and run debugging")
 	assert.Contains(t, airHintText, "databricks aitools install --skills-only --skills databricks-ai-runtime")
-	assert.Contains(t, airHintText, "databricks aitools install --path <dir> --skills databricks-ai-runtime")
+	assert.Contains(t, airHintText, "replace --skills-only with --path <dir>")
 	assert.NotContains(t, airHintText, "\n")
 }
 
