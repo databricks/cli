@@ -4,8 +4,8 @@
     <testcase classname="tests.test_orders" name="test_slow">
       <error message="no result received"></error>
     </testcase>
-    <testcase name="update [UUID][1]">
-      <error message="RUN INCOMPLETE: the update was canceled before all test results were received.">RUN INCOMPLETE: the update was canceled before all test results were received.&#xA;update [UUID][1] is CANCELED</error>
+    <testcase name="pipelines test">
+      <error message="RUN INCOMPLETE: the update was canceled before all test results were received.">RUN INCOMPLETE: the update was canceled before all test results were received.&#xA;update [UUID][1] is CANCELED&#xA;Update: [UUID][1]</error>
     </testcase>
   </testsuite>
 </testsuites>

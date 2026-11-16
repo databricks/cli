@@ -170,7 +170,7 @@ func (r *testReport) failed(ctx context.Context, err error) error {
 		Name:   r.suiteName,
 		Tests:  1,
 		Errors: 1,
-		Cases:  []junitTestCase{{Name: "pipelines test", Error: newJUnitResult(message)}},
+		Cases:  []junitTestCase{{Name: junitCommandEntryName, Error: newJUnitResult(message)}},
 	}}}
 	if writeErr := writeJUnitReport(r.path, report); writeErr != nil {
 		if printed {

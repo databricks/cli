@@ -651,6 +651,24 @@ incomplete run, a run without tests, or a timeout adds a failing entry that
 names the cause. The report replaces the file on every exit except a flag that
 cannot be parsed. With workspace.sync_mode immutable, test names keep the path
 of the deployed snapshot, which changes with each deployment.`,
+		Example: `  # Run all tests of the pipeline my_pipeline
+  databricks pipelines test my_pipeline
+
+  # Run the tests in one file
+  databricks pipelines test my_pipeline tests/test_orders.py
+
+  # Run one failed test again, by the test ID that the output shows
+  databricks pipelines test my_pipeline tests/test_orders.py::test_backfill
+
+  # Run the tests in CI and write a JUnit XML report
+  databricks pipelines test my_pipeline --junit-xml report.xml
+
+  # Stop waiting after 30 minutes, then read the results later
+  databricks pipelines test my_pipeline --timeout 30m
+  databricks pipelines test my_pipeline --resume UPDATE_ID
+
+  # Run the tests of any pipeline by its ID
+  databricks pipelines test --pipeline-id PIPELINE_ID`,
 	}
 
 	var f testFlags
