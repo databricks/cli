@@ -3,6 +3,9 @@ package config
 type Experimental struct {
 	Scripts map[ScriptHook]Command `json:"scripts,omitempty"`
 
+	// CheckGitBranchFreshness checks the current branch against its upstream before deployment.
+	CheckGitBranchFreshness *bool `json:"check_git_branch_freshness,omitempty"`
+
 	// ImmutableFolder specifies that bundle files and artifacts are uploaded as a
 	// single immutable snapshot rather than being synced individually. When true,
 	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets

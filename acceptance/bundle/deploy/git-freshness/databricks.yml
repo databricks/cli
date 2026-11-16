@@ -1,0 +1,16 @@
+bundle:
+  name: git-freshness
+
+experimental:
+  check_git_branch_freshness: true
+
+sync:
+  exclude:
+    - remote.git/**
+    - writer/**
+    - tmp.plan.json
+
+resources:
+  jobs:
+    job:
+      name: test-job

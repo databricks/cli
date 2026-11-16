@@ -1,0 +1,19 @@
+git-repo-init
+git clone --bare . remote.git &> LOG.git
+git remote add origin remote.git
+git fetch origin >> LOG.git 2>&1
+git branch --set-upstream-to=origin/main main >> LOG.git 2>&1
+git clone remote.git writer >> LOG.git 2>&1
+git -C writer config user.name "Tester"
+git -C writer config user.email "tester@databricks.com"
+
+trace $CLI bundle plan -o json > tmp.plan.json
+git -C writer commit --allow-empty -m "Update upstream" >> LOG.git 2>&1
+git -C writer push >> LOG.git 2>&1
+
+title "A stale branch blocks non-interactive deployments"
+musterr trace $CLI bundle deploy
+musterr trace $CLI bundle deploy --plan tmp.plan.json
+
+title "Auto-approve allows a stale branch"
+trace $CLI bundle deploy --plan tmp.plan.json --auto-approve

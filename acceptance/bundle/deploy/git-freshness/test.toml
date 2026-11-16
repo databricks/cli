@@ -1,0 +1,1 @@
+Ignore = [".git", "remote.git", "writer", "tmp.plan.json"]
