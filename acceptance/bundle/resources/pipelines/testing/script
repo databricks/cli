@@ -29,7 +29,7 @@ title "Removing testing sends an update without it"
 update_file.py databricks.yml "$(sed -n '/^      testing:/,$p' databricks.yml)" ""
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests.py //api/2.0/pipelines --nostamp | jq '{method, path, testing: .body.testing}'
+trace print_requests.py //api/2.0/pipelines --nostamp | jq '{method, path, has_testing: (.body | has("testing"))}'
 
 trace $CLI bundle destroy --auto-approve
 rm "$OUT_REQUESTS"

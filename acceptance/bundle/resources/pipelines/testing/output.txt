@@ -116,7 +116,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "method": "PUT",
   "path": "/api/2.0/pipelines/[ORDERS_ID]",
-  "testing": null
+  "has_testing": false
 }
 
 >>> [CLI] bundle destroy --auto-approve
