@@ -5,7 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/env"
+	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows"
@@ -73,4 +75,15 @@ func TestNewCapabilitiesMSYSPipeStdin(t *testing.T) {
 	c = newCapabilities(ctx, FakeTTYReader(nil), errw, errw)
 	assert.False(t, c.stdinIsMSYSPipe)
 	assert.True(t, c.SupportsPrompt())
+}
+
+func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
+	// termenv can't recognize an MSYS2 pty pipe as a terminal, but cmdio
+	// does, so the renderer must still emit color there.
+	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty0-to-master", os.Getpid()+1))
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
+	r, color := NewRenderer(ctx, f)
+	assert.True(t, color)
+	assert.Equal(t, termenv.ANSI, r.ColorProfile())
+	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
 }

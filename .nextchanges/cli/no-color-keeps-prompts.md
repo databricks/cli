@@ -1,1 +1,1 @@
-* `NO_COLOR` now only removes color: prompts, spinners and pagers stay available (uncolored) instead of being disabled. ([#7700](https://github.com/databricks/cli/pull/7700))
+* `NO_COLOR` now only removes color: prompts, spinners and the pager for list output stay available (uncolored) instead of being disabled, and a terminal with `NO_COLOR` set counts as interactive (for example for the update notice and the user agent). ([#7700](https://github.com/databricks/cli/pull/7700))

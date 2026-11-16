@@ -147,9 +147,10 @@ func PadLeft(s string, n int) string {
 //   - when w doesn't support color (NO_COLOR, TERM=dumb, or w is piped or
 //     redirected) the renderer is forced to the Ascii profile so every Style
 //     it mints emits no SGR escapes;
-//   - when it does but termenv's own probe found nothing (an MSYS2 pty pipe
-//     without ConPTY, which termenv can't see is a terminal; see conpty.go),
-//     the renderer is raised to basic ANSI.
+//   - when w is an MSYS2 pty pipe (no ConPTY; see conpty.go), which cmdio
+//     treats as a terminal but termenv can't recognize, the renderer is
+//     raised from Ascii to basic ANSI. Other reasons termenv picks Ascii on
+//     a terminal (CLICOLOR=0, CI) are left alone.
 //
 // Callers still write rendered strings to w themselves; the renderer only
 // carries the color profile.
@@ -159,7 +160,7 @@ func NewRenderer(ctx context.Context, w io.Writer) (*lipgloss.Renderer, bool) {
 	switch {
 	case !color:
 		r.SetColorProfile(termenv.Ascii)
-	case r.ColorProfile() == termenv.Ascii:
+	case isMSYSPipe(w) && r.ColorProfile() == termenv.Ascii:
 		r.SetColorProfile(termenv.ANSI)
 	}
 	return r, color

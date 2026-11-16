@@ -5,7 +5,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
@@ -140,15 +139,16 @@ func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
 	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
 }
 
-func TestNewRendererRaisesAsciiWhenColor(t *testing.T) {
+func TestNewRendererKeepsTermenvProfile(t *testing.T) {
 	ctx := ttyContext(t)
 
-	// termenv can't detect a FakeTTY (like an MSYS2 pty pipe), but cmdio says
-	// it supports color, so the renderer must still emit color.
+	// cmdio says a FakeTTY supports color, but it isn't an MSYS2 pty pipe, so
+	// termenv's own decision (Ascii: it can't see a terminal) stands. The same
+	// holds for CLICOLOR=0 or CI on a real terminal. The MSYS2 pipe case is
+	// covered in conpty_windows_test.go.
 	r, color := cmdio.NewRenderer(ctx, cmdio.FakeTTY(&bytes.Buffer{}))
 	assert.True(t, color)
-	assert.Equal(t, termenv.ANSI, r.ColorProfile())
-	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
+	assert.Equal(t, termenv.Ascii, r.ColorProfile())
 }
 
 func TestRenderFuncMap(t *testing.T) {

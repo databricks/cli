@@ -71,6 +71,23 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 	}
 }
 
+func TestCapabilities_SupportsPager(t *testing.T) {
+	tty := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}
+	assert.True(t, tty.SupportsPager())
+
+	c := tty
+	c.noColor = true
+	assert.True(t, c.SupportsPager(), "NO_COLOR keeps the pager (uncolored)")
+
+	c = tty
+	c.dumb = true
+	assert.False(t, c.SupportsPager(), "TERM=dumb can't redraw")
+
+	c = tty
+	c.stdoutIsTTY = false
+	assert.False(t, c.SupportsPager(), "stdout redirected")
+}
+
 func TestCapabilities_SupportsColor(t *testing.T) {
 	tests := []struct {
 		name     string
