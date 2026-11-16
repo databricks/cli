@@ -626,9 +626,25 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
       - cat test-output-unit.json test-output-acc.json > test-output.json
-      - rm -fr ./acceptance/build/cover-merged/
+      - rm -fr ./acceptance/build/cover-merged/ ./acceptance/build/cover-batches/
       - mkdir -p acceptance/build/cover-merged/
-      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
+      # A full run writes thousands of per-test dirs; joined into one -i argument they exceed
+      # Linux's 128KB per-argument limit ("argument list too long"), so merge in batches.
+      - |
+        batch=""; n=0; i=0
+        for d in acceptance/build/cover/*; do
+          batch="$batch,$d"; n=$((n+1))
+          if [ $n -eq 500 ]; then
+            i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+            go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+            batch=""; n=0
+          fi
+        done
+        if [ -n "$batch" ]; then
+          i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+          go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+        fi
+        go tool covdata merge -i "$(printf '%s,' acceptance/build/cover-batches/* | sed 's/,$//')" -o acceptance/build/cover-merged/
       - go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
 
   showcover:
