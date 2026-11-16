@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/google/uuid"
 )
 
 // source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
@@ -37,6 +38,13 @@ var requestObjectTypeToObjectType = map[string]string{
 	"database-instances":      "database-instances",
 	"database-projects":       "database-projects",
 	"alertsv2":                "alertv2",
+}
+
+// isServicePrincipalID reports whether name is a service principal application ID
+// (a UUID). The Permissions API treats a UUID-valued user_name as a service principal.
+func isServicePrincipalID(name string) bool {
+	_, err := uuid.Parse(name)
+	return err == nil
 }
 
 // aclPrincipalKey returns a unique key identifying the principal in an ACL entry.
@@ -269,15 +277,27 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	// Convert AccessControlRequest to AccessControlResponse and replace the ACL.
 	existingPermissions.AccessControlList = nil
 	for _, acl := range updateRequest.AccessControlList {
-		display := acl.UserName
+		userName := acl.UserName
+		servicePrincipalName := acl.ServicePrincipalName
+
+		// The real Permissions API resolves a user_name that is actually a service
+		// principal's application ID (a UUID) to a service principal, and returns it
+		// as service_principal_name on GET. Model that here so a bundle that declares
+		// a service principal under user_name converges the same way it does on cloud.
+		if userName != "" && isServicePrincipalID(userName) {
+			servicePrincipalName = userName
+			userName = ""
+		}
+
+		display := userName
 		if display == "" {
-			display = acl.ServicePrincipalName
+			display = servicePrincipalName
 		}
 
 		response := iam.AccessControlResponse{
-			UserName:             acl.UserName,
+			UserName:             userName,
 			GroupName:            acl.GroupName,
-			ServicePrincipalName: acl.ServicePrincipalName,
+			ServicePrincipalName: servicePrincipalName,
 			DisplayName:          display,
 		}
 
