@@ -1,6 +1,8 @@
 package completer
 
 import (
+	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupCompleter(t *testing.T, onlyDirs bool) *completer {
@@ -102,4 +105,26 @@ func TestFilerCompleterNoCompletions(t *testing.T) {
 	assert.Nil(t, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveError, directive)
 	assert.Error(t, err)
+}
+
+// TestFilerCompleterLocalPartialName uses the OS separator, so on Windows it covers
+// "dir\\di": the listed directory must come from the same split as the typed prefix.
+func TestFilerCompleterLocalPartialName(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "dir", "dirA"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "dir", "dirB"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "dir", "fileA"), nil, 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "dirC"), 0o755))
+	t.Chdir(root)
+
+	localFiler, err := filer.NewLocalClient("")
+	require.NoError(t, err)
+	c := New(t.Context(), localFiler, true)
+	c.SetIsLocalPath(true)
+
+	sep := string(filepath.Separator)
+	completions, directive, err := c.CompletePath("dir" + sep + "di")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"dir" + sep + "dirA" + sep, "dir" + sep + "dirB" + sep, "dbfs:/"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }

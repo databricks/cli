@@ -57,13 +57,13 @@ func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, 
 	// would clean it and turn "./sr" into "src", which the shell then discards.
 	typedDir := p[:strings.LastIndexAny(p, separators)+1]
 
-	// If the user is TAB-ing their way through a path and the
-	// path ends in a trailing slash, we should list nested directories.
-	// If the path is incomplete, however, then we should list adjacent
-	// directories.
-	dirPath := p
-	if !strings.HasSuffix(p, trailingSeparator) {
-		dirPath = path.Dir(p)
+	// List the directory part of p: nested entries after a trailing separator,
+	// adjacent ones for a partial name. Split it the same way as typedDir;
+	// path.Dir only splits on '/', so on Windows it would list the current
+	// directory for ".\src\s" and pair its entries with the typed ".\src\".
+	dirPath := typedDir
+	if dirPath == "" {
+		dirPath = "."
 	}
 
 	entries, err := c.filer.ReadDir(c.ctx, dirPath)
