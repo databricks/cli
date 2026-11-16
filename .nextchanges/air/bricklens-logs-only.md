@@ -1,1 +1,1 @@
-* Use Bricklens for AIR log streaming and downloads by default; temporarily restore the legacy MLflow artifact fallback and downloads with `DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK=true`.
+* Use Bricklens for AIR log streaming and downloads by default; temporarily restore the legacy MLflow artifact fallback and downloads with `DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK=true`. ([#7697](https://github.com/databricks/cli/pull/7697))
