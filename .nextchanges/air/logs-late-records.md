@@ -1,1 +1,1 @@
-* `databricks air logs` on a run that ended in the last two minutes now waits for the log index to settle before printing, instead of sometimes dropping lines that were indexed late.
+* `databricks air logs` on a run that ended in the last two minutes now waits for the log index to settle before printing, instead of sometimes dropping lines that were indexed late. ([#7663](https://github.com/databricks/cli/pull/7663))
