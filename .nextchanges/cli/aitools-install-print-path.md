@@ -1,0 +1,1 @@
+* `databricks aitools install` now prints the directory it installed skills into (for example `Installed 1 skill in ~/.databricks/aitools/skills.`), so agents can open the installed `SKILL.md` files without searching for them.

@@ -7,7 +7,7 @@ Flag --global has been deprecated, use --scope=global
 Installing Databricks skills for Cursor...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 2 skills.
+Installed 2 skills in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 === update against a release where beta is gone: alpha updates, beta is pruned
 
