@@ -46,6 +46,10 @@ func TestCheckSingleStatement(t *testing.T) {
 		{name: "spaced trailing semicolons", input: "SELECT 1; ;", wantErr: false},
 		{name: "semicolon after trailing comment", input: "SELECT 1; -- a\n;", wantErr: false},
 		{name: "form feed after semi", input: "SELECT 1;\f", wantErr: false},
+		{name: "nested block comment after semi", input: "SELECT 1; /* /* */ */", wantErr: false},
+		{name: "nested block comment hides line comment after semi", input: "SELECT 1; /* /* */--*/ SELECT 2", wantErr: true},
+		{name: "nested block comment hides line comment before semi", input: "SELECT 1 /* /* */--*/; SELECT 2", wantErr: true},
+		{name: "semicolon in nested block comment", input: "SELECT 1 /* a /* ; */ ; */", wantErr: false},
 
 		{name: "leading whitespace", input: "  ;", wantErr: false},
 		{name: "empty input", input: "", wantErr: false},

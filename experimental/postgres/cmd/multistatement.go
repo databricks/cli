@@ -18,8 +18,8 @@ var errMultipleStatements = errors.New("input contains multiple statements (a ';
 // The scanner ignores ';' inside:
 //   - single-quoted strings ('a;b', SQL standard doubled-quote escape)
 //   - double-quoted identifiers ("col;name")
-//   - line comments (-- ... \n)
-//   - block comments (/* ... */, non-nesting)
+//   - line comments (-- ... up to \n or \r)
+//   - block comments (/* ... */, nesting as in Postgres)
 //   - dollar-quoted bodies ($tag$ ... $tag$, optional tag)
 //
 // Over-rejection on weird syntactic edge cases is acceptable: users get a
@@ -124,13 +124,26 @@ func scanLineComment(s string, start, end int) int {
 	return i
 }
 
+// scanBlockComment advances past a "/*" comment opened at s[start]. Postgres
+// nests block comments, so the comment ends at the "*/" that closes the
+// outermost "/*". Returns end if unterminated.
 func scanBlockComment(s string, start, end int) int {
+	depth := 1
 	i := start + 2
 	for i+1 < end {
-		if s[i] == '*' && s[i+1] == '/' {
-			return i + 2
+		switch {
+		case s[i] == '/' && s[i+1] == '*':
+			depth++
+			i += 2
+		case s[i] == '*' && s[i+1] == '/':
+			depth--
+			i += 2
+			if depth == 0 {
+				return i
+			}
+		default:
+			i++
 		}
-		i++
 	}
 	return end
 }
