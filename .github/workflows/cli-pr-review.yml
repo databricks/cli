@@ -1,0 +1,96 @@
+name: CLI PR review
+
+# Run trusted workflow code; never check out or execute the PR here.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    if: |
+      github.repository == 'databricks/cli' && (
+        (github.event_name == 'pull_request_target' &&
+         !github.event.pull_request.draft &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         !github.event.pull_request.head.repo.fork) ||
+        (github.event_name == 'issue_comment' &&
+         github.event.issue.pull_request &&
+         github.event.comment.user.type == 'User' &&
+         github.event.comment.body == '/review')
+      )
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    timeout-minutes: 45
+    environment:
+      name: test-trigger-is
+      deployment: false
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      # Check real repo access: membership labels can be hidden from Apps.
+      - name: Validate review request
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTER: ${{ github.event.comment.user.login }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/databricks/cli/pulls/$PR_NUMBER" > "$RUNNER_TEMP/review-pr.json"
+          if ! jq -e --arg event "$EVENT_NAME" --arg head "$EVENT_HEAD" '
+            .state == "open" and .base.ref == "main" and
+            .head.repo.full_name == "databricks/cli" and .head.repo.fork == false and
+            .user.type == "User" and
+            ($event == "issue_comment" or (.draft == false and .head.sha == $head))
+          ' "$RUNNER_TEMP/review-pr.json" >/dev/null; then
+            echo "PR is ineligible or this event was superseded; skipping review." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          author=$(jq -r '.user.login' "$RUNNER_TEMP/review-pr.json")
+          for user in "$author" ${REQUESTER:+"$REQUESTER"}; do
+            user=$(jq -rn --arg user "$user" '$user | @uri')
+            permission=$(gh api "repos/databricks/cli/collaborators/$user/permission" --jq '.permission')
+            if [[ ! "$permission" =~ ^(admin|maintain|write)$ ]]; then
+              echo "PR author and /review requester must have write access; skipping review." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          done
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+
+      - name: Generate backend dispatch token
+        if: steps.request.outputs.eligible == 'true'
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: databricks-eng
+          repositories: eng-dev-ecosystem
+          permission-actions: write
+
+      - name: Dispatch and wait for this review
+        if: steps.request.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |-
+          set -euo pipefail
+          # This API version returns the exact run, even when other PRs trigger reviews.
+          # https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event
+          gh api --method POST \
+            repos/databricks-eng/eng-dev-ecosystem/actions/workflows/cli-pr-review.yml/dispatches \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -f ref=main -f "inputs[pull_request_number]=$PR_NUMBER" > "$RUNNER_TEMP/review-run.json"
+          run_id=$(jq -er '.workflow_run_id | select(type == "number")' "$RUNNER_TEMP/review-run.json")
+          echo "[Review run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'To request another review, comment `/review` on the PR.' >> "$GITHUB_STEP_SUMMARY"
+          gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status
