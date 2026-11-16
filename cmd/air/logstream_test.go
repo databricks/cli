@@ -436,6 +436,47 @@ func TestWaitingSpinnerText(t *testing.T) {
 		newStreamer(t, "", "TERMINATED", "PENDING").waitingSpinnerText())
 }
 
+func TestStreamBricklensPrintsWaitingStatusWithoutTTY(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	var runGets int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"log_records":[]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"training"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets++
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"run_id":1,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	// Buffers are not TTYs, so this is the agent/CI case where no spinner renders.
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+		logRequest{runID: 1, attempt: -1, tailLines: -1},
+		logRunStatus{lifeCycleState: "PENDING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Equal(t, "Waiting for GPU capacity...\n", stderr.String())
+	assert.Contains(t, stdout.String(), "training")
+}
+
 func TestEmitLogLineJSON(t *testing.T) {
 	var buf bytes.Buffer
 	emitLogLine(&buf, logRequest{node: 2, jsonOutput: true}, "hello")
