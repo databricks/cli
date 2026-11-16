@@ -2,22 +2,42 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.no_run_as
-Created jobs.no_run_as_creator
+Created jobs.not_selected
+Created jobs.pending_add
+Created jobs.removed_run_as
 Created jobs.user_to_creator
 Created jobs.user_to_sp
 Created jobs.user_to_user
 Files: 2 uploaded, 0 deleted
-Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 7 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove run_as from config and deploy
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated jobs.removed_run_as
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 6 unchanged
+
+>>> [CLI] jobs get [REMOVED_RUN_AS_ID]
+{
+  "user_name": "first-user@example.com"
+}
+
+=== Add run_as to config without deploying
 
 === Change run_as remotely
 
 === Detect and save changes
 
->>> [CLI] bundle config-remote-sync --save
-Detected changes in 4 resource(s):
+>>> [CLI] bundle config-remote-sync --save --sync-run-as-ids jobs:[NO_RUN_AS_ID],jobs:[PENDING_ADD_ID]
+Detected changes in 5 resource(s):
 
 Resource: resources.jobs.no_run_as
   run_as: add
+
+Resource: resources.jobs.pending_add
+  run_as.user_name: replace
 
 Resource: resources.jobs.user_to_creator
   run_as.user_name: replace
@@ -39,23 +59,30 @@ Resource: resources.jobs.user_to_user
 
 +      run_as:
 +        service_principal_name: [UUID]
-     # The terraform provider pins run_as to the job's identity on every update,
-     # so a remote run_as that names the creator is a default, not an edit.
-@@ -24,5 +26,5 @@
+     not_selected:
+       name: not-selected-[UNIQUE_NAME]
+@@ -31,5 +33,5 @@
+       name: pending-add-[UNIQUE_NAME]
+       run_as:
+-        user_name: local-user@example.com
++        user_name: remote-user@example.com
+       tasks:
+         - task_key: main
+@@ -40,5 +42,5 @@
        name: user-to-user-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: second-user@example.com
        tasks:
          - task_key: main
-@@ -34,5 +36,5 @@
+@@ -49,5 +51,5 @@
        name: user-to-creator-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: [USERNAME]
        tasks:
          - task_key: main
-@@ -43,5 +45,5 @@
+@@ -58,5 +60,5 @@
        name: user-to-sp-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
@@ -65,23 +92,30 @@ Resource: resources.jobs.user_to_user
 
 === Second sync is a no-op
 
->>> [CLI] bundle config-remote-sync
+>>> [CLI] bundle config-remote-sync --sync-run-as-ids jobs:[NO_RUN_AS_ID],jobs:[PENDING_ADD_ID]
 No changes detected.
 
 
 === Plan after sync
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 7 unchanged
+
+=== Invalid --sync-run-as-ids value
+
+>>> musterr [CLI] bundle config-remote-sync --sync-run-as-ids pipelines:123
+Error: invalid --sync-run-as-ids value "pipelines:123", expected jobs:<id> (e.g. jobs:123456789)
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.no_run_as
-  delete resources.jobs.no_run_as_creator
+  delete resources.jobs.not_selected
+  delete resources.jobs.pending_add
+  delete resources.jobs.removed_run_as
   delete resources.jobs.user_to_creator
   delete resources.jobs.user_to_sp
   delete resources.jobs.user_to_user
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 5 deleted
+Destroy: 7 deleted

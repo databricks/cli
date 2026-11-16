@@ -44,6 +44,33 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
 
+=== With --sync-run-as-ids the job's run_as is written too
+
+>>> [CLI] bundle config-remote-sync --save --sync-run-as-ids jobs:[TEST_JOB_ID]
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  run_as: add
+
+
+
+>>> cat databricks.yml
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    test_job:
+      name: test-job
+      max_concurrent_runs: 3
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+      run_as:
+        user_name: [USERNAME]
+
 === Cleanup
 
 >>> [CLI] bundle destroy --auto-approve

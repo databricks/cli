@@ -11,10 +11,26 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
 
-    # The terraform provider pins run_as to the job's identity on every update,
-    # so a remote run_as that names the creator is a default, not an edit.
-    no_run_as_creator:
-      name: no-run-as-creator-$UNIQUE_NAME
+    not_selected:
+      name: not-selected-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # run_as is removed from config and deployed; the job keeps it remotely.
+    removed_run_as:
+      name: removed-run-as-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # run_as is added to config locally and not deployed.
+    pending_add:
+      name: pending-add-$UNIQUE_NAME
       tasks:
         - task_key: main
           notebook_task:
@@ -29,7 +45,6 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
 
-    # The creator default only applies when the config leaves run_as unset.
     user_to_creator:
       name: user-to-creator-$UNIQUE_NAME
       run_as:

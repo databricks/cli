@@ -138,8 +138,9 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
+// plan. syncRunAs holds the plan keys of the jobs whose remote run_as is synced
+// even when the config does not set one (see RunAsSelection).
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, syncRunAs map[string]bool) (Changes, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
@@ -162,7 +163,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 					!keepSkippedRunAsChange(fullPath, changeDesc) {
 					continue
 				}
-				if skipJobRunAs(fullPath, changeDesc, entry.RemoteState) {
+				if skipJobRunAs(fullPath, changeDesc, syncRunAs[resourceKey]) {
 					continue
 				}
 
