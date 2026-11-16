@@ -70,6 +70,16 @@ func TestLoadDeployConfigCheckpoint(t *testing.T) {
 	}, req)
 }
 
+func TestLoadDeployConfigAudioCheckpoint(t *testing.T) {
+	for _, task := range []string{taskAudioTranscriptions, taskAudioTranslations} {
+		t.Run(task, func(t *testing.T) {
+			cfg, err := loadDeployConfigText(t, strings.Replace(checkpointDeployConfig, "task: llm/v1/chat", "task: "+task, 1))
+			require.NoError(t, err)
+			assert.Equal(t, task, cfg.registrationRequest("key-1", nil).Checkpoint.Task)
+		})
+	}
+}
+
 func TestLoadDeployConfigCodeOnCPU(t *testing.T) {
 	cfg, err := loadDeployConfigText(t, codeDeployConfig)
 	require.NoError(t, err)
@@ -153,7 +163,7 @@ func TestDeployConfigValidation(t *testing.T) {
 		{"checkpoint on CPU", replaceFirst("GPU_MEDIUM", "CPU"), "a checkpoint is served on GPU"},
 		{"unknown workload type", replaceFirst("GPU_MEDIUM", "GPU_MEDUIM"), `compute.workload_type must be one of CPU, CPU_LARGE, CPU_MEDIUM, GPU_LARGE, GPU_MEDIUM, GPU_SMALL, GPU_XLARGE, GPU_XLARGE_8, MULTIGPU_MEDIUM, got "GPU_MEDUIM"`},
 		{"lowercase workload type", replaceFirst("GPU_MEDIUM", "gpu_medium"), "compute.workload_type must be one of"},
-		{"agent task on a checkpoint", replaceFirst("task: llm/v1/chat", "task: agent/v1/responses"), `task of a checkpoint must be one of llm/v1/chat, llm/v1/completions, llm/v1/embeddings, got "agent/v1/responses"`},
+		{"agent task on a checkpoint", replaceFirst("task: llm/v1/chat", "task: agent/v1/responses"), `task of a checkpoint must be one of llm/v1/chat, llm/v1/completions, llm/v1/embeddings, llm/v1/audio/transcriptions, llm/v1/audio/translations, got "agent/v1/responses"`},
 		{"zero environment version", replaceFirst("  dependencies: [einops==0.8.0]", "  version: 0"), "environment.version must be a serverless environment version"},
 		{"empty dependency", replaceFirst("[einops==0.8.0]", `[""]`), "environment.dependencies[0] cannot be empty"},
 		{"no endpoint", dropLine("endpoint:"), `endpoint must be a serving endpoint name of letters, digits, '-' and '_', got ""`},

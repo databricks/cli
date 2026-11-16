@@ -259,7 +259,7 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 		return fmt.Errorf("serving version %s of %s on endpoint %s failed: %w\n\nTo try again without registering another version, run:\n  %s", result.ModelVersion, cfg.RegisteredModel, cfg.Endpoint, err, resume)
 	}
 	result.Status = "READY"
-	result.EndpointURL = endpointInvocationsURL(w.Config.Host, cfg.Endpoint)
+	result.EndpointURL = endpointQueryURL(w.Config.Host, cfg.Endpoint, cfg.Task)
 	if jsonOut {
 		return renderEnvelope(ctx, result)
 	}
@@ -450,7 +450,17 @@ func deployResumeCommand(profile string, opts deployOptions, key string) string 
 	return strings.Join(args, " ")
 }
 
-// endpointInvocationsURL is the REST URL that queries the endpoint.
-func endpointInvocationsURL(host, name string) string {
-	return strings.TrimSuffix(host, "/") + "/serving-endpoints/" + name + "/invocations"
+// endpointQueryURL is the REST URL that queries the endpoint: an audio model's
+// audio route, which takes a multipart upload, or invocations for any other model.
+func endpointQueryURL(host, name string, task *string) string {
+	base := strings.TrimSuffix(host, "/") + "/serving-endpoints/" + name
+	if task != nil {
+		switch *task {
+		case taskAudioTranscriptions:
+			return base + "/audio/transcriptions"
+		case taskAudioTranslations:
+			return base + "/audio/translations"
+		}
+	}
+	return base + "/invocations"
 }

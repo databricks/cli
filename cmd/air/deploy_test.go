@@ -467,3 +467,19 @@ func TestDeployHelpDocumentsAField(t *testing.T) {
 	// The coding agent skill writes run YAML, so the deploy help leaves it out.
 	assert.NotContains(t, out.String(), "databricks-ai-runtime")
 }
+
+func TestEndpointQueryURL(t *testing.T) {
+	task := func(s string) *string { return &s }
+	tests := []struct {
+		task *string
+		want string
+	}{
+		{task("llm/v1/chat"), "https://h/serving-endpoints/ep/invocations"},
+		{task(taskAudioTranscriptions), "https://h/serving-endpoints/ep/audio/transcriptions"},
+		{task(taskAudioTranslations), "https://h/serving-endpoints/ep/audio/translations"},
+		{nil, "https://h/serving-endpoints/ep/invocations"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, endpointQueryURL("https://h/", "ep", tt.task))
+	}
+}

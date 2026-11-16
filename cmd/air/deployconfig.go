@@ -34,9 +34,16 @@ const (
 // modelTypes lists model.type values in the order the help and errors name them.
 var modelTypes = []string{modelTypeCheckpoint, modelTypeCode, modelTypeSavedModelDir, modelTypeRegistered}
 
+// Audio tasks: their requests are multipart uploads of a recording, sent to the
+// endpoint's audio route rather than to invocations.
+const (
+	taskAudioTranscriptions = "llm/v1/audio/transcriptions"
+	taskAudioTranslations   = "llm/v1/audio/translations"
+)
+
 // checkpointTasks are the tasks a checkpoint can serve, as the registration API
 // documents them; models from code serve agent tasks too.
-var checkpointTasks = []string{"llm/v1/chat", "llm/v1/completions", "llm/v1/embeddings"}
+var checkpointTasks = []string{"llm/v1/chat", "llm/v1/completions", "llm/v1/embeddings", taskAudioTranscriptions, taskAudioTranslations}
 
 // deployCommandPath is the command whose -h documents deployConfig.
 const deployCommandPath = "databricks air deploy"
@@ -82,7 +89,7 @@ var entryFileRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompi
 type deployConfig struct {
 	RegisteredModel string                   `yaml:"registered_model" help:"Unity Catalog model, as <catalog>.<schema>.<model>. air deploy registers a new version of it, creating the model if it doesn't exist, unless model.type is registered." required:"yes" group:"Model"`
 	Model           *deployModelConfig       `yaml:"model" help:"What to serve: a checkpoint, a model from code, a model directory saved by MLflow, or an existing version." required:"yes" group:"Model"`
-	Task            *string                  `yaml:"task" help:"The model's task as MLflow names it: llm/v1/chat, llm/v1/completions or llm/v1/embeddings for a checkpoint, or e.g. agent/v1/responses for a model from code. A model from code without a task has no signature." required:"when model.type is checkpoint" group:"Model"`
+	Task            *string                  `yaml:"task" help:"The model's task as MLflow names it: llm/v1/chat, llm/v1/completions, llm/v1/embeddings, llm/v1/audio/transcriptions or llm/v1/audio/translations for a checkpoint, or e.g. agent/v1/responses for a model from code. A model from code without a task has no signature." required:"when model.type is checkpoint" group:"Model"`
 	Command         *string                  `yaml:"command" help:"Shell command that starts the model server of a checkpoint, at most 32,768 characters. It runs from the directory where model.path appears under its own name." required:"when model.type is checkpoint" group:"Model"`
 	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment version to serve on and the packages to install, for a checkpoint or a model from code." group:"Model"`
 	CodeSource      *deployCodeSourceConfig  `yaml:"code_source" help:"Local code of a model from code, sent with the registration and stored in the model version, where anyone who can read the model can read it. Only the files under include_paths are sent, leaving out files git ignores, hidden files and directories (names starting with '.') and __pycache__ directories; run with --dry-run to list them." required:"when model.type is code" group:"Model"`
