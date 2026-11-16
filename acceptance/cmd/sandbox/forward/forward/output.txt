@@ -1,0 +1,28 @@
+
+=== The command reports the forward once it is listening
+
+>>> retry --until Press Ctrl-C to stop. cat LOG.forward
+Forwarding http://127.0.0.1:[LOCAL_PORT] -> happy-panda-1234:10080
+Press Ctrl-C to stop.
+
+=== A local request reaches the sandbox app through the forward route
+
+>>> curl -sS -X POST -H X-Databricks-Org-Id: 999 -d ping http://127.0.0.1:[LOCAL_PORT]/api/items?page=2
+hello from the sandbox app
+
+=== The workspace receives the CLI's routing header in place of the caller's
+
+>>> print_requests.py //sandbox-proxy
+{
+  "headers": {
+    "X-Databricks-Org-Id": [
+      "[WORKSPACE_ID]"
+    ]
+  },
+  "method": "POST",
+  "path": "/sandbox-proxy/sandboxes/happy-panda-1234/ports/10080/api/items",
+  "q": {
+    "page": "2"
+  },
+  "raw_body": "ping"
+}
