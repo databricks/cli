@@ -3,6 +3,7 @@
 package queries
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,21 +19,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "queries",
-		Short: `The queries API can be used to perform CRUD operations on queries.`,
-		Long: `The queries API can be used to perform CRUD operations on queries. A query is
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "queries",
+	Short:   `The queries API can be used to perform CRUD operations on queries.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The queries API can be used to perform CRUD operations on queries. A query is
   a Databricks SQL object that includes the target SQL warehouse, query text,
   name, description, tags, and parameters. Queries can be scheduled using the
-  sql_task type of the Jobs API, e.g. :method:jobs/create.`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  sql_task type of the Jobs API, e.g. :method:jobs/create.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

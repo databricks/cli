@@ -3,6 +3,8 @@
 package settings
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
@@ -19,34 +21,36 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "settings",
-		Short:   `Accounts Settings API allows users to manage settings at the account level.`,
-		Long:    `Accounts Settings API allows users to manage settings at the account level.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "settings",
+	Short:   `Accounts Settings API allows users to manage settings at the account level.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Accounts Settings API allows users to manage settings at the account level.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
-
 	// Add subservices
-	cmd.AddCommand(csp_enablement_account.New())
-	cmd.AddCommand(disable_legacy_features.New())
-	cmd.AddCommand(enable_ip_access_lists.New())
-	cmd.AddCommand(esm_enablement_account.New())
-	cmd.AddCommand(llm_proxy_partner_powered_account.New())
-	cmd.AddCommand(llm_proxy_partner_powered_enforce.New())
-	cmd.AddCommand(personal_compute.New())
+	cmd.AddCommand(root.NewCommand(ctx, csp_enablement_account.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, disable_legacy_features.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, enable_ip_access_lists.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, esm_enablement_account.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, llm_proxy_partner_powered_account.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, llm_proxy_partner_powered_enforce.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, personal_compute.Spec))
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // end service AccountSettings
