@@ -195,7 +195,8 @@ Global Flags:
 Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run". Use --no-follow
+to print the logs so far from an active run and exit.
 
 Usage:
   databricks air logs JOB_RUN_ID [flags]
@@ -203,12 +204,14 @@ Usage:
 Examples:
   databricks air logs 123456789
   databricks air logs 123456789 --node 1 --retry 0
+  databricks air logs 123456789 --no-follow --tail 50
   databricks air logs 123456789 --download-to ./logs
 
 Flags:
       --download-to string   Download all logs to this directory instead of printing
   -h, --help                 help for logs
       --minutes int          Fetch only logs from the last N minutes
+      --no-follow            Print the logs so far and exit instead of following an active run
       --node int             Fetch logs from this node
       --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
       --tail int             Print the last N existing lines before following, or from a completed run (default 10000)

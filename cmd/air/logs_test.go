@@ -500,3 +500,22 @@ func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
 }
+
+func TestLogsNoFollowPrintsActiveRunOnce(t *testing.T) {
+	var getRunHits int
+	srv := activeRunPastRetryServer(t, &getRunHits)
+	var buf bytes.Buffer
+	// The run never finishes, so following it would block until the deadline.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newLogsCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	require.NoError(t, cmd.Flags().Set("no-follow", "true"))
+
+	require.NoError(t, cmd.RunE(cmd, []string{"9"}))
+	assert.Equal(t, "retry 0 log\n", buf.String())
+	assert.Equal(t, 1, getRunHits)
+}

@@ -26,6 +26,7 @@ func newLogsCommand() *cobra.Command {
 		retry      int
 		downloadTo string
 		review     bool
+		noFollow   bool
 	)
 
 	cmd := &cobra.Command{
@@ -35,9 +36,11 @@ func newLogsCommand() *cobra.Command {
 		Long: `Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run". Use --no-follow
+to print the logs so far from an active run and exit.`,
 		Example: `  databricks air logs 123456789
   databricks air logs 123456789 --node 1 --retry 0
+  databricks air logs 123456789 --no-follow --tail 50
   databricks air logs 123456789 --download-to ./logs`,
 	}
 
@@ -45,6 +48,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
+	cmd.Flags().BoolVar(&noFollow, "no-follow", false, "Print the logs so far and exit instead of following an active run")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	cmd.Flags().MarkHidden("review")
@@ -130,6 +134,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 			boundInitialLogs: minutes == 0,
 			downloadTo:       downloadTo,
 			jsonOutput:       root.OutputType(cmd) == flags.OutputJSON,
+			staticView:       noFollow,
 		})
 		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
 			return err
