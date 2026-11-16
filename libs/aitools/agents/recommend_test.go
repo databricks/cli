@@ -162,6 +162,8 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 		{name: "skills only in the agent's own skills dir", agentDirs: []string{".cursor"}, agentSkills: true, installedPlugins: noPlugins},
 		{name: "databricks runtime", agentDirs: []string{".codex"}, onDBR: true, installedPlugins: noPlugins},
 		{name: "claude code caller is left to MaybeHint", agentEnv: []string{"CLAUDECODE", "1"}, agentDirs: []string{".claude"}, installedPlugins: noPlugins},
+		{name: "codex caller is left to MaybeHint", agentEnv: []string{"CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins},
+		{name: "several agents calling get the tip, since MaybeHint skips them", agentEnv: []string{"CLAUDECODE", "1", "CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins, wantTip: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()

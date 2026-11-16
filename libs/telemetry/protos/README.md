@@ -6,15 +6,16 @@ which config options were set, the outcome and latency, and how long packaging a
 uploading the code snapshot took. It never includes code, paths, names, parameters,
 or image references. Set `DATABRICKS_CLI_DISABLE_TELEMETRY=1` to opt out.
 
-The CLI logs an `aitools_hint_event` for each Claude Code install-hint line it prints (the native
-`<claude-code-hint>` line and the text line are one event each) and for the `apps init` skills tip
-or install prompt. The install hint is never printed on aitools commands, `auth token`,
-`auth docker token` or in CLI processes the CLI started itself. It carries only the kind of hint
-(`hint_kind`); the command it was shown on is the entry's `execution_context.command`. The event
-uploads at exit only when the command resolved auth. The install hint prints at most once per
-Claude Code session per hour, so when the command that printed it resolves no auth (e.g.
-`databricks version`), that session logs no install hint event for the next hour even though the
-agent saw the hint.
+The CLI logs an `aitools_hint_event` for each install-hint line it prints for a coding agent
+(Claude Code's native `<claude-code-hint>` line and its text line are one event each; another
+agent's text line is one event) and for the `apps init` skills tip or install prompt. The install
+hint is never printed on aitools commands, `auth token`, `auth docker token` or in CLI processes the
+CLI started itself. It carries only the kind of hint (`hint_kind`); the command it was shown on is
+the entry's `execution_context.command`. The event uploads at exit only when the command resolved
+auth. The install hint prints at most once per hour per agent session (or per agent on the machine,
+for agents without a session id), so when the command that printed it resolves no auth (e.g.
+`databricks version`), no install hint event is logged for that hour even though the agent saw the
+hint.
 
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED
