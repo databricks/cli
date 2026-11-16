@@ -60,17 +60,6 @@ config
       root_path: .
     command: python "$CODE_SOURCE_PATH/train.py"
 
-  Set on every node (use in command and training code):
-    CODE_SOURCE_PATH              Extracted code_source directory
-    MLFLOW_RUN_ID                 MLflow run created for this job; log metrics and artifacts to it
-    NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
-    WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
-    MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
-    HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set
-
-  mlflow.start_run() attaches to MLFLOW_RUN_ID. The Hugging Face Trainer starts
-  it on its own, so don't also call mlflow.start_run() when you use the Trainer.
-
   Workload:
     experiment_name              (required) Name of the experiment.
     compute                      (required) Which accelerators to run on and how many.
@@ -98,6 +87,14 @@ config
     usage_policy_id              Usage policy to attribute the run's usage to, by id.
 
 For details on a field, run "databricks air run -h config.<field>".
+
+Set on every node (use in command and training code):
+  CODE_SOURCE_PATH              Extracted code_source directory
+  MLFLOW_RUN_ID                 MLflow run created for this attempt; log metrics and artifacts to it
+  NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
+  WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
+  MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
+  HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set
 
 Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
   databricks aitools install --skills-only --skills databricks-ai-runtime
