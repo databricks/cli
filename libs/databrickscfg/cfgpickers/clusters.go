@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -140,7 +141,7 @@ func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient,
 	if err != nil {
 		return nil, fmt.Errorf("list clusters: %w", err)
 	}
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, w)
 	if err != nil {
 		return nil, fmt.Errorf("current user: %w", err)
 	}

@@ -13,9 +13,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -86,7 +86,7 @@ all active runs submitted by the current user.
 		if all {
 			data.All = true
 
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+			me, err := iamutil.GetCurrentUser(ctx, w)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to resolve current user: %w", err))
