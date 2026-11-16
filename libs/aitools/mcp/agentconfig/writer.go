@@ -144,7 +144,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	default:
 		merged, mergeErr := keepUserKeys(current, ours, keys)
 		if mergeErr != nil {
-			return path, "", mergeErr
+			return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, mergeErr)
 		}
 		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
 		if cmpErr != nil {
@@ -311,7 +311,7 @@ func save(path string, doc document) error {
 		target = resolved
 	case errors.Is(err, fs.ErrNotExist):
 		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("%s is a symlink to a file that does not exist", filepath.ToSlash(path))
+			return fmt.Errorf("%s is a symlink to a file that does not exist: %w", filepath.ToSlash(path), err)
 		}
 	default:
 		return fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
