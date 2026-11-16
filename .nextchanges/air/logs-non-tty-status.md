@@ -1,1 +1,1 @@
-* `air logs` and `air run --watch` now print the waiting status (for example `Waiting for accelerator compute capacity...`) as a line on stderr when stderr is not a terminal, instead of printing nothing until the run produces logs.
+* `air logs` and `air run --watch` now print the waiting status (for example `Waiting for accelerator compute capacity...`) as a line on stderr when stderr is not a terminal, instead of printing nothing until the run produces logs. ([#7651](https://github.com/databricks/cli/pull/7651))
