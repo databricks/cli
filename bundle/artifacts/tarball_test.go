@@ -174,3 +174,24 @@ func TestTarballFromGitRejectsPathMissingFromRef(t *testing.T) {
 	err := tarballFromGit(t.Context(), b, a, &buf)
 	assert.ErrorContains(t, err, "is not in the tree of HEAD")
 }
+
+// TestTarballFromGitReportsUnknownRef: a ref that doesn't resolve keeps git's own
+// error rather than the "not in the tree" one meant for a missing path.
+func TestTarballFromGitReportsUnknownRef(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "README"), []byte("x\n"), 0o644))
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "init")
+
+	b := &bundle.Bundle{SyncRootPath: repo}
+	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Branch: "no-such-branch"}}
+
+	var buf bytes.Buffer
+	err := tarballFromGit(t.Context(), b, a, &buf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "git archive no-such-branch")
+	assert.NotContains(t, err.Error(), "is not in the tree")
+}

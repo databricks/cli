@@ -176,8 +176,9 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	// keeps the tarball reproducible.
 	// git archive run from a directory the ref doesn't have (uncommitted, or added
 	// after an older ref) succeeds with an empty archive, so check that it exists.
-	verify := exec.CommandContext(ctx, "git", "-C", a.Path, "rev-parse", "--verify", "--quiet", ref+":./")
-	if err := verify.Run(); err != nil {
+	// Only once the ref resolves: otherwise git archive below reports git's own error
+	// (unknown ref, not a git repository).
+	if gitVerify(ctx, a.Path, ref+"^{commit}") && !gitVerify(ctx, a.Path, ref+":./") {
 		return fmt.Errorf("git artifact: %s is not in the tree of %s; commit it or pick a ref that contains it", a.Path, ref)
 	}
 	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
@@ -200,6 +201,11 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 		return fmt.Errorf("git archive %s in %s: %w: %s", ref, a.Path, err, stderr.String())
 	}
 	return gzw.Close()
+}
+
+// gitVerify reports whether rev resolves when git runs in dir.
+func gitVerify(ctx context.Context, dir, rev string) bool {
+	return exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--verify", "--quiet", rev).Run() == nil
 }
 
 // addFileToTarball writes f (a sync-root-relative file) to the archive under a name
