@@ -601,3 +601,43 @@ func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
 	MaybeHint(ctx, regularCmd(), noPluginRecorded)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
 }
+
+// writeProjectSkill lays out a project-scoped install the way
+// `aitools install --scope project` does: the canonical copy under the project,
+// symlinked from Claude's project skills dir.
+func writeProjectSkill(t *testing.T, project, name string) {
+	canonical := filepath.Join(project, ".databricks", "aitools", "skills", name)
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	link := filepath.Join(project, ".claude", "skills", name)
+	require.NoError(t, os.MkdirAll(filepath.Dir(link), 0o755))
+	rel, err := filepath.Rel(filepath.Dir(link), canonical)
+	require.NoError(t, err)
+	require.NoError(t, os.Symlink(rel, link))
+}
+
+func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	ctx, stderr := claudeCtx(t, home)
+	project := t.TempDir()
+	writeProjectSkill(t, project, "databricks-ai-runtime")
+	t.Chdir(project)
+
+	MaybeHint(ctx, regularCmd())
+	assert.Empty(t, stderr.String())
+}
+
+func TestMaybeHint_ProjectSkillsInParentOfRepoSubdirSilent(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	ctx, stderr := claudeCtx(t, home)
+	repo := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(repo, ".git"), 0o755))
+	writeProjectSkill(t, repo, "databricks-ai-runtime")
+	sub := filepath.Join(repo, "train")
+	require.NoError(t, os.Mkdir(sub, 0o755))
+	t.Chdir(sub)
+
+	MaybeHint(ctx, regularCmd())
+	assert.Empty(t, stderr.String())
+}
