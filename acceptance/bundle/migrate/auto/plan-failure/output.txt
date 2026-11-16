@@ -20,6 +20,11 @@ The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migr
 >>> print_migration_telemetry
 direct_migrate_plan_error true
 
+>>> print_requests.py --get --oneline
+engine/direct /api/2.0/workspace/export
+engine/direct /api/2.2/jobs/get
+engine/direct /telemetry-ext
+
 === Local state was NOT rewritten (still terraform)
 
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
