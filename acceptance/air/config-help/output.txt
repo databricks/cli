@@ -11,6 +11,11 @@ field, pass its path to -h as a separate argument:
   databricks air run -h config.compute                    one section
   databricks air run -h config.compute.accelerator_type   one field
 
+To have a coding agent write the YAML and follow the run, install the
+databricks-ai-runtime skill:
+
+  databricks aitools install --skills-only --skills databricks-ai-runtime
+
 Usage:
   databricks air run [flags]
 
