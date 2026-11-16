@@ -1,1 +1,0 @@
-* Fix `bundle plan` and `bundle deploy` failing to recreate a cluster deleted outside the bundle when its libraries status lookup responds first, as reported in [#7565](https://github.com/databricks/cli/issues/7565).
