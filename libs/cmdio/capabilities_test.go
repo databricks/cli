@@ -9,7 +9,8 @@ import (
 )
 
 func TestNewCapabilities_Env(t *testing.T) {
-	ctx := t.Context()
+	// Pin both variables so the developer's shell can't leak in.
+	ctx := env.Set(env.Set(t.Context(), "NO_COLOR", ""), "TERM", "")
 	c := newCapabilities(ctx, nil, nil, nil)
 	assert.False(t, c.noColor)
 	assert.False(t, c.dumb)

@@ -78,6 +78,8 @@ func TestNewCapabilitiesMSYSPipeStdin(t *testing.T) {
 }
 
 func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
+	// termenv reads NO_COLOR from the process environment.
+	t.Setenv("NO_COLOR", "")
 	// termenv can't recognize an MSYS2 pty pipe as a terminal, but cmdio
 	// does, so the renderer must still emit color there.
 	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty0-to-master", os.Getpid()+1))
@@ -89,6 +91,8 @@ func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
 }
 
 func TestNewRendererMSYSPipeHonorsCLICOLOR(t *testing.T) {
+	// termenv reads NO_COLOR from the process environment.
+	t.Setenv("NO_COLOR", "")
 	t.Setenv("CLICOLOR", "0")
 	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty1-to-master", os.Getpid()+3))
 	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
