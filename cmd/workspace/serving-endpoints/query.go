@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -69,9 +71,7 @@ func queryOverride(queryCmd *cobra.Command, queryReq *serving.QueryEndpointInput
 			"Accept":       "text/event-stream",
 			"Content-Type": "application/json",
 		}
-		if w.Config.WorkspaceID != "" {
-			headers["X-Databricks-Workspace-Id"] = w.Config.WorkspaceID
-		}
+		maps.Copy(headers, auth.WorkspaceIDHeaders(w.Config))
 		var body io.ReadCloser
 		path := fmt.Sprintf("/serving-endpoints/%v/invocations", queryReq.Name)
 		err = apiClient.Do(ctx, http.MethodPost, path, headers, nil, queryReq, &body)
