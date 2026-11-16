@@ -33,8 +33,9 @@ import (
 //
 // The setting only matters where the MSYS2 runtime emulates a pty, i.e. in
 // mintty. A shell running directly in a console (conhost, Windows Terminal,
-// the VS Code terminal) passes that console on to native programs, even with
-// MSYS=disable_pcon.
+// or the VS Code terminal, which uses ConPTY unless
+// terminal.integrated.windowsEnableConpty is off) passes that console on to
+// native programs, even with MSYS=disable_pcon.
 //
 // Hence the check is on the handle itself: see isMSYSPipe. To reproduce the
 // pipe case, start mintty with MSYS=disable_pcon in its environment.
