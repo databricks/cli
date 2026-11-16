@@ -18,10 +18,16 @@ import (
 // decodeRunConfigReader decodes and unknown-key-checks a run YAML from r. path is
 // used only for error messages.
 func decodeRunConfigReader(r io.Reader, path string) (*runConfig, error) {
+	return decodeConfigReader[runConfig](r, path)
+}
+
+// decodeConfigReader decodes and unknown-key-checks a YAML config from r into a
+// T. path is used only for error messages.
+func decodeConfigReader[T any](r io.Reader, path string) (*T, error) {
 	dec := yaml.NewDecoder(r)
 	dec.KnownFields(true)
 
-	var cfg runConfig
+	var cfg T
 	if err := dec.Decode(&cfg); err != nil {
 		if errors.Is(err, io.EOF) {
 			return nil, fmt.Errorf("config %s is empty", path)
@@ -59,30 +65,41 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 	if len(overrides) == 0 {
 		return loadRunConfig(path)
 	}
-
-	entries, err := parseOverrides(overrides)
+	document, validationYAML, err := readConfigWithOverrides(ctx, path, overrides, configSchema())
 	if err != nil {
 		return nil, err
 	}
-	if err := validateOverridePaths(entries); err != nil {
-		return nil, err
+	return finishRunConfigLoad(path, document, validationYAML)
+}
+
+// readConfigWithOverrides reads a YAML config and applies --override KEY=VALUE
+// entries, checked against schema, to its ordered YAML tree. It returns the tree
+// and its serialization, which the caller decodes with unknown keys rejected.
+// ctx is used only to log applied overrides.
+func readConfigWithOverrides(ctx context.Context, path string, overrides []string, schema configField) (*yaml.Node, []byte, error) {
+	entries, err := parseOverrides(overrides)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := validateOverridePaths(entries, schema); err != nil {
+		return nil, nil, err
 	}
 	document, _, err := readRunConfigDocument(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(document.Content) == 0 {
 		document.Kind = yaml.DocumentNode
 		document.Content = []*yaml.Node{newMappingNode()}
 	}
 	if err := applyOverrides(ctx, document, entries); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	validationYAML, err := yaml.Marshal(document)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
+		return nil, nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
 	}
-	return finishRunConfigLoad(path, document, validationYAML)
+	return document, validationYAML, nil
 }
 
 func readRunConfigDocument(path string) (*yaml.Node, []byte, error) {

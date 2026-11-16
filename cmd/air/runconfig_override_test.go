@@ -90,7 +90,7 @@ func TestValidateOverridePaths(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateOverridePaths([]overrideEntry{{path: tt.path, raw: "x"}})
+			err := validateOverridePaths([]overrideEntry{{path: tt.path, raw: "x"}}, configSchema())
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 				return

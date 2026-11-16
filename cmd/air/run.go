@@ -136,7 +136,7 @@ databricks-ai-runtime skill:
 		if field.path == "config.compute" || field.path == "config.compute.accelerator_type" {
 			computeOptions = loadComputeOptionsForHelp(c, args)
 		}
-		renderConfigField(c.OutOrStdout(), field, computeOptions)
+		renderConfigField(c.OutOrStdout(), runCommandPath, field, computeOptions)
 	})
 
 	// List flags in declaration order (most used first) rather than alphabetically.
@@ -175,7 +175,7 @@ databricks-ai-runtime skill:
 				}
 				snapshotFileCount = &count
 			}
-			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
+			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg.IdempotencyToken)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
 				return err

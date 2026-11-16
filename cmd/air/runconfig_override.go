@@ -45,11 +45,10 @@ type overrideEntry struct {
 	raw  string
 }
 
-// validateOverridePaths checks every dotted path against the runConfig schema
+// validateOverridePaths checks every dotted path against a config schema
 // before mutation, so an error names the exact --override key rather than the
 // re-decode's Go-type language.
-func validateOverridePaths(entries []overrideEntry) error {
-	schema := configSchema()
+func validateOverridePaths(entries []overrideEntry, schema configField) error {
 	for _, e := range entries {
 		if err := checkOverridePath(strings.Split(e.path, "."), schema, e.path); err != nil {
 			return err
@@ -100,7 +99,7 @@ func applyOverrides(ctx context.Context, document *yaml.Node, entries []override
 		root = document.Content[0]
 	}
 	if root.Kind != yaml.MappingNode {
-		return errors.New("run config must be a YAML mapping")
+		return errors.New("config must be a YAML mapping")
 	}
 
 	for _, e := range entries {
