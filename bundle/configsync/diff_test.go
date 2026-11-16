@@ -315,6 +315,15 @@ func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
 				"configuration['spark.sql.ansi.enabled']": {Action: deployplan.Update, Old: "true", Remote: "false"},
 			},
 		},
+		"resources.pipelines.other_pipeline": {
+			Changes: deployplan.Changes{
+				// A remote-only map holding a backend default next to a real addition.
+				"configuration": {Action: deployplan.Update, Remote: map[string]string{
+					"spark.sql.ansi.enabled": "true",
+					"custom.key":             "value",
+				}},
+			},
+		},
 		"resources.model_serving_endpoints.my_endpoint": {
 			Changes: deployplan.Changes{
 				// GET returns no telemetry_config, so the plan reports the whole
@@ -328,13 +337,16 @@ func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
 		},
 		"resources.jobs.my_job": {
 			Changes: deployplan.Changes{
-				// A task added remotely keeps its fields, minus the backend-managed ones.
+				// A task added remotely keeps its fields, including node_type_id, minus the
+				// backend-managed ones and defaults pinned to a value.
 				"tasks[task_key='loop']": {Action: deployplan.Update, Remote: map[string]any{
 					"task_key": "loop",
 					"for_each_task": map[string]any{"task": map[string]any{"new_cluster": map[string]any{
 						"spark_version":  "16.4.x-scala2.12",
+						"node_type_id":   "i3.xlarge",
 						"aws_attributes": map[string]any{"availability": "SPOT"},
 					}}},
+					"run_if": "ALL_SUCCESS",
 				}},
 				// input_only: never returned by GET, so a local edit would be removed.
 				"trigger.table_update.condition": {Action: deployplan.Update, Old: "ANY_UPDATED", New: "ALL_UPDATED"},
@@ -355,12 +367,16 @@ func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
 	assert.Equal(t, ResourceChanges{
 		"configuration['spark.sql.ansi.enabled']": {Operation: OperationAdd, Value: "false", LocalEdit: true},
 	}, changes["resources.pipelines.my_pipeline"])
+	assert.Equal(t, ResourceChanges{
+		"configuration": {Operation: OperationAdd, Value: map[string]any{"custom.key": "value"}},
+	}, changes["resources.pipelines.other_pipeline"])
 	assert.NotContains(t, changes, "resources.model_serving_endpoints.my_endpoint")
 	assert.Equal(t, ResourceChanges{
 		"tasks[task_key='loop']": {Operation: OperationAdd, Value: map[string]any{
 			"task_key": "loop",
 			"for_each_task": map[string]any{"task": map[string]any{"new_cluster": map[string]any{
 				"spark_version": "16.4.x-scala2.12",
+				"node_type_id":  "i3.xlarge",
 			}}},
 		}},
 		"run_as.service_principal_name": {Operation: OperationAdd, Value: "sp"},

@@ -162,11 +162,11 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 					!keepSkippedRunAsChange(fullPath, changeDesc) {
 					continue
 				}
-				synced, skip, err := applyLifecycle(resourceKey, path, changeDesc)
+				synced, err := applyLifecycle(resourceKey, path, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to apply lifecycle rules for path %s: %w", path, err)
 				}
-				if skip {
+				if synced == nil {
 					continue
 				}
 

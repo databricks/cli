@@ -12,75 +12,93 @@ import (
 )
 
 // applyLifecycle applies the direct engine's lifecycle metadata to a change, whatever
-// action the plan gave it. The plan action is not enough on its own: it is still an
-// update when the config has an undeployed edit to such a field, or when a resource's
-// OverrideChangeDesc promotes it (a genie space etag).
+// action the plan gave it, and returns nil when nothing is left to sync. The plan action
+// is not enough on its own: it is still an update when the config has an undeployed edit
+// to such a field, or when a resource's OverrideChangeDesc promotes it (a genie space etag).
 //
 // A remote value under ignore_remote_changes (output-only, input-only or backend-managed)
 // is never written back, and neither is a backend default the config does not set. When
-// the plan reports a whole object (one side is nil), the ignored fields inside it are
-// left out of both sides, and the change is skipped if nothing else differs.
-func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*deployplan.ChangeDesc, bool, error) {
+// the plan reports a whole object (one side is nil), these fields are left out of it, and
+// the change is skipped if nothing else differs. Inside a remote-only object, only
+// defaults pinned to allowed values are left out: a field like node_type_id may be what
+// the user picked in the UI.
+func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*deployplan.ChangeDesc, error) {
 	path, err := structpath.ParsePath(fieldPath)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	resourceType := config.GetResourceTypeFromKey(resourceKey)
 	backendDefault := cd.New == nil && cd.Remote != nil && !matchPattern(jobRunAsChildPattern, resourceKey+"."+fieldPath)
+	isNested := func(pattern *structpath.PatternNode) bool {
+		return pattern.Len() > path.Len() && path.HasPatternPrefix(pattern.Prefix(path.Len()))
+	}
 
-	var nested []*structpath.PatternNode
+	var ignored []*structpath.PatternNode
+	var defaults dresources.ResourceLifecycleConfig
 	for _, rc := range []*dresources.ResourceLifecycleConfig{
 		dresources.GetResourceConfig(resourceType),
 		dresources.GetGeneratedResourceConfig(resourceType),
 	} {
 		for _, rule := range rc.IgnoreRemoteChanges {
 			if path.HasPatternPrefix(rule.Field) {
-				return nil, true, nil
+				return nil, nil
 			}
-			if rule.Field.Len() > path.Len() && path.HasPatternPrefix(rule.Field.Prefix(path.Len())) {
-				nested = append(nested, rule.Field)
+			if isNested(rule.Field) {
+				ignored = append(ignored, rule.Field)
 			}
 		}
 		if backendDefault && rc.IsBackendDefault(path, cd.Remote) {
-			return nil, true, nil
+			return nil, nil
+		}
+		if cd.New == nil {
+			for _, rule := range rc.BackendDefaults {
+				if len(rule.Values) > 0 && isNested(rule.Field) {
+					defaults.BackendDefaults = append(defaults.BackendDefaults, rule)
+				}
+			}
 		}
 	}
-	if len(nested) == 0 {
-		return cd, false, nil
+	if len(ignored) == 0 && len(defaults.BackendDefaults) == 0 {
+		return cd, nil
 	}
 
 	newValue, err := normalizeValue(cd.New)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to normalize config value: %w", err)
+		return nil, fmt.Errorf("failed to normalize config value: %w", err)
 	}
 	remoteValue, err := normalizeValue(cd.Remote)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to normalize remote value: %w", err)
+		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
-	newValue = stripIgnoredFields(nested, path, newValue)
-	remoteValue = stripIgnoredFields(nested, path, remoteValue)
+	isIgnored := func(p *structpath.PathNode, _ any) bool {
+		return slices.ContainsFunc(ignored, p.HasPatternPrefix)
+	}
+	newValue = stripFields(path, newValue, isIgnored)
+	remoteValue = stripFields(path, remoteValue, func(p *structpath.PathNode, v any) bool {
+		return isIgnored(p, v) || defaults.IsBackendDefault(p, v)
+	})
 	if reflect.DeepEqual(newValue, remoteValue) {
-		return nil, true, nil
+		return nil, nil
 	}
 
 	stripped := *cd
 	stripped.New = newValue
 	stripped.Remote = remoteValue
-	return &stripped, false, nil
+	return &stripped, nil
 }
 
-// stripIgnoredFields drops the fields of value, the normalized value at path, that
-// match one of the rules. A map left empty only by dropping fields becomes nil.
-func stripIgnoredFields(rules []*structpath.PatternNode, path *structpath.PathNode, value any) any {
+// stripFields drops the fields of value, the normalized value at path, for which drop
+// returns true. A map left empty only by dropping fields becomes nil.
+func stripFields(path *structpath.PathNode, value any, drop func(*structpath.PathNode, any) bool) any {
 	switch v := value.(type) {
 	case map[string]any:
 		result := make(map[string]any, len(v))
 		for key, val := range v {
 			child := structpath.NewStringKey(path, key)
-			if slices.ContainsFunc(rules, child.HasPatternPrefix) {
+			if drop(child, val) {
 				continue
 			}
-			if s := stripIgnoredFields(rules, child, val); s != nil || val == nil {
+			if s := stripFields(child, val, drop); s != nil || val == nil {
 				result[key] = s
 			}
 		}
@@ -91,7 +109,7 @@ func stripIgnoredFields(rules []*structpath.PatternNode, path *structpath.PathNo
 	case []any:
 		result := make([]any, len(v))
 		for i, elem := range v {
-			result[i] = stripIgnoredFields(rules, structpath.NewIndex(path, i), elem)
+			result[i] = stripFields(structpath.NewIndex(path, i), elem, drop)
 		}
 		return result
 	}
