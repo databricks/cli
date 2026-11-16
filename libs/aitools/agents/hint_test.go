@@ -3,6 +3,7 @@ package agents
 import (
 	"bytes"
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -30,9 +32,11 @@ func setClaudeAgent(t *testing.T) {
 // HOME + cache dir, so detection and the session throttle read only the test's
 // temp state. home is returned so the test can drop fixtures under it.
 func claudeCtx(t *testing.T, home string) (context.Context, *bytes.Buffer) {
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	stderr := &bytes.Buffer{}
+	ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(nil, io.Discard, stderr))
 	ctx = env.WithUserHomeDir(ctx, home)
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx = env.Set(ctx, claudeSessionEnv, "session-test")
 	return ctx, stderr
 }
 
@@ -208,8 +212,7 @@ func TestMaybeHint_ThrottledPerSession(t *testing.T) {
 	home := t.TempDir()
 	cacheDir := t.TempDir()
 	newCtx := func() (context.Context, *bytes.Buffer) {
-		ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-		ctx = env.WithUserHomeDir(ctx, home)
+		ctx, stderr := claudeCtx(t, home)
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
 		return telemetry.WithNewLogger(ctx), stderr
@@ -225,4 +228,42 @@ func TestMaybeHint_ThrottledPerSession(t *testing.T) {
 	MaybeHint(ctx2, regularCmd())
 	assert.Empty(t, stderr2.String())
 	assert.Empty(t, hintKinds(t, ctx2))
+}
+
+func TestMaybeHint_MissingSessionSilent(t *testing.T) {
+	setClaudeAgent(t)
+	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = env.Set(ctx, claudeSessionEnv, "")
+	for range 2 {
+		MaybeHint(ctx, regularCmd())
+	}
+	assert.Empty(t, stderr.String())
+}
+
+func TestMaybeHint_NonInteractiveSilent(t *testing.T) {
+	setClaudeAgent(t)
+	for _, tt := range []struct {
+		name      string
+		stderrTTY bool
+	}{
+		{name: "pipes"},
+		{name: "redirected stdin", stderrTTY: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := claudeCtx(t, t.TempDir())
+			stderr := &bytes.Buffer{}
+			var errWriter io.Writer = stderr
+			if tt.stderrTTY {
+				errWriter = cmdio.FakeTTY(stderr)
+			}
+			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, io.Discard, errWriter, "", ""))
+			MaybeHint(ctx, regularCmd())
+			assert.Empty(t, stderr.String())
+
+			// A suppressed invocation must not consume the session's hint.
+			ctx = cmdio.InContext(ctx, cmdio.NewTestIO(nil, io.Discard, stderr))
+			MaybeHint(ctx, regularCmd())
+			assert.Contains(t, stderr.String(), hintText)
+		})
+	}
 }
