@@ -19,8 +19,11 @@ type Capabilities struct {
 	// keystrokes from it, so prompts and pagers are disabled there.
 	stdinIsMSYSPipe bool
 
-	// Environment flags
-	color bool // Color output is enabled (NO_COLOR not set and TERM not dumb)
+	// Environment flags. They are independent on purpose: NO_COLOR is a
+	// color preference only (https://no-color.org), while TERM=dumb means
+	// the terminal can't move the cursor, which rules out redrawing output.
+	noColor bool // NO_COLOR is set
+	dumb    bool // TERM=dumb
 }
 
 // newCapabilities detects terminal capabilities from context and I/O streams.
@@ -29,14 +32,22 @@ func newCapabilities(ctx context.Context, in io.Reader, out, err io.Writer) Capa
 		stdinIsTTY:      isTTY(in),
 		stdoutIsTTY:     isTTY(out),
 		stderrIsTTY:     isTTY(err),
-		color:           env.Get(ctx, "NO_COLOR") == "" && env.Get(ctx, "TERM") != "dumb",
+		noColor:         env.Get(ctx, "NO_COLOR") != "",
+		dumb:            env.Get(ctx, "TERM") == "dumb",
 		stdinIsMSYSPipe: isMSYSPipe(in),
 	}
 }
 
-// SupportsInteractive returns true if terminal supports interactive features (colors, spinners).
+// SupportsInteractive returns true if stderr can show output that redraws
+// in place (spinners, prompts). NO_COLOR does not affect this; it only
+// removes color from that output.
 func (c Capabilities) SupportsInteractive() bool {
-	return c.stderrIsTTY && c.color
+	return c.stderrIsTTY && !c.dumb
+}
+
+// colorAllowed reports whether the environment permits color at all.
+func (c Capabilities) colorAllowed() bool {
+	return !c.noColor && !c.dumb
 }
 
 // SupportsPrompt returns true if terminal supports user prompting.
@@ -49,14 +60,20 @@ func (c Capabilities) SupportsPrompt() bool {
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func (c Capabilities) SupportsColor(w io.Writer) bool {
-	return isTTY(w) && c.color
+	return isTTY(w) && c.colorAllowed()
 }
 
 // SupportsStdoutColor returns true if stdout supports colored output.
 // Use this when emitting colored bytes to a writer that wraps stdout (e.g.
 // a buffered flusher) where SupportsColor's isTTY check would be misled.
 func (c Capabilities) SupportsStdoutColor() bool {
-	return c.stdoutIsTTY && c.color
+	return c.stdoutIsTTY && c.colorAllowed()
+}
+
+// SupportsStderrColor is the stderr counterpart of SupportsStdoutColor;
+// prompts and spinners render to stderr.
+func (c Capabilities) SupportsStderrColor() bool {
+	return c.stderrIsTTY && c.colorAllowed()
 }
 
 // SupportsPager returns true when we can drive an interactive pager.

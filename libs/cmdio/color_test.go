@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
@@ -137,6 +138,17 @@ func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
 	assert.False(t, color)
 	assert.Equal(t, termenv.Ascii, r.ColorProfile())
 	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
+}
+
+func TestNewRendererRaisesAsciiWhenColor(t *testing.T) {
+	ctx := ttyContext(t)
+
+	// termenv can't detect a FakeTTY (like an MSYS2 pty pipe), but cmdio says
+	// it supports color, so the renderer must still emit color.
+	r, color := cmdio.NewRenderer(ctx, cmdio.FakeTTY(&bytes.Buffer{}))
+	assert.True(t, color)
+	assert.Equal(t, termenv.ANSI, r.ColorProfile())
+	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
 }
 
 func TestRenderFuncMap(t *testing.T) {

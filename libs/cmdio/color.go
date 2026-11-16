@@ -142,15 +142,25 @@ func PadLeft(s string, n int) string {
 }
 
 // NewRenderer returns a lipgloss renderer targeting w, along with whether w
-// supports color. When it does not (NO_COLOR, TERM=dumb, or w is piped or
-// redirected) the renderer is forced to the Ascii profile so every Style it
-// mints emits no SGR escapes. Callers still write rendered strings to w
-// themselves; the renderer only carries the color profile.
+// supports color. cmdio's decision wins in both directions, so lipgloss
+// output agrees with the rest of cmdio's output:
+//   - when w doesn't support color (NO_COLOR, TERM=dumb, or w is piped or
+//     redirected) the renderer is forced to the Ascii profile so every Style
+//     it mints emits no SGR escapes;
+//   - when it does but termenv's own probe found nothing (an MSYS2 pty pipe
+//     without ConPTY, which termenv can't see is a terminal; see conpty.go),
+//     the renderer is raised to basic ANSI.
+//
+// Callers still write rendered strings to w themselves; the renderer only
+// carries the color profile.
 func NewRenderer(ctx context.Context, w io.Writer) (*lipgloss.Renderer, bool) {
 	color := SupportsColor(ctx, w)
 	r := lipgloss.NewRenderer(w)
-	if !color {
+	switch {
+	case !color:
 		r.SetColorProfile(termenv.Ascii)
+	case r.ColorProfile() == termenv.Ascii:
+		r.SetColorProfile(termenv.ANSI)
 	}
 	return r, color
 }

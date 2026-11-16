@@ -173,7 +173,6 @@ func MockDiscard(ctx context.Context) context.Context {
 			stdinIsTTY:  false,
 			stdoutIsTTY: false,
 			stderrIsTTY: false,
-			color:       false,
 		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),
