@@ -244,7 +244,7 @@ func registeredModelNotFound(fullName string) Response {
 		StatusCode: http.StatusNotFound,
 		Body: map[string]string{
 			"error_code": "RESOURCE_DOES_NOT_EXIST",
-			"message":    fmt.Sprintf("Registered model '%s' does not exist.", fullName),
+			"message":    fmt.Sprintf("Routine or Model '%s' does not exist.", fullName),
 		},
 	}
 }
