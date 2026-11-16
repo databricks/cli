@@ -120,20 +120,12 @@ func TestDownloadAllNodeLogs(t *testing.T) {
 	assert.FileExists(t, nodeLogs[1])
 }
 
-// fullDownloadServer also serves the run and its output, so downloadLogs can run
-// end to end against a 2-node run.
+// fullDownloadServer serves the run output and artifact chain for a full download.
 func fullDownloadServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	var base string
-	runGet := `{
-		"run_id": 123,
-		"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
-		"tasks": [{"run_id": 456, "ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 2}}]}}]
-	}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/2.2/jobs/runs/get":
-			_, _ = w.Write([]byte(runGet))
 		case "/api/2.2/jobs/runs/get-output":
 			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`))
 		case "/api/2.0/mlflow/artifacts/list":
@@ -160,7 +152,7 @@ func TestDownloadLogsAllNodes(t *testing.T) {
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 	dir := t.TempDir()
 
-	success, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"})
+	success, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"}, airRunWithCompute("GPU_1xA10", 2))
 	require.NoError(t, err)
 	assert.True(t, success)
 	assert.FileExists(t, filepath.Join(dir, "logs", "node_0.log"))
@@ -172,21 +164,11 @@ func TestDownloadLogsSingleNode(t *testing.T) {
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 	dir := t.TempDir()
 
-	success, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 1, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"})
+	success, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 1, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"}, airRunWithCompute("GPU_1xA10", 2))
 	require.NoError(t, err)
 	assert.True(t, success)
 	assert.FileExists(t, filepath.Join(dir, "logs", "node_1.log"))
 	assert.NoFileExists(t, filepath.Join(dir, "logs", "node_0.log"))
-}
-
-func TestDownloadLogsOutOfRangeNode(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
-	dir := t.TempDir()
-
-	_, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 5, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid --node 5")
 }
 
 func TestDownloadLogsExplicitNodeZero(t *testing.T) {
@@ -196,37 +178,17 @@ func TestDownloadLogsExplicitNodeZero(t *testing.T) {
 
 	// An explicit --node 0 must download only node 0, unlike the default which
 	// downloads every node.
-	_, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 0, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"})
+	_, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 0, nodeSet: true, attempt: -1, downloadTo: dir}, logRunStatus{resultState: "SUCCESS"}, airRunWithCompute("GPU_1xA10", 2))
 	require.NoError(t, err)
 	assert.FileExists(t, filepath.Join(dir, "logs", "node_0.log"))
 	assert.NoFileExists(t, filepath.Join(dir, "logs", "node_1.log"))
 }
 
-func TestDownloadLogsOutOfRangeNodeIsInvalidArgs(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
-
-	// The sentinel lets the caller classify this as bad input rather than a
-	// transient, retryable failure.
-	_, err := downloadLogs(ctx, w, &bytes.Buffer{}, logRequest{runID: 123, node: 5, nodeSet: true, attempt: -1, downloadTo: t.TempDir()}, logRunStatus{resultState: "SUCCESS"})
-	require.ErrorIs(t, err, errNodeOutOfRange)
-}
-
-// noLogsDownloadServer serves a run with no resolvable MLflow run, so there is
-// nothing to download.
+// noLogsDownloadServer serves no resolvable MLflow run, so there is nothing to download.
 func noLogsDownloadServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/2.2/jobs/runs/get":
-			_, _ = w.Write([]byte(`{
-				"run_id": 123,
-				"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
-				"tasks": [{"run_id": 456, "ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 2}}]}}]
-			}`))
-		default:
-			_, _ = w.Write([]byte(`{}`))
-		}
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	t.Cleanup(srv.Close)
 	return srv
@@ -239,7 +201,7 @@ func TestDownloadLogsNoLogsMatchesStreamingPath(t *testing.T) {
 	// A SUCCESS run with no logs reports it and still succeeds, exactly as the
 	// streaming path does — no error, no non-zero exit.
 	var buf bytes.Buffer
-	success, err := downloadLogs(ctx, w, &buf, logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir()}, logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"})
+	success, err := downloadLogs(ctx, w, &buf, logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir()}, logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"}, airRunWithCompute("GPU_1xA10", 2))
 	require.NoError(t, err)
 	assert.True(t, success)
 	assert.Contains(t, buf.String(), "No logs available for run 123")
@@ -506,20 +468,17 @@ func TestDownloadLogsActiveRunExitsZero(t *testing.T) {
 	// Downloading a still-running run's logs is not a failure.
 	success, err := downloadLogs(ctx, w, &bytes.Buffer{},
 		logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir()},
-		logRunStatus{lifeCycleState: "RUNNING"})
+		logRunStatus{lifeCycleState: "RUNNING"},
+		airRunWithCompute("GPU_1xA10", 2))
 	require.NoError(t, err)
 	assert.True(t, success)
 }
 
-// allNodesFailServer serves a FAILED 2-node run whose chunk credentials all 404,
-// so every node's download fails.
+// allNodesFailServer serves a 2-node log set whose chunk credentials all 404.
 func allNodesFailServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/2.2/jobs/runs/get":
-			_, _ = w.Write([]byte(`{"run_id": 123, "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
-				"tasks": [{"run_id": 456, "ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 2}}]}}]}`))
 		case "/api/2.2/jobs/runs/get-output":
 			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`))
 		case "/api/2.0/mlflow/artifacts/list":
@@ -549,7 +508,8 @@ func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
 	// tell a caller the run produced nothing, so this fails instead.
 	_, err := downloadLogs(ctx, w, &stdout,
 		logRequest{runID: 123, attempt: -1, downloadTo: t.TempDir(), jsonOutput: true},
-		logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"})
+		logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED"},
+		airRunWithCompute("GPU_1xA10", 2))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to download logs from any of 2 node(s)")
 	assert.NotContains(t, stdout.String(), "No logs available")

@@ -3,6 +3,7 @@
 package provider_personalization_requests
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "provider-personalization-requests",
-		Short: `Personalization requests are an alternate to instantly available listings.`,
-		Long: `Personalization requests are an alternate to instantly available listings.
-  Control the lifecycle of personalized solutions.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-personalization-requests",
+	Short:   `Personalization requests are an alternate to instantly available listings.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Personalization requests are an alternate to instantly available listings.
+  Control the lifecycle of personalized solutions.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -40,8 +45,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start list command

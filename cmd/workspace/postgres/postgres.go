@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,11 +26,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "postgres",
-		Short: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
-		Long: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "postgres",
+	Short:   `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
+	GroupID: "postgres",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
   infrastructure, including projects, branches, compute endpoints, and roles.
 
   This API manages database infrastructure only. To query or modify data, use
@@ -40,14 +46,13 @@ func New() *cobra.Command {
   Resources are identified by hierarchical resource names like
   projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
   name field on each resource contains this full path and is output-only. Note
-  that name refers to this resource path, not the user-visible display_name.`,
-		GroupID: "postgres",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  that name refers to this resource path, not the user-visible display_name.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAcknowledgeAssessmentWarnings())
@@ -118,8 +123,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start acknowledge-assessment-warnings command
@@ -491,7 +494,12 @@ func newCreateCatalog() *cobra.Command {
 	cmd.Short = `Register a Database in UC.`
 	cmd.Long = `Register a Database in UC.
 
-  Register a Postgres database in the Unity Catalog.
+  Registers a Postgres database from a Lakebase project branch as a catalog in
+  Unity Catalog, so that its schemas, tables and views are governed and
+  discoverable through Unity Catalog. The catalog is read-only; the data stays
+  managed through Postgres. Returns a long-running operation. Poll it until done
+  is true; its response holds the new catalog. For an overview, see
+  https://docs.databricks.com/aws/en/oltp/projects/register-uc.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -499,8 +507,9 @@ func newCreateCatalog() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    CATALOG_ID: The ID in the Unity Catalog. It becomes the full resource name, for
-      example "my_catalog" becomes "catalogs/my_catalog".`
+    CATALOG_ID: The ID of the catalog to create, which is also its name in Unity Catalog.
+      It becomes the last segment of the catalog's resource name,
+      catalogs/{catalog_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -874,7 +883,7 @@ func newCreateDatabase() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID used to identify and manage the Database resource through the API.`)
 	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
@@ -1009,7 +1018,10 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Short = `Create an Endpoint.`
 	cmd.Long = `Create an Endpoint.
 
-  Creates a new compute endpoint in the branch.
+  Creates a compute endpoint in the branch. Each branch gets its read-write
+  endpoint when the branch is created, so use this method to add read-only
+  endpoints (read replicas) or, with replace_existing, to reconfigure the
+  existing read-write endpoint.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1019,11 +1031,12 @@ func newCreateEndpoint() *cobra.Command {
   Arguments:
     PARENT: The Branch where this Endpoint will be created. Format:
       projects/{project_id}/branches/{branch_id}
-    ENDPOINT_ID: The ID to use for the Endpoint. This becomes the final component of the
-      endpoint's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, primary becomes
-      projects/my-app/branches/development/endpoints/primary.`
+    ENDPOINT_ID: The ID to use for the endpoint. It becomes the final segment of the
+      endpoint's resource name,
+      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
+      ID must be 3 to 63 characters long, start with a lowercase letter, end
+      with a lowercase letter or digit, and contain only lowercase letters,
+      digits, and hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1296,7 +1309,9 @@ func newCreateProject() *cobra.Command {
 	cmd.Long = `Create a Project.
 
   Creates a new Lakebase Autoscaling Postgres database project, which contains
-  branches and compute endpoints.
+  branches and compute endpoints. The new project starts with a single branch, a
+  read-write compute endpoint on that branch, a Postgres database named
+  databricks_postgres, and a Postgres role for the calling identity.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1304,10 +1319,12 @@ func newCreateProject() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    PROJECT_ID: The ID to use for the Project. This becomes the final component of the
-      project's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, my-app becomes projects/my-app.`
+    PROJECT_ID: The ID to use for the project. It becomes the final segment of the
+      project's resource name, projects/{project_id}. The ID must be 3 to 63
+      characters long, start with a lowercase letter, end with a lowercase
+      letter or digit, and contain only lowercase letters, digits, and hyphens.
+      The ID of a soft-deleted project stays reserved until that project is
+      permanently deleted.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1412,7 +1429,7 @@ func newCreateRole() *cobra.Command {
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createRoleReq.ReplaceExisting, "replace-existing", createRoleReq.ReplaceExisting, `If true, update the role if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
+	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID used to identify and manage the Role resource through the API.`)
 	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -1893,6 +1910,10 @@ func newDeleteCatalog() *cobra.Command {
 	cmd.Short = `Delete a Database Catalog.`
 	cmd.Long = `Delete a Database Catalog.
 
+  Deletes the catalog from Unity Catalog. The Postgres database and its tables
+  remain in the branch, and the database can be registered again afterwards.
+  Returns a long-running operation. Poll it until done is true.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -2305,7 +2326,10 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Short = `Delete an Endpoint.`
 	cmd.Long = `Delete an Endpoint.
 
-  Deletes the specified compute endpoint.
+  Deletes the specified compute endpoint. Deletion is permanent. Only read-only
+  endpoints can be deleted this way, because a branch's read-write endpoint is
+  deleted together with the branch. To stop the compute costs of a read-write
+  endpoint without deleting the branch, set spec.disabled to true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2507,13 +2531,15 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectSkipWait, "no-wait", deleteProjectSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
+	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project and all of its data immediately.`)
 
 	cmd.Use = "delete-project NAME"
 	cmd.Short = `Delete a Project.`
 	cmd.Long = `Delete a Project.
 
-  Deletes the specified database project.
+  Deletes the specified database project. By default the project is soft-deleted
+  and can be restored with Undelete during its retention period; set purge to
+  delete it permanently.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -3149,6 +3175,9 @@ func newGetCatalog() *cobra.Command {
 	cmd.Use = "get-catalog NAME"
 	cmd.Short = `Get a Database Catalog.`
 	cmd.Long = `Get a Database Catalog.
+
+  Gets the catalog with the given name. The status reports the Postgres
+  database, project and branch that the catalog registers.
 
   Arguments:
     NAME: The full resource path of the catalog to retrieve.
@@ -4334,7 +4363,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for the number of endpoints returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -4347,7 +4376,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Short = `List Endpoints.`
 	cmd.Long = `List Endpoints.
 
-  Returns a paginated list of compute endpoints in the branch.
+  Lists the compute endpoints in the branch, including its read-write endpoint
+  and any read-only endpoints.
 
   Arguments:
     PARENT: The Branch that owns this collection of endpoints. Format:
@@ -4484,7 +4514,7 @@ func newListProjects() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listProjectsLimit int
 
-	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for the number of projects returned.`)
 	cmd.Flags().BoolVar(&listProjectsReq.ShowDeleted, "show-deleted", listProjectsReq.ShowDeleted, `Whether to include soft-deleted projects in the response.`)
 
 	// Limit flag for total result capping.
@@ -5094,7 +5124,10 @@ func newUndeleteProject() *cobra.Command {
 
 Undelete a Project.
 
-  Undeletes a soft-deleted project.
+  Restores a soft-deleted project together with its branches and their data,
+  compute endpoints, Postgres databases and roles, project settings, and
+  permissions. A project can be restored until its purge_time; after that it
+  is permanently deleted and cannot be recovered.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5584,8 +5617,10 @@ func newUpdateEndpoint() *cobra.Command {
 	cmd.Short = `Update an Endpoint.`
 	cmd.Long = `Update an Endpoint.
 
-  Updates the specified compute endpoint. You can update autoscaling limits,
-  suspend timeout, or enable/disable the compute endpoint.
+  Updates the configuration of the specified compute endpoint. Only the spec
+  fields named in update_mask change, and spec.endpoint_type cannot be
+  changed. The endpoint keeps its hostnames across updates, so existing
+  connection strings stay valid.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5595,7 +5630,11 @@ func newUpdateEndpoint() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the endpoint. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the endpoint, for example
+      spec.autoscaling_limit_max_cu. Pass spec to update every field that is
+      set in spec. Only fields under spec can be updated. To change the
+      suspension setting, include spec.suspension or the specific suspension
+      field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -5872,7 +5911,8 @@ func newUpdateProject() *cobra.Command {
 	cmd.Short = `Update a Project.`
 	cmd.Long = `Update a Project.
 
-  Updates the specified database project.
+  Updates the configuration of the specified database project. Only the fields
+  named in update_mask change.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5882,7 +5922,9 @@ func newUpdateProject() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the project. Format:
       projects/{project_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the project, for example
+      spec.display_name. Pass * to update every field that is set in the
+      request. Only fields under spec can be updated.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

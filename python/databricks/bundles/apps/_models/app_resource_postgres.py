@@ -20,10 +20,21 @@ class AppResourcePostgres:
     """"""
 
     branch: VariableOrOptional[str] = None
+    """
+    Resource name of the Lakebase Autoscaling branch, in the form
+    `projects/{project}/branches/{branch}`.
+    """
 
     database: VariableOrOptional[str] = None
+    """
+    Resource name of the database within the branch, in the form
+    `projects/{project}/branches/{branch}/databases/{database}`.
+    """
 
     permission: VariableOrOptional[AppResourcePostgresPostgresPermission] = None
+    """
+    Permission to grant the app on the database.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourcePostgresDict") -> "Self":
@@ -37,10 +48,21 @@ class AppResourcePostgresDict(TypedDict, total=False):
     """"""
 
     branch: VariableOrOptional[str]
+    """
+    Resource name of the Lakebase Autoscaling branch, in the form
+    `projects/{project}/branches/{branch}`.
+    """
 
     database: VariableOrOptional[str]
+    """
+    Resource name of the database within the branch, in the form
+    `projects/{project}/branches/{branch}/databases/{database}`.
+    """
 
     permission: VariableOrOptional[AppResourcePostgresPostgresPermissionParam]
+    """
+    Permission to grant the app on the database.
+    """
 
 
 AppResourcePostgresParam = AppResourcePostgresDict | AppResourcePostgres

@@ -90,6 +90,11 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			if j.Trigger != nil && j.Trigger.PauseStatus == "" {
 				j.Trigger.PauseStatus = paused
 			}
+			for i := range j.Triggers {
+				if j.Triggers[i].PauseStatus == "" {
+					j.Triggers[i].PauseStatus = paused
+				}
+			}
 		}
 	}
 

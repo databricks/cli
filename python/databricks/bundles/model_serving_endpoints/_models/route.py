@@ -21,6 +21,9 @@ class Route:
     """
 
     served_entity_name: VariableOrOptional[str] = None
+    """
+    The name of the served entity this route configures traffic for.
+    """
 
     served_model_name: VariableOrOptional[str] = None
     """
@@ -44,6 +47,9 @@ class RouteDict(TypedDict, total=False):
     """
 
     served_entity_name: VariableOrOptional[str]
+    """
+    The name of the served entity this route configures traffic for.
+    """
 
     served_model_name: VariableOrOptional[str]
     """

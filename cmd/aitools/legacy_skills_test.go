@@ -1,10 +1,17 @@
 package aitools
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -119,4 +126,55 @@ func TestLegacySkillsListDelegatesToListFn(t *testing.T) {
 	err := cmd.RunE(cmd, nil)
 	require.NoError(t, err)
 	assert.True(t, called)
+}
+
+// Root uploads telemetry from the alias command's context, so the config the
+// delegated install resolves for its telemetry must end up there.
+func TestLegacySkillsInstallKeepsTelemetryAuthConfig(t *testing.T) {
+	setupTestAgents(t)
+	setupInstallMock(t)
+	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Host: "https://ws.test"}))
+		return nil
+	})
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	cmd := newLegacySkillsInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+
+	require.NoError(t, cmd.Execute())
+	require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
+	assert.Equal(t, "https://ws.test", cmdctx.ConfigUsed(cmd.Context()).Host)
+}
+
+// The alias runs a detached install command, so cobra must not print the
+// error or usage itself: root prints the returned error once.
+func TestLegacySkillsInstallPrintsNoErrorOrUsageItself(t *testing.T) {
+	isolateAgents(t)
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+	fakeBinsOnPath(t) // no agent detected
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	origStderr, origStdout := os.Stderr, os.Stdout
+	os.Stderr, os.Stdout = w, w
+	t.Cleanup(func() { os.Stderr, os.Stdout = origStderr, origStdout })
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := newLegacySkillsInstallCmd()
+	cmd.SetContext(ctx)
+	runErr := cmd.RunE(cmd, nil)
+	os.Stderr, os.Stdout = origStderr, origStdout
+	require.NoError(t, w.Close())
+	out, err := io.ReadAll(r)
+	require.NoError(t, err)
+
+	require.ErrorIs(t, runErr, errNoAgentSetUp)
+	assert.NotContains(t, string(out), "Error:")
+	assert.NotContains(t, string(out), "Usage:")
 }

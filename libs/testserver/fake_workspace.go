@@ -222,7 +222,7 @@ type FakeWorkspace struct {
 	JobRunOutputs         map[int64]jobs.RunOutput
 	JobRunIdempotency     map[string]int64
 	Pipelines             map[string]pipelines.GetPipelineResponse
-	PipelineUpdates       map[string]bool
+	PipelineUpdates       map[string]pipelines.UpdateInfo
 	Monitors              map[string]catalog.MonitorInfo
 	DataQualityMonitors   map[string]dataquality.Monitor
 	Apps                  map[string]apps.App
@@ -234,6 +234,7 @@ type FakeWorkspace struct {
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
+	PurgedAlertIDs        map[string]bool
 	Experiments           map[string]ml.GetExperimentResponse
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
@@ -533,7 +534,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		JobRunIdempotency:     map[string]int64{},
 		Grants:                map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:             map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:       map[string]bool{},
+		PipelineUpdates:       map[string]pipelines.UpdateInfo{},
 		Monitors:              map[string]catalog.MonitorInfo{},
 		DataQualityMonitors:   map[string]dataquality.Monitor{},
 		Apps:                  map[string]apps.App{},
@@ -588,6 +589,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
+		PurgedAlertIDs:            map[string]bool{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},

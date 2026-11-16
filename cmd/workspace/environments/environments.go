@@ -3,6 +3,7 @@
 package environments
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,23 +23,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "environments",
-		Short: `APIs to manage environment resources.`,
-		Long: `APIs to manage environment resources.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "environments",
+	Short:   `APIs to manage environment resources.`,
+	GroupID: "environments",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `APIs to manage environment resources.
 
   The Environments API provides management capabilities for different types of
   environments including workspace-level base environments that define the
   environment version and dependencies to be used in serverless notebooks and
-  jobs.`,
-		GroupID: "environments",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  jobs.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateWorkspaceBaseEnvironment())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-workspace-base-environment command

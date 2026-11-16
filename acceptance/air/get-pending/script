@@ -1,0 +1,1 @@
+trace $CLI air get 123 -o json

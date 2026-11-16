@@ -17,6 +17,7 @@ import (
 	bundleresources "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
@@ -179,15 +180,18 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 
 	latestUpdate := *getUpdateResponse.Update
 
-	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
-		OrderBy: "timestamp asc",
-	}
-
-	events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
+	// The public events API rejects event_type filters.
+	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+		PipelineId: pipelineId,
+		Filter:     fmt.Sprintf("update_id='%s'", updateId),
+		OrderBy:    []string{"timestamp asc"},
+	})
 	if err != nil {
 		return err
 	}
+	events = slices.DeleteFunc(events, func(event pipelines.PipelineEvent) bool {
+		return event.EventType != "update_progress"
+	})
 
 	err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
 	if err != nil {
@@ -233,17 +237,16 @@ func runCommand() *cobra.Command {
 		Long: `Run the pipeline identified by KEY.
 KEY is the unique name of the pipeline to run, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
-Refreshes all tables in the pipeline unless otherwise specified.`,
+Refreshes all tables in the pipeline unless otherwise specified.
+
+` + run.PipelineRefreshHelp,
+		Args: root.MaximumNArgs(1),
 	}
 
-	var refresh []string
-	var fullRefreshAll bool
-	var fullRefresh []string
+	var pipelineOptions run.PipelineOptions
 
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables to run.")
-	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
+	pipelineOptions.DefineRefreshFlags(pipelineGroup.FlagSet())
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(pipelineGroup)
@@ -257,12 +260,19 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		runOptions := run.Options{
+			Pipeline: pipelineOptions,
+			NoWait:   noWait,
+		}
 		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, _, err = resolveRunArgument(ctx, b, args)
 				return err
+			},
+			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, _ *statemgmt.StateDesc) error {
+				return runOptions.Pipeline.ResolveRefreshSelectors(ctx, b)
 			},
 			ErrorOnEmptyState: true,
 			SkipInitContext:   true,
@@ -276,15 +286,6 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
-		}
-
-		runOptions := run.Options{
-			Pipeline: run.PipelineOptions{
-				Refresh:        refresh,
-				FullRefreshAll: fullRefreshAll,
-				FullRefresh:    fullRefresh,
-			},
-			NoWait: noWait,
 		}
 
 		var runOutput bundlerunoutput.RunOutput

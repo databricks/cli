@@ -16,6 +16,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan --output json
 {
+  "isolation_mode": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "OPEN"
+  },
   "properties": {
     "action": "skip",
     "reason": "backend_default",

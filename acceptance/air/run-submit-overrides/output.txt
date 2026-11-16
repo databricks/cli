@@ -7,7 +7,7 @@ Override: changing parameters.model.hidden_size from 1024 to 2048
 Override: setting parameters.optimizer.learning_rate to 0.001
 Submitting experiment: overrides-smoke
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:

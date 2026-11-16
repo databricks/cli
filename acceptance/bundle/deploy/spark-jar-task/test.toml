@@ -1,5 +1,8 @@
 Cloud = true
 
+# Room for one task retry, which waits for a new job cluster.
+TimeoutCloud = '40m'
+
 Ignore = [
     'myjar/PrintArgs.jar',
     'myjar/PrintArgs.class',

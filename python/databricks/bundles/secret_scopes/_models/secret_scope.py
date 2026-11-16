@@ -55,7 +55,7 @@ class SecretScope(Resource):
 
     permissions: VariableOrList[SecretScopePermission] = field(default_factory=list)
     """
-    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
     """
 
     @classmethod
@@ -91,7 +91,7 @@ class SecretScopeDict(TypedDict, total=False):
 
     permissions: VariableOrList[SecretScopePermissionParam]
     """
-    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
     """
 
 

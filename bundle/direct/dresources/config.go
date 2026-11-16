@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"go.yaml.in/yaml/v3"
 )
@@ -49,6 +51,39 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// IsBackendDefault reports whether remote, the remote value at path, matches any of
+// the backend-default rules (and the rule's allowed values, if specified).
+func (c *ResourceLifecycleConfig) IsBackendDefault(path *structpath.PathNode, remote any) bool {
+	for _, rule := range c.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return true
+		}
+		if matchesAllowedValue(remote, rule.Values) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
+}
+
 // RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
 // object's WhenSet field is set. Inside such an object, a field the config never declared
 // coming back set from the remote is an addition by the backend, not drift.
@@ -67,6 +102,13 @@ type ResourceLifecycleConfig struct {
 
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
+
+	// InternalIDField: the state field holding the backend's own ID for the resource, which a rename
+	// keeps (a volume's volume_id). Config never sets it: the framework records it from the remote
+	// state on every save and skips its changes in the plan. When the resource is missing from its
+	// recorded ID, the plan looks for it at the ID IDFromState gives it and takes what it finds only
+	// if this field matches. Requires IDFromState and DoUpdateWithID.
+	InternalIDField string `yaml:"internal_id_field,omitempty"`
 
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
@@ -155,6 +197,7 @@ const (
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
+	InternalIDField:       "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,

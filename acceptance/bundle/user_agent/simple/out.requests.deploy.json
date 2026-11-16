@@ -249,7 +249,8 @@
         "__id__": "mycatalog.myschema",
         "state": {
           "catalog_name": "mycatalog",
-          "name": "myschema"
+          "name": "myschema",
+          "schema_id": "[UUID][4]"
         }
       }
     }

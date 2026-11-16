@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
+func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -89,9 +89,13 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
-		// Recommend installing Databricks AI tooling to Claude Code when it is
-		// driving the CLI without the tooling installed (best-effort, stderr only).
-		agents.MaybeHint(ctx, cmd)
+		// Recommend installing Databricks AI tooling to the calling coding agent
+		// when it drives the CLI without the tooling installed (best-effort: a
+		// stderr line and a telemetry event that is uploaded at exit). Only the
+		// global install state is read, as for the calling-agent User-Agent.
+		agents.MaybeHint(ctx, cmd, func(ctx context.Context, agentName string) bool {
+			return installer.PluginRecorded(ctx, installer.ScopeGlobal, agentName)
+		})
 		return nil
 	}
 
@@ -113,9 +117,10 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+// execute runs cmd with args, which select the subcommand to run. Unlike
+// [cobra.Command.SetArgs], nil args mean no arguments rather than the process
+// arguments.
+func execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
 	defer func() {
 		r := recover()
 
@@ -150,6 +155,12 @@ Stack Trace:
 
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
+
+	// Cobra runs with the process arguments if args are nil.
+	if args == nil {
+		args = []string{}
+	}
+	cmd.SetArgs(args)
 
 	startTime := time.Now()
 

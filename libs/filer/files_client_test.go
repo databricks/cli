@@ -8,13 +8,17 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	cliauth "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -215,4 +219,121 @@ func TestMapUploadError(t *testing.T) {
 	if got := mapUploadError(other, p); got != other { //nolint:errorlint // must be the same error, not a wrapper
 		t.Errorf("mapUploadError(other) = %v, want it unchanged", got)
 	}
+}
+
+// throttledResponse is how the Files API reports throttled cloud storage.
+var throttledResponse = testserver.Response{
+	StatusCode: 429,
+	Body: map[string]any{
+		"error_code": "RESOURCE_EXHAUSTED",
+		"message":    "AWS S3 is throttling requests; try again later.",
+	},
+}
+
+// throttled wraps a handler so that its first n requests are throttled.
+func throttled(n int, handler func(req testserver.Request) any) func(req testserver.Request) any {
+	var mu sync.Mutex
+	count := 0
+	return func(req testserver.Request) any {
+		mu.Lock()
+		count++
+		throttle := count <= n
+		mu.Unlock()
+		if throttle {
+			return throttledResponse
+		}
+		return handler(req)
+	}
+}
+
+func newFilesClientWithFastRetries(t *testing.T, server *testserver.Server) *FilesClient {
+	t.Helper()
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewFilesClient(t.Context(), client, "/Volumes/main/schema/vol")
+	require.NoError(t, err)
+	fc := f.(*FilesClient)
+	fc.retryBackoff = ops.BackoffPolicy{Initial: time.Millisecond, Maximum: time.Millisecond}
+	return fc
+}
+
+func ok(testserver.Request) any { return testserver.Response{} }
+
+func TestFilesClientRetriesThrottledCalls(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	var uploads []string
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", throttled(2, ok))
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		uploads = append(uploads, string(req.Body))
+		return testserver.Response{}
+	})
+	server.Handle("GET", "/api/2.0/fs/files/{path...}", throttled(2, func(testserver.Request) any {
+		return testserver.Response{Body: []byte("abc")}
+	}))
+	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", throttled(2, ok))
+	f := newFilesClientWithFastRetries(t, server)
+
+	require.NoError(t, f.Write(ctx, "hello", strings.NewReader("abc")))
+
+	r, err := f.Read(ctx, "hello")
+	require.NoError(t, err)
+	data, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "abc", string(data))
+	require.NoError(t, r.Close())
+
+	require.NoError(t, f.deleteFile(ctx, "hello"))
+	assert.Equal(t, []string{"abc"}, uploads)
+}
+
+func TestFilesClientRetriesThrottledUploadFromStartOffset(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	var uploads []string
+	put := throttled(2, ok)
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		uploads = append(uploads, string(req.Body))
+		return put(req)
+	})
+	f := newFilesClientWithFastRetries(t, server)
+
+	// Each attempt resends the body from where the reader was when Write was
+	// called, not from where the failed attempt left it.
+	reader := strings.NewReader("skip:abc")
+	_, err := reader.Seek(5, io.SeekStart)
+	require.NoError(t, err)
+	require.NoError(t, f.Write(ctx, "hello", reader, CreateParentDirectories))
+	assert.Equal(t, []string{"abc", "abc", "abc"}, uploads)
+}
+
+func TestFilesClientDoesNotRetryNonSeekableUpload(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", throttled(1, ok))
+	f := newFilesClientWithFastRetries(t, server)
+
+	err := f.Write(ctx, "hello", onlyReader{strings.NewReader("abc")}, CreateParentDirectories)
+	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
+}
+
+func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	requests := 0
+	del := throttled(filesMaxRetries+1, ok)
+	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		requests++
+		return del(req)
+	})
+	f := newFilesClientWithFastRetries(t, server)
+
+	err := f.deleteFile(ctx, "hello")
+	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
+	assert.Equal(t, filesMaxRetries+1, requests)
 }

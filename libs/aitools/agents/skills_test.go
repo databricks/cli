@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,15 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
+func TestHasDatabricksToolingInstalledNoAgents(t *testing.T) {
 	origRegistry := Registry
 	Registry = []*Agent{}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
+func TestHasDatabricksToolingInstalledCanonicalOnly(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
@@ -34,10 +35,10 @@ func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
+func TestHasDatabricksToolingInstalledIgnoresAgentDir(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
@@ -55,10 +56,10 @@ func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
+func TestHasDatabricksToolingInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -76,10 +77,10 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
+func TestHasDatabricksToolingInstalledNoSkillsDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -94,10 +95,10 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
+func TestHasDatabricksToolingInstalledCustomSubdirNotChecked(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
@@ -115,10 +116,10 @@ func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
-func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
+func TestHasDatabricksToolingInstalledDatabricksAppsCanonical(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
@@ -138,7 +139,7 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInFollowsSymlinks(t *testing.T) {
@@ -165,7 +166,7 @@ func TestHasDatabricksSkillsInIgnoresDanglingSymlink(t *testing.T) {
 	assert.False(t, HasDatabricksSkillsIn(skillsDir))
 }
 
-func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
+func TestHasDatabricksToolingInstalledLegacyPath(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
@@ -185,5 +186,49 @@ func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
+}
+
+func TestHasDatabricksToolingInstalled(t *testing.T) {
+	const userPlugin = `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user","version":"0.2.6"}]}}`
+	const otherProjectPlugin = `{"plugins":{"databricks@claude-plugins-official":[{"scope":"project","projectPath":"/work/other","version":"0.2.6"}]}}`
+
+	for _, tc := range []struct {
+		name string
+		// manifests holds one plugin manifest per detected agent; "" means none.
+		manifests []string
+		skills    bool
+		want      bool
+	}{
+		{name: "plugin for the only agent", manifests: []string{userPlugin}, want: true},
+		{name: "plugin for every agent", manifests: []string{userPlugin, userPlugin}, want: true},
+		{name: "plugin for one of two agents", manifests: []string{userPlugin, ""}, want: false},
+		{name: "plugin for another project only", manifests: []string{otherProjectPlugin}, want: false},
+		{name: "shared skills cover every agent", manifests: []string{userPlugin, ""}, skills: true, want: true},
+		{name: "neither", manifests: []string{""}, want: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpHome := t.TempDir()
+			t.Setenv("HOME", tmpHome)
+			t.Setenv("USERPROFILE", tmpHome)
+			if tc.skills {
+				require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
+			}
+
+			var registry []*Agent
+			for i, manifest := range tc.manifests {
+				configDir := filepath.Join(tmpHome, fmt.Sprintf("agent-%d", i))
+				require.NoError(t, os.MkdirAll(configDir, 0o755))
+				if manifest != "" {
+					writeManifest(t, configDir, manifest)
+				}
+				registry = append(registry, agentWithConfigDir(configDir))
+			}
+			origRegistry := Registry
+			Registry = registry
+			t.Cleanup(func() { Registry = origRegistry })
+
+			assert.Equal(t, tc.want, HasDatabricksToolingInstalled(t.Context()))
+		})
+	}
 }
