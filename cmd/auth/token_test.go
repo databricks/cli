@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"runtime"
 	"strings"
@@ -984,7 +985,7 @@ host = https://prod.cloud.databricks.test
 cluster_id = abc
 `))
 	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
-		name, _, err := resolveNoArgsToken(ctx, profile.DefaultProfiler, &auth.AuthArguments{}, nil, storage.StorageModePlaintext)
+		name, _, err := resolveNoArgsToken(ctx, profile.DefaultProfiler, &auth.AuthArguments{}, nil, storage.StorageModePlaintext, defaultTimeout)
 		return name, err
 	})
 	tm.WaitFor(profilePickerCreateNewLabel)
@@ -997,4 +998,48 @@ cluster_id = abc
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
 	assert.EqualError(t, err, "^C")
+}
+
+func TestLoadTokenCreateNewProfileAppliesTimeout(t *testing.T) {
+	// See TestLoginDeviceCodePickerEmptyHost.
+	if runtime.GOOS == "windows" {
+		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
+	}
+	// Either one would resolve the profile before the picker is shown.
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("DATABRICKS_CONFIG_FILE", writeTempConfig(t, `[prod]
+host = https://prod.cloud.databricks.test
+`))
+	t.Setenv("BROWSER", "none")
+
+	// Host discovery runs before the login timeout starts and has its own 5s
+	// limit, so answer it immediately. Every other request blocks until the
+	// login's context is done.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+
+	tm := termtest.Run(t, func(ctx context.Context) (*oauth2.Token, error) {
+		return loadToken(ctx, loadTokenArgs{
+			authArguments: &auth.AuthArguments{},
+			tokenTimeout:  100 * time.Millisecond,
+			profiler:      profile.DefaultProfiler,
+			tokenStore:    storage.NewMemoryStore(),
+			mode:          storage.StorageModePlaintext,
+		})
+	})
+	tm.WaitFor(profilePickerCreateNewLabel)
+	tm.Type(termtest.KeyDown + termtest.KeyEnter)
+	tm.WaitFor("Databricks profile name [DEFAULT]")
+	tm.Type("new" + termtest.KeyEnter)
+	tm.WaitFor("Databricks host")
+	tm.Type(server.URL + termtest.KeyEnter)
+	_, err := tm.Result()
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }

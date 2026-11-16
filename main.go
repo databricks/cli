@@ -25,7 +25,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	err := root.Execute(ctx, cmd.New(ctx))
+	err := root.Execute(ctx, cmd.New(ctx), os.Args[1:])
 	if err != nil {
 		os.Exit(1)
 	}

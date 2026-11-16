@@ -48,7 +48,8 @@ class ExternalLocation(Resource):
 
     url: VariableOr[str]
     """
-    Path URL of the external location.
+    URL of the cloud storage path that the external location points to, including the scheme
+    (for example `s3://`, `abfss://`, or `gs://`).
     """
 
     comment: VariableOrOptional[str] = None
@@ -58,7 +59,7 @@ class ExternalLocation(Resource):
 
     enable_file_events: VariableOrOptional[bool] = None
     """
-    Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.
+    Whether to enable file events on this external location. Defaults to `true`. Set to `false` to disable file events.
     The actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.
     """
 
@@ -74,7 +75,8 @@ class ExternalLocation(Resource):
 
     file_event_queue: VariableOrOptional[FileEventQueue] = None
     """
-    File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.
+    File event queue settings. When `enable_file_events` is `true`, exactly one of the queue options
+    must be set. Must be omitted when `enable_file_events` is `false`.
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
@@ -120,7 +122,8 @@ class ExternalLocationDict(TypedDict, total=False):
 
     url: VariableOr[str]
     """
-    Path URL of the external location.
+    URL of the cloud storage path that the external location points to, including the scheme
+    (for example `s3://`, `abfss://`, or `gs://`).
     """
 
     comment: VariableOrOptional[str]
@@ -130,7 +133,7 @@ class ExternalLocationDict(TypedDict, total=False):
 
     enable_file_events: VariableOrOptional[bool]
     """
-    Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.
+    Whether to enable file events on this external location. Defaults to `true`. Set to `false` to disable file events.
     The actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.
     """
 
@@ -146,7 +149,8 @@ class ExternalLocationDict(TypedDict, total=False):
 
     file_event_queue: VariableOrOptional[FileEventQueueParam]
     """
-    File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.
+    File event queue settings. When `enable_file_events` is `true`, exactly one of the queue options
+    must be set. Must be omitted when `enable_file_events` is `false`.
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]

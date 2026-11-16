@@ -1,0 +1,84 @@
+
+=== Initial deployment
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-data-staging-options/default/files...
+Created pipelines.explicit_staging
+Created pipelines.implicit_staging
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op: the backend-filled data_staging_options is a default, not drift
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "resources.pipelines.explicit_staging": {
+    "action": "skip",
+    "changes": null
+  },
+  "resources.pipelines.implicit_staging": {
+    "action": "skip",
+    "changes": {
+      "ingestion_definition.data_staging_options": {
+        "action": "skip",
+        "reason": "backend_default",
+        "remote": {
+          "catalog_name": "my_catalog",
+          "schema_name": "my_schema",
+          "volume_name": "__databricks_ingestion_gateway_staging_data-[UUID]"
+        }
+      }
+    }
+  }
+}
+
+=== Redeploy is a no-op (no update call)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-data-staging-options/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py --sort //api/2.0/pipelines
+json[1].body.ingestion_definition.data_staging_options.catalog_name = "staging_catalog";
+json[1].body.ingestion_definition.data_staging_options.schema_name = "staging_schema";
+json[1].body.ingestion_definition.data_staging_options.volume_name = "staging_volume";
+
+=== Explicitly configured data_staging_options still detects a remote change
+
+>>> [CLI] bundle plan
+update pipelines.explicit_staging
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "resources.pipelines.explicit_staging": {
+    "action": "update",
+    "changes": {
+      "ingestion_definition.data_staging_options.volume_name": {
+        "action": "update",
+        "old": "staging_volume",
+        "new": "staging_volume",
+        "remote": "changed_volume"
+      }
+    }
+  },
+  "resources.pipelines.implicit_staging": {
+    "action": "skip",
+    "changes": {
+      "ingestion_definition.data_staging_options": {
+        "action": "skip",
+        "reason": "backend_default",
+        "remote": {
+          "catalog_name": "my_catalog",
+          "schema_name": "my_schema",
+          "volume_name": "__databricks_ingestion_gateway_staging_data-[UUID]"
+        }
+      }
+    }
+  }
+}

@@ -401,6 +401,18 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
 }
 
+// logWaitingStatus prints a waiting status as a plain stderr line, for terminals
+// that can't show the spinner.
+func (st *bricklensStreamer) logWaitingStatus(msg string) {
+	cmdio.LogProgress(st.ctx, msg)
+}
+
+// printWaitingEvent reports a waiting status as a WAITING JSONL event in place of
+// the spinner, which -o json never shows.
+func (st *bricklensStreamer) printWaitingEvent(msg string) {
+	printWaitingEvent(st.out, msg)
+}
+
 // reportStatusChange fires onStatusChange when the run's display state differs
 // from the last reported one.
 func (st *bricklensStreamer) reportStatusChange() {
@@ -426,15 +438,24 @@ func (st *bricklensStreamer) run() (bool, error) {
 		return st.drainStatic(st.req.toSeconds(st.status))
 	}
 
-	// Show a "waiting for run to start" spinner on stderr while the run has not
-	// yet produced logs, so a provisioning run doesn't look hung. Suppressed in
-	// --json mode and auto-degraded to nothing on a non-interactive terminal.
-	// The first emitted log line stops it via onFirstLog (before any stdout write).
-	if !st.req.jsonOutput {
+	// Report the waiting status while the run has not yet produced logs, so a
+	// provisioning run doesn't look hung: a spinner on an interactive stderr, one
+	// line per status change on a non-interactive stderr, and WAITING events in
+	// --json mode. The first emitted log line stops the spinner via onFirstLog
+	// (before any stdout write).
+	if st.req.jsonOutput {
+		st.updateSpinner = st.printWaitingEvent
+	} else {
 		sp := cmdio.NewSpinner(st.ctx)
 		defer sp.Close()
 		st.onFirstLog = sp.Close
 		st.updateSpinner = sp.Update
+		// A non-interactive stderr (agents, CI, pipes) gets no spinner, which made
+		// a provisioning run look hung. Print each new waiting status as one line
+		// instead; the caller only calls updateSpinner when the text changes.
+		if cmdio.GetInteractiveMode(st.ctx) == cmdio.InteractiveModeNone {
+			st.updateSpinner = st.logWaitingStatus
+		}
 	}
 
 	firstIteration := true
@@ -473,19 +494,6 @@ func (st *bricklensStreamer) run() (bool, error) {
 
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
-
-		// While waiting on a still-active run with no logs yet, refresh the spinner
-		// with the server-set status (throttled), so a run stuck waiting for compute
-		// shows why rather than a generic "waiting" message.
-		if !terminal && !st.firstLogSeen && st.updateSpinner != nil {
-			if statusRefreshCounter%statusMessageRefreshEveryNPolls == 0 {
-				if desired := st.waitingSpinnerText(); desired != lastSpinnerText {
-					st.updateSpinner(desired)
-					lastSpinnerText = desired
-				}
-			}
-			statusRefreshCounter++
-		}
 
 		// `air logs` starts an active attachment with a bounded tail; subsequent
 		// polls follow live with dedup so the overlap does not re-print it.
@@ -529,6 +537,20 @@ func (st *bricklensStreamer) run() (bool, error) {
 			return st.status.succeeded(), nil
 		}
 		if !st.firstLogSeen {
+			// The fetch above found no logs for this still-active run, so refresh the
+			// waiting status with the server-set message (throttled): a run stuck
+			// waiting for compute shows why rather than a generic message. Doing this
+			// after the fetch means attaching to a run that already has logs never
+			// reports it as waiting.
+			if st.updateSpinner != nil {
+				if statusRefreshCounter%statusMessageRefreshEveryNPolls == 0 {
+					if desired := st.waitingSpinnerText(); desired != lastSpinnerText {
+						st.updateSpinner(desired)
+						lastSpinnerText = desired
+					}
+				}
+				statusRefreshCounter++
+			}
 			emptyStreamPolls++
 			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
 				log.Debugf(st.ctx, "air logs: MLflow artifacts exist for run %d; falling back to MLflow log stream", st.req.runID)

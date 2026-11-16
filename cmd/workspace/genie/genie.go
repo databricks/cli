@@ -107,7 +107,10 @@ func newCreateMessage() *cobra.Command {
 
   Sends a new message in a chat-mode
   [conversation](:method:genie/startconversation). The AI response uses all
-  previously created messages in the conversation to respond.
+  previously created messages in the conversation to respond. The message is
+  processed asynchronously. Poll [Get a conversation
+  message](:method:genie/getmessage) until its status is COMPLETED,
+  FAILED, or CANCELLED.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the conversation is started.
@@ -293,9 +296,9 @@ func newCreateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Optional description.`)
-	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Parent folder path where the space will be registered.`)
-	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Optional title override.`)
+	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Description of the space, up to 16384 bytes.`)
+	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Path of the workspace folder in which to create the space.`)
+	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Display name of the new space.`)
 
 	cmd.Use = "create-space WAREHOUSE_ID SERIALIZED_SPACE"
 	cmd.Short = `Create a Genie space.`
@@ -304,12 +307,13 @@ func newCreateSpace() *cobra.Command {
   Creates a Genie space from a serialized payload.
 
   Arguments:
-    WAREHOUSE_ID: Warehouse to associate with the new space
-    SERIALIZED_SPACE: The contents of the Genie Space in serialized string form. Use the [Get
-      Genie Space](:method:genie/getspace) API to retrieve an example response,
-      which includes the serialized_space field. This field provides the
-      structure of the JSON string that represents the space's layout and
-      components.`
+    WAREHOUSE_ID: ID of the SQL warehouse that runs the queries Genie generates for the
+      space, as a 16-character hexadecimal string.
+    SERIALIZED_SPACE: Configuration of the new space as a JSON string. To copy an existing
+      space, use the value that [Get Genie Space](:method:genie/getspace)
+      returns when include_serialized_space is true. For the JSON format and
+      its validation rules, see
+      https://docs.databricks.com/aws/en/genie-agents/conversation-api.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -388,6 +392,10 @@ func newDeleteConversation() *cobra.Command {
 	cmd.Use = "delete-conversation SPACE_ID CONVERSATION_ID"
 	cmd.Short = `Delete a conversation.`
 	cmd.Long = `Delete a conversation.
+
+  Deletes a conversation and all of its messages. Users can delete their own
+  conversations. Deleting another user's conversation requires at least CAN
+  MANAGE permission on the space.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the conversation is located.
@@ -1353,9 +1361,9 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.Short = `Get an attachment SQL result.`
 	cmd.Long = `Get an attachment SQL result.
 
-  Get the result of SQL query if the message has a query attachment. This is
-  only available if a message has a query attachment and the message status is
-  EXECUTING_QUERY OR COMPLETED.
+  Gets the result of the SQL query in a message's query attachment. The result
+  is available only while the message status is EXECUTING_QUERY or
+  COMPLETED.
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -1753,7 +1761,10 @@ func newListConversations() *cobra.Command {
 	cmd.Short = `List conversations.`
 	cmd.Long = `List conversations.
 
-  Get a list of conversations in a Genie Space.
+  Lists the conversations in a Genie space. By default the list contains only
+  the caller's own conversations, ordered by most recent activity. With
+  include_all, it contains every user's conversations in the space, ordered by
+  creation time with the newest first.
 
   Arguments:
     SPACE_ID: The ID of the Genie space to retrieve conversations from.`
@@ -1883,7 +1894,8 @@ func newListSpaces() *cobra.Command {
 	cmd.Short = `List Genie spaces.`
 	cmd.Long = `List Genie spaces.
 
-  Get list of Genie Spaces.`
+  Lists the Genie spaces that the caller can access, most recently updated
+  first.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -2043,7 +2055,10 @@ func newStartConversation() *cobra.Command {
 	cmd.Short = `Chat mode: Start a conversation.`
 	cmd.Long = `Chat mode: Start a conversation.
 
-  Starts a new chat-mode conversation and sends its first message.
+  Starts a new chat-mode conversation and sends its first message. The message
+  is processed asynchronously. Poll [Get a conversation
+  message](:method:genie/getmessage) until its status is COMPLETED,
+  FAILED, or CANCELLED.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where you want to start a
@@ -2195,18 +2210,20 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `New description for the space, up to 16384 bytes.`)
 	cmd.Flags().StringVar(&updateSpaceReq.Etag, "etag", updateSpaceReq.Etag, `ETag returned by a previous GET or UPDATE.`)
 	cmd.Flags().StringVar(&updateSpaceReq.ParentPath, "parent-path", updateSpaceReq.ParentPath, `Parent workspace folder path to move this Genie space under.`)
-	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `The contents of the Genie Space in serialized string form (full replacement).`)
-	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
-	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)
+	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `New configuration of the space as a JSON string.`)
+	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `New display name for the space.`)
+	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `ID of the SQL warehouse that runs the queries Genie generates for the space.`)
 
 	cmd.Use = "update-space SPACE_ID"
 	cmd.Short = `Update a Genie space.`
 	cmd.Long = `Update a Genie space.
 
-  Updates a Genie space with a serialized payload.
+  Updates a Genie space. Replaces the whole configuration when
+  serialized_space is set and changes the title, description, warehouse or
+  folder when those fields are set; omitted fields keep their current values.
 
   Arguments:
     SPACE_ID: Genie space ID`

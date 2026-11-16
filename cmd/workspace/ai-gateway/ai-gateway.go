@@ -379,7 +379,9 @@ func newCreateModelService() *cobra.Command {
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
       {...} component is capped at 255 characters individually.
-    MODEL_SERVICE_ID: Name for the model service, e.g. "my_model_service".`
+    MODEL_SERVICE_ID: Name of the model service within the parent schema. The name must not
+      contain periods, spaces, forward slashes, percent signs, or control
+      characters, and it is stored in lowercase.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1852,9 +1854,9 @@ func newUpdateModelService() *cobra.Command {
   Arguments:
     NAME: Resource name of the model service. Format:
       model-services/{catalog}.{schema}.{model_service}. Each {...}
-      component is capped at 255 characters individually. Server-derived on
-      Create from parent + model_service_id; required and immutable on
-      Update/Get/Delete.
+      component is capped at 255 characters individually. The server derives the
+      name on Create from parent and model_service_id; it is required and
+      immutable on Update, Get, and Delete.
     UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
       replacement must include every required field; any optional field you omit
       is cleared. To preserve sibling fields, use one or more granular paths:
