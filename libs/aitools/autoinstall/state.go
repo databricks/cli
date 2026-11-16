@@ -33,8 +33,8 @@ type State struct {
 
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
-	// `databricks aitools uninstall` and by a "no" to the skills prompt of
-	// `databricks apps init`.
+	// `databricks aitools uninstall`, by declining the install prompt and by a
+	// "no" to the skills prompt of `databricks apps init`.
 	OptedOut bool `json:"opted_out,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that

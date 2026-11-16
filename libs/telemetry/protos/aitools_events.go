@@ -173,13 +173,17 @@ const (
 	// The run was in CI (the CI env var is set).
 	AitoolsAutoInstallOutcomeSkippedCI AitoolsAutoInstallOutcome = "SKIPPED_CI"
 	// The user turned auto-install off: DATABRICKS_AITOOLS_AUTO_INSTALL=false,
-	// `aitools auto-install disable`, a global `aitools uninstall`, or "no"
-	// to the skills prompt of `apps init`.
+	// `aitools auto-install disable`, a global `aitools uninstall`, "no" at
+	// the prompt of an earlier version, or "no" to the skills prompt of
+	// `apps init`.
 	AitoolsAutoInstallOutcomeSkippedOptOut AitoolsAutoInstallOutcome = "SKIPPED_OPTOUT"
 	// The machine is in the holdout cohort.
 	AitoolsAutoInstallOutcomeSkippedHoldout AitoolsAutoInstallOutcome = "SKIPPED_HOLDOUT"
 	// No supported coding agent has a config directory on the machine.
 	AitoolsAutoInstallOutcomeSkippedNoAgents AitoolsAutoInstallOutcome = "SKIPPED_NO_AGENTS"
+	// The user answered "no" at the install prompt, which also turns
+	// auto-install off.
+	AitoolsAutoInstallOutcomeDeclined AitoolsAutoInstallOutcome = "DECLINED"
 	// The attempt failed or timed out; a later run of the same version retries.
 	AitoolsAutoInstallOutcomeFailed AitoolsAutoInstallOutcome = "FAILED"
 	// The attempt failed and was the last one this CLI version gets.

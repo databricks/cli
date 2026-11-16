@@ -135,6 +135,43 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 	}
 }
 
+func TestCapabilities_SupportsLinePrompt(t *testing.T) {
+	gitBashPS1 := `\u@\h $MSYSTEM \w$ `
+	tests := []struct {
+		name string
+		env  map[string]string
+	}{
+		{name: "NO_COLOR set", env: map[string]string{"NO_COLOR": "1"}},
+		{name: "TERM=dumb", env: map[string]string{"TERM": "dumb"}},
+		{name: "Git Bash", env: map[string]string{"MSYSTEM": "MINGW64", "TERM": "xterm", "PS1": gitBashPS1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("TERM", "xterm")
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+			caps := newCapabilities(t.Context(), nil, io.Discard, io.Discard)
+			caps.stdinIsTTY = true
+			caps.stdoutIsTTY = true
+			caps.stderrIsTTY = true
+			assert.False(t, caps.SupportsPrompt())
+			assert.True(t, caps.SupportsLinePrompt())
+		})
+	}
+
+	assert.False(t, Capabilities{stdinIsTTY: false, stdoutIsTTY: true, stderrIsTTY: true}.SupportsLinePrompt(), "stdin not TTY")
+	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: false, stderrIsTTY: true}.SupportsLinePrompt(), "stdout not TTY")
+	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: false}.SupportsLinePrompt(), "stderr not TTY")
+}
+
+func TestCapabilities_HasTTY(t *testing.T) {
+	assert.False(t, Capabilities{}.HasTTY())
+	assert.True(t, Capabilities{stdinIsTTY: true}.HasTTY())
+	assert.True(t, Capabilities{stdoutIsTTY: true}.HasTTY())
+	assert.True(t, Capabilities{stderrIsTTY: true}.HasTTY())
+}
+
 func TestDetectGitBash(t *testing.T) {
 	ctx := t.Context()
 	assert.False(t, detectGitBash(ctx))

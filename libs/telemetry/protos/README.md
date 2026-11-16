@@ -32,7 +32,7 @@ within the upload timeout, when auth has already resolved.
 On the first run of a new CLI version, the CLI can install Databricks AI tools for the coding agents
 on the machine (see `databricks aitools auto-install --help`). It logs an `aitools_auto_install_event`
 with the outcome (`INSTALLED`, `SKIPPED_CI`, `SKIPPED_OPTOUT`, `SKIPPED_HOLDOUT`, `SKIPPED_NO_AGENTS`,
-`FAILED`, `RETRIES_EXHAUSTED`), the machine's holdout arm and, for a failure, its error
+`DECLINED`, `FAILED`, `RETRIES_EXHAUSTED`), the machine's holdout arm and, for a failure, its error
 category: once per version and machine, plus once per retry of a failed attempt. Nothing is logged
 for a version whose outcome is settled, or while the feature is turned off remotely (the CI and
 opt-out checks come first and are logged either way). An install with no tools installed yet also

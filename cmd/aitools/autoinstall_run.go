@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +35,9 @@ const (
 	// agent CLIs it runs). One that runs out of time counts as a failed
 	// attempt and is retried on a later run.
 	installTimeout = 10 * time.Second
+
+	// promptTimeout bounds the wait for an answer at the install prompt.
+	promptTimeout = time.Minute
 )
 
 // autoInstallDisable is the opt-out command named in the notice.
@@ -42,8 +46,9 @@ const autoInstallDisable = "databricks aitools auto-install disable"
 // AutoInstall installs Databricks AI tools for the coding agents on this
 // machine, or updates an existing installation, on the first run of a new CLI
 // version. The root command runs it after a command succeeded. It never fails
-// the command and never writes to stdout: it prints at most one line to
-// stderr, and why it skipped or failed only to the debug log.
+// the command and never writes to stdout. On stderr it prints the install
+// prompt (in a terminal) and one line on what it did; why it skipped or failed
+// goes only to the debug log.
 func AutoInstall(cmd *cobra.Command) {
 	ctx := cmd.Context()
 	defer func() {
@@ -120,7 +125,7 @@ func autoInstall(ctx context.Context, path []string) {
 		version:     version,
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
-		interactive: installPromptsSupported(ctx),
+		interactive: autoInstallAsks(ctx),
 	}
 	if !reason.Due() {
 		// Another process settled the version while this one waited.
@@ -151,6 +156,29 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	}
 	qctx := quietContext(ctx)
 	tools, err := planTools(qctx)
+	// A terminal user is asked before the first install of a version, once:
+	// a retry was answered "yes" (or ran non-interactively), so it is not
+	// asked again.
+	if r.interactive && attempt == 1 {
+		switch {
+		case err != nil:
+			// A retry would install without asking, so this version settles.
+			log.Debugf(ctx, "auto-install: failed before asking: %v", err)
+			r.settleFailed(ctx, err)
+			return
+		case tools.existing == nil && len(tools.plan) > 0:
+			if !cmdio.IsLinePromptSupported(ctx) {
+				// The question could not be seen or answered safely, and
+				// installing without it would skip the consent. A later run
+				// in a terminal asks.
+				log.Debugf(ctx, "auto-install: skipped: cannot ask, stdin, stdout or stderr is not a terminal")
+				return
+			}
+			if !r.ask(ctx, tools.plan) {
+				return
+			}
+		}
+	}
 	// Count the attempt before making it: an attempt that never finishes (the
 	// process is killed) still counts, and a state that cannot be saved stops
 	// auto-install instead of retrying it on every run.
@@ -193,6 +221,59 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	}
 }
 
+// autoInstallAsks reports whether a person may be at the terminal, so
+// auto-install asks before installing: stdin, stdout or stderr is a terminal
+// and no coding agent is detected (see installPromptsSupported). It asks only
+// when all three are terminals and skips otherwise; the install without
+// asking is left to runs with no terminal at all. The question is a
+// plain-text line, so NO_COLOR, TERM=dumb and Git Bash, which turn off the TUI
+// prompts of install, do not skip it.
+func autoInstallAsks(ctx context.Context) bool {
+	return cmdio.HasTTY(ctx) && useragent.AgentProvider() == ""
+}
+
+// ask asks whether to install for the agents in plan and reports whether to go
+// ahead. The version is settled before asking, so the question is asked once
+// per version even when it is never answered: the process is killed, stdin
+// is closed, or nobody answers within promptTimeout (an unrecognized agent in
+// a pseudo-terminal). Only "no" stores the opt-out.
+func (r autoInstallRun) ask(ctx context.Context, plan []agentPlanItem) bool {
+	if err := autoinstall.Record(ctx, r.version, 0, r.id); err != nil {
+		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
+		return false
+	}
+	names := make([]string, len(plan))
+	for i, it := range plan {
+		names[i] = it.agent.DisplayName
+	}
+	actx, cancel := context.WithTimeout(ctx, promptTimeout)
+	defer cancel()
+	ans, err := cmdio.AskCancellable(actx, "Install Databricks AI tools for "+strings.Join(names, ", ")+"? [Y/n]", "")
+	if err != nil {
+		log.Debugf(ctx, "auto-install: skipped: the prompt was not answered: %v", err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			cmdio.LogString(ctx, "")
+		}
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(ans)) {
+	case "", "y", "yes":
+		return true
+	}
+	r.decline(ctx)
+	return false
+}
+
+// decline stores a "no" at the prompt as the opt-out, so no later version
+// asks again.
+func (r autoInstallRun) decline(ctx context.Context) {
+	if err := autoinstall.SetOptedOut(ctx, true); err != nil {
+		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
+	}
+	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
+	cmdio.LogString(ctx, "Skipped. You won't be asked again; to install Databricks AI tools later, run: databricks aitools install")
+}
+
 // skipOutcomes are the reported outcomes of the skips that settle a version.
 var skipOutcomes = map[autoinstall.Reason]protos.AitoolsAutoInstallOutcome{
 	autoinstall.ReasonSkippedCI:      protos.AitoolsAutoInstallOutcomeSkippedCI,
@@ -206,6 +287,14 @@ type autoInstallRun struct {
 	id          string
 	arm         protos.AitoolsHoldoutArm
 	interactive bool
+}
+
+// settleFailed records the version as done and reports a failed attempt.
+func (r autoInstallRun) settleFailed(ctx context.Context, err error) {
+	if recErr := autoinstall.Record(ctx, r.version, 0, r.id); recErr != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", recErr)
+	}
+	r.report(ctx, protos.AitoolsAutoInstallOutcomeFailed, classifyInstallError(err))
 }
 
 // settle records the version as done and reports outcome.

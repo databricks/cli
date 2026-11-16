@@ -83,6 +83,21 @@ func IsPromptSupported(ctx context.Context) bool {
 	return c.capabilities.SupportsPrompt()
 }
 
+// IsLinePromptSupported reports whether a plain-text line prompt ([Ask]) can
+// be shown and answered: stdin, stdout and stderr are terminals. Unlike
+// IsPromptSupported, it does not depend on NO_COLOR, TERM=dumb or Git Bash.
+func IsLinePromptSupported(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.SupportsLinePrompt()
+}
+
+// HasTTY reports whether stdin, stdout or stderr is a terminal, so that a
+// person may be running the command.
+func HasTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.HasTTY()
+}
+
 // IsInputTTY reports whether stdin is a terminal, so that a user can type
 // input into the command. Unlike IsPromptSupported, it does not depend on
 // stderr, NO_COLOR, TERM=dumb or Git Bash, which only matter for rendering
