@@ -255,6 +255,7 @@ func TestRunWatchDryRunSkipsSubmit(t *testing.T) {
 }
 
 func TestRunWatchJSONMLflowFallbackTerminalEnvelope(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	// Regression: through the MLflow fallback the terminal status must come from
 	// the run's actual state, not the onStatusChange callback (which is
 	// Bricklens-only), so a SUCCESS run isn't mislabeled FAILED in the envelope.

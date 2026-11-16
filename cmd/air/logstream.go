@@ -21,7 +21,7 @@ import (
 
 const (
 	// maxTransientFailures is how many consecutive Bricklens failures to tolerate
-	// before falling back to MLflow.
+	// before returning an error.
 	maxTransientFailures = 5
 	// defaultCompletedRunTailLines caps a completed run's output when neither
 	// --tail nor --minutes is set.
@@ -76,12 +76,10 @@ var retryCheckInterval = 3 * time.Second
 // bricklensPollInterval is independent of slower retry and discovery backoffs.
 var bricklensPollInterval = time.Second
 
-// errBricklensFeatureDisabled signals the caller to fall back to MLflow: Bricklens
-// is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404),
-// persistently failing, or served every request successfully but never returned a
-// record for a run whose logs may still be in MLflow. The flag is evaluated
-// server-side.
-var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable; falling back to mlflow")
+// errBricklensFeatureDisabled marks an unavailable Bricklens endpoint. When the
+// legacy fallback is enabled, empty streams and exhausted retries also use this
+// sentinel to hand off to MLflow.
+var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable")
 
 // logRequest describes what to fetch, shared by both backends so they honor the
 // same flags. windowMinutes and tailLines are mutually exclusive.
@@ -523,16 +521,19 @@ func (st *bricklensStreamer) run() (bool, error) {
 					continue
 				}
 			}
-			if !st.firstLogSeen {
+			if !st.firstLogSeen && mlflowLogFallbackEnabled(st.ctx) {
 				// A successful but empty Bricklens stream isn't proof the run has no
-				// logs; they may be in MLflow (as --download-to reads). Fall back
-				// there, which owns the real no-logs report and the same exit code.
+				// logs; older runs may have artifacts. The opt-in legacy path owns
+				// the no-logs report and exit code in that case.
 				return false, errBricklensFeatureDisabled
+			}
+			if !st.firstLogSeen {
+				emitNoLogs(st.out, st.req, st.status)
 			}
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
 		}
-		if !st.firstLogSeen {
+		if !st.firstLogSeen && mlflowLogFallbackEnabled(st.ctx) {
 			emptyStreamPolls++
 			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
 				log.Debugf(st.ctx, "air logs: MLflow artifacts exist for run %d; falling back to MLflow log stream", st.req.runID)
@@ -570,11 +571,14 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 	if err := st.drainTail(toSec, false); err != nil {
 		return false, err
 	}
-	if !st.firstLogSeen {
+	if !st.firstLogSeen && mlflowLogFallbackEnabled(st.ctx) {
 		// An empty Bricklens tail doesn't mean the attempt has no logs; fall back to
 		// MLflow, which holds the immutable per-attempt artifacts. See the terminal
 		// branch in run.
 		return false, errBricklensFeatureDisabled
+	}
+	if !st.firstLogSeen {
+		emitNoLogs(st.out, st.req, st.status)
 	}
 	return st.status.downloadOutcome(), nil
 }
@@ -675,7 +679,7 @@ func (st *bricklensStreamer) drainPages(toSec int64, suppressInitialHistory bool
 }
 
 // requestPage fetches one page, retrying transient failures up to
-// maxTransientFailures before falling back to MLflow. A feature-gated response or
+// maxTransientFailures before returning an error. A feature-gated response or
 // genuine not-found returns immediately.
 func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize int, ascending bool) (*bricklensLogsResponse, error) {
 	q := bricklensLogsQuery{
@@ -697,15 +701,17 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 
 		switch classified := classifyLogError(err); {
 		case errors.Is(classified, errBricklensFeatureDisabled):
-			return nil, errBricklensFeatureDisabled
+			return nil, fmt.Errorf("%w: %w", errBricklensFeatureDisabled, err)
 		case classified != nil:
 			return nil, classified
 		}
 
 		transientFailures++
 		if transientFailures >= maxTransientFailures {
-			log.Debugf(st.ctx, "air logs: bricklens failed %d times; falling back to mlflow", maxTransientFailures)
-			return nil, errBricklensFeatureDisabled
+			if mlflowLogFallbackEnabled(st.ctx) {
+				return nil, errBricklensFeatureDisabled
+			}
+			return nil, fmt.Errorf("bricklens logs failed after %d attempts: %w", maxTransientFailures, err)
 		}
 		log.Debugf(st.ctx, "air logs: bricklens transient failure (%d/%d): %v", transientFailures, maxTransientFailures, err)
 		if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
