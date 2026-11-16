@@ -3,8 +3,6 @@ package validate
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
@@ -28,22 +26,22 @@ func (v *pipelineTestingEnabled) Apply(ctx context.Context, b *bundle.Bundle) di
 		return nil
 	}
 	var diags diag.Diagnostics
-	pipelines := b.Config.Resources.Pipelines
-	for _, key := range slices.Sorted(maps.Keys(pipelines)) {
-		if pipelines[key] == nil || pipelines[key].Testing == nil {
-			continue
-		}
-		path := dyn.NewPath(dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key(key), dyn.Key("testing"))
-		value, err := dyn.GetByPath(b.Config.Value(), path)
-		if err != nil {
-			return diag.FromErr(err)
+	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.AnyKey(), dyn.Key("testing"))
+	_, err := dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		// "testing:" without a value is not set, as in the typed configuration.
+		if v.Kind() == dyn.KindNil {
+			return v, nil
 		}
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("the testing property of pipelines is experimental. Set %s=true to enable it", env.ExperimentalPipelineTestingVariable),
-			Locations: value.Locations(),
-			Paths:     dyn.ToStructPaths(path),
+			Locations: v.Locations(),
+			Paths:     dyn.ToStructPaths(p),
 		})
+		return v, nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
 	}
 	return diags
 }
