@@ -18,6 +18,3 @@ resources:
             table: main.default.user_features
             lookup_keys: [user_id]
             feature_names: [age]
-      grants:
-        - principal: account users
-          privileges: [EXECUTE]

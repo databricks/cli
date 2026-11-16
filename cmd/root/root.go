@@ -89,9 +89,13 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
-		// Recommend installing Databricks AI tooling to Claude Code when it is
-		// driving the CLI without the tooling installed (best-effort, stderr only).
-		agents.MaybeHint(ctx, cmd)
+		// Recommend installing Databricks AI tooling to the calling coding agent
+		// when it drives the CLI without the tooling installed (best-effort: a
+		// stderr line and a telemetry event that is uploaded at exit). Only the
+		// global install state is read, as for the calling-agent User-Agent.
+		agents.MaybeHint(ctx, cmd, func(ctx context.Context, agentName string) bool {
+			return installer.PluginRecorded(ctx, installer.ScopeGlobal, agentName)
+		})
 		return nil
 	}
 

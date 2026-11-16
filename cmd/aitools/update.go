@@ -1,7 +1,9 @@
 package aitools
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +23,7 @@ var updateSkillsFn = func(ctx context.Context, src installer.ManifestSource, ins
 }
 
 var (
+	updateGetSkillsRefFn          = installer.GetSkillsRef
 	updatePluginsFn               = installer.UpdateInstalledPlugins
 	updateInstallPluginForAgentFn = installer.InstallPluginForAgent
 	updateRecordPluginInstallsFn  = installer.RecordPluginInstalls
@@ -49,7 +53,9 @@ func NewUpdateCmd() *cobra.Command {
 
 By default, updates all installed skills and auto-installs new skills
 from the manifest. Use --no-new to skip new skills, or --check to
-preview what would change without downloading.`,
+preview what would change without downloading.
+
+The command exits with code 1 when every update or check it attempts fails.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -65,12 +71,19 @@ preview what would change without downloading.`,
 
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
-				return err
+				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
 			}
+			// Record a scope flag before resolving, so a scope error still reports it.
+			funnel := funnelFrom(ctx)
+			funnel.setScope(explicitScope(projectFlag, globalFlag))
 
 			scopes, err := resolveScopeForUpdate(ctx, projectFlag, globalFlag, globalDir, projectDir)
 			if err != nil {
 				return err
+			}
+			// The scope enum has no "both"; a run over both scopes reports none.
+			if len(scopes) == 1 {
+				funnel.setScope(scopes[0])
 			}
 
 			installed := agents.DetectInstalled(ctx)
@@ -79,7 +92,16 @@ preview what would change without downloading.`,
 
 			// The plugin version recorded on update tracks the skills release.
 			// Tolerate a resolution error (skip plugin updates, still do skills).
-			ref, _, refErr := installer.GetSkillsRef(ctx)
+			ref, _, refErr := updateGetSkillsRefFn(ctx)
+
+			// A failed or skipped plugin update, or a check whose manifest could
+			// not be fetched, is only a warning, unless every attempt failed and
+			// nothing else ran. A plugin record for an agent this CLI does not know
+			// is not an attempt: no command can act on it.
+			// firstErr is the first failure of any kind; firstAttemptErr the first
+			// one of an attempt (a record of an unknown agent is not one).
+			var firstErr, firstAttemptErr error
+			updatedAnything := false
 
 			for _, scope := range scopes {
 				if len(scopes) > 1 {
@@ -94,9 +116,16 @@ preview what would change without downloading.`,
 				if err != nil {
 					return err
 				}
+				// A scope with something installed fetches releases and runs agent
+				// CLIs, so the run waits for the telemetry auth. Without state the
+				// run only reports that nothing (or a legacy install) is there.
+				if state != nil {
+					waitForTelemetryAuth(ctx)
+				}
 
 				if check && refErr == nil && state != nil && len(state.Plugins) > 0 {
 					printPluginCheckResults(ctx, state, installer.DisplaySkillsVersion(ref))
+					updatedAnything = true
 				}
 
 				migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
@@ -107,6 +136,13 @@ preview what would change without downloading.`,
 					printPluginMigrationCheckResults(ctx, migrationCandidates)
 				}
 
+				// Without a ref the recorded plugins are skipped (with --check,
+				// not checked).
+				if refErr != nil && state != nil && hasKnownPluginRecord(state) {
+					firstAttemptErr = cmp.Or(firstAttemptErr, refErr)
+					firstErr = cmp.Or(firstErr, refErr)
+				}
+
 				// Update plugin agents through their own CLI (check mode skips this).
 				if !check && refErr == nil {
 					pluginUpdates, err := updatePluginsFn(ctx, scope, ref)
@@ -114,6 +150,14 @@ preview what would change without downloading.`,
 						return err
 					}
 					for _, pu := range pluginUpdates {
+						if pu.Err != nil {
+							if !errors.Is(pu.Err, installer.ErrUnknownAgent) {
+								firstAttemptErr = cmp.Or(firstAttemptErr, pu.Err)
+							}
+							firstErr = cmp.Or(firstErr, pu.Err)
+							continue
+						}
+						updatedAnything = true
 						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
 					}
 
@@ -122,6 +166,7 @@ preview what would change without downloading.`,
 						return err
 					}
 					if migrated {
+						updatedAnything = true
 						state, err = installer.LoadState(dir)
 						if err != nil {
 							return err
@@ -151,17 +196,59 @@ preview what would change without downloading.`,
 						targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
 					}
 
-					result, err := updateSkillsFn(ctx, src, excludePluginAgents(targetAgents, state), opts)
+					fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
+					// Raw skills an earlier install gave an agent that now has the
+					// plugin would show every skill twice, so remove them as
+					// install does when it keeps the plugin.
+					if !check {
+						for _, a := range manifestPlugins {
+							if err := updateCleanupLegacyFn(ctx, a, scope); err != nil {
+								log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", a.DisplayName, err)
+							}
+						}
+					}
+					// The plugin agents left no agent that can take file skills in
+					// this scope, so there is nothing to reconcile. Without this, a
+					// project whose only project-capable agent has the plugin would
+					// fail the update with "no agents support project-scoped skills".
+					// Without install state the reconcile still runs, for the
+					// "no skills or plugins installed" and legacy-install guidance.
+					if state != nil && len(manifestPlugins) > 0 && !slices.ContainsFunc(fileAgents, func(a *agents.Agent) bool {
+						return scope != installer.ScopeProject || a.SupportsProjectScope
+					}) {
+						continue
+					}
+
+					result, err := updateSkillsFn(ctx, src, fileAgents, opts)
 					if err != nil {
 						return err
 					}
-					if result != nil && (check || len(result.Updated) > 0 || len(result.Added) > 0 || len(result.Removed) > 0) {
+					if result != nil && result.CheckErr != nil {
+						firstAttemptErr = cmp.Or(firstAttemptErr, result.CheckErr)
+						firstErr = cmp.Or(firstErr, result.CheckErr)
+					} else {
+						updatedAnything = true
+					}
+					// A check that could not fetch the manifest has nothing to report.
+					if result != nil && result.CheckErr == nil && (check || len(result.Updated) > 0 || len(result.Added) > 0 || len(result.Removed) > 0) {
 						text := installer.FormatUpdateResult(result, check)
 						if text != "No changes." || len(migrationCandidates) == 0 {
 							cmdio.LogString(ctx, text)
 						}
 					}
 				}
+			}
+			if firstErr != nil && !updatedAnything {
+				if firstAttemptErr == nil {
+					// Only unknown-agent records: warned about above, but not a run
+					// that failed to do what it could.
+					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeFailure, classifyInstallError(firstErr))
+					return nil
+				}
+				if check {
+					return fmt.Errorf("nothing was checked: %w", firstAttemptErr)
+				}
+				return fmt.Errorf("nothing was updated: %w", firstAttemptErr)
 			}
 			return nil
 		},
@@ -176,7 +263,7 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandUpdate)
 }
 
 func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state *installer.InstallState) ([]pluginMigrationCandidate, error) {
@@ -194,9 +281,13 @@ func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state 
 		if !ok {
 			continue
 		}
-		// Match install's non-interactive behavior: a raw install for a plugin
-		// agent should attempt migration and report a skip if its CLI is missing,
-		// rather than silently staying on raw skills forever.
+		// Match install's behavior: an agent whose CLI is not on PATH keeps its
+		// raw skills, which update refreshes, until the CLI is there to install
+		// the plugin with. An agent with the CLI attempts migration and reports
+		// a skip if it fails, rather than silently staying on raw skills forever.
+		if !agent.HasBinary(ctx) {
+			continue
+		}
 		hasRawSkills, err := hasManagedRawSkillsForAgentFn(ctx, agent, scope)
 		if err != nil {
 			return nil, err
@@ -253,7 +344,7 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 		rec := state.Plugins[name]
 		status := "up to date"
 		if rec.Version == "" {
-			status = "version unknown"
+			status = "update may be available"
 		} else if rec.Version != latest {
 			status = "update available"
 		}
@@ -277,17 +368,40 @@ func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
 	return merged
 }
 
-// excludePluginAgents drops agents that are managed as plugins in this scope, so
-// the file-skills reconcile never drops duplicate skill files onto a plugin agent.
-func excludePluginAgents(installed []*agents.Agent, state *installer.InstallState) []*agents.Agent {
-	if state == nil || len(state.Plugins) == 0 {
-		return installed
-	}
-	out := make([]*agents.Agent, 0, len(installed))
+// excludePluginAgents splits off agents that have the plugin in this scope, so
+// the file-skills reconcile never drops duplicate skill files onto a plugin
+// agent. That is an agent the CLI recorded a plugin install for, or one whose
+// own manifest shows a plugin serving the scope (see manifestPluginActive) while
+// its CLI is missing: install keeps such a plugin, without recording it. With
+// the CLI on PATH, raw skills next to the plugin are the user's choice (install
+// --skills-only), so they are refreshed as before. manifestPlugins lists the
+// agents excluded for their manifest.
+func excludePluginAgents(ctx context.Context, scope string, installed []*agents.Agent, state *installer.InstallState) (fileAgents, manifestPlugins []*agents.Agent) {
+	fileAgents = make([]*agents.Agent, 0, len(installed))
 	for _, a := range installed {
-		if _, isPlugin := state.Plugins[a.Name]; !isPlugin {
-			out = append(out, a)
+		if state != nil {
+			if _, isPlugin := state.Plugins[a.Name]; isPlugin {
+				continue
+			}
+		}
+		if !a.HasBinary(ctx) {
+			if active, err := manifestPluginActive(ctx, a, scope); err == nil && active {
+				manifestPlugins = append(manifestPlugins, a)
+				continue
+			}
+		}
+		fileAgents = append(fileAgents, a)
+	}
+	return fileAgents, manifestPlugins
+}
+
+// hasKnownPluginRecord reports whether state records a plugin for an agent this
+// CLI knows, so that skipping the recorded plugins is a failed attempt.
+func hasKnownPluginRecord(state *installer.InstallState) bool {
+	for name := range state.Plugins {
+		if agents.ByName(name) != nil {
+			return true
 		}
 	}
-	return out
+	return false
 }

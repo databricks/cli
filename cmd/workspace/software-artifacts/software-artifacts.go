@@ -23,8 +23,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "software-artifacts",
-		Short: `*Beta* Manage software artifacts and their versions in Unity Catalog.`,
-		Long: `This command is in Beta and may change without notice.
+		Short: `*Public Preview* Manage software artifacts and their versions in Unity Catalog.`,
+		Long: `This command is in Public Preview and may change without notice.
 
 Manage software artifacts and their versions in Unity Catalog.`,
 		GroupID: "catalog",
@@ -32,8 +32,8 @@ Manage software artifacts and their versions in Unity Catalog.`,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetSoftwareArtifact())
@@ -66,8 +66,8 @@ func newGetSoftwareArtifact() *cobra.Command {
 	var getSoftwareArtifactReq softwareartifacts.GetSoftwareArtifactRequest
 
 	cmd.Use = "get-software-artifact NAME"
-	cmd.Short = `*Beta* Get a software artifact.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Get a software artifact.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Get a software artifact.
 
@@ -78,8 +78,8 @@ Get a software artifact.
       software-artifacts/{catalog}.{schema}.{artifact}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -128,8 +128,8 @@ func newGetSoftwareArtifactVersion() *cobra.Command {
 	var getSoftwareArtifactVersionReq softwareartifacts.GetSoftwareArtifactVersionRequest
 
 	cmd.Use = "get-software-artifact-version NAME"
-	cmd.Short = `*Beta* Get a software artifact version.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Get a software artifact version.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Get a software artifact version.
 
@@ -140,8 +140,8 @@ Get a software artifact version.
       software-artifacts/{catalog}.{schema}.{artifact}/versions/{version}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -203,8 +203,8 @@ func newListSoftwareArtifactVersions() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-software-artifact-versions PARENT"
-	cmd.Short = `*Beta* List software artifact versions.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* List software artifact versions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 List software artifact versions.
 
@@ -215,8 +215,8 @@ List software artifact versions.
       software-artifacts/{catalog}.{schema}.{artifact}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -281,8 +281,8 @@ func newListSoftwareArtifacts() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-software-artifacts PARENT"
-	cmd.Short = `*Beta* List software artifacts.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* List software artifacts.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 List software artifacts.
 
@@ -293,8 +293,8 @@ List software artifacts.
       schemas/{catalog}.{schema}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -349,8 +349,8 @@ func newResolveSoftwareArtifactVersion() *cobra.Command {
 	cmd.Flags().Var(&resolveSoftwareArtifactVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "resolve-software-artifact-version PARENT ALIAS"
-	cmd.Short = `*Beta* Resolve a software artifact version.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Resolve a software artifact version.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Resolve a software artifact version.
 
@@ -361,8 +361,8 @@ Resolve a software artifact version.
     ALIAS: Image tag alias selecting the version.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -440,8 +440,8 @@ func newUpdateSoftwareArtifact() *cobra.Command {
 	cmd.Flags().StringVar(&updateSoftwareArtifactReq.SoftwareArtifact.Owner, "owner", updateSoftwareArtifactReq.SoftwareArtifact.Owner, `Principal name (a user, service principal, or group) that owns this artifact.`)
 
 	cmd.Use = "update-software-artifact NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a software artifact.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Update a software artifact.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Update a software artifact.
 
@@ -458,8 +458,8 @@ Update a software artifact.
       Output-only values in the resource are ignored.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

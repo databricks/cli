@@ -5,11 +5,14 @@
 //
 //	go run ./acceptance/internal/selection/cmd
 //	go run ./acceptance/internal/selection/cmd -limit 5
+//	go run ./acceptance/internal/selection/cmd -cloud aws
 //	go run ./acceptance/internal/selection/cmd acceptance/bundle/invariant/configs/job.yml.tmpl
 //
-// With no arguments the selection comes from git, exactly as the test runner gets it. Each
-// argument stands for a changed file instead, and counts as modified unless it carries a
-// status ("A:path" for an added file, "R100:old:new" for a rename).
+// With no arguments the selection comes from git, exactly as the test runner gets it, and
+// also lists the tests the last commit message names (see acceptance/README.md) for the run
+// -cloud picks: aws, azure or gcp, or empty for a local run. Each argument stands for a
+// changed file instead, and counts as modified unless it carries a status ("A:path" for an
+// added file, "R100:old:new" for a rename); the commit message is not read then.
 //
 // Each line is a `go test -run` pattern, so a selected test can be run as printed:
 //
@@ -27,6 +30,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -39,10 +43,14 @@ import (
 func main() {
 	limit := flag.Int("limit", 50, "maximum number of changed tests to select")
 	root := flag.String("root", "acceptance", "path to the acceptance directory")
+	cloud := flag.String("cloud", "", "cloud to list commit message names for: aws, azure, gcp, or empty for a local run")
 	flag.Parse()
 
 	if *limit <= 0 {
 		fatalf("-limit must be a positive integer, got %d", *limit)
+	}
+	if !slices.Contains([]string{"", "aws", "azure", "gcp"}, *cloud) {
+		fatalf("-cloud must be aws, azure, gcp or empty, got %q", *cloud)
 	}
 
 	dirs, err := selection.FindTestDirs(*root)
@@ -55,10 +63,16 @@ func main() {
 	}
 
 	var result selection.Result
-	if args := flag.Args(); len(args) > 0 {
-		result = selection.FromDiff(*root, diffFromArgs(args), testDirs, *limit)
+	var commit selection.CommitSelection
+	fromGit := len(flag.Args()) == 0
+	if !fromGit {
+		result = selection.FromDiff(*root, diffFromArgs(flag.Args()), testDirs, *limit)
 	} else {
 		result, err = selection.FromGit(*root, testDirs, *limit)
+		if err != nil {
+			fatalf("%s", err)
+		}
+		commit, err = selection.FromCommitMessage(*root, testDirs, *cloud)
 		if err != nil {
 			fatalf("%s", err)
 		}
@@ -72,6 +86,41 @@ func main() {
 	}
 	if len(result.Selected) == 0 {
 		fmt.Println("       none of the changed files belong to a test dir")
+	}
+
+	if fromGit {
+		printNamed(commit)
+	}
+}
+
+// printNamed prints the tests the last commit message names, as go test -run patterns, and
+// the warnings the test runner would log for it. A commit that names nothing prints nothing,
+// like the test runner, which logs the section only when there is something in it.
+func printNamed(commit selection.CommitSelection) {
+	warnings := commit.Warnings()
+	if len(commit.Named) == 0 && len(warnings) == 0 {
+		return
+	}
+	fmt.Printf("Selected %d test dirs named in the last commit message (%s)\n", len(commit.Named), commit.Where)
+	for _, dir := range slices.Sorted(maps.Keys(commit.Named)) {
+		elements := strings.Split(dir, "/")
+		var names []string
+		for _, filters := range commit.Named[dir].Filters {
+			if filters == nil {
+				// Every variant runs, so the variant names below add nothing.
+				names = []string{runPattern(elements)}
+				break
+			}
+			if name := runPattern(append(slices.Clone(elements), filters...)); !slices.Contains(names, name) {
+				names = append(names, name)
+			}
+		}
+		for _, name := range names {
+			fmt.Printf("       %s\n", name)
+		}
+	}
+	for _, warning := range warnings {
+		fmt.Printf("WARNING: %s\n", warning)
 	}
 }
 

@@ -21,8 +21,9 @@ class ModelServiceConfigPayPerTokenConfig:
 
     model: VariableOr[str]
     """
-    Resource name of the Unity Catalog model.
-    Format: `models/{catalog}.{schema}.{model}`.
+    Resource name of the Unity Catalog foundation model. Pay-per-token
+    foundation models live in the `system.ai` schema, so the name has the
+    form `models/system.ai.{model}`.
     """
 
     @classmethod
@@ -38,8 +39,9 @@ class ModelServiceConfigPayPerTokenConfigDict(TypedDict, total=False):
 
     model: VariableOr[str]
     """
-    Resource name of the Unity Catalog model.
-    Format: `models/{catalog}.{schema}.{model}`.
+    Resource name of the Unity Catalog foundation model. Pay-per-token
+    foundation models live in the `system.ai` schema, so the name has the
+    form `models/system.ai.{model}`.
     """
 
 

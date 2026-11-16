@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -16,7 +17,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
+	"github.com/databricks/sdk-go/core/apiretry"
+	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
+	"github.com/databricks/sdk-go/options/call"
 	"github.com/databricks/sdk-go/options/client"
 	"golang.org/x/sync/errgroup"
 )
@@ -35,6 +39,42 @@ func httpStatus(err error) int {
 		return aerr.HTTPStatusCode()
 	}
 	return -1
+}
+
+// filesRetryStatusCodes are the HTTP statuses on which Files API calls are
+// retried; the same set files/v2 retries for its own upload control-plane calls.
+// Throttled cloud storage comes back as 429 RESOURCE_EXHAUSTED (e.g. "AWS S3 is
+// throttling requests; try again later."), which asks the caller to retry.
+// files/v2 retries nothing unless the caller passes a retrier, so the filer
+// supplies one to keep the retries the databricks-sdk-go client used to do.
+var filesRetryStatusCodes = []int{
+	http.StatusRequestTimeout,     // 408
+	http.StatusTooManyRequests,    // 429
+	http.StatusBadGateway,         // 502
+	http.StatusServiceUnavailable, // 503
+	http.StatusGatewayTimeout,     // 504
+}
+
+// filesMaxRetries bounds the retries of one call. Non-streaming files/v2 calls
+// also have a 5 minute SDK timeout, but the single-shot upload retried by the
+// filer itself does not.
+const filesMaxRetries = 10
+
+// filesRetryBackoff is the default delay policy between retries.
+var filesRetryBackoff = ops.BackoffPolicy{Initial: time.Second, Maximum: 10 * time.Second}
+
+// cappedRetrier stops retrying after filesMaxRetries retries.
+type cappedRetrier struct {
+	ops.Retrier
+	retries int
+}
+
+func (r *cappedRetrier) IsRetriable(err error) (time.Duration, bool) {
+	if r.retries >= filesMaxRetries {
+		return 0, false
+	}
+	r.retries++
+	return r.Retrier.IsRetriable(err)
 }
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
@@ -152,6 +192,18 @@ type FilesClient struct {
 	// (e.g. fs cp -r) draw from one bounded budget and one connection pool.
 	limiter        files.Limiter
 	transferClient *http.Client
+
+	// retryBackoff is copied into a fresh retrier for every call.
+	retryBackoff ops.BackoffPolicy
+}
+
+func (w *FilesClient) newRetrier() ops.Retrier {
+	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
+}
+
+// retry is the call option that retries a files/v2 call on throttling.
+func (w *FilesClient) retry() call.Option {
+	return call.WithRetrier(w.newRetrier)
 }
 
 func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -167,6 +219,7 @@ func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root str
 
 		limiter:        files.NewLimiter(uploadConcurrency),
 		transferClient: newTransferClient(uploadConcurrency),
+		retryBackoff:   filesRetryBackoff,
 	}, nil
 }
 
@@ -213,7 +266,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// Check that target path exists if CreateParentDirectories mode is not set
 	if !slices.Contains(mode, CreateParentDirectories) {
 		dir := path.Dir(absPath)
-		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
+		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir}, w.retry())
 		if err != nil {
 			// This API returns a 404 if the directory doesn't exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -247,11 +300,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return mapUploadError(uerr, absPath)
 	}
 
-	_, err = w.client.UploadFile(ctx, files.UploadFileRequest{
-		FilePath:  &absPath,
-		Contents:  io.NopCloser(reader),
-		Overwrite: &overwrite,
-	})
+	err = w.uploadFile(ctx, absPath, reader, overwrite)
 	if err == nil {
 		return nil
 	}
@@ -261,6 +310,64 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return fileAlreadyExistsError{absPath}
 	}
 	return err
+}
+
+// uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
+// call because it cannot replay a streamed body, so a seekable reader is rewound
+// to its starting offset and retried here. Other readers get one attempt; that
+// includes pipes, which are *os.File and so implement io.Seeker but fail Seek.
+func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
+	seeker, ok := reader.(io.Seeker)
+	if !ok {
+		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+	}
+	start, err := seeker.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+	}
+	return ops.Execute(ctx, func(ctx context.Context) error {
+		if _, err := seeker.Seek(start, io.SeekStart); err != nil {
+			return err
+		}
+		body := &attemptBody{r: reader}
+		err := w.putFile(ctx, absPath, body, overwrite)
+		body.Close()
+		return err
+	}, ops.WithRetrier(w.newRetrier))
+}
+
+func (w *FilesClient) putFile(ctx context.Context, absPath string, body io.ReadCloser, overwrite bool) error {
+	_, err := w.client.UploadFile(ctx, files.UploadFileRequest{
+		FilePath:  &absPath,
+		Contents:  body,
+		Overwrite: &overwrite,
+	})
+	return err
+}
+
+// attemptBody is the request body of one upload attempt. net/http may still be
+// sending the body after the response has arrived; Close waits for an in-flight
+// Read and stops further ones, so the next attempt can safely rewind the reader.
+type attemptBody struct {
+	mu     sync.Mutex
+	r      io.Reader
+	closed bool
+}
+
+func (b *attemptBody) Read(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return b.r.Read(p)
+}
+
+func (b *attemptBody) Close() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.closed = true
+	return nil
 }
 
 // isSeekable reports whether r can be seeked, without moving it: a no-op
@@ -295,7 +402,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, err
 	}
 
-	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath})
+	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath}, w.retry())
 
 	// Return early on success.
 	if err == nil {
@@ -327,7 +434,7 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath})
+	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, w.retry())
 
 	// Return early on success.
 	if err == nil {
@@ -353,7 +460,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, w.retry())
 
 	// Return early on success.
 	if err == nil {
@@ -477,7 +584,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	var entries []fs.DirEntry
 	for entry, err := range w.client.ListDirectoryContentsIter(ctx, files.ListDirectoryContentsRequest{
 		DirectoryPath: &absPath,
-	}) {
+	}, w.retry()) {
 		if err != nil {
 			// This API returns a 404 if the specified path does not exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -513,7 +620,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath}, w.retry())
 
 	// This API returns a 409 when a file already exists at the path (the create
 	// is not idempotent over a file).
@@ -531,7 +638,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, err
 	}
 
-	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath})
+	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath}, w.retry())
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
@@ -557,7 +664,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, err
 	}
 
-	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
+	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath}, w.retry())
 
 	// If the HEAD requests succeeds, the directory exists.
 	if err == nil {

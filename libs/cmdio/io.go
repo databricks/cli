@@ -101,6 +101,13 @@ func IsPagerSupported(ctx context.Context) bool {
 	return c.capabilities.SupportsPager()
 }
 
+// HasTerminal reports whether stdin, stdout or stderr is a terminal. Unlike
+// GetInteractiveMode it ignores colour preferences (NO_COLOR, TERM=dumb).
+func HasTerminal(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.stdinIsTTY || c.capabilities.stdoutIsTTY || c.capabilities.stderrIsTTY
+}
+
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func SupportsColor(ctx context.Context, w io.Writer) bool {

@@ -7,6 +7,9 @@
   ],
   "action": "skip",
   "remote_state": {
+    "attributes": {
+      "createdb": false
+    },
     "create_time": "[TIMESTAMP]",
     "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
@@ -25,16 +28,6 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "attributes": {
-      "action": "skip",
-      "reason": "spec:input_only",
-      "old": {
-        "createdb": false
-      },
-      "new": {
-        "createdb": false
-      }
-    },
     "postgres_role": {
       "action": "skip",
       "reason": "spec:input_only",

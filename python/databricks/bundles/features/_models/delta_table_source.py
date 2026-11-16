@@ -29,15 +29,11 @@ class DeltaTableSource:
 
     filter_condition: VariableOrOptional[str] = None
     """
-    Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
+    A single WHERE clause to filter the Delta table before applying transformations.
+    The predicate is evaluated for each row.
     """
 
     transformation_sql: VariableOrOptional[str] = None
-    """
-    A single SQL SELECT expression applied after filter_condition.
-    Should contains all the columns needed (eg. "SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a > 0" would have `transformation_sql` "*, col_a + col_b AS col_c")
-    If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
-    """
 
     @classmethod
     def from_dict(cls, value: "DeltaTableSourceDict") -> "Self":
@@ -64,15 +60,11 @@ class DeltaTableSourceDict(TypedDict, total=False):
 
     filter_condition: VariableOrOptional[str]
     """
-    Single WHERE clause to filter delta table before applying transformations. Will be row-wise evaluated, so should only include conditionals and projections.
+    A single WHERE clause to filter the Delta table before applying transformations.
+    The predicate is evaluated for each row.
     """
 
     transformation_sql: VariableOrOptional[str]
-    """
-    A single SQL SELECT expression applied after filter_condition.
-    Should contains all the columns needed (eg. "SELECT *, col_a + col_b AS col_c FROM x.y.z WHERE col_a > 0" would have `transformation_sql` "*, col_a + col_b AS col_c")
-    If transformation_sql is not provided, all columns of the delta table are present in the DataSource dataframe.
-    """
 
 
 DeltaTableSourceParam = DeltaTableSourceDict | DeltaTableSource

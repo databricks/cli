@@ -71,7 +71,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
+	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The cloud storage URL where the files of the volume are stored.`)
 
 	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE"
 	cmd.Short = `Create a Volume.`
@@ -84,17 +84,17 @@ func newCreate() *cobra.Command {
   managed volume will be located in the default location which is specified by
   the parent schema, or the parent catalog, or the Metastore.
 
-  For the volume creation to succeed, the user must satisfy following
+  For the volume creation to succeed, the user must satisfy the following
   conditions: - The caller must be a metastore admin, or be the owner of the
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
   catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
   must have **CREATE VOLUME** privilege on the parent schema.
 
-  For an external volume, following conditions also need to satisfy - The caller
-  must have **CREATE EXTERNAL VOLUME** privilege on the external location. -
-  There are no other tables, nor volumes existing in the specified storage
-  location. - The specified storage location is not under the location of other
-  tables, nor volumes, or catalogs or schemas.
+  For an external volume, the following conditions must also be satisfied: - The
+  caller must have **CREATE EXTERNAL VOLUME** privilege on the external
+  location. - There are no other tables, nor volumes existing in the specified
+  storage location. - The specified storage location is not under the location
+  of other tables, nor volumes, or catalogs or schemas.
 
   Arguments:
     CATALOG_NAME: The name of the catalog where the schema and the volume are
@@ -270,7 +270,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes for which the principal can only access selective metadata through the BROWSE privilege.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length).`)
 
 	// Limit flag for total result capping.
@@ -302,8 +302,8 @@ func newList() *cobra.Command {
   end of results has been reached.
 
   Arguments:
-    CATALOG_NAME: The identifier of the catalog
-    SCHEMA_NAME: The identifier of the schema`
+    CATALOG_NAME: The name of the catalog that contains the schema.
+    SCHEMA_NAME: The name of the schema whose volumes are listed.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -359,7 +359,7 @@ func newRead() *cobra.Command {
 
 	var readReq catalog.ReadVolumeRequest
 
-	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes for which the principal can only access selective metadata through the BROWSE privilege.`)
 
 	cmd.Use = "read NAME"
 	cmd.Short = `Get a Volume.`
@@ -441,8 +441,8 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the volume.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `The new name for the volume.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The user or group that owns the volume.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a Volume.`
@@ -454,7 +454,7 @@ func newUpdate() *cobra.Command {
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
 
-  Currently only the name, the owner or the comment of the volume could be
+  Currently only the name, the owner, or the comment of the volume can be
   updated.
 
   Arguments:

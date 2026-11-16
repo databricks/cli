@@ -26,6 +26,14 @@ func TestIsTransient(t *testing.T) {
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "deadline exceeded"}))
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
 	assert.False(t, IsTransient(ctx, errors.New("boom")))
+
+	// The SDK's inactivity timeout, which it does not retry itself.
+	inactivity := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: errors.New("request timed out after 1m30s of inactivity")}
+	assert.True(t, IsTransient(ctx, inactivity))
+	assert.True(t, IsTransient(ctx, fmt.Errorf("failed to upload: %w", inactivity)))
+	assert.True(t, IsTransientRead(ctx, inactivity))
+	cancelled := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: context.Canceled}
+	assert.False(t, IsTransient(ctx, cancelled))
 }
 
 func TestIsTransientRead(t *testing.T) {
@@ -115,7 +123,7 @@ func TestWithStopsOnContextCancel(t *testing.T) {
 
 func TestRetryMessage(t *testing.T) {
 	apiErr := &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "boom"}
-	assert.Equal(t, "retrying", retryMessage(errors.New("x")))
+	assert.Equal(t, "retrying after x", retryMessage(errors.New("x")))
 	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
 	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
 }

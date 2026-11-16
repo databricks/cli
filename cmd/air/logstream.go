@@ -87,6 +87,8 @@ var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable; fallin
 // same flags. windowMinutes and tailLines are mutually exclusive.
 type logRequest struct {
 	runID int64
+	// runURL preserves the URL already shown by air run --watch.
+	runURL string
 	// node is the node index to fetch; node 0 always exists.
 	node int
 	// nodeSet distinguishes an explicit --node 0 from the default, so a download
@@ -391,6 +393,12 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
 }
 
+// logWaitingStatus prints a waiting status as a plain stderr line, for terminals
+// that can't show the spinner.
+func (st *bricklensStreamer) logWaitingStatus(msg string) {
+	cmdio.LogProgress(st.ctx, msg)
+}
+
 // reportStatusChange fires onStatusChange when the run's display state differs
 // from the last reported one.
 func (st *bricklensStreamer) reportStatusChange() {
@@ -425,6 +433,12 @@ func (st *bricklensStreamer) run() (bool, error) {
 		defer sp.Close()
 		st.onFirstLog = sp.Close
 		st.updateSpinner = sp.Update
+		// A non-interactive stderr (agents, CI, pipes) gets no spinner, which made
+		// a provisioning run look hung. Print each new waiting status as one line
+		// instead; the caller only calls updateSpinner when the text changes.
+		if cmdio.GetInteractiveMode(st.ctx) == cmdio.InteractiveModeNone {
+			st.updateSpinner = st.logWaitingStatus
+		}
 	}
 
 	firstIteration := true

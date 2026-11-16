@@ -138,6 +138,10 @@ type PersistentAuth struct {
 	// login.databricks.com lands the user on the account selector instead of
 	// the workspace selector. Use for account-only logins.
 	discoveryAccountTarget bool
+
+	// noRefresh makes Token() return the cached access token only while it is
+	// valid, and never refresh it.
+	noRefresh bool
 }
 
 type PersistentAuthOption func(*PersistentAuth)
@@ -214,6 +218,17 @@ func WithResources(resources []string) PersistentAuthOption {
 func WithDisableOfflineAccess(disable bool) PersistentAuthOption {
 	return func(a *PersistentAuth) {
 		a.disableOfflineAccess = disable
+	}
+}
+
+// WithoutRefresh makes Token() return the cached access token only while it
+// is valid and fail with [ErrRefreshDisabled] instead of refreshing it. For a
+// best-effort caller that may exit before a refresh finishes: the server
+// rotates the single-use refresh token, so an abandoned refresh can lose the
+// new one and log the user out.
+func WithoutRefresh() PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		a.noRefresh = true
 	}
 }
 
@@ -320,7 +335,11 @@ func (a *PersistentAuth) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if needsRefresh(t) {
+	if a.noRefresh {
+		if !t.Valid() {
+			return nil, ErrRefreshDisabled
+		}
+	} else if needsRefresh(t) {
 		if refreshedToken, err := a.refresh(t); err == nil {
 			t = refreshedToken
 		} else if !t.Valid() {

@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/shellquote"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -72,21 +71,6 @@ Examples:
 				extraArgs = args[dashAt:]
 			}
 
-			if sandboxID != "" {
-				resolved, err := resolveLocalID(ctx, profile, sandboxID)
-				if err != nil {
-					return err
-				}
-				sandboxID = resolved
-			}
-
-			// Captured from any Sandbox response we touch below; "" when
-			// we never hit the API in this invocation.
-			var (
-				sandboxGatewayHost string
-				sandboxStatus      string
-			)
-
 			api, err := newSandboxAPI(w)
 			if err != nil {
 				return err
@@ -97,47 +81,19 @@ Examples:
 				return err
 			}
 
-			if sandboxID == "" {
-				def := getDefault(ctx, profile)
-				if def == "" {
-					return errors.New("no default sandbox configured — run `databricks sandbox create` to provision one, or `databricks sandbox default <id>` to point at an existing sandbox")
-				}
-				// Confirm the saved default still exists. A stale entry is
-				// almost always user-correctable (deleted from another
-				// machine, reaped by an admin); fail fast with an actionable
-				// message rather than silently provisioning a fresh sandbox
-				// and surprising the user with a bill.
-				sb, err := api.get(ctx, def)
-				switch {
-				case err == nil:
-					sandboxID = def
-					sandboxGatewayHost = sb.GatewayHost
-					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
-					_ = clearDefault(ctx, profile)
-					return fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks sandbox create` to provision a new one, or `databricks sandbox default <id>` to point at an existing sandbox", def)
-				default:
-					warn(ctx, fmt.Sprintf("Could not validate default %s: %v", def, err))
-					sandboxID = def
-				}
-			} else {
-				// Validate the explicit ID against the server. Two reasons:
-				//   1. Surface `sandbox ssh fake-id` as a clear 404 instead of
-				//      letting the user wade through `Permission denied` from
-				//      ssh when the gateway can't route an unknown sandbox.
-				//   2. Capture `gateway_host` to drive the resolution below.
-				// Non-NotFound errors fall through so transient API hiccups
-				// don't block a connection the gateway can still route.
-				sb, err := api.get(ctx, sandboxID)
-				switch {
-				case err == nil:
-					sandboxGatewayHost = sb.GatewayHost
-					sandboxStatus = sb.Status
-				case errors.Is(err, apierr.ErrNotFound):
-					return fmt.Errorf("no sandbox named %q — `databricks sandbox list` shows available IDs", sandboxID)
-				default:
-					warn(ctx, fmt.Sprintf("Could not validate sandbox %s: %v", sandboxID, err))
-				}
+			// Validating the sandbox against the server surfaces an unknown ID
+			// as a clear 404 instead of ssh's `Permission denied` when the
+			// gateway can't route it, and captures `gateway_host` for the
+			// resolution below.
+			sandboxID, sb, err := resolveSandbox(ctx, api, profile, sandboxID)
+			if err != nil {
+				return err
+			}
+			// "" when the lookup only warned.
+			var sandboxGatewayHost, sandboxStatus string
+			if sb != nil {
+				sandboxGatewayHost = sb.GatewayHost
+				sandboxStatus = sb.Status
 			}
 
 			// Drive start ourselves so the user sees a spinner instead

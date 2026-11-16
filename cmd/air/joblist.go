@@ -53,12 +53,14 @@ func isSweep(r *jobs.Run) bool {
 	return len(r.Tasks) > 0 && r.Tasks[0].ForEachTask != nil
 }
 
-// taskRunID returns the run id of the AIR task, used to fetch its MLflow output.
-func taskRunID(r *jobs.Run) int64 {
-	if len(r.Tasks) == 0 {
-		return 0
+// retryTasks returns the run's task runs with only the fields that pick its
+// MLflow run (see mlflowIDsFromRetries), so the list cache stays small.
+func retryTasks(r *jobs.Run) []jobs.RunTask {
+	tasks := make([]jobs.RunTask, len(r.Tasks))
+	for i, t := range r.Tasks {
+		tasks[i] = jobs.RunTask{RunId: t.RunId, TaskKey: t.TaskKey, AttemptNumber: t.AttemptNumber}
 	}
-	return r.Tasks[0].RunId
+	return tasks
 }
 
 // jobExperiment returns the run's MLflow experiment name (user-folder prefix
@@ -146,7 +148,8 @@ func fetchJobRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64
 
 // hydrateJobRuns fetches the given run ids concurrently via runs/get, preserving
 // input order. runs/get enforces per-run view ACLs, so an id the caller can't
-// view (403) or that has been purged (404) is dropped; any other error is
+// view (403) or that has been purged (404, or the 400 "Run <id> does not exist."
+// that the SDK maps to ErrResourceDoesNotExist) is dropped; any other error is
 // systemic and fails the whole batch.
 func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []int64) ([]*jobs.Run, error) {
 	runs := make([]*jobs.Run, len(ids))
@@ -156,11 +159,14 @@ func hydrateJobRuns(ctx context.Context, w *databricks.WorkspaceClient, ids []in
 		g.Go(func() error {
 			run, err := fetchJobRun(gctx, w, id)
 			if err != nil {
+				if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+					return nil // purged: drop this id
+				}
 				if apiErr, ok := errors.AsType[*apierr.APIError](err); ok &&
 					(apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusNotFound) {
 					return nil // not viewable or purged: drop this id
 				}
-				return fmt.Errorf("failed to get run %d: %w", id, err)
+				return err
 			}
 			runs[i] = run
 			return nil

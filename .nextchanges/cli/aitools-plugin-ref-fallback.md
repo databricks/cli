@@ -1,0 +1,1 @@
+* `databricks aitools install` no longer fails a plugin-only install when the lookup of the latest skills release on GitHub fails or is rate-limited. The plugin is installed and its version is recorded as unknown. ([#7474](https://github.com/databricks/cli/pull/7474))

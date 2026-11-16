@@ -18,6 +18,12 @@ import (
 // with a raw client.Do because the SDK does not model the AiTrainingService.
 const aiTrainingWorkflowsPath = "/api/2.0/ai-training/workflows"
 
+// aiTrainingWorkflowsPageSize is how many workloads the index scans per page.
+// The server scans the whole workspace and returns only the caller's runs, so
+// a larger page means fewer sequential round trips. It caps the value at its
+// own read limit, and servers that predate page_size ignore it.
+const aiTrainingWorkflowsPageSize = 1000
+
 const computeOptionsPath = "/api/2.0/ai-training/compute-options"
 
 type computeOption struct {
@@ -81,7 +87,7 @@ func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient,
 	seenIDs := map[int64]bool{}
 	var pageToken string
 	for {
-		query := map[string]any{}
+		query := map[string]any{"page_size": aiTrainingWorkflowsPageSize}
 		if activeOnly {
 			query["active_only"] = true
 		}

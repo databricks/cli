@@ -1,0 +1,1 @@
+python3 "$TESTDIR/../run.py" update_deployment

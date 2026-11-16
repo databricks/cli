@@ -5,7 +5,7 @@
 Submitting experiment: submit-smoke
 Uploading [SNAPSHOT_TARBALL]...
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
@@ -112,7 +112,7 @@ Stream logs after submission using:
 >>> [CLI] air run -f b300.yaml
 Submitting experiment: b300-submit-smoke
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
@@ -163,7 +163,7 @@ Stream logs after submission using:
 >>> [CLI] air run -f rtx6000.yaml
 Submitting experiment: rtx6000-submit-smoke
 Submitted workload with Job Run ID: 555
-View job run at: [DATABRICKS_URL]/jobs/runs/555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:

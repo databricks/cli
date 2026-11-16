@@ -63,7 +63,8 @@ func TestDatabricksPluginVersionAcrossMarketplaces(t *testing.T) {
 	configDir := t.TempDir()
 	writeManifest(t, configDir, `{"plugins":{"databricks@a":[{"scope":"user","version":"0.2.9"}],"databricks@b":[{"scope":"user","version":"0.3.0"}]}}`)
 	a := agentWithConfigDir(configDir)
-	installs, ok := claudePluginInstalls(t.Context(), a)
+	installs, ok, err := claudePluginInstalls(t.Context(), a)
+	require.NoError(t, err)
 	require.True(t, ok)
 	assert.Len(t, installs, 2)
 	version, ok := a.DatabricksPluginVersion(t.Context())
@@ -85,13 +86,51 @@ func projectFixture(t *testing.T) (project, sub string) {
 // Every record counts, not only the first one the reader returns.
 func TestDatabricksPluginActiveInChecksEveryRecord(t *testing.T) {
 	project, _ := projectFixture(t)
-	a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool) {
+	a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool, error) {
 		return []pluginInstall{
 			{Scope: "project", ProjectPath: filepath.Join(filepath.Dir(project), "Other")},
 			{Scope: "user"},
-		}, true
+		}, true, nil
 	}}
-	assert.True(t, a.databricksPluginActiveIn(t.Context(), project))
+	active, err := a.DatabricksPluginActiveIn(t.Context(), project)
+	require.NoError(t, err)
+	assert.True(t, active)
+}
+
+// A working directory spelled through a symlink inside the project that points
+// out of it is the directory it points to, which the project's plugin does not
+// cover.
+func TestDatabricksPluginActiveInResolvesTheWorkingDir(t *testing.T) {
+	project, _ := projectFixture(t)
+	outside := filepath.Join(filepath.Dir(project), "Other")
+	require.NoError(t, os.Mkdir(outside, 0o755))
+	link := filepath.Join(project, "link")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Skipf("cannot create a symlink: %v", err)
+	}
+	a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool, error) {
+		return []pluginInstall{{Scope: "project", ProjectPath: project}}, true, nil
+	}}
+	active, err := a.DatabricksPluginActiveIn(t.Context(), link)
+	require.NoError(t, err)
+	assert.False(t, active)
+	active, err = a.DatabricksPluginActiveIn(t.Context(), project)
+	require.NoError(t, err)
+	assert.True(t, active)
+}
+
+// A missing manifest means no plugin; one that exists but cannot be parsed
+// leaves the answer unknown, so the caller can consult another source.
+func TestDatabricksPluginActiveInTellsAMissingManifestFromAnUnreadableOne(t *testing.T) {
+	configDir := t.TempDir()
+	a := agentWithConfigDir(configDir)
+	active, err := a.DatabricksPluginActiveIn(t.Context(), "")
+	require.NoError(t, err)
+	assert.False(t, active)
+
+	writeManifest(t, configDir, `{not json`)
+	_, err = a.DatabricksPluginActiveIn(t.Context(), "")
+	assert.Error(t, err)
 }
 
 func TestPluginInstallAppliesToProjectOutsideWorkingDir(t *testing.T) {
@@ -141,4 +180,28 @@ func TestDatabricksPluginVersionWithoutReader(t *testing.T) {
 	version, ok := a.DatabricksPluginVersion(t.Context())
 	assert.False(t, ok)
 	assert.Empty(t, version)
+}
+
+// Only a project-scope record for the project that contains cwd is the
+// project's own plugin; user and local records are personal.
+func TestDatabricksProjectPluginIn(t *testing.T) {
+	project, sub := projectFixture(t)
+	other := filepath.Join(filepath.Dir(project), "Other")
+	require.NoError(t, os.Mkdir(other, 0o755))
+	for _, tc := range []struct {
+		install pluginInstall
+		want    bool
+	}{
+		{pluginInstall{Scope: "project", ProjectPath: project}, true},
+		{pluginInstall{Scope: "project", ProjectPath: other}, false},
+		{pluginInstall{Scope: "local", ProjectPath: project}, false},
+		{pluginInstall{Scope: "user"}, false},
+	} {
+		a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool, error) {
+			return []pluginInstall{tc.install}, true, nil
+		}}
+		got, err := a.DatabricksProjectPluginIn(t.Context(), sub)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, got, "%+v", tc.install)
+	}
 }

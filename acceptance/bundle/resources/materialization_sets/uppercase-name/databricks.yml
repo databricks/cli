@@ -1,0 +1,69 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    myschema:
+      catalog_name: main
+      name: MySchema
+
+  features:
+    # The schema part of each name becomes ${resources.schemas.myschema.name}, which resolves to
+    # MySchema.
+    feata:
+      full_name: main.MySchema.FeatA
+      source:
+        delta_table_source:
+          full_name: main.myschema.mysource
+      function:
+        aggregation_function:
+          count_function:
+            input: amount
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: account_id
+      timeseries_column:
+        name: event_ts
+    featb:
+      full_name: main.MySchema.FeatB
+      source:
+        delta_table_source:
+          full_name: main.myschema.mysource
+      function:
+        aggregation_function:
+          count_function:
+            input: amount
+          time_window:
+            sliding:
+              window_duration: 604800s
+              slide_duration: 86400s
+      entities:
+        - name: account_id
+      timeseries_column:
+        name: event_ts
+
+  materialization_sets:
+    set1:
+      lifecycle:
+        depends_on:
+          - resource: features.featb
+      materialized_features:
+        - feature_name: ${resources.features.feata.full_name}
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"
+        - feature_name: main.MySchema.FeatB
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: "0 0 * * * ?"

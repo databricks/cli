@@ -1,0 +1,20 @@
+# Ports are allocated per run so that tests in parallel worktrees do not collide.
+read -r LOCAL_PORT <<< "$(free_port.py 1)"
+
+# The forward runs until interrupted. Start it outside this shell's job table so
+# stopping it doesn't print a "Killed" job notice, and stop it by port, which
+# also works on Windows.
+( $CLI sandbox forward happy-panda-1234 -L "$LOCAL_PORT:10080" &> LOG.forward & )
+trap 'kill_port.py "$LOCAL_PORT"' EXIT
+
+export RETRY_MAX_ATTEMPTS=30
+
+title "The command reports the forward once it is listening"
+trace retry --until "Press Ctrl-C to stop." cat LOG.forward
+
+title "A local request reaches the sandbox app through the forward route"
+trace curl -sS -X POST -H "X-Databricks-Org-Id: 999" -d 'ping' "http://127.0.0.1:$LOCAL_PORT/api/items?page=2"
+echo
+
+title "The workspace receives the CLI's routing header in place of the caller's"
+trace print_requests.py //sandbox-proxy

@@ -18,12 +18,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
-Error: cannot recreate resources.vector_search_endpoints.my_endpoint: Vector search endpoint with name vs-endpoint-b-[UNIQUE_NAME] already exists (409 RESOURCE_ALREADY_EXISTS)
+Error: cannot recreate resources.vector_search_endpoints.my_endpoint: AI Search endpoint vs-endpoint-b-[UNIQUE_NAME] already exists. Please try again with a different endpoint name. (409 ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
 HTTP Status: 409 Conflict
-API error_code: RESOURCE_ALREADY_EXISTS
-API message: Vector search endpoint with name vs-endpoint-b-[UNIQUE_NAME] already exists
+API error_code: ALREADY_EXISTS
+API message: AI Search endpoint vs-endpoint-b-[UNIQUE_NAME] already exists. Please try again with a different endpoint name.
 
 Files: 0 uploaded, 0 deleted
 

@@ -47,6 +47,7 @@ AI Search
   ai-search                              *Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
 
 Identity and Access Management
+  assume-group                           *Beta* Manage the workspace's restricted sharing groups.
   current-user                           *Public Preview* This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
   groups-v2                              *Public Preview* Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
@@ -66,6 +67,7 @@ Databricks SQL
   queries                                The queries API can be used to perform CRUD operations on queries.
   queries-legacy                         These endpoints are used for CRUD operations on query definitions.
   query-history                          A service responsible for storing and retrieving the list of queries run against SQL endpoints and serverless compute.
+  statement-execution-v2                 *Public Preview* The Statement Execution API v2 can be used to execute SQL statements on a SQL warehouse and fetch the result.
   warehouses                             A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL.
 
 AI/BI
@@ -95,7 +97,7 @@ Unity Catalog
   rfa                                    *Public Preview* Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   secrets-uc                             A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).
-  software-artifacts                     *Beta* Manage software artifacts and their versions in Unity Catalog.
+  software-artifacts                     *Public Preview* Manage software artifacts and their versions in Unity Catalog.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
@@ -178,10 +180,10 @@ Environments
   environments                           APIs to manage environment resources.
 
 Domains
-  domains                                *Beta* Manage domains for organizing and discovering data assets.
+  domains                                *Public Preview* Manage domains for organizing and discovering data assets.
 
 Developer Tools
-  air                                    Run and manage AI Runtime training workloads
+  air                                    Run and manage AI Runtime workloads on serverless GPU compute
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
@@ -200,11 +202,11 @@ Additional Commands:
   version                                Retrieve information about the current version of this CLI
 
 Flags:
-      --debug            enable debug logging
-  -h, --help             help for databricks
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-  -v, --version          version for databricks
+      --debug[=true|false]     enable debug logging
+  -h, --help[=true|false]      help for databricks
+  -o, --output type            output type: text or json (default text)
+  -p, --profile string         ~/.databrickscfg profile
+  -t, --target string          bundle target to use (if applicable)
+  -v, --version[=true|false]   version for databricks
 
 Use "databricks [command] --help" for more information about a command.

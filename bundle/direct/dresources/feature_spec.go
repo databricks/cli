@@ -20,8 +20,8 @@ func (*ResourceFeatureSpec) New(client *databricks.WorkspaceClient) *ResourceFea
 }
 
 // PrepareState sorts the fields in FeatureSpec that are order-free lists, so a reorder in config is
-// not a recreate. The FeatureSpec with the order-free list fields sorted is what gets sent and
-// stored in the backend.
+// not a recreate. The sorted copy is what is sent in the create request and persisted in state; the
+// config is not modified.
 func (*ResourceFeatureSpec) PrepareState(input *resources.FeatureSpec) *ml.FeatureSpec {
 	state := input.FeatureSpec
 	sortOrderFreeLists(&state)
@@ -33,8 +33,8 @@ func (r *ResourceFeatureSpec) DoRead(ctx context.Context, id string) (*ml.Featur
 	if err != nil {
 		return nil, err
 	}
-	// Returns the FeatureSpec with its order-free list fields sorted, so a feature spec created
-	// outside the bundle also has them sorted.
+	// Sorted the same way as in PrepareState, so the two compare equal whatever order the API
+	// returns the lists in.
 	sortOrderFreeLists(featureSpec)
 	return featureSpec, nil
 }
@@ -75,8 +75,8 @@ func featureFunctionInputBindingKey(x ml.FeatureFunctionInputBinding) (string, s
 }
 
 // sortOrderFreeLists sorts a FeatureSpec's ExcludeColumns and ExtraPipRequirements. Both are
-// treated as sets by the server but stored as string lists, which cannot be compared by a key
-// defined in KeyedSlices. Each field is replaced with the sorted list rather than sorted in place,
+// treated as sets by the server but stored as string lists, so they are sorted on both sides, as
+// normalizeAssignments in grants.go does for privileges. Each field is replaced with a sorted copy,
 // so the bundle config is not mutated.
 func sortOrderFreeLists(featureSpec *ml.FeatureSpec) {
 	featureSpec.ExcludeColumns = sortedClone(featureSpec.ExcludeColumns)
@@ -87,7 +87,8 @@ func sortOrderFreeLists(featureSpec *ml.FeatureSpec) {
 	}
 }
 
-// sortedClone keeps an empty list empty rather than nil, so the request body is unchanged.
+// sortedClone returns a sorted copy of values. An empty list stays empty rather than nil, so the
+// request body is unchanged.
 func sortedClone(values []string) []string {
 	sorted := slices.Clone(values)
 	slices.Sort(sorted)

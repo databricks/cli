@@ -1,0 +1,15 @@
+Cloud = false
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
+
+# Simulate an app whose service principal was deleted on the backend: updates and starts fail.
+[[Server]]
+Pattern = "POST /api/2.0/apps/{name}/update"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "BAD_REQUEST", "message": "App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app."}'''
+
+[[Server]]
+Pattern = "POST /api/2.0/apps/{name}/start"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "BAD_REQUEST", "message": "App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app."}'''

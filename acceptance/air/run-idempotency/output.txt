@@ -4,7 +4,7 @@
 >>> [CLI] air run -f run.yaml --idempotency-key flag-key
 Submitting experiment: idempotency-smoke
 Submitted workload with Job Run ID: [FLAG_KEY_RUN_ID]
-View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]
+View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
@@ -15,7 +15,7 @@ Stream logs after submission using:
 >>> [CLI] air run -f run.yaml --idempotency-key flag-key
 Submitting experiment: idempotency-smoke
 Returned existing workload with Job Run ID: [FLAG_KEY_RUN_ID] (idempotency key "flag-key" was already used)
-View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]
+View job run at: [DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
@@ -30,7 +30,7 @@ Stream logs after submission using:
   "data": {
     "status": "PENDING",
     "run_id": "[FLAG_KEY_RUN_ID]",
-    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/[FLAG_KEY_RUN_ID]?o=[WORKSPACE_ID]",
     "existing": true
   }
 }
@@ -45,7 +45,7 @@ false
 >>> [CLI] air run -f run-token.yaml
 Submitting experiment: idempotency-smoke
 Returned existing workload with Job Run ID: [YAML_TOKEN_RUN_ID] (idempotency key "yaml-key" was already used)
-View job run at: [DATABRICKS_URL]/jobs/runs/[YAML_TOKEN_RUN_ID]
+View job run at: [DATABRICKS_URL]/jobs/runs/[YAML_TOKEN_RUN_ID]?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
