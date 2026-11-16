@@ -15,7 +15,12 @@ func newHuhCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "huh",
 		Short: "Run one huh form field with the appkit theme",
-		Args:  cobra.NoArgs,
+		Long: `Run one huh form field with the appkit theme and print the answer.
+
+The field is built here, not by a libs/apps/prompt helper: those helpers each
+set their own title, options and validation. Only prompt.AppkitTheme is shared,
+so this checks the theme, not the production prompt flows.`,
+		Args: cobra.NoArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch field {
 			case "input", "select", "confirm", "multiselect":

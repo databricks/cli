@@ -1,2 +1,2 @@
-title "--duration splits the total across the spinner messages"
+title "--duration is accepted and the spinner completes"
 trace $CLI selftest tui spinner --duration 500ms

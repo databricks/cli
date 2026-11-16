@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -40,6 +41,12 @@ func newSpinnerCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&elapsed, "elapsed", false, "show an MM:SS elapsed-time prefix on the spinner")
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if duration < 0 {
+			return fmt.Errorf("--duration must not be negative, got %s", duration)
+		}
+		return nil
+	}
 	cmd.Flags().DurationVar(&duration, "duration", 0, "total time the spinner runs, split across its messages (0 keeps the built-in per-message timing)")
 	return cmd
 }

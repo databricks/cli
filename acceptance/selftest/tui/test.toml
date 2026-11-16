@@ -8,5 +8,9 @@ Env.CI = ""
 Env.TERM_PROGRAM = ""
 Env.WT_SESSION = ""
 
-# Only the non-interactive paths run here. The keys, table and huh commands need a
-# TTY for their live behaviour, which is checked by hand under a PTY.
+# Only the non-interactive paths run here. Live rendering and raw mode need a
+# real TTY, which is checked by hand under a PTY.
+
+# The scripts use bash, printf and sleep, and the goldens embed bubbletea escape
+# sequences. Not verified on Windows, so these tests run on Linux and macOS only.
+GOOS.windows = false

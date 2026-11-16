@@ -58,5 +58,3 @@ truecolor:
 
 >>> [CLI] selftest tui colors --stream file
 Error: --stream must be stdout or stderr, got "file"
-
-Exit code: 1

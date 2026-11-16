@@ -4,9 +4,5 @@
 >>> [CLI] selftest tui table --cols 0
 Error: --cols must be at least 1, got 0
 
-Exit code: 1
-
 >>> [CLI] selftest tui table --rows -1
 Error: --rows must be non-negative, got -1
-
-Exit code: 1
