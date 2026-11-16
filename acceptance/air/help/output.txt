@@ -206,7 +206,7 @@ Examples:
   databricks air logs 123456789 --download-to ./logs
 
 Flags:
-      --download-to string   Download all logs to this directory instead of printing
+      --download-to string   Download all logs to this directory instead of printing; not combinable with --tail or --minutes
   -h, --help[=true|false]    help for logs
       --minutes int          Fetch only logs from the last N minutes
       --node int             Fetch logs from this node
