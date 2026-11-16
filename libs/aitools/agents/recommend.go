@@ -42,7 +42,6 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 	// Recorded plugins are checked above, so DatabricksTooling only needs the
 	// agent's own manifest, its skills dir and the project dirs up to the
 	// repository root.
-	noRecordedPlugin := func() bool { return false }
 	for _, a := range Registry {
 		if a.DatabricksTooling(ctx, noRecordedPlugin) != ToolingNone {
 			return

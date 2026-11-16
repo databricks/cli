@@ -213,3 +213,27 @@ image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
 pull --platform linux/amd64 example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
 pull --platform linux/amd64 example/image:v1
+
+=== in a Claude Code session the auth docker configure child adds no install hint
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+>>> musterr databricks air images push -p pat-test -s example/image:v1 --catalog main --schema training
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile pat-test
+Error: configure Docker authentication: run auth docker configure: exit status 1: Error: profile "pat-test" uses auth_type "pat". Docker credential helper requires a profile created by databricks auth login
