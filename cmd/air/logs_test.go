@@ -500,3 +500,57 @@ func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
 }
+
+// lateIndexedRunServer serves a run that ended endedAgo ago. Its first tail read
+// misses a record that Bricklens indexes late; later reads include it.
+func lateIndexedRunServer(t *testing.T, endedAgo time.Duration, logReads *int) *httptest.Server {
+	t.Helper()
+	end := time.Now().Add(-endedAgo).UnixMilli()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			*logReads++
+			if *logReads == 1 {
+				_, _ = w.Write([]byte(`{"log_records":[{"record_id":"b","time_unix_nano":20000000000,"body":"epoch 2"},{"record_id":"a","time_unix_nano":10000000000,"body":"epoch 1"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"b","time_unix_nano":20000000000,"body":"epoch 2"},{"record_id":"late","time_unix_nano":15000000000,"body":"epoch 1.5"},{"record_id":"a","time_unix_nano":10000000000,"body":"epoch 1"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			fmt.Fprintf(w, `{"run_id":1,"start_time":10000,"end_time":%d,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`, end)
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestLogsJustEndedRunWaitsForLateRecords(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	for _, tc := range []struct {
+		name     string
+		endedAgo time.Duration
+		want     string
+	}{
+		{"just ended", 5 * time.Second, "epoch 1\nepoch 1.5\nepoch 2\n"},
+		// An old run's index has settled, so it gets a single read.
+		{"ended long ago", time.Hour, "epoch 1\nepoch 2\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var logReads int
+			srv := lateIndexedRunServer(t, tc.endedAgo, &logReads)
+			var buf bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+			cmd := withOutput(newLogsCommand(), flags.OutputText)
+			cmd.SetContext(ctx)
+			cmd.SetOut(&buf)
+
+			require.NoError(t, cmd.RunE(cmd, []string{"1"}))
+			assert.Equal(t, tc.want, buf.String())
+		})
+	}
+}
