@@ -54,3 +54,20 @@ func TestIsMSYSPipeWindows(t *testing.T) {
 		assert.False(t, isTTY(f))
 	})
 }
+
+func TestNewCapabilitiesMSYSPipeStdin(t *testing.T) {
+	// End to end through newCapabilities: an MSYS2 pty pipe on stdin, with a
+	// terminal on stderr, allows interactive output but not prompts.
+	id := fmt.Sprintf("%016x", os.Getpid()+2)
+	in := openNamedPipe(t, "msys-"+id+"-pty0-from-master")
+	errw := openNamedPipe(t, "msys-"+id+"-pty0-to-master")
+	c := newCapabilities(t.Context(), in, errw, errw)
+	assert.True(t, c.stdinIsMSYSPipe)
+	assert.True(t, c.SupportsInteractive())
+	assert.False(t, c.SupportsPrompt())
+
+	// The same pipe on stdout or stderr doesn't affect prompt support.
+	c = newCapabilities(t.Context(), FakeTTYReader(nil), errw, errw)
+	assert.False(t, c.stdinIsMSYSPipe)
+	assert.True(t, c.SupportsPrompt())
+}

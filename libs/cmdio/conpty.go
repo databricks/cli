@@ -47,6 +47,8 @@ import (
 //     (v2.47.0 ships the MSYS2 runtime based on Cygwin 3.5)
 //   - https://github.com/mattn/go-isatty/blob/master/isatty_windows.go
 //     (how MSYS2/Cygwin pty pipes are recognized)
+//   - https://code.visualstudio.com/docs/terminal/advanced#_windows-and-conpty
+//     (the VS Code terminal hosts shells through ConPTY)
 
 // isMSYSPipe reports whether v is an MSYS2/Cygwin pty pipe rather than a real
 // console, i.e. the "without ConPTY" case described above. It is always false

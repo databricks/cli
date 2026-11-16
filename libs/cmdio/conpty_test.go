@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,13 @@ func TestIsMSYSPipeNotAFile(t *testing.T) {
 }
 
 func TestIsMSYSPipeRegularFile(t *testing.T) {
+	f, err := os.Create(filepath.Join(t.TempDir(), "stdin"))
+	require.NoError(t, err)
+	defer f.Close()
+	assert.False(t, isMSYSPipe(f))
+}
+
+func TestIsMSYSPipeDevNull(t *testing.T) {
 	f, err := os.Open(os.DevNull)
 	require.NoError(t, err)
 	defer f.Close()
