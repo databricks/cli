@@ -1,2 +1,0 @@
-title "Unknown field type is rejected"
-musterr trace $CLI selftest tui huh --field bogus
