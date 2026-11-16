@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+sync:
+  paths: []
+
+resources:
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: myschema
+      name: myvolume

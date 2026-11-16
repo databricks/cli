@@ -15,7 +15,7 @@ import (
 type lifecycleDependsOn struct{}
 
 // LifecycleDependsOn validates that every lifecycle.depends_on entry refers to an existing
-// resource other than the one declaring it.
+// resource other than the one declaring it, or to the grants or permissions of a resource.
 func LifecycleDependsOn() bundle.Mutator {
 	return &lifecycleDependsOn{}
 }
@@ -34,10 +34,10 @@ func (*lifecycleDependsOn) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 				continue
 			}
 
-			self := group.Description.PluralName + "." + key
+			self := "resources." + group.Description.PluralName + "." + key
 			for i, dep := range resource.GetLifecycle().GetDependsOn() {
-				target, targetKey, err := b.Config.Resources.ResolveKey(dep.Resource)
-				if err == nil && target.ResourceDescription().PluralName+"."+targetKey == self {
+				target, err := b.Config.Resources.ResolveDependsOn(dep.Resource)
+				if err == nil && target == self {
 					err = fmt.Errorf("resource %q cannot depend on itself", dep.Resource)
 				}
 				if err != nil {

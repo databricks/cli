@@ -284,3 +284,38 @@ func TestRunDryRunValidatesIdempotencyTokenAfterWorkspaceValidation(t *testing.T
 	runOptions := validations[0].body["run_options"].(map[string]any)
 	assert.Equal(t, tooLong, runOptions["idempotency_token"])
 }
+
+func snapshotConfig(rootPath string) string {
+	return minimalConfig + "code_source:\n  snapshot:\n    root_path: " + rootPath + "\n"
+}
+
+func TestRunDryRunReportsSnapshotFileCount(t *testing.T) {
+	srv := dryRunServer(t, validateConfigResponse{}, nil)
+	project := t.TempDir()
+	writeRepoFile(t, project, "main.py", "print(1)\n")
+	writeRepoFile(t, project, "src/model.py", "print(2)\n")
+
+	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, snapshotConfig(project), "--dry-run")
+	require.NoError(t, result.err)
+	assert.Contains(t, result.stderr, "code_source snapshot would include 2 file(s)")
+
+	result = runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, snapshotConfig(project), "--dry-run")
+	require.NoError(t, result.err)
+	var got struct {
+		Data runResult `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
+	assert.Equal(t, "DRY_RUN_OK", got.Data.Status)
+	require.NotNil(t, got.Data.SnapshotFileCount)
+	assert.Equal(t, 2, *got.Data.SnapshotFileCount)
+}
+
+func TestRunDryRunRejectsEmptySnapshot(t *testing.T) {
+	var requests []dryRunRequest
+	srv := dryRunServer(t, validateConfigResponse{}, &requests)
+
+	result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputText, srv.URL, snapshotConfig(ignoredProject(t)), "--dry-run")
+	require.Error(t, result.err)
+	assert.Contains(t, result.err.Error(), "ignored by git")
+	assert.NotContains(t, result.stderr, "Dry run: configuration")
+}

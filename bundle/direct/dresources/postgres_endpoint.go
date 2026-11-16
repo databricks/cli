@@ -71,17 +71,17 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 		Parent:     remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		EndpointSpec: remote.EndpointSpec,
 	}
 }
 
 // makePostgresEndpointRemote converts the SDK Endpoint into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_endpoints.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_endpoints.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
 	var spec postgres.EndpointSpec
 	if endpoint.Spec != nil {
@@ -154,7 +154,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -162,7 +162,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	}
 
 	// Wait for the operation to complete
-	result, err := waiter.Wait(ctx)
+	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}

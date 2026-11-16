@@ -21,3 +21,11 @@ func TestSkipLoadBundle(t *testing.T) {
 	ctx = SkipLoadBundle(ctx)
 	assert.True(t, shouldSkipLoadBundle(ctx))
 }
+
+func TestSkipTokenRefresh(t *testing.T) {
+	ctx := t.Context()
+	assert.False(t, shouldSkipTokenRefresh(ctx))
+
+	ctx = SkipTokenRefresh(ctx)
+	assert.True(t, shouldSkipTokenRefresh(ctx))
+}

@@ -28,6 +28,7 @@ render databricks.yml.tmpl
 
 title "A batch feature materialized offline creates, and a redeploy plans nothing"
 trace $CLI bundle deploy
+trace read_id.py set1
 trace $CLI bundle plan -o json > out.plan.json
 trace set_actions
 

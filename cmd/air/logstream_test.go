@@ -436,6 +436,47 @@ func TestWaitingSpinnerText(t *testing.T) {
 		newStreamer(t, "", "TERMINATED", "PENDING").waitingSpinnerText())
 }
 
+func TestStreamBricklensPrintsWaitingStatusWithoutTTY(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	var runGets int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"log_records":[]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"training"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets++
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"run_id":1,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	// Buffers are not TTYs, so this is the agent/CI case where no spinner renders.
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+		logRequest{runID: 1, attempt: -1, tailLines: -1},
+		logRunStatus{lifeCycleState: "PENDING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Equal(t, "Waiting for GPU capacity...\n", stderr.String())
+	assert.Contains(t, stdout.String(), "training")
+}
+
 func TestEmitLogLineJSON(t *testing.T) {
 	var buf bytes.Buffer
 	emitLogLine(&buf, logRequest{node: 2, jsonOutput: true}, "hello")
@@ -530,6 +571,7 @@ func TestMatchFatalPattern(t *testing.T) {
 func TestEmitNoLogs(t *testing.T) {
 	tests := []struct {
 		name   string
+		req    logRequest
 		status logRunStatus
 		want   string
 	}{
@@ -543,20 +585,56 @@ func TestEmitNoLogs(t *testing.T) {
 			status: logRunStatus{lifeCycleState: "RUNNING"},
 			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
 		},
+		{
+			name:   "latest retry of a terminal run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "Out of capacity.", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry N (0 through 1) to see them\n",
+		},
+		{
+			name:   "latest retry of a terminal run with one earlier retry",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 1},
+			want:   "No logs available for run 7. Run terminated in state FAILED. Earlier retries may have logs; pass --retry 0 to see them\n",
+		},
+		{
+			name:   "latest retry of a running run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 2},
+			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
+		},
+		{
+			name:   "explicitly requested retry",
+			req:    logRequest{attempt: 2},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED\n",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var text bytes.Buffer
-			emitNoLogs(&text, logRequest{runID: 7}, tc.status)
+			req := tc.req
+			req.runID = 7
+			emitNoLogs(&text, req, tc.status)
 			assert.Equal(t, tc.want, text.String())
 
+			wantNode := strings.Replace(tc.want, "for run 7", "for node 1 in run 7", 1)
+			nodeReq := req
+			nodeReq.node = 1
+			nodeReq.nodeSet = true
+
+			var nodeText bytes.Buffer
+			emitNoLogs(&nodeText, nodeReq, tc.status)
+			assert.Equal(t, wantNode, nodeText.String())
+
 			var jsonBuf bytes.Buffer
-			emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, tc.status)
+			nodeReq.jsonOutput = true
+			emitNoLogs(&jsonBuf, nodeReq, tc.status)
 			var ev logEvent
 			require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
 			assert.Equal(t, "ERROR", ev.Type)
 			assert.Equal(t, 1, ev.Node)
-			assert.Equal(t, strings.TrimRight(tc.want, "\n"), ev.Line)
+			assert.Equal(t, strings.TrimRight(wantNode, "\n"), ev.Line)
 		})
 	}
 }

@@ -79,7 +79,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			}
 		}
 
-		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
+		if a.Type == "whl" && config.IsExplicitlyEnabled(a.DynamicVersion) && cacheDir != "" {
 			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
 			for ind, artifactFile := range a.Files {
 				patchedWheel := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)

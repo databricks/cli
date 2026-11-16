@@ -70,7 +70,10 @@ git-repo-init() {
 
 title() {
     local label="$1"
-    printf "\n=== %b" "$label"
+    # Print a trailing newline so the header is self-contained: it no longer
+    # relies on a following `trace` (which prepends one) to terminate the line,
+    # and output that is not a `trace` no longer gets mashed onto the header.
+    printf "\n=== %b\n" "$label"
 }
 
 withdir() {

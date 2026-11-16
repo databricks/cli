@@ -1,0 +1,1 @@
+* Bound the whole telemetry upload at exit, including config resolution and authentication, by its timeout, so a stalled auth or telemetry endpoint no longer keeps a command from exiting. ([#7467](https://github.com/databricks/cli/pull/7467))

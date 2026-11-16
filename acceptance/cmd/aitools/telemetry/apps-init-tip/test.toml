@@ -1,0 +1,8 @@
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TEST_TMP_DIR]\\app-tip'
+New = 'TEST_TMP_DIR]/app-tip'
+
+[[Repls]]
+Old = 'TEST_TMP_DIR]\\app-plugin'
+New = 'TEST_TMP_DIR]/app-plugin'

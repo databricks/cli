@@ -1,35 +1,46 @@
 
 === Bind schema test:
+
 === Substitute variables in the template:
-=== Create a pre-defined schema: {
+
+=== Create a pre-defined schema: 
+{
   "full_name": "main.test-schema-[UUID]",
   "catalog_name": "main"
 }
 
-=== Bind schema: Successfully bound schema with an id 'main.test-schema-[UUID]'
+=== Bind schema: 
+Successfully bound schema with an id 'main.test-schema-[UUID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
-=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+=== Deploy bundle: 
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
-=== Read the pre-defined schema: {
+=== Read the pre-defined schema: 
+{
   "full_name": "main.test-schema-[UUID]",
   "catalog_name": "main",
   "comment": "This schema was created from DABs"
 }
 
 === Unbind the schema: 
-=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+=== Destroy the bundle: 
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted
 
-=== Read the pre-defined schema again (expecting it still exists): {
+=== Read the pre-defined schema again (expecting it still exists): 
+{
   "full_name": "main.test-schema-[UUID]",
   "catalog_name": "main",
   "comment": "This schema was created from DABs"
 }
 
 === Test cleanup:
-=== Delete the pre-defined schema test-schema-[UUID]: 0
+
+=== Delete the pre-defined schema test-schema-[UUID]: 
+0

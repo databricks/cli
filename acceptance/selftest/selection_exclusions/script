@@ -19,7 +19,7 @@ selection() {
     "$SELECTION" -root acceptance
 }
 
-title "A new template excluded from migration selects only its no_drift variant\n"
+title "A new template excluded from migration selects only its no_drift variant"
 cp ../fixtures/new.yml.tmpl acceptance/bundle/invariant/configs/
 cp ../fixtures/excluded.toml acceptance/bundle/invariant/migrate/test.toml
 cp ../fixtures/new_matrix.toml acceptance/bundle/invariant/no_drift/out.test.toml
@@ -27,7 +27,7 @@ git add .
 trace cat acceptance/bundle/invariant/migrate/test.toml
 trace selection
 
-title "Changing the migration script also selects its existing variants\n"
+title "Changing the migration script also selects its existing variants"
 cp ../fixtures/changed_script.txt acceptance/bundle/invariant/migrate/script
 trace selection
 
@@ -36,8 +36,17 @@ cp ../fixtures/script.txt acceptance/bundle/invariant/migrate/script
 git commit -qm 'Add template and exclusion'
 git update-ref refs/remotes/origin/main HEAD
 
-title "Removing the exclusion selects migration, including the re-enabled variant\n"
+title "Removing the exclusion selects migration, including the re-enabled variant"
 cp ../fixtures/base.toml acceptance/bundle/invariant/migrate/test.toml
 cp ../fixtures/new_matrix.toml acceptance/bundle/invariant/migrate/out.test.toml
 trace cat acceptance/bundle/invariant/migrate/test.toml
 trace selection
+
+title "Tests named in the last commit message are listed after the changed ones"
+git commit -q --allow-empty -m 'Run tests
+
+aws: TestAccept/bundle/invariant/no_drift
+cloud: TestAccept/bundle/invariant/migrate/INPUT_CONFIG=new.yml.tmpl TestAccept/nope
+gcp: `TestAccept/bundle`'
+trace selection
+trace "$SELECTION" -root acceptance -cloud gcp

@@ -10,8 +10,25 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// VolumeState is the volume's config plus its volume_id. The backend assigns volume_id and a
+// rename keeps it, so recording it lets the plan recognize the volume under a new name (see
+// internal_id_field in volumes.yml).
+type VolumeState struct {
+	catalog.CreateVolumeRequestContent
+	VolumeId string `json:"volume_id,omitempty"`
+}
+
+func (s *VolumeState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s VolumeState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourceVolume struct {
 	client *databricks.WorkspaceClient
@@ -21,12 +38,15 @@ func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
 	return &ResourceVolume{client: client}
 }
 
-func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolumeRequestContent {
-	return &input.CreateVolumeRequestContent
+func (*ResourceVolume) PrepareState(input *resources.Volume) *VolumeState {
+	return &VolumeState{
+		CreateVolumeRequestContent: input.CreateVolumeRequestContent,
+		VolumeId:                   "", // Recorded by the framework from the remote state (internal_id_field).
+	}
 }
 
-func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolumeRequestContent {
-	return &catalog.CreateVolumeRequestContent{
+func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *VolumeState {
+	return &VolumeState{
 		CatalogName:     info.CatalogName,
 		Comment:         info.Comment,
 		Name:            info.Name,
@@ -34,6 +54,7 @@ func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolum
 		StorageLocation: info.StorageLocation,
 		VolumeType:      info.VolumeType,
 		ForceSendFields: utils.FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+		VolumeId:        info.VolumeId,
 	}
 }
 
@@ -41,8 +62,8 @@ func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.Volume
 	return r.client.Volumes.ReadByName(ctx, id)
 }
 
-func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
-	response, err := r.client.Volumes.Create(ctx, *config)
+func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (string, *catalog.VolumeInfo, error) {
+	response, err := r.client.Volumes.Create(ctx, config.CreateVolumeRequestContent)
 	if err != nil {
 		return "", nil, err
 	}
@@ -52,7 +73,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 var volumeForceSend = []string{"Comment"}
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -83,10 +104,10 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
-		Name:    id,
+		Name:    "", // Initialized below
 
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
@@ -100,6 +121,10 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	}
 	nameFromID := items[len(items)-1]
 
+	// The parents come from config: a renamed catalog or schema moves the volume with it,
+	// leaving id stale (see followsParentRename).
+	updateRequest.Name = config.CatalogName + "." + config.SchemaName + "." + nameFromID
+
 	if config.Name != nameFromID {
 		updateRequest.NewName = config.Name
 	}
@@ -112,7 +137,12 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *catalog.CreateVolumeRequestContent) error {
+// IDFromState returns the full name, which is the ID.
+func (*ResourceVolume) IDFromState(state *VolumeState) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
+}
+
+func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *VolumeState) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
 

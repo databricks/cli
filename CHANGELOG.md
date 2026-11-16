@@ -1,5 +1,27 @@
 # Version changelog
 
+## Release v1.26.0 (2026-11-11)
+
+### AI Runtime
+
+ * `air run` reuses its existing workspace connection for config validation instead of opening a second one, which saves a TCP and TLS handshake per submission. ([#7210](https://github.com/databricks/cli/pull/7210))
+ * Speed up `databricks air run` for git-pinned `code_source` snapshots by compressing the archive in parallel, which substantially shortens packaging on large repositories. ([#7402](https://github.com/databricks/cli/pull/7402))
+ * Point the `air run -h config` agent-skill hint at the stable `databricks-ai-runtime` skill. ([#7454](https://github.com/databricks/cli/pull/7454))
+
+### Bundles
+
+ * Add `DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE`, which names a profile whose host the `workspace_host` template helper returns instead of the selected profile's host. The profile must have the selected profile's workspace ID. ([#7410](https://github.com/databricks/cli/pull/7410))
+ * Fixed an explicit `false` on optional boolean fields (`variables.*.sensitive`, `artifacts.*.dynamic_version`, `bundle.deployment.lock.force`, `workspace.azure_use_msi`, `replace_existing` on postgres endpoints, databases and roles, and the `experimental.*` flags) being dropped, which hid it from `bundle validate -o json` and kept a target from overriding `true` with it. ([#7412](https://github.com/databricks/cli/pull/7412))
+ * Stop sending `compute_size` in the app update mask when the bundle does not declare it, so a deploy no longer resets a manually resized app to the default size. ([#7461](https://github.com/databricks/cli/pull/7461))
+ * `lifecycle.depends_on` can now target the grants or permissions of a resource, as `schemas.foo.grants`. ([#7435](https://github.com/databricks/cli/pull/7435))
+ * Add support for the `feature_specs` resource type, including UC grants on a feature spec. ([#7364](https://github.com/databricks/cli/pull/7364))
+
+### Dependency Updates
+
+ * Update the Go SDK to [v0.197.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.197.0). ([#7457](https://github.com/databricks/cli/pull/7457))
+ * Bump Go toolchain to 1.27.4. ([#7458](https://github.com/databricks/cli/pull/7458))
+
+
 ## Release v1.25.0 (2026-11-09)
 
 ### CLI

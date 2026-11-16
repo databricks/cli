@@ -3,6 +3,6 @@ git remote add origin https://github.com/databricks/cli
 
 trace $CLI bundle deploy
 
-trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {git, from_workspace_folder}'
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {git, from_workspace_folder, in_git_repo}'
 
 rm "$OUT_REQUESTS"

@@ -1,5 +1,6 @@
 
-=== Badness: validate could detect this and fail as wellName: test-bundle
+=== Badness: validate could detect this and fail as well
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]

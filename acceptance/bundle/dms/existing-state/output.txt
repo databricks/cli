@@ -1,5 +1,6 @@
 
 === Enable history on existing remote file state without replacing the job
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Files: 3 uploaded, 0 deleted
@@ -14,6 +15,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === Disable history without replacing the job
+
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted

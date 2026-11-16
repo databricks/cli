@@ -41,14 +41,14 @@ trace $CLI volumes read "$RENAMED.myschema2.myvolume2" | jq '{full_name}'
 trace $CLI registered-models get "$RENAMED.myschema2.mymodel2" | jq '{full_name}'
 trace $CLI secrets-uc get-secret "$RENAMED.myschema2.mysecret" | jq '{full_name}'
 
-title "Deleting the schema with force deletes everything in it\n"
+title "Deleting the schema with force deletes everything in it"
 # Not traced: the "not found" messages differ between UC and the test server.
 $CLI schemas delete "$RENAMED.myschema2" --force
 echo "volume: $(exists $CLI volumes read "$RENAMED.myschema2.myvolume2")"
 echo "model: $(exists $CLI registered-models get "$RENAMED.myschema2.mymodel2")"
 echo "secret: $(exists $CLI secrets-uc get-secret "$RENAMED.myschema2.mysecret")"
 
-title "Deleting the catalog with force deletes its schemas\n"
+title "Deleting the catalog with force deletes its schemas"
 trace $CLI schemas create other "$RENAMED" | jq '{full_name}'
 $CLI catalogs delete "$RENAMED" --force
 echo "schema: $(exists $CLI schemas get "$RENAMED.other")"

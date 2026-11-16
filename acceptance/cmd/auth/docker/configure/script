@@ -22,10 +22,10 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; t
     }
 fi
 
-title "Docker config\n"
+title "Docker config"
 jq -S . "$DOCKER_CONFIG/config.json"
 
-title "Profile with resolved workspace ID\n"
+title "Profile with resolved workspace ID"
 cat "$HOME/.databrickscfg"
 
 trace databricks auth docker host --profile docker-test --output json | tee "$HOME/host.json"
@@ -34,24 +34,24 @@ trace print_requests.py --get //api
 registry_host=$(jq -r .host "$HOME/host.json")
 printf '%s\n' "$registry_host" | trace docker-credential-databricks get | jq -S .
 
-title "Invalid registry host\n"
+title "Invalid registry host"
 printf '%s\n' registry.example.test | trace musterr docker-credential-databricks get
 
 trace musterr docker-credential-databricks erase
 
-title "Configure again\n"
+title "Configure again"
 cp "$DOCKER_CONFIG/config.json" "$HOME/config.before.json"
 databricks auth docker configure docker-test &>LOG.configure-again
 cmp "$HOME/config.before.json" "$DOCKER_CONFIG/config.json"
 printf 'Docker config unchanged\n'
 trace print_requests.py --get //api
 
-title "Deprecated --region flag skips workspace lookups\n"
+title "Deprecated --region flag skips workspace lookups"
 trace databricks auth docker configure docker-test --region us-west-2
 assert_not_exists.py "$OUT_REQUESTS"
 printf 'No requests sent\n'
 
-title "Explicit --region resolves a missing workspace ID\n"
+title "Explicit --region resolves a missing workspace ID"
 cat > "$HOME/.databrickscfg" <<ENDCFG
 [docker-test]
 host = $DATABRICKS_HOST_ORIG
@@ -60,6 +60,6 @@ ENDCFG
 trace databricks auth docker configure docker-test --region us-west-2
 trace print_requests.py --get //api
 
-title "Configure with the installation directory absent from PATH\n"
+title "Configure with the installation directory absent from PATH"
 PATH="$path_without_cli" trace command "$HOME/bin/databricks" auth docker configure docker-test
 trace print_requests.py --get //api

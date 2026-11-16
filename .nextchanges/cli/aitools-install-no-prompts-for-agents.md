@@ -1,0 +1,1 @@
+* `databricks aitools install` no longer prompts when a coding agent runs it, even in a pseudo-terminal; it uses the non-interactive defaults instead and prints a note saying so. ([#7477](https://github.com/databricks/cli/pull/7477))

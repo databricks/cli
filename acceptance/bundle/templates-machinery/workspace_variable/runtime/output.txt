@@ -221,6 +221,34 @@ URL "/jobs": [DATABRICKS_URL]/jobs?w=[WORKSPACE_ID]
 URL "/jobs?view=list#top": [DATABRICKS_URL]/jobs?view=list&w=[WORKSPACE_ID]#top
 URLID: "[WORKSPACE_ID]"
 
+=== Workspace host profile
+
+>>> DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE=workspace_classic_id [CLI] bundle debug render-template-schema ./helpers --profile workspace_custom_host
+{
+  "welcome_message": "workspace_host: [DATABRICKS_URL], URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]",
+  "success_message": null,
+  "properties": {
+    "host": {
+      "description": "Host for [USERNAME]",
+      "default": "[DATABRICKS_URL]"
+    }
+  }
+}
+
+>>> DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE=workspace_classic_id [CLI] bundle init ./helpers --profile workspace_custom_host
+workspace_host: [DATABRICKS_URL], URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+✨ Successfully initialized template
+workspace_host: [DATABRICKS_URL]
+host: [DATABRICKS_URL]
+URL: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+user_name: [USERNAME]
+
+>>> DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE=other_workspace musterr [CLI] bundle init ./helpers --profile workspace_custom_host
+Error: template: :1:19: executing "" at <workspace_host>: error calling workspace_host: profile "other_workspace" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE has workspace ID "1234", but the selected profile has workspace ID "[WORKSPACE_ID]"
+
+>>> DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE=missing musterr [CLI] bundle debug render-template-schema ./helpers --profile workspace_custom_host
+Error: property host default: failed to render template "{{ workspace_host }}": template: base:1:3: executing "base" at <workspace_host>: error calling workspace_host: profile "missing" from DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE not found or has no host
+
 === ID
 
 >>> [CLI] bundle init ./id --profile workspace_classic

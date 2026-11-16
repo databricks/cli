@@ -1,6 +1,8 @@
 
 === Enable the Data API on a database outside the bundle
+
 === Deploy fails because the Data API is already enabled
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot create resources.postgres_data_apis.data_api1: Data API is already enabled for this database (409 ALREADY_EXISTS)
@@ -13,6 +15,7 @@ API message: Data API is already enabled for this database
 Files: 2 uploaded, 0 deleted
 
 === Bind adopts the existing Data API
+
 >>> [CLI] bundle deployment bind data_api1 projects/test-project/branches/production/databases/test-database/data-api --auto-approve
 Successfully bound postgres_data_api with an id 'projects/test-project/branches/production/databases/test-database/data-api'
 Run 'bundle deploy' to deploy changes to your workspace
@@ -54,6 +57,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Unbind leaves the Data API enabled
+
 >>> [CLI] bundle deployment unbind data_api1
 
 >>> [CLI] bundle summary
@@ -73,6 +77,7 @@ Resources:
 }
 
 === Bind again; destroy turns off the Data API
+
 >>> [CLI] bundle deployment bind data_api1 projects/test-project/branches/production/databases/test-database/data-api --auto-approve
 Successfully bound postgres_data_api with an id 'projects/test-project/branches/production/databases/test-database/data-api'
 Run 'bundle deploy' to deploy changes to your workspace

@@ -143,6 +143,7 @@ recreate postgres_databases.my_database
 Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 
 === Recreate requires approval: non-interactive deploy must abort, not silently delete the database
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
 
@@ -185,6 +186,7 @@ Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
 }
 
 === Fetch database and verify it exists after recreation
+
 >>> [CLI] postgres get-database [MY_DATABASE_ID]-v2
 {
   "database_id": "test-database-[UNIQUE_NAME]-v2",
@@ -198,6 +200,7 @@ Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
 }
 
 === Destroy and verify cleanup
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main

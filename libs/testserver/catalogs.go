@@ -68,6 +68,8 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,
 		CatalogType:  catalog.CatalogTypeManagedCatalog,
+		// UC defaults a new catalog to OPEN; isolation_mode is only settable on update.
+		IsolationMode: catalog.CatalogIsolationModeOpen,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
@@ -151,7 +153,7 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 		delete(s.Volumes, key)
 		volume.CatalogName = newCatalogName
 		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
-		s.Volumes[volume.FullName] = volume
+		s.Volumes[volumeKey(volume.FullName)] = volume
 	}
 	for key, model := range s.RegisteredModels {
 		if model.CatalogName != oldCatalogName {

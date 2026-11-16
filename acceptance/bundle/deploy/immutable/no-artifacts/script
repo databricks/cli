@@ -1,9 +1,13 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle validate
-trace $CLI bundle plan -o json > plan.json
-trace jq '.plan["resources.jobs.my_job"].new_state.value.tasks' plan.json
-trace jq '.plan["resources.internal_immutable_snapshots.immutable"]' plan.json
+# A direct deploy generates a new snapshot UUID, while --plan reuses the planned
+# one. Keep the initial plan in its own golden so both variants agree per file.
+{
+    trace $CLI bundle plan -o json > plan.json
+    trace jq '.plan["resources.jobs.my_job"].new_state.value.tasks' plan.json
+    trace jq '.plan["resources.internal_immutable_snapshots.immutable"]' plan.json
+} > out.plan.txt 2>&1
 
 trace $CLI bundle deploy $(readplanarg plan.json)
 

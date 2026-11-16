@@ -1,0 +1,1 @@
+* Invalid `compute.accelerator_type` errors and `air run -h config.compute` no longer list the CLI's built-in accelerator types, which could differ from the workspace's. ([#7520](https://github.com/databricks/cli/pull/7520))

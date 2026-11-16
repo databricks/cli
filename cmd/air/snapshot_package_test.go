@@ -123,6 +123,29 @@ func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testin
 	assert.NotContains(t, entries, "subpkg/configs/train.yaml")
 }
 
+func TestCreateGitArchiveSnapshot_GitFailureSurfacesStderr(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	commitAll(t, repo, "init")
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), "0000000000000000000000000000000000000000", out, "repo", nil, "")
+	require.ErrorContains(t, err, "failed to create git archive")
+	assert.ErrorContains(t, err, "fatal")
+}
+
+func TestCreateGitArchiveSnapshotStopsWhenCancelled(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a.txt", "1")
+	sha := commitAll(t, repo, "init")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, filepath.Join(t.TempDir(), "snap.tar.gz"), "repo", nil, "")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
 func TestCreatePlainTarball(t *testing.T) {
 	ctx := t.Context()
 	repo := t.TempDir()
@@ -261,4 +284,43 @@ func TestSnapshotFilesCapturesModeTypeAndSymlinkTarget(t *testing.T) {
 	assert.Equal(t, uint32(linkInfo.Mode()), byName["current"].mode)
 	assert.NotZero(t, os.FileMode(byName["current"].mode)&os.ModeSymlink)
 	assert.Equal(t, "run.sh", byName["current"].linkTarget)
+}
+
+// ignoredProject returns a project dir that an enclosing repo's .gitignore excludes.
+func ignoredProject(t *testing.T) string {
+	t.Helper()
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	writeRepoFile(t, repo, ".gitignore", ".scratch/\n")
+	writeRepoFile(t, repo, ".scratch/proj/main.py", "print(1)\n")
+	return filepath.Join(repo, ".scratch", "proj")
+}
+
+func TestSnapshotFiles_RejectsGitIgnoredRoot(t *testing.T) {
+	project := ignoredProject(t)
+
+	_, err := snapshotFiles(t.Context(), project, nil, true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.Contains(t, err.Error(), "ignored by git")
+	// The matching rule and the command to inspect it are both named.
+	assert.Contains(t, err.Error(), ".gitignore:1:.scratch/")
+	assert.Contains(t, err.Error(), "check-ignore -v")
+}
+
+func TestSnapshotFiles_RejectsEmptyDirectory(t *testing.T) {
+	_, err := snapshotFiles(t.Context(), t.TempDir(), nil, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.NotContains(t, err.Error(), "ignored by git")
+}
+
+func TestSnapshotFiles_RejectsIncludePathsMatchingNothing(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "a.txt", "1")
+
+	_, err := snapshotFiles(t.Context(), repo, []string{"missing"}, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "contains no files")
+	assert.Contains(t, err.Error(), "include_paths")
 }

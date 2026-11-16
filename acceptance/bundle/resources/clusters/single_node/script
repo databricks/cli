@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Settings the backend derives from is_single_node are not drift"
+trace $CLI bundle plan
+
+title "...classified backend_default"
+trace $CLI bundle plan -o json | jq -S '.plan | with_entries(.value |= (.changes // {}
+  | with_entries(select(.key | test("spark_conf|custom_tags")))))'
+
+title "An explicitly configured spark_conf key changed out-of-band is still drift"
+explicit_id=$(read_id.py explicit)
+# Re-send only the authored spark_conf keys: the backend-derived ones come back from is_single_node.
+$CLI clusters get "$explicit_id" | jq '{cluster_id, cluster_name, spark_version, node_type_id,
+  is_single_node, kind, data_security_mode, autotermination_minutes,
+  spark_conf: (.spark_conf | del(.["spark.databricks.cluster.profile"], .["spark.master"])
+    + {"spark.sql.shuffle.partitions": "16"})}' > edit.json
+trace $CLI clusters edit --json @edit.json &> LOG.edit
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq -S '.plan["resources.clusters.explicit"].changes
+  | with_entries(select(.key | test("spark_conf")))'

@@ -1,5 +1,6 @@
 
 === Deploy with bundle.engine: direct and an empty terraform state — migrate (0 resources)
+
 >>> [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -38,6 +39,7 @@ resources.json: remote direct state serial=2 lineage="test-lineage"
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="test-lineage"
 
 === Next deploy uses direct engine by default (no more mismatch warning, no re-migration)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted

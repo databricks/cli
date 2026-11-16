@@ -6,8 +6,6 @@ from typing import Literal
 
 class ConfidentialComputeType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     Confidential computing technology for GCP instances.
     Aligns with gcloud's --confidential-compute-type flag and the REST API's
     confidentialInstanceConfig.confidentialInstanceType field.

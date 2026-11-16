@@ -51,6 +51,19 @@ backend_defaults:
   # See https://github.com/databricks/cli/issues/4418
   - field: single_user_name
 
+  # is_single_node on a kind: CLASSIC_PREVIEW cluster makes the backend fill in the legacy
+  # single-node settings, which read back next to the flag. num_workers is forced to 0 as
+  # well, but that is the zero value and never diffs. Explicitly configured spark_conf and
+  # custom_tags keys are unaffected and still participate in drift detection.
+  # https://docs.databricks.com/api/workspace/clusters/create#is_single_node
+  # https://github.com/databricks/cli/issues/7563
+  - field: spark_conf['spark.databricks.cluster.profile']
+    values: ["singleNode"]
+  # The core count in local[*, N] follows the node type, so the value cannot be pinned.
+  - field: spark_conf['spark.master']
+  - field: custom_tags['ResourceClass']
+    values: ["SingleNode"]
+
 # We have custom handler for this in cluster.go
 # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
 # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""

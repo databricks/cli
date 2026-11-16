@@ -1,0 +1,64 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "fail_on_active_runs": false,
+  "lock_force": false,
+  "workspace": {
+    "azure_use_msi": false
+  },
+  "presets": {
+    "artifacts_dynamic_version": false
+  },
+  "variables": {
+    "plain": {
+      "sensitive": false
+    }
+  },
+  "artifacts": {
+    "overridden": {
+      "dynamic_version": false
+    },
+    "whl": {
+      "dynamic_version": false
+    }
+  },
+  "resources": {
+    "dashboards": {
+      "d": {
+        "embed_credentials": false
+      }
+    },
+    "postgres_branches": {
+      "b": {
+        "purge_on_delete": false,
+        "replace_existing": false
+      }
+    },
+    "postgres_databases": {
+      "db": {
+        "replace_existing": false
+      }
+    },
+    "postgres_endpoints": {
+      "e": {
+        "replace_existing": false
+      }
+    },
+    "postgres_projects": {
+      "p": {
+        "purge_on_delete": false
+      }
+    },
+    "postgres_roles": {
+      "r": {
+        "replace_existing": false
+      }
+    }
+  },
+  "experimental": {
+    "python_wheel_wrapper": false,
+    "skip_artifact_cleanup": false,
+    "skip_name_prefix_for_schema": false,
+    "use_legacy_run_as": false
+  }
+}

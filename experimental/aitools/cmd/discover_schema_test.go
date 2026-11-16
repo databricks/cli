@@ -51,19 +51,26 @@ func TestQuoteTableName(t *testing.T) {
 }
 
 func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
+	// DESCRIBE TABLE lists partition columns in the main section and then
+	// repeats them under "# Partition Information".
 	result := &sqlexec.Result{
 		Rows: [][]string{
 			{"id", "BIGINT", ""},
+			{"#tag", "STRING", ""},
 			{"name", "STRING", ""},
-			{"# Partition Information", "", ""},
 			{"region", "STRING", ""},
-			{"", "STRING", ""},
+			{"# Partition Information", "", ""},
+			{"# col_name", "data_type", "comment"},
+			{"region", "STRING", ""},
+			{"", "", ""},
+			{"# Clustering Information", "", ""},
+			{"name", "STRING", ""},
 		},
 	}
 
 	cols, types := parseDescribeResult(result)
-	assert.Equal(t, []string{"id", "name", "region"}, cols)
-	assert.Equal(t, []string{"BIGINT", "STRING", "STRING"}, types)
+	assert.Equal(t, []string{"id", "#tag", "name", "region"}, cols)
+	assert.Equal(t, []string{"BIGINT", "STRING", "STRING", "STRING"}, types)
 }
 
 func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {

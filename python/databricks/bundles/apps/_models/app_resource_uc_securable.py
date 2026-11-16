@@ -24,10 +24,21 @@ class AppResourceUcSecurable:
     """"""
 
     permission: VariableOr[AppResourceUcSecurableUcSecurablePermission]
+    """
+    Privilege to grant the app on the securable. The privilege must be valid for the securable
+    type, such as READ_VOLUME for a volume or SELECT for a table.
+    """
 
     securable_full_name: VariableOr[str]
+    """
+    Full name of the Unity Catalog securable. For volumes, tables and functions this is the
+    three-level catalog.schema.object name.
+    """
 
     securable_type: VariableOr[AppResourceUcSecurableUcSecurableType]
+    """
+    Kind of Unity Catalog securable that `securable_full_name` refers to.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceUcSecurableDict") -> "Self":
@@ -41,10 +52,21 @@ class AppResourceUcSecurableDict(TypedDict, total=False):
     """"""
 
     permission: VariableOr[AppResourceUcSecurableUcSecurablePermissionParam]
+    """
+    Privilege to grant the app on the securable. The privilege must be valid for the securable
+    type, such as READ_VOLUME for a volume or SELECT for a table.
+    """
 
     securable_full_name: VariableOr[str]
+    """
+    Full name of the Unity Catalog securable. For volumes, tables and functions this is the
+    three-level catalog.schema.object name.
+    """
 
     securable_type: VariableOr[AppResourceUcSecurableUcSecurableTypeParam]
+    """
+    Kind of Unity Catalog securable that `securable_full_name` refers to.
+    """
 
 
 AppResourceUcSecurableParam = AppResourceUcSecurableDict | AppResourceUcSecurable

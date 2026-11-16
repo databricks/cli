@@ -1913,8 +1913,8 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
+		if !agents.HasDatabricksToolingInstalled(ctx) {
+			agents.PrintSkillsTip(ctx)
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
@@ -1964,6 +1964,7 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 		args = append(args, "--profile", profile)
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Env = agents.SelfExecEnv(os.Environ())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -1992,6 +1993,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(ctx, executable, args...)
+		cmd.Env = agents.SelfExecEnv(os.Environ())
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin

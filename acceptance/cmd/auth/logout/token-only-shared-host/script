@@ -34,14 +34,14 @@ cat > "./home/.databricks/token-cache.json" <<EOF
 }
 EOF
 
-title "Token cache keys before logout\n"
+title "Token cache keys before logout"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout dev without --delete"
 trace $CLI auth logout --profile dev --auto-approve
 
-title "Config after logout — both profiles should still exist\n"
+title "Config after logout — both profiles should still exist"
 cat "./home/.databrickscfg"
 
-title "Token cache keys after logout — dev removed, host preserved (shared with staging)\n"
+title "Token cache keys after logout — dev removed, host preserved (shared with staging)"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"

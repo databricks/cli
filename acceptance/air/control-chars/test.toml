@@ -1,0 +1,69 @@
+# Server-supplied names carrying terminal control characters: an OSC
+# set-window-title sequence, a CSI clear-screen sequence, an SGR colour code and
+# a carriage return. The text views must drop them; JSON output keeps the strings
+# as the server sent them (encoded as \u001b etc. by the JSON encoder).
+Env.DATABRICKS_CACHE_ENABLED = "false"
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# Experiment and creator names with embedded escapes, for `air get` and `air list`.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_name": "qwen\u001b[2J-train",
+  "creator_user_name": "user\u001b[31m@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [{
+    "task_key": "train",
+    "run_id": 456,
+    "attempt_number": 0,
+    "ai_runtime_task": {
+      "experiment": "/Users/user@example.com/my\u001b]0;pwned\u0007-exp",
+      "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+    }
+  }]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/list"
+Response.Body = '''
+{
+  "runs": [{
+    "run_id": 123,
+    "run_name": "qwen\u001b[2J-train",
+    "creator_user_name": "user\u001b[31m@example.com",
+    "start_time": 1700000000000,
+    "end_time": 1700000012000,
+    "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+    "tasks": [{
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "ai_runtime_task": {
+        "experiment": "/Users/user@example.com/my\u001b]0;pwned\u0007-exp",
+        "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+      }
+    }]
+  }]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+'''
+
+# The MLflow run name carries all three kinds of control character.
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "\u001b]0;pwned\u0007my\u001b[2J-run\r"}}}
+'''

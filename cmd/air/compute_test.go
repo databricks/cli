@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -35,7 +36,9 @@ func TestParseGPUTypeInvalid(t *testing.T) {
 		t.Run(in, func(t *testing.T) {
 			_, err := parseGPUType(in)
 			require.Error(t, err)
-			assert.Contains(t, err.Error(), "valid types are")
+			assert.Equal(t, fmt.Sprintf("%q is not a recognized accelerator type", in), err.Error())
+			// The CLI must not suggest types: only the workspace knows which it can use.
+			assert.NotContains(t, err.Error(), "GPU_1xA10")
 		})
 	}
 }

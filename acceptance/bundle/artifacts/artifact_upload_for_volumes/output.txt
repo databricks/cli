@@ -5,6 +5,7 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting 2 wheels in libraries section in /jobs/create
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
@@ -48,6 +49,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting environment dependencies to be updated
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
 [
   {
@@ -63,6 +65,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting wheel to be uploaded
+
 >>> jq -s .[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl") [OUTPUT_DIR]/out.requests.txt
 {
   "method": "PUT",
