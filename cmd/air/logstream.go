@@ -399,6 +399,12 @@ func (st *bricklensStreamer) logWaitingStatus(msg string) {
 	cmdio.LogProgress(st.ctx, msg)
 }
 
+// printWaitingEvent reports a waiting status as a WAITING JSONL event in place of
+// the spinner, which -o json never shows.
+func (st *bricklensStreamer) printWaitingEvent(msg string) {
+	printWaitingEvent(st.out, msg)
+}
+
 // reportStatusChange fires onStatusChange when the run's display state differs
 // from the last reported one.
 func (st *bricklensStreamer) reportStatusChange() {
@@ -425,10 +431,12 @@ func (st *bricklensStreamer) run() (bool, error) {
 	}
 
 	// Show a "waiting for run to start" spinner on stderr while the run has not
-	// yet produced logs, so a provisioning run doesn't look hung. Suppressed in
-	// --json mode and auto-degraded to nothing on a non-interactive terminal.
+	// yet produced logs, so a provisioning run doesn't look hung. --json mode gets
+	// WAITING events instead, and it auto-degrades to nothing on a non-interactive terminal.
 	// The first emitted log line stops it via onFirstLog (before any stdout write).
-	if !st.req.jsonOutput {
+	if st.req.jsonOutput {
+		st.updateSpinner = st.printWaitingEvent
+	} else {
 		sp := cmdio.NewSpinner(st.ctx)
 		defer sp.Close()
 		st.onFirstLog = sp.Close

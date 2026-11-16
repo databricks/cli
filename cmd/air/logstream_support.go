@@ -166,6 +166,28 @@ func printStatusEvent(out io.Writer, current, previous string) {
 	fmt.Fprintln(out, string(b))
 }
 
+// waitingEvent is a JSONL event emitted while a run has produced no logs yet,
+// each time the reason it is waiting changes, so a -o json consumer can tell a
+// provisioning run from a hung command.
+type waitingEvent struct {
+	Type    string `json:"type"`
+	TS      string `json:"ts"`
+	Message string `json:"message"`
+}
+
+// printWaitingEvent writes a WAITING JSONL event.
+func printWaitingEvent(out io.Writer, message string) {
+	b, err := json.Marshal(waitingEvent{
+		Type:    "WAITING",
+		TS:      time.Now().UTC().Format(time.RFC3339),
+		Message: message,
+	})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(out, string(b))
+}
+
 // terminalEvent is the closing envelope `air run --watch -o json` emits after
 // streaming, carrying the run's terminal status.
 type terminalEvent struct {
