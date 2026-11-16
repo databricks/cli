@@ -51,7 +51,15 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
     "est_remaining_seconds": null,
-    "est_percent_complete": null
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": null,
+    "mlflow_run_name": "my-run",
+    "sweep": null
   }
 }
 

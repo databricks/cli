@@ -213,20 +213,6 @@ func TestReformatYAMLForDisplay(t *testing.T) {
 	assert.Equal(t, "\tnot: valid: yaml:", reformatYAMLForDisplay([]byte("\tnot: valid: yaml:")))
 }
 
-func TestAccelerators(t *testing.T) {
-	assert.Empty(t, accelerators(&jobs.Run{}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
-		GenAiComputeTask: &jobs.GenAiComputeTask{},
-	}}}))
-	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
-		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 0}},
-	}}}))
-	assert.Equal(t, "8x H100", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
-		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 8, GpuType: "GPU_8xH100"}},
-	}}}))
-}
-
 func TestAcceleratorLabel(t *testing.T) {
 	assert.Empty(t, acceleratorLabel("GPU_8xH100", 0))
 	assert.Equal(t, "8x H100", acceleratorLabel("GPU_8xH100", 8))

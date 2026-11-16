@@ -16,6 +16,14 @@
     "mlflow_url": null,
     "termination_reason": "Out of capacity",
     "est_remaining_seconds": null,
-    "est_percent_complete": null
+    "est_percent_complete": null,
+    "user": null,
+    "accelerator_type": null,
+    "num_accelerators": null,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": null,
+    "mlflow_run_name": null,
+    "sweep": null
   }
 }
