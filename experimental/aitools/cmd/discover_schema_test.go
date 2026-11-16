@@ -56,6 +56,7 @@ func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
 	result := &sqlexec.Result{
 		Rows: [][]string{
 			{"id", "BIGINT", ""},
+			{"#tag", "STRING", ""},
 			{"name", "STRING", ""},
 			{"region", "STRING", ""},
 			{"# Partition Information", "", ""},
@@ -68,8 +69,8 @@ func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
 	}
 
 	cols, types := parseDescribeResult(result)
-	assert.Equal(t, []string{"id", "name", "region"}, cols)
-	assert.Equal(t, []string{"BIGINT", "STRING", "STRING"}, types)
+	assert.Equal(t, []string{"id", "#tag", "name", "region"}, cols)
+	assert.Equal(t, []string{"BIGINT", "STRING", "STRING", "STRING"}, types)
 }
 
 func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
