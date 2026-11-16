@@ -1,0 +1,5 @@
+# Runs only against the local test server.
+Cloud = false
+RecordRequests = true
+Ignore = [".databricks"]
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING = "true"

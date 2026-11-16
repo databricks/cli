@@ -2454,7 +2454,7 @@
                         "deprecated": true
                       },
                       "testing": {
-                        "description": "[Private Preview] Test configuration for this pipeline. Used only by test-only updates.",
+                        "description": "[Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it. It is experimental and needs `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTesting",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
@@ -18261,7 +18261,7 @@
                   "description": "The packages that a pipeline's tests need in addition to the pipeline's environment.",
                   "properties": {
                     "dependencies": {
-                      "description": "[Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements\nfile, or a wheel, in the workspace or a UC volume. A project folder can take `--editable` and\nan extra, for example `--editable /Workspace/Users/someone@example.com/orders[test]`. Package\nnames, such as `faker==33.0`, and URLs are rejected.",
+                      "description": "[Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements file, or a wheel, in the workspace or a UC volume. A project folder can take `-e` and an extra, for example `-e ./project[test]`. A relative path, such as `-e ./project[test]` or `-r ./tests/requirements.txt`, is relative to the YAML file that defines it. Package names and URLs are rejected.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -18282,7 +18282,7 @@
                   "description": "A workspace location that holds pipeline tests.",
                   "properties": {
                     "glob": {
-                      "description": "[Private Preview] An absolute workspace path to a test file, or to a folder followed by `/**`.",
+                      "description": "[Private Preview] A `.py` test file, or a folder followed by `/**`. Other wildcards are rejected, and the sources must not overlap the pipeline's `libraries`. A relative path is relative to the YAML file that defines it.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true

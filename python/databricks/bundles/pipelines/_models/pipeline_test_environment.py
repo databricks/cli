@@ -23,10 +23,7 @@ class PipelineTestEnvironment:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements
-    file, or a wheel, in the workspace or a UC volume. A project folder can take `--editable` and
-    an extra, for example `--editable /Workspace/Users/someone@example.com/orders[test]`. Package
-    names, such as `faker==33.0`, and URLs are rejected.
+    [Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements file, or a wheel, in the workspace or a UC volume. A project folder can take `-e` and an extra, for example `-e ./project[test]`. A relative path, such as `-e ./project[test]` or `-r ./tests/requirements.txt`, is relative to the YAML file that defines it. Package names and URLs are rejected.
     """
 
     @classmethod
@@ -44,10 +41,7 @@ class PipelineTestEnvironmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements
-    file, or a wheel, in the workspace or a UC volume. A project folder can take `--editable` and
-    an extra, for example `--editable /Workspace/Users/someone@example.com/orders[test]`. Package
-    names, such as `faker==33.0`, and URLs are rejected.
+    [Private Preview] A list of files that declare the packages the tests need: a project folder, a requirements file, or a wheel, in the workspace or a UC volume. A project folder can take `-e` and an extra, for example `-e ./project[test]`. A relative path, such as `-e ./project[test]` or `-r ./tests/requirements.txt`, is relative to the YAML file that defines it. Package names and URLs are rejected.
     """
 
 

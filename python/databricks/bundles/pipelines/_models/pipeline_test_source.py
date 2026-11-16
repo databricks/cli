@@ -27,7 +27,7 @@ class PipelineTestSource:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] An absolute workspace path to a test file, or to a folder followed by `/**`.
+    [Private Preview] A `.py` test file, or a folder followed by `/**`. Other wildcards are rejected, and the sources must not overlap the pipeline's `libraries`. A relative path is relative to the YAML file that defines it.
     """
 
     @classmethod
@@ -45,7 +45,7 @@ class PipelineTestSourceDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] An absolute workspace path to a test file, or to a folder followed by `/**`.
+    [Private Preview] A `.py` test file, or a folder followed by `/**`. Other wildcards are rejected, and the sources must not overlap the pipeline's `libraries`. A relative path is relative to the YAML file that defines it.
     """
 
 
