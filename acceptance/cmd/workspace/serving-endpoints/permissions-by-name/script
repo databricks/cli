@@ -1,0 +1,18 @@
+$CLI serving-endpoints create my-endpoint --no-wait > /dev/null
+endpoint_id=$($CLI serving-endpoints get my-endpoint | jq -r .id)
+add_repl "$endpoint_id" ENDPOINT_ID
+
+
+title "Permissions commands accept the endpoint name"
+trace $CLI serving-endpoints set-permissions my-endpoint --json '{"access_control_list": [{"group_name": "users", "permission_level": "CAN_QUERY"}]}' | jq -c '.access_control_list[] | {group_name, permission_level: .all_permissions[0].permission_level}'
+trace $CLI serving-endpoints get-permissions my-endpoint | jq -c '{object_id}'
+
+# The fake server uses dashed UUIDs as endpoint IDs, so this also does a lookup by
+# name first. A real 32-character ID is passed through without one.
+title "The ID still works"
+trace $CLI serving-endpoints get-permissions "$endpoint_id" | jq -c '{object_id}'
+
+title "A name that doesn't resolve gets the API's error"
+trace musterr $CLI serving-endpoints get-permissions no-such-endpoint
+
+trace print_requests.py //serving-endpoints //permissions --get

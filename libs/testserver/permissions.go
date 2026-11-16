@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -151,6 +153,10 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
+	if resp := servingEndpointIDError(requestObjectType, objectId); resp != nil {
+		return *resp
+	}
+
 	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
 
 	// V2 permissions APIs cascade-delete ACLs with the parent, so the cloud
@@ -198,6 +204,24 @@ func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId stri
 	return true
 }
 
+// servingEndpointIDError mirrors the permissions API, which rejects a value
+// that isn't shaped like a serving endpoint ID, such as the endpoint's name.
+func servingEndpointIDError(requestObjectType, objectId string) *Response {
+	if requestObjectType != "serving-endpoints" {
+		return nil
+	}
+	if _, err := uuid.Parse(objectId); err == nil {
+		return nil
+	}
+	return &Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    fmt.Sprintf("'%s' is not a valid Inference Endpoint ID.", objectId),
+		},
+	}
+}
+
 func (s *FakeWorkspace) SetPermissions(req Request) any {
 	defer s.LockUnlock()()
 
@@ -228,6 +252,10 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 			StatusCode: 400,
 			Body:       map[string]string{"message": "object_id is required"},
 		}
+	}
+
+	if resp := servingEndpointIDError(requestObjectType, objectId); resp != nil {
+		return *resp
 	}
 
 	var updateRequest iam.UpdateObjectPermissions

@@ -1,0 +1,71 @@
+
+=== Permissions commands accept the endpoint name
+
+>>> [CLI] serving-endpoints set-permissions my-endpoint --json {"access_control_list": [{"group_name": "users", "permission_level": "CAN_QUERY"}]}
+{"group_name":"users","permission_level":"CAN_QUERY"}
+
+>>> [CLI] serving-endpoints get-permissions my-endpoint
+{"object_id":"/serving-endpoints/[ENDPOINT_ID]"}
+
+=== The ID still works
+
+>>> [CLI] serving-endpoints get-permissions [ENDPOINT_ID]
+{"object_id":"/serving-endpoints/[ENDPOINT_ID]"}
+
+=== A name that doesn't resolve gets the API's error
+
+>>> musterr [CLI] serving-endpoints get-permissions no-such-endpoint
+Error: 'no-such-endpoint' is not a valid Inference Endpoint ID.
+
+>>> print_requests.py //serving-endpoints //permissions --get
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "my-endpoint"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "users",
+        "permission_level": "CAN_QUERY"
+      }
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/no-such-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/no-such-endpoint"
+}
