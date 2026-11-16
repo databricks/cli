@@ -11,6 +11,11 @@ resources:
       catalog_name: main
       schema_name: ${resources.schemas.schema1.name}
       name: myvolume
+  registered_models:
+    model1:
+      catalog_name: main
+      schema_name: ${resources.schemas.schema1.name}
+      name: mymodel
   jobs:
     job1:
       name: test-job-$UNIQUE_NAME
@@ -21,3 +26,7 @@ resources:
           default: ${resources.volumes.volume1.id}
         - name: volume_uuid
           default: ${resources.volumes.volume1.volume_id}
+        - name: model_full_name
+          default: ${resources.registered_models.model1.full_name}
+        - name: model_id
+          default: ${resources.registered_models.model1.id}
