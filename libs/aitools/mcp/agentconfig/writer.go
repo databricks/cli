@@ -152,6 +152,9 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
+	if err := checkWritable(a, path); err != nil {
+		return path, "", err
+	}
 	if err := save(path, doc); err != nil {
 		return path, "", err
 	}
@@ -190,6 +193,9 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	}
 	if err := doc.put(root, name, nil, nil); err != nil {
 		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	if err := checkWritable(a, path); err != nil {
+		return false, err
 	}
 	if err := save(path, doc); err != nil {
 		return false, err
@@ -260,6 +266,23 @@ func load(spec *mcpconfig.Spec, path string) (document, error) {
 	return doc, nil
 }
 
+// checkWritable refuses an existing config file that the user cannot write. The
+// save replaces the file by rename, which needs write permission only on the
+// directory, so a read-only file would be replaced anyway. A file the user made
+// read-only is one they mean to keep as it is. A missing file is not refused.
+func checkWritable(a *agents.Agent, path string) error {
+	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return nil
+	case errors.Is(err, fs.ErrPermission):
+		return fmt.Errorf("%s is read-only; make it writable or leave %s out of --agents", filepath.ToSlash(path), a.Name)
+	case err != nil:
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return f.Close()
+}
+
 // save writes doc to path atomically. The file keeps its mode; a new file gets
 // 0600 and a new directory 0700, because agent configs can hold auth state.
 func save(path string, doc document) error {
@@ -286,10 +309,7 @@ func save(path string, doc document) error {
 	default:
 		return fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
 	}
-	if err := atomicfile.Write(target, data, perm, atomicfile.MkDir(0o700)); err != nil {
-		return fmt.Errorf("write %s: %w", filepath.ToSlash(path), err)
-	}
-	return nil
+	return atomicfile.Write(target, data, perm, atomicfile.MkDir(0o700))
 }
 
 // lineEnding returns CRLF when data uses it, and LF otherwise.
