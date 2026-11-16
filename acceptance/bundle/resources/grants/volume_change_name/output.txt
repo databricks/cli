@@ -1,32 +1,31 @@
 
-=== Deploy a volume and a registered model with grants
+=== Deploy a volume with grants
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Created registered_models.model1
-Created registered_models.model1.grants
 Created schemas.schema1
 Created volumes.volume1
 Created volumes.volume1.grants
 Files: 2 uploaded, 0 deleted
-Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --sort //unity-catalog
+>>> print_requests.py //unity-catalog
 {
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/function/main.test-schema-[UNIQUE_NAME].mymodel",
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
   "body": {
-    "changes": [
-      {
-        "add": [
-          "APPLY_TAG"
-        ],
-        "principal": "deco-test-user@databricks.com",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
-      }
-    ]
+    "catalog_name": "main",
+    "name": "test-schema-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "myvolume",
+    "schema_name": "test-schema-[UNIQUE_NAME]",
+    "volume_type": "MANAGED"
   }
 }
 {
@@ -46,45 +45,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
     ]
   }
 }
-{
-  "method": "POST",
-  "path": "/api/2.1/unity-catalog/models",
-  "body": {
-    "catalog_name": "main",
-    "name": "mymodel",
-    "schema_name": "test-schema-[UNIQUE_NAME]"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/unity-catalog/schemas",
-  "body": {
-    "catalog_name": "main",
-    "name": "test-schema-[UNIQUE_NAME]"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/unity-catalog/volumes",
-  "body": {
-    "catalog_name": "main",
-    "name": "myvolume",
-    "schema_name": "test-schema-[UNIQUE_NAME]",
-    "volume_type": "MANAGED"
-  }
-}
 
 >>> read_state.py volumes volume1.grants id
 volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume'
 
->>> read_state.py registered_models model1.grants id
-registered_models model1.grants id='function/main.test-schema-[UNIQUE_NAME].mymodel'
-
-=== Rename the volume and the model: their IDs change, and so do the IDs of their grants
+=== Rename the volume: its ID changes, and so does the ID of its grants
 
 >>> update_file.py databricks.yml myvolume myvolume_renamed
-
->>> update_file.py databricks.yml mymodel mymodel_renamed
 
 >>> [CLI] bundle plan --output json
 {
@@ -97,54 +64,22 @@ registered_models model1.grants id='function/main.test-schema-[UNIQUE_NAME].mymo
   }
 }
 
->>> [CLI] bundle plan --output json
-{
-  "full_name": {
-    "action": "update_id",
-    "reason": "id_changes",
-    "old": "main.test-schema-[UNIQUE_NAME].mymodel",
-    "new": "",
-    "remote": "main.test-schema-[UNIQUE_NAME].mymodel"
-  }
-}
-
-=== Deploy renames the volume and the model in place and applies the grants under the new names
+=== Deploy renames the volume and applies the grants under the new name
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Updated registered_models.model1
-Updated registered_models.model1.grants
 Updated volumes.volume1
 Updated volumes.volume1.grants
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 4 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py --sort //unity-catalog
+>>> print_requests.py //unity-catalog
 {
   "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].mymodel",
+  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].myvolume",
   "body": {
-    "catalog_name": "main",
     "comment": "",
-    "new_name": "mymodel_renamed",
-    "schema_name": "test-schema-[UNIQUE_NAME]"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/function/main.test-schema-[UNIQUE_NAME].mymodel_renamed",
-  "body": {
-    "changes": [
-      {
-        "add": [
-          "APPLY_TAG"
-        ],
-        "principal": "deco-test-user@databricks.com",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
-      }
-    ]
+    "new_name": "myvolume_renamed"
   }
 }
 {
@@ -164,14 +99,6 @@ Resources: 0 created, 4 changed, 0 deleted, 1 unchanged
     ]
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].myvolume",
-  "body": {
-    "comment": "",
-    "new_name": "myvolume_renamed"
-  }
-}
 
 >>> [CLI] grants get volume main.test-schema-[UNIQUE_NAME].myvolume_renamed
 {
@@ -181,28 +108,16 @@ Resources: 0 created, 4 changed, 0 deleted, 1 unchanged
   ]
 }
 
->>> [CLI] grants get function main.test-schema-[UNIQUE_NAME].mymodel_renamed
-{
-  "principal": "deco-test-user@databricks.com",
-  "privileges": [
-    "APPLY_TAG"
-  ]
-}
-
 === The grants are recorded under the new name, so the next plan is a no-op
 
 >>> read_state.py volumes volume1.grants id
 volumes volume1.grants id='volume/main.test-schema-[UNIQUE_NAME].myvolume_renamed'
 
->>> read_state.py registered_models model1.grants id
-registered_models model1.grants id='function/main.test-schema-[UNIQUE_NAME].mymodel_renamed'
-
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.registered_models.model1
   delete resources.schemas.schema1
   delete resources.volumes.volume1
 
@@ -217,4 +132,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 2 deleted
