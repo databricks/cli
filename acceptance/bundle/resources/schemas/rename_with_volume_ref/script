@@ -8,7 +8,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy a schema, a volume and a registered model in it, and a job that reads their full_name and id"
+title "Deploy a schema, a volume in it and a job that reads the volume's full_name and id"
 trace $CLI bundle deploy
 print_requests.py //unity-catalog &> LOG.deploy_requests
 JOB_ID=$($CLI bundle summary --output json | jq -r .resources.jobs.job1.id)
@@ -19,10 +19,10 @@ trace $CLI jobs get "$JOB_ID" | jq .settings.parameters
 title "Rename the schema"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
-title "The full_name and id of the volume and the model change with the schema, so the job is updated too"
+title "The volume's full_name and id change with the schema, so the job is updated too"
 trace $CLI bundle plan
 
-title "Deploy passes the new full_name and id of the volume and the model to the job"
+title "Deploy passes the volume's new full_name and id to the job"
 trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI jobs get "$JOB_ID" | jq .settings.parameters
