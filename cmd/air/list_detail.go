@@ -21,6 +21,7 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		}
 		return "", fmt.Errorf("failed to fetch run: %w", err)
 	}
+	pre := startRunTextPrefetch(ctx, w, run)
 
 	data := buildGetData(run)
 	// As in `air get`: an ai_runtime_task run keeps its experiment, accelerators
@@ -36,7 +37,7 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 	}
 
 	var buf bytes.Buffer
-	renderRunText(ctx, &buf, w, run, &data, ids)
+	renderRunText(ctx, &buf, w, run, &data, ids, pre)
 	return buf.String(), nil
 }
 

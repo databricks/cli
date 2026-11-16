@@ -167,6 +167,13 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 				fmt.Errorf("failed to get status for run %d: %w", runID, err))
 		}
 
+		// The text view's run-only lookups start now so they overlap the
+		// get-output and MLflow requests below. A sweep renders no run box.
+		var pre *runTextPrefetch
+		if root.OutputType(cmd) == flags.OutputText && findForEachTask(run) == nil {
+			pre = startRunTextPrefetch(ctx, w, run)
+		}
+
 		// Prefer the configured workspace ID; only look it up when it is unset.
 		id, err := auth.ResolveWorkspaceID(ctx, w)
 		if err != nil {
@@ -224,7 +231,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		}
 		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
-		renderRunText(ctx, out, w, run, &data, ids)
+		renderRunText(ctx, out, w, run, &data, ids, pre)
 		return nil
 	}
 

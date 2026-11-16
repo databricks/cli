@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/auth"
@@ -92,7 +93,39 @@ type runView struct {
 // completed progress bar, and a field list, separated by blank lines. It is a
 // one-shot renderer — it builds the full string and writes it once, with no
 // streaming, spinner, or redraw.
-func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers) {
+// runTextPrefetch holds the text view's lookups that depend only on the run, so
+// they can start before the get-output and MLflow requests and overlap them.
+type runTextPrefetch struct {
+	environment func() string
+	config      func() string
+}
+
+// startRunTextPrefetch starts the environment-version and training-config
+// fetches in the background.
+func startRunTextPrefetch(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *runTextPrefetch {
+	return &runTextPrefetch{
+		environment: inBackground(func() string { return aiRuntimeEnvironmentVersion(ctx, w, run.RunId) }),
+		config: inBackground(func() string {
+			// The config path is derived from the run alone, the same way the
+			// caller derives it before rendering.
+			data := buildGetData(run)
+			if genAIComputeTask(run) == nil {
+				enrichFromAiRuntimeTask(run, &data)
+			}
+			return resolveConfigYAML(ctx, w, run, &data)
+		}),
+	}
+}
+
+// inBackground runs f in a goroutine and returns a function that waits for its
+// result.
+func inBackground(f func() string) func() string {
+	done := make(chan string, 1)
+	go func() { done <- f() }()
+	return sync.OnceValue(func() string { return <-done })
+}
+
+func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers, pre *runTextPrefetch) {
 	// cmdio.NewRenderer sets the Ascii color profile when color is off, which
 	// emits no SGR codes; combined with the link fallback below this gives clean,
 	// un-escaped output under --no-color / NO_COLOR / piped stdout.
@@ -102,7 +135,11 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// The serverless environment version lives on the run's environments[].spec,
 	// which the typed SDK Run drops, so read it with a raw request. Empty (a run
 	// with no serverless environment) stays "N/A".
-	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, run.RunId))
+	var mlflowName func() string
+	if ids != nil {
+		mlflowName = inBackground(func() string { return fetchMLflowRunName(ctx, w, ids.RunID) })
+	}
+	data.EnvironmentDisplay = orNA(pre.environment())
 
 	view := runView{
 		runID:        data.RunID,
@@ -125,12 +162,12 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 
 	if ids != nil {
 		// The box grows to fit its fields, so the label is shown whole.
-		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID, 0) + ids.retryNote()
+		view.mlflowLabel = mlflowRunLabel(mlflowName(), ids.RunID, 0) + ids.retryNote()
 		view.mlflowURL = mlflowRunURL(w.Config.Host, ids)
 	}
 
 	var sections []string
-	if body := colorizeConfig(p, resolveConfigYAML(ctx, w, run, data)); body != "" {
+	if body := colorizeConfig(p, pre.config()); body != "" {
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
