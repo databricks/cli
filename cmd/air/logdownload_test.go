@@ -3,11 +3,14 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -148,6 +151,7 @@ func fullDownloadServer(t *testing.T) *httptest.Server {
 }
 
 func TestDownloadLogsAllNodes(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 	dir := t.TempDir()
@@ -160,6 +164,7 @@ func TestDownloadLogsAllNodes(t *testing.T) {
 }
 
 func TestDownloadLogsSingleNode(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 	dir := t.TempDir()
@@ -172,6 +177,7 @@ func TestDownloadLogsSingleNode(t *testing.T) {
 }
 
 func TestDownloadLogsExplicitNodeZero(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 	dir := t.TempDir()
@@ -462,6 +468,7 @@ func TestDownloadOutcomeTreatsActiveRunAsSuccess(t *testing.T) {
 }
 
 func TestDownloadLogsActiveRunExitsZero(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, fullDownloadServer(t).URL)
 
@@ -500,6 +507,7 @@ func allNodesFailServer(t *testing.T) *httptest.Server {
 }
 
 func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	ctx := cmdio.MockDiscard(t.Context())
 	w := newTestWorkspaceClient(t, allNodesFailServer(t).URL)
 	var stdout bytes.Buffer
@@ -513,4 +521,108 @@ func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to download logs from any of 2 node(s)")
 	assert.NotContains(t, stdout.String(), "No logs available")
+}
+
+func TestDownloadLogsUsesBricklens(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "")
+	for _, nodeSet := range []bool{false, true} {
+		t.Run(strconv.FormatBool(nodeSet), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/.well-known/databricks-config" {
+					_, _ = w.Write([]byte(`{}`))
+					return
+				}
+				assert.Equal(t, "/api/2.0/ai-training/workflows/by-run-id/123/logs", r.URL.Path)
+				q := r.URL.Query()
+				assert.Equal(t, "true", q.Get("ascending"))
+				assert.Equal(t, "0", q.Get("ref.attempt_number"))
+				assert.Empty(t, q.Get("page_size"), "downloads must not use the tail cap")
+				if q.Get("page_token") == "" {
+					records := make([]logRecord, defaultCompletedRunTailLines+1)
+					for i := range records {
+						records[i].Body = "node " + q.Get("filter.node_index")
+					}
+					assert.NoError(t, json.NewEncoder(w).Encode(bricklensLogsResponse{LogRecords: records, NextPageToken: "next"}))
+				} else {
+					assert.Equal(t, "next", q.Get("page_token"))
+					_, _ = w.Write([]byte(`{"log_records":[{"body":"last line"}]}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+			dir := t.TempDir()
+			success, err := downloadLogs(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), &bytes.Buffer{},
+				logRequest{runID: 123, attempt: -1, downloadTo: dir, node: 1, nodeSet: nodeSet},
+				logRunStatus{resultState: "SUCCESS"}, airRunWithCompute("GPU_1xA10", 2))
+			require.NoError(t, err)
+			assert.True(t, success)
+			for node := range 2 {
+				file := filepath.Join(dir, "logs", fmt.Sprintf("node_%d.log", node))
+				if nodeSet && node == 0 {
+					assert.NoFileExists(t, file)
+					continue
+				}
+				data, err := os.ReadFile(file)
+				require.NoError(t, err)
+				assert.Equal(t, strings.Repeat(fmt.Sprintf("node %d\n", node), defaultCompletedRunTailLines+1)+"last line\n", string(data))
+			}
+		})
+	}
+}
+
+func TestDownloadBricklensNodeLogReportsFetchFailures(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "")
+	for _, partial := range []bool{false, true} {
+		t.Run(strconv.FormatBool(partial), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/.well-known/databricks-config" {
+					_, _ = w.Write([]byte(`{}`))
+					return
+				}
+				if partial && r.URL.Query().Get("page_token") == "" {
+					_, _ = w.Write([]byte(`{"log_records":[{"body":"first page"}],"next_page_token":"next"}`))
+					return
+				}
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = w.Write([]byte(`{"error_code":"FEATURE_DISABLED","message":"logs disabled"}`))
+			}))
+			t.Cleanup(srv.Close)
+			dir := t.TempDir()
+			file, err := downloadBricklensNodeLog(t.Context(), newTestWorkspaceClient(t, srv.URL), dir, 0,
+				logRequest{runID: 123, attempt: 2}, logRunStatus{resultState: "SUCCESS"})
+			require.ErrorIs(t, err, errBricklensFeatureDisabled)
+			assert.Contains(t, err.Error(), "logs disabled")
+			if partial {
+				data, err := os.ReadFile(file)
+				require.NoError(t, err)
+				assert.Equal(t, "first page\n", string(data))
+			} else {
+				assert.Empty(t, file)
+				assert.NoFileExists(t, filepath.Join(dir, "logs", "node_0.log"))
+			}
+		})
+	}
+}
+
+func TestDownloadBricklensNodeLogCancellationRemovesPartialFile(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		if r.URL.Query().Get("page_token") == "" {
+			_, _ = w.Write([]byte(`{"log_records":[{"body":"first page"}],"next_page_token":"next"}`))
+		} else {
+			cancel()
+			<-r.Context().Done()
+		}
+	}))
+	t.Cleanup(srv.Close)
+	dir := t.TempDir()
+	file, err := downloadBricklensNodeLog(ctx, newTestWorkspaceClient(t, srv.URL), dir, 0,
+		logRequest{runID: 123, attempt: 0}, logRunStatus{resultState: "SUCCESS"})
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Empty(t, file)
+	assert.NoFileExists(t, filepath.Join(dir, "logs", "node_0.log"))
 }

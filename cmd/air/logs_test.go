@@ -306,6 +306,7 @@ func mlflowFallbackServer(t *testing.T) *httptest.Server {
 }
 
 func TestLogsFallsBackToMLflow(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	srv := mlflowFallbackServer(t)
 	var buf bytes.Buffer
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
@@ -322,6 +323,7 @@ func TestLogsFallsBackToMLflow(t *testing.T) {
 }
 
 func TestFetchLogsRetryNotificationDeduplicatedAcrossFallback(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	oldRetryInterval := retryCheckInterval
 	retryCheckInterval = time.Millisecond
 	t.Cleanup(func() { retryCheckInterval = oldRetryInterval })
@@ -360,7 +362,7 @@ func TestFetchLogsRetryNotificationDeduplicatedAcrossFallback(t *testing.T) {
 	}
 	maxRetries := 3
 	var out bytes.Buffer
-	success, err := fetchLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out, logRequest{
+	success, err := fetchLogs(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), &out, logRequest{
 		runID:        5,
 		attempt:      -1,
 		tailLines:    -1,
@@ -500,4 +502,26 @@ func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
 	err := runLogs(ctx, cmd, logRequest{runID: 777, runURL: runURL, attempt: -1, tailLines: -1})
 	require.NoError(t, err)
 	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
+}
+
+func TestFetchLogsMLflowFallbackRequiresOptIn(t *testing.T) {
+	for _, value := range []string{"", "false", "invalid", "true", "1"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", value)
+			srv := mlflowFallbackServer(t)
+			var out bytes.Buffer
+			success, err := fetchLogs(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), &out,
+				logRequest{runID: 5, attempt: -1, tailLines: -1},
+				logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"})
+			if value == "true" || value == "1" {
+				require.NoError(t, err)
+				assert.True(t, success)
+				assert.Equal(t, "line one\nline two\n", out.String())
+			} else {
+				require.ErrorIs(t, err, errBricklensFeatureDisabled)
+				assert.False(t, success)
+				assert.Empty(t, out.String())
+			}
+		})
+	}
 }

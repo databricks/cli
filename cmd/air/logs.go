@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -35,7 +36,10 @@ func newLogsCommand() *cobra.Command {
 		Long: `Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".
+
+Logs are read from Bricklens. To temporarily restore the legacy MLflow artifact
+fallback and artifact downloads, set DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK=true.`,
 		Example: `  databricks air logs 123456789
   databricks air logs 123456789 --node 1 --retry 0
   databricks air logs 123456789 --download-to ./logs`,
@@ -241,14 +245,20 @@ func resolveLogAttempt(run *jobs.Run, requested int) (int, int64, error) {
 	return 0, 0, fmt.Errorf("run %d has no task for retry %d", run.RunId, attempt)
 }
 
-// fetchLogs serves logs from Bricklens, falling back to MLflow when Bricklens
-// returns errBricklensFeatureDisabled.
+// mlflowLogFallbackEnabled temporarily preserves access to logs from the retired
+// artifact ingestion path while customers migrate to Bricklens.
+func mlflowLogFallbackEnabled(ctx context.Context) bool {
+	enabled, _ := env.GetBool(ctx, "DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK")
+	return enabled
+}
+
+// fetchLogs serves logs from Bricklens, with an opt-in legacy MLflow fallback.
 func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
 		req.retryTracker = newRetryTracker(status)
 	}
 	success, err := streamBricklensLogs(ctx, w, out, req, status)
-	if errors.Is(err, errBricklensFeatureDisabled) {
+	if errors.Is(err, errBricklensFeatureDisabled) && mlflowLogFallbackEnabled(ctx) {
 		return mlflowLogFallback(ctx, w, out, req, status)
 	}
 	return success, err

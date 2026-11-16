@@ -10,10 +10,13 @@ import (
 	"path/filepath"
 	"slices"
 	"sync"
+	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"golang.org/x/sync/errgroup"
 )
@@ -56,7 +59,7 @@ func resolveNodeCount(run *jobs.Run) (int, error) {
 
 // downloadLogs writes each node's logs to <downloadTo>/logs/node_<n>.log and
 // prints a summary. An explicit --node downloads only that node; otherwise all of
-// them. Logs come from MLflow artifacts, since Bricklens only streams. The
+// them. Logs come from Bricklens unless legacy artifact downloads are enabled. The
 // returned bool is the run's outcome, so the exit code matches the streaming path.
 func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus, run *jobs.Run) (bool, error) {
 	numNodes, err := resolveNodeCount(run)
@@ -79,10 +82,14 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 	if err != nil {
 		return false, err
 	}
-	ids := mlflowIDsForTask(ctx, w, taskRunID)
-	if ids == nil || ids.RunID == "" {
-		emitNoLogs(out, req, status)
-		return status.downloadOutcome(), nil
+	var mlflowRunID string
+	if mlflowLogFallbackEnabled(ctx) {
+		ids := mlflowIDsForTask(ctx, w, taskRunID)
+		if ids == nil || ids.RunID == "" {
+			emitNoLogs(out, req, status)
+			return status.downloadOutcome(), nil
+		}
+		mlflowRunID = ids.RunID
 	}
 
 	dir, err := filepath.Abs(req.downloadTo)
@@ -95,7 +102,16 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 		return false, fmt.Errorf("failed to create %s: %w", dir, err)
 	}
 
-	nodeLogs, failures, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, attempt)
+	var nodeLogs map[int]string
+	var failures map[int]string
+	if mlflowLogFallbackEnabled(ctx) {
+		nodeLogs, failures, err = downloadAllNodeLogs(ctx, w, mlflowRunID, dir, nodes, attempt)
+	} else {
+		req.attempt = attempt
+		nodeLogs, failures, err = downloadNodes(ctx, nodes, func(ctx context.Context, node int) (string, error) {
+			return downloadBricklensNodeLog(ctx, w, dir, node, req, status)
+		})
+	}
 	if err != nil {
 		return false, err
 	}
@@ -139,13 +155,20 @@ func downloadAllNodeLogs(ctx context.Context, w *databricks.WorkspaceClient, mlf
 		return nil, nil, err
 	}
 
+	return downloadNodes(ctx, nodes, func(ctx context.Context, node int) (string, error) {
+		return downloadNodeLog(ctx, w, mlflowRunID, node, attemptDir, withAttempt, dir)
+	})
+}
+
+// downloadNodes bounds concurrency and retains partial files alongside their errors.
+func downloadNodes(ctx context.Context, nodes []int, download func(context.Context, int) (string, error)) (map[int]string, map[int]string, error) {
 	paths := make([]string, len(nodes))
 	reasons := make([]string, len(nodes))
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(downloadConcurrency)
 	for i, node := range nodes {
 		g.Go(func() error {
-			path, err := downloadNodeLog(gctx, w, mlflowRunID, node, attemptDir, withAttempt, dir)
+			path, err := download(gctx, node)
 			switch {
 			case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 				// Interrupting the command must not look like a node with no logs.
@@ -268,4 +291,61 @@ func sortedNodeKeys(m map[int]string) []int {
 	}
 	slices.Sort(keys)
 	return keys
+}
+
+// downloadBricklensNodeLog pages oldest-first without a tail cap. Keep a partial
+// file on fetch failure so the caller can report it as incomplete.
+func downloadBricklensNodeLog(ctx context.Context, w *databricks.WorkspaceClient, dir string, node int, req logRequest, status logRunStatus) (string, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return "", fmt.Errorf("failed to create API client: %w", err)
+	}
+	outPath := filepath.Join(dir, "logs", fmt.Sprintf("node_%d.log", node))
+	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+		return "", err
+	}
+	f, err := os.Create(outPath)
+	if err != nil {
+		return "", err
+	}
+	req.node = node
+	st := bricklensStreamer{
+		ctx:       ctx,
+		w:         w,
+		apiClient: apiClient,
+		headers:   auth.WorkspaceIDHeaders(w.Config),
+		req:       req,
+		fromSec:   req.fromSeconds(status, time.Now()),
+	}
+	var written bool
+	var pageToken string
+	for {
+		var resp *bricklensLogsResponse
+		resp, err = st.requestPage(pageToken, req.toSeconds(status), 0, true)
+		if err != nil {
+			break
+		}
+		for _, rec := range resp.LogRecords {
+			if _, err = fmt.Fprintln(f, rec.Body); err != nil {
+				break
+			}
+			written = true
+		}
+		if err != nil || resp.NextPageToken == "" {
+			break
+		}
+		pageToken = resp.NextPageToken
+	}
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if ctx.Err() != nil {
+		os.Remove(outPath)
+		return "", ctx.Err()
+	}
+	if !written {
+		os.Remove(outPath)
+		return "", err
+	}
+	return outPath, err
 }

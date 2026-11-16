@@ -640,6 +640,7 @@ func TestEmitNoLogs(t *testing.T) {
 }
 
 func TestRequestPageRetriesThenFallsBack(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	// Shrink the retry wait so the transient-failure loop runs fast.
 	orig := retryCheckInterval
 	retryCheckInterval = time.Millisecond
@@ -728,6 +729,7 @@ func emptyLogsServer(t *testing.T) *httptest.Server {
 }
 
 func TestStreamBricklensEmptyFallsBackToMLflow(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	// Bricklens served every request but returned no record. That is not proof the
 	// run has no logs (they may be in MLflow), so the streamer must hand off via
 	// errBricklensFeatureDisabled and emit nothing itself, rather than reporting
@@ -781,6 +783,7 @@ func TestStreamBricklensTerminalWithRecordsDoesNotFallBack(t *testing.T) {
 }
 
 func TestStreamBricklensActiveEmptyProbesMLflow(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	oldInterval := retryCheckInterval
 	retryCheckInterval = time.Millisecond
 	t.Cleanup(func() { retryCheckInterval = oldInterval })
@@ -816,6 +819,7 @@ func TestStreamBricklensActiveEmptyProbesMLflow(t *testing.T) {
 }
 
 func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "true")
 	// End-to-end repro: a terminal SUCCESS run whose Bricklens stream is empty but
 	// whose logs are in MLflow. The print path must fall back to MLflow and print
 	// them, exactly as --download-to already does.
@@ -881,4 +885,54 @@ func TestSleepOrCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	require.ErrorIs(t, sleepOrCancel(ctx, time.Hour), context.Canceled)
+}
+
+func TestStreamBricklensEmptyWithoutMLflow(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "")
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+	for _, result := range []string{"SUCCESS", "CANCELED"} {
+		t.Run(result, func(t *testing.T) {
+			polls := 0
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/.well-known/databricks-config" {
+					_, _ = w.Write([]byte(`{}`))
+					return
+				}
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/logs"):
+					polls++
+					_, _ = w.Write([]byte(`{"log_records":[]}`))
+				case r.URL.Path == "/api/2.2/jobs/runs/get":
+					if polls < bricklensEmptyMLflowProbeEveryNPolls+1 {
+						_, _ = w.Write([]byte(`{"state":{"life_cycle_state":"RUNNING"}}`))
+					} else {
+						_, _ = w.Write([]byte(`{"state":{"life_cycle_state":"TERMINATED","result_state":"` + result + `"}}`))
+					}
+				default:
+					t.Errorf("unexpected request: %s", r.URL)
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			}))
+			t.Cleanup(srv.Close)
+			var out bytes.Buffer
+			success, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out,
+				logRequest{runID: 123, attempt: -1, tailLines: -1, jsonOutput: true}, logRunStatus{lifeCycleState: "RUNNING"})
+			require.NoError(t, err)
+			assert.Equal(t, result == "SUCCESS", success)
+			assert.Contains(t, out.String(), "No logs available for run 123")
+			assert.Greater(t, polls, bricklensEmptyMLflowProbeEveryNPolls)
+		})
+	}
+}
+
+func TestStreamBricklensStaticEmptyWithoutMLflow(t *testing.T) {
+	t.Setenv("DATABRICKS_AIR_ENABLE_MLFLOW_LOG_FALLBACK", "")
+	var out bytes.Buffer
+	success, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, emptyLogsServer(t).URL), &out,
+		logRequest{runID: 123, attempt: 0, tailLines: -1, staticView: true}, logRunStatus{lifeCycleState: "RUNNING"})
+	require.NoError(t, err)
+	assert.True(t, success)
+	assert.Contains(t, out.String(), "No logs available yet for run 123")
 }
