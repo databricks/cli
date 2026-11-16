@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "environment": {
+    "dependencies": [
+      "-e .[test]",
+      "-r ./tests/requirements.txt",
+      "./dist/*.whl"
+    ]
+  },
+  "sources": [
+    {
+      "glob": {
+        "include": "./tests/**"
+      }
+    }
+  ]
+}
+
+=== Without pipeline testing, the property is an error
+
+>>> musterr env -u DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING [CLI] bundle validate
+Error: the testing property of pipelines is experimental. Set DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true to enable it
+  at resources.pipelines.orders.testing
+  in databricks.yml:12:9
+
+Name: pipeline-testing
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/pipeline-testing/default
+
+Found 1 error

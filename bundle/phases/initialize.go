@@ -166,6 +166,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Must run after PythonMutator to see development values set by Python mutators.
 		validate.PipelineDevelopmentDeprecated(),
 
+		// Reject the experimental testing property of pipelines while it is off. Must run after
+		// PythonMutator, which can set testing, and before TranslatePaths and the deploy use it.
+		validate.PipelineTestingEnabled(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
