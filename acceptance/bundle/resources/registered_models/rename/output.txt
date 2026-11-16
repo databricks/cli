@@ -1,5 +1,6 @@
 
 === Deploy a catalog with a schema and a registered model in it
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
@@ -36,6 +37,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Rename the model: it is renamed in place, keeping its versions
+
 >>> update_file.py databricks.yml name: mymodel name: mymodel2
 
 >>> [CLI] bundle plan --output json
@@ -157,6 +159,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === Rename the schema: UC moves the model with it, so the model is re-keyed without a request
+
 >>> update_file.py databricks.yml name: myschema name: myschema2
 
 >>> [CLI] bundle plan --output json
@@ -291,6 +294,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === Rename the catalog: the model is re-keyed again
+
 >>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
 
 >>> [CLI] bundle plan --output json
@@ -452,6 +456,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === Rename the model and change its comment in one deploy: both go in one PATCH
+
 >>> update_file.py databricks.yml name: mymodel2 name: mymodel3
 
 >>> update_file.py databricks.yml comment: c1 comment: c2
@@ -482,6 +487,7 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 }
 
 === The state tracks the new paths and the plan is a no-op
+
 >>> [CLI] bundle summary --output json
 {
   "catalogs": {
