@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows"
@@ -61,13 +62,15 @@ func TestNewCapabilitiesMSYSPipeStdin(t *testing.T) {
 	id := fmt.Sprintf("%016x", os.Getpid()+2)
 	in := openNamedPipe(t, "msys-"+id+"-pty0-from-master")
 	errw := openNamedPipe(t, "msys-"+id+"-pty0-to-master")
-	c := newCapabilities(t.Context(), in, errw, errw)
+	// Pin the environment so a developer's NO_COLOR or TERM=dumb can't leak in.
+	ctx := env.Set(env.Set(t.Context(), "NO_COLOR", ""), "TERM", "")
+	c := newCapabilities(ctx, in, errw, errw)
 	assert.True(t, c.stdinIsMSYSPipe)
 	assert.True(t, c.SupportsInteractive())
 	assert.False(t, c.SupportsPrompt())
 
 	// The same pipe on stdout or stderr doesn't affect prompt support.
-	c = newCapabilities(t.Context(), FakeTTYReader(nil), errw, errw)
+	c = newCapabilities(ctx, FakeTTYReader(nil), errw, errw)
 	assert.False(t, c.stdinIsMSYSPipe)
 	assert.True(t, c.SupportsPrompt())
 }
