@@ -38,6 +38,9 @@ const (
 	bricklensLogLookback = 30 * time.Second
 	// A terminal job can have records that are not searchable yet.
 	bricklensTerminalEmptyPolls = 3
+	// Bricklens keeps indexing a run's records for a short while after it ends, so
+	// a tail read right after the end can miss lines from the middle of the log.
+	bricklensIndexSettleWindow = 2 * time.Minute
 )
 
 // statusMessageType tags a client-facing message packed into
@@ -129,6 +132,8 @@ type logRunStatus struct {
 	endTimeMs                int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
+	// attemptEndTimeMs maps each finished attempt_number to its task's end time.
+	attemptEndTimeMs map[int]int64
 }
 
 // retryTracker reports each retry once across either Jobs transition:
@@ -200,6 +205,20 @@ func (s logRunStatus) terminal() bool {
 	return terminalLifeCycleStates[s.lifeCycleState] || terminalResultStates[s.resultState]
 }
 
+// attemptEndedWithin reports whether the given attempt (-1 for the latest) of a
+// terminal run ended less than d before now. A past attempt uses its own task's
+// end time: it may have ended long before the run did.
+func (s logRunStatus) attemptEndedWithin(attempt int, now time.Time, d time.Duration) bool {
+	if !s.terminal() {
+		return false
+	}
+	endMs := s.endTimeMs
+	if attempt >= 0 && attempt != s.latestAttempt {
+		endMs = s.attemptEndTimeMs[attempt]
+	}
+	return endMs > 0 && now.Sub(time.UnixMilli(endMs)) < d
+}
+
 func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
 }
@@ -254,6 +273,12 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 	}
 	for i := range run.Tasks {
 		task := &run.Tasks[i]
+		if task.EndTime > 0 {
+			if s.attemptEndTimeMs == nil {
+				s.attemptEndTimeMs = map[int]int64{}
+			}
+			s.attemptEndTimeMs[task.AttemptNumber] = max(s.attemptEndTimeMs[task.AttemptNumber], task.EndTime)
+		}
 		if i > 0 && task.AttemptNumber <= s.latestAttempt {
 			continue
 		}
@@ -603,29 +628,18 @@ func (req logRequest) tailTarget() int {
 // returns records newest-first, so it pages until it has `target`, keeps the
 // newest `target`, and reverses to chronological order.
 func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
-	target := st.req.tailTarget()
-	if target <= 0 {
-		return nil
+	collected, err := st.fetchTail(toSec)
+	if err != nil {
+		return err
 	}
-
-	var collected []logRecord
-	var pageToken string
-	for len(collected) < target {
-		resp, err := st.requestPage(pageToken, toSec, target, false)
+	if st.status.attemptEndedWithin(st.req.attempt, time.Now(), bricklensIndexSettleWindow) {
+		collected, err = st.settleTail(toSec, collected)
 		if err != nil {
 			return err
 		}
-		collected = append(collected, resp.LogRecords...)
-		pageToken = resp.NextPageToken
-		if pageToken == "" {
-			break
-		}
 	}
 
-	// Keep the newest `target`, then reverse to print oldest -> newest.
-	if len(collected) > target {
-		collected = collected[:target]
-	}
+	// collected is newest first; print oldest -> newest.
 	for _, c := range slices.Backward(collected) {
 		st.emit(c.Body)
 		if remember {
@@ -637,6 +651,53 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 		st.fromSec = max(st.streamStartSec, st.lastNano/1_000_000_000-int64(bricklensLogLookback/time.Second))
 	}
 	return nil
+}
+
+// settleTail re-reads the tail of a run that just ended until two reads return
+// the same records, so lines Bricklens indexes late are not dropped. Comparing
+// identities rather than counts matters once the tail is full: a late record
+// then shifts the window without changing its length.
+func (st *bricklensStreamer) settleTail(toSec int64, collected []logRecord) ([]logRecord, error) {
+	for range bricklensTerminalEmptyPolls {
+		if err := sleepOrCancel(st.ctx, bricklensPollInterval); err != nil {
+			return nil, err
+		}
+		next, err := st.fetchTail(toSec)
+		if err != nil {
+			return nil, err
+		}
+		if slices.EqualFunc(next, collected, func(a, b logRecord) bool { return seenRecordKey(a) == seenRecordKey(b) }) {
+			return next, nil
+		}
+		collected = next
+	}
+	return collected, nil
+}
+
+// fetchTail returns up to the tail target's newest records, newest first.
+func (st *bricklensStreamer) fetchTail(toSec int64) ([]logRecord, error) {
+	target := st.req.tailTarget()
+	if target <= 0 {
+		return nil, nil
+	}
+
+	var collected []logRecord
+	var pageToken string
+	for len(collected) < target {
+		resp, err := st.requestPage(pageToken, toSec, target, false)
+		if err != nil {
+			return nil, err
+		}
+		collected = append(collected, resp.LogRecords...)
+		pageToken = resp.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	if len(collected) > target {
+		collected = collected[:target]
+	}
+	return collected, nil
 }
 
 // drainPages exhausts all pages from the current from-second in ascending order.
