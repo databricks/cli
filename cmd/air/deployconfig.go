@@ -41,10 +41,6 @@ const (
 	taskAudioTranslations   = "llm/v1/audio/translations"
 )
 
-// checkpointTasks are the tasks a checkpoint can serve, as the registration API
-// documents them; models from code serve agent tasks too.
-var checkpointTasks = []string{"llm/v1/chat", "llm/v1/completions", "llm/v1/embeddings", taskAudioTranscriptions, taskAudioTranslations}
-
 // deployCommandPath is the command whose -h documents deployConfig.
 const deployCommandPath = "databricks air deploy"
 
@@ -89,10 +85,10 @@ var entryFileRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompi
 type deployConfig struct {
 	RegisteredModel string                   `yaml:"registered_model" help:"Unity Catalog model, as <catalog>.<schema>.<model>. air deploy registers a new version of it, creating the model if it doesn't exist, unless model.type is registered." required:"yes" group:"Model"`
 	Model           *deployModelConfig       `yaml:"model" help:"What to serve: a checkpoint, a model from code, a model directory saved by MLflow, or an existing version." required:"yes" group:"Model"`
-	Task            *string                  `yaml:"task" help:"The model's task as MLflow names it: llm/v1/chat, llm/v1/completions, llm/v1/embeddings, llm/v1/audio/transcriptions or llm/v1/audio/translations for a checkpoint, or e.g. agent/v1/responses for a model from code. A model from code without a task has no signature." required:"when model.type is checkpoint" group:"Model"`
-	Command         *string                  `yaml:"command" help:"Shell command that starts the model server of a checkpoint, at most 32,768 characters. It runs from the directory where model.path appears under its own name." required:"when model.type is checkpoint" group:"Model"`
-	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment version to serve on and the packages to install, for a checkpoint or a model from code." group:"Model"`
-	CodeSource      *deployCodeSourceConfig  `yaml:"code_source" help:"Local code of a model from code, sent with the registration and stored in the model version, where anyone who can read the model can read it. Only the files under include_paths are sent, leaving out files git ignores, hidden files and directories (names starting with '.') and __pycache__ directories; run with --dry-run to list them." required:"when model.type is code" group:"Model"`
+	Task            *string                  `yaml:"task" help:"The model's task as MLflow names it. Required with command, and then one Model Serving serves a command for, such as llm/v1/chat, llm/v1/embeddings or llm/v1/audio/transcriptions. Optional with model.entry, e.g. llm/v1/chat or agent/v1/responses, where it selects MLflow's signature; a model without a task has no signature." required:"when command is set" group:"Model"`
+	Command         *string                  `yaml:"command" help:"Shell command that starts a model server over a checkpoint's weights, at most 32,768 characters, serving task on port 8080. It runs from the directory where model.path appears under its own name. Set either command or model.entry." required:"when model.type is checkpoint and model.entry is not set" group:"Model"`
+	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve on and the packages to install, for a checkpoint or a model from code." group:"Model"`
+	CodeSource      *deployCodeSourceConfig  `yaml:"code_source" help:"Local code of model.entry, sent with the registration and stored in the model version, where anyone who can read the model can read it. Only the files under include_paths are sent, leaving out files git ignores, hidden files and directories (names starting with '.') and __pycache__ directories; run with --dry-run to list them." required:"when model.entry is set" group:"Model"`
 
 	Endpoint     string               `yaml:"endpoint" help:"Serving endpoint to serve the model on. It is created if it doesn't exist. An endpoint that serves one version of registered_model is updated to serve this version instead, with the compute, environment variables and secrets in this file replacing the ones it has; air deploy doesn't change an endpoint that serves anything else." required:"yes" group:"Serving"`
 	Compute      *deployComputeConfig `yaml:"compute" help:"Serving compute and how the endpoint scales." required:"yes" group:"Serving"`
@@ -105,16 +101,18 @@ type deployConfig struct {
 
 // deployModelConfig is the `model` block: where the served model comes from.
 type deployModelConfig struct {
-	Type    string  `yaml:"type" help:"One of checkpoint (weights in a volume, started by command), code (a Python file from code_source), saved_model_dir (a model directory saved by MLflow in a volume) or registered (an existing version of registered_model)." required:"yes"`
-	Path    *string `yaml:"path" help:"Unity Catalog volume directory, as /Volumes/<catalog>/<schema>/<volume>/<path>, holding a checkpoint's weights or a model saved by MLflow. Model Serving copies it into the version." required:"when type is checkpoint or saved_model_dir"`
-	Entry   *string `yaml:"entry" help:"Python file directly under code_source.root_path that builds the model and calls mlflow.models.set_model, e.g. agent.py." required:"when type is code"`
-	Version *string `yaml:"version" help:"Version of registered_model to serve, e.g. 3." required:"when type is registered"`
+	Type        string         `yaml:"type" help:"One of checkpoint (weights in a volume, served by command or by the Python file model.entry), code (a Python file from code_source, no weights), saved_model_dir (a model directory saved by MLflow in a volume) or registered (an existing version of registered_model)." required:"yes"`
+	Path        *string        `yaml:"path" help:"Unity Catalog volume directory, as /Volumes/<catalog>/<schema>/<volume>/<path>, holding a checkpoint's weights or a model saved by MLflow. Model Serving copies it, with its subdirectories, into the version, where it appears under its own name: command finds it there, and model.entry reads its path as context.artifacts[\"<its name>\"]." required:"when type is checkpoint or saved_model_dir"`
+	Entry       *string        `yaml:"entry" help:"Python file directly under code_source.root_path that builds the model and calls mlflow.models.set_model, e.g. model.py. Model Serving's model server loads it and calls its predict; for a checkpoint, set either entry or command." required:"when type is code"`
+	ModelConfig map[string]any `yaml:"model_config" help:"Settings model.entry reads as context.model_config, as MLflow's log_model(model_config=...) records them."`
+	Streamable  *bool          `yaml:"streamable" help:"Whether model.entry answers streaming requests with predict_stream. MLflow detects this from the class when it logs a model; here it is declared. Defaults to true for a chat or agent task and false otherwise."`
+	Version     *string        `yaml:"version" help:"Version of registered_model to serve, e.g. 3." required:"when type is registered"`
 }
 
 // deployEnvironmentConfig is the `environment` block of a deployment.
 type deployEnvironmentConfig struct {
-	Version      *int     `yaml:"version" help:"Serverless environment version to serve on, e.g. 6 (default: 6). The model uses its Python version."`
-	Dependencies []string `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000. A model from code must list mlflow or mlflow-skinny."`
+	Version      *stringOrInt `yaml:"version" help:"Serverless environment to serve on: 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6), as for air run. The model uses its Python version. Standard includes CUDA but not PyTorch; the Databricks AI environment adds PyTorch, Transformers and vLLM, and needs GPU compute. A command that doesn't install SGLang runs on the Databricks AI environment either way."`
+	Dependencies []string     `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000. A model from code must list mlflow or mlflow-skinny."`
 }
 
 // deployCodeSourceConfig is the `code_source` block of a model from code.
@@ -134,7 +132,7 @@ type deployComputeConfig struct {
 // addition to the required ones in requiredSourceFields. Every other source field
 // is rejected, so a field the source can't use is never silently dropped.
 var sourceFields = map[string][]string{
-	modelTypeCheckpoint:    {"environment", "idempotency_token", "mlflow_experiment_path"},
+	modelTypeCheckpoint:    {"model.entry", "model.model_config", "model.streamable", "task", "command", "code_source", "environment", "idempotency_token", "mlflow_experiment_path"},
 	modelTypeCode:          {"task", "environment", "idempotency_token", "mlflow_experiment_path"},
 	modelTypeSavedModelDir: {"idempotency_token", "mlflow_experiment_path"},
 	modelTypeRegistered:    {},
@@ -142,7 +140,7 @@ var sourceFields = map[string][]string{
 
 // requiredSourceFields lists the fields each model.type requires.
 var requiredSourceFields = map[string][]string{
-	modelTypeCheckpoint:    {"model.path", "task", "command"},
+	modelTypeCheckpoint:    {"model.path"},
 	modelTypeCode:          {"model.entry", "code_source"},
 	modelTypeSavedModelDir: {"model.path"},
 	modelTypeRegistered:    {"model.version"},
@@ -199,6 +197,8 @@ func (c *deployConfig) validateSource() error {
 	set := map[string]bool{
 		"model.path":             m.Path != nil,
 		"model.entry":            m.Entry != nil,
+		"model.model_config":     m.ModelConfig != nil,
+		"model.streamable":       m.Streamable != nil,
 		"model.version":          m.Version != nil,
 		"task":                   c.Task != nil,
 		"command":                c.Command != nil,
@@ -219,11 +219,18 @@ func (c *deployConfig) validateSource() error {
 		}
 	}
 
-	if m.Path != nil {
-		v := *m.Path
-		if !strings.HasPrefix(v, "/Volumes/") || serverLength(v) > maxVolumePathChars {
-			return fmt.Errorf("model.path must be a Unity Catalog volume directory as /Volumes/<catalog>/<schema>/<volume>/<path>, of at most %d characters, got %q", maxVolumePathChars, v)
+	if m.Type == modelTypeCheckpoint {
+		if err := c.validateCheckpoint(); err != nil {
+			return err
 		}
+	}
+	if m.Path != nil {
+		if err := validateVolumeDirectory("model.path", *m.Path); err != nil {
+			return err
+		}
+	}
+	if c.CodeSource != nil && m.Entry == nil {
+		return errors.New("code_source can't be set without model.entry, the file in it that builds the model")
 	}
 	if m.Entry != nil && !entryFileRe().MatchString(*m.Entry) {
 		return fmt.Errorf("model.entry must name a .py file directly under code_source.root_path, e.g. agent.py, got %q", *m.Entry)
@@ -233,9 +240,6 @@ func (c *deployConfig) validateSource() error {
 	}
 	if c.Task != nil && strings.TrimSpace(*c.Task) == "" {
 		return errors.New("task cannot be empty")
-	}
-	if m.Type == modelTypeCheckpoint && !slices.Contains(checkpointTasks, *c.Task) {
-		return fmt.Errorf("task of a checkpoint must be one of %s, got %q", strings.Join(checkpointTasks, ", "), *c.Task)
 	}
 	if c.Command != nil {
 		if err := validateCommand(*c.Command); err != nil {
@@ -273,9 +277,39 @@ func (c *deployConfig) validateSource() error {
 }
 
 // validate checks the environment version and dependency lines.
+// validateCheckpoint checks the fields of a checkpoint: weights to copy, and
+// exactly one way to serve them.
+func (c *deployConfig) validateCheckpoint() error {
+	m := c.Model
+	if (c.Command != nil) == (m.Entry != nil) {
+		return errors.New("exactly one of command and model.entry is required when model.type is checkpoint: a command that serves the weights, or a Python file Model Serving's model server loads")
+	}
+	if c.Command != nil && c.Task == nil {
+		return errors.New("task is required when command is set: the task Model Serving routes to the command, such as llm/v1/chat")
+	}
+	if m.Entry != nil && c.CodeSource == nil {
+		return errors.New("code_source is required when model.entry is set: the directory that holds the file")
+	}
+	if m.Entry == nil && (m.ModelConfig != nil || m.Streamable != nil) {
+		return errors.New("model.model_config and model.streamable apply to model.entry, not to command")
+	}
+	return nil
+}
+
+// validateVolumeDirectory checks a Unity Catalog volume directory the server
+// copies into the version.
+func validateVolumeDirectory(field, v string) error {
+	if !strings.HasPrefix(v, "/Volumes/") || serverLength(v) > maxVolumePathChars {
+		return fmt.Errorf("%s must be a Unity Catalog volume directory as /Volumes/<catalog>/<schema>/<volume>/<path>, of at most %d characters, got %q", field, maxVolumePathChars, v)
+	}
+	return nil
+}
+
 func (e *deployEnvironmentConfig) validate() error {
-	if e.Version != nil && *e.Version < 1 {
-		return fmt.Errorf("environment.version must be a serverless environment version such as 6, got %d", *e.Version)
+	if e.Version != nil {
+		if _, _, err := e.runtimeVersion(); err != nil {
+			return err
+		}
 	}
 	if len(e.Dependencies) > maxDependencies {
 		return fmt.Errorf("environment.dependencies can list at most %d packages, got %d", maxDependencies, len(e.Dependencies))
@@ -329,13 +363,28 @@ func (c *deployConfig) servesOnGPU() bool {
 	return !strings.HasPrefix(c.Compute.WorkloadType, cpuWorkloadTypePrefix)
 }
 
+// runtimeVersion is environment.version as a version number, and whether it names
+// the Databricks AI environment, as air run reads the same field.
+func (e *deployEnvironmentConfig) runtimeVersion() (int, bool, error) {
+	if e == nil || e.Version == nil {
+		return defaultServingEnvironmentVersion, false, nil
+	}
+	normalized, err := validateRuntimeVersion(e.Version.raw, "environment.version")
+	if err != nil {
+		return 0, false, err
+	}
+	ai := strings.HasPrefix(normalized, databricksAIPrefix)
+	major, err := strconv.Atoi(strings.TrimPrefix(normalized, databricksAIPrefix))
+	if err != nil || major < 1 {
+		return 0, false, fmt.Errorf("environment.version must be a serverless environment version such as 6 or databricks_ai_v6, got %q", e.Version.raw)
+	}
+	return major, ai, nil
+}
+
 // servingRuntime is the serverless runtime the model is served on, as the server
 // names it: client.<version>, with a -gpu suffix on GPU compute.
 func (c *deployConfig) servingRuntime() string {
-	version := defaultServingEnvironmentVersion
-	if c.Environment != nil && c.Environment.Version != nil {
-		version = *c.Environment.Version
-	}
+	version, _, _ := c.Environment.runtimeVersion()
 	runtime := "client." + strconv.Itoa(version)
 	if c.servesOnGPU() {
 		runtime += "-gpu"
@@ -343,9 +392,13 @@ func (c *deployConfig) servingRuntime() string {
 	return runtime
 }
 
-// servingEnvironment is the registration's runtime and dependencies.
+// servingEnvironment is the registration's runtime, dependencies and base
+// environment.
 func (c *deployConfig) servingEnvironment() modelPackageEnvironment {
 	environment := modelPackageEnvironment{Runtime: c.servingRuntime()}
+	if _, ai, _ := c.Environment.runtimeVersion(); ai {
+		environment.BaseEnvironment = baseEnvironmentDatabricksAI
+	}
 	if c.Environment != nil {
 		environment.Dependencies = c.Environment.Dependencies
 	}

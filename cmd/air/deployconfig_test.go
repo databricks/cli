@@ -80,6 +80,63 @@ func TestLoadDeployConfigAudioCheckpoint(t *testing.T) {
 	}
 }
 
+const pythonCheckpointDeployConfig = `registered_model: main.ml.whisper
+model:
+  type: checkpoint
+  path: /Volumes/main/weights/whisper
+  entry: model.py
+  model_config: {language: en, beams: 4}
+  streamable: false
+task: llm/v1/chat
+code_source:
+  root_path: .
+  include_paths: [model.py]
+environment:
+  version: databricks_ai_v6
+  dependencies: [soundfile==0.13.1]
+endpoint: whisper
+compute:
+  workload_type: GPU_MEDIUM
+  workload_size: Small
+`
+
+func TestLoadDeployConfigPythonCheckpoint(t *testing.T) {
+	cfg, err := loadDeployConfigText(t, pythonCheckpointDeployConfig)
+	require.NoError(t, err)
+	assert.Equal(t, "client.6-gpu", cfg.servingRuntime())
+
+	streamable := false
+	code := &modelPackageCode{EntryFile: "model.py", EntrySource: "import mlflow\n", Files: []modelPackageFile{{Path: "util/a.py", Content: "x = 1\n"}}}
+	req := cfg.registrationRequest("key-1", code)
+	assert.Equal(t, registerModelPackageRequest{
+		RegisteredModel: "main.ml.whisper",
+		IdempotencyKey:  "key-1",
+		Checkpoint: &modelPackageCheckpoint{
+			VolumePath: "/Volumes/main/weights/whisper",
+			PythonModel: &modelPackagePythonModel{
+				EntryFile:   "model.py",
+				EntrySource: "import mlflow\n",
+				Files:       []modelPackageFile{{Path: "util/a.py", Content: "x = 1\n"}},
+				ModelConfig: `{"beams":4,"language":"en"}`,
+				Streamable:  &streamable,
+			},
+			Task:        "llm/v1/chat",
+			Environment: modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"soundfile==0.13.1"}, BaseEnvironment: "databricks-ai"},
+		},
+	}, req)
+}
+
+func TestLoadDeployConfigPythonCheckpointWithoutTask(t *testing.T) {
+	text := strings.Replace(pythonCheckpointDeployConfig, "task: llm/v1/chat\n", "", 1)
+	text = strings.Replace(text, "  model_config: {language: en, beams: 4}\n  streamable: false\n", "", 1)
+	cfg, err := loadDeployConfigText(t, text)
+	require.NoError(t, err)
+	req := cfg.registrationRequest("k", &modelPackageCode{EntryFile: "model.py"})
+	assert.Empty(t, req.Checkpoint.Task)
+	assert.Nil(t, req.Checkpoint.PythonModel.Streamable)
+	assert.Empty(t, req.Checkpoint.PythonModel.ModelConfig)
+}
+
 func TestLoadDeployConfigCodeOnCPU(t *testing.T) {
 	cfg, err := loadDeployConfigText(t, codeDeployConfig)
 	require.NoError(t, err)
@@ -151,10 +208,15 @@ func TestDeployConfigValidation(t *testing.T) {
 		{"bad model name", replaceFirst("main.models.qwen", "qwen"), "registered_model must be a Unity Catalog model name"},
 		{"backticked model name", replaceFirst("main.models.qwen", "main.models.`qwen`"), "registered_model must be a Unity Catalog model name"},
 		{"unknown type", replaceFirst("type: checkpoint", "type: pickle"), `model.type must be one of checkpoint, code, saved_model_dir, registered, got "pickle"`},
-		{"checkpoint without task", replaceFirst("task: llm/v1/chat\n", ""), "task is required when model.type is checkpoint"},
-		{"checkpoint without command", dropLine("command:"), "command is required when model.type is checkpoint"},
-		{"checkpoint with entry", replaceFirst("  type: checkpoint\n", "  type: checkpoint\n  entry: a.py\n"), "model.entry can't be set when model.type is checkpoint"},
-		{"checkpoint with code_source", appendText("code_source: {root_path: .}\n"), "code_source can't be set when model.type is checkpoint"},
+		{"checkpoint without task", replaceFirst("task: llm/v1/chat\n", ""), "task is required when command is set"},
+		{"checkpoint without command", dropLine("command:"), "exactly one of command and model.entry is required when model.type is checkpoint"},
+		{"checkpoint with command and entry", replaceFirst("  type: checkpoint\n", "  type: checkpoint\n  entry: a.py\n"), "exactly one of command and model.entry is required when model.type is checkpoint"},
+		{"checkpoint with code_source but no entry", appendText("code_source: {root_path: .}\n"), "code_source can't be set without model.entry"},
+		{"checkpoint without weights", dropLine("  path:"), "model.path is required when model.type is checkpoint"},
+		{"checkpoint with artifacts", replaceFirst("  type: checkpoint\n", "  type: checkpoint\n  artifacts: {tok: /Volumes/a/b/c/d}\n"), "field artifacts not found"},
+		{"model_config with a command", replaceFirst("  type: checkpoint\n", "  type: checkpoint\n  model_config: {k: v}\n"), "model.model_config and model.streamable apply to model.entry, not to command"},
+		{"AI environment before version 5", replaceFirst("  dependencies: [einops==0.8.0]", "  version: databricks_ai_v4"), "databricks_ai_v in environment.version requires AI Runtime version 5 or higher"},
+		{"bad environment version", replaceFirst("  dependencies: [einops==0.8.0]", "  version: six"), "unsupported client image version"},
 		{"path outside volumes", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/dbfs/weights"), "model.path must be a Unity Catalog volume directory"},
 		{"path too long", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("a", 1100)), "model.path must be a Unity Catalog volume directory"},
 		{"empty command", replaceFirst("command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080", `command: " "`), "command cannot be empty"},
@@ -163,8 +225,7 @@ func TestDeployConfigValidation(t *testing.T) {
 		{"checkpoint on CPU", replaceFirst("GPU_MEDIUM", "CPU"), "a checkpoint is served on GPU"},
 		{"unknown workload type", replaceFirst("GPU_MEDIUM", "GPU_MEDUIM"), `compute.workload_type must be one of CPU, CPU_LARGE, CPU_MEDIUM, GPU_LARGE, GPU_MEDIUM, GPU_SMALL, GPU_XLARGE, GPU_XLARGE_8, MULTIGPU_MEDIUM, got "GPU_MEDUIM"`},
 		{"lowercase workload type", replaceFirst("GPU_MEDIUM", "gpu_medium"), "compute.workload_type must be one of"},
-		{"agent task on a checkpoint", replaceFirst("task: llm/v1/chat", "task: agent/v1/responses"), `task of a checkpoint must be one of llm/v1/chat, llm/v1/completions, llm/v1/embeddings, llm/v1/audio/transcriptions, llm/v1/audio/translations, got "agent/v1/responses"`},
-		{"zero environment version", replaceFirst("  dependencies: [einops==0.8.0]", "  version: 0"), "environment.version must be a serverless environment version"},
+		{"zero environment version", replaceFirst("  dependencies: [einops==0.8.0]", "  version: 0"), "environment.version must be a serverless environment version such as 6 or databricks_ai_v6"},
 		{"empty dependency", replaceFirst("[einops==0.8.0]", `[""]`), "environment.dependencies[0] cannot be empty"},
 		{"no endpoint", dropLine("endpoint:"), `endpoint must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
 		{"endpoint with a path", replaceFirst("endpoint: qwen-chat", "endpoint: x/../../jobs"), "endpoint must be a serving endpoint name"},

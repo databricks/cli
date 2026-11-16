@@ -202,7 +202,7 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 	}
 
 	var code *modelPackageCode
-	if cfg.Model.Type == modelTypeCode {
+	if cfg.Model.Entry != nil {
 		code, err = collectModelCode(ctx, cfg, opts.file)
 		if err != nil {
 			return withCode(codeInvalidArgs, false, err)

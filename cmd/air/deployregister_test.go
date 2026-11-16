@@ -343,6 +343,29 @@ func TestRegisterAndFinalizeStopsWhenCanceled(t *testing.T) {
 	assert.Empty(t, fake.finalizeRequests)
 }
 
+func TestRegisterPythonCheckpointRequestJSON(t *testing.T) {
+	streamable := true
+	raw, err := json.Marshal(registerModelPackageRequest{
+		RegisteredModel: "a.b.c",
+		IdempotencyKey:  "k",
+		Checkpoint: &modelPackageCheckpoint{
+			VolumePath:  "/Volumes/a/b/c/w",
+			PythonModel: &modelPackagePythonModel{EntryFile: "model.py", EntrySource: "x = 1\n", ModelConfig: `{"k":"v"}`, Streamable: &streamable},
+			Environment: modelPackageEnvironment{Runtime: "client.6-gpu", BaseEnvironment: "databricks-ai"},
+		},
+	})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"registered_model": "a.b.c",
+		"idempotency_key": "k",
+		"checkpoint": {
+			"volume_path": "/Volumes/a/b/c/w",
+			"python_model": {"entry_file": "model.py", "entry_source": "x = 1\n", "model_config": "{\"k\":\"v\"}", "streamable": true},
+			"environment": {"runtime": "client.6-gpu", "base_environment": "databricks-ai"}
+		}
+	}`, string(raw))
+}
+
 func TestRegisterModelPackageRequestJSON(t *testing.T) {
 	raw, err := json.Marshal(registerModelPackageRequest{
 		RegisteredModel: "a.b.c",

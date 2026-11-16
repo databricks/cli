@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -57,11 +58,24 @@ type registerModelPackageRequest struct {
 }
 
 type modelPackageCheckpoint struct {
-	VolumePath     string                  `json:"volume_path"`
-	ServingCommand string                  `json:"serving_command"`
-	Task           string                  `json:"task"`
-	Environment    modelPackageEnvironment `json:"environment"`
+	VolumePath     string                   `json:"volume_path"`
+	ServingCommand string                   `json:"serving_command,omitempty"`
+	PythonModel    *modelPackagePythonModel `json:"python_model,omitempty"`
+	Task           string                   `json:"task,omitempty"`
+	Environment    modelPackageEnvironment  `json:"environment"`
 }
+
+// modelPackagePythonModel is the Python code that serves a checkpoint's weights.
+type modelPackagePythonModel struct {
+	EntryFile   string             `json:"entry_file"`
+	EntrySource string             `json:"entry_source"`
+	Files       []modelPackageFile `json:"files,omitempty"`
+	ModelConfig string             `json:"model_config,omitempty"`
+	Streamable  *bool              `json:"streamable,omitempty"`
+}
+
+// baseEnvironmentDatabricksAI names the Databricks AI environment to the server.
+const baseEnvironmentDatabricksAI = "databricks-ai"
 
 type modelPackageCode struct {
 	EntryFile   string                  `json:"entry_file"`
@@ -81,8 +95,9 @@ type modelPackageSavedModel struct {
 }
 
 type modelPackageEnvironment struct {
-	Runtime      string   `json:"runtime"`
-	Dependencies []string `json:"dependencies,omitempty"`
+	Runtime         string   `json:"runtime"`
+	Dependencies    []string `json:"dependencies,omitempty"`
+	BaseEnvironment string   `json:"base_environment,omitempty"`
 }
 
 // registerModelPackageResponse is the RegisterModelPackageResponse body.
@@ -159,7 +174,7 @@ func (e *finalizeError) Error() string { return e.err.Error() }
 func (e *finalizeError) Unwrap() error { return e.err }
 
 // registrationRequest builds the request that registers cfg's model under key.
-// code is the collected model from code, and is nil for the other sources.
+// code is the collected code of model.entry, and is nil when there is none.
 func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) registerModelPackageRequest {
 	req := registerModelPackageRequest{
 		RegisteredModel: c.RegisteredModel,
@@ -170,12 +185,26 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) r
 	}
 	switch c.Model.Type {
 	case modelTypeCheckpoint:
-		req.Checkpoint = &modelPackageCheckpoint{
-			VolumePath:     *c.Model.Path,
-			ServingCommand: *c.Command,
-			Task:           *c.Task,
-			Environment:    c.servingEnvironment(),
+		checkpoint := &modelPackageCheckpoint{VolumePath: *c.Model.Path, Environment: c.servingEnvironment()}
+		if c.Task != nil {
+			checkpoint.Task = *c.Task
 		}
+		if c.Command != nil {
+			checkpoint.ServingCommand = *c.Command
+		} else {
+			checkpoint.PythonModel = &modelPackagePythonModel{
+				EntryFile:   code.EntryFile,
+				EntrySource: code.EntrySource,
+				Files:       code.Files,
+				Streamable:  c.Model.Streamable,
+			}
+			if c.Model.ModelConfig != nil {
+				// The YAML decoded as JSON-compatible values; the server reads a JSON object.
+				raw, _ := json.Marshal(c.Model.ModelConfig)
+				checkpoint.PythonModel.ModelConfig = string(raw)
+			}
+		}
+		req.Checkpoint = checkpoint
 	case modelTypeCode:
 		req.Code = code
 	case modelTypeSavedModelDir:
