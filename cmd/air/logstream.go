@@ -132,6 +132,8 @@ type logRunStatus struct {
 	endTimeMs                int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
+	// attemptEndTimeMs maps each finished attempt_number to its task's end time.
+	attemptEndTimeMs map[int]int64
 }
 
 // retryTracker reports each retry once across either Jobs transition:
@@ -203,9 +205,18 @@ func (s logRunStatus) terminal() bool {
 	return terminalLifeCycleStates[s.lifeCycleState] || terminalResultStates[s.resultState]
 }
 
-// endedWithin reports whether a terminal run ended less than d before now.
-func (s logRunStatus) endedWithin(now time.Time, d time.Duration) bool {
-	return s.terminal() && s.endTimeMs > 0 && now.Sub(time.UnixMilli(s.endTimeMs)) < d
+// attemptEndedWithin reports whether the given attempt (-1 for the latest) of a
+// terminal run ended less than d before now. A past attempt uses its own task's
+// end time: it may have ended long before the run did.
+func (s logRunStatus) attemptEndedWithin(attempt int, now time.Time, d time.Duration) bool {
+	if !s.terminal() {
+		return false
+	}
+	endMs := s.endTimeMs
+	if attempt >= 0 && attempt != s.latestAttempt {
+		endMs = s.attemptEndTimeMs[attempt]
+	}
+	return endMs > 0 && now.Sub(time.UnixMilli(endMs)) < d
 }
 
 func (s logRunStatus) succeeded() bool {
@@ -262,6 +273,12 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 	}
 	for i := range run.Tasks {
 		task := &run.Tasks[i]
+		if task.EndTime > 0 {
+			if s.attemptEndTimeMs == nil {
+				s.attemptEndTimeMs = map[int]int64{}
+			}
+			s.attemptEndTimeMs[task.AttemptNumber] = max(s.attemptEndTimeMs[task.AttemptNumber], task.EndTime)
+		}
 		if i > 0 && task.AttemptNumber <= s.latestAttempt {
 			continue
 		}
@@ -593,7 +610,7 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 	if err != nil {
 		return err
 	}
-	if st.status.endedWithin(time.Now(), bricklensIndexSettleWindow) {
+	if st.status.attemptEndedWithin(st.req.attempt, time.Now(), bricklensIndexSettleWindow) {
 		collected, err = st.settleTail(toSec, collected)
 		if err != nil {
 			return err
@@ -615,7 +632,9 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 }
 
 // settleTail re-reads the tail of a run that just ended until two reads return
-// the same number of records, so lines Bricklens indexes late are not dropped.
+// the same records, so lines Bricklens indexes late are not dropped. Comparing
+// identities rather than counts matters once the tail is full: a late record
+// then shifts the window without changing its length.
 func (st *bricklensStreamer) settleTail(toSec int64, collected []logRecord) ([]logRecord, error) {
 	for range bricklensTerminalEmptyPolls {
 		if err := sleepOrCancel(st.ctx, bricklensPollInterval); err != nil {
@@ -625,7 +644,7 @@ func (st *bricklensStreamer) settleTail(toSec int64, collected []logRecord) ([]l
 		if err != nil {
 			return nil, err
 		}
-		if len(next) == len(collected) {
+		if slices.EqualFunc(next, collected, func(a, b logRecord) bool { return seenRecordKey(a) == seenRecordKey(b) }) {
 			return next, nil
 		}
 		collected = next
