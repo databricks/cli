@@ -23,38 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// hintEnvVars are the non-detection env vars MaybeHint reads. They are cleared
-// so a test run from inside Claude Code or CI sees none of the host's values.
-var hintEnvVars = []string{
-	claudeChildSessionEnv, claudeSessionEnv, ciEnv, "CLAUDE_CONFIG_DIR",
-	// CI/CD provider markers read by useragent.CiCdProvider().
-	"GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "TF_BUILD", "CIRCLECI", "TRAVIS",
-	"BITBUCKET_BUILD_NUMBER", "PROJECT_ID", "CODEBUILD_BUILD_ARN", "TFC_RUN_ID",
-}
-
-// unsetEnv unsets vars for the test and restores them afterwards. t.Setenv
-// cannot unset, hence the manual save/restore.
-func unsetEnv(t *testing.T, vars []string) {
-	for _, v := range vars {
-		if orig, ok := os.LookupEnv(v); ok {
-			t.Cleanup(func() { os.Setenv(v, orig) }) //nolint:usetesting // restoring, not setting fresh
-			os.Unsetenv(v)                           //nolint:usetesting // t.Setenv cannot unset
-		}
-	}
-}
-
 // setClaudeAgent makes useragent.AgentProvider() report Claude Code for this
 // test, with the host's agent and hint env cleared. These tests must not run
-// in parallel (see testutil.SetAgentEnv). The first t.TempDir call runs before
-// SetAgentEnv clears TMPDIR / TEMP, so later calls in the test still work.
-// It also moves into an empty project with its own .git boundary, so project
-// skills in the checkout running the tests are not detected.
+// in parallel (see testutil.SetAgentEnv). It also moves into an empty project
+// with its own .git boundary, so project skills in the checkout running the
+// tests are not detected.
 func setClaudeAgent(t *testing.T) {
 	cwd := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(cwd, ".git"), 0o755))
 	t.Chdir(cwd)
 	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
-	unsetEnv(t, hintEnvVars)
 }
 
 // claudeCtx returns a context with a captured stderr buffer and an isolated
@@ -73,10 +51,6 @@ func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "installed_plugins.json"), []byte(body), 0o600))
-}
-
-func writeCanonicalSkill(t *testing.T, home, name string) {
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks", "aitools", "skills", name), 0o755))
 }
 
 // hintKinds returns the kinds of the hint-shown events buffered on ctx,
@@ -164,8 +138,9 @@ func TestMaybeHint_ProjectPluginCountsOnlyInItsProject(t *testing.T) {
 	}
 }
 
-func TestClaudeToolingInstalled_LogsPluginVersion(t *testing.T) {
-	unsetEnv(t, hintEnvVars)
+func TestClaudeToolingInstalled_LogsPluginDetected(t *testing.T) {
+	// Clears the host's CLAUDE_CONFIG_DIR, which would move the manifest.
+	testutil.SetAgentEnv(t)
 	home := t.TempDir()
 	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
 
@@ -177,12 +152,7 @@ func TestClaudeToolingInstalled_LogsPluginVersion(t *testing.T) {
 
 	assert.True(t, claudeToolingInstalled(ctx))
 
-	// The text handler escapes the inner quotes around the version, so assert on
-	// the stable, unescaped fragments rather than the full quoted message.
-	out := buf.String()
-	assert.Contains(t, out, "Databricks plugin detected for Claude Code")
-	assert.Contains(t, out, "0.2.6")
-	assert.Contains(t, out, "skipping install hint")
+	assert.Contains(t, buf.String(), "Databricks plugin detected for Claude Code; skipping install hint")
 }
 
 func TestMaybeHint_CustomClaudeConfigDir(t *testing.T) {
@@ -251,7 +221,7 @@ func TestMaybeHint_NonDatabricksSkillStillHints(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()
 	ctx, stderr := claudeCtx(t, home)
-	writeCanonicalSkill(t, home, "some-other-skill")
+	writeClaudeSkill(t, home, "some-other-skill")
 
 	MaybeHint(ctx, regularCmd())
 	assert.Contains(t, stderr.String(), hintText)
@@ -353,6 +323,16 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 		{
 			name:       "CI=false still prints native",
 			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "false"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			name:       "CI=no still prints native",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "no"},
+			wantStderr: wantNativeHint + "\n" + hintText + "\n",
+		},
+		{
+			name:       "CI=OFF still prints native",
+			env:        map[string]string{claudeChildSessionEnv: "1", ciEnv: "OFF"},
 			wantStderr: wantNativeHint + "\n" + hintText + "\n",
 		},
 		{
@@ -464,7 +444,6 @@ func TestMaybeHint_NativeHintSilentForOtherCallers(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			testutil.SetAgentEnv(t, tc.agentEnv...)
-			unsetEnv(t, hintEnvVars)
 			ctx, stderr := claudeCtx(t, t.TempDir())
 			// Even with Claude's child-session marker present, only a sole
 			// Claude Code caller gets the native hint.
