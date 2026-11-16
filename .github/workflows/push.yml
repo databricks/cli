@@ -205,10 +205,15 @@ jobs:
       - name: Pack coverage
         if: ${{ always() && steps.cover.outputs.acc != '' }}
         env:
-          META: '{"sha": "${{ github.event.pull_request.head.sha || github.sha }}", "os": "${{ matrix.os.name }}", "cell": "${{ matrix.deployment.name }}", "pr": ${{ github.event.pull_request.number || 'null' }}}'
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          OS: ${{ matrix.os.name }}
+          CELL: ${{ matrix.deployment.name }}
+          UNIT_DIR: ${{ steps.cover.outputs.unit }}
+          ACC_DIR: ${{ steps.cover.outputs.acc }}
         run: |
-          uv run tools/coverpack.py --unit "${{ steps.cover.outputs.unit }}" --acc "${{ steps.cover.outputs.acc }}" \
-            --meta "$META" -o "$RUNNER_TEMP/coverage.txt.zst"
+          uv run tools/coverpack.py --unit "$UNIT_DIR" --acc "$ACC_DIR" -o "$RUNNER_TEMP/coverage.txt.zst" \
+            --meta "{\"sha\": \"$SHA\", \"os\": \"$OS\", \"cell\": \"$CELL\", \"pr\": ${PR_NUMBER:-null}}"
 
       - name: Upload coverage
         if: ${{ always() && steps.cover.outputs.acc != '' }}
