@@ -1,0 +1,16 @@
+Cloud = false
+RecordRequests = true
+
+# The testserver doesn't model invocations; stub a streamed chat response.
+[[Server]]
+Pattern = "POST /serving-endpoints/chat-endpoint/invocations"
+Response.Body = '''
+data: {"choices":[{"delta":{"content":"Hel"},"index":0}]}
+
+data: {"choices":[{"delta":{"content":"lo"},"finish_reason":"stop","index":0}]}
+
+data: [DONE]
+
+'''
+[Server.Response.Headers]
+Content-Type = ["text/event-stream"]
