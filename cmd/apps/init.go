@@ -1964,6 +1964,7 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 		args = append(args, "--profile", profile)
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Env = agents.SelfExecEnv(os.Environ())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -1992,6 +1993,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(ctx, executable, args...)
+		cmd.Env = agents.SelfExecEnv(os.Environ())
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin

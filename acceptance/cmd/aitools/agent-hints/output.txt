@@ -1,0 +1,46 @@
+
+=== Codex is hinted once per thread
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] air list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-2 [CLI] air list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Cursor exposes no session id, so it is hinted once per machine
+
+>>> CURSOR_AGENT=1 [CLI] air list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents cursor --scope global
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> CURSOR_AGENT=1 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Copilot CLI maps to the copilot registry agent
+
+>>> COPILOT_CLI=1 [CLI] air list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents copilot --scope global
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Gemini CLI with its own Databricks skills is not hinted
+
+>>> GEMINI_CLI=1 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Agents the CLI cannot install for are not hinted
+
+>>> WINDSURF_AGENT=1 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+>>> VSCODE_AGENT=1 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Nested agents are not hinted
+
+>>> CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.

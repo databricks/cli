@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -78,7 +79,7 @@ func TestRunnableAirCommandsGetSkillHint(t *testing.T) {
 					ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 					ctx = env.WithUserHomeDir(ctx, t.TempDir())
 					ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
-					agents.MaybeHint(ctx, sub)
+					agents.MaybeHint(ctx, sub, func(context.Context, string) bool { return false })
 					assert.Contains(t, stderr.String(), "install the databricks-ai-runtime skill")
 				})
 			}

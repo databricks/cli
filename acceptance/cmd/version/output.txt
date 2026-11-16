@@ -40,3 +40,10 @@ Tip: coding agents detected without Databricks skills. Run 'databricks aitools i
 >>> [CLI] version --check
 Databricks CLI v[CLI_VERSION]
 This is a development build; skipping the update check.
+
+=== version --check from Codex prints only the root hint
+
+>>> [CLI] version --check
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
+Databricks CLI v[CLI_VERSION]
+This is a development build; skipping the update check.

@@ -63,8 +63,8 @@ func (t Tooling) String() string {
 // only plugin source, so it misses plugins installed with the agent's own CLI
 // and includes plugins later removed with it. The shared skills store is not consulted: it cannot attribute skills.
 // The install hint's airSkillAvailable differs on purpose: it looks for the AI
-// Runtime skill only, in the shared store too, while this reports what the
-// agent loads.
+// Runtime skill only (the plugin counts either way), so another Databricks
+// skill never silences a hint about this one.
 func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() bool) Tooling {
 	// An unknown working directory skips the project lookups below.
 	cwd := ""
@@ -93,6 +93,10 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 	}
 	return ToolingNone
 }
+
+// noRecordedPlugin is the pluginRecorded argument to DatabricksTooling for
+// callers that don't consult the CLI install record.
+func noRecordedPlugin() bool { return false }
 
 // projectDirs returns cwd and each of its parents up to the repository root,
 // the nearest directory holding .git (a file in a git worktree, so the walk

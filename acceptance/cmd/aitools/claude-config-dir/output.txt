@@ -7,6 +7,7 @@ No active runs found. Use --all-status to include runs that are no longer active
 === Custom directory takes precedence over the default installation
 
 >>> CLAUDE_CONFIG_DIR=missing [CLI] air list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
 No active runs found. Use --all-status to include runs that are no longer active.
 
@@ -16,6 +17,22 @@ No active runs found. Use --all-status to include runs that are no longer active
 No active runs found. Use --all-status to include runs that are no longer active.
 
 === Unset override uses the default installation
+
+>>> [CLI] air list
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Outside a Claude Code subprocess only the text hint prints
+
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] air list
+Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
+No active runs found. Use --all-status to include runs that are no longer active.
+
+=== Within one session both lines print once, so 2>&1 pipelines see them only on the first command
+
+>>> [CLI] air list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
+No active runs found. Use --all-status to include runs that are no longer active.
 
 >>> [CLI] air list
 No active runs found. Use --all-status to include runs that are no longer active.

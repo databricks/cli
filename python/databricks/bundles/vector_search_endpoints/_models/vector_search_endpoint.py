@@ -34,17 +34,21 @@ class VectorSearchEndpoint(Resource):
 
     endpoint_type: VariableOr[EndpointType]
     """
-    Type of endpoint
+    Type of endpoint to create. STANDARD endpoints are optimized for low-latency queries and support
+    Target QPS scaling. STORAGE_OPTIMIZED endpoints hold much larger indexes and index faster, with
+    higher query latency. See https://docs.databricks.com/aws/en/ai-search/ai-search#endpoint-options.
     """
 
     name: VariableOr[str]
     """
-    Name of the AI Search endpoint
+    Name of the AI Search endpoint. The name must be unique within the workspace, have at most 50
+    characters, contain only lowercase letters, digits, hyphens, underscores and periods, and start
+    and end with a letter or digit.
     """
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    [Public Preview] The budget policy id to be applied
+    [Public Preview] Budget policy to attribute the endpoint's usage to. If omitted, the default budget policy applies.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -61,7 +65,7 @@ class VectorSearchEndpoint(Resource):
 
     target_qps: VariableOrOptional[int] = None
     """
-    Target QPS for the endpoint. Mutually exclusive with num_replicas.
+    Target queries per second (QPS) for the endpoint. Supported for STANDARD endpoints only.
     The actual replica count is calculated at index creation/sync time based on this value.
     Best-effort target; the system does not guarantee this QPS will be achieved.
     """
@@ -86,17 +90,21 @@ class VectorSearchEndpointDict(TypedDict, total=False):
 
     endpoint_type: VariableOr[EndpointTypeParam]
     """
-    Type of endpoint
+    Type of endpoint to create. STANDARD endpoints are optimized for low-latency queries and support
+    Target QPS scaling. STORAGE_OPTIMIZED endpoints hold much larger indexes and index faster, with
+    higher query latency. See https://docs.databricks.com/aws/en/ai-search/ai-search#endpoint-options.
     """
 
     name: VariableOr[str]
     """
-    Name of the AI Search endpoint
+    Name of the AI Search endpoint. The name must be unique within the workspace, have at most 50
+    characters, contain only lowercase letters, digits, hyphens, underscores and periods, and start
+    and end with a letter or digit.
     """
 
     budget_policy_id: VariableOrOptional[str]
     """
-    [Public Preview] The budget policy id to be applied
+    [Public Preview] Budget policy to attribute the endpoint's usage to. If omitted, the default budget policy applies.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -111,7 +119,7 @@ class VectorSearchEndpointDict(TypedDict, total=False):
 
     target_qps: VariableOrOptional[int]
     """
-    Target QPS for the endpoint. Mutually exclusive with num_replicas.
+    Target queries per second (QPS) for the endpoint. Supported for STANDARD endpoints only.
     The actual replica count is calculated at index creation/sync time based on this value.
     Best-effort target; the system does not guarantee this QPS will be achieved.
     """

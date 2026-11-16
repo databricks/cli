@@ -23,10 +23,19 @@ trace $CLI version --check
 title "version --check --output json with a coding agent prints no tip"
 trace $CLI version --check --output json
 
-# Claude Code callers get no tip: agents.MaybeHint owns their hints and only
-# hints on air subcommands.
+# Callers that agents.MaybeHint hints get no tip here: it owns their install
+# guidance and only hints on air subcommands, so `databricks version` prints
+# no install guidance to them.
 title "version --check from Claude Code prints no hint"
 sethome ./claude-home
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
 trace $CLI version --check
+unset CLAUDECODE
+
+title "version --check from Codex prints no hint"
+sethome ./codex-home
+export CODEX_CI=1
+unset CODEX_THREAD_ID
+trace $CLI version --check
+unset CODEX_CI

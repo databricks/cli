@@ -171,6 +171,29 @@ func TestRenderFields(t *testing.T) {
 	assert.NotContains(t, out, "\n\n")
 }
 
+func TestRenderFieldsStripsControlCharacters(t *testing.T) {
+	p := asciiPalette(t)
+	out := renderFields(p, false, runView{
+		runID:        "1",
+		status:       "SUCCESS",
+		submitted:    "2026-06-03 04:17 UTC",
+		maxRetries:   "3",
+		duration:     "1m 13s",
+		experiment:   "\x1b]0;pwned\x07exp\x1b[2Jeriment",
+		mlflowLabel:  "run\rname",
+		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
+		user:         "user\x1b[31m@example.com",
+		accelerators: "1x A10",
+		environment:  "4",
+	})
+
+	assert.Contains(t, out, "Experiment    experiment")
+	assert.Contains(t, out, "MLflow Run    runname")
+	assert.Contains(t, out, "User          user@example.com")
+	assert.NotContains(t, out, "\x1b")
+	assert.NotContains(t, out, "\r")
+}
+
 func TestLink(t *testing.T) {
 	p := asciiPalette(t)
 	// Color off: the bare label, no URL.

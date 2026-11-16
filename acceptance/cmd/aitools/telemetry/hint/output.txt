@@ -1,11 +1,13 @@
 
-=== hint printed on an air command: one hint-shown event is uploaded
+=== hint printed on an air command: one hint-shown event per printed line is uploaded
 
 >>> [CLI] air list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
 No active runs found. Use --all-status to include runs that are no longer active.
 
 >>> print_telemetry
+{"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"CLAUDE_CODE_NATIVE"}}
 {"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 
 === commands outside air print no hint and log no event
@@ -32,10 +34,12 @@ preview/databricks-test/SKILL.md
 no aitools state in HOME
 
 >>> [CLI] air list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
 No active runs found. Use --all-status to include runs that are no longer active.
 
 >>> print_telemetry
+{"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"CLAUDE_CODE_NATIVE"}}
 {"command":"air_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 
 === plugin installed: no hint, no event
