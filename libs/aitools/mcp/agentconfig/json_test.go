@@ -231,3 +231,35 @@ func TestJSONAddKeepsStrictJSON(t *testing.T) {
 		assert.Equal(t, "y", semantic(t, mcpconfig.FormatJSON, []byte(got))["mcpServers"].(map[string]any)["x"].(map[string]any)["command"], data)
 	}
 }
+
+// TestJSONRemoveLastDropsEmptyContainers checks that removing the last member of
+// a container drops the container, and each container above it that it leaves
+// empty. A file gets back the bytes it had before the add, in LF and CRLF files.
+func TestJSONRemoveLastDropsEmptyContainers(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		root []string
+		data string
+	}{
+		{"one level", []string{"mcpServers"}, "{\n  \"theme\": \"dark\"\n}\n"},
+		{"one level compact", []string{"mcpServers"}, `{"theme": "dark"}`},
+		{"one level before a member", []string{"mcpServers"}, "{\n  \"theme\": \"dark\",\n  \"model\": \"x\"\n}\n"},
+		{"two levels", []string{"mcp", "servers"}, "{\n  \"theme\": \"dark\"\n}\n"},
+		{"two levels compact", []string{"mcp", "servers"}, `{"theme": "dark"}`},
+		{"empty file object", []string{"mcpServers"}, "{}\n"},
+		{"sibling of the emptied level stays", []string{"mcp", "servers"}, `{"mcp": {"other": 1}}`},
+	} {
+		for _, nl := range []string{"\n", "\r\n"} {
+			t.Run(tc.name, func(t *testing.T) {
+				data := strings.ReplaceAll(tc.data, "\n", nl)
+				added := jsonEdit(t, data, func(d document) {
+					require.NoError(t, d.put(tc.root, "x", map[string]any{"command": "x"}, nil))
+				})
+				got := jsonEdit(t, added, func(d document) {
+					require.NoError(t, d.put(tc.root, "x", nil, nil))
+				})
+				assert.Equal(t, data, got, "line ending %q", nl)
+			})
+		}
+	}
+}

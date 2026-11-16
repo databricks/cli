@@ -112,6 +112,18 @@ func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []stri
 	if err != nil {
 		return err
 	}
+	// The [root] table goes with its last server, the same as the container of a
+	// JSON file. Only the server is left in the table when it is found.
+	if entry == nil && found {
+		table, err := d.table(root)
+		if err != nil {
+			return err
+		}
+		if len(table) == 1 {
+			ranges = append(ranges, tableBlocks(lines, func(parts []string) bool { return slices.Equal(parts, root) })...)
+			slices.SortFunc(ranges, func(a, b lineRange) int { return a.start - b.start })
+		}
+	}
 	if found && len(ranges) == 0 {
 		return fmt.Errorf("server %q is not defined by its own [%s] tables (inline table or dotted keys), so it cannot be edited; edit it by hand",
 			name, strings.Join(append(root, name), "."))
@@ -361,6 +373,12 @@ type lineRange struct {
 // next table header. Blank and comment lines right before that header are not
 // part of the range, since they describe the header that follows.
 func serverBlocks(lines [][]byte, root []string, name string) []lineRange {
+	return tableBlocks(lines, func(parts []string) bool { return isServerTable(parts, root, name) })
+}
+
+// tableBlocks returns the line ranges of the tables whose key path match accepts,
+// each ending before the next table header. See serverBlocks.
+func tableBlocks(lines [][]byte, match func(parts []string) bool) []lineRange {
 	var headers []int
 	var keys [][]string
 	for i, line := range lines {
@@ -371,7 +389,7 @@ func serverBlocks(lines [][]byte, root []string, name string) []lineRange {
 	}
 	var ranges []lineRange
 	for h, parts := range keys {
-		if !isServerTable(parts, root, name) {
+		if !match(parts) {
 			continue
 		}
 		end := len(lines)

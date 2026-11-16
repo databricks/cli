@@ -365,7 +365,9 @@ func indent(depth int) string {
 
 // remove deletes name under root. A missing name is a no-op. Removing the last
 // member keeps the file's trailing-comma state: a strict file gets no comma after
-// the member that becomes last.
+// the member that becomes last. An object that the removal leaves empty is
+// removed from its parent too, and so on up to the root object, which stays. A
+// file that had no such object before an add gets back its bytes.
 func (d *jsonDoc) remove(root []string, name string) error {
 	obj, err := d.object(root)
 	if err != nil || obj == nil || findMember(obj, name) == nil {
@@ -380,6 +382,17 @@ func (d *jsonDoc) remove(root []string, name string) error {
 		return err
 	}
 	setTrailingComma(obj, trailing)
+	useLineEnding(obj, d.nl)
+	if len(obj.Members) == 0 {
+		if len(root) > 0 {
+			return d.remove(root[:len(root)-1], root[len(root)-1])
+		}
+		// The root object is left empty. Its layout goes, so it reads {} as an
+		// empty file did, unless a comment sits inside it.
+		if len(bytes.TrimSpace(obj.AfterExtra)) == 0 {
+			obj.AfterExtra = nil
+		}
+	}
 	return nil
 }
 

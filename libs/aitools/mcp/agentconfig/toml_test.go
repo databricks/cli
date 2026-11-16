@@ -352,3 +352,32 @@ func TestTOMLAddThenRemoveRestoresBytes(t *testing.T) {
 		})
 	}
 }
+
+// TestTOMLRemoveLastDropsEmptyRootTable checks that removing the last server
+// drops the [mcp_servers] table when no other key is left under it, and keeps it
+// when a key is, in LF and CRLF files.
+func TestTOMLRemoveLastDropsEmptyRootTable(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		before string
+		want   string
+	}{
+		{"header only", "model = \"x\"\n\n[mcp_servers]\n", "model = \"x\"\n"},
+		{"header with key", "[mcp_servers]\nenabled = true\n", "[mcp_servers]\nenabled = true\n"},
+	} {
+		for _, nl := range []string{"\n", "\r\n"} {
+			t.Run(tc.name, func(t *testing.T) {
+				path := filepath.Join(t.TempDir(), "config.toml")
+				writeFile(t, path, []byte(strings.ReplaceAll(tc.before, "\n", nl)), 0o600)
+				a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+				_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+				require.NoError(t, err)
+				removed, err := Remove(t.Context(), a, testName)
+				require.NoError(t, err)
+				assert.True(t, removed)
+				assert.Equal(t, strings.ReplaceAll(tc.want, "\n", nl), string(readFile(t, path)), "line ending %q", nl)
+			})
+		}
+	}
+}
