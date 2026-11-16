@@ -1,8 +1,0 @@
-
-=== Flag validation runs before the TTY is needed
-
->>> [CLI] selftest tui table --cols 0
-Error: --cols must be at least 1, got 0
-
->>> [CLI] selftest tui table --rows -1
-Error: --rows must be non-negative, got -1

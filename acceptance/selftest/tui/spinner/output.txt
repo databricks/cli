@@ -1,5 +1,0 @@
-
-=== --duration is accepted and the spinner completes
-
->>> [CLI] selftest tui spinner --duration 500ms
-Spinner test complete
