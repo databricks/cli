@@ -1,0 +1,23 @@
+# apps import of an app whose source has an app.yml with a plain env value, a
+# valueFrom reference and an unquoted value that YAML reads as a number.
+APP_PATH="/Workspace/Users/$CURRENT_USER_NAME/myapp"
+$CLI workspace import-dir src "$APP_PATH" > /dev/null
+$CLI apps create myapp > /dev/null
+$CLI apps deploy myapp --source-code-path "$APP_PATH" > /dev/null
+
+trace $CLI apps import --name myapp --output-dir out
+
+trace ls out
+
+trace cat out/databricks.yml
+
+if [ -f out/app.yml ]; then
+    trace cat out/app.yml
+fi
+
+title "App config the bundle deploys"
+cd out
+trace $CLI bundle validate -o json | jq '.resources.apps.app.config'
+cd ..
+
+rm -rf out
