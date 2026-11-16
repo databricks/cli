@@ -7,6 +7,7 @@ Env.NO_COLOR = ""
 Env.CI = ""
 Env.TERM_PROGRAM = ""
 Env.WT_SESSION = ""
+Env.COLORFGBG = ""
 
 # Only the non-interactive paths run here. Live rendering and raw mode need a
 # real TTY, which is checked by hand under a PTY.
