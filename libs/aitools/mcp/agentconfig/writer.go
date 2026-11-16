@@ -96,7 +96,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err := checkName(name); err != nil {
 		return "", "", err
 	}
-	for k := range env {
+	for _, k := range slices.Sorted(maps.Keys(env)) {
 		if k != pinnedEnv {
 			return "", "", fmt.Errorf("server %q: env may only set %s, got %q", name, pinnedEnv, k)
 		}
