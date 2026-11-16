@@ -72,13 +72,13 @@ are visible.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&stream, "stream", "", "write output to stdout or stderr (default: cmdio.LogString, stderr)")
+	cmd.Flags().StringVar(&stream, "stream", "", "write output to stdout or stderr (default: stderr)")
 	cmd.Flags().BoolVar(&swatches, "lipgloss", false, "also print truecolor and 256-color swatches")
 	return cmd
 }
 
-// writeLine keeps the default stream on cmdio.LogString so the default output
-// stays exactly as it was before --stream existed.
+// writeLine sends lines without --stream through cmdio.LogString, so the default
+// output and its stderr routing are unchanged.
 func writeLine(ctx context.Context, stream string, w io.Writer, s string) {
 	if stream == "" {
 		cmdio.LogString(ctx, s)

@@ -88,6 +88,9 @@ func newPagerCmd() *cobra.Command {
 			if items < 0 {
 				return fmt.Errorf("--items must be non-negative, got %d", items)
 			}
+			if delayFirst < 0 || delay < 0 {
+				return fmt.Errorf("--delay and --delay-first must not be negative, got %s and %s", delay, delayFirst)
+			}
 			if failAfter < -1 {
 				return fmt.Errorf("--fail-after must be -1 or greater, got %d", failAfter)
 			}
