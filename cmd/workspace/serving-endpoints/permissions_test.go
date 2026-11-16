@@ -12,7 +12,8 @@ func TestIsEndpointID(t *testing.T) {
 		want bool
 	}{
 		{"31ee674b7e6643f6930d5e12148fbe6f", true},
-		{"31EE674B7E6643F6930D5E12148FBE6F", false},
+		{"31EE674B7E6643F6930D5E12148FBE6F", true},
+		{"root", true},
 		{"31ee674b-7e66-43f6-930d-5e12148fbe6f", false},
 		{"31ee674b7e6643f6930d5e12148fbe6", false},
 		{"my-endpoint", false},

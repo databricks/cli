@@ -14,16 +14,24 @@ const permissionsNameHelp = `
       You can also pass the endpoint NAME; it is resolved to the ID with
       "serving-endpoints get".`
 
-// endpointIDLength is the length of a serving endpoint ID (32 hex characters).
-const endpointIDLength = 32
+const (
+	// endpointIDLength is the length of a serving endpoint ID (32 hex characters).
+	endpointIDLength = 32
+	// rootEndpointID is the ID of the root object that endpoints inherit permissions from.
+	rootEndpointID = "root"
+)
 
-// isEndpointID reports whether s has the shape of a serving endpoint ID.
+// isEndpointID reports whether s is a value the permissions API accepts as an
+// endpoint ID: "root" or 32 hex characters, matching the server's validation.
 func isEndpointID(s string) bool {
+	if s == rootEndpointID {
+		return true
+	}
 	if len(s) != endpointIDLength {
 		return false
 	}
 	for _, r := range s {
-		if !strings.ContainsRune("0123456789abcdef", r) {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
 			return false
 		}
 	}
