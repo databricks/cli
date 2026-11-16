@@ -23,9 +23,17 @@ trace $CLI version --check
 title "version --check --output json with a coding agent prints no tip"
 trace $CLI version --check --output json
 
-# Claude Code callers get only the root hint (agents.MaybeHint), not the tip.
+# Callers that agents.MaybeHint hints get only the root hint, not the tip.
 title "version --check from Claude Code prints only the root hint"
 sethome ./claude-home
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
 trace $CLI version --check
+unset CLAUDECODE
+
+title "version --check from Codex prints only the root hint"
+sethome ./codex-home
+export CODEX_CI=1
+unset CODEX_THREAD_ID
+trace $CLI version --check
+unset CODEX_CI

@@ -152,6 +152,14 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 	}
 }
 
+// isHintedAgent reports whether MaybeHint hints the agent with this
+// useragent.AgentProvider() value. It defers to hintForAgent so both follow
+// the same dispatch; pluginRecorded is only read when the hint's installed
+// check runs, so none is needed here.
+func isHintedAgent(provider string) bool {
+	return hintForAgent(provider, nil) != nil
+}
+
 // nativeLine returns the agent-native line due for this invocation, or "".
 func (h *agentHint) nativeLine(ctx context.Context) string {
 	if h.native == nil {
