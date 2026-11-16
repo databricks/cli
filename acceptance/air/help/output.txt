@@ -28,13 +28,13 @@ Provisioned capacity:
   pools           View provisioned GPU pools, if any (not required to run)
 
 Flags:
-  -h, --help   help for air
+  -h, --help[=true|false]   help for air
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air [command] --help" for more information about a command.
 
@@ -73,17 +73,17 @@ Examples:
     --filter user=person@example.com
 
 Flags:
-      --all-status           Show runs in all states (default: active only)
-      --all-users            Show runs from all users
-      --filter stringArray   Filter runs by KEY=VALUE (repeatable)
-  -h, --help                 help for list
-      --limit int            Maximum number of runs to show (default 20)
+      --all-status[=true|false]   Show runs in all states (default: active only)
+      --all-users[=true|false]    Show runs from all users
+      --filter stringArray        Filter runs by KEY=VALUE (repeatable)
+  -h, --help[=true|false]         help for list
+      --limit int                 Maximum number of runs to show (default 20)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === get help
 
@@ -96,13 +96,13 @@ Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
-  -h, --help   help for get
+  -h, --help[=true|false]   help for get
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === pools help
 
@@ -122,13 +122,13 @@ Available Commands:
   list        List the GPU pools available to the current workspace
 
 Flags:
-  -h, --help   help for pools
+  -h, --help[=true|false]   help for pools
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air pools [command] --help" for more information about a command.
 
@@ -145,13 +145,13 @@ Available Commands:
   push        *Preview* Push a container image to Databricks Artifact Registry
 
 Flags:
-  -h, --help   help for images
+  -h, --help[=true|false]   help for images
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air images [command] --help" for more information about a command.
 
@@ -176,18 +176,18 @@ Usage:
   databricks air images push [flags]
 
 Flags:
-      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
-      --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
-  -h, --help              help for push
-      --pull              Pull the source image even when it is already available locally
-      --schema string     Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
-  -s, --source string     Source container image to push (NAME[:TAG] or NAME@DIGEST)
+      --artifact string     Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
+      --catalog string      Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -h, --help[=true|false]   help for push
+      --pull[=true|false]   Pull the source image even when it is already available locally
+      --schema string       Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -s, --source string       Source container image to push (NAME[:TAG] or NAME@DIGEST)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === logs help
 
@@ -207,17 +207,17 @@ Examples:
 
 Flags:
       --download-to string   Download all logs to this directory instead of printing; not combinable with --tail or --minutes
-  -h, --help                 help for logs
+  -h, --help[=true|false]    help for logs
       --minutes int          Fetch only logs from the last N minutes
       --node int             Fetch logs from this node
       --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
       --tail int             Print the last N existing lines before following, or from a completed run (default 10000)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === cancel help
 
@@ -231,12 +231,12 @@ Usage:
   databricks air cancel [JOB_RUN_ID...] [flags]
 
 Flags:
-      --all    Cancel all of your active runs
-  -h, --help   help for cancel
-  -y, --yes    Skip the confirmation prompt
+      --all[=true|false]    Cancel all of your active runs
+  -h, --help[=true|false]   help for cancel
+  -y, --yes[=true|false]    Skip the confirmation prompt
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
