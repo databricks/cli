@@ -110,6 +110,9 @@ type logRequest struct {
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.
 	staticView bool
+	// printOnce prints an active run's available logs and exits instead of
+	// following it (air logs without --follow).
+	printOnce bool
 	// boundInitialLogs limits existing output before following an active run.
 	boundInitialLogs bool
 	jsonOutput       bool

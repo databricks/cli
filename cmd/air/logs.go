@@ -26,25 +26,30 @@ func newLogsCommand() *cobra.Command {
 		retry      int
 		downloadTo string
 		review     bool
+		follow     bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "logs JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Stream or fetch a run's logs",
-		Long: `Stream logs from an active run until it completes, or fetch logs from a
-completed run.
+		Short: "Print or follow a run's logs",
+		Long: `Print a run's logs and exit, or follow an active run with --follow.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run". By default this
+prints the logs available now: the last 10000 lines, or --tail N lines. With
+--follow it prints them and then streams new lines until the run completes.`,
 		Example: `  databricks air logs 123456789
+  databricks air logs 123456789 --tail 50
+  databricks air logs 123456789 --follow
   databricks air logs 123456789 --node 1 --retry 0
   databricks air logs 123456789 --download-to ./logs`,
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")
-	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
+	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N lines (default 10000); with --follow, before streaming new ones")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
+	cmd.Flags().BoolVarP(&follow, "follow", "f", false, "Stream new lines until the run completes")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing; not combinable with --tail or --minutes")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	cmd.Flags().MarkHidden("review")
@@ -77,6 +82,11 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 
 		// --tail (line tail) and --minutes (time window) answer the same question
 		// two ways, so reject both together rather than silently honoring one.
+		if downloadTo != "" && follow {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				errors.New("--download-to writes the logs available now, so it cannot be combined with --follow"))
+		}
+
 		if tail > 0 && minutes > 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				errors.New("cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window"))
@@ -112,9 +122,10 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 
 		// Only the streaming path prints resume guidance, so only it catches the
 		// interrupt: without this a Ctrl-C kills the process before
-		// handleWatchResult runs. Download and JSON keep the default handling.
+		// handleWatchResult runs. Printing, download and JSON keep the default
+		// handling.
 		streamCtx := ctx
-		if downloadTo == "" && root.OutputType(cmd) != flags.OutputJSON {
+		if follow && root.OutputType(cmd) != flags.OutputJSON {
 			var stop context.CancelFunc
 			streamCtx, stop = notifyInterrupt(ctx)
 			defer stop()
@@ -130,6 +141,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 			boundInitialLogs: minutes == 0,
 			downloadTo:       downloadTo,
 			jsonOutput:       root.OutputType(cmd) == flags.OutputJSON,
+			printOnce:        !follow,
 		})
 		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
 			return err
@@ -186,8 +198,11 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 		return nil
 	}
 
-	// A past retry of an active run has immutable logs: render once, don't follow.
-	if req.attempt >= 0 && req.attempt < status.latestAttempt && !status.terminal() {
+	// Without --follow an active run's logs print once. A past retry of an active
+	// run has immutable logs, so it renders once either way. A completed run keeps
+	// the regular path, which already prints and exits.
+	pastRetry := req.attempt >= 0 && req.attempt < status.latestAttempt
+	if (req.printOnce || pastRetry) && !status.terminal() {
 		req.staticView = true
 	}
 
