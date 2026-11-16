@@ -236,8 +236,8 @@ func completedRunLogsServer(t *testing.T) *httptest.Server {
 				{"time_unix_nano": 2000000000, "body": "line two", "node_index": 0},
 				{"time_unix_nano": 1000000000, "body": "line one", "node_index": 0}
 			]}`))
-		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
-			t.Errorf("unexpected Me() probe on a successful logs fetch")
+		case strings.HasSuffix(r.URL.Path, "/identity/me"):
+			t.Errorf("unexpected current-user probe on a successful logs fetch")
 			w.WriteHeader(http.StatusInternalServerError)
 		default:
 			// SDK config discovery.
