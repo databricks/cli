@@ -6,8 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
