@@ -1,0 +1,1 @@
+* Boolean flags now show `[=true|false]` in help output to indicate that they accept an optional explicit value, such as `--debug=false`. When a boolean flag is passed more than once, the last occurrence wins. ([#7635](https://github.com/databricks/cli/pull/7635), [#7683](https://github.com/databricks/cli/pull/7683))
