@@ -85,7 +85,7 @@ func IsPromptSupported(ctx context.Context) bool {
 
 // IsInputTTY reports whether stdin is a terminal, so that a user can type
 // input into the command. Unlike IsPromptSupported, it does not depend on
-// stderr, NO_COLOR, TERM=dumb or Git Bash, which only matter for rendering
+// stderr, NO_COLOR, TERM=dumb or MSYS2 pipes, which only matter for rendering
 // prompts.
 func IsInputTTY(ctx context.Context) bool {
 	c := fromContext(ctx)
@@ -174,7 +174,6 @@ func MockDiscard(ctx context.Context) context.Context {
 			stdoutIsTTY: false,
 			stderrIsTTY: false,
 			color:       false,
-			isGitBash:   false,
 		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),

@@ -1,0 +1,1 @@
+* Interactive prompts and pagers now work on Windows in MSYS2-based terminals (such as mintty) that run the CLI under ConPTY, the default since Git for Windows 2.47; they are disabled only when stdin is a legacy MSYS2 pty pipe. ([#7699](https://github.com/databricks/cli/pull/7699))

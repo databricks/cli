@@ -4,7 +4,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,18 +55,17 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: true,
 				stderrIsTTY: true,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: true,
 		},
 		{
-			name: "Git Bash blocks prompts",
+			name: "MSYS2 pipe stdin blocks prompts",
 			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   true,
+				stdinIsTTY:      true,
+				stdoutIsTTY:     true,
+				stderrIsTTY:     true,
+				color:           true,
+				stdinIsMSYSPipe: true,
 			},
 			expected: false,
 		},
@@ -78,7 +76,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: true,
 				stderrIsTTY: true,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: false,
 		},
@@ -89,7 +86,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: false,
 				stderrIsTTY: true,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: true,
 		},
@@ -100,7 +96,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: true,
 				stderrIsTTY: false,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: false,
 		},
@@ -111,7 +106,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: true,
 				stderrIsTTY: true,
 				color:       false,
-				isGitBash:   false,
 			},
 			expected: false,
 		},
@@ -122,7 +116,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				stdoutIsTTY: false,
 				stderrIsTTY: false,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: false,
 		},
@@ -133,16 +126,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.caps.SupportsPrompt())
 		})
 	}
-}
-
-func TestDetectGitBash(t *testing.T) {
-	ctx := t.Context()
-	assert.False(t, detectGitBash(ctx))
-
-	ctx = env.Set(ctx, "MSYSTEM", "MINGW64")
-	ctx = env.Set(ctx, "TERM", "xterm")
-	ctx = env.Set(ctx, "PS1", "\\[\033]0;$TITLEPREFIX:$PWD\007\\]\n\\[\033[32m\\]\\u@\\h \\[\033[35m\\]$MSYSTEM \\[\033[33m\\]\\w\\[\033[36m\\]`__git_ps1`\\[\033[0m\\]\n$")
-	assert.True(t, detectGitBash(ctx))
 }
 
 func TestCapabilities_SupportsColor(t *testing.T) {
@@ -193,12 +176,11 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 		expected InteractiveMode
 	}{
 		{
-			name: "full interactive - all TTYs, color, no Git Bash",
+			name: "full interactive - all TTYs, color, console stdin",
 			caps: Capabilities{
 				stdinIsTTY:  true,
 				stderrIsTTY: true,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: InteractiveModeFull,
 		},
@@ -208,17 +190,16 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 				stdinIsTTY:  false,
 				stderrIsTTY: true,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: InteractiveModeOutputOnly,
 		},
 		{
-			name: "output only - Git Bash",
+			name: "output only - MSYS2 pipe stdin",
 			caps: Capabilities{
-				stdinIsTTY:  true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   true,
+				stdinIsTTY:      true,
+				stderrIsTTY:     true,
+				color:           true,
+				stdinIsMSYSPipe: true,
 			},
 			expected: InteractiveModeOutputOnly,
 		},
@@ -228,7 +209,6 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 				stdinIsTTY:  true,
 				stderrIsTTY: false,
 				color:       true,
-				isGitBash:   false,
 			},
 			expected: InteractiveModeNone,
 		},
@@ -238,7 +218,6 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 				stdinIsTTY:  true,
 				stderrIsTTY: true,
 				color:       false,
-				isGitBash:   false,
 			},
 			expected: InteractiveModeNone,
 		},
@@ -248,7 +227,6 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 				stdinIsTTY:  false,
 				stderrIsTTY: false,
 				color:       false,
-				isGitBash:   false,
 			},
 			expected: InteractiveModeNone,
 		},

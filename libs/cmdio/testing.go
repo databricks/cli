@@ -76,7 +76,6 @@ func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 			stdoutIsTTY: opts.PromptSupported,
 			stderrIsTTY: true,
 			color:       opts.PromptSupported,
-			isGitBash:   false,
 		},
 		in:  rin,
 		out: wout,
