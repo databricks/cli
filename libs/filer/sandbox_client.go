@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"maps"
 	"net/http"
 	"net/url"
 	"path"
@@ -15,10 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
@@ -102,8 +99,7 @@ func (i sandboxFileInfo) Sys() any {
 // Uploads create missing parents and deletes succeed for absent paths, so this
 // client checks those paths to enforce the stricter Filer contract.
 type SandboxClient struct {
-	api          sandbox.SandboxInterface
-	uploadClient *client.DatabricksClient
+	api sandbox.SandboxInterface
 
 	// parent is the sandbox resource name, "sandboxes/{sandbox_id}", that every
 	// file API call is scoped to.
@@ -127,15 +123,10 @@ func NewSandboxClient(w *databricks.WorkspaceClient, sandboxID, root string) (Fi
 	if !path.IsAbs(root) {
 		return nil, fmt.Errorf("sandbox root must be absolute: %s", root)
 	}
-	uploadClient, err := client.New(w.Config)
-	if err != nil {
-		return nil, err
-	}
 	return &SandboxClient{
-		api:          w.Sandbox,
-		uploadClient: uploadClient,
-		parent:       "sandboxes/" + url.PathEscape(sandboxID),
-		root:         NewWorkspaceRootPath(root),
+		api:    w.Sandbox,
+		parent: "sandboxes/" + url.PathEscape(sandboxID),
+		root:   NewWorkspaceRootPath(root),
 	}, nil
 }
 
@@ -175,11 +166,15 @@ func (c *SandboxClient) Write(ctx context.Context, name string, reader io.Reader
 			return err
 		}
 	}
-	headers := map[string]string{"Content-Type": "application/octet-stream"}
-	maps.Copy(headers, auth.WorkspaceIDHeaders(c.uploadClient.Config))
-	// The pinned SDK lacks the overwrite field; its HTTP client still streams the body.
-	err = c.uploadClient.Do(ctx, http.MethodPut, "/api/2.0/sandbox-files/"+c.parent+"/content",
-		headers, map[string]any{"path": absPath, "overwrite": overwrite}, io.NopCloser(reader), nil)
+	err = c.api.UploadFile(ctx, sandbox.UploadFileRequest{
+		Parent: c.parent,
+		Path:   absPath,
+		// The caller owns reader; the SDK must not close it.
+		Contents:  io.NopCloser(reader),
+		Overwrite: overwrite,
+		// The server overwrites when the parameter is omitted, and the SDK omits false.
+		ForceSendFields: []string{"Overwrite"},
+	})
 	if !overwrite && sandboxStatus(err) == http.StatusPreconditionFailed {
 		return fileAlreadyExistsError{absPath}
 	}

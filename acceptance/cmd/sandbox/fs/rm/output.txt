@@ -1,5 +1,6 @@
 
 === Help
+
 >>> [CLI] sandbox fs rm --help
 Remove files and directories. Use SANDBOX:/absolute/path for sandbox paths.
 
@@ -10,16 +11,17 @@ Examples:
   databricks sandbox fs rm -r my-sandbox:/tmp/dir
 
 Flags:
-  -h, --help        help for rm
-  -r, --recursive   Recursively delete a non-empty directory.
+  -h, --help[=true|false]        help for rm
+  -r, --recursive[=true|false]   Recursively delete a non-empty directory.
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === Remove a file
+
 >>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 
 >>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
@@ -28,6 +30,7 @@ Error: file does not exist: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 Exit code: 1
 
 === Removing a non-empty directory needs -r
+
 >>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir
 Error: directory not empty: /tmp/sandbox-fs-[UNIQUE_NAME]/dir
 
@@ -41,6 +44,7 @@ Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/dir
 Exit code: 1
 
 === Removing a missing path fails
+
 >>> [CLI] sandbox fs rm [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
 Error: file does not exist: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
 

@@ -1,5 +1,6 @@
 
 === Help
+
 >>> [CLI] sandbox fs cat --help
 Show file content. Use SANDBOX:/absolute/path for sandbox paths.
 
@@ -10,19 +11,21 @@ Examples:
   databricks sandbox fs cat my-sandbox:/tmp/file
 
 Flags:
-  -h, --help   help for cat
+  -h, --help[=true|false]   help for cat
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === cat a file
+
 >>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 hello world!
 
 === cat a directory, then a missing path
+
 >>> [CLI] sandbox fs cat [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]
 Error: not a file: /tmp/sandbox-fs-[UNIQUE_NAME]
 
