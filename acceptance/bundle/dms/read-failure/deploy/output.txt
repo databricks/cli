@@ -1,5 +1,6 @@
 
 === Plan with a failed read: the job keeps the deployment id the lookup found, so nothing changes
+
 >>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
 
 >>> [CLI] bundle plan
@@ -7,6 +8,7 @@ Warn: Could not read deployment history, not recording it for this run: Fault in
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Deploy with a failed read: no history is recorded, so no second deployment is created, and the job keeps its deployment id
+
 >>> update_file.py databricks.yml name: foo name: renamed
 
 >>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
@@ -29,6 +31,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === The next deploy resumes history on the same deployment and stamps the new version
+
 >>> update_file.py databricks.yml name: renamed name: resumed
 
 >>> [CLI] bundle deploy

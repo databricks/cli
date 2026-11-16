@@ -1,5 +1,6 @@
 
 === Destroy with a failed read: no history is recorded, so no second deployment is created and then deleted
+
 >>> fault.py GET /api/2.0/bundle/deployments/* 403 0 1 PERMISSION_DENIED
 
 >>> [CLI] bundle destroy --auto-approve
@@ -16,5 +17,6 @@ Destroy: 1 deleted
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
 
 === The deployment record is kept
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments get-deployment deployments/[DEPLOYMENT_ID] -o json
 {"last_version_id":"1"}
