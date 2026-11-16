@@ -17,7 +17,7 @@ class AzureQueueStorage:
 
     queue_url: VariableOrOptional[str] = None
     """
-    The AQS queue url in the format https://{storage account}.queue.core.windows.net/{queue name}
+    The AQS queue URL in the format `https://{storage account}.queue.core.windows.net/{queue name}`.
     Only required for provided_aqs.
     """
 
@@ -48,7 +48,7 @@ class AzureQueueStorageDict(TypedDict, total=False):
 
     queue_url: VariableOrOptional[str]
     """
-    The AQS queue url in the format https://{storage account}.queue.core.windows.net/{queue name}
+    The AQS queue URL in the format `https://{storage account}.queue.core.windows.net/{queue name}`.
     Only required for provided_aqs.
     """
 

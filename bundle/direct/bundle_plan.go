@@ -225,8 +225,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		if entry.Action == deployplan.Delete {
 			id := b.StateDB.GetResourceID(resourceKey)
 			if id == "" {
-				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
-				return false
+				// An empty-ID entry from an older partial-recreate failure (see the
+				// Create path below): its resource was deleted and never re-created,
+				// so there is nothing to delete remotely; applying only drops the entry.
+				entry.Gone = true
+				return true
 			}
 
 			if !adapter.HasDoDelete() {
@@ -1189,7 +1192,7 @@ func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *str
 	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
 		return "", false
 	}
-	if matchesAnyBackendDefault(cfg, path, ch.Remote) {
+	if cfg.IsBackendDefault(path, ch.Remote) {
 		return deployplan.ReasonBackendDefault, true
 	}
 
@@ -1205,45 +1208,11 @@ func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *str
 	iter := rv.MapRange()
 	for iter.Next() {
 		childPath := structpath.NewBracketString(path, iter.Key().String())
-		if !matchesAnyBackendDefault(cfg, childPath, iter.Value().Interface()) {
+		if !cfg.IsBackendDefault(childPath, iter.Value().Interface()) {
 			return "", false
 		}
 	}
 	return deployplan.ReasonBackendDefault, true
-}
-
-// matchesAnyBackendDefault reports whether the remote value at path matches any of
-// the resource's configured backend-default rules (and the rule's allowed values,
-// if specified).
-func matchesAnyBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, remote any) bool {
-	for _, rule := range cfg.BackendDefaults {
-		if !path.HasPatternPrefix(rule.Field) {
-			continue
-		}
-		if len(rule.Values) == 0 {
-			return true
-		}
-		if matchesAllowedValue(remote, rule.Values) {
-			return true
-		}
-	}
-	return false
-}
-
-// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
-// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
-func matchesAllowedValue(remote any, values []json.RawMessage) bool {
-	remoteType := reflect.TypeOf(remote)
-	for _, raw := range values {
-		candidate := reflect.New(remoteType).Interface()
-		if err := json.Unmarshal(raw, candidate); err != nil {
-			continue
-		}
-		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
-			return true
-		}
-	}
-	return false
 }
 
 func allEmpty(values ...any) bool {

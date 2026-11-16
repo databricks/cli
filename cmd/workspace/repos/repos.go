@@ -89,7 +89,7 @@ func newCreate() *cobra.Command {
   unlike repos created in the browser.
 
   Arguments:
-    URL: URL of the Git repository to be linked.
+    URL: HTTPS URL of the Git repository to be linked. SSH URLs are not supported.
     PROVIDER: Git provider. This field is case-insensitive. The available Git providers
       are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
       DevOps Services, including Microsoft Entra ID authentication),
@@ -174,10 +174,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a repo.`
 	cmd.Long = `Delete a repo.
 
-  Deletes the specified repo.
+  Deletes the Git folder (repo) and its contents from the workspace. The remote
+  Git repository is not affected.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to delete.`
+    REPO_ID: ID of the Git folder (repo) to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -196,14 +197,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to delete")
+			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding repo to delete")
+			return errors.New("expected to have id of the git folder (repo) to delete")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -629,7 +630,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch to check out.`)
 	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
 	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
@@ -640,7 +641,8 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a repo.
 
   Updates the repo to a different branch or tag, or updates the repo to the
-  latest commit on the same branch.
+  latest commit on the same branch. Exactly one of branch or tag must be
+  specified.
 
   Arguments:
     REPO_ID: ID of the Git folder (repo) object in the workspace.`

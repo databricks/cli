@@ -21,6 +21,7 @@ var EnumFields = map[string][]string{
 	"resources.alerts.*.schedule.pause_status":                   {"PAUSED", "UNPAUSED"},
 
 	"resources.apps.*.active_deployment.mode":                             {"AUTO_SYNC", "SNAPSHOT"},
+	"resources.apps.*.active_deployment.scan_status":                      {"APP_DEPLOYMENT_SCAN_STATUS_CLEAN", "APP_DEPLOYMENT_SCAN_STATUS_FINDINGS", "APP_DEPLOYMENT_SCAN_STATUS_NOT_SCANNED", "APP_DEPLOYMENT_SCAN_STATUS_PARTIAL", "APP_DEPLOYMENT_SCAN_STATUS_UNAVAILABLE"},
 	"resources.apps.*.active_deployment.status.state":                     {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.app_status.state":                                   {"CRASHED", "DEPLOYING", "RUNNING", "UNAVAILABLE"},
 	"resources.apps.*.compute_size":                                       {"LARGE", "MEDIUM", "XLARGE"},
@@ -37,6 +38,7 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.effective_resources[*].uc_securable.permission":     {"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.effective_resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "MODEL_SERVICE", "TABLE", "VOLUME"},
 	"resources.apps.*.pending_deployment.mode":                            {"AUTO_SYNC", "SNAPSHOT"},
+	"resources.apps.*.pending_deployment.scan_status":                     {"APP_DEPLOYMENT_SCAN_STATUS_CLEAN", "APP_DEPLOYMENT_SCAN_STATUS_FINDINGS", "APP_DEPLOYMENT_SCAN_STATUS_NOT_SCANNED", "APP_DEPLOYMENT_SCAN_STATUS_PARTIAL", "APP_DEPLOYMENT_SCAN_STATUS_UNAVAILABLE"},
 	"resources.apps.*.pending_deployment.status.state":                    {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.permissions[*].level":                               {"CAN_MANAGE", "CAN_USE"},
 	"resources.apps.*.resources[*].app.permission":                        {"CAN_USE"},

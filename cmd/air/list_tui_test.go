@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -238,6 +239,28 @@ func TestRenderRowHyperlinks(t *testing.T) {
 	assert.NotContains(t, plain, "\x1b]8;;", "no links when links are disabled")
 }
 
+func TestRenderRowStripsControlCharacters(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	styles := newListStyles(r)
+	row := listRow{
+		RunID: "1", Status: "SUCCESS", Duration: "-", Accelerators: "-",
+		Experiment:  "\x1b]0;pwned\x07exp\x1b[2Jeriment",
+		User:        "user\r@example.com",
+		MLflowURL:   "https://h/ml/experiments/E/runs/rid",
+		MLflowLabel: "my\x1b[31m-run",
+	}
+	cols := computeListCols([]listRow{row})
+
+	out := styles.renderRow(cols, row, false, false)
+	assert.Contains(t, out, "experiment")
+	assert.Contains(t, out, "user@example.com")
+	assert.Contains(t, out, "my-run")
+	assert.NotContains(t, out, "\x1b")
+	assert.NotContains(t, out, "\r")
+	// Stripping happens before width is measured, so the columns stay aligned.
+	assert.Equal(t, cols.experiment, lipgloss.Width(stripControl(row.Experiment)))
+}
+
 func TestListModelInfoKeyOpensDetail(t *testing.T) {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	f := &runFetcher{ctx: t.Context(), w: newTestWorkspaceClient(t, "https://x.test")}
@@ -374,4 +397,101 @@ func TestPadAndTruncate(t *testing.T) {
 	assert.Equal(t, "   ab", pad("ab", 5, true))
 	assert.Equal(t, "abcd…", truncate("abcdefgh", 5))
 	assert.Equal(t, "abc", truncate("abc", 5))
+}
+
+// wideListRows is a fixture whose Experiment and User values both exceed
+// columnCap, with realistic widths in the fixed columns.
+func wideListRows() []listRow {
+	return []listRow{
+		{RunID: "684127395104822", Experiment: "/Users/someone.longname@example.com/quickstart/qwen-finetune-lora", User: "someone.with.a.long.name.for.testing@example.com", Status: "SUCCESS", StartedAt: new("2026-10-23T17:32:39.000000+00:00"), Duration: "1h 14m", MLflowURL: "https://h.test/ml/experiments/E/runs/04c41514fbb0", MLflowLabel: "qwen-run-001", Accelerators: "8x H100"},
+		{RunID: "684127395104823", Experiment: "mixtral", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-10-23T18:43:24.000000+00:00"), Duration: "3m 32s", Progress: "81% · ~48m", MLflowURL: "-", MLflowLabel: "-", Accelerators: "1x A10"},
+	}
+}
+
+func TestListColsFitWidth(t *testing.T) {
+	natural := computeListCols(wideListRows())
+	require.Equal(t, columnCap, natural.experiment)
+	require.Equal(t, columnCap, natural.user)
+	require.Equal(t, 186, natural.tableWidth())
+
+	tests := []struct {
+		name           string
+		width          int
+		wantExperiment int
+		wantUser       int
+		wantFits       bool
+	}{
+		{name: "unknown width leaves columns alone", width: 0, wantExperiment: columnCap, wantUser: columnCap},
+		// The fixed columns alone need 114 cells, so both flexible columns sit at
+		// their floors and the table still overflows.
+		{name: "80 columns", width: 80, wantExperiment: experimentMinWidth, wantUser: userMinWidth},
+		{name: "120 columns", width: 120, wantExperiment: experimentMinWidth, wantUser: userMinWidth},
+		{name: "narrowest width that fits", width: 134, wantExperiment: experimentMinWidth, wantUser: userMinWidth, wantFits: true},
+		{name: "160 columns splits the shortfall", width: 160, wantExperiment: 23, wantUser: 23, wantFits: true},
+		{name: "200 columns keeps natural widths", width: 200, wantExperiment: columnCap, wantUser: columnCap, wantFits: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := natural.fitWidth(tt.width)
+			assert.Equal(t, tt.wantExperiment, got.experiment)
+			assert.Equal(t, tt.wantUser, got.user)
+			if tt.wantFits {
+				assert.LessOrEqual(t, got.tableWidth(), tt.width)
+			}
+
+			// Only the flexible columns change.
+			got.experiment, got.user = natural.experiment, natural.user
+			assert.Equal(t, natural, got)
+		})
+	}
+}
+
+func TestListColsFitWidthFloorsNeverWiden(t *testing.T) {
+	// Columns already narrower than the floors stay as they are.
+	natural := computeListCols(testListRows())
+	got := natural.fitWidth(40)
+	assert.Equal(t, natural.experiment, got.experiment)
+	assert.Equal(t, userMinWidth, got.user)
+}
+
+func TestListModelFitsTerminalWidth(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	rows := wideListRows()
+	f := &runFetcher{ctx: t.Context(), exhausted: true}
+	m := newListModel(r, f, rows[:1], false)
+
+	// Before the terminal reports its size the columns keep their natural widths.
+	assert.Equal(t, columnCap, m.cols.experiment)
+
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 160, Height: 30})
+	m = next.(listModel)
+	lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+	require.Len(t, lines, 3) // header, one row, hint
+	for _, line := range lines[:2] {
+		assert.LessOrEqual(t, ansi.StringWidth(line), 160)
+	}
+	assert.Contains(t, lines[0], "Accelerators")
+	assert.Contains(t, lines[1], "8x H100")
+	// Experiment keeps its end, User its start.
+	assert.Contains(t, lines[1], "  …tart/qwen-finetune-lora  ")
+	assert.Contains(t, lines[1], "  someone.with.a.long.nam…  ")
+
+	// A lazily loaded page is laid out against the same width.
+	next, _ = m.Update(moreRowsMsg{rows: rows[1:]})
+	m = next.(listModel)
+	assert.LessOrEqual(t, m.cols.tableWidth(), 160)
+
+	// Widening the terminal restores the natural widths.
+	next, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 30})
+	m = next.(listModel)
+	assert.Equal(t, columnCap, m.cols.experiment)
+	assert.Equal(t, columnCap, m.cols.user)
+}
+
+func TestStaticListTableIgnoresTerminalWidth(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	lines := strings.Split(staticListTable(r, wideListRows(), false), "\n")
+	assert.Equal(t, computeListCols(wideListRows()).tableWidth(), ansi.StringWidth(lines[0]))
+	// The one-shot table still cuts a long Experiment at its end.
+	assert.Contains(t, lines[1], " /Users/someone.longname@example.com… ")
 }

@@ -1,0 +1,14 @@
+RecordRequests = true
+Ignore = [".databricks"]
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'
+
+[[Repls]]
+Old = '/jobs/\d+'
+New = '/jobs/[JOB_ID]'
+
+[[Repls]]
+Old = '"job_id": \d+'
+New = '"job_id": [JOB_ID]'

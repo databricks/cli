@@ -115,6 +115,7 @@ import (
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
 	software_artifacts "github.com/databricks/cli/cmd/workspace/software-artifacts"
+	statement_execution_v2 "github.com/databricks/cli/cmd/workspace/statement-execution-v2"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	supervisor_agents "github.com/databricks/cli/cmd/workspace/supervisor-agents"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -259,6 +260,7 @@ func All() []*cobra.Command {
 	out = append(out, settings.New())
 	out = append(out, shares.New())
 	out = append(out, software_artifacts.New())
+	out = append(out, statement_execution_v2.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, supervisor_agents.New())
 	out = append(out, system_schemas.New())
