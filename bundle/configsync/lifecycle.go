@@ -29,12 +29,8 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 	}
 	resourceType := config.GetResourceTypeFromKey(resourceKey)
 	backendDefault := cd.New == nil && cd.Remote != nil && !matchPattern(jobRunAsChildPattern, resourceKey+"."+fieldPath)
-	isNested := func(pattern *structpath.PatternNode) bool {
-		return pattern.Len() > path.Len() && path.HasPatternPrefix(pattern.Prefix(path.Len()))
-	}
 
-	var ignored []*structpath.PatternNode
-	var defaults dresources.ResourceLifecycleConfig
+	var f nestedFieldFilter
 	for _, rc := range []*dresources.ResourceLifecycleConfig{
 		dresources.GetResourceConfig(resourceType),
 		dresources.GetGeneratedResourceConfig(resourceType),
@@ -43,8 +39,8 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 			if path.HasPatternPrefix(rule.Field) {
 				return nil, nil
 			}
-			if isNested(rule.Field) {
-				ignored = append(ignored, rule.Field)
+			if isNestedPattern(path, rule.Field) {
+				f.ignored = append(f.ignored, rule.Field)
 			}
 		}
 		if backendDefault && rc.IsBackendDefault(path, cd.Remote) {
@@ -52,13 +48,13 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 		}
 		if cd.New == nil {
 			for _, rule := range rc.BackendDefaults {
-				if len(rule.Values) > 0 && isNested(rule.Field) {
-					defaults.BackendDefaults = append(defaults.BackendDefaults, rule)
+				if len(rule.Values) > 0 && isNestedPattern(path, rule.Field) {
+					f.defaults.BackendDefaults = append(f.defaults.BackendDefaults, rule)
 				}
 			}
 		}
 	}
-	if len(ignored) == 0 && len(defaults.BackendDefaults) == 0 {
+	if len(f.ignored) == 0 && len(f.defaults.BackendDefaults) == 0 {
 		return cd, nil
 	}
 
@@ -70,13 +66,8 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
-	isIgnored := func(p *structpath.PathNode, _ any) bool {
-		return slices.ContainsFunc(ignored, p.HasPatternPrefix)
-	}
-	newValue = stripFields(path, newValue, isIgnored)
-	remoteValue = stripFields(path, remoteValue, func(p *structpath.PathNode, v any) bool {
-		return isIgnored(p, v) || defaults.IsBackendDefault(p, v)
-	})
+	newValue = stripFields(path, newValue, f.dropFromConfig)
+	remoteValue = stripFields(path, remoteValue, f.dropFromRemote)
 	if reflect.DeepEqual(newValue, remoteValue) {
 		return nil, nil
 	}
@@ -85,6 +76,25 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 	stripped.New = newValue
 	stripped.Remote = remoteValue
 	return &stripped, nil
+}
+
+// isNestedPattern reports whether pattern names a field inside the value at path.
+func isNestedPattern(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+	return pattern.Len() > path.Len() && path.HasPatternPrefix(pattern.Prefix(path.Len()))
+}
+
+// nestedFieldFilter holds the lifecycle rules that name fields inside a whole-object change.
+type nestedFieldFilter struct {
+	ignored  []*structpath.PatternNode
+	defaults dresources.ResourceLifecycleConfig
+}
+
+func (f *nestedFieldFilter) dropFromConfig(path *structpath.PathNode, _ any) bool {
+	return slices.ContainsFunc(f.ignored, path.HasPatternPrefix)
+}
+
+func (f *nestedFieldFilter) dropFromRemote(path *structpath.PathNode, value any) bool {
+	return f.dropFromConfig(path, value) || f.defaults.IsBackendDefault(path, value)
 }
 
 // stripFields drops the fields of value, the normalized value at path, for which drop
