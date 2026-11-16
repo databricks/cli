@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -71,6 +73,42 @@ func (g gitRepo) isRepository(ctx context.Context) bool {
 		return false
 	}
 	return strings.TrimSpace(out) == "true"
+}
+
+// hasGitMetadata reports whether dir holds a repository's `.git` entry: a gitfile, or a
+// directory with HEAD. An empty `.git` directory is not a repository, as in git.
+func hasGitMetadata(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, ".git"))
+	if err != nil {
+		return false
+	}
+	if info.Mode().IsRegular() {
+		return true
+	}
+	if !info.IsDir() {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(dir, ".git", "HEAD"))
+	return err == nil
+}
+
+// insideGitRepository is the git-free stand-in for isRepository, used only when no git
+// binary is available: repository metadata in dir or one of its ancestors marks a work tree.
+func insideGitRepository(dir string) bool {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+	for {
+		if hasGitMetadata(abs) {
+			return true
+		}
+		parent := filepath.Dir(abs)
+		if parent == abs {
+			return false
+		}
+		abs = parent
+	}
 }
 
 // repoRelativePrefix returns the path from the repository root to g.path. Git

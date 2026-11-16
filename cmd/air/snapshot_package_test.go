@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -313,6 +314,135 @@ func TestSnapshotFiles_RejectsEmptyDirectory(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "contains no files")
 	assert.NotContains(t, err.Error(), "ignored by git")
+}
+
+// withoutGit makes the git binary look absent for the rest of the test.
+func withoutGit(t *testing.T) {
+	t.Helper()
+	orig := gitLookPath
+	gitLookPath = func(string) (string, error) { return "", exec.ErrNotFound }
+	t.Cleanup(func() { gitLookPath = orig })
+}
+
+// writeFallbackFixture lays out a directory outside any repository that covers the cases
+// the git-free listing must select as git does: root and nested .gitignore files,
+// negation, an ignored directory, dotfiles, and symlinks that are listed but not followed.
+func writeFallbackFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	writeRepoFile(t, dir, ".gitignore", "build/\n*.log\n")
+	writeRepoFile(t, dir, "keep.txt", "1")
+	writeRepoFile(t, dir, "drop.log", "1")
+	writeRepoFile(t, dir, "build/out.py", "1")
+	writeRepoFile(t, dir, "README.md", "1")
+	writeRepoFile(t, dir, ".dotfile", "1")
+	writeRepoFile(t, dir, ".hidden/secret.txt", "1")
+	writeRepoFile(t, dir, "a/x.py", "1")
+	writeRepoFile(t, dir, "src/m.py", "1")
+	writeRepoFile(t, dir, "src/deep/n.py", "1")
+	writeRepoFile(t, dir, "nested/.gitignore", "*.tmp\n!keep.tmp\n")
+	writeRepoFile(t, dir, "nested/drop.tmp", "1")
+	writeRepoFile(t, dir, "nested/keep.tmp", "1")
+	writeRepoFile(t, dir, "nested/inner/z.py", "1")
+	require.NoError(t, os.Symlink("src/m.py", filepath.Join(dir, "lnk.py")))
+	require.NoError(t, os.Symlink("src", filepath.Join(dir, "symdir")))
+	return dir
+}
+
+// selectedNames returns the repo-relative paths snapshotFiles selects, sorted.
+func selectedNames(t *testing.T, dir string, includePaths []string, isGitRepo bool) []string {
+	t.Helper()
+	files, err := snapshotFiles(t.Context(), dir, includePaths, isGitRepo)
+	require.NoError(t, err)
+	names := make([]string, 0, len(files))
+	for _, f := range files {
+		names = append(names, filepath.ToSlash(f.rel))
+	}
+	slices.Sort(names)
+	return names
+}
+
+// The git listing and the git-free fallback select the same files for the common cases,
+// and the git listing is pinned here so changing the fallback cannot change it.
+func TestSnapshotFilesWithoutGit_MatchesGitListing(t *testing.T) {
+	cases := []struct {
+		name         string
+		includePaths []string
+		want         []string
+	}{
+		{
+			name: "whole tree",
+			want: []string{
+				".dotfile", ".gitignore", ".hidden/secret.txt", "README.md", "a/x.py",
+				"keep.txt", "lnk.py", "nested/.gitignore", "nested/inner/z.py",
+				"nested/keep.tmp", "src/deep/n.py", "src/m.py", "symdir",
+			},
+		},
+		{
+			name:         "directory include_path",
+			includePaths: []string{"src"},
+			want:         []string{"src/deep/n.py", "src/m.py"},
+		},
+		{
+			name:         "file include_path",
+			includePaths: []string{"a/x.py"},
+			want:         []string{"a/x.py"},
+		},
+		{
+			name:         "nested include_path with nested rules",
+			includePaths: []string{"nested"},
+			want:         []string{"nested/.gitignore", "nested/inner/z.py", "nested/keep.tmp"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := writeFallbackFixture(t)
+			assert.Equal(t, tc.want, selectedNames(t, dir, tc.includePaths, false), "git listing changed")
+
+			withoutGit(t)
+			assert.Equal(t, tc.want, selectedNames(t, dir, tc.includePaths, false), "git-free fallback")
+		})
+	}
+}
+
+// A nested repository is one "dir/" entry in both listings, and its contents are not walked.
+func TestSnapshotFilesWithoutGit_NestedRepoIsOneEntry(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoFile(t, dir, "top.py", "1")
+	nested := filepath.Join(dir, "nested")
+	require.NoError(t, os.MkdirAll(nested, 0o755))
+	runGit(t, nested, "init", "-q")
+	writeRepoFile(t, nested, "inner.py", "1")
+
+	want := []string{"nested/", "top.py"}
+	assert.Equal(t, want, selectedNames(t, dir, nil, false))
+	withoutGit(t)
+	assert.Equal(t, want, selectedNames(t, dir, nil, false))
+}
+
+// Known difference: a root *.log excludes nested/keep.log even though the nested file
+// re-includes it, because libs/git returns the first matching rule from the root down.
+func TestSnapshotFilesWithoutGit_NestedNegationDiffersFromGit(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoFile(t, dir, ".gitignore", "*.log\n")
+	writeRepoFile(t, dir, "nested/.gitignore", "!keep.log\n")
+	writeRepoFile(t, dir, "nested/keep.log", "1")
+
+	assert.Contains(t, selectedNames(t, dir, nil, false), "nested/keep.log")
+	withoutGit(t)
+	assert.NotContains(t, selectedNames(t, dir, nil, false), "nested/keep.log")
+}
+
+// Known difference: include_paths globs use path.Match, where "*" does not cross "/",
+// so "*.py" selects only the root file (git's pathspec selects a/x.py too).
+func TestSnapshotFilesWithoutGit_IncludeGlobDiffersFromGit(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoFile(t, dir, "top.py", "1")
+	writeRepoFile(t, dir, "a/x.py", "1")
+
+	assert.Equal(t, []string{"a/x.py", "top.py"}, selectedNames(t, dir, []string{"*.py"}, false))
+	withoutGit(t)
+	assert.Equal(t, []string{"top.py"}, selectedNames(t, dir, []string{"*.py"}, false))
 }
 
 func TestSnapshotFiles_RejectsIncludePathsMatchingNothing(t *testing.T) {

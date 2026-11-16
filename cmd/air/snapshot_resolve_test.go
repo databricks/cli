@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -94,6 +95,52 @@ func TestResolveSnapshotPlan_NonGitDir(t *testing.T) {
 	_, err = resolveSnapshotPlan(ctx, newGitRepo(dir), &gitRef{Branch: new("main")}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not a git repository")
+}
+
+func TestResolveSnapshotPlan_WithoutGitNonRepoIsPlainTar(t *testing.T) {
+	dir := t.TempDir()
+	writeRepoFile(t, dir, "main.py", "1")
+	withoutGit(t)
+
+	plan, err := resolveSnapshotPlan(t.Context(), newGitRepo(dir), nil, nil)
+	require.NoError(t, err)
+	assert.Equal(t, modePlainTar, plan.mode)
+	assert.False(t, plan.isGitRepo)
+}
+
+// An empty .git directory is not a repository for git, so it must not trip the early error.
+func TestResolveSnapshotPlan_WithoutGitEmptyDotGitIsNotRepo(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	withoutGit(t)
+
+	plan, err := resolveSnapshotPlan(t.Context(), newGitRepo(dir), nil, nil)
+	require.NoError(t, err)
+	assert.Equal(t, modePlainTar, plan.mode)
+}
+
+func TestResolveSnapshotPlan_WithoutGitInsideRepoFailsEarly(t *testing.T) {
+	repo := newTestRepo(t)
+	sub := filepath.Join(repo, "sub")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+	withoutGit(t)
+
+	_, err := resolveSnapshotPlan(t.Context(), newGitRepo(sub), nil, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "code_source at "+sub+" is in a git repository")
+	assert.Contains(t, err.Error(), "needs git on PATH")
+	assert.NotContains(t, err.Error(), "exec:")
+}
+
+func TestResolveSnapshotPlan_WithoutGitRefFailsEarly(t *testing.T) {
+	dir := t.TempDir()
+	withoutGit(t)
+
+	_, err := resolveSnapshotPlan(t.Context(), newGitRepo(dir), &gitRef{Branch: new("main")}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "code_source.git is set")
+	assert.Contains(t, err.Error(), "needs git on PATH")
+	assert.NotContains(t, err.Error(), "exec:")
 }
 
 func TestResolveSnapshotPlan_IncludePaths(t *testing.T) {
