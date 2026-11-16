@@ -26,6 +26,13 @@ AIR:
           - 'cmd/air/**'
           - 'acceptance/air/**'
 
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'cmd/auth/**'
+          - 'libs/auth/**'
+          - 'acceptance/cmd/auth/**'
+
 DABs:
   - changed-files:
       - any-glob-to-any-file:
