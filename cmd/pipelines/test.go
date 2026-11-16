@@ -207,26 +207,14 @@ func getRootPath(ctx context.Context, w *databricks.WorkspaceClient, pipelineID 
 	return pipeline.Spec.RootPath, nil
 }
 
-// updateTestOnly holds UpdateInfo.test_only from a Get Update response; the Go SDK does not have it yet.
-// The service leaves it out where it cannot report it, such as before pipeline testing is enabled.
-type updateTestOnly struct {
-	Update struct {
-		TestOnly *bool `json:"test_only"`
-	} `json:"update"`
-}
-
 // checkTestUpdate returns an error if the service reports that the update is not a test-only update.
+// The service leaves test_only out where it cannot report it, such as before pipeline testing is enabled.
 func checkTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string) error {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
-	}
-	var response updateTestOnly
-	err = apiClient.Do(ctx, http.MethodGet, fmt.Sprintf("/api/2.0/pipelines/%s/updates/%s", pipelineID, updateID), auth.WorkspaceIDHeaders(w.Config), nil, nil, &response)
+	response, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{PipelineId: pipelineID, UpdateId: updateID})
 	if err != nil {
 		return err
 	}
-	if testOnly := response.Update.TestOnly; testOnly != nil && !*testOnly {
+	if update := response.Update; update != nil && !update.TestOnly && slices.Contains(update.ForceSendFields, "TestOnly") {
 		return fmt.Errorf("update %s is not a test update; pass the update ID that pipelines test printed", updateID)
 	}
 	return nil
