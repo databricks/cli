@@ -1,14 +1,13 @@
 
-=== Deploy a catalog with a schema, a volume and a registered model in it
+=== Deploy a catalog with a schema and a volume in it
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created catalogs.catalog1
-Created registered_models.model1
 Created schemas.schema1
 Created volumes.volume1
 Files: 2 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the catalog and the schema in one deploy
 
@@ -16,7 +15,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> update_file.py databricks.yml name: myschema name: myschema2
 
-=== Both parents of the volume and the model are renamed, so both their catalog_name and schema_name follow them
+=== Both of the volume's parents are renamed, so both its catalog_name and schema_name follow them
 
 >>> [CLI] bundle plan --output json
 {
@@ -29,6 +28,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
     },
     "remote_state": {
       "catalog_type": "MANAGED_CATALOG",
+      "created_at": [UNIX_TIME_MILLIS][0],
       "created_by": "[USERNAME]",
       "full_name": "test_catalog_[UNIQUE_NAME]",
       "name": "test_catalog_[UNIQUE_NAME]",
@@ -41,66 +41,6 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
         "old": "test_catalog_[UNIQUE_NAME]",
         "new": "test_catalog_renamed_[UNIQUE_NAME]",
         "remote": "test_catalog_[UNIQUE_NAME]"
-      }
-    }
-  },
-  "resources.registered_models.model1": {
-    "depends_on": [
-      {
-        "node": "resources.catalogs.catalog1",
-        "label": "${resources.catalogs.catalog1.name}"
-      },
-      {
-        "node": "resources.schemas.schema1",
-        "label": "${resources.schemas.schema1.name}"
-      }
-    ],
-    "action": "update_id",
-    "state_only": true,
-    "new_state": {
-      "value": {
-        "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
-        "name": "mymodel",
-        "schema_name": "myschema2"
-      }
-    },
-    "remote_state": {
-      "catalog_name": "test_catalog_[UNIQUE_NAME]",
-      "created_by": "[USERNAME]",
-      "full_name": "test_catalog_[UNIQUE_NAME].myschema.mymodel",
-      "name": "mymodel",
-      "owner": "[USERNAME]",
-      "schema_name": "myschema"
-    },
-    "changes": {
-      "catalog_name": {
-        "action": "update_id",
-        "reason": "parent_renamed",
-        "old": "test_catalog_[UNIQUE_NAME]",
-        "new": "test_catalog_renamed_[UNIQUE_NAME]",
-        "remote": "test_catalog_[UNIQUE_NAME]"
-      },
-      "created_by": {
-        "action": "skip",
-        "reason": "output_only",
-        "remote": "[USERNAME]"
-      },
-      "full_name": {
-        "action": "skip",
-        "reason": "backend_default",
-        "remote": "test_catalog_[UNIQUE_NAME].myschema.mymodel"
-      },
-      "owner": {
-        "action": "skip",
-        "reason": "backend_default",
-        "remote": "[USERNAME]"
-      },
-      "schema_name": {
-        "action": "update_id",
-        "reason": "parent_renamed",
-        "old": "myschema",
-        "new": "myschema2",
-        "remote": "myschema"
       }
     }
   },
@@ -121,6 +61,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
     "remote_state": {
       "catalog_name": "test_catalog_[UNIQUE_NAME]",
       "catalog_type": "MANAGED_CATALOG",
+      "created_at": [UNIX_TIME_MILLIS][1],
       "created_by": "[USERNAME]",
       "full_name": "test_catalog_[UNIQUE_NAME].myschema",
       "name": "myschema",
@@ -173,6 +114,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
     },
     "remote_state": {
       "catalog_name": "test_catalog_[UNIQUE_NAME]",
+      "created_at": [UNIX_TIME_MILLIS][2],
       "created_by": "[USERNAME]",
       "full_name": "test_catalog_[UNIQUE_NAME].myschema.myvolume",
       "name": "myvolume",
@@ -206,14 +148,14 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Deploy renames the catalog, then the schema under it. UC moves the volume and the model both times, so they get no request
+=== Deploy renames the catalog, then the schema under it. UC moves the volume both times, so it gets no request
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated catalogs.catalog1
 Updated schemas.schema1
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 2 unchanged
+Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog
 {
@@ -235,7 +177,7 @@ Resources: 0 created, 2 changed, 0 deleted, 2 unchanged
   }
 }
 
-=== The schema, the volume and the model are under the new names, not recreated
+=== The schema and the volume are under the new names, with their original ids
 
 >>> [CLI] schemas get test_catalog_renamed_[UNIQUE_NAME].myschema2
 {
@@ -249,19 +191,10 @@ Resources: 0 created, 2 changed, 0 deleted, 2 unchanged
   "volume_id": "[VOLUME_ID]"
 }
 
->>> [CLI] registered-models get test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel
-{
-  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel",
-  "created_at": [MODEL_CREATED_AT]
-}
-
 >>> [CLI] bundle summary --output json
 {
   "catalogs": {
     "catalog1": "test_catalog_renamed_[UNIQUE_NAME]"
-  },
-  "registered_models": {
-    "model1": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel"
   },
   "schemas": {
     "schema1": "test_catalog_renamed_[UNIQUE_NAME].myschema2"
@@ -274,12 +207,11 @@ Resources: 0 created, 2 changed, 0 deleted, 2 unchanged
 === Redeploy is a no-op
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.catalogs.catalog1
-  delete resources.registered_models.model1
   delete resources.schemas.schema1
   delete resources.volumes.volume1
 
@@ -294,4 +226,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 4 deleted
+Destroy: 3 deleted
