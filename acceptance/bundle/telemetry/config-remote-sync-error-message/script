@@ -1,13 +1,9 @@
 # The diagnostic is already printed, so telemetry records it instead of the AlreadyPrinted sentinel.
 trace musterr $CLI bundle config-remote-sync
 
-trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | {error_message, error_category}'
-
-rm "$OUT_REQUESTS"
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
 
 # Selecting the target fails before the auth config is set; the failure is still reported.
 trace musterr $CLI bundle config-remote-sync -t bad
 
-trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | {error_message, error_category}'
-
-rm "$OUT_REQUESTS"
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'

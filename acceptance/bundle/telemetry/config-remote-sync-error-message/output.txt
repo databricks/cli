@@ -3,7 +3,7 @@
 Error: no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 
->>> cat [OUTPUT_DIR]/out.requests.txt
+>>> print_requests.py //telemetry-ext
 {
   "error_message": "no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using \"--var\", the BUNDLE_VAR_myvar environment variable, or [REDACTED_REL_PATH](json)",
   "error_category": "BUNDLE_LOAD_FAILED"
@@ -13,7 +13,7 @@ Error: no value assigned to required variable myvar. Variables are usually assig
 Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
 
 
->>> cat [OUTPUT_DIR]/out.requests.txt
+>>> print_requests.py //telemetry-ext
 {
   "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
   "error_category": "BUNDLE_LOAD_FAILED"

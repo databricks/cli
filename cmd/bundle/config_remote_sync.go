@@ -181,13 +181,9 @@ Examples:
 		})
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
-			// Failing to load or select the target returns before the auth config is
-			// set; resolve it here so those failures are still reported.
-			if !cmdctx.HasConfigUsed(cmd.Context()) {
-				if client, clientErr := b.WorkspaceClientE(cmd.Context()); clientErr == nil {
-					cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), client.Config))
-				}
-			}
+			// Failing to select the target returns before the auth config is set;
+			// resolve it here so those failures are still reported.
+			root.ConfigureBundleAuth(cmd, b)
 		}
 
 		// The diagnostics are already on stderr; record the first one instead of the sentinel.

@@ -220,6 +220,43 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
+func TestConfigureBundleAuthAfterTargetFailure(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	setupDatabricksCfg(t)
+
+	cmd := emptyCommand(t)
+	err := cmd.Flag("profile").Value.Set("PROFILE-2")
+	require.NoError(t, err)
+
+	rootPath := t.TempDir()
+	t.Chdir(rootPath)
+	contents := `
+workspace:
+  profile: PROFILE-1
+targets:
+  bad:
+    default: true
+    variables:
+      undefined_var: value
+`
+	err = os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
+	require.NoError(t, err)
+
+	ctx := logdiag.InitContext(cmd.Context())
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	b := MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Summary, "variable undefined_var is not defined")
+	require.False(t, cmdctx.HasConfigUsed(cmd.Context()))
+
+	ConfigureBundleAuth(cmd, b)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
 func TestBundleConfigureProfileEnvVariable(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 

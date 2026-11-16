@@ -217,6 +217,21 @@ func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	return b
 }
 
+// ConfigureBundleAuth sets the auth configuration in the command context when
+// configuring the bundle stopped before it did, for example because selecting
+// the target failed. It does nothing if the configuration cannot be resolved.
+func ConfigureBundleAuth(cmd *cobra.Command, b *bundle.Bundle) {
+	if cmdctx.HasConfigUsed(cmd.Context()) {
+		return
+	}
+	configureProfile(cmd, b)
+	client, err := b.WorkspaceClientE(cmd.Context())
+	if err != nil {
+		return
+	}
+	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), client.Config))
+}
+
 // TryConfigureBundle configures a bundle on the command context
 // if there is one, but doesn't fail if there isn't one.
 func TryConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
