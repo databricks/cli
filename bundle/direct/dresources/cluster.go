@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -17,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"golang.org/x/sync/errgroup"
 )
 
 // librariesWaitTimeout bounds how long we poll for libraries to finish installing.
@@ -151,21 +151,27 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
 	var details *compute.ClusterDetails
 	var libraries []compute.Library
+	var detailsErr, librariesErr error
 
-	// The cluster GET and the library-status GET are independent, so run them concurrently.
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		var err error
-		details, err = r.client.Clusters.GetByClusterId(ctx, id)
-		return err
+	// The two GETs are independent, so they still run together. The result is not
+	// whichever error finishes first: library-status reports a deleted cluster as
+	// INVALID_PARAMETER_VALUE, which the planner does not treat as missing, and
+	// that error aborts the plan whenever it wins the race. A failed cluster read
+	// decides the outcome. A library error is returned only after the cluster
+	// itself was read, so a failure on a live cluster still surfaces.
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		details, detailsErr = r.client.Clusters.GetByClusterId(ctx, id)
 	})
-	g.Go(func() error {
-		var err error
-		libraries, err = r.readLibraries(ctx, id)
-		return err
+	wg.Go(func() {
+		libraries, librariesErr = r.readLibraries(ctx, id)
 	})
-	if err := g.Wait(); err != nil {
-		return nil, err
+	wg.Wait()
+	if detailsErr != nil {
+		return nil, detailsErr
+	}
+	if librariesErr != nil {
+		return nil, librariesErr
 	}
 
 	remote := &ClusterRemote{
