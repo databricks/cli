@@ -40,7 +40,8 @@ func (c Capabilities) SupportsInteractive() bool {
 }
 
 // SupportsPrompt returns true if terminal supports user prompting.
-// Prompts write to stderr and read from stdin, so we only need those to be TTYs.
+// Prompts write to stderr and read keystrokes from stdin, so stderr must be a
+// TTY and stdin a console rather than an MSYS2 pty pipe (see conpty.go).
 func (c Capabilities) SupportsPrompt() bool {
 	return c.SupportsInteractive() && c.stdinIsTTY && !c.stdinIsMSYSPipe
 }
