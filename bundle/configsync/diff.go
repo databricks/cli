@@ -157,7 +157,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				change, err := convertPlanChange(resourceKey+"."+path, changeDesc, b.Config.Presets.NamePrefix)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, b.Config.Presets.NamePrefix)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
@@ -182,15 +182,23 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	return changes, skipped, nil
 }
 
-// convertPlanChange converts a plan change at fullPath, returning nil when there is nothing to
-// write back.
-func convertPlanChange(fullPath string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
+// convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
+// nothing to write back.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
+	fullPath := resourceKey + "." + path
 	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
 		!keepSkippedRunAsChange(fullPath, changeDesc) {
 		return nil, nil
 	}
+	synced, err := applyLifecycle(resourceKey, path, changeDesc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply lifecycle rules: %w", err)
+	}
+	if synced == nil {
+		return nil, nil
+	}
 
-	change, err := convertChangeDesc(fullPath, changeDesc)
+	change, err := convertChangeDesc(fullPath, synced)
 	if err != nil {
 		return nil, err
 	}

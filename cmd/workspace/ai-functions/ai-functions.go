@@ -454,7 +454,10 @@ Create a batch.
       request, in the form {"custom_id": ..., "body": ...}. The file can hold
       up to 50,000 requests and be up to 200 MiB.
     OUTPUT_REF: Unity Catalog volume path to write the JSONL output file to. If the path
-      is a directory, the file is <path>/<name>_output.jsonl.`
+      is a directory, the file is <path>/<name>_output.jsonl. Each line is the
+      result of one request, in the form {"custom_id": ..., "response": ...},
+      or {"custom_id": ..., "error": {"type": ..., "message": ...}} for a
+      request that failed.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

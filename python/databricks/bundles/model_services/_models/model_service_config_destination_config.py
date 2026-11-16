@@ -43,7 +43,9 @@ class ModelServiceConfigDestinationConfig:
 
     name: VariableOr[str]
     """
-    User-facing label for this destination, used in routing references.
+    Label that identifies this destination. Names are compared
+    case-insensitively and must be unique within the primary destinations and
+    within the fallback destinations.
     """
 
     external_model_config: VariableOrOptional[ModelServiceConfigExternalModelConfig] = (
@@ -94,7 +96,9 @@ class ModelServiceConfigDestinationConfigDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    User-facing label for this destination, used in routing references.
+    Label that identifies this destination. Names are compared
+    case-insensitively and must be unique within the primary destinations and
+    within the fallback destinations.
     """
 
     external_model_config: VariableOrOptional[

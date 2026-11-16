@@ -184,10 +184,10 @@ func newCreateIndex() *cobra.Command {
 
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createIndexReq.IndexId, "index-id", createIndexReq.IndexId, `The user-supplied Unity Catalog table name for the Index, per AIP-133.`)
+	cmd.Flags().StringVar(&createIndexReq.IndexId, "index-id", createIndexReq.IndexId, `Three-level Unity Catalog table name for the new index, in the form catalog.schema.name.`)
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
-	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
+	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `Subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
 	cmd.Flags().StringVar(&createIndexReq.Index.Name, "name", createIndexReq.Index.Name, `Name of the AI Search index.`)
 	// TODO: complex arg: status
 
@@ -197,13 +197,19 @@ func newCreateIndex() *cobra.Command {
 
 Create an AI Search index.
 
-  Create a new AI Search index.
+  Create a new AI Search index. The index is provisioned asynchronously;
+  status.ready on GetIndex reports when it can serve queries.
 
   Arguments:
     PARENT: The Endpoint where this Index will be created. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}
-    PRIMARY_KEY: Primary key of the index. Set on create and immutable thereafter.
-    INDEX_TYPE: Type of index. Required on create and immutable thereafter.
+    PRIMARY_KEY: Name of the column that uniquely identifies each row. It must exist in the
+      source table (Delta Sync) or in schema_json (Direct Access) and cannot
+      be the embedding source or vector column. Set on create and immutable
+      thereafter.
+    INDEX_TYPE: Type of index. A DELTA_SYNC index is kept in sync with a source Delta
+      table; a DIRECT_ACCESS index holds rows that you write through
+      UpsertData and RemoveData. Set on create and immutable thereafter.
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
@@ -609,7 +615,7 @@ func newListIndexes() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listIndexesLimit int
 
-	cmd.Flags().IntVar(&listIndexesReq.PageSize, "page-size", listIndexesReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	cmd.Flags().IntVar(&listIndexesReq.PageSize, "page-size", listIndexesReq.PageSize, `Maximum number of indexes to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listIndexesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -688,14 +694,14 @@ func newQueryIndex() *cobra.Command {
 
 	// TODO: array: columns_to_rerank
 	// TODO: array: facets
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string describing query filters (e.g.`)
-	cmd.Flags().IntVar(&queryIndexReq.MaxResults, "max-results", queryIndexReq.MaxResults, `Maximum number of results to return (the legacy num_results).`)
+	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON object of filters to apply, serialized as a string.`)
+	cmd.Flags().IntVar(&queryIndexReq.MaxResults, "max-results", queryIndexReq.MaxResults, `Maximum number of results to return.`)
 	// TODO: array: query_columns
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `Query type: ANN, HYBRID, or FULL_TEXT.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `Query type: ANN for vector similarity search, HYBRID for combined vector and keyword search, or FULL_TEXT for keyword search without embeddings.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Score threshold for the approximate nearest-neighbor search.`)
+	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Score threshold for the approximate nearest-neighbor search; results that score below it are not returned.`)
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index NAME"
@@ -940,9 +946,9 @@ func newSyncIndex() *cobra.Command {
 
 Synchronize an AI Search index.
 
-  Synchronize a Delta Sync AI Search index with its source Delta table. Applies
-  only to Delta Sync indexes; Direct Access indexes are written via the
-  data-plane upsert path.
+  Start a sync of a Delta Sync AI Search index with its source Delta table. Use
+  it with TRIGGERED pipelines; CONTINUOUS pipelines sync automatically.
+  Direct Access indexes are written through UpsertData instead.
 
   Arguments:
     NAME: Full resource name of the index to synchronize. Must be a Delta Sync
@@ -1129,7 +1135,11 @@ Upsert data into an AI Search index.
   Arguments:
     NAME: Full resource name of the index. Must be a Direct Access index. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}
-    INPUTS_JSON: JSON document describing the rows to upsert.`
+    INPUTS_JSON: JSON array of the rows to insert or update, serialized as a string. Each
+      element is an object that maps column names to values and must include the
+      primary key column; vector columns are given as arrays of numbers. A row
+      whose primary key already exists is overwritten. The array must not be
+      empty.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"

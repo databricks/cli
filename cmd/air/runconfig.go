@@ -922,11 +922,15 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	}
 }
 
+// skillInstallCommand installs the databricks-ai-runtime agent skill. Help
+// pages that point coding agents at the skill share it.
+const skillInstallCommand = "databricks aitools install --skills-only --skills databricks-ai-runtime"
+
 // agentSkillHelp closes `-h config`: users look up the schema while writing
 // YAML, which is when an agent skill that writes it for them is most useful.
 const agentSkillHelp = `
 Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
-  databricks aitools install --skills-only --skills databricks-ai-runtime
+  ` + skillInstallCommand + `
   (add --scope project to install into the current project)
   https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
 `

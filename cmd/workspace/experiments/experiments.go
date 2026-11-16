@@ -214,7 +214,7 @@ func newCreateIssue() *cobra.Command {
 	var lastSeenTimeParam string
 	cmd.Flags().StringVar(&lastSeenTimeParam, "last-seen-time", lastSeenTimeParam, `The request time of the latest trace the Issue affects.`)
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&createIssueReq.Issue.Name, "name", createIssueReq.Issue.Name, `experiments/{experiment}/issues/{issue}.`)
+	cmd.Flags().StringVar(&createIssueReq.Issue.Name, "name", createIssueReq.Issue.Name, `The Issue's resource name, as experiments/{experiment}/issues/{issue}, where {experiment} is the experiment ID and {issue} is the Issue ID: iss- followed by 32 lowercase hex digits.`)
 	cmd.Flags().StringVar(&createIssueReq.Issue.SourceId, "source-id", createIssueReq.Issue.SourceId, `Set once at create.`)
 	cmd.Flags().Var(&createIssueReq.Issue.SourceType, "source-type", `Set once at create. Supported values: [ADHOC_RUN, MANUAL, SCHEDULED_RUN, SINGLE_TRACE_ANALYSIS]`)
 	cmd.Flags().Var(&createIssueReq.Issue.Status, "status", `Defaults to PENDING on create, and can't be cleared. Supported values: [PENDING, REJECTED, RESOLVED]`)
@@ -229,7 +229,9 @@ Create an issue.
   Creates an issue in an experiment.
 
   Arguments:
-    PARENT: experiments/{experiment}
+    PARENT: The experiment to create the Issue in, as experiments/{experiment},
+      where {experiment} is the experiment ID. For example,
+      experiments/1234567890.
     TITLE: Non-empty, at most 250 UTF-8 bytes.
     SEVERITY: Cannot be cleared: an Issue without a severity would match no severity
       filter.
@@ -1256,7 +1258,10 @@ Get an issue.
   Gets an issue.
 
   Arguments:
-    NAME: experiments/{experiment}/issues/{issue}`
+    NAME: The Issue to get, as experiments/{experiment}/issues/{issue}, where
+      {experiment} is the experiment ID and {issue} is the Issue ID: iss-
+      followed by 32 lowercase hex digits. For example,
+      experiments/1234567890/issues/iss-0123456789abcdef0123456789abcdef.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2728,7 +2733,9 @@ Search issues in an experiment.
   Searches the issues in an experiment, filtered and sorted.
 
   Arguments:
-    PARENT: experiments/{experiment}`
+    PARENT: The experiment to search, as experiments/{experiment}, where
+      {experiment} is the experiment ID. For example,
+      experiments/1234567890.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -3390,7 +3397,7 @@ func newUpdateIssue() *cobra.Command {
 	var lastSeenTimeParam string
 	cmd.Flags().StringVar(&lastSeenTimeParam, "last-seen-time", lastSeenTimeParam, `The request time of the latest trace the Issue affects.`)
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&updateIssueReq.Issue.Name, "name", updateIssueReq.Issue.Name, `experiments/{experiment}/issues/{issue}.`)
+	cmd.Flags().StringVar(&updateIssueReq.Issue.Name, "name", updateIssueReq.Issue.Name, `The Issue's resource name, as experiments/{experiment}/issues/{issue}, where {experiment} is the experiment ID and {issue} is the Issue ID: iss- followed by 32 lowercase hex digits.`)
 	cmd.Flags().StringVar(&updateIssueReq.Issue.SourceId, "source-id", updateIssueReq.Issue.SourceId, `Set once at create.`)
 	cmd.Flags().Var(&updateIssueReq.Issue.SourceType, "source-type", `Set once at create. Supported values: [ADHOC_RUN, MANUAL, SCHEDULED_RUN, SINGLE_TRACE_ANALYSIS]`)
 	cmd.Flags().Var(&updateIssueReq.Issue.Status, "status", `Defaults to PENDING on create, and can't be cleared. Supported values: [PENDING, REJECTED, RESOLVED]`)
@@ -3405,7 +3412,10 @@ Update an issue.
   Updates the fields of an issue named in update_mask.
 
   Arguments:
-    NAME: experiments/{experiment}/issues/{issue}
+    NAME: The Issue's resource name, as experiments/{experiment}/issues/{issue},
+      where {experiment} is the experiment ID and {issue} is the Issue ID:
+      iss- followed by 32 lowercase hex digits. For example,
+      experiments/1234567890/issues/iss-0123456789abcdef0123456789abcdef.
     UPDATE_MASK: Accepts title, description, status, severity, categories, tags,
       last_seen_time, and metadata.<key>. A path with an empty value clears the
       field, except that title, status, and severity can't be cleared, and

@@ -23,8 +23,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "domains",
-		Short: `*Beta* Manage domains for organizing and discovering data assets.`,
-		Long: `This command is in Beta and may change without notice.
+		Short: `*Public Preview* Manage domains for organizing and discovering data assets.`,
+		Long: `This command is in Public Preview and may change without notice.
 
 Manage domains for organizing and discovering data assets.`,
 		GroupID: "domains",
@@ -32,8 +32,8 @@ Manage domains for organizing and discovering data assets.`,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateDomain())
@@ -79,8 +79,8 @@ func newCreateDomain() *cobra.Command {
 	// TODO: array: technical_owner_ids
 
 	cmd.Use = "create-domain TAG_KEY"
-	cmd.Short = `*Beta* Create a domain.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Create a domain.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Create a domain.
 
@@ -90,8 +90,8 @@ Create a domain.
     TAG_KEY: Governed tag key associated with this domain.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -163,8 +163,8 @@ func newDeleteDomain() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteDomainReq.Force, "force", deleteDomainReq.Force, `When false (default), DeleteDomain is rejected with FAILED_PRECONDITION if the domain still has Glossary pages.`)
 
 	cmd.Use = "delete-domain NAME"
-	cmd.Short = `*Beta* Delete a domain.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Delete a domain.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Delete a domain.
 
@@ -175,8 +175,8 @@ Delete a domain.
     NAME: Full resource name of the domain to delete. Format: domains/{domain_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -224,8 +224,8 @@ func newGetDomain() *cobra.Command {
 	var getDomainReq domains.GetDomainRequest
 
 	cmd.Use = "get-domain NAME"
-	cmd.Short = `*Beta* Get a domain.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Get a domain.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Get a domain.
 
@@ -238,8 +238,8 @@ Get a domain.
       domains/{domain_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -302,8 +302,8 @@ func newListDomains() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-domains"
-	cmd.Short = `*Beta* List domains.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* List domains.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 List domains.
 
@@ -314,8 +314,8 @@ List domains.
   only domains the caller is authorized to read are returned.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -378,8 +378,8 @@ func newUpdateDomain() *cobra.Command {
 	// TODO: array: technical_owner_ids
 
 	cmd.Use = "update-domain NAME UPDATE_MASK TAG_KEY"
-	cmd.Short = `*Beta* Update a domain.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Update a domain.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Update a domain.
 
@@ -405,8 +405,8 @@ Update a domain.
     TAG_KEY: Governed tag key associated with this domain.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

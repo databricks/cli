@@ -83,19 +83,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The dashboard definition (datasets, pages and widgets) as a JSON string, in the same format as a dashboard file exported from the workspace (.lvdash.json).`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
 
-  Create a draft dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
+  Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -506,11 +501,6 @@ func newGet() *cobra.Command {
 
   Get a draft dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -788,12 +778,8 @@ func newList() *cobra.Command {
 	cmd.Short = `List dashboards.`
 	cmd.Long = `List dashboards.
 
-  List dashboards.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
+  List the dashboards that the caller can view. Each entry carries summary
+  metadata only; use Get dashboard to retrieve a dashboard's full definition.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1114,11 +1100,6 @@ func newPublish() *cobra.Command {
 
   Publish the current draft dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
@@ -1193,11 +1174,6 @@ func newRevert() *cobra.Command {
 
   Revert a dashboard's definition in draft mode to the last published version.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1269,11 +1245,6 @@ func newTrash() *cobra.Command {
 
   Trash a dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1331,11 +1302,6 @@ func newUnpublish() *cobra.Command {
 	cmd.Long = `Unpublish dashboard.
 
   Unpublish the dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -1396,7 +1362,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The dashboard definition (datasets, pages and widgets) as a JSON string, in the same format as a dashboard file exported from the workspace (.lvdash.json).`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "update DASHBOARD_ID"
@@ -1404,11 +1370,6 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update dashboard.
 
   Update a draft dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
