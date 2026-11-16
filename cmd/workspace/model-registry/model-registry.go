@@ -3,6 +3,7 @@
 package model_registry
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "model-registry",
-		Short: `Note: This API reference documents APIs for the Workspace Model Registry.`,
-		Long: `Note: This API reference documents APIs for the Workspace Model Registry.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "model-registry",
+	Short:   `Note: This API reference documents APIs for the Workspace Model Registry.`,
+	GroupID: "ml",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Note: This API reference documents APIs for the Workspace Model Registry.
   Databricks recommends using [Models in Unity
   Catalog](/api/workspace/registeredmodels) instead. Models in Unity Catalog
   provides centralized model governance, cross-workspace access, lineage, and
   deployment. Workspace Model Registry will be deprecated in the future.
 
   The Workspace Model Registry is a centralized model repository and a UI and
-  set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
-		GroupID: "ml",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  set of APIs that enable you to manage the full lifecycle of MLflow Models.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newApproveTransitionRequest())
@@ -80,8 +85,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start approve-transition-request command

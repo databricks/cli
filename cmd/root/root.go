@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
+func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -117,9 +117,10 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+// execute runs cmd with args, which select the subcommand to run. Unlike
+// [cobra.Command.SetArgs], nil args mean no arguments rather than the process
+// arguments.
+func execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
 	defer func() {
 		r := recover()
 
@@ -154,6 +155,12 @@ Stack Trace:
 
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
+
+	// Cobra runs with the process arguments if args are nil.
+	if args == nil {
+		args = []string{}
+	}
+	cmd.SetArgs(args)
 
 	startTime := time.Now()
 

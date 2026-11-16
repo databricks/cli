@@ -3,6 +3,7 @@
 package schemas
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "schemas",
-		Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
-		Long: `A schema (also called a database) is the second layer of Unity Catalog’s
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "schemas",
+	Short:   `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A schema (also called a database) is the second layer of Unity Catalog’s
   three-level namespace. A schema organizes tables, views, and functions. To
   access (or list) a table or view in a schema, users must have the USE_SCHEMA
   data permission on the schema and its parent catalog, and they must have the
-  SELECT permission on the table or view.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  SELECT permission on the table or view.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

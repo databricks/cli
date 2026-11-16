@@ -3,6 +3,7 @@
 package default_namespace
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,15 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "default-namespace",
-		Short: `*Public Preview* The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "default-namespace",
+	Short: `*Public Preview* The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The default namespace setting API allows users to configure the default
   namespace for a Databricks workspace.
@@ -34,13 +39,13 @@ The default namespace setting API allows users to configure the default
 
   This setting requires a restart of clusters and SQL warehouses to take effect.
   Additionally, the default namespace only applies when using Unity
-  Catalog-enabled compute.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  Catalog-enabled compute.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -51,8 +56,6 @@ The default namespace setting API allows users to configure the default
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

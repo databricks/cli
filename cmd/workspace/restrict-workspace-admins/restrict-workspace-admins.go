@@ -3,6 +3,7 @@
 package restrict_workspace_admins
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,15 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "restrict-workspace-admins",
-		Short: `*Public Preview* The Restrict Workspace Admins setting lets you control the capabilities of workspace admins.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "restrict-workspace-admins",
+	Short: `*Public Preview* The Restrict Workspace Admins setting lets you control the capabilities of workspace admins.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The Restrict Workspace Admins setting lets you control the capabilities of
   workspace admins. With the setting status set to ALLOW_ALL, workspace admins
@@ -34,13 +39,13 @@ The Restrict Workspace Admins setting lets you control the capabilities of
   access tokens on behalf of service principals they have the Service Principal
   User role on. They can also only change a job owner to themselves. And they
   can change the job run_as setting to themselves or to a service principal on
-  which they have the Service Principal User role.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  which they have the Service Principal User role.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -51,8 +56,6 @@ The Restrict Workspace Admins setting lets you control the capabilities of
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

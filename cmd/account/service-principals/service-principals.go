@@ -6,6 +6,7 @@
 package service_principals
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,22 +21,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "service-principals",
-		Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
-		Long: `Identities for use with jobs, automated tools, and systems such as scripts,
+// Spec declares the service-principals command.
+var Spec = root.CommandSpec{
+	Use:     "service-principals",
+	Short:   `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Annotations = map[string]string{
+		"package": "iam",
+	}
+	cmd.Long = `Identities for use with jobs, automated tools, and systems such as scripts,
   apps, and CI/CD platforms. Databricks recommends creating service principals
   to run production jobs or modify production data. If all processes that act on
   production data run with service principals, interactive users do not need any
   write, delete, or modify privileges in production. This eliminates the risk of
-  a user overwriting production data by accident.`,
-		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
-	}
+  a user overwriting production data by accident.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -49,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

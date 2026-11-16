@@ -46,7 +46,11 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly boo
 			tea.WithInput(cmd.InOrStdin()),
 			tea.WithOutput(out),
 		).Run()
-		return err
+		if err != nil {
+			return err
+		}
+		warnIfTruncated(ctx, f)
+		return nil
 	}
 
 	rows, err := f.next(limit)

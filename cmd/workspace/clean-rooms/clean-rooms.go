@@ -3,6 +3,7 @@
 package clean_rooms
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -18,20 +19,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clean-rooms",
-		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.`,
-		Long: `A clean room uses Delta Sharing and serverless compute to provide a secure and
-  privacy-protecting environment where multiple parties can work together on
-  sensitive enterprise data without direct access to each other's data.`,
-		GroupID: "cleanrooms",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clean-rooms",
+	Short:   `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.`,
+	GroupID: "cleanrooms",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A clean room uses Delta Sharing and serverless compute to provide a secure and
+  privacy-protecting environment where multiple parties can work together on
+  sensitive enterprise data without direct access to each other's data.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

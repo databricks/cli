@@ -3,6 +3,7 @@
 package statement_execution_v2
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "statement-execution-v2",
-		Short: `*Public Preview* The Statement Execution API v2 can be used to execute SQL statements on a SQL warehouse and fetch the result.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "statement-execution-v2",
+	Short:   `*Public Preview* The Statement Execution API v2 can be used to execute SQL statements on a SQL warehouse and fetch the result.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The Statement Execution API v2 can be used to execute SQL statements on a SQL
   warehouse and fetch the result. It works the same as the Statement Execution
@@ -35,14 +41,13 @@ The Statement Execution API v2 can be used to execute SQL statements on a SQL
   statements on Lakehouse//RT warehouses with version 1, but version 2 is
   optimized for them.
 
-  [Lakehouse//RT]: https://docs.databricks.com/compute/sql-warehouse/real-time.html`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Lakehouse//RT]: https://docs.databricks.com/compute/sql-warehouse/real-time.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelStatement())
@@ -54,8 +59,6 @@ The Statement Execution API v2 can be used to execute SQL statements on a SQL
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-statement command
