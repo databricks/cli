@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/set"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type permissionDiagnostics struct{}
@@ -34,7 +35,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	canManageBundle, _ := analyzeBundlePermissions(b)
+	canManageBundle, _ := analyzeBundlePermissions(ctx, b)
 	if canManageBundle {
 		return nil
 	}
@@ -70,7 +71,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 // Returns:
 // - canManageBundle: true if the current user or one of their groups can manage the bundle resources.
 // - assistance: advice on who to contact as to manage this project
-func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
+func analyzeBundlePermissions(ctx context.Context, b *bundle.Bundle) (bool, string) {
 	canManageBundle := false
 	otherManagers := set.NewSet[string]()
 	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" && b.Config.RunAs.UserName != b.Config.Workspace.CurrentUser.UserName {
@@ -80,8 +81,7 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	}
 
 	currentUser := b.Config.Workspace.CurrentUser.UserName
-	targetPermissions := b.Config.Permissions
-	for _, p := range targetPermissions {
+	for _, p := range b.Config.Permissions {
 		if p.Level != CAN_MANAGE {
 			continue
 		}
@@ -91,7 +91,7 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 			continue
 		}
 
-		if isGroupOfCurrentUser(b, p.GroupName) {
+		if p.GroupName != "" && isMemberOfGroup(b, p.GroupName) {
 			canManageBundle = true
 			continue
 		}
@@ -120,13 +120,10 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	return canManageBundle, assistance
 }
 
-func isGroupOfCurrentUser(b *bundle.Bundle, groupName string) bool {
-	currentUserGroups := b.Config.Workspace.CurrentUser.Groups
-
-	for _, g := range currentUserGroups {
-		if g.Display == groupName {
-			return true
-		}
-	}
-	return false
+// isMemberOfGroup reports whether the current user belongs to the group named name,
+// by matching the name against the groups read in PopulateCurrentUser.
+func isMemberOfGroup(b *bundle.Bundle, name string) bool {
+	return slices.ContainsFunc(b.Config.Workspace.CurrentUser.Groups, func(g iam.ComplexValue) bool {
+		return g.Display == name
+	})
 }
