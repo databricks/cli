@@ -12,6 +12,7 @@ const (
 	BundleConfigRemoteSyncErrorCategorySaveFailed          BundleConfigRemoteSyncErrorCategory = "SAVE_FAILED"
 	BundleConfigRemoteSyncErrorCategoryOutputFailed        BundleConfigRemoteSyncErrorCategory = "OUTPUT_FAILED"
 	BundleConfigRemoteSyncErrorCategoryResourceNotInConfig BundleConfigRemoteSyncErrorCategory = "RESOURCE_NOT_IN_CONFIG"
+	BundleConfigRemoteSyncErrorCategoryNoMatchingSelector  BundleConfigRemoteSyncErrorCategory = "NO_MATCHING_SELECTOR"
 )
 
 // BundleConfigRemoteSyncEvent is emitted on every execution of the
