@@ -28,7 +28,7 @@ func TestConfigYAML(t *testing.T) {
 		task := &jobs.GenAiComputeTask{
 			YamlParameters: "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: \"for i in $(seq 1 3); do echo $i; done\\n\"\n",
 		}
-		got := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
+		got, _ := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
 		assert.Contains(t, got, "experiment_name: my-exp")
 		assert.Contains(t, got, "accelerator_type: a10")
 		assert.Contains(t, got, "command: |")
@@ -41,7 +41,9 @@ func TestConfigYAML(t *testing.T) {
 			Download(mock.Anything, "/Workspace/cfg.yaml").
 			Return(io.NopCloser(strings.NewReader("experiment_name: from-file\n")), nil)
 		task := &jobs.GenAiComputeTask{YamlParametersFilePath: "/Workspace/cfg.yaml"}
-		assert.Equal(t, "experiment_name: from-file", configYAML(ctx, m.WorkspaceClient, task))
+		got, raw := configYAML(ctx, m.WorkspaceClient, task)
+		assert.Equal(t, "experiment_name: from-file", got)
+		assert.Equal(t, "experiment_name: from-file\n", string(raw))
 	})
 
 	t.Run("falls back to a synthesized config", func(t *testing.T) {
@@ -49,7 +51,7 @@ func TestConfigYAML(t *testing.T) {
 			MlflowExperimentName: "/Users/me@example.com/exp",
 			Compute:              &jobs.ComputeConfig{GpuType: "a10", NumGpus: 1},
 		}
-		got := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
+		got, _ := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
 		assert.Contains(t, got, "experiment_name: exp")
 		assert.NotContains(t, got, "command")
 	})
@@ -65,20 +67,24 @@ func TestResolveConfigYAML(t *testing.T) {
 			Return(io.NopCloser(strings.NewReader("experiment_name: from-air\n")), nil)
 		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
 		data := &getData{TrainingConfigPath: "/Workspace/run/training_config.yaml"}
-		assert.Equal(t, "experiment_name: from-air", resolveConfigYAML(ctx, m.WorkspaceClient, run, data))
+		got, raw := resolveConfigYAML(ctx, m.WorkspaceClient, run, data)
+		assert.Equal(t, "experiment_name: from-air", got)
+		assert.Equal(t, "experiment_name: from-air\n", string(raw))
 	})
 
 	t.Run("falls back to the legacy task when no path is set", func(t *testing.T) {
 		run := &jobs.Run{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
 			MlflowExperimentName: "/Users/me@example.com/exp",
 		}}}}
-		got := resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{})
+		got, _ := resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{})
 		assert.Contains(t, got, "experiment_name: exp")
 	})
 
 	t.Run("empty when neither source is present", func(t *testing.T) {
 		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
-		assert.Empty(t, resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{}))
+		got, raw := resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{})
+		assert.Empty(t, got)
+		assert.Nil(t, raw)
 	})
 }
 

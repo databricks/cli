@@ -104,13 +104,15 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// with no serverless environment) stays "N/A".
 	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, run.RunId))
 
+	configBody, configRaw := resolveConfigYAML(ctx, w, run, data)
+
 	view := runView{
 		runID:        data.RunID,
 		dashboardURL: data.DashboardURL,
 		status:       data.Status,
 		submitted:    data.SubmittedDisplay,
 		retries:      data.AttemptNumber,
-		maxRetries:   data.MaxRetriesDisplay,
+		maxRetries:   maxRetriesDisplay(resolveMaxRetries(run, configRaw)),
 		duration:     data.DurationDisplay,
 		progress:     data.ProgressDisplay,
 		experiment:   data.ExperimentDisplay,
@@ -130,7 +132,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	var sections []string
-	if body := colorizeConfig(p, resolveConfigYAML(ctx, w, run, data)); body != "" {
+	if body := colorizeConfig(p, configBody); body != "" {
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
@@ -199,33 +201,35 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 }
 
 // resolveConfigYAML returns the config box body: from the downloaded config file
-// when we have its path, else from the legacy task.
-func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) string {
+// when we have its path, else from the legacy task. It also returns the raw
+// config the body came from, or nil when the body is synthesized or empty.
+func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) (string, []byte) {
 	if data.TrainingConfigPath != "" {
 		if raw := downloadConfig(ctx, w, data.TrainingConfigPath); len(raw) > 0 {
-			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
+			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 		}
 	}
 	if task := genAIComputeTask(run); task != nil {
 		return configYAML(ctx, w, task)
 	}
-	return ""
+	return "", nil
 }
 
 // configYAML returns the run's resolved training config as YAML for the box. The
 // full config (including the command/script) lives in the run's parameters, not
 // the structured task fields, so we prefer the inline parameters, then the
 // parameters file, and only synthesize a minimal config as a last resort.
-func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.GenAiComputeTask) string {
+func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.GenAiComputeTask) (string, []byte) {
 	if task.YamlParameters != "" {
-		return strings.TrimRight(reformatYAMLForDisplay([]byte(task.YamlParameters)), "\n")
+		raw := []byte(task.YamlParameters)
+		return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 	}
 	if task.YamlParametersFilePath != "" {
 		if raw := downloadConfig(ctx, w, task.YamlParametersFilePath); len(raw) > 0 {
-			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
+			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 		}
 	}
-	return synthConfigYAML(task)
+	return synthConfigYAML(task), nil
 }
 
 // downloadConfig fetches the run's training-config file, returning nil on

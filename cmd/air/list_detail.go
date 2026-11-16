@@ -29,6 +29,9 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		enrichFromAiRuntimeTask(run, &data)
 	}
 	data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceIDForRunLink(ctx, w))
+	if findForEachTask(run) == nil && genAIComputeTask(run) == nil {
+		enrichFromAiRuntimeTask(run, &data)
+	}
 	ids := mlflowIDs(ctx, w, run)
 	if ids != nil {
 		url := mlflowLogsURL(w.Config.Host, ids)

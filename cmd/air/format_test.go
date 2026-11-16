@@ -1,7 +1,9 @@
 package aircmd
 
 import (
+	"encoding/json"
 	"io"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -305,4 +307,94 @@ func TestTerminationReason(t *testing.T) {
 
 	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateSuccess, StateMessage: "done"}}))
 	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "cancelled"}}))
+}
+
+func TestMaxRetries(t *testing.T) {
+	submit := func(task jobs.RunTask) *jobs.Run {
+		return &jobs.Run{RunType: jobs.RunTypeSubmitRun, Tasks: []jobs.RunTask{task}}
+	}
+	aiRuntime := jobs.RunTask{AiRuntimeTask: &jobs.AiRuntimeTask{}}
+	reported := func(n int) jobs.RunTask {
+		return jobs.RunTask{MaxRetries: n, AiRuntimeTask: &jobs.AiRuntimeTask{}, ForceSendFields: []string{"MaxRetries"}}
+	}
+	legacy := jobs.RunTask{GenAiComputeTask: &jobs.GenAiComputeTask{}}
+	jobRun := &jobs.Run{RunType: jobs.RunTypeJobRun, Tasks: []jobs.RunTask{aiRuntime}}
+	tests := []struct {
+		name   string
+		run    *jobs.Run
+		config string
+		want   string
+	}{
+		{"submit, config sets 1", submit(aiRuntime), "max_retries: 1\n", "1"},
+		{"submit, config sets 0", submit(aiRuntime), "max_retries: 0\n", "0"},
+		{"submit, config sets unlimited", submit(aiRuntime), "max_retries: -1\n", "unlimited"},
+		{"submit, config unset uses the CLI default", submit(aiRuntime), "experiment_name: e\n", "3 (CLI default)"},
+		{"submit, no config", submit(aiRuntime), "", "N/A"},
+		{"submit, unparsable config", submit(aiRuntime), "[not: a map", "N/A"},
+		{"legacy submit, config unset is unknown", submit(legacy), "experiment_name: e\n", "N/A"},
+		{"legacy submit, config sets 2", submit(legacy), "max_retries: 2\n", "2"},
+		{"job run ignores the config", jobRun, "max_retries: 1\n", "N/A"},
+		{"job run, config unset", jobRun, "experiment_name: e\n", "N/A"},
+		{"run type unknown", &jobs.Run{Tasks: []jobs.RunTask{aiRuntime}}, "max_retries: 1\n", "N/A"},
+		{"server reports 0 over the config", submit(reported(0)), "max_retries: 2\n", "0"},
+		{"server reports 5 on a job run", &jobs.Run{RunType: jobs.RunTypeJobRun, Tasks: []jobs.RunTask{reported(5)}}, "", "5"},
+		{"server reports unlimited", submit(reported(-1)), "", "unlimited"},
+		{"no tasks", &jobs.Run{RunType: jobs.RunTypeSubmitRun}, "", "N/A"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var raw []byte
+			if tt.config != "" {
+				raw = []byte(tt.config)
+			}
+			assert.Equal(t, tt.want, maxRetriesDisplay(resolveMaxRetries(tt.run, raw)))
+		})
+	}
+}
+
+func TestResolveMaxRetriesSource(t *testing.T) {
+	run := &jobs.Run{RunType: jobs.RunTypeSubmitRun, Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{}}}}
+	assert.Equal(t, &runMaxRetries{Limit: 1, Source: maxRetriesConfigured}, resolveMaxRetries(run, []byte("max_retries: 1\n")))
+	assert.Equal(t, &runMaxRetries{Limit: 3, Source: maxRetriesCLIDefault}, resolveMaxRetries(run, []byte("command: x\n")))
+	run.Tasks[0].MaxRetries = 2
+	assert.Equal(t, &runMaxRetries{Limit: 2, Source: maxRetriesReported}, resolveMaxRetries(run, nil))
+}
+
+// The runs/get bodies below are trimmed copies of real workspace responses:
+// task runs carry no max_retries key at all.
+func TestMaxRetriesFromDecodedRunGet(t *testing.T) {
+	decode := func(body string) *jobs.Run {
+		var run jobs.Run
+		require.NoError(t, json.Unmarshal([]byte(body), &run))
+		return &run
+	}
+	display := func(run *jobs.Run, config []byte) string {
+		return maxRetriesDisplay(resolveMaxRetries(run, config))
+	}
+	// Run 111111111111111: submitted with max_retries 1, failed, retried once.
+	aiRuntime := decode(`{"run_id": 111111111111111, "run_type": "SUBMIT_RUN", "tasks": [
+		{"task_key": "t", "run_id": 222222222222222, "attempt_number": 0, "ai_runtime_task": {"experiment": "e"}},
+		{"task_key": "t", "run_id": 333333333333333, "attempt_number": 1, "ai_runtime_task": {"experiment": "e"}}]}`)
+	assert.Equal(t, "1", display(aiRuntime, []byte("experiment_name: e\nmax_retries: 1\n")))
+	assert.Equal(t, "3 (CLI default)", display(aiRuntime, []byte("experiment_name: e\n")))
+
+	// A multi-container run has no deployment-level command_path, so the config
+	// path is unknown and nothing is downloaded.
+	multi := decode(`{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"task_key": "t", "run_id": 2,
+		"ai_runtime_task": {"experiment": "e", "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]}}]}`)
+	var data getData
+	enrichFromAiRuntimeTask(multi, &data)
+	assert.Empty(t, data.TrainingConfigPath)
+	assert.Equal(t, "N/A", display(multi, nil))
+
+	// A legacy run as the Python CLI submitted it: yaml_parameters is the user's
+	// raw YAML, and max_retries is sent only when > 0.
+	legacyYAML := "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: python train.py\n"
+	legacy := decode(`{"run_id": 1, "run_type": "SUBMIT_RUN", "tasks": [{"task_key": "train", "run_id": 2, "attempt_number": 0,
+		"gen_ai_compute_task": {"mlflow_experiment_name": "/Users/u/my-exp", "yaml_parameters": ` + strconv.Quote(legacyYAML) + `}}]}`)
+	_, raw := configYAML(t.Context(), nil, genAIComputeTask(legacy))
+	assert.Equal(t, "N/A", display(legacy, raw))
+
+	explicitZero := decode(`{"run_type": "SUBMIT_RUN", "tasks": [{"max_retries": 0, "ai_runtime_task": {}}]}`)
+	assert.Equal(t, "0", display(explicitZero, []byte("experiment_name: e\n")))
 }
