@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 
 	"github.com/stretchr/testify/assert"
@@ -70,10 +71,10 @@ func TestResolveTestSelections(t *testing.T) {
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
-	assert.Equal(t, startTestUpdateRequest{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
-	assert.Equal(t, startTestUpdateRequest{
+	assert.Equal(t, pipelines.StartUpdate{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
+	assert.Equal(t, pipelines.StartUpdate{
 		TestOnly:    true,
-		TestOptions: &testOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
+		TestOptions: &pipelines.PipelineTestOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
 	}, newStartTestUpdateRequest([]string{"/Workspace/tests"}, []string{"-k", "orders"}))
 }
 

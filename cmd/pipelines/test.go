@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"maps"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -20,7 +19,6 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/env"
@@ -28,28 +26,16 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	databricks "github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// startTestUpdateRequest is the Start Update body of a test run.
-// test_only and test_options are not in the Go SDK yet, so the request is sent directly.
-type startTestUpdateRequest struct {
-	TestOnly    bool         `json:"test_only"`
-	TestOptions *testOptions `json:"test_options,omitempty"`
-}
-
-type testOptions struct {
-	TestSelection []string `json:"test_selection,omitempty"`
-	PytestArgs    []string `json:"pytest_args,omitempty"`
-}
-
-func newStartTestUpdateRequest(selection, pytestArgs []string) startTestUpdateRequest {
-	req := startTestUpdateRequest{TestOnly: true}
+// newStartTestUpdateRequest returns the Start Update request of a test run.
+func newStartTestUpdateRequest(selection, pytestArgs []string) pipelines.StartUpdate {
+	req := pipelines.StartUpdate{TestOnly: true}
 	if len(selection) > 0 || len(pytestArgs) > 0 {
-		req.TestOptions = &testOptions{TestSelection: selection, PytestArgs: pytestArgs}
+		req.TestOptions = &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs}
 	}
 	return req
 }
@@ -205,22 +191,9 @@ func getRootPath(ctx context.Context, w *databricks.WorkspaceClient, pipelineID 
 }
 
 // startTestUpdate starts a test-only update and returns its ID.
-func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, req startTestUpdateRequest) (string, error) {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return "", fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	var response pipelines.StartUpdateResponse
-	err = apiClient.Do(
-		ctx,
-		http.MethodPost,
-		fmt.Sprintf("/api/2.0/pipelines/%s/updates", pipelineID),
-		auth.WorkspaceIDHeaders(w.Config),
-		nil,
-		req,
-		&response,
-	)
+func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, req pipelines.StartUpdate) (string, error) {
+	req.PipelineId = pipelineID
+	response, err := w.Pipelines.StartUpdate(ctx, req)
 	if err != nil {
 		return "", err
 	}

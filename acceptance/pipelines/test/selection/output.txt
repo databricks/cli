@@ -42,16 +42,16 @@ Update: [UUID][2]
   "body": {
     "test_only": true,
     "test_options": {
-      "test_selection": [
-        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests",
-        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_backfill",
-        "/Workspace/Users/someone@example.com/tests/test_other.py"
-      ],
       "pytest_args": [
         "-k",
         "orders and not slow",
         "-m",
         "smoke,fast"
+      ],
+      "test_selection": [
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests",
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_backfill",
+        "/Workspace/Users/someone@example.com/tests/test_other.py"
       ]
     }
   }
