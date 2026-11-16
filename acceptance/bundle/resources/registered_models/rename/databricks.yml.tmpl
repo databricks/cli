@@ -2,16 +2,13 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 resources:
-  catalogs:
-    catalog1:
-      name: test_catalog_$UNIQUE_NAME
   schemas:
     schema1:
-      catalog_name: ${resources.catalogs.catalog1.name}
-      name: myschema
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
   registered_models:
     model1:
-      catalog_name: ${resources.catalogs.catalog1.name}
+      catalog_name: main
       schema_name: ${resources.schemas.schema1.name}
       name: mymodel
       comment: c1
