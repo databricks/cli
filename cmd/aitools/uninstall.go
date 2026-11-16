@@ -7,8 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +28,10 @@ func NewUninstallCmd() *cobra.Command {
 		Long: `Remove installed Databricks skills and plugins from all coding agents.
 
 By default, removes all skills. Use --skills to remove specific skills only.
+
+A global-scope uninstall also turns off the automatic installation of
+Databricks AI tools on CLI upgrades; 'databricks aitools auto-install enable'
+turns it back on.
 
 The command exits with code 1 when every removal it attempts fails.`,
 		Args: cobra.NoArgs,
@@ -102,6 +108,14 @@ The command exits with code 1 when every removal it attempts fails.`,
 			// is not installed (the installer returns that error).
 			if state != nil && skillsInstalled(state, opts.Skills) {
 				waitForTelemetryAuth(ctx)
+			}
+			// Auto-install only ever installs in global scope, so only a global
+			// uninstall could be undone by it on the next CLI upgrade. A partial
+			// one counts too: the update it runs re-adds removed skills.
+			if scope == installer.ScopeGlobal {
+				if err := autoinstall.SetOptedOut(ctx, true); err != nil {
+					log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
+				}
 			}
 			result, err := uninstallSkillsFn(ctx, opts)
 			if err != nil {

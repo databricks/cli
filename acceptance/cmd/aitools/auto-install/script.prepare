@@ -1,0 +1,5 @@
+# auto_install_state prints the persisted auto-install state.
+auto_install_state() {
+    local path="${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+    if [ -f "$path" ]; then cat "$path"; else echo "(no auto-install state)"; fi
+}

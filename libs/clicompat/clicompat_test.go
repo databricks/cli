@@ -324,6 +324,45 @@ func TestResolveAgentSkillsVersion(t *testing.T) {
 	}
 }
 
+func TestResolveAutoInstall(t *testing.T) {
+	manifest := `{
+		"1.20.0": {"appkit": "0.84.0", "skills": "0.2.30"},
+		"1.30.0": {"appkit": "0.84.0", "skills": "0.2.30", "auto_install": true}
+	}`
+	tests := []struct {
+		cliVersion string
+		want       bool
+	}{
+		{cliVersion: "1.25.0", want: false},
+		{cliVersion: "1.30.0", want: true},
+		{cliVersion: "1.31.2", want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.cliVersion, func(t *testing.T) {
+			ctx := testContext(t)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(manifest))
+			}))
+			defer srv.Close()
+			redirectToServer(t, srv)
+
+			got, err := ResolveAutoInstall(ctx, tc.cliVersion)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// The remote manifest is this same file on main, so turning auto_install on
+// anywhere is a launch decision: change this test in the PR that makes it.
+func TestManifestLeavesAutoInstallOff(t *testing.T) {
+	m, err := parseManifest(build.CLICompatManifestJSON)
+	require.NoError(t, err)
+	for version, entry := range m {
+		assert.False(t, entry.AutoInstall, "auto_install is on for %s", version)
+	}
+}
+
 // --- ResolveEmbeddedAppKitVersion ---
 
 func TestResolveEmbeddedAppKitVersion(t *testing.T) {
