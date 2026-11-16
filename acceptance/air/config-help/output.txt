@@ -31,17 +31,17 @@ Examples:
 
 Flags:
   -f, --file string              Path to the workload YAML config
-      --watch                    Stream logs until the run completes
+      --watch[=true|false]       Stream logs until the run completes
       --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
-      --dry-run                  Validate the config against the workspace without submitting a run
+      --dry-run[=true|false]     Validate the config against the workspace without submitting a run
       --idempotency-key string   Return the existing run if this key was already used
-  -h, --help                     help for run
+  -h, --help[=true|false]        help for run
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === schema overview
 
