@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	filesystem "github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -81,7 +82,17 @@ func sandboxFilerForPath(ctx context.Context, fullPath string) (filer.Filer, str
 		return nil, "", err
 	}
 	f, err := filer.NewSandboxClient(w, id, "/")
-	return f, path.Clean(name), err
+	return f, cleanKeepingTrailingSlash(name), err
+}
+
+// cleanKeepingTrailingSlash cleans p but keeps a trailing slash, which shell
+// completion needs to list a directory's entries instead of its siblings.
+func cleanKeepingTrailingSlash(p string) string {
+	cleaned := path.Clean(p)
+	if strings.HasSuffix(p, "/") && cleaned != "/" {
+		cleaned += "/"
+	}
+	return cleaned
 }
 
 func completeSandboxPaths(complete cobra.CompletionFunc) cobra.CompletionFunc {
