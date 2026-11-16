@@ -119,7 +119,7 @@ config.compute
   GPU Pools (optional):
     accelerator_pool_id  GPU Pool to run on, by ID.
     pool_id              Compatibility alias for accelerator_pool_id.
-    priority_class       Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL.
+    priority_class       Scheduling priority within the pool: NORMAL or HIGH.
 
 For details on a field, run "databricks air run -h config.compute.<field>".
 
@@ -148,7 +148,7 @@ config.compute.pool_id
 
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires accelerator_pool_id (or its pool_id alias).
+  Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id (or its pool_id alias).
 
   Type:     string
   Required: no

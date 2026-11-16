@@ -75,10 +75,17 @@ func TestParsePriorityClass(t *testing.T) {
 		assert.Equal(t, priorityClassNormal, got)
 	}
 
-	for _, in := range []string{"urgent", "", "high", "CRITICAL"} {
+	for _, in := range []string{"HIGH", "high", "High", "  high  "} {
+		got, err := parsePriorityClass(in)
+		require.NoError(t, err)
+		assert.Equal(t, priorityClassHigh, got)
+	}
+
+	for _, in := range []string{"urgent", "", "CRITICAL"} {
 		_, err := parsePriorityClass(in)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "valid values are")
+		assert.Contains(t, err.Error(), "valid values are: NORMAL, HIGH")
+		assert.NotContains(t, err.Error(), "BEST_EFFORT")
 	}
 }
 

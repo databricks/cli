@@ -143,6 +143,7 @@ func TestSubmitRun(t *testing.T) {
 		{name: "on-demand"},
 		{name: "pool", poolID: "capacity-1"},
 		{name: "pool-normal", poolID: "capacity-1", priorityClass: "NORMAL"},
+		{name: "pool-high", poolID: "capacity-1", priorityClass: "HIGH"},
 		{name: "pool-best-effort", poolID: "capacity-1", priorityClass: "BEST_EFFORT"},
 		{name: "image", unityCatalogImagePath: "main.air.training:prod"},
 		{name: "pool-image", poolID: "capacity-1", unityCatalogImagePath: "main.air.training:prod"},

@@ -37,11 +37,12 @@ type priorityClass string
 const (
 	priorityClassBestEffort priorityClass = "BEST_EFFORT"
 	priorityClassNormal     priorityClass = "NORMAL"
+	priorityClassHigh       priorityClass = "HIGH"
 )
 
-// priorityClasses lists every valid value, low to high. Used for validation
-// error messages.
-var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal}
+// priorityClasses lists the advertised priorities, low to high. BEST_EFFORT
+// remains accepted for compatibility with existing configurations.
+var priorityClasses = []priorityClass{priorityClassNormal, priorityClassHigh}
 
 func validPriorityClassesHint() string {
 	names := make([]string, len(priorityClasses))
@@ -56,7 +57,7 @@ func validPriorityClassesHint() string {
 // trimmed and upper-cased, so `normal` and `NORMAL` both resolve.
 func parsePriorityClass(value string) (priorityClass, error) {
 	switch p := priorityClass(strings.ToUpper(strings.TrimSpace(value))); p {
-	case priorityClassBestEffort, priorityClassNormal:
+	case priorityClassBestEffort, priorityClassNormal, priorityClassHigh:
 		return p, nil
 	}
 	return "", fmt.Errorf("invalid priority_class %q: %s", value, validPriorityClassesHint())
@@ -84,7 +85,7 @@ type computeConfig struct {
 	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected; the workload will not fall back to on-demand capacity. When omitted, workspace capacity selection applies." group:"GPU Pools (optional)"`
 	PoolID            *string `yaml:"pool_id" help:"Compatibility alias for accelerator_pool_id. If both are set, their IDs must match." group:"GPU Pools (optional)"`
-	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires accelerator_pool_id (or its pool_id alias)." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id (or its pool_id alias)." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
