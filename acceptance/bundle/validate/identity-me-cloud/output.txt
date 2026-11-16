@@ -1,0 +1,3 @@
+
+=== bundle validate reads the current user's groups
+"array"

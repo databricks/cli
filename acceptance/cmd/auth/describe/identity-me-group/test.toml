@@ -1,0 +1,19 @@
+Ignore = [
+    "home"
+]
+
+# The caller is an assumed group, which identity/me returns as the principal.
+[[Server]]
+Pattern = "GET /api/2.0/identity/me"
+Response.Body = '''
+{
+  "name": "accounts/acct-123/me",
+  "group": {
+    "group_id": "42",
+    "group_name": "data-engineers",
+    "name": "accounts/acct-123/groups/42",
+    "parent": "accounts/acct-123"
+  },
+  "identity_attributes": {}
+}
+'''

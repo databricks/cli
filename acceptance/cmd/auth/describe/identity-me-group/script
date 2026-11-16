@@ -1,0 +1,2 @@
+title "Describe succeeds with an assumed group and shows the group as the user"
+trace $CLI auth describe

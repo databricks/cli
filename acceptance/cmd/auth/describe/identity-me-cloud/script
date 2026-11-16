@@ -1,0 +1,2 @@
+title "auth describe resolves the current user through identity/me"
+trace $CLI auth describe -o json | jq '{status, username}'

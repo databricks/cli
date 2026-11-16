@@ -1,0 +1,5 @@
+title "bundle validate reads the current user's groups"
+err=$(mktemp)
+$CLI bundle validate -o json 2>"$err" | jq '.workspace.current_user.groups | type'
+grep -q "Could not read the groups" "$err" && { echo "unexpected groups warning"; exit 1; } || true
+rm -f "$err"

@@ -6,7 +6,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 GET /.well-known/databricks-config
-GET /api/2.0/preview/scim/v2/Me
+GET /api/2.0/identity/groups
+GET /api/2.0/identity/me
+GET /api/2.0/identity/me/transitive-parent-groups
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate
@@ -18,6 +20,8 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests
+GET /api/2.0/identity/groups
+GET /api/2.0/identity/me/transitive-parent-groups
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
@@ -47,6 +51,8 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests
+GET /api/2.0/identity/groups
+GET /api/2.0/identity/me/transitive-parent-groups
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
@@ -74,6 +80,8 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> print_requests
+GET /api/2.0/identity/groups
+GET /api/2.0/identity/me/transitive-parent-groups
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate

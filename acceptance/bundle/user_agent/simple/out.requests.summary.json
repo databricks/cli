@@ -5,7 +5,16 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
 }
 {
   "headers": {
@@ -44,6 +53,15 @@
   "q": {
     "excludedAttributes": "entitlements"
   }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none sdk-feature/pagination auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/groups"
 }
 {
   "headers": {

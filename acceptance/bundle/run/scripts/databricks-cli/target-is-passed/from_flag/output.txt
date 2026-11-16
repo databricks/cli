@@ -28,7 +28,25 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/groups"
 }
 {
   "method": "GET",
@@ -55,7 +73,25 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/groups"
 }
 {
   "headers": {
