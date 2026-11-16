@@ -1,0 +1,10 @@
+{
+  "served_entities": [
+    {
+      "entity_name": "main.default.iris",
+      "entity_version": "2",
+      "workload_size": "Small",
+      "scale_to_zero_enabled": true
+    }
+  ]
+}
