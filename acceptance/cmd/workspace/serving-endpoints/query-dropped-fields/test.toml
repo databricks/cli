@@ -1,0 +1,15 @@
+Cloud = false
+
+# The testserver doesn't model invocations; stub a chat response and a custom
+# model response.
+[[Server]]
+Pattern = "POST /serving-endpoints/chat-endpoint/invocations"
+Response.Body = '''
+{"id": "chatcmpl-1", "object": "chat.completion", "service_tier": "default", "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "Hello"}}]}
+'''
+
+[[Server]]
+Pattern = "POST /serving-endpoints/custom-endpoint/invocations"
+Response.Body = '''
+{"predictions": [{"label": "positive", "confidence": 0.9}]}
+'''

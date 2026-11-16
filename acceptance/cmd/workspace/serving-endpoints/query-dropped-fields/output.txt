@@ -1,0 +1,34 @@
+
+=== Fields the output doesn't show are named on stderr; stdout is unchanged
+
+>>> [CLI] serving-endpoints query chat-endpoint --json {"messages": [{"role": "user", "content": "hi"}]}
+Warning: the endpoint's response has fields that this output doesn't show: choices[].finish_reason, service_tier
+
+To see the full response, send the same request with:
+  databricks api post /serving-endpoints/chat-endpoint/invocations --json ...
+
+{
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "content": "Hello",
+        "role": "assistant"
+      }
+    }
+  ],
+  "id": "chatcmpl-1",
+  "object": "chat.completion"
+}
+
+=== No warning when nothing is dropped
+
+>>> [CLI] serving-endpoints query custom-endpoint --json {"dataframe_records": [{"text": "I love this"}]}
+{
+  "predictions": [
+    {
+      "confidence": 0.9,
+      "label": "positive"
+    }
+  ]
+}

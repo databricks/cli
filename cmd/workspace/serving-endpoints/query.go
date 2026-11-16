@@ -3,7 +3,9 @@ package serving_endpoints
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -30,77 +32,89 @@ const queryStreamHelp = `
   For a chat endpoint, the reply text of each chunk is in
   .choices[0].delta.content.`
 
-// queryOverride makes --stream work. The generated command decodes the whole
-// response as a single JSON object, so a streamed (server-sent events) response
-// always failed with "failed to unmarshal response body". Non-streaming queries
-// still run the generated code unchanged.
+// queryOverride sends the query itself instead of through the SDK's typed
+// Query call, for two reasons:
+//   - The SDK decodes the whole response as one JSON object, so a streamed
+//     (server-sent events) response always failed with "failed to unmarshal
+//     response body". Streamed chunks are now printed one per line.
+//   - The SDK's response type only has some of the fields endpoints return,
+//     and drops the rest without a trace (for example choices[].finish_reason,
+//     tool calls, or an agent's custom outputs). The output is still the typed
+//     response, so it doesn't change, but a warning on stderr now names the
+//     fields it left out.
 func queryOverride(queryCmd *cobra.Command, queryReq *serving.QueryEndpointInput) {
 	queryCmd.Long += queryStreamHelp
-	generatedRunE := queryCmd.RunE
 	queryCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		stream, err := queryWantsStream(cmd)
-		if err != nil || !stream {
-			return generatedRunE(cmd, args)
-		}
-
 		ctx := cmd.Context()
-		if cmd.Flags().Changed("json") {
-			jsonFlag, ok := cmd.Flags().Lookup("json").Value.(*flags.JsonFlag)
-			if !ok {
-				return generatedRunE(cmd, args)
-			}
-			diags := jsonFlag.Unmarshal(queryReq)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				if err := cmdio.RenderDiagnostics(ctx, diags); err != nil {
-					return err
-				}
-			}
-		}
-		queryReq.Name = args[0]
-		queryReq.Stream = true
-
-		w := cmdctx.WorkspaceClient(ctx)
-		apiClient, err := client.New(w.Config)
-		if err != nil {
+		if err := unmarshalQueryJSON(cmd, queryReq); err != nil {
 			return err
 		}
-		headers := map[string]string{
-			"Accept":       "text/event-stream",
-			"Content-Type": "application/json",
+		queryReq.Name = args[0]
+
+		accept := "application/json"
+		if queryReq.Stream {
+			accept = "text/event-stream"
 		}
-		maps.Copy(headers, auth.WorkspaceIDHeaders(w.Config))
-		var body io.ReadCloser
-		path := fmt.Sprintf("/serving-endpoints/%v/invocations", queryReq.Name)
-		err = apiClient.Do(ctx, http.MethodPost, path, headers, nil, queryReq, &body)
+		body, err := postInvocations(ctx, queryReq, accept)
 		if err != nil {
 			return err
 		}
 		defer body.Close()
-		return copyEventStream(cmd.OutOrStdout(), body)
+		if queryReq.Stream {
+			return copyEventStream(cmd.OutOrStdout(), body)
+		}
+
+		raw, err := io.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		var response serving.QueryEndpointResponse
+		if err := json.Unmarshal(raw, &response); err != nil {
+			return fmt.Errorf("failed to unmarshal response body: %w", err)
+		}
+		if err := warnDroppedFields(ctx, queryReq.Name, raw, &response); err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, &response)
 	}
 }
 
-// queryWantsStream reports whether --stream is set, or --json sets "stream": true.
-func queryWantsStream(cmd *cobra.Command) (bool, error) {
-	if stream, err := cmd.Flags().GetBool("stream"); err != nil || stream {
-		return stream, err
-	}
+// unmarshalQueryJSON applies --json the same way the generated command does.
+func unmarshalQueryJSON(cmd *cobra.Command, queryReq *serving.QueryEndpointInput) error {
 	if !cmd.Flags().Changed("json") {
-		return false, nil
+		return nil
 	}
 	jsonFlag, ok := cmd.Flags().Lookup("json").Value.(*flags.JsonFlag)
 	if !ok {
-		return false, nil
+		return errors.New("unexpected type for --json flag")
 	}
-	var body struct {
-		Stream bool `json:"stream"`
+	diags := jsonFlag.Unmarshal(queryReq)
+	if diags.HasError() {
+		return diags.Error()
 	}
-	// Invalid JSON is reported by the generated command, so ignore it here.
-	_ = json.Unmarshal(jsonFlag.Raw(), &body)
-	return body.Stream, nil
+	if len(diags) > 0 {
+		return cmdio.RenderDiagnostics(cmd.Context(), diags)
+	}
+	return nil
+}
+
+// postInvocations sends the query with the same path, headers and body as the
+// SDK's Query call, and returns the response body unread.
+func postInvocations(ctx context.Context, queryReq *serving.QueryEndpointInput, accept string) (io.ReadCloser, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"Accept":       accept,
+		"Content-Type": "application/json",
+	}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(w.Config))
+	var body io.ReadCloser
+	path := fmt.Sprintf("/serving-endpoints/%v/invocations", queryReq.Name)
+	err = apiClient.Do(ctx, http.MethodPost, path, headers, nil, queryReq, &body)
+	return body, err
 }
 
 // copyEventStream writes the data payload of each server-sent event as one
