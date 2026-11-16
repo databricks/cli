@@ -66,6 +66,10 @@ func newJUnitResult(text string) *junitResult {
 	return &junitResult{Message: message, Text: text}
 }
 
+// junitCommandEntryName names the failing entry that the command adds when the run itself has a
+// problem, before or after the update starts, so that CI shows every such entry under one name.
+const junitCommandEntryName = "pipelines test"
+
 // junitNoResult is the error message of a collected case that has no final outcome.
 const junitNoResult = "no result received"
 
@@ -111,8 +115,8 @@ func newJUnitReport(suiteName, updateID, projectFolder string, run *testRun, pro
 
 	if problem != "" {
 		suite.Cases = append(suite.Cases, junitTestCase{
-			Name:  "update " + updateID,
-			Error: newJUnitResult(problem),
+			Name:  junitCommandEntryName,
+			Error: newJUnitResult(problem + "\nUpdate: " + updateID),
 		})
 		suite.Errors++
 	}

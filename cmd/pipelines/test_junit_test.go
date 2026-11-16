@@ -74,3 +74,12 @@ func TestTestReportJoinsWriteErrors(t *testing.T) {
 	require.ErrorIs(t, err, runErr)
 	assert.ErrorContains(t, err, "failed to write JUnit report")
 }
+
+func TestJUnitReportProblemEntry(t *testing.T) {
+	report := newJUnitReport("orders", "u1", "", newTestRun(), "RUN INCOMPLETE: the update was canceled.")
+	cases := report.Suites[0].Cases
+	require.Len(t, cases, 1)
+	assert.Equal(t, junitCommandEntryName, cases[0].Name)
+	assert.Equal(t, "RUN INCOMPLETE: the update was canceled.", cases[0].Error.Message)
+	assert.Equal(t, "RUN INCOMPLETE: the update was canceled.\nUpdate: u1", cases[0].Error.Text)
+}
