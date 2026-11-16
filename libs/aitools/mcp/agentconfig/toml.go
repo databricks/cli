@@ -308,7 +308,11 @@ func (d *tomlDoc) defined(root []string) bool {
 
 // hasHeaderUnder reports whether a table header in lines is root or below it.
 func hasHeaderUnder(lines [][]byte, root []string) bool {
-	for _, line := range lines {
+	inArray := arrayStarts(lines)
+	for i, line := range lines {
+		if inArray[i] {
+			continue
+		}
 		parts, ok := tomlTableKey(string(line))
 		if !ok || len(parts) < len(root) {
 			continue
@@ -383,7 +387,11 @@ func serverBlocks(lines [][]byte, root []string, name string) []lineRange {
 func tableBlocks(lines [][]byte, match func(parts []string) bool) []lineRange {
 	var headers []int
 	var keys [][]string
+	inArray := arrayStarts(lines)
 	for i, line := range lines {
+		if inArray[i] {
+			continue
+		}
 		if parts, ok := tomlTableKey(string(line)); ok {
 			headers = append(headers, i)
 			keys = append(keys, parts)
@@ -454,6 +462,43 @@ func tomlTableKey(line string) ([]string, bool) {
 		return nil, false
 	}
 	return parts, true
+}
+
+// arrayStarts reports, for each line, whether the line starts inside a multi-line
+// array. Such a line is an array element, even when it looks like a table header,
+// as ["c"] does. The text must have its multi-line strings protected already, so
+// each line's quotes close on that line.
+func arrayStarts(lines [][]byte) []bool {
+	starts := make([]bool, len(lines))
+	depth := 0
+	for i, line := range lines {
+		starts[i] = depth > 0
+		depth = max(0, depth+bracketDelta(string(line)))
+	}
+	return starts
+}
+
+// bracketDelta returns the number of "[" minus the number of "]" in line, outside
+// of quoted strings and comments.
+func bracketDelta(line string) int {
+	delta := 0
+	for i := 0; i < len(line); i++ {
+		switch c := line[i]; c {
+		case '#':
+			return delta
+		case '"', '\'':
+			for i++; i < len(line) && line[i] != c; i++ {
+				if c == '"' && line[i] == '\\' {
+					i++
+				}
+			}
+		case '[':
+			delta++
+		case ']':
+			delta--
+		}
+	}
+	return delta
 }
 
 // tomlKey reads one key at the start of s, a bare key or a basic ("...") or

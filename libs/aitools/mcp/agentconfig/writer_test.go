@@ -795,6 +795,33 @@ func TestRemoveInlineServerTOMLKeepsFile(t *testing.T) {
 	assert.Equal(t, before, string(readFile(t, path)))
 }
 
+// TestUpsertArrayElementIsNotHeaderTOML checks that an array element that looks like
+// a table header, here ["mcp_servers"], does not stand in for the root table. An
+// inline root must still refuse a new server.
+func TestUpsertArrayElementIsNotHeaderTOML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	before := "mcp_servers = {}\nother = [\n  [\"mcp_servers\"]\n]\n"
+	writeFile(t, path, []byte(before), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	assert.ErrorContains(t, err, "edit it by hand")
+	assert.Equal(t, before, string(readFile(t, path)))
+}
+
+// TestRemoveArrayElementInsideServerTOML checks that an array inside a server's table,
+// whose last element looks like a table header, is removed with the server.
+func TestRemoveArrayElementInsideServerTOML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	writeFile(t, path, []byte(testBlock+"extra = [\n  [\"c\"]\n]\n"), 0o600)
+	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
+
+	removed, err := Remove(t.Context(), a, testName)
+	require.NoError(t, err)
+	assert.True(t, removed)
+	assert.Empty(t, readFile(t, path))
+}
+
 // TestUpsertKeepsTypeWhenBuilderDoesNotWriteIt checks that a "type" key is the
 // user's for agents whose builder never writes one, so an update keeps it.
 func TestUpsertKeepsTypeWhenBuilderDoesNotWriteIt(t *testing.T) {
