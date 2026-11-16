@@ -78,10 +78,16 @@ func isGuestToken(token string) bool {
 	return strings.HasPrefix(token, GuestServicePrincipalTokenPrefix)
 }
 
+// isServicePrincipalToken reports whether a token authenticates a service principal
+// (primary or guest).
+func isServicePrincipalToken(token string) bool {
+	return strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token)
+}
+
 // userForToken returns the identity behind a token: any service-principal token
 // (primary or guest) is the SP, otherwise the user.
 func userForToken(token string) iam.User {
-	if strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token) {
+	if isServicePrincipalToken(token) {
 		return TestUserSP
 	}
 	return TestUser
@@ -95,6 +101,25 @@ func (s *FakeWorkspace) MeUser(token string) iam.User {
 		user.DisplayName = guestServicePrincipalDisplayName
 	}
 	return user
+}
+
+// IdentityMe returns the GET /api/2.0/identity/me body for a token. It describes the
+// same identity as MeUser, as a user or a service principal.
+func (s *FakeWorkspace) IdentityMe(token string) any {
+	me := s.MeUser(token)
+	if isServicePrincipalToken(token) {
+		return map[string]any{"service_principal": map[string]any{
+			"service_principal_id": me.Id,
+			"application_id":       me.UserName,
+			"display_name":         me.DisplayName,
+			"account_sp_status":    "ACTIVE",
+		}}
+	}
+	return map[string]any{"user": map[string]any{
+		"user_id":             me.Id,
+		"username":            me.UserName,
+		"account_user_status": "ACTIVE",
+	}}
 }
 
 var (
@@ -280,6 +305,9 @@ type FakeWorkspace struct {
 	Permissions map[string]iam.ObjectPermissions
 
 	Groups map[string]iam.Group
+	// groupMembers holds the IDs of the groups the caller belongs to; the parent-groups
+	// endpoint lists exactly these.
+	groupMembers map[string]bool
 
 	Repos map[string]workspace.RepoInfo
 
@@ -570,6 +598,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		WorkspaceSettings:         map[string]settingsv2.Setting{},
 		Permissions:               map[string]iam.ObjectPermissions{},
 		Groups:                    map[string]iam.Group{},
+		groupMembers:              map[string]bool{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
