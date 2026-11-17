@@ -402,13 +402,30 @@ func notifyTestInterrupt(parent context.Context) (ctx context.Context, stop cont
 
 var errTestWaitTimeout = errors.New("test wait timed out")
 
+// withTestWaitTimeout returns a context that is canceled with the cause errTestWaitTimeout when
+// the timeout passes, so that it also interrupts a read in flight; a zero timeout never fires.
+// It is not a context deadline: the SDK rate limiter fails a request that would wait past the
+// deadline before the context expires, with an error that does not name the timeout. The caller
+// must call stop.
+func withTestWaitTimeout(parent context.Context, timeout time.Duration) (ctx context.Context, stop context.CancelFunc) {
+	ctx, cancel := context.WithCancelCause(parent)
+	if timeout <= 0 {
+		return ctx, func() { cancel(nil) }
+	}
+	timer := time.AfterFunc(timeout, func() { cancel(errTestWaitTimeout) })
+	return ctx, func() {
+		timer.Stop()
+		cancel(nil)
+	}
+}
+
 const testPollInterval = time.Second
 
 // waitForTestUpdate polls the update until it ends, prints each test case as it finishes, and
 // returns the final state. It takes the steps of the bundle pipeline runner's wait loop
-// (bundle/run/pipeline.go), which cannot be reused because it starts a regular update. It returns
-// errTestWaitTimeout when timedOut fires; a nil timedOut never fires.
-func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, run *testRun, printer *testProgressPrinter, timedOut <-chan time.Time) (pipelines.UpdateInfoState, error) {
+// (bundle/run/pipeline.go), which cannot be reused because it starts a regular update. Every read
+// uses ctx, so canceling it also interrupts a read in flight.
+func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, run *testRun, printer *testProgressPrinter) (pipelines.UpdateInfoState, error) {
 	lastTimestamp := ""
 	for {
 		response, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
@@ -445,9 +462,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
-		case <-timedOut:
-			return "", errTestWaitTimeout
+			return "", context.Cause(ctx)
 		case <-time.After(testPollInterval):
 		}
 	}
@@ -647,15 +662,12 @@ to read the results later. To stop the update, run 'pipelines stop'.`,
 		run := newTestRun()
 		run.noTestsMessage = noTestsCollectedMessage(target.shortSelections(), pytestArgs)
 		printer := &testProgressPrinter{out: out, shortID: target.shortTestID}
-		// The timeout is not a context deadline: the SDK rate limiter fails a request that would wait
-		// past the deadline before the context expires, with an error that does not name the timeout.
-		var timedOut <-chan time.Time
-		if timeout > 0 {
-			timedOut = time.After(timeout)
-		}
-		state, err := waitForTestUpdate(waitCtx, target.w, target.pipelineID, updateID, run, printer, timedOut)
+		readCtx, stopReads := withTestWaitTimeout(waitCtx, timeout)
+		defer stopReads()
+		state, err := waitForTestUpdate(readCtx, target.w, target.pipelineID, updateID, run, printer)
 		if err != nil {
-			isTimeout := errors.Is(err, errTestWaitTimeout)
+			// A read that the timeout interrupts fails with the bare context error, so the cause tells.
+			isTimeout := errors.Is(context.Cause(readCtx), errTestWaitTimeout)
 			resumeCmd := target.resumeCommand(cmd, updateID)
 			if !isTimeout && waitCtx.Err() == nil {
 				// The SDK client already retries transient errors, so the read failed for good.

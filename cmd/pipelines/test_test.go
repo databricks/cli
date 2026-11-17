@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -284,7 +285,7 @@ func TestWaitForTestUpdate(t *testing.T) {
 	var out bytes.Buffer
 	run := newTestRun()
 	printer := &testProgressPrinter{out: &out, shortID: func(id string) string { return relativeTestID("/Workspace/p", id) }}
-	state, err := waitForTestUpdate(t.Context(), w, "p1", "u1", run, printer, nil)
+	state, err := waitForTestUpdate(t.Context(), w, "p1", "u1", run, printer)
 	require.NoError(t, err)
 
 	assert.Equal(t, pipelines.UpdateInfoStateCompleted, state)
@@ -310,11 +311,33 @@ func TestWaitForTestUpdateTimeout(t *testing.T) {
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
-	timedOut := make(chan time.Time, 1)
-	timedOut <- time.Time{}
+	ctx, stop := withTestWaitTimeout(t.Context(), 20*time.Millisecond)
+	defer stop()
 	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
-	_, err = waitForTestUpdate(t.Context(), w, "p1", "u1", newTestRun(), printer, timedOut)
+	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
 	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
+// The timeout also interrupts a read in flight, so an update that ends after it is not reported.
+func TestWaitForTestUpdateTimeoutInterruptsRead(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req testserver.Request) any {
+		time.Sleep(180 * time.Millisecond)
+		return map[string]any{"update": map[string]any{"update_id": "u1", "state": "COMPLETED"}}
+	})
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		return map[string]any{"events": []any{}}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, stop := withTestWaitTimeout(t.Context(), 20*time.Millisecond)
+	defer stop()
+	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
+	state, err := waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
+	require.Error(t, err)
+	assert.Empty(t, state)
+	assert.ErrorIs(t, context.Cause(ctx), errTestWaitTimeout)
 }
 
 func TestTestTargetResumeCommand(t *testing.T) {
