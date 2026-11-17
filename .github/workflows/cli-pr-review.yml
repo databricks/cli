@@ -57,6 +57,7 @@ jobs:
           assert comment['user']['login'] == 'shreyas-goenka'
           assert comment['body'] == '/review'
           print('Workflow-token comment association:', comment['author_association'])
+          print('Native PR event association:', event['pull_request']['author_association'])
           payload = {'action': 'created', 'repository': event['repository'],
                      'issue': {'number': 4738, 'pull_request': {}}, 'comment': comment}
           (root / 'test-event.json').write_text(json.dumps(payload))
@@ -64,12 +65,17 @@ jobs:
               f.write('association=' + comment['author_association'] + '\n')
           PYTHON
 
-      - name: Validate review request
-        id: request
+      - name: Probe comment authorization
         if: contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), steps.test-comment.outputs.association)
         env:
           GH_TOKEN: ${{ github.token }}
         run: GITHUB_EVENT_NAME=issue_comment GITHUB_EVENT_PATH="$RUNNER_TEMP/test-event.json" python3 .github/scripts/cli_pr_review.py
+
+      - name: Validate automatic review request
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: GITHUB_EVENT_NAME=pull_request_target python3 .github/scripts/cli_pr_review.py
 
       - name: Confirm request passed
         env:
