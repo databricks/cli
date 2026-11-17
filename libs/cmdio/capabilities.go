@@ -3,7 +3,6 @@ package cmdio
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -15,19 +14,23 @@ type Capabilities struct {
 	stdoutIsTTY bool
 	stderrIsTTY bool
 
+	// stdinIsMSYSPipe is true when stdin is an MSYS2/Cygwin pty pipe rather
+	// than a real console (no ConPTY; see conpty.go). bubbletea can't read
+	// keystrokes from it, so prompts and pagers are disabled there.
+	stdinIsMSYSPipe bool
+
 	// Environment flags
-	color     bool // Color output is enabled (NO_COLOR not set and TERM not dumb)
-	isGitBash bool // Git Bash on Windows
+	color bool // Color output is enabled (NO_COLOR not set and TERM not dumb)
 }
 
 // newCapabilities detects terminal capabilities from context and I/O streams.
 func newCapabilities(ctx context.Context, in io.Reader, out, err io.Writer) Capabilities {
 	return Capabilities{
-		stdinIsTTY:  isTTY(in),
-		stdoutIsTTY: isTTY(out),
-		stderrIsTTY: isTTY(err),
-		color:       env.Get(ctx, "NO_COLOR") == "" && env.Get(ctx, "TERM") != "dumb",
-		isGitBash:   detectGitBash(ctx),
+		stdinIsTTY:      isTTY(in),
+		stdoutIsTTY:     isTTY(out),
+		stderrIsTTY:     isTTY(err),
+		color:           env.Get(ctx, "NO_COLOR") == "" && env.Get(ctx, "TERM") != "dumb",
+		stdinIsMSYSPipe: isMSYSPipe(in),
 	}
 }
 
@@ -37,9 +40,10 @@ func (c Capabilities) SupportsInteractive() bool {
 }
 
 // SupportsPrompt returns true if terminal supports user prompting.
-// Prompts write to stderr and read from stdin, so we only need those to be TTYs.
+// Prompts write to stderr and read keystrokes from stdin, so stderr must be a
+// TTY and stdin a console rather than an MSYS2 pty pipe (see conpty.go).
 func (c Capabilities) SupportsPrompt() bool {
-	return c.SupportsInteractive() && c.stdinIsTTY && !c.isGitBash
+	return c.SupportsInteractive() && c.stdinIsTTY && !c.stdinIsMSYSPipe
 }
 
 // SupportsColor returns true if the given writer supports colored output.
@@ -56,28 +60,11 @@ func (c Capabilities) SupportsStdoutColor() bool {
 }
 
 // SupportsPager returns true when we can drive an interactive pager.
-// It builds on SupportsPrompt (stderr+stdin TTY, not Git Bash) and
+// It builds on SupportsPrompt (stderr+stdin TTY, stdin not an MSYS2 pipe) and
 // additionally requires stdout to be a TTY so rendered rows land on
 // the terminal rather than a redirected file.
 func (c Capabilities) SupportsPager() bool {
 	return c.SupportsPrompt() && c.stdoutIsTTY
-}
-
-// detectGitBash returns true if running under a Cygwin/MSYS2 environment on
-// Windows (Git Bash is the common case).
-//
-// We disable prompting there because bubbletea is not compatible with the
-// Cygwin/MSYS2 pty emulation; making it work is a follow-up.
-func detectGitBash(ctx context.Context) bool {
-	// Check if the MSYSTEM environment variable is set to "MINGW64"
-	msystem := env.Get(ctx, "MSYSTEM")
-	if strings.EqualFold(msystem, "MINGW64") {
-		// Check for typical Git Bash env variable for prompts
-		ps1 := env.Get(ctx, "PS1")
-		return strings.Contains(ps1, "MINGW") || strings.Contains(ps1, "MSYSTEM")
-	}
-
-	return false
 }
 
 // InteractiveMode represents the level of terminal interactivity available.
@@ -86,7 +73,7 @@ type InteractiveMode string
 // Interactive mode constants for user agent tracking.
 const (
 	InteractiveModeFull       InteractiveMode = "full"   // Both interactive output and prompts supported
-	InteractiveModeOutputOnly InteractiveMode = "output" // Interactive output only, no prompts (stdin not TTY or Git Bash)
+	InteractiveModeOutputOnly InteractiveMode = "output" // Interactive output only, no prompts (stdin not a TTY, or an MSYS2 pipe)
 	InteractiveModeNone       InteractiveMode = "none"   // Non-interactive (CI, cron, stderr redirected)
 )
 
