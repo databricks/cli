@@ -2454,7 +2454,7 @@
                         "deprecated": true
                       },
                       "testing": {
-                        "description": "[Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it. It is experimental and needs `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`.",
+                        "description": "[Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTesting",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
