@@ -132,3 +132,16 @@ func TestWindowsArgRejectsWhatNoQuotingKeepsLiteral(t *testing.T) {
 		})
 	}
 }
+
+func TestArg(t *testing.T) {
+	quoted, ok := Arg("linux", "/tmp/my dir")
+	assert.True(t, ok)
+	assert.Equal(t, "'/tmp/my dir'", quoted)
+
+	quoted, ok = Arg("windows", `C:\my dir`)
+	assert.True(t, ok)
+	assert.Equal(t, `"C:\my dir"`, quoted)
+
+	_, ok = Arg("linux", "/tmp/a\nb")
+	assert.False(t, ok)
+}

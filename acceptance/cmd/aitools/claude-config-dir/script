@@ -32,8 +32,14 @@ trace CLAUDE_CODE_CHILD_SESSION= $CLI clusters list
 
 # The session throttle lives in the file cache, which a host could disable.
 export DATABRICKS_CACHE_ENABLED=true
-title "Within one session both lines print once, so 2>&1 pipelines see them only on the first command"
+title "Within one session the text line prints at most once per hour and the native line at most once per 10 minutes, so a 2>&1 pipeline on the next command sees neither"
 export CLAUDE_CODE_SESSION_ID=session-1
 trace $CLI clusters list
+trace $CLI clusters list
+unset CLAUDE_CODE_SESSION_ID
+
+title "A command outside a Claude Code subprocess leaves the native line due, so the next Claude Code command prints only that line"
+export CLAUDE_CODE_SESSION_ID=session-2
+trace CLAUDE_CODE_CHILD_SESSION= $CLI clusters list
 trace $CLI clusters list
 unset CLAUDE_CODE_SESSION_ID
