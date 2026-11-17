@@ -105,6 +105,9 @@ approves it.`
 		if err != nil {
 			return err
 		}
+		if err := checkApproval(cmd.Context(), opts.yes); err != nil {
+			return err
+		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
 	}
@@ -116,7 +119,7 @@ approves it.`
 func newSubmission(cmd *cobra.Command, message string, opts *options) (submission, error) {
 	// Feedback never loads the bundle, so a target would be ignored.
 	for _, name := range []string{"target", "environment"} {
-		if f := cmd.Flag(name); f != nil && f.Changed {
+		if cmd.Flag(name).Changed {
 			return submission{}, fmt.Errorf("--%s selects a bundle target, which feedback does not use; use --profile to choose the workspace", name)
 		}
 	}
@@ -153,11 +156,11 @@ func send(ctx context.Context, s submission, yes bool) error {
 		// The SDK adds the agent to HTTP request headers, but the feedback record
 		// needs it too so triage can distinguish agent reports.
 		ctx = useragent.InContext(ctx, useragent.AgentKey, provider)
-		if !yes {
-			confirmed, err := confirm(ctx, s)
-			if err != nil || !confirmed {
-				return err
-			}
+	}
+	if needsApproval(yes) {
+		confirmed, err := confirm(ctx, s)
+		if err != nil || !confirmed {
+			return err
 		}
 	}
 
@@ -217,13 +220,26 @@ func topLevelName(cmd *cobra.Command) string {
 	return cmd.Name()
 }
 
+// needsApproval reports whether the user must approve the feedback before it is
+// sent: an AI agent is running the CLI and did not pass --yes.
+func needsApproval(yes bool) bool {
+	return useragent.AgentProvider() != "" && !yes
+}
+
+// checkApproval returns an error when the user must approve the feedback but
+// there is no terminal to ask in. It needs only the input, so it runs before
+// authenticating.
+func checkApproval(ctx context.Context, yes bool) error {
+	if !needsApproval(yes) || cmdio.IsInputTTY(ctx) {
+		return nil
+	}
+	return errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
+		agent.AgentNote("show the user the exact feedback message and pass --yes only after the user approves sending it"))
+}
+
 // confirm asks the user to approve feedback an AI agent is about to send. It
 // returns false without error if the user declines.
 func confirm(ctx context.Context, s submission) (bool, error) {
-	if !cmdio.IsInputTTY(ctx) {
-		return false, errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
-			agent.AgentNote("show the user the exact feedback message and pass --yes only after the user approves sending it"))
-	}
 	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s))
 	confirmed, err := cmdio.AskYesOrNo(ctx, "Send this feedback?")
 	if err != nil {
@@ -235,11 +251,11 @@ func confirm(ctx context.Context, s submission) (bool, error) {
 	return confirmed, nil
 }
 
-// summary returns everything the user approves: the message and the fields
-// sent with it.
+// summary returns the message and the choices sent with it, for the user to
+// approve.
 func summary(s submission) string {
 	var b strings.Builder
-	b.WriteString(escapeControl(s.text))
+	b.WriteString(escapeNonGraphic(s.text))
 	b.WriteString("\n\n")
 	if s.command != "" {
 		fmt.Fprintf(&b, "Command: %s\n", s.command)
@@ -255,12 +271,14 @@ func summary(s submission) string {
 	return b.String()
 }
 
-// escapeControl escapes control characters other than newlines and tabs, so
-// that none of them can hide or overwrite part of the message in the terminal.
-func escapeControl(text string) string {
+// escapeNonGraphic escapes the characters that are not graphic, other than
+// newlines and tabs: control and format characters such as escape sequences,
+// bidi overrides and zero-width characters, which could hide, reorder or
+// overwrite part of the message in the terminal.
+func escapeNonGraphic(text string) string {
 	var b strings.Builder
 	for _, r := range text {
-		if unicode.IsControl(r) && r != '\n' && r != '\t' {
+		if !unicode.IsGraphic(r) && r != '\n' && r != '\t' {
 			quoted := strconv.QuoteRune(r)
 			b.WriteString(quoted[1 : len(quoted)-1])
 			continue

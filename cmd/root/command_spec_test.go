@@ -10,12 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Every command-valued spec field must reach the command, and changing it while
-// building must panic. This fails if such a field is added but not handled.
+// Every spec field must reach the command, and changing it while building
+// must panic. This fails if a field is added to Spec but not handled.
 func TestSpecFields(t *testing.T) {
 	specType := reflect.TypeFor[root.CommandSpec]()
 	for i := range specType.NumField() {
 		field := specType.Field(i)
+		// NeedsFullTree tells the tree how to build the command; it is not a
+		// command field.
 		if field.Name == "Build" || field.Name == "NeedsFullTree" {
 			continue
 		}

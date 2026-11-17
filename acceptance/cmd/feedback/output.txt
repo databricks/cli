@@ -160,9 +160,9 @@ Thank you! Your feedback was sent. Reference: [UUID][8]
   }
 }
 
-=== A broken bundle does not block feedback
+=== Feedback is sent even with telemetry disabled
 
->>> withdir broken-bundle [CLI] feedback bundle config does not block feedback
+>>> DATABRICKS_CLI_DISABLE_TELEMETRY=1 [CLI] feedback telemetry is disabled
 Thank you! Your feedback was sent. Reference: [UUID][10]
 
 >>> print_requests.py //telemetry-ext
@@ -171,6 +171,27 @@ Thank you! Your feedback was sent. Reference: [UUID][10]
   "entry": {
     "fast_feedback_log": {
       "reference_event_id": "[UUID][11]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "telemetry is disabled"
+    }
+  }
+}
+
+=== A broken bundle does not block feedback
+
+>>> withdir broken-bundle [CLI] feedback bundle config does not block feedback
+Thank you! Your feedback was sent. Reference: [UUID][12]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][12]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][13]",
       "parent_ui": "DeveloperEcosystem.DatabricksCLI",
       "origin": "cli",
       "can_be_contacted": false,

@@ -162,6 +162,11 @@ func TestSummary(t *testing.T) {
 			s:    submission{text: "great\x1b[8m hidden\x1b[0m\r\u0085"},
 			want: `great\x1b[8m hidden\x1b[0m\r\u0085` + "\n\nDatabricks may contact you: no\n",
 		},
+		{
+			name: "format characters cannot reorder or hide text",
+			s:    submission{text: "a\u202eb\u200bc\U000E0041 d\u00a0é"},
+			want: `a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nDatabricks may contact you: no\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -189,35 +194,45 @@ func TestConfirm(t *testing.T) {
 		assert.False(t, confirmed)
 		assert.Contains(t, stderr.String(), "Feedback not sent.")
 	})
-
-	t.Run("no terminal", func(t *testing.T) {
-		testutil.SetAgent(t, "test-agent")
-		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
-		confirmed, err := confirm(ctx, submission{text: "exact feedback"})
-		assert.False(t, confirmed)
-		assert.EqualError(t, err, "feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n"+
-			"Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it")
-	})
 }
 
-func TestConfirmWithoutColorSupport(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		key   string
-		value string
+func TestCheckApproval(t *testing.T) {
+	const refusal = "feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
+		"Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it"
+	tests := []struct {
+		name     string
+		agent    string
+		yes      bool
+		terminal bool
+		envKey   string
+		envValue string
+		wantErr  string
 	}{
-		{name: "no color", key: "NO_COLOR", value: "1"},
-		{name: "dumb terminal", key: "TERM", value: "dumb"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), tc.key, tc.value)
-			var stderr bytes.Buffer
-			in := cmdio.FakeTTYReader(strings.NewReader("y\n"))
-			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, io.Discard, cmdio.FakeTTY(&stderr), "", ""))
-			assert.False(t, cmdio.IsPromptSupported(ctx))
-			confirmed, err := confirm(ctx, submission{text: "exact feedback"})
-			require.NoError(t, err)
-			assert.True(t, confirmed)
+		{name: "human without a terminal"},
+		{name: "agent with --yes", agent: "test-agent", yes: true},
+		{name: "agent with a terminal", agent: "test-agent", terminal: true},
+		{name: "agent with a terminal and NO_COLOR", agent: "test-agent", terminal: true, envKey: "NO_COLOR", envValue: "1"},
+		{name: "agent with a dumb terminal", agent: "test-agent", terminal: true, envKey: "TERM", envValue: "dumb"},
+		{name: "agent without a terminal", agent: "test-agent", wantErr: refusal},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.SetAgent(t, tt.agent)
+			ctx := t.Context()
+			if tt.envKey != "" {
+				ctx = env.Set(ctx, tt.envKey, tt.envValue)
+			}
+			var in io.Reader = strings.NewReader("")
+			if tt.terminal {
+				in = cmdio.FakeTTYReader(in)
+			}
+			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, io.Discard, cmdio.FakeTTY(io.Discard), "", ""))
+			err := checkApproval(ctx, tt.yes)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
 		})
 	}
 }

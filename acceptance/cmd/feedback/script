@@ -39,6 +39,10 @@ title "An AI agent with --yes"
 trace AGENT=test-agent $CLI feedback --yes "hello"
 print_feedback
 
+title "Feedback is sent even with telemetry disabled"
+trace DATABRICKS_CLI_DISABLE_TELEMETRY=1 $CLI feedback "telemetry is disabled"
+print_feedback
+
 title "A broken bundle does not block feedback"
 trace withdir broken-bundle $CLI feedback "bundle config does not block feedback"
 print_feedback

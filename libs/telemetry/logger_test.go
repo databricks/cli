@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -504,6 +505,9 @@ func TestSendMakesOneAttempt(t *testing.T) {
 					if !assert.NoError(t, err) {
 						return
 					}
+					// A zero linger makes Close send a TCP reset, which the SDK
+					// retries unless retries are off.
+					assert.NoError(t, conn.(*net.TCPConn).SetLinger(0))
 					assert.NoError(t, conn.Close())
 				})
 			} else {

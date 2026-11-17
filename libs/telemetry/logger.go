@@ -146,7 +146,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	apiClient, err := within(ctx, &l.running, func() (*client.DatabricksClient, error) {
-		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running)
+		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running, true)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
@@ -284,16 +284,9 @@ func within[T any](ctx context.Context, running *atomic.Int32, f func() (T, erro
 }
 
 // newAPIClient is client.New with authenticate as the auth visitor. The SDK
-// runs the auth visitor on every request, including its own retries.
-func newAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
-	return newAPIClientWithRetries(cfg, running, true)
-}
-
-func newSingleAttemptAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
-	return newAPIClientWithRetries(cfg, running, false)
-}
-
-func newAPIClientWithRetries(cfg *config.Config, running *atomic.Int32, allowRetries bool) (*client.DatabricksClient, error) {
+// runs the auth visitor on every request, including its own retries. Without
+// retries, the client makes a single attempt.
+func newAPIClient(cfg *config.Config, running *atomic.Int32, retries bool) (*client.DatabricksClient, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -301,7 +294,7 @@ func newAPIClientWithRetries(cfg *config.Config, running *atomic.Int32, allowRet
 	clientCfg.AuthVisitor = func(r *http.Request) error {
 		return authenticate(r, cfg, running)
 	}
-	if !allowRetries {
+	if !retries {
 		// The SDK retries some connection errors regardless of ErrorRetriable,
 		// so a minimal retry window is needed to stop after the first attempt.
 		clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
@@ -337,7 +330,7 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 
 	var running atomic.Int32
 	apiClient, err := within(ctx, &running, func() (*client.DatabricksClient, error) {
-		return newSingleAttemptAPIClient(cfg, &running)
+		return newAPIClient(cfg, &running, false)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
