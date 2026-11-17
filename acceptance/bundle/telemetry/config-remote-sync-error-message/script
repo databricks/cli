@@ -23,8 +23,6 @@ trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .en
 # Without a profile, with one that does not resolve, or with one for another host than the bundle's, nothing is sent.
 trace musterr $CLI bundle config-remote-sync -t bad
 trace musterr $CLI bundle config-remote-sync -t bad -p missing
-cd conflict
-trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
-cd ..
+withdir conflict trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
 
 trace errcode print_requests.py //telemetry-ext
