@@ -23,6 +23,7 @@ const keysExitCtrlC = 2
 // Update: tea.Println runs its commands concurrently, so the order is not kept.
 type keysModel struct {
 	out   io.Writer
+	eol   string
 	ctrlC int
 }
 
@@ -35,7 +36,7 @@ func (m *keysModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	line := fmt.Sprintf("key=%q type=%d runes=%q alt=%t paste=%t",
 		key.String(), key.Type, string(key.Runes), key.Alt, key.Paste)
-	fmt.Fprintln(m.out, line)
+	fmt.Fprint(m.out, line+m.eol)
 	if key.Type == tea.KeyCtrlC {
 		m.ctrlC++
 		if m.ctrlC >= keysExitCtrlC {
@@ -65,14 +66,20 @@ With --raw, bubbletea is bypassed: when stdin is a terminal it is put in raw
 mode, and each chunk of bytes read is printed as hex and quoted text.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			in := cmd.InOrStdin()
 			out := cmd.ErrOrStderr()
 			if raw {
-				return runRawKeys(cmd.Context(), in, out, timeout)
+				return runRawKeys(ctx, in, out, timeout)
 			}
 			// Mirrors cmdio's runTUI options. cmdio does not expose a way to run a
 			// custom model, so keep these in sync with libs/cmdio/io.go.
-			p := tea.NewProgram(&keysModel{out: out},
+			// Raw mode clears OPOST, so "\n" would not return the carriage.
+			eol := "\n"
+			if _, ok := rawInputFile(ctx, in); ok {
+				eol = "\r\n"
+			}
+			p := tea.NewProgram(&keysModel{out: out, eol: eol},
 				tea.WithInput(in),
 				tea.WithOutput(out),
 				tea.WithoutSignalHandler(),
@@ -96,6 +103,13 @@ mode, and each chunk of bytes read is printed as hex and quoted text.`,
 	return cmd
 }
 
+// rawInputFile returns stdin as a file when it is a terminal. bubbletea and the
+// --raw path put that file in raw mode, which is why output needs "\r\n".
+func rawInputFile(ctx context.Context, in io.Reader) (*os.File, bool) {
+	f, ok := in.(*os.File)
+	return f, ok && cmdio.IsInputTTY(ctx)
+}
+
 // runRawKeys reads stdin in raw mode without bubbletea. After an early return
 // the reader goroutine can be blocked on Read or on sending a chunk; the
 // process exits once the command finishes, so it does not need to be joined.
@@ -103,7 +117,7 @@ func runRawKeys(ctx context.Context, in io.Reader, out io.Writer, timeout time.D
 	// Raw mode clears OPOST, so "\n" would not return the carriage. Print
 	// "\r\n" in that case so each line starts at column 0.
 	eol := "\n"
-	if f, ok := in.(*os.File); ok && cmdio.IsInputTTY(ctx) {
+	if f, ok := rawInputFile(ctx, in); ok {
 		state, err := term.MakeRaw(int(f.Fd()))
 		if err != nil {
 			return err
