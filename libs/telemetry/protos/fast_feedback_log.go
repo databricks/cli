@@ -4,8 +4,9 @@ package protos
 // (proto/logs/frontend/docs-platform/fast_feedback_log.proto). It is the event the
 // in-product feedback widget records, so CLI feedback is triaged the same way.
 type FastFeedbackLog struct {
-	// ID of an event the feedback relates to. The CLI sets the command execution ID so
-	// triagers can find the matching requests in http_access_log.
+	// ID of an event the feedback relates to. The CLI sets the execution ID of the
+	// feedback command itself, which its requests also carry as cmd-exec-id in the
+	// user agent.
 	ReferenceEventID string `json:"reference_event_id,omitempty"`
 
 	// ES component the feedback is filed under (e.g. "DeveloperEcosystem.DatabricksCLI").
@@ -21,6 +22,8 @@ type FastFeedbackLog struct {
 
 	UserAgent string `json:"user_agent,omitempty"`
 
-	// Feedback text written by the user.
+	// Feedback text written by the user. Unlike other telemetry it is user-authored
+	// by design: the user asked to send it, and confirms it first when an AI agent
+	// wrote it.
 	Text string `json:"text,omitempty"`
 }

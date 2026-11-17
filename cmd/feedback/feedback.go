@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 	"uuid"
 
@@ -49,6 +50,17 @@ type options struct {
 	yes            bool
 }
 
+// submission is the validated input, checked before authenticating so that a
+// mistake is reported without a login prompt or a network call.
+type submission struct {
+	text           string
+	command        string
+	component      string
+	origin         string
+	runID          string
+	canBeContacted bool
+}
+
 // Spec declares the feedback command.
 var Spec = root.CommandSpec{
 	Use:           "feedback MESSAGE",
@@ -86,40 +98,63 @@ approves it.`
 	cmd.Flags().BoolVar(&opts.canBeContacted, "can-be-contacted", false, "Allow Databricks to contact you about this feedback")
 	cmd.Flags().BoolVarP(&opts.yes, "yes", "y", false, "Confirm sending feedback written by an AI agent")
 
+	var s submission
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		var err error
+		s, err = newSubmission(cmd, args[0], &opts)
+		if err != nil {
+			return err
+		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
 	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return run(cmd, args[0], &opts)
+		return send(cmd.Context(), s, opts.yes)
 	}
 }
 
-func run(cmd *cobra.Command, message string, opts *options) error {
-	ctx := cmd.Context()
+func newSubmission(cmd *cobra.Command, message string, opts *options) (submission, error) {
+	// Feedback never loads the bundle, so a target would be ignored.
+	for _, name := range []string{"target", "environment"} {
+		if f := cmd.Flag(name); f != nil && f.Changed {
+			return submission{}, fmt.Errorf("--%s selects a bundle target, which feedback does not use; use --profile to choose the workspace", name)
+		}
+	}
 	text, err := validateMessage(message)
 	if err != nil {
-		return err
+		return submission{}, err
 	}
-
 	component, origin, err := resolveCommand(cmd, opts.command)
 	if err != nil {
-		return err
+		return submission{}, err
+	}
+	s := submission{
+		text:           text,
+		command:        strings.Join(strings.Fields(opts.command), " "),
+		component:      component,
+		origin:         origin,
+		canBeContacted: opts.canBeContacted,
 	}
 	if opts.runID != "" {
 		id, err := strconv.ParseInt(opts.runID, 10, 64)
 		if err != nil || id <= 0 {
-			return errors.New("--run-id must be a positive job run ID")
+			return submission{}, errors.New("--run-id must be a positive job run ID")
 		}
-		ctx = useragent.InContext(ctx, runIDKey, opts.runID)
+		s.runID = strconv.FormatInt(id, 10)
 	}
+	return s, nil
+}
 
+func send(ctx context.Context, s submission, yes bool) error {
+	if s.runID != "" {
+		ctx = useragent.InContext(ctx, runIDKey, s.runID)
+	}
 	if provider := useragent.AgentProvider(); provider != "" {
 		// The SDK adds the agent to HTTP request headers, but the feedback record
 		// needs it too so triage can distinguish agent reports.
 		ctx = useragent.InContext(ctx, useragent.AgentKey, provider)
-		if !opts.yes {
-			confirmed, err := confirm(ctx, text)
+		if !yes {
+			confirmed, err := confirm(ctx, s)
 			if err != nil || !confirmed {
 				return err
 			}
@@ -129,17 +164,17 @@ func run(cmd *cobra.Command, message string, opts *options) error {
 	id := uuid.New().String()
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
 	defer cancel()
-	err = telemetry.Send(sendCtx, cmdctx.WorkspaceClient(ctx).Config, []protos.FrontendLog{{
+	err := telemetry.Send(sendCtx, cmdctx.WorkspaceClient(ctx).Config, []protos.FrontendLog{{
 		FrontendLogEventID: id,
 		Entry: protos.FrontendLogEntry{
 			FastFeedbackLog: &protos.FastFeedbackLog{
 				ReferenceEventID: cmdctx.ExecId(ctx),
-				ParentUI:         component,
-				Origin:           origin,
-				CanBeContacted:   opts.canBeContacted,
+				ParentUI:         s.component,
+				Origin:           s.origin,
+				CanBeContacted:   s.canBeContacted,
 				UIVersions:       "cli:" + build.GetInfo().Version,
 				UserAgent:        useragent.FromContext(ctx),
-				Text:             text,
+				Text:             s.text,
 			},
 		},
 	}})
@@ -166,7 +201,7 @@ func resolveCommand(cmd *cobra.Command, command string) (string, string, error) 
 	}
 	target, rest, err := cmd.Root().Find(strings.Fields(command))
 	if err != nil || len(rest) > 0 || target == cmd.Root() {
-		return "", "", fmt.Errorf("unknown command %q", command)
+		return "", "", fmt.Errorf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
 	}
 	component := defaultComponent
 	if productComponent, ok := productComponents[topLevelName(target)]; ok {
@@ -184,12 +219,12 @@ func topLevelName(cmd *cobra.Command) string {
 
 // confirm asks the user to approve feedback an AI agent is about to send. It
 // returns false without error if the user declines.
-func confirm(ctx context.Context, text string) (bool, error) {
+func confirm(ctx context.Context, s submission) (bool, error) {
 	if !cmdio.IsInputTTY(ctx) {
 		return false, errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
 			agent.AgentNote("show the user the exact feedback message and pass --yes only after the user approves sending it"))
 	}
-	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+text+"\n")
+	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s))
 	confirmed, err := cmdio.AskYesOrNo(ctx, "Send this feedback?")
 	if err != nil {
 		return false, err
@@ -198,4 +233,39 @@ func confirm(ctx context.Context, text string) (bool, error) {
 		cmdio.LogString(ctx, "Feedback not sent.")
 	}
 	return confirmed, nil
+}
+
+// summary returns everything the user approves: the message and the fields
+// sent with it.
+func summary(s submission) string {
+	var b strings.Builder
+	b.WriteString(escapeControl(s.text))
+	b.WriteString("\n\n")
+	if s.command != "" {
+		fmt.Fprintf(&b, "Command: %s\n", s.command)
+	}
+	if s.runID != "" {
+		fmt.Fprintf(&b, "Run ID: %s\n", s.runID)
+	}
+	contact := "no"
+	if s.canBeContacted {
+		contact = "yes"
+	}
+	fmt.Fprintf(&b, "Databricks may contact you: %s\n", contact)
+	return b.String()
+}
+
+// escapeControl escapes control characters other than newlines and tabs, so
+// that none of them can hide or overwrite part of the message in the terminal.
+func escapeControl(text string) string {
+	var b strings.Builder
+	for _, r := range text {
+		if unicode.IsControl(r) && r != '\n' && r != '\t' {
+			quoted := strconv.QuoteRune(r)
+			b.WriteString(quoted[1 : len(quoted)-1])
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

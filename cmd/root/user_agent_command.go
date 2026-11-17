@@ -14,7 +14,8 @@ import (
 // See unit test [main.TestCommandsDontUseUnderscoreInName].
 const commandSeparator = "_"
 
-// CommandString returns the command hierarchy joined with underscores.
+// CommandString walks up the command hierarchy of the specified
+// command to build a string representing this hierarchy.
 func CommandString(cmd *cobra.Command) string {
 	reversed := []string{cmd.Name()}
 	cmd.VisitParents(func(p *cobra.Command) {

@@ -284,11 +284,11 @@ func isCredentialHelperCommand(cmd *cobra.Command) bool {
 var hintExemptCommands = []string{
 	"aitools",
 	"experimental aitools",
-	"feedback",
 	"auth",
 	"configure",
 	"current-user me",
 	"version",
+	"feedback",
 	"completion",
 	"help",
 	cobra.ShellCompRequestCmd,
