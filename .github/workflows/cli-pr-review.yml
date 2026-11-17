@@ -12,6 +12,11 @@ on:
   issue_comment:
     types: [created]
 
+# Group review requests before validation; unrelated comments get their own group.
+concurrency:
+  group: cli-pr-review-${{ github.event.pull_request.number || (github.event.issue.pull_request && github.event.comment.body == '/review' && github.event.issue.number) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     if: |
@@ -54,10 +59,6 @@ jobs:
   review:
     needs: validate
     if: needs.validate.outputs.eligible == 'true' && github.ref == 'refs/heads/main'
-    # Only validated requests can supersede an older request for this PR.
-    concurrency:
-      group: cli-pr-review-${{ needs.validate.outputs.pr_number }}
-      cancel-in-progress: true
     # Cross-org dispatch needs the same approved network as integration tests.
     runs-on:
       group: databricks-release-runner-group-emu-access
