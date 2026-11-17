@@ -36,7 +36,6 @@ func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundl
 	}
 
 	remote, skipped := readRemotePermissions(ctx, b, plan)
-	currentUser := currentUserName(b)
 	for resourceKey, permissions := range remote {
 		if entry := plan.Plan[resourceKey+".permissions"]; entry != nil && entry.Action == deployplan.Create {
 			if err := addUndeployedPermissionsChanges(changes, b, resourceKey, permissions); err != nil {
@@ -45,7 +44,7 @@ func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundl
 			continue
 		}
 
-		permissions = withoutCurrentUserManage(permissions, currentUser)
+		permissions = withoutCurrentUserManage(permissions, currentUserName(b))
 		if len(permissions) == 0 {
 			continue
 		}
