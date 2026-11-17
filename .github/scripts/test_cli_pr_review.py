@@ -53,7 +53,7 @@ class ReviewRequestTest(unittest.TestCase):
 
     def test_automatic_events(self):
         """Each supported PR event may start a review when the PR is still eligible."""
-        for action in ["opened", "reopened", "synchronize", "ready_for_review"]:
+        for action in ["opened", "reopened", "ready_for_review"]:
             with self.subTest(action=action):
                 self.automatic["action"] = action
                 self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
@@ -90,16 +90,24 @@ class ReviewRequestTest(unittest.TestCase):
                 self.assertIsNone(review.validate_request("issue_comment", self.comment, self.api))
                 self.permissions["author"] = "write"
 
-    def test_retargeting_and_unrelated_edits(self):
-        """Retargeting starts a fresh review; title/body edits and old target events are skipped."""
-        self.automatic["action"] = "edited"
-        for changes in [{}, {"title": {"from": "Old title"}}, {"body": {"from": "Old description"}}]:
-            with self.subTest(changes=changes):
+    def test_pushes_and_edits_require_explicit_request(self):
+        """Pushes and edits do not start reviews; users can request one with /review."""
+        for action, changes in [
+            ("synchronize", {}),
+            ("edited", {}),
+            ("edited", {"title": {"from": "Old title"}}),
+            ("edited", {"body": {"from": "Old description"}}),
+            ("edited", {"base": {"ref": {"from": "release/v1.2"}}}),
+        ]:
+            with self.subTest(action=action, changes=changes):
+                self.automatic["action"] = action
                 self.automatic["changes"] = changes
                 self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
         self.api.assert_not_called()
-        self.automatic["changes"] = {"base": {"ref": {"from": "release/v1.2"}}}
-        self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
+        self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
+
+    def test_stale_base_requires_explicit_request(self):
+        """An automatic event queued before retargeting cannot review the new base."""
         self.pr["base"]["ref"] = "release/v1.3"
         self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
         self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)

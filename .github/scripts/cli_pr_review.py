@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 REPOSITORY = "databricks/cli"
-PR_ACTIONS = {"opened", "reopened", "synchronize", "ready_for_review", "edited"}
+PR_ACTIONS = {"opened", "reopened", "ready_for_review"}
 WRITE_PERMISSIONS = {"write", "maintain", "admin"}
 
 
@@ -29,9 +29,6 @@ def validate_request(event_name, event, api=github_api):
     requester = None
     if event_name == "pull_request_target":
         if event["action"] not in PR_ACTIONS:
-            return None
-        # Retargeting changes the diff; edits to the title or description do not need a review.
-        if event["action"] == "edited" and "base" not in event.get("changes", {}):
             return None
         number = event["number"]
         expected_head = event["pull_request"]["head"]["sha"]
