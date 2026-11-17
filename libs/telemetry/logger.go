@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -339,11 +340,19 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 		return &notSentError{fmt.Errorf("failed to create API client: %w", err)}
 	}
 
-	resp, err := attempt(ctx, apiClient, protoLogs)
-	if err != nil {
+	// A request is written only once its connection is set up, so a failure
+	// before then, such as a DNS, dial or TLS error, means nothing was sent.
+	var connected atomic.Bool
+	traceCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+		GotConn: func(httptrace.GotConnInfo) { connected.Store(true) },
+	})
+	resp, err := attempt(traceCtx, apiClient, protoLogs)
+	switch {
+	case err != nil && !connected.Load():
+		return &notSentError{err}
+	case err != nil:
 		return err
-	}
-	if resp.NumProtoSuccess < int64(len(protoLogs)) {
+	case resp.NumProtoSuccess < int64(len(protoLogs)):
 		return &NotAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
 	}
 	return nil

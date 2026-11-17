@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -561,6 +562,34 @@ func TestSendMakesOneAttempt(t *testing.T) {
 			if !tt.reset {
 				assert.Equal(t, []string{`{"frontend_log_event_id":"id","entry":{"fast_feedback_log":{"can_be_contacted":false,"text":"hello"}}}`}, body.ProtoLogs)
 			}
+		})
+	}
+}
+
+func TestSendFailingBeforeConnectingIsNotSent(t *testing.T) {
+	// Resolve the config while the server is up, because the SDK retries its
+	// host metadata lookup for minutes; then close it to refuse the upload.
+	closed := httptest.NewServer(http.NotFoundHandler())
+	refused := &config.Config{Host: closed.URL, Token: "token"}
+	require.NoError(t, refused.EnsureResolved())
+	closed.Close()
+
+	// The client does not trust the certificate of this server.
+	untrusted := httptest.NewTLSServer(http.NotFoundHandler())
+	t.Cleanup(untrusted.Close)
+
+	tests := []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{name: "connection refused", cfg: refused},
+		{name: "untrusted certificate", cfg: &config.Config{Host: untrusted.URL, Token: "token"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Send(t.Context(), tt.cfg, testFeedbackLog())
+			require.Error(t, err)
+			assert.True(t, NotSent(err), "error: %v", err)
 		})
 	}
 }
