@@ -343,7 +343,9 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m model) View() string {
+func (m model) View() string { return m.render() }
+
+func (m model) render() string {
 	if !m.ready {
 		return "Loading..."
 	}

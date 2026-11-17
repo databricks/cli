@@ -204,7 +204,9 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *promptModel) View() string {
+func (m *promptModel) View() string { return m.render() }
+
+func (m *promptModel) render() string {
 	// HideEntered: empty final frame so the masked value isn't left in
 	// scrollback after the user presses Enter.
 	if m.submitted && m.hideEntered {

@@ -81,7 +81,9 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m spinnerModel) View() string {
+func (m spinnerModel) View() string { return m.render() }
+
+func (m spinnerModel) render() string {
 	if m.quitting {
 		return ""
 	}
