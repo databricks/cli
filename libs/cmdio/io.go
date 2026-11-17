@@ -85,8 +85,8 @@ func IsPromptSupported(ctx context.Context) bool {
 
 // IsInputTTY reports whether stdin is a terminal, so that a user can type
 // input into the command. Unlike IsPromptSupported, it does not depend on
-// stderr, NO_COLOR or TERM=dumb, which only matter for rendering prompts, and
-// it accepts MSYS2 pty pipes, which carry line input but not keystrokes.
+// stderr or TERM=dumb, which only matter for rendering prompts, and it accepts
+// MSYS2 pty pipes, which carry line input but not keystrokes.
 func IsInputTTY(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.stdinIsTTY
@@ -102,7 +102,7 @@ func IsPagerSupported(ctx context.Context) bool {
 }
 
 // HasTerminal reports whether stdin, stdout or stderr is a terminal. Unlike
-// GetInteractiveMode it ignores colour preferences (NO_COLOR, TERM=dumb).
+// GetInteractiveMode it ignores TERM=dumb.
 func HasTerminal(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.stdinIsTTY || c.capabilities.stdoutIsTTY || c.capabilities.stderrIsTTY
@@ -173,7 +173,6 @@ func MockDiscard(ctx context.Context) context.Context {
 			stdinIsTTY:  false,
 			stdoutIsTTY: false,
 			stderrIsTTY: false,
-			color:       false,
 		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),

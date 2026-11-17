@@ -44,7 +44,7 @@ func TestIsMSYSPipeAnonymousPipe(t *testing.T) {
 func TestMSYSPipeBlocksPromptsOnly(t *testing.T) {
 	// An MSYS2 pty pipe counts as a TTY for output and line input, but not
 	// for prompts and pagers, which need raw keystrokes.
-	c := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, color: true, stdinIsMSYSPipe: true}
+	c := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, stdinIsMSYSPipe: true}
 	assert.True(t, c.SupportsInteractive())
 	assert.True(t, c.SupportsColor(FakeTTY(&bytes.Buffer{})))
 	assert.False(t, c.SupportsPrompt())
