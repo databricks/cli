@@ -159,16 +159,16 @@ func collectTaskTypes(jobs map[string]*resources.Job) []string {
 	return keys
 }
 
-// aiRuntimeTaskMetrics computes the ai_runtime_task-specific deploy dimensions.
-// present is true when any job declares an ai_runtime_task (including one nested in
-// a for_each_task); scheduled and multitask describe those jobs and are meaningful
-// only when present is true. Task-type presence itself (has_ai_runtime_task and the
-// other has_*_task keys) is recorded generically by collectTaskTypes.
+// aiRuntimeTaskMetrics records the ai_runtime_task-specific deploy dimensions: whether
+// each job that declares an ai_runtime_task (including one nested in a for_each_task)
+// is scheduled and has more than one task. Task-type presence itself
+// (has_ai_runtime_task and the other has_*_task keys) is recorded generically by
+// collectTaskTypes.
 //
 // code_source_path is deliberately not inspected: it is rewritten to its uploaded
 // remote path before this runs, so it would always read as remote. GPU type and
 // count are likewise not recorded here.
-func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
+func aiRuntimeTaskMetrics(jobs map[string]*resources.Job, t *bundle.Telemetry) {
 	for _, job := range jobs {
 		if job == nil {
 			continue
@@ -187,15 +187,9 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 		if !jobHasAiRuntimeTask {
 			continue
 		}
-		present = true
-		if job.Schedule != nil || job.Trigger != nil || job.Continuous != nil {
-			scheduled = true
-		}
-		if len(job.Tasks) > 1 {
-			multitask = true
-		}
+		t.AiRuntimeTaskScheduled.SetBool(job.Schedule != nil || job.Trigger != nil || job.Continuous != nil)
+		t.AiRuntimeTaskMultitask.SetBool(len(job.Tasks) > 1)
 	}
-	return present, scheduled, multitask
 }
 
 // pydabsMetrics reports usage of Python support. Loaders and mutators are read from
@@ -360,10 +354,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
 		b.Metrics.SetBoolValue(key, true)
 	}
-	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
-		b.Telemetry.AiRuntimeTaskScheduled = new(airScheduled)
-		b.Telemetry.AiRuntimeTaskMultitask = new(airMultitask)
-	}
+	aiRuntimeTaskMetrics(b.Config.Resources.Jobs, &b.Telemetry)
 
 	// Record whether the removed terraform engine was still requested (the command
 	// then fails with the removal error), separately per source. Only emitted when
