@@ -1,5 +1,3 @@
-Badness = "A model has no recorded id, so after a deploy is interrupted between its schema's rename and its own update, the plan does not find it at its new path: it creates it again and the create fails with RESOURCE_ALREADY_EXISTS on every deploy. Main has the same gap when the deploy is interrupted before the model's recreate."
-
 # Local-only: the test server kills the CLI mid-deploy (kill_after.py), which a real workspace cannot.
 Cloud = false
 
