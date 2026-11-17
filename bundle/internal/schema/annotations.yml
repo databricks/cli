@@ -354,6 +354,9 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+        "thumbnail_path":
+          "description": |-
+            The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the file that defines the app. Removing it deletes the thumbnail.
     "catalogs":
       "description": |-
         PLACEHOLDER

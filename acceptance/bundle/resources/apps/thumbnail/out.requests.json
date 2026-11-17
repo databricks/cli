@@ -1,0 +1,37 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "",
+    "name": "myappname"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/apps/myappname/thumbnail",
+  "body": {
+    "app_thumbnail": {
+      "thumbnail": "iVBORw0KGgoAAAANSUhEUgAAACAAAAASCAIAAAC1qksFAAAAHklEQVR42mNgYPhPYzRqwagFoxaMWjBqwagFdLAAAM9QPd+sTeHpAAAAAElFTkSuQmCC"
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/apps/myappname/thumbnail",
+  "body": {
+    "app_thumbnail": {
+      "thumbnail": "iVBORw0KGgoAAAANSUhEUgAAACAAAAASCAIAAAC1qksFAAAAH0lEQVR42mP4z8BAU8QwasGoBaMWjFowasGoBfSwAABLGz3fTe+jHwAAAABJRU5ErkJggg=="
+    }
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myappname/thumbnail"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myappname"
+}

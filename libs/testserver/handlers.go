@@ -778,6 +778,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.AppsGetUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsUpdateThumbnail(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsDeleteThumbnail(req.Vars["name"])
+	})
+
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
 		return req.Workspace.AppsGet(req.Vars["name"])
 	})

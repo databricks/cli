@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -20,11 +21,13 @@ import (
 )
 
 // AppState is the state type for App resources. source_code_path and git_source come from
-// apps.App; config and lifecycle are DABs-only additions persisted in state.
+// apps.App; config, lifecycle and thumbnail are DABs-only additions persisted in state.
+// thumbnail is the base64-encoded image; state keeps only its hash (hashed_fields in apps.yml).
 type AppState struct {
 	apps.App
 	Config    *resources.AppConfig `json:"config,omitempty"`
 	Lifecycle *StateLifecycle      `json:"lifecycle,omitempty"`
+	Thumbnail string               `json:"thumbnail,omitempty"`
 }
 
 // AppRemote extends apps.App with the same DABs-only fields as AppState so they
@@ -66,6 +69,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		App:       input.App,
 		Config:    input.Config,
 		Lifecycle: nil,
+		Thumbnail: input.ThumbnailContent,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
@@ -82,6 +86,7 @@ func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 		App:       remote.App,
 		Config:    remote.Config,
 		Lifecycle: remote.Lifecycle,
+		Thumbnail: "",
 	}
 }
 
@@ -160,8 +165,27 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 		return "", nil, err
 	}
 
+	// The thumbnail is uploaded before the state is saved, so a failed upload is not recorded
+	// and the next deploy retries it. Failing here would leave the new app out of the state.
+	if config.Thumbnail != "" {
+		if err := r.updateThumbnail(ctx, app.Name, config.Thumbnail); err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("Warning: failed to upload the thumbnail of app %s, the next deploy retries it: %s", app.Name, err))
+			config.Thumbnail = ""
+		}
+	}
+
 	return app.Name, nil, nil
 }
+
+func (r *ResourceApp) updateThumbnail(ctx context.Context, name, thumbnail string) error {
+	_, err := r.client.Apps.UpdateAppThumbnail(ctx, apps.UpdateAppThumbnailRequest{
+		Name:         name,
+		AppThumbnail: &apps.AppThumbnail{Thumbnail: thumbnail, ForceSendFields: nil},
+	})
+	return err
+}
+
+var appThumbnailPath = structpath.MustParsePath("thumbnail")
 
 var UpdateMaskFields = []string{
 	"description",
@@ -216,6 +240,18 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 
 		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
 			return fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+		}
+	}
+
+	if entry.Changes.HasChange(appThumbnailPath) {
+		var err error
+		if config.Thumbnail == "" {
+			err = r.client.Apps.DeleteAppThumbnail(ctx, apps.DeleteAppThumbnailRequest{Name: id})
+		} else {
+			err = r.updateThumbnail(ctx, id, config.Thumbnail)
+		}
+		if err != nil {
+			return err
 		}
 	}
 
@@ -282,7 +318,7 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 // hasAppChanges reports whether the plan entry contains any Update changes
 // to fields that belong to the App Update API (i.e., not deploy-only fields).
 func hasAppChanges(entry *PlanEntry) bool {
-	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started", "thumbnail")
 }
 
 // OverrideChangeDesc skips drift on the deploy-only fields (source_code_path, config,
