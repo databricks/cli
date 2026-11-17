@@ -12,6 +12,9 @@ Once finished, complete the login by running the same command with
 --user-code WDJB-0001 and --confirmation-code set to the confirmation code
 provided in your browser.
 
+>>> musterr [CLI] auth login --host [DATABRICKS_URL]?a=other-acct --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
+Error: the login for profile account was started with a different account ID. Complete it with the same command that started it. Run the same command without --user-code and --confirmation-code to start a new login
+
 >>> [CLI] auth login --host [DATABRICKS_URL]?a=spog-acct-123 --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 To use workspace commands, set workspace_id in your profile or pass --workspace-id.
 Profile account was successfully saved

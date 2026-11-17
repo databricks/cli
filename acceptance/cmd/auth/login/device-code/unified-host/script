@@ -7,6 +7,9 @@ export DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.w
 # login runs non-interactively.
 title "Log in to the account"
 trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123" --profile account --use-device-code
+# The device code only works with the token endpoint of the account that
+# issued it, so the login cannot be completed for another account.
+trace musterr $CLI auth login --host "$DATABRICKS_HOST?a=other-acct" --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123" --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 trace $CLI auth token --profile account | gron.py | grep access_token
 

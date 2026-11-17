@@ -142,8 +142,21 @@ type nonInteractiveDeviceCodeLogin struct {
 	key            string
 	profile        string
 	host           string
+	accountID      string
 	clientID       string
 	scopes         []string
+}
+
+// oauthAccountID returns the ID of the account whose OIDC endpoints arg logs
+// in with, or "" for a workspace host.
+func oauthAccountID(arg u2m.OAuthArgument) string {
+	switch a := arg.(type) {
+	case u2m.AccountOAuthArgument:
+		return a.GetAccountId()
+	case u2m.UnifiedOAuthArgument:
+		return a.GetAccountId()
+	}
+	return ""
 }
 
 // pendingLoginKey returns the token store key of the pending login for the
@@ -185,6 +198,7 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 		DeviceCode: da.DeviceCode,
 		UserCode:   da.UserCode,
 		Host:       l.host,
+		AccountID:  l.accountID,
 		ClientID:   l.clientID,
 		Scopes:     l.scopes,
 	}})
@@ -272,6 +286,8 @@ func (l nonInteractiveDeviceCodeLogin) changedSetting(pending storage.PendingLog
 	switch {
 	case pending.Host != l.host:
 		return "a different host"
+	case pending.AccountID != l.accountID:
+		return "a different account ID"
 	case pending.ClientID != l.clientID:
 		return "a different client ID"
 	case !slices.Equal(pending.Scopes, l.scopes):

@@ -463,6 +463,7 @@ a new profile is created.
 			key:            pendingLoginKey(oauthArgument.GetCacheKey()),
 			profile:        profileName,
 			host:           (&config.Config{Host: authArguments.Host}).CanonicalHostName(),
+			accountID:      oauthAccountID(oauthArgument),
 			clientID:       clientID,
 			scopes:         slices.Sorted(slices.Values(scopesList)),
 		}
