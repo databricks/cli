@@ -64,6 +64,24 @@ type cmdIO struct {
 	// user input is processed. Populated only by NewTestIO so pipe-backed
 	// test runs receive a synthetic WindowSizeMsg.
 	teaWindowSize *tea.WindowSizeMsg
+
+	// errWriter wraps err for LogString; built once by stderrWriter.
+	errWriterMu sync.Mutex
+	errWriter   io.Writer
+}
+
+// stderrWriter returns err wrapped to match its color support, built on first
+// use. Whether err supports color depends only on this cmdIO's capabilities,
+// so the result does not change; the color depth is read from ctx's
+// environment on that first call. (sync.OnceValue can't take ctx.)
+func (c *cmdIO) stderrWriter(ctx context.Context) io.Writer {
+	c.errWriterMu.Lock()
+	defer c.errWriterMu.Unlock()
+	if c.errWriter == nil {
+		r, _ := NewRenderer(ctx, c.err)
+		c.errWriter = r.Writer(c.err)
+	}
+	return c.errWriter
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
