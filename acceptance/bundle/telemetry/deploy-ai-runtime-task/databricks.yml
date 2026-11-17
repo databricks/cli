@@ -23,3 +23,32 @@ resources:
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
+    # Unscheduled and multi-task, unlike the job above, so both values of each
+    # ai_runtime_task_* telemetry bool are recorded.
+    multitask_job:
+      name: "[${bundle.target}] AI Runtime Multitask Job"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-experiment
+            deployments:
+              - command_path: /Workspace/Shared/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+        - task_key: evaluate
+          depends_on:
+            - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-experiment
+            deployments:
+              - command_path: /Workspace/Shared/evaluate.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
