@@ -89,6 +89,42 @@ from databricks.bundles.core._generated.pipelines import (
     _PipelineResources,
     pipeline_mutator,
 )
+from databricks.bundles.core._generated.postgres_branches import (
+    _PostgresBranchResources,
+    postgres_branch_mutator,
+)
+from databricks.bundles.core._generated.postgres_catalogs import (
+    _PostgresCatalogResources,
+    postgres_catalog_mutator,
+)
+from databricks.bundles.core._generated.postgres_data_apis import (
+    _PostgresDataApiResources,
+    postgres_data_api_mutator,
+)
+from databricks.bundles.core._generated.postgres_databases import (
+    _PostgresDatabaseResources,
+    postgres_database_mutator,
+)
+from databricks.bundles.core._generated.postgres_endpoints import (
+    _PostgresEndpointResources,
+    postgres_endpoint_mutator,
+)
+from databricks.bundles.core._generated.postgres_projects import (
+    _PostgresProjectResources,
+    postgres_project_mutator,
+)
+from databricks.bundles.core._generated.postgres_roles import (
+    _PostgresRoleResources,
+    postgres_role_mutator,
+)
+from databricks.bundles.core._generated.postgres_snapshot_schedules import (
+    _PostgresSnapshotScheduleResources,
+    postgres_snapshot_schedule_mutator,
+)
+from databricks.bundles.core._generated.postgres_synced_tables import (
+    _PostgresSyncedTableResources,
+    postgres_synced_table_mutator,
+)
 from databricks.bundles.core._generated.quality_monitors import (
     _QualityMonitorResources,
     quality_monitor_mutator,
@@ -151,6 +187,15 @@ __all__ = [
     "model_service_mutator",
     "model_serving_endpoint_mutator",
     "pipeline_mutator",
+    "postgres_branch_mutator",
+    "postgres_catalog_mutator",
+    "postgres_data_api_mutator",
+    "postgres_database_mutator",
+    "postgres_endpoint_mutator",
+    "postgres_project_mutator",
+    "postgres_role_mutator",
+    "postgres_snapshot_schedule_mutator",
+    "postgres_synced_table_mutator",
     "quality_monitor_mutator",
     "registered_model_mutator",
     "schema_mutator",
@@ -189,6 +234,15 @@ class _GeneratedResources(
     _ModelServingEndpointResources,
     _MlflowModelResources,
     _PipelineResources,
+    _PostgresBranchResources,
+    _PostgresCatalogResources,
+    _PostgresDataApiResources,
+    _PostgresDatabaseResources,
+    _PostgresEndpointResources,
+    _PostgresProjectResources,
+    _PostgresRoleResources,
+    _PostgresSnapshotScheduleResources,
+    _PostgresSyncedTableResources,
     _QualityMonitorResources,
     _RegisteredModelResources,
     _SchemaResources,
@@ -229,6 +283,15 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         model_serving_endpoints,
         models,
         pipelines,
+        postgres_branches,
+        postgres_catalogs,
+        postgres_data_apis,
+        postgres_databases,
+        postgres_endpoints,
+        postgres_projects,
+        postgres_roles,
+        postgres_snapshot_schedules,
+        postgres_synced_tables,
         quality_monitors,
         registered_models,
         schemas,
@@ -266,6 +329,15 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         model_serving_endpoints._resource_type(),
         models._resource_type(),
         pipelines._resource_type(),
+        postgres_branches._resource_type(),
+        postgres_catalogs._resource_type(),
+        postgres_data_apis._resource_type(),
+        postgres_databases._resource_type(),
+        postgres_endpoints._resource_type(),
+        postgres_projects._resource_type(),
+        postgres_roles._resource_type(),
+        postgres_snapshot_schedules._resource_type(),
+        postgres_synced_tables._resource_type(),
         quality_monitors._resource_type(),
         registered_models._resource_type(),
         schemas._resource_type(),
