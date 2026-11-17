@@ -19,7 +19,5 @@ trace $CLI auth token --profile workspace | gron.py | grep access_token
 title "Device code requests"
 trace print_requests.py --oneline //oidc
 
-# The fake server's host metadata returns a workspace ID, so the account
-# profile gets one too.
 # Track the .databrickscfg file that was created to surface changes.
 mv "./home/.databrickscfg" "./out.databrickscfg"

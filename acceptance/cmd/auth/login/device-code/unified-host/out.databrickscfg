@@ -2,10 +2,9 @@
 [DEFAULT]
 
 [account]
-host         = [DATABRICKS_URL]
-account_id   = spog-acct-123
-workspace_id = [WORKSPACE_ID]
-auth_type    = databricks-cli
+host       = [DATABRICKS_URL]
+account_id = spog-acct-123
+auth_type  = databricks-cli
 
 [__settings__]
 default_profile = account

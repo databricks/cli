@@ -13,6 +13,7 @@ Once finished, complete the login by running the same command with
 provided in your browser.
 
 >>> [CLI] auth login --host [DATABRICKS_URL]?a=spog-acct-123 --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
+To use workspace commands, set workspace_id in your profile or pass --workspace-id.
 Profile account was successfully saved
 
 >>> [CLI] auth token --profile account
