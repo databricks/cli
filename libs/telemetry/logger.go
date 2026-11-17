@@ -313,7 +313,7 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 		return struct{}{}, cfg.Authenticate(authReq)
 	})
 	if err != nil {
-		return fmt.Errorf("authenticating telemetry upload: %w", err)
+		return fmt.Errorf("authenticating upload: %w", err)
 	}
 	r.Header = authReq.Header
 	return nil

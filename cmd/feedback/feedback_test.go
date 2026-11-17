@@ -274,21 +274,26 @@ func TestSendAsksBeforeSending(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testutil.SetAgent(t, "test-agent")
+			// Start the server and the client before SetAgent clears the
+			// environment: on Windows, sockets need SystemRoot.
 			server := testserver.New(t)
 			var sent []string
 			server.Handle(http.MethodPost, "/telemetry-ext", func(req testserver.Request) any {
+				// The handler runs on the server's goroutine, so it must not
+				// call require.
 				var body telemetry.RequestBody
-				require.NoError(t, json.Unmarshal(req.Body, &body))
+				assert.NoError(t, json.Unmarshal(req.Body, &body))
 				for _, raw := range body.ProtoLogs {
 					var entry protos.FrontendLog
-					require.NoError(t, json.Unmarshal([]byte(raw), &entry))
-					sent = append(sent, entry.Entry.FastFeedbackLog.Text)
+					if assert.NoError(t, json.Unmarshal([]byte(raw), &entry)) {
+						sent = append(sent, entry.Entry.FastFeedbackLog.Text)
+					}
 				}
 				return telemetry.ResponseBody{NumProtoSuccess: int64(len(body.ProtoLogs))}
 			})
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 			require.NoError(t, err)
+			testutil.SetAgent(t, "test-agent")
 
 			var stdout, stderr bytes.Buffer
 			ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(tt.answer), &stdout, &stderr))

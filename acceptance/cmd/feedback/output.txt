@@ -94,6 +94,9 @@ Global Flags:
   -t, --target string        bundle target to use (if applicable)
 
 
+>>> [CLI] feedback deploy is slow
+Error: the message must be one argument, but received 3; quote it, for example: databricks feedback "deploy is slow"
+
 >>> [CLI] feedback --command no-such-command hello
 Error: unknown command "no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
 

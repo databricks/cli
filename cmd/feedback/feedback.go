@@ -90,7 +90,13 @@ is attached. Show the user the exact message and pass --yes only after the user
 approves it.`
 	cmd.Example = `  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
   databricks feedback --command "air run" --run-id 123 "logs omitted the failure reason"`
-	cmd.Args = root.ExactArgs(1)
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		// An unquoted message arrives as several arguments.
+		if len(args) > 1 {
+			return fmt.Errorf("the message must be one argument, but received %d; quote it, for example: databricks feedback %q", len(args), strings.Join(args, " "))
+		}
+		return root.ExactArgs(1)(cmd, args)
+	}
 
 	var opts options
 	cmd.Flags().StringVar(&opts.command, "command", "", `CLI command the feedback is about, for example "bundle deploy"`)
