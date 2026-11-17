@@ -11,6 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,15 +25,20 @@ type blackholeProxy struct {
 	ln       net.Listener
 	target   string
 	mu       sync.Mutex
-	conns    []*atomic.Bool
+	links    []*proxyLink
 	accepted atomic.Int32
+}
+
+type proxyLink struct {
+	client, server net.Conn
+	dead           atomic.Bool
 }
 
 func newBlackholeProxy(t *testing.T, target string) *blackholeProxy {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	p := &blackholeProxy{ln: ln, target: target}
-	t.Cleanup(func() { ln.Close() })
+	t.Cleanup(p.close)
 	go p.serve()
 	return p
 }
@@ -41,29 +49,30 @@ func (p *blackholeProxy) serve() {
 		if err != nil {
 			return
 		}
-		p.accepted.Add(1)
 		server, err := net.Dial("tcp", p.target)
 		if err != nil {
 			client.Close()
 			continue
 		}
-		dead := &atomic.Bool{}
+		p.accepted.Add(1)
+		l := &proxyLink{client: client, server: server}
 		p.mu.Lock()
-		p.conns = append(p.conns, dead)
+		p.links = append(p.links, l)
 		p.mu.Unlock()
-		go pipe(client, server, dead)
-		go pipe(server, client, dead)
+		go l.pipe(server, client)
+		go l.pipe(client, server)
 	}
 }
 
-func pipe(dst, src net.Conn, dead *atomic.Bool) {
+func (l *proxyLink) pipe(dst, src net.Conn) {
+	defer l.close()
 	buf := make([]byte, 32*1024)
 	for {
 		n, err := src.Read(buf)
 		if err != nil {
 			return
 		}
-		if dead.Load() {
+		if l.dead.Load() {
 			continue
 		}
 		if _, err := dst.Write(buf[:n]); err != nil {
@@ -72,11 +81,25 @@ func pipe(dst, src net.Conn, dead *atomic.Bool) {
 	}
 }
 
+func (l *proxyLink) close() {
+	l.client.Close()
+	l.server.Close()
+}
+
 func (p *blackholeProxy) blackhole() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, c := range p.conns {
-		c.Store(true)
+	for _, l := range p.links {
+		l.dead.Store(true)
+	}
+}
+
+func (p *blackholeProxy) close() {
+	p.ln.Close()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for _, l := range p.links {
+		l.close()
 	}
 }
 
@@ -122,23 +145,28 @@ func setupDeadConnection(t *testing.T, transport *http.Transport) (*blackholePro
 
 func TestHealthCheckedTransportReplacesDeadConnection(t *testing.T) {
 	transport := newHealthCheckedTransport(false)
-	transport.HTTP2.SendPingTimeout = 200 * time.Millisecond
-	transport.HTTP2.PingTimeout = 200 * time.Millisecond
+	transport.HTTP2.SendPingTimeout = time.Second
+	transport.HTTP2.PingTimeout = time.Second
 	proxy, get := setupDeadConnection(t, transport)
 
-	// The request on the dead connection fails: the health check closes the connection.
-	_, err := get(5 * time.Second)
-	require.ErrorContains(t, err, "http2: client connection lost")
+	// A request sent on the dead connection fails once the health check closes it, with an error
+	// libs/retry retries. If the health check closed the connection before the request was sent,
+	// the request already goes out on a new connection.
+	_, err := get(10 * time.Second)
+	if err != nil {
+		require.ErrorContains(t, err, "http2: client connection lost")
+		assert.True(t, retry.IsTransient(t.Context(), err))
+	}
 
-	// The next request dials a new connection and succeeds.
-	proto, err := get(5 * time.Second)
+	proto, err := get(10 * time.Second)
 	require.NoError(t, err)
 	assert.Equal(t, "HTTP/2.0", proto)
 	assert.EqualValues(t, 2, proxy.accepted.Load())
 }
 
-// Without the health check, a timed-out request leaves the dead connection in the pool and the
-// next request (a retry) is sent on it again. This is the failure the health check fixes.
+// Documents the net/http behavior the health check works around: without it, a timed-out request
+// leaves the dead connection in the pool and the next request (a retry) is sent on it again. If a
+// Go release stops reusing such connections, this test fails and can be removed.
 func TestTransportWithoutHealthCheckReusesDeadConnection(t *testing.T) {
 	transport := newHealthCheckedTransport(false)
 	transport.HTTP2 = nil
@@ -159,4 +187,33 @@ func TestWorkspaceTransportIsShared(t *testing.T) {
 	assert.NotSame(t, secure, insecure)
 	assert.Nil(t, secure.TLSClientConfig)
 	assert.True(t, insecure.TLSClientConfig.InsecureSkipVerify)
+}
+
+func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "secure",
+		Host:    "https://secure.cloud.databricks.test",
+		Token:   "token",
+	})
+	require.NoError(t, err)
+	// insecure_skip_verify comes from the profile, so it is only known after the config is resolved.
+	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:            "insecure",
+		Host:               "https://insecure.cloud.databricks.test",
+		Token:              "token",
+		InsecureSkipVerify: true,
+	})
+	require.NoError(t, err)
+
+	w := Workspace{Profile: "secure"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, workspaceTransport(false), client.Config.HTTPTransport)
+
+	w = Workspace{Profile: "insecure"}
+	client, err = w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, workspaceTransport(true), client.Config.HTTPTransport)
 }

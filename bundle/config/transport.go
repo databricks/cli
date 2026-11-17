@@ -21,8 +21,11 @@ const (
 	http2PingTimeout     = 15 * time.Second
 )
 
-// newHealthCheckedTransport mirrors the SDK's default transport (httpclient.makeDefaultTransport)
-// and adds the HTTP/2 health check.
+// newHealthCheckedTransport mirrors the SDK's default transport (httpclient.makeDefaultTransport,
+// which is unexported) and adds the HTTP/2 health check. Keep the two in sync on SDK upgrades.
+//
+// Only the bundle workspace client uses it. The token-refresh client the SDK builds while
+// resolving the config still uses the SDK default.
 func newHealthCheckedTransport(insecureSkipVerify bool) *http.Transport {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,

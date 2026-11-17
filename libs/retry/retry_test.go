@@ -34,6 +34,12 @@ func TestIsTransient(t *testing.T) {
 	assert.True(t, IsTransientRead(ctx, inactivity))
 	cancelled := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: context.Canceled}
 	assert.False(t, IsTransient(ctx, cancelled))
+
+	// The HTTP/2 health check closed a dead connection, which ends the request before the
+	// inactivity timeout would.
+	connLost := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: errors.New("http2: client connection lost")}
+	assert.True(t, IsTransient(ctx, connLost))
+	assert.True(t, IsTransient(ctx, fmt.Errorf("failed to upload: %w", connLost)))
 }
 
 func TestIsTransientRead(t *testing.T) {

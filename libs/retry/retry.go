@@ -38,12 +38,12 @@ func interval(ctx context.Context) time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-// IsTransient returns true for 5xx and 408 errors that the SDK did not already retry, and for
-// the SDK's client-side inactivity timeout.
+// IsTransient returns true for 5xx and 408 errors that the SDK did not already retry, for the
+// SDK's client-side inactivity timeout, and for an HTTP/2 connection closed by its health check.
 // The SDK retries 504s matching its allTransientErrors patterns (e.g. "deadline exceeded");
 // this covers the remaining 504s like TEMPORARILY_UNAVAILABLE.
 func IsTransient(ctx context.Context, err error) bool {
-	if isInactivityTimeout(err) {
+	if isInactivityTimeout(err) || isConnectionLost(err) {
 		return true
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
@@ -73,15 +73,22 @@ func isInactivityTimeout(err error) bool {
 	return strings.HasPrefix(msg, "request timed out after ") && strings.HasSuffix(msg, " of inactivity")
 }
 
+// isConnectionLost reports whether the HTTP/2 health check closed the connection because a ping went
+// unanswered (see bundle/config/transport.go). It replaces the inactivity timeout for a request on
+// a dead connection, with the same uncertainty about whether the server applied it, and the retry
+// goes out on a new connection.
+func isConnectionLost(err error) bool {
+	urlErr, ok := errors.AsType[*url.Error](err)
+	return ok && urlErr.Err.Error() == "http2: client connection lost"
+}
+
 // transientReadMessages are the transport errors, matched by message, that are worth retrying on
 // an idempotent call:
 //   - REFUSED_STREAM, the HTTP/2 refusal in issue #6472, where the server refused the stream before
 //     processing the request.
 //   - unexpected EOF, where the connection was cut mid-response. Observed on GET /clusters/get and
 //     POST /workspace-files/import-file.
-//   - http2: client connection lost, where the HTTP/2 health check found the connection dead and
-//     closed it (see bundle/config/transport.go). The retry goes out on a new connection.
-var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF", "http2: client connection lost"}
+var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF"}
 
 // IsTransientRead returns true for errors worth retrying on an idempotent call (a read or an
 // overwriting write): the transient server errors IsTransient covers, plus the transport errors
