@@ -234,20 +234,25 @@ func lookupDeployedField(b *bundle.Bundle, resourceKey, field string) (any, erro
 	return structaccess.Get(remote, path)
 }
 
-// withoutCurrentUserDefaults drops the current user's grants that are there without being
-// declared: IS_OWNER or CAN_MANAGE, one of which FixPermissions adds on deploy, and the CAN_USE
-// that the backend grants the creator of a cluster policy, which supports no other level. Another
-// principal's IS_OWNER is kept, so a transferred owner stays the owner after the next deploy.
+// withoutCurrentUserDefaults drops the current user's IS_OWNER and CAN_MANAGE, one of which
+// FixPermissions adds on deploy. Another principal's IS_OWNER is kept, so a transferred owner
+// stays the owner after the next deploy.
+//
+// A cluster policy supports only CAN_USE, which the backend grants its creator and FixPermissions
+// does not add. The current user's CAN_USE is dropped only when it is the whole ACL: once other
+// principals are imported, it is kept so that the next deploy does not revoke it.
 func withoutCurrentUserDefaults(permissions []dresources.StatePermission, currentUser, resourceType string) []dresources.StatePermission {
+	isCurrentUser := func(p dresources.StatePermission) bool {
+		return currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
+	}
+	if resourceType == "cluster_policies" {
+		if len(permissions) == 1 && isCurrentUser(permissions[0]) && permissions[0].Level == iam.PermissionLevelCanUse {
+			return nil
+		}
+		return permissions
+	}
 	return slices.DeleteFunc(permissions, func(p dresources.StatePermission) bool {
-		isCurrentUser := currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
-		if !isCurrentUser {
-			return false
-		}
-		if resourceType == "cluster_policies" {
-			return p.Level == iam.PermissionLevelCanUse
-		}
-		return p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage
+		return isCurrentUser(p) && (p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage)
 	})
 }
 

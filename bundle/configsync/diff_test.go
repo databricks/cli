@@ -388,16 +388,22 @@ func TestWithoutCurrentUserDefaults(t *testing.T) {
 }
 
 func TestWithoutCurrentUserDefaultsClusterPolicy(t *testing.T) {
-	permissions := []dresources.StatePermission{
+	creatorOnly := []dresources.StatePermission{
 		{Level: iam.PermissionLevelCanUse, ServicePrincipalName: "me@example.com"},
-		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
+	}
+	assert.Empty(t, withoutCurrentUserDefaults(creatorOnly, "me@example.com", "cluster_policies"))
+
+	// With other grants, the current user's CAN_USE is kept, or the next deploy would revoke it.
+	withOthers := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, ServicePrincipalName: "me@example.com"},
 		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
 	}
+	assert.Equal(t, withOthers, withoutCurrentUserDefaults(slices.Clone(withOthers), "me@example.com", "cluster_policies"))
 
-	assert.Equal(t, []dresources.StatePermission{
+	otherCreator := []dresources.StatePermission{
 		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
-		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
-	}, withoutCurrentUserDefaults(permissions, "me@example.com", "cluster_policies"))
+	}
+	assert.Equal(t, otherCreator, withoutCurrentUserDefaults(slices.Clone(otherCreator), "me@example.com", "cluster_policies"))
 }
 
 func TestPermissionsReadSkip(t *testing.T) {
