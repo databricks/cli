@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -518,13 +519,9 @@ func defaultPromptAgentSelection(_ context.Context, scope string, choices []agen
 	}
 
 	var selected []string
-	err := huh.NewMultiSelect[string]().
-		Title(agentPickerTitle(scope)).
-		Description("space to toggle, enter to install").
-		Options(options...).
-		Value(&selected).
-		Run()
-	if err != nil {
+	field := agentPickerField(scope, options, &selected)
+	form := huh.NewForm(huh.NewGroup(field)).WithShowHelp(false)
+	if err := runPicker(form, field.GetFiltering); err != nil {
 		return nil, promptError(err)
 	}
 	if len(selected) == 0 {
@@ -536,6 +533,66 @@ func defaultPromptAgentSelection(_ context.Context, scope string, choices []agen
 		result = append(result, byName[name])
 	}
 	return result, nil
+}
+
+// agentPickerHelp is the help line of the agent picker. Enter installs the
+// selected agents: install runs the plan straight after the picker.
+const agentPickerHelp = "space to toggle, enter to install, esc to cancel"
+
+func agentPickerField(scope string, options []huh.Option[string], selected *[]string) *huh.MultiSelect[string] {
+	return huh.NewMultiSelect[string]().
+		Title(agentPickerTitle(scope)).
+		Description(agentPickerHelp).
+		Options(options...).
+		Value(selected)
+}
+
+// pickerModel runs a form as huh's Run does, except that Esc cancels it too.
+type pickerModel struct {
+	form *huh.Form
+	// searching reports whether a multi-select in the form is searching. Esc
+	// then belongs to the form, which leaves the search.
+	searching func() bool
+	cancelled bool
+}
+
+func (p *pickerModel) Init() tea.Cmd { return p.form.Init() }
+
+func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok && key.Type == tea.KeyEsc && !p.searching() {
+		p.cancelled = true
+		return p, tea.Quit
+	}
+	next, cmd := p.form.Update(msg)
+	p.form = next.(*huh.Form)
+	return p, cmd
+}
+
+func (p *pickerModel) View() string { return p.form.View() }
+
+// newPicker returns the program of form. Run sets the commands that submit and
+// cancel a form, and newPicker sets them too, since it runs the form without Run.
+func newPicker(form *huh.Form, searching func() bool) *pickerModel {
+	form.SubmitCmd = tea.Quit
+	form.CancelCmd = tea.Interrupt
+	return &pickerModel{form: form, searching: searching}
+}
+
+// runPicker runs form and returns huh.ErrUserAborted when the user cancels it,
+// with Esc or Ctrl+C.
+func runPicker(form *huh.Form, searching func() bool) error {
+	p := newPicker(form, searching)
+	_, err := tea.NewProgram(p).Run()
+	return pickerError(p.cancelled, err)
+}
+
+// pickerError is the result of a picker's program: a cancel, by Esc or Ctrl+C,
+// is huh.ErrUserAborted, as huh's Run returns it.
+func pickerError(cancelled bool, err error) error {
+	if cancelled || errors.Is(err, tea.ErrInterrupted) {
+		return huh.ErrUserAborted
+	}
+	return err
 }
 
 // buildPlan resolves the per-agent delivery and scope. Plugin-first: an agent
