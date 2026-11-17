@@ -93,7 +93,10 @@ const queryExamples = `
     # The same rows in split format
     databricks serving-endpoints query my-endpoint --json '{"dataframe_split": {"columns": ["x", "y"], "data": [[1.0, 2.0]]}}'
 
-    # Tensor input
+    # The same rows as "inputs", keyed by column name
+    databricks serving-endpoints query my-endpoint --json '{"inputs": {"x": [1.0], "y": [2.0]}}'
+
+    # A model with a tensor signature (no column names)
     databricks serving-endpoints query my-endpoint --json '{"inputs": [[1.0, 2.0]]}'
 
     # A chat model
