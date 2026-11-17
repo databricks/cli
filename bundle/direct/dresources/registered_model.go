@@ -145,21 +145,27 @@ func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string,
 		return "", nil, err
 	}
 
-	// The catalog and schema come from config: a renamed parent moves the model with it, leaving id
-	// stale (see followsParentRename).
-	parent := config.CatalogName + "." + config.SchemaName + "."
-	newID := parent + config.Name
+	// The catalog and schema come from config: a renamed parent moves the model with it (see
+	// followsParentRename).
+	current := config.CatalogName + "." + config.SchemaName + "." + nameFromID
+
+	// Aliases go first, under the current name: if they fail, the model is not renamed yet, so the
+	// state still points at it.
+	err = r.syncChangedAliases(ctx, current, config, entry)
+	if err != nil {
+		return "", nil, err
+	}
 
 	newName := ""
 	if config.Name != nameFromID {
 		newName = config.Name
 	}
 
-	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(parent+nameFromID, newName, config))
+	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(current, newName, config))
 	if err != nil {
 		return "", nil, err
 	}
-	return newID, response, r.syncChangedAliases(ctx, newID, config, entry)
+	return config.CatalogName + "." + config.SchemaName + "." + config.Name, response, nil
 }
 
 // syncChangedAliases applies the configured aliases when the plan changes them.
