@@ -328,9 +328,12 @@ func parseDescribeResult(result *sqlexec.Result) (columns, types []string) {
 		}
 		colName := row[0]
 		colType := row[1]
-		// skip partition/metadata rows (they start with #)
-		if strings.HasPrefix(colName, "#") || colName == "" {
-			continue
+		// The column list ends at the first row without a type: the blank separator
+		// or a "# Partition Information" style header. The sections that follow
+		// repeat columns already listed above. The name can't be the signal because
+		// Delta allows column names starting with "#".
+		if colType == "" {
+			break
 		}
 		columns = append(columns, colName)
 		types = append(types, colType)

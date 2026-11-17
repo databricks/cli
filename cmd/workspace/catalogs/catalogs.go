@@ -3,6 +3,7 @@
 package catalogs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "catalogs",
-		Short: `A catalog is the first layer of Unity Catalog’s three-level namespace.`,
-		Long: `A catalog is the first layer of Unity Catalog’s three-level namespace.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "catalogs",
+	Short:   `A catalog is the first layer of Unity Catalog’s three-level namespace.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A catalog is the first layer of Unity Catalog’s three-level namespace.
   It’s used to organize your data assets. Users can see all catalogs on which
   they have been assigned the USE_CATALOG data permission.
 
   In Unity Catalog, admins and data stewards manage users and their access to
   data centrally across all of the workspaces in a Databricks account. Users in
   different workspaces can share access to the same data, depending on
-  privileges granted centrally in Unity Catalog.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  privileges granted centrally in Unity Catalog.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -71,14 +74,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `The name of the connection to an external data source.`)
-	cmd.Flags().Int64Var(&createReq.CustomMaxRetentionHours, "custom-max-retention-hours", createReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the catalog.`)
+	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `Naming a connection to an external data source creates a foreign catalog that mirrors a database in that source, which requires ownership of or the CREATE FOREIGN CATALOG privilege on the connection.`)
+	cmd.Flags().Int64Var(&createReq.CustomMaxRetentionHours, "custom-max-retention-hours", createReq.CustomMaxRetentionHours, `Dropped objects in the catalog remain recoverable for this number of hours before they are permanently purged.`)
 	// TODO: complex arg: managed_encryption_settings
 	// TODO: map via StringToStringVar: options
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
-	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within catalog.`)
+	cmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The Delta Sharing provider that owns the share must be named here, together with share_name, to create a Delta Sharing catalog that exposes the data of the share on a remote sharing server.`)
+	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The share under the Delta Sharing provider must be named here, together with provider_name, to create a Delta Sharing catalog.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Managed tables and volumes in the catalog are stored under this storage root URL.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a catalog.`
@@ -88,7 +91,9 @@ func newCreate() *cobra.Command {
   metastore admin or has the **CREATE_CATALOG** privilege.
 
   Arguments:
-    NAME: Name of catalog.`
+    NAME: The name of the catalog is stored in lowercase, can be at most 255
+      characters long, and cannot contain periods, spaces, forward slashes, or
+      control characters.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -222,7 +227,7 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetCatalogRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to return the catalog when the principal can only access selective metadata for it through the BROWSE privilege.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a catalog.`
@@ -289,7 +294,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs for which the principal can only access selective metadata through the BROWSE privilege.`)
 	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include catalogs not bound to the workspace.`)
 
 	// Limit flag for total result capping.
@@ -374,9 +379,9 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().Int64Var(&updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", updateReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the catalog.`)
-	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]`)
+	cmd.Flags().Int64Var(&updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", updateReq.CustomMaxRetentionHours, `Dropped objects in the catalog remain recoverable for this number of hours before they are permanently purged.`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization is enabled for this catalog and the objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the catalog is accessible from all workspaces attached to the metastore (OPEN) or only from the workspaces bound to it (ISOLATED). Supported values: [ISOLATED, OPEN]`)
 	// TODO: complex arg: managed_encryption_settings
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the catalog.`)
 	// TODO: map via StringToStringVar: options

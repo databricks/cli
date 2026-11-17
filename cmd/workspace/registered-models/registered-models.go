@@ -3,6 +3,7 @@
 package registered_models
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "registered-models",
-		Short: `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
-		Long: `Databricks provides a hosted version of MLflow Model Registry in Unity
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "registered-models",
+	Short:   `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Databricks provides a hosted version of MLflow Model Registry in Unity
   Catalog. Models in Unity Catalog provide centralized access control, auditing,
   lineage, and discovery of ML models across Databricks workspaces.
 
@@ -50,14 +56,13 @@ func New() *cobra.Command {
 
   Note: The securable type for models is FUNCTION. When using REST APIs (for
   example, tagging, grants) that specify a securable type, use FUNCTION as the
-  securable type.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  securable type.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -72,8 +77,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

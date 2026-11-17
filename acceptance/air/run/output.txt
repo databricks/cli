@@ -55,6 +55,22 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
+=== include_paths entry that selects no files is rejected
+
+>>> [CLI] air run -f include-unmatched.yaml --dry-run
+Error: code_source include_paths select no files under [TEST_TMP_DIR]: data. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v <file>` shows the rule for a file); empty directories, nested git repositories and submodules add no files
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== include_paths pathspec that selects files outside root_path is rejected
+
+>>> [CLI] air run -f include-outside-root.yaml --dry-run
+Error: code_source include_paths select "../valid.yaml", which is outside root_path [TEST_TMP_DIR]/src
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
 === git-ignored root_path is rejected instead of selecting no files
 
 >>> [CLI] air run -f ignored-root.yaml --dry-run
@@ -64,6 +80,12 @@ Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
 
 Exit code: 1
+
+=== a non-git root_path selects the same files when run from its subdirectory
+
+>>> [CLI] air run -f workload.yaml --dry-run
+Dry run: code_source snapshot would include 2 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
 
 === git.remote is rejected
 
@@ -79,6 +101,16 @@ Exit code: 1
 
 >>> [CLI] air run -f invalid.yaml --dry-run
 Error: invalid experiment_name "bad.name": only alphanumeric characters, hyphens (-), and underscores (_) are allowed
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+Exit code: 1
+
+=== unknown field suggests the near match
+
+>>> [CLI] air run -f unknown-field.yaml --dry-run
+Error: invalid config unknown-field.yaml: line 6: unknown field "enviroment"; did you mean "environment"? Run "databricks air run -h config" for the list of fields
 
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …

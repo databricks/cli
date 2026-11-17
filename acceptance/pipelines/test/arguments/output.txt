@@ -31,14 +31,14 @@ Pipeline Test Flags:
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
 
 Flags:
-  -h, --help   help for test
+  -h, --help[=true|false]   help for test
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in project config. Example: --var="foo=bar"
 
 === The command is experimental and off by default
 

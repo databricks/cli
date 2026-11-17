@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.199.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.200.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.3.0 // Apache-2.0
@@ -30,7 +30,7 @@ require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD-3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
-	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
+	github.com/spf13/pflag v1.1.0 // BSD-3-Clause
 	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
@@ -39,7 +39,7 @@ require (
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
 	golang.org/x/net v0.62.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
-	golang.org/x/sync v0.24.0 // BSD-3-Clause
+	golang.org/x/sync v0.25.0 // BSD-3-Clause
 	golang.org/x/sys v0.49.0 // BSD-3-Clause
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause

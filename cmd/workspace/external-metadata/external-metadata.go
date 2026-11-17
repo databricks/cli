@@ -3,6 +3,7 @@
 package external_metadata
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "external-metadata",
-		Short: `*Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "external-metadata",
+	Short:   `*Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 External Metadata objects enable customers to register and manage metadata
   about external systems within Unity Catalog.
@@ -30,14 +36,13 @@ External Metadata objects enable customers to register and manage metadata
   These APIs provide a standardized way to create, update, retrieve, list, and
   delete external metadata objects. Fine-grained authorization ensures that only
   users with appropriate permissions can view and manage external metadata
-  objects.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  objects.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateExternalMetadata())
@@ -50,8 +55,6 @@ External Metadata objects enable customers to register and manage metadata
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-external-metadata command

@@ -1,0 +1,8 @@
+
+>>> [CLI] labs install foo --offline
+
+>>> find home/.databricks/labs/foo -type f
+home/.databricks/labs/foo/cache/databrickslabs-foo-releases.json
+home/.databricks/labs/foo/config/login.json
+home/.databricks/labs/foo/lib/labs.yml
+home/.databricks/labs/foo/state/version.json

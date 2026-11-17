@@ -49,14 +49,17 @@ func renderUpdateCheck(ctx context.Context, result *versioncheck.Result, output 
 	return nil
 }
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Args:  root.NoArgs,
-		Short: "Retrieve information about the current version of this CLI",
-		Annotations: map[string]string{
-			"template": "Databricks CLI v{{.Version}}\n",
-		},
+// Spec declares the version command.
+var Spec = root.CommandSpec{
+	Use:   "version",
+	Short: "Retrieve information about the current version of this CLI",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Args = root.NoArgs
+	cmd.Annotations = map[string]string{
+		"template": "Databricks CLI v{{.Version}}\n",
 	}
 
 	var check bool
@@ -69,6 +72,4 @@ func New() *cobra.Command {
 		}
 		return cmdio.Render(ctx, build.GetInfo())
 	}
-
-	return cmd
 }
