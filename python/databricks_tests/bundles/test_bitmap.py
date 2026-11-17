@@ -9,7 +9,9 @@ from databricks.bundles._bitmap import (
     SCHEMA,
     decode,
     decode_bits,
+    decode_json,
     text,
+    to_json,
 )
 
 
@@ -114,11 +116,88 @@ def test_decode():
     ]
 
 
-def test_decode_rejects_unknown_context():
+@pytest.mark.parametrize("decoder", [decode, decode_json])
+def test_decode_rejects_unknown_context(decoder):
     with pytest.raises(ValueError, match="unsupported bitmap context 1"):
-        decode(_encode(_payload([], context=1)))
+        decoder(_encode(_payload([], context=1)))
 
 
-def test_decode_rejects_newer_bitmap():
+@pytest.mark.parametrize("decoder", [decode, decode_json])
+def test_decode_rejects_newer_bitmap(decoder):
     with pytest.raises(ValueError, match="decode it with a newer databricks-bundles"):
-        decode(_encode(_payload([False] * (len(SCHEMA) + 1))))
+        decoder(_encode(_payload([False] * (len(SCHEMA) + 1))))
+
+
+SCHEMA_FOR_JSON = [
+    "bundle",
+    "bundle.name",
+    "jobs",
+    "jobs.*",
+    "jobs.*.tasks",
+    "jobs.*.tasks[*]",
+    "jobs.*.tasks[*].enabled",
+    "jobs.*.tasks[*].enabled=true",
+    "jobs.*.tasks[*].enabled=false",
+    "later",
+]
+TASKS = ["jobs", "jobs.*", "jobs.*.tasks"]
+ENABLED = [*TASKS, "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled"]
+ENABLED_TREE = {"jobs": {"*": {"tasks": {"[*]": {"enabled": True}}}}}
+
+
+@pytest.mark.parametrize(
+    ("set_paths", "presence", "true", "false"),
+    [
+        ([], {}, {}, {}),
+        # A parent with set children is a subtree.
+        (["bundle", "bundle.name"], {"bundle": {"name": True}}, {}, {}),
+        # A set field without set children is a leaf.
+        (TASKS, {"jobs": {"*": {"tasks": True}}}, {}, {}),
+        ([*ENABLED, "jobs.*.tasks[*].enabled=false"], ENABLED_TREE, {}, ENABLED_TREE),
+        # Both values under a wildcard.
+        (
+            [*ENABLED, "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false"],
+            ENABLED_TREE,
+            ENABLED_TREE,
+            ENABLED_TREE,
+        ),
+    ],
+)
+def test_to_json(set_paths: list[str], presence: dict, true: dict, false: dict):
+    bits = [path in set_paths for path in SCHEMA_FOR_JSON]
+    assert to_json(SCHEMA_FOR_JSON, bits, CONTEXT_FULL_BUNDLE) == {
+        "size": len(SCHEMA_FOR_JSON),
+        "context": 0,
+        "presence": presence,
+        "true": true,
+        "false": false,
+    }
+
+
+def test_to_json_older_bitmap():
+    assert to_json(SCHEMA_FOR_JSON, [True], 7) == {
+        "size": 1,
+        "context": 7,
+        "presence": {"bundle": True},
+        "true": {},
+        "false": {},
+    }
+
+
+def test_to_json_key_order():
+    # Same order as the CLI, which sorts map keys, so the printed JSON matches.
+    out = to_json(["b", "a", "a.z", "a.y"], [True] * 4, CONTEXT_FULL_BUNDLE)
+    assert list(out) == ["size", "context", "presence", "true", "false"]
+    assert list(out["presence"]) == ["a", "b"]
+    assert list(out["presence"]["a"]) == ["y", "z"]
+
+
+def test_decode_json():
+    bits = [path in ("bundle", "bundle.name") for path in SCHEMA]
+    assert decode_json(_encode(_payload(bits))) == {
+        "size": len(SCHEMA),
+        "context": 0,
+        "presence": {"bundle": {"name": True}},
+        "true": {},
+        "false": {},
+    }
