@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Every spec field must reach the command, and changing it while building
-// must panic. This fails if a field is added to Spec but not handled.
+// Every command-valued spec field must reach the command, and changing it while
+// building must panic. This fails if such a field is added but not handled.
 func TestSpecFields(t *testing.T) {
 	specType := reflect.TypeFor[root.CommandSpec]()
 	for i := range specType.NumField() {
 		field := specType.Field(i)
-		if field.Name == "Build" {
+		if field.Name == "Build" || field.Name == "NeedsFullTree" {
 			continue
 		}
 		t.Run(field.Name, func(t *testing.T) {

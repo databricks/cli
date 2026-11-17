@@ -114,13 +114,9 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
 	}
 
-	protoLogs := make([]string, len(l.logs))
-	for i, log := range l.logs {
-		b, err := json.Marshal(log)
-		if err != nil {
-			return fmt.Errorf("failed to marshal log: %w", err)
-		}
-		protoLogs[i] = string(b)
+	protoLogs, err := marshalLogs(l.logs)
+	if err != nil {
+		return err
 	}
 
 	if !cmdctx.HasConfigUsed(ctx) {
@@ -290,12 +286,27 @@ func within[T any](ctx context.Context, running *atomic.Int32, f func() (T, erro
 // newAPIClient is client.New with authenticate as the auth visitor. The SDK
 // runs the auth visitor on every request, including its own retries.
 func newAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
+	return newAPIClientWithRetries(cfg, running, true)
+}
+
+func newSingleAttemptAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
+	return newAPIClientWithRetries(cfg, running, false)
+}
+
+func newAPIClientWithRetries(cfg *config.Config, running *atomic.Int32, allowRetries bool) (*client.DatabricksClient, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	clientCfg.AuthVisitor = func(r *http.Request) error {
 		return authenticate(r, cfg, running)
+	}
+	if !allowRetries {
+		// The SDK retries some connection errors regardless of ErrorRetriable,
+		// so a minimal retry window is needed to stop after the first attempt.
+		clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
+		clientCfg.TransientErrors = nil
+		clientCfg.RetryTimeout = time.Nanosecond
 	}
 	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
 }
@@ -313,6 +324,45 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 	}
 	r.Header = authReq.Header
 	return nil
+}
+
+// Send uploads logs in a single request and returns an error unless all of them
+// were accepted. It is for events the user explicitly asked to send, so unlike
+// Upload it ignores DATABRICKS_CLI_DISABLE_TELEMETRY and never retries.
+func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) error {
+	protoLogs, err := marshalLogs(logs)
+	if err != nil {
+		return err
+	}
+
+	var running atomic.Int32
+	apiClient, err := within(ctx, &running, func() (*client.DatabricksClient, error) {
+		return newSingleAttemptAPIClient(cfg, &running)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	resp, err := attempt(ctx, apiClient, protoLogs)
+	if err != nil {
+		return err
+	}
+	if resp.NumProtoSuccess < int64(len(protoLogs)) {
+		return fmt.Errorf("only %d of %d logs were accepted", resp.NumProtoSuccess, len(protoLogs))
+	}
+	return nil
+}
+
+func marshalLogs(logs []protos.FrontendLog) ([]string, error) {
+	protoLogs := make([]string, len(logs))
+	for i, log := range logs {
+		b, err := json.Marshal(log)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal log: %w", err)
+		}
+		protoLogs[i] = string(b)
+	}
+	return protoLogs, nil
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {

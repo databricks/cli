@@ -18,6 +18,12 @@ machine, for agents without a session id), so when the command that printed it r
 (e.g. `databricks bundle schema`), no install hint event is logged for that hour even though the
 agent saw the hint.
 
+`databricks feedback` sends one `fast_feedback_log` entry, the event the in-product feedback widget
+records, instead of a `databricks_cli_log`. The user asked for it to be sent, so it is uploaded
+immediately in a single attempt even when `DATABRICKS_CLI_DISABLE_TELEMETRY` is set. When an AI
+agent is detected, the user must first confirm the message. Agent and run context ride in the
+entry's `user_agent`.
+
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED
 with the outcome and error category. The CLI sets no calling-agent field on it: the upload's

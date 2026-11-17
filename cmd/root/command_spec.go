@@ -26,6 +26,10 @@ type CommandSpec struct {
 	Hidden     bool
 	Deprecated string
 
+	// NeedsFullTree builds every top-level command before running this command,
+	// for commands that resolve other command paths while they run.
+	NeedsFullTree bool
+
 	Build func(ctx context.Context, cmd *cobra.Command)
 }
 

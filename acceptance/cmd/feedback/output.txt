@@ -1,0 +1,174 @@
+
+=== Feedback about a product command is routed to its team
+
+>>> [CLI] feedback --command air run --run-id 123 --can-be-contacted   logs omitted the failure reason  
+Thank you! Your feedback was sent. Reference: [UUID][0]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][0]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][1]",
+      "parent_ui": "ModelTraining.AIRuntime",
+      "origin": "air_run",
+      "can_be_contacted": true,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback run-id/123",
+      "text": "logs omitted the failure reason"
+    }
+  }
+}
+
+=== A command group, with a JSON receipt
+
+>>> [CLI] feedback --command bundle deploy should print which resources changed -o json
+{
+  "received": true,
+  "feedback_id": "[UUID][2]"
+}
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][2]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][3]",
+      "parent_ui": "DeveloperEcosystem.CoreDabs",
+      "origin": "bundle",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "deploy should print which resources changed"
+    }
+  }
+}
+
+=== Feedback can name a nested command
+
+>>> [CLI] feedback --command bundle  deploy deploy is slow
+Thank you! Your feedback was sent. Reference: [UUID][4]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][4]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][5]",
+      "parent_ui": "DeveloperEcosystem.CoreDabs",
+      "origin": "bundle_deploy",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "deploy is slow"
+    }
+  }
+}
+
+=== Validation errors send nothing
+
+>>> [CLI] feedback    
+Error: feedback message must contain 1 to 10000 characters
+
+>>> [CLI] feedback
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks feedback MESSAGE [flags]
+
+Examples:
+  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
+  databricks feedback --command "air run" --run-id 123 "logs omitted the failure reason"
+
+Flags:
+      --can-be-contacted[=true|false]   Allow Databricks to contact you about this feedback
+      --command string                  CLI command the feedback is about, for example "bundle deploy"
+  -h, --help[=true|false]               help for feedback
+      --run-id string                   ID of the job run the feedback is about
+  -y, --yes[=true|false]                Confirm sending feedback written by an AI agent
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+
+>>> [CLI] feedback --command no-such-command hello
+Error: unknown command "no-such-command"
+
+>>> [CLI] feedback --command bundle no-such-command hello
+Error: unknown command "bundle no-such-command"
+
+>>> [CLI] feedback --run-id abc hello
+Error: --run-id must be a positive job run ID
+
+=== General CLI feedback
+
+>>> [CLI] feedback the CLI should support ...
+Thank you! Your feedback was sent. Reference: [UUID][6]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][6]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][7]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "the CLI should support ..."
+    }
+  }
+}
+
+=== An AI agent needs the user's confirmation
+
+>>> AGENT=test-agent [CLI] feedback hello
+Error: feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message
+
+Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it
+
+=== An AI agent with --yes
+
+>>> AGENT=test-agent [CLI] feedback --yes hello
+Thank you! Your feedback was sent. Reference: [UUID][8]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][8]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][9]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback agent/test-agent",
+      "text": "hello"
+    }
+  }
+}
+
+=== A broken bundle does not block feedback
+
+>>> withdir broken-bundle [CLI] feedback bundle config does not block feedback
+Thank you! Your feedback was sent. Reference: [UUID][10]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][10]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][11]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "cli",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "bundle config does not block feedback"
+    }
+  }
+}
