@@ -1,11 +1,15 @@
 # Isolate HOME so the real machine's plugins and skills are not seen.
 sethome home
 export CLAUDECODE=1
+# As inside Claude Code: enables the native <claude-code-hint> line (not in CI).
+export CLAUDE_CODE_CHILD_SESSION=1
+# CI and the CI/CD provider markers the SDK detects (GitHub Actions sets both).
+unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID
 unset CLAUDE_CODE_SESSION_ID
 # A host CLAUDE_CONFIG_DIR would move the plugin file away from the isolated HOME.
 unset CLAUDE_CONFIG_DIR
 
-title "hint printed on an authenticated command: one hint-shown event is uploaded"
+title "hint printed on an authenticated command: one hint-shown event per printed line is uploaded"
 trace $CLI jobs list
 trace print_telemetry
 

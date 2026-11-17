@@ -730,6 +730,18 @@ func cutLast(s, sep string) (before, after string, found bool) {
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
 // siblings and, when one is close enough, a suggestion.
 func unknownConfigFieldError(parent configField, part string, matched []string) error {
+	names := visibleConfigChildNames(parent)
+
+	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
+	if suggestion, ok := closestConfigField(part, names); ok {
+		msg += fmt.Sprintf("; did you mean %q?", suggestion)
+	}
+	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
+}
+
+// visibleConfigChildNames returns the sorted YAML names of a field's documented
+// children.
+func visibleConfigChildNames(parent configField) []string {
 	names := make([]string, 0, len(parent.children))
 	for _, c := range parent.children {
 		if c.hidden {
@@ -738,12 +750,7 @@ func unknownConfigFieldError(parent configField, part string, matched []string) 
 		names = append(names, configLeafName(c.path))
 	}
 	slices.Sort(names)
-
-	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
-	if suggestion, ok := closestConfigField(part, names); ok {
-		msg += fmt.Sprintf("; did you mean %q?", suggestion)
-	}
-	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
+	return names
 }
 
 // closestConfigField returns the nearest candidate by edit distance, if one is
@@ -918,15 +925,33 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	}
 	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
 	if f.path == configHelpRoot {
+		fmt.Fprint(w, runtimeEnvHelp)
 		fmt.Fprint(w, agentSkillHelp)
 	}
 }
+
+// skillInstallCommand installs the databricks-ai-runtime agent skill. Help
+// pages that point coding agents at the skill share it.
+const skillInstallCommand = "databricks aitools install --skills-only --skills databricks-ai-runtime"
+
+// runtimeEnvHelp follows the fields in `-h config`: training code needs these
+// variables (MLFLOW_RUN_ID especially, since the runtime has already created the
+// MLflow run), and the YAML schema is where people and agents look for them.
+const runtimeEnvHelp = `
+Set on every node (use in command and training code):
+  CODE_SOURCE_PATH              Extracted code_source directory
+  MLFLOW_RUN_ID                 MLflow run created for this attempt; log metrics and artifacts to it
+  NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
+  WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
+  MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
+  HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set
+`
 
 // agentSkillHelp closes `-h config`: users look up the schema while writing
 // YAML, which is when an agent skill that writes it for them is most useful.
 const agentSkillHelp = `
 Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
-  databricks aitools install --skills-only --skills databricks-ai-runtime
+  ` + skillInstallCommand + `
   (add --scope project to install into the current project)
   https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
 `

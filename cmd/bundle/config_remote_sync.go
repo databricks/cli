@@ -61,11 +61,6 @@ Examples:
 			return errors.New("config-remote-sync command is not supported on Windows")
 		}
 
-		runAs, err := configsync.ParseRunAsSelection(syncRunAsIDs)
-		if err != nil {
-			return err
-		}
-
 		stats := configsync.Stats{Save: save}
 
 		// Emit telemetry on every exit path, including failures inside
@@ -100,6 +95,13 @@ Examples:
 				// ProcessBundleRet has already opened the direct state for reading.
 				deployBundle := &b.DeploymentBundle
 
+				// Validated here, like --select-ids, so an invalid value is reported
+				// through WriteResult and telemetry.
+				runAs, err := configsync.ParseRunAsSelection(syncRunAsIDs)
+				if err != nil {
+					return err
+				}
+
 				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
@@ -107,7 +109,7 @@ Examples:
 				}
 
 				deployed := configsync.IndexDeployedResources(&deployBundle.StateDB)
-				detected, err := configsync.ExtractChanges(ctx, b, plan, runAs.ResourceKeys(ctx, deployed))
+				detected, permissionsSkipped, err := configsync.ExtractChanges(ctx, b, plan, runAs.ResourceKeys(ctx, deployed))
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -140,6 +142,9 @@ Examples:
 						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
 					detected = configsync.FilterChanges(detected, selected)
+					permissionsSkipped = slices.DeleteFunc(permissionsSkipped, func(skip configsync.SkippedChange) bool {
+						return !slices.Contains(selected, skip.ResourceKey)
+					})
 				}
 
 				detected, policySkipped, err := configsync.FilterClusterPolicyValues(ctx, b, plan, detected)
@@ -181,7 +186,7 @@ Examples:
 
 				files = applied
 				changes = detected
-				skippedChanges = policySkipped
+				skippedChanges = append(policySkipped, permissionsSkipped...)
 				return nil
 			},
 		})

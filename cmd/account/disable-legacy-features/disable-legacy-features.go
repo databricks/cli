@@ -3,6 +3,7 @@
 package disable_legacy_features
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "disable-legacy-features",
-		Short: `Disable legacy features for new Databricks workspaces.`,
-		Long: `Disable legacy features for new Databricks workspaces.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "disable-legacy-features",
+	Short: `Disable legacy features for new Databricks workspaces.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Disable legacy features for new Databricks workspaces.
 
   For newly created workspaces: 1. Disables the use of DBFS root and mounts. 2.
   Hive Metastore will not be provisioned. 3. Disables the use of ‘No-isolation
-  clusters’. 4. Disables Databricks Runtime versions prior to 13.3LTS.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  clusters’. 4. Disables Databricks Runtime versions prior to 13.3LTS.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -42,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

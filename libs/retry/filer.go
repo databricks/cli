@@ -64,7 +64,8 @@ func (r *retryingFiler) Write(ctx context.Context, path string, reader io.Reader
 		rewind = func() (io.Reader, error) { return bytes.NewReader(body), nil }
 	}
 
-	_, err := With(ctx, IsTransient, func() (struct{}, error) {
+	// An overwrite is idempotent, so it can also retry the transport errors that IsTransientRead covers.
+	_, err := With(ctx, IsTransientRead, func() (struct{}, error) {
 		attempt, err := rewind()
 		if err != nil {
 			return struct{}{}, err

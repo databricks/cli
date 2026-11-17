@@ -19,3 +19,6 @@ errcode $CLI bundle config-remote-sync --select-ids "jobs:no-such-id-999" -o jso
 
 title "A malformed selector is reported as failed, exit 0"
 errcode $CLI bundle config-remote-sync --select-ids "no-such-id-999" -o json
+
+title "A malformed --sync-run-as-ids value is reported as failed, exit 0"
+errcode $CLI bundle config-remote-sync --sync-run-as-ids "pipelines:123" -o json

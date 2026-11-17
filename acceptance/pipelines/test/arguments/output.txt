@@ -23,22 +23,28 @@ example:
 
   databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
 
+The command waits for the results. It exits with code 0 only if at least one
+test was collected and none failed or errored, so a run whose tests were all
+skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
+update starts. To stop the update, run 'pipelines stop'.
+
 Usage:
   databricks pipelines test [flags] [KEY] [TEST_SELECTION...]
 
 Pipeline Test Flags:
+      --no-wait[=true|false]     Don't wait for the tests to complete.
       --pipeline-id string       ID of the pipeline to test, instead of a KEY.
       --pytest-arg stringArray   Argument to pass to pytest (repeatable). Only -k and -m are supported.
 
 Flags:
-  -h, --help   help for test
+  -h, --help[=true|false]   help for test
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in project config. Example: --var="foo=bar"
 
 === The command is experimental and off by default
 

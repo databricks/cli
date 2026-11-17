@@ -58,7 +58,7 @@ Pipeline Flags:
       --pipeline-type string   Type of the pipeline
 
 Flags:
-  -b, --bool   Bool flag
+  -b, --bool[=true|false]   Bool flag
 
 Global Flags:
       --global string   Global flag

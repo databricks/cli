@@ -1082,14 +1082,12 @@ func TestInstallOutputJSONThroughRoot(t *testing.T) {
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cli := root.New(ctx)
-	cli.AddCommand(NewInstallCmd())
+	cli := root.NewTree(ctx)
+	cli.Add(Spec)
 	var out, errOut bytes.Buffer
 	cli.SetOut(&out)
 	cli.SetErr(&errOut)
-	cli.SetArgs([]string{"install", "--agents", "codex", "--scope", "global", "--output", "json"})
-
-	err := root.Execute(ctx, cli)
+	err := cli.Execute(ctx, []string{"aitools", "install", "--agents", "codex", "--scope", "global", "--output", "json"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.NotContains(t, errOut.String(), "Error:")
 

@@ -19,6 +19,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "changes": {}
 }
 
+=== A malformed --sync-run-as-ids value is reported as failed, exit 0
+{
+  "status": "failed",
+  "error": "invalid --sync-run-as-ids value \"pipelines:123\", expected jobs:\u003cid\u003e (e.g. jobs:123456789)",
+  "files": null,
+  "changes": {}
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.test_job

@@ -1,18 +1,15 @@
-package cmd_test
+package cmd
 
 import (
 	"testing"
 
-	"github.com/databricks/cli/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRootCommandNamesAreUnique(t *testing.T) {
-	cli := cmd.New(t.Context())
-
 	seen := map[string]bool{}
-	for _, sub := range cli.Commands() {
-		assert.False(t, seen[sub.Name()], "duplicate top-level command %q", sub.Name())
-		seen[sub.Name()] = true
+	for _, spec := range topLevelSpecs() {
+		assert.False(t, seen[spec.Name()], "duplicate top-level command %q", spec.Name())
+		seen[spec.Name()] = true
 	}
 }

@@ -50,11 +50,17 @@ func (s RunAsSelection) ResourceKeys(ctx context.Context, deployed map[string]st
 	return keys
 }
 
+// isJobRunAsPath reports whether path is a job's run_as or one of its keys.
+// Unlike other backend defaults, these are synced when the config lacks them:
+// the keys always, the whole object only as decided by skipJobRunAs.
+func isJobRunAsPath(path string) bool {
+	return matchPattern(jobRunAsPattern, path) || matchPattern(jobRunAsChildPattern, path)
+}
+
 // keepSkippedRunAsChange reports whether a run_as change the plan skipped as a
 // backend default should still be considered for syncing.
 func keepSkippedRunAsChange(path string, cd *deployplan.ChangeDesc) bool {
-	return cd.Reason == deployplan.ReasonBackendDefault &&
-		(matchPattern(jobRunAsPattern, path) || matchPattern(jobRunAsChildPattern, path))
+	return cd.Reason == deployplan.ReasonBackendDefault && isJobRunAsPath(path)
 }
 
 // skipJobRunAs reports whether a change to the run_as object as a whole must
