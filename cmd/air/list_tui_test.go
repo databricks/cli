@@ -8,10 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func testListModel(t *testing.T) listModel {
 
 func key(t *testing.T, m listModel, s string) listModel {
 	t.Helper()
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)})
+	next, _ := m.Update(teainput.Type(s))
 	return next.(listModel)
 }
 
@@ -92,17 +93,17 @@ func TestListModelPaging(t *testing.T) {
 	m = next.(listModel)
 	require.Equal(t, 4, m.visibleCount())
 
-	page := func(k tea.KeyType) {
-		n, _ := m.Update(tea.KeyMsg{Type: k})
+	page := func(name string) {
+		n, _ := m.Update(teainput.Press(name))
 		m = n.(listModel)
 	}
-	page(tea.KeyRight)
+	page("right")
 	assert.Equal(t, 4, m.cursor)
-	page(tea.KeyEnd)
+	page("end")
 	assert.Equal(t, 9, m.cursor)
-	page(tea.KeyLeft)
+	page("left")
 	assert.Equal(t, 5, m.cursor)
-	page(tea.KeyHome)
+	page("home")
 	assert.Equal(t, 0, m.cursor)
 }
 
@@ -153,7 +154,7 @@ func TestListModelMoreRowsEmptyKeepsPaging(t *testing.T) {
 
 func TestListModelQuit(t *testing.T) {
 	m := testListModel(t)
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	_, cmd := m.Update(teainput.Press("q"))
 	require.NotNil(t, cmd)
 	assert.Equal(t, tea.QuitMsg{}, cmd())
 }
@@ -165,7 +166,7 @@ func TestListModelEnterOpensMLflowLogs(t *testing.T) {
 	f := &runFetcher{ctx: ctx, w: newTestWorkspaceClient(t, "https://x.test")}
 	m := newListModel(r, f, testListRows(), false)
 
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(teainput.Press("enter"))
 	require.NotNil(t, cmd)
 	cmd()
 
@@ -175,7 +176,7 @@ func TestListModelEnterOpensMLflowLogs(t *testing.T) {
 
 func TestListModelView(t *testing.T) {
 	next, _ := testListModel(t).Update(tea.WindowSizeMsg{Width: 200, Height: 24})
-	raw := next.(listModel).View()
+	raw := next.(listModel).render()
 
 	// On lipgloss v2 styles always render full color and the program
 	// downsamples at write time, so check text on the stripped view.
@@ -283,7 +284,7 @@ func TestListModelInfoKeyOpensDetail(t *testing.T) {
 	m := newListModel(r, f, testListRows(), false)
 
 	// `i` opens the detail pane in a loading state and dispatches a fetch (not run here).
-	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+	next, cmd := m.Update(teainput.Press("i"))
 	m = next.(listModel)
 	assert.Equal(t, modeDetail, m.mode)
 	assert.True(t, m.detailLoading)
@@ -299,7 +300,7 @@ func detailLoadingModel(t *testing.T) listModel {
 	m := newListModel(r, f, testListRows(), false)
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = next.(listModel)
-	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+	next, _ = m.Update(teainput.Press("i"))
 	m = next.(listModel)
 	require.Equal(t, modeDetail, m.mode)
 	require.True(t, m.detailLoading)
@@ -314,16 +315,16 @@ func TestListModelDetailPaneAndBack(t *testing.T) {
 	m = next.(listModel)
 	require.Equal(t, modeDetail, m.mode)
 	assert.False(t, m.detailLoading)
-	view := m.View()
+	view := m.render()
 	assert.Contains(t, view, "Run Details")
 	assert.Contains(t, view, "hello from the detail pane")
 	assert.Contains(t, view, "esc back")
 
 	// esc returns to the list.
-	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	next, _ = m.Update(teainput.Press("esc"))
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
-	assert.Contains(t, m.View(), "Run ID")
+	assert.Contains(t, m.render(), "Run ID")
 }
 
 func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
@@ -333,7 +334,7 @@ func TestListModelDetailPaneWrapsLongLines(t *testing.T) {
 
 	next, _ := m.Update(detailMsg{title: "Run Details", body: reason})
 	m = next.(listModel)
-	assert.Contains(t, m.View(), "ENDOFREASON", "the end of a long line must be visible, not clipped at the pane edge")
+	assert.Contains(t, m.render(), "ENDOFREASON", "the end of a long line must be visible, not clipped at the pane edge")
 
 	// A narrower terminal re-wraps the same text.
 	next, _ = m.Update(tea.WindowSizeMsg{Width: 30, Height: 24})
@@ -357,7 +358,7 @@ func TestListModelDetailPaneKeepsBoxRowsAndURLsWhole(t *testing.T) {
 	assert.Equal(t, 2, m.viewport.TotalLineCount(), "box rows and URLs must not wrap")
 
 	// ←/→ pans to the clipped end instead.
-	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	next, _ = m.Update(teainput.Press("right"))
 	m = next.(listModel)
 	assert.Positive(t, m.viewport.HorizontalScrollPercent())
 }
@@ -366,7 +367,7 @@ func TestListModelDetailLateMsgDropped(t *testing.T) {
 	m := detailLoadingModel(t)
 
 	// User escapes back to the list before the fetch resolves.
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	next, _ := m.Update(teainput.Press("esc"))
 	m = next.(listModel)
 	require.Equal(t, modeList, m.mode)
 
@@ -374,7 +375,7 @@ func TestListModelDetailLateMsgDropped(t *testing.T) {
 	next, _ = m.Update(detailMsg{title: "Run Details", body: "late result"})
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
-	assert.NotContains(t, m.View(), "late result")
+	assert.NotContains(t, m.render(), "late result")
 }
 
 func TestTruncateFitsDisplayWidth(t *testing.T) {
@@ -481,16 +482,17 @@ func TestListModelFitsTerminalWidth(t *testing.T) {
 
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 160, Height: 30})
 	m = next.(listModel)
-	lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+	lines := strings.Split(strings.TrimRight(m.render(), "\n"), "\n")
 	require.Len(t, lines, 3) // header, one row, hint
 	for _, line := range lines[:2] {
 		assert.LessOrEqual(t, ansi.StringWidth(line), 160)
 	}
 	assert.Contains(t, lines[0], "Accelerators")
 	assert.Contains(t, lines[1], "8x H100")
-	// Experiment keeps its end, User its start.
-	assert.Contains(t, lines[1], "  …tart/qwen-finetune-lora  ")
-	assert.Contains(t, lines[1], "  someone.with.a.long.nam…  ")
+	// Experiment keeps its end, User its start. The row is styled, so match the text.
+	plain := ansi.Strip(lines[1])
+	assert.Contains(t, plain, "  …tart/qwen-finetune-lora  ")
+	assert.Contains(t, plain, "  someone.with.a.long.nam…  ")
 
 	// A lazily loaded page is laid out against the same width.
 	next, _ = m.Update(moreRowsMsg{rows: rows[1:]})
@@ -509,7 +511,7 @@ func TestStaticListTableIgnoresTerminalWidth(t *testing.T) {
 	lines := strings.Split(staticListTable(r, wideListRows(), false), "\n")
 	assert.Equal(t, computeListCols(wideListRows()).tableWidth(), ansi.StringWidth(lines[0]))
 	// The one-shot table still cuts a long Experiment at its end.
-	assert.Contains(t, lines[1], " /Users/someone.longname@example.com… ")
+	assert.Contains(t, ansi.Strip(lines[1]), " /Users/someone.longname@example.com… ")
 }
 
 func TestLayoutListCols(t *testing.T) {
@@ -688,7 +690,7 @@ func TestRenderHidesColumns(t *testing.T) {
 		assert.NotContains(t, row, "8x H100")
 		assert.NotContains(t, row, "runs/04c41514fbb0", "a hidden MLflow column carries no hyperlink")
 	}
-	assert.True(t, strings.HasPrefix(styles.renderRow(cols, rows[0], true, false), "▸"))
+	assert.True(t, strings.HasPrefix(ansi.Strip(styles.renderRow(cols, rows[0], true, false)), "▸"))
 }
 
 func TestListModelNarrowTerminalHidesColumns(t *testing.T) {
@@ -699,7 +701,7 @@ func TestListModelNarrowTerminalHidesColumns(t *testing.T) {
 	view := func(width int) []string {
 		next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 		m = next.(listModel)
-		lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+		lines := strings.Split(strings.TrimRight(m.render(), "\n"), "\n")
 		require.Len(t, lines, 4) // header, two rows, hint
 		for _, line := range lines {
 			assert.LessOrEqual(t, ansi.StringWidth(line), width, line)
@@ -732,11 +734,11 @@ func TestListModelHintNamesHiddenColumnsWithFullLegend(t *testing.T) {
 	m := newListModel(r, f, fullLabelListRows(), false)
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = next.(listModel)
-	lines := strings.Split(strings.TrimRight(m.View(), "\n"), "\n")
+	lines := strings.Split(strings.TrimRight(m.render(), "\n"), "\n")
 	require.Len(t, lines, 4)
 	assert.NotContains(t, lines[0], "Accelerators")
 	assert.Contains(t, lines[0], "MLflow")
-	assert.Equal(t, hintLegend+"  ·  row 1/2  ·  hidden: Accelerators", lines[3])
+	assert.Equal(t, hintLegend+"  ·  row 1/2  ·  hidden: Accelerators", ansi.Strip(lines[3]))
 	assert.LessOrEqual(t, ansi.StringWidth(lines[3]), 120)
 }
 
@@ -762,7 +764,7 @@ func TestListModelHintFitsNarrowTerminal(t *testing.T) {
 					m.loadErr = errors.New("boom")
 				}
 				m.cursor = len(rows) - 1
-				hint := m.renderHint()
+				hint := ansi.Strip(m.renderHint())
 				assert.LessOrEqual(t, ansi.StringWidth(hint), width, hint)
 				// The row counter and paging state come first, so they survive
 				// every step down.
@@ -781,13 +783,13 @@ func TestListModelHintFitsNarrowTerminal(t *testing.T) {
 				idle, loading := m, m
 				idle.loading, idle.loadErr = false, nil
 				loading.loading, loading.loadErr = true, nil
-				loadingHint := loading.renderHint()
+				loadingHint := ansi.Strip(loading.renderHint())
 				if strings.HasSuffix(loadingHint, "…") || strings.HasSuffix(hint, "…") {
 					assert.Less(t, width, 48, hint)
 					return
 				}
 				assert.True(t, strings.Contains(hint, "hidden: ") || strings.Contains(hint, "columns hidden"), hint)
-				assert.Equal(t, idle.renderHint(), strings.Replace(loadingHint, " (loading…)", "", 1))
+				assert.Equal(t, ansi.Strip(idle.renderHint()), strings.Replace(loadingHint, " (loading…)", "", 1))
 			})
 		}
 	}
@@ -805,7 +807,7 @@ func TestListModelRelayoutsLoadedPageInNarrowTerminal(t *testing.T) {
 	next, _ = m.Update(moreRowsMsg{rows: rows[:1]})
 	m = next.(listModel)
 	assert.Equal(t, []string{"User", "Accelerators"}, m.cols.hiddenNames())
-	for line := range strings.SplitSeq(strings.TrimRight(m.View(), "\n"), "\n") {
+	for line := range strings.SplitSeq(strings.TrimRight(m.render(), "\n"), "\n") {
 		assert.LessOrEqual(t, ansi.StringWidth(line), 100, line)
 	}
 }
@@ -821,7 +823,7 @@ func TestListModelEnterOpensMLflowLogsWhenColumnHidden(t *testing.T) {
 	m = next.(listModel)
 	require.False(t, m.cols.shown(columnMLflow))
 
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(teainput.Press("enter"))
 	require.NotNil(t, cmd)
 	cmd()
 	assert.Contains(t, stderr.String(), "https://h/ml/experiments/E/runs/04c41514fbb0/logs")

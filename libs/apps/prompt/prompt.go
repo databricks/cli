@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -38,18 +38,18 @@ var (
 )
 
 // Theme is the huh theme handed to appkit prompt forms and fields.
-type Theme = *huh.Theme
+type Theme = huh.Theme
 
 // AppkitTheme returns a custom theme for appkit prompts.
 func AppkitTheme() Theme {
-	return appkitStyles(cmdio.HasDarkBackground())
+	return huh.ThemeFunc(appkitStyles)
 }
 
 // appkitStyles builds the appkit styles on top of huh's base theme for a known
-// background, matching the shape of huh v2's ThemeFunc.
-func appkitStyles(isDark bool) *huh.Theme {
+// background.
+func appkitStyles(isDark bool) *huh.Styles {
 	lightDark := cmdio.LightDark(isDark)
-	t := huh.ThemeBase()
+	t := huh.ThemeBase(isDark)
 
 	t.Focused.Title = t.Focused.Title.Foreground(colorRed).Bold(true)
 	t.Focused.Description = t.Focused.Description.Foreground(colorGray)
@@ -309,7 +309,7 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 	theme := AppkitTheme()
 
 	var name string
-	err := huh.NewInput().
+	err := cmdio.RunHuhField(ctx, huh.NewInput().
 		Title("App name").
 		Description("lowercase letters, numbers, hyphens (max 26 chars)").
 		Placeholder("my-app").
@@ -317,8 +317,7 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 		Validate(func(s string) error {
 			return validateProjectNameForPrompt(s, outputDir)
 		}).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return "", err
 	}
@@ -340,15 +339,14 @@ func PromptScaffoldLocation(ctx context.Context, basename string) (bool, error) 
 	)
 
 	choice := locSubdir
-	err := huh.NewSelect[string]().
+	err := cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("Where should we create the app?").
 		Options(
 			huh.NewOption("Create a new subdirectory", locSubdir),
 			huh.NewOption(fmt.Sprintf("Use the current directory (%q)", basename), locCurrent),
 		).
 		Value(&choice).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return false, err
 	}
@@ -366,12 +364,11 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	theme := AppkitTheme()
 
 	// Deploy after creation?
-	err = huh.NewConfirm().
+	err = cmdio.RunHuhField(ctx, huh.NewConfirm().
 		Title("Deploy after creation?").
 		Description("Run 'databricks apps deploy' after setup").
 		Value(&deploy).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return false, RunModeNone, err
 	}
@@ -392,13 +389,12 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 
 	// Run the app?
 	runModeStr := string(RunModeNone)
-	err = huh.NewSelect[string]().
+	err = cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("Run the app after creation?").
 		Description("Choose how to start the development server").
 		Options(runOptions...).
 		Value(&runModeStr).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return false, RunModeNone, err
 	}
@@ -436,14 +432,13 @@ func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, it
 		labels[it.ID] = it.Label
 	}
 	var selected string
-	err := huh.NewSelect[string]().
+	err := cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title(title).
 		Description(fmt.Sprintf("%d available — / to filter", len(items))).
 		Options(options...).
 		Value(&selected).
 		Height(8).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return "", "", err
 	}
@@ -502,13 +497,12 @@ func getFetcherByKey(ctx context.Context, cacheKey, spinnerMsg string, fallbackC
 func promptManualInput(ctx context.Context, title string, prefetchedLabels []string) (string, error) {
 	theme := AppkitTheme()
 	var value string
-	err := huh.NewInput().
+	err := cmdio.RunHuhField(ctx, huh.NewInput().
 		Title(title).
 		Placeholder("Type a name or ID").
 		Suggestions(prefetchedLabels).
 		Value(&value).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return "", err
 	}
@@ -559,14 +553,13 @@ func promptFromPagedFetcher(ctx context.Context, title, emptyMessage string, fet
 		}
 
 		var selected string
-		err := huh.NewSelect[string]().
+		err := cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 			Title(title).
 			Description(desc).
 			Options(options...).
 			Value(&selected).
 			Height(8).
-			WithTheme(theme).
-			Run()
+			WithTheme(theme))
 		if err != nil {
 			return "", "", err
 		}
@@ -1219,14 +1212,13 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 	}
 
 	var selected string
-	err = huh.NewSelect[string]().
+	err = cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title(title).
 		Description(fmt.Sprintf("%d apps found — / to filter", len(existingApps))).
 		Options(options...).
 		Value(&selected).
 		Height(8).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return "", err
 	}

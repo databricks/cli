@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 )
 
@@ -200,7 +200,7 @@ func (m *promptModel) insert(typed []rune) {
 	m.submitErr = nil
 }
 
-func (m *promptModel) View() string { return m.render() }
+func (m *promptModel) View() tea.View { return tea.NewView(m.render()) }
 
 func (m *promptModel) render() string {
 	// HideEntered: empty final frame so the masked value isn't left in

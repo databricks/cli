@@ -3,6 +3,8 @@ package cmdio
 import (
 	"bytes"
 	"io"
+	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -14,10 +16,10 @@ import (
 
 func TestPromptModelNoColor(t *testing.T) {
 	m := newPromptModel(PromptOptions{Label: "Name"}, true)
-	assert.Contains(t, m.View(), ansiGreen)
+	assert.Contains(t, m.render(), ansiGreen)
 
 	m = newPromptModel(PromptOptions{Label: "Name"}, false)
-	v := m.View()
+	v := m.render()
 	assert.NotContains(t, v, ansiGreen)
 	assert.Contains(t, v, ansiBold)
 }
@@ -66,9 +68,24 @@ func TestRunPromptNoColor(t *testing.T) {
 		return err
 	}
 
-	assert.Contains(t, runWithKeys(t, false, "Name", "x\r", run), ansiGreen)
+	assert.True(t, hasSGR(runWithKeys(t, false, "Name", "x\r", run), ansiGreen))
 
 	out := runWithKeys(t, true, "Name", "x\r", run)
-	assert.NotContains(t, out, ansiGreen)
-	assert.Contains(t, out, ansiBold)
+	assert.False(t, hasSGR(out, ansiGreen))
+	assert.True(t, hasSGR(out, ansiBold))
+}
+
+var sgrSequence = regexp.MustCompile(`\x1b\[([0-9;]*)m`)
+
+// hasSGR reports whether out sets the attribute of the single-parameter SGR
+// sequence want, e.g. "\x1b[32m". Bubble Tea v2 re-encodes what a view
+// writes, merging parameters ("\x1b[32;1m"), so the bytes don't survive.
+func hasSGR(out, want string) bool {
+	code := sgrSequence.FindStringSubmatch(want)[1]
+	for _, m := range sgrSequence.FindAllStringSubmatch(out, -1) {
+		if slices.Contains(strings.Split(m[1], ";"), code) {
+			return true
+		}
+	}
+	return false
 }
