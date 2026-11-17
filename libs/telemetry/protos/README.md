@@ -20,6 +20,12 @@ native line printed since the text line last printed. So when the command that p
 resolves no auth (e.g. `databricks bundle schema`), no event for that line is uploaded until the
 text line prints again, even though the agent saw the hint.
 
+`databricks feedback` sends one `fast_feedback_log` entry, the event the in-product feedback widget
+records, instead of a `databricks_cli_log`. The user asked for it to be sent, so it is uploaded
+immediately in a single attempt even when `DATABRICKS_CLI_DISABLE_TELEMETRY` is set. When an AI
+agent is detected, the user must first confirm the message. Agent and run context ride in the
+entry's `user_agent`.
+
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED
 with the outcome and error category. The CLI sets no calling-agent field on it: the upload's

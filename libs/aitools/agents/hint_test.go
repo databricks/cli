@@ -260,6 +260,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}{
 		{"aitools install", true},
 		{"experimental aitools skills install", true},
+		{"feedback", true},
 		{"auth login", true},
 		{"auth token", true},
 		{"configure", true},
