@@ -62,13 +62,19 @@ const (
 const testWorkspace = "https://workspace.test"
 
 // newTestFeedbackCommand returns the feedback command under a root with the
-// root's bundle target flags.
+// root's bundle target flags and a few top-level commands, without subcommands
+// like the CLI's unbuilt placeholders.
 func newTestFeedbackCommand() *cobra.Command {
 	rootCmd := &cobra.Command{Use: "databricks"}
 	rootCmd.PersistentFlags().String("target", "", "")
 	rootCmd.PersistentFlags().String("environment", "", "")
 	feedbackCmd := &cobra.Command{Use: "feedback"}
-	rootCmd.AddCommand(feedbackCmd)
+	rootCmd.AddCommand(
+		feedbackCmd,
+		&cobra.Command{Use: "air"},
+		&cobra.Command{Use: "bundle"},
+		&cobra.Command{Use: "jobs", Aliases: []string{"job"}},
+	)
 	return feedbackCmd
 }
 
@@ -122,13 +128,13 @@ func TestWorkspaceLabel(t *testing.T) {
 		workspaceID string
 		want        string
 	}{
-		{name: "workspace host", want: "https://workspace.test"},
-		{name: "unified host", workspaceID: "123", want: "https://workspace.test (workspace ID 123)"},
-		{name: "no workspace sentinel", workspaceID: "none", want: "https://workspace.test"},
+		{name: "workspace host", want: testWorkspace},
+		{name: "unified host", workspaceID: "123", want: testWorkspace + " (workspace ID 123)"},
+		{name: "no workspace sentinel", workspaceID: "none", want: testWorkspace},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, workspaceLabel(&config.Config{Host: "https://workspace.test", WorkspaceID: tt.workspaceID}))
+			assert.Equal(t, tt.want, workspaceLabel(&config.Config{Host: testWorkspace, WorkspaceID: tt.workspaceID}))
 		})
 	}
 }
@@ -139,18 +145,31 @@ func TestResolveCommand(t *testing.T) {
 		command       string
 		wantComponent string
 		wantOrigin    string
+		wantErr       bool
 	}{
 		{name: "general", wantComponent: defaultComponent, wantOrigin: "cli"},
 		{name: "blank", command: " ", wantComponent: defaultComponent, wantOrigin: "cli"},
 		{name: "air subcommand", command: "air run", wantComponent: "ModelTraining.AIRuntime", wantOrigin: "air_run"},
 		{name: "bundle group", command: "bundle", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle"},
 		{name: "bundle subcommand", command: "bundle  deploy", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_deploy"},
-		{name: "any text after a product's name", command: "bundle not-a-command", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_not-a-command"},
+		{name: "unchecked subcommand", command: "bundle not-a-command", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_not-a-command"},
 		{name: "other command", command: "jobs list", wantComponent: defaultComponent, wantOrigin: "jobs_list"},
+		{name: "alias", command: "job list", wantComponent: defaultComponent, wantOrigin: "jobs_list"},
+		{name: "unknown top level", command: "bundel deploy", wantErr: true},
+		{name: "databricks prefix", command: "databricks bundle deploy", wantErr: true},
+		{name: "flag", command: "bundle deploy -t dev", wantErr: true},
+		{name: "path argument", command: "bundle sync ./src", wantErr: true},
+		{name: "uppercase", command: "Bundle deploy", wantErr: true},
+		{name: "control characters", command: "bundle \x1b[8mdeploy", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			component, origin := resolveCommand(tt.command)
+			component, origin, err := resolveCommand(newTestFeedbackCommand(), tt.command)
+			if tt.wantErr {
+				assert.EqualError(t, err, fmt.Sprintf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, tt.command))
+				return
+			}
+			require.NoError(t, err)
 			assert.Equal(t, tt.wantComponent, component)
 			assert.Equal(t, tt.wantOrigin, origin)
 		})
@@ -269,7 +288,7 @@ func TestConfirm(t *testing.T) {
 
 func TestCheckApproval(t *testing.T) {
 	const refusal = "feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
-		"Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it"
+		"Note for AI agents (test-agent): show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it"
 	tests := []struct {
 		name     string
 		agent    string

@@ -100,6 +100,15 @@ Error: the message must be one argument, but received 3; put quotes around the w
 >>> [CLI] feedback --command bundle deploy deploy is slow
 Error: the message must be one argument, but received 2; put quotes around the whole message, and around --command if it has several words
 
+>>> [CLI] feedback --command no-such-command hello
+Error: unknown command "no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
+
+>>> [CLI] feedback --command databricks bundle deploy hello
+Error: unknown command "databricks bundle deploy"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
+
+>>> [CLI] feedback --command bundle deploy -t dev hello
+Error: unknown command "bundle deploy -t dev"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
+
 >>> [CLI] feedback --run-id abc hello
 Error: --run-id must be a positive job run ID
 
@@ -114,7 +123,7 @@ Error: feedback message must contain 1 to 10000 characters, including a visible 
 >>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent [CLI] feedback hello
 Error: feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message
 
-Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it
+Note for AI agents (test-agent): show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it
 
 === General CLI feedback
 
@@ -142,7 +151,7 @@ Thank you! Your feedback was sent. Reference: [UUID][6]
 >>> AGENT=test-agent [CLI] feedback hello
 Error: feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message
 
-Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it
+Note for AI agents (test-agent): show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it
 
 === An AI agent with --yes
 

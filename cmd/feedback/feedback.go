@@ -88,8 +88,8 @@ DATABRICKS_CLI_DISABLE_TELEMETRY is set, because you asked to send it.
 
 AI agents: submit feedback only with the user's approval. When an agent is
 detected, the command asks for confirmation, or requires --yes when no terminal
-is attached. Show the user the exact message and pass --yes only after the user
-approves it.`
+is attached. Show the user the exact message and the flags you pass with it,
+such as --can-be-contacted, and pass --yes only after the user approves it.`
 	cmd.Example = `  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
   databricks feedback --command "air run" --run-id 123 "logs omitted the failure reason"`
 
@@ -141,7 +141,10 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	if err != nil {
 		return submission{}, err
 	}
-	component, origin := resolveCommand(opts.command)
+	component, origin, err := resolveCommand(cmd, opts.command)
+	if err != nil {
+		return submission{}, err
+	}
 	s := submission{
 		text:           text,
 		command:        strings.Join(strings.Fields(opts.command), " "),
@@ -211,7 +214,7 @@ func send(ctx context.Context, s submission, yes bool) error {
 }
 
 // notSent reports whether err shows that the server stored nothing: it rejected
-// the request, or accepted none of its logs.
+// the request, or did not accept the feedback.
 func notSent(err error) bool {
 	if _, ok := errors.AsType[*telemetry.NotAcceptedError](err); ok {
 		return true
@@ -229,19 +232,47 @@ func validateMessage(message string) (string, error) {
 }
 
 // resolveCommand returns the component and origin for --command. Its first word
-// picks the owning team, so "bundle deploy" reaches bundles without the CLI
-// building every command to check the path. The origin joins the words with
+// must be a top-level command and picks the owning team, so "bundle deploy"
+// reaches bundles. The rest is not checked against the command tree, which would
+// mean building every command; instead every word is limited to the characters
+// of command names, so flags, paths, arguments and terminal control sequences
+// cannot reach origin or the approval prompt. The origin joins the words with
 // underscores, as the CLI names commands elsewhere (bundle_deploy).
-func resolveCommand(command string) (string, string) {
+func resolveCommand(cmd *cobra.Command, command string) (string, string, error) {
 	words := strings.Fields(command)
 	if len(words) == 0 {
-		return defaultComponent, "cli"
+		return defaultComponent, "cli", nil
 	}
+	// Top-level commands are registered on the root before they are built.
+	top, rest, err := cmd.Root().Find(words[:1])
+	valid := err == nil && len(rest) == 0 && top != cmd.Root()
+	for _, word := range words {
+		valid = valid && isCommandWord(word)
+	}
+	if !valid {
+		return "", "", fmt.Errorf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
+	}
+	// An alias resolves to the command's name.
+	words[0] = top.Name()
 	component := defaultComponent
 	if productComponent, ok := productComponents[words[0]]; ok {
 		component = productComponent
 	}
-	return component, strings.Join(words, "_")
+	return component, strings.Join(words, "_"), nil
+}
+
+// isCommandWord reports whether word can be part of a command path: lowercase
+// letters, digits and dashes, not starting with a dash.
+func isCommandWord(word string) bool {
+	if word == "" || word[0] == '-' {
+		return false
+	}
+	for _, r := range word {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return false
+		}
+	}
+	return true
 }
 
 // needsApproval reports whether the user must approve the feedback before it is
@@ -258,7 +289,7 @@ func checkApproval(ctx context.Context, yes bool) error {
 		return nil
 	}
 	return errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
-		agent.AgentNote("show the user the exact feedback message and pass --yes only after the user approves sending it"))
+		agent.AgentNote("show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it"))
 }
 
 // confirm asks the user to approve feedback an AI agent is about to send. It
