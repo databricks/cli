@@ -23,8 +23,7 @@ kill_after.py "PATCH /api/2.1/unity-catalog/volumes/$NEW_VOLUME" 0 1
 trace errcode $CLI bundle deploy -q
 trace print_requests.py //unity-catalog
 
-title "The volume is gone from its recorded path, so the plan looks for it at its path in config"
-trace print_state.py | jq '.state["resources.volumes.volume1"] | {__id__, volume_id: .state.volume_id}'
+title "The volume's new path was recorded before its update, so the plan updates it there"
 trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at
 
 title "The next deploy updates the volume at its new path"
