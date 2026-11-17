@@ -81,6 +81,12 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
+=== a non-git root_path selects the same files when run from its subdirectory
+
+>>> [CLI] air run -f workload.yaml --dry-run
+Dry run: code_source snapshot would include 2 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
 === git.remote is rejected
 
 >>> [CLI] air run -f git-remote.yaml --dry-run

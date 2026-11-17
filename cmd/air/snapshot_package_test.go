@@ -218,6 +218,38 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	assert.NotContains(t, entries, dirName+"/a.txt")
 }
 
+func TestSnapshotFiles_NonGitRootFromSubdirectory(t *testing.T) {
+	// The CLI often runs from the workload's directory, inside root_path. sub/main.py
+	// shadows main.py, so a listing relative to the working directory picks the wrong
+	// files instead of failing.
+	tests := []struct {
+		name         string
+		includePaths []string
+		want         []string
+	}{
+		{name: "include_paths", includePaths: []string{"main.py", "data"}, want: []string{"data/x.csv", "main.py"}},
+		{name: "whole root", want: []string{"data/x.csv", "main.py", "sub/main.py"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeRepoFile(t, root, "main.py", "print('root')")
+			writeRepoFile(t, root, "sub/main.py", "print('sub')")
+			writeRepoFile(t, root, "data/x.csv", "a,b")
+			t.Chdir(filepath.Join(root, "sub"))
+
+			files, err := snapshotFiles(t.Context(), root, tt.includePaths, false)
+			require.NoError(t, err)
+			var got []string
+			for _, f := range files {
+				got = append(got, filepath.ToSlash(f.rel))
+			}
+			slices.Sort(got)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
 	repo := t.TempDir()
 	writeRepoFile(t, repo, ".gitignore", "*.log\n!keep.log\n/root-only.txt\n")
