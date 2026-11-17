@@ -101,7 +101,7 @@ func renderTestResult(out io.Writer, run *testRun, incompleteReason string, shor
 	case incompleteReason != "":
 		fmt.Fprintf(out, "RUN INCOMPLETE: %s.\n", incompleteReason)
 	case run.summaries[0].Total == 0:
-		fmt.Fprintln(out, "No tests were collected.")
+		fmt.Fprintln(out, run.noTestsMessage)
 	}
 }
 
@@ -115,4 +115,22 @@ func renderTestSummaryLine(out io.Writer, run *testRun, incompleteReason string)
 		s = run.summaries[0]
 	}
 	fmt.Fprintf(out, "Done. PASSED=%d FAILED=%d SKIPPED=%d ERROR=%d TOTAL=%d\n", s.Passed, s.Failed, s.Skipped, s.Errored, s.Total)
+}
+
+// noTestsCollectedMessage says that no tests were collected and names what was run: the selections,
+// as shown to the user, or the pipeline's test sources. It does not restate pytest's naming rules,
+// because a project can change them in its pytest configuration.
+func noTestsCollectedMessage(selections, pytestArgs []string) string {
+	from := "the pipeline's test sources"
+	if len(selections) > 0 {
+		from = strings.Join(selections, ", ")
+	}
+	switch {
+	case len(selections) > 0:
+		return fmt.Sprintf("No tests were collected from %s. Check the test selection and any --pytest-arg filters.", from)
+	case len(pytestArgs) > 0:
+		return fmt.Sprintf("No tests were collected from %s. Check the --pytest-arg filters.", from)
+	default:
+		return fmt.Sprintf("No tests were collected from %s.", from)
+	}
 }

@@ -74,7 +74,13 @@ Done. PASSED=1 FAILED=0 SKIPPED=0 ERROR=0 TOTAL=2
 	empty := newTestRun()
 	empty.add(ev.summary(0, 0, 0, 0, 0))
 	assert.Equal(t, `
-No tests were collected.
+No tests were collected from the pipeline's test sources.
 Done. PASSED=0 FAILED=0 SKIPPED=0 ERROR=0 TOTAL=0
 `, render(empty, ""))
+}
+
+func TestNoTestsCollectedMessage(t *testing.T) {
+	assert.Equal(t, "No tests were collected from the pipeline's test sources.", noTestsCollectedMessage(nil, nil))
+	assert.Equal(t, "No tests were collected from the pipeline's test sources. Check the --pytest-arg filters.", noTestsCollectedMessage(nil, []string{"-k", "orders"}))
+	assert.Equal(t, "No tests were collected from tests/test_a.py, tests/b. Check the test selection and any --pytest-arg filters.", noTestsCollectedMessage([]string{"tests/test_a.py", "tests/b"}, nil))
 }

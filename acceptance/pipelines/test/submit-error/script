@@ -1,3 +1,6 @@
+pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
+rm "$OUT_REQUESTS"
+
 title "A submit error from the service is shown as is, and no update ID is printed"
-trace musterr $CLI pipelines test --pipeline-id 11111111-2222-3333-4444-555555555555
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id
 trace print_requests.py //updates
