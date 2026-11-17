@@ -62,9 +62,7 @@ func validateDeviceCodeLogin(ctx context.Context, cmd *cobra.Command) error {
 		return fmt.Errorf("--use-device-code is experimental. Set %s=true to enable it", deviceCodeEnvVar)
 	}
 	for _, name := range deviceCodeIncompatibleFlags {
-		// Compare with the default so that, e.g., --skip-workspace=false is
-		// accepted.
-		if f := cmd.Flag(name); f.Changed && f.Value.String() != f.DefValue {
+		if cmd.Flag(name).Changed {
 			return fmt.Errorf("--use-device-code cannot be combined with --%s", name)
 		}
 	}
