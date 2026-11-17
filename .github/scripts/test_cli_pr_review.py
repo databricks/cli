@@ -21,10 +21,11 @@ class ReviewRequestTest(unittest.TestCase):
             "base": {"ref": "main"},
             "head": {"sha": "a" * 40, "repo": {"full_name": "databricks/cli", "fork": False}},
             "draft": False,
-            "user": {"login": "author", "type": "User"},
+            "user": {"id": 10, "login": "author", "type": "User"},
         }
         self.automatic = {
             "repository": {"full_name": "databricks/cli"},
+            "sender": {"id": 11, "login": "requester", "type": "User"},
             "action": "opened",
             "number": 7400,
             # Keep the old event separate so tests can change the current PR afterward.
@@ -32,12 +33,14 @@ class ReviewRequestTest(unittest.TestCase):
         }
         self.comment = {
             "repository": {"full_name": "databricks/cli"},
+            "sender": {"id": 11, "login": "requester", "type": "User"},
             "action": "created",
             "issue": {"number": 7400, "pull_request": {}},
             "comment": {
+                "id": 55,
                 "body": "/review",
                 "author_association": "MEMBER",
-                "user": {"login": "requester", "type": "User"},
+                "user": {"id": 11, "login": "requester", "type": "User"},
             },
         }
         self.permissions = {"author": "write", "requester": "maintain"}
@@ -65,7 +68,7 @@ class ReviewRequestTest(unittest.TestCase):
             ("head", {"sha": "a" * 40, "repo": {"full_name": "other/cli", "fork": True}}),
             ("head", {"sha": "a" * 40, "repo": {"full_name": "databricks/cli", "fork": True}}),
             ("head", {"sha": "a" * 40, "repo": None}),
-            ("user", {"login": "bot", "type": "Bot"}),
+            ("user", {"id": 12, "login": "bot", "type": "Bot"}),
         ]
         original = copy.deepcopy(self.pr)
         # Change one property at a time and check both automatic and comment requests.
@@ -142,7 +145,7 @@ class ReviewRequestTest(unittest.TestCase):
             ("body", " /review extra "),
             ("body", "/reviewer"),
             ("body", "$(touch /tmp/should-not-execute)"),
-            ("user", {"login": "bot", "type": "Bot"}),
+            ("user", {"id": 12, "login": "bot", "type": "Bot"}),
         ]:
             with self.subTest(key=key, value=value):
                 event = copy.deepcopy(self.comment)
@@ -222,6 +225,15 @@ class ReviewRequestTest(unittest.TestCase):
             event_path.write_text(json.dumps(self.comment))
             env = {
                 "GITHUB_EVENT_PATH": str(event_path),
+                "RUNNER_TEMP": str(root),
+                "GITHUB_REPOSITORY_ID": "100",
+                "GITHUB_RUN_ID": "200",
+                "GITHUB_RUN_ATTEMPT": "2",
+                "GITHUB_WORKFLOW_SHA": "c" * 40,
+                "GITHUB_WORKFLOW_REF": "databricks/cli/.github/workflows/cli-pr-review.yml@refs/heads/main",
+                "GITHUB_ACTOR": "requester",
+                "GITHUB_ACTOR_ID": "11",
+                "GITHUB_TRIGGERING_ACTOR": "rerunner",
                 "GITHUB_EVENT_NAME": "issue_comment",
                 "GITHUB_OUTPUT": str(root / "output"),
                 "GITHUB_STEP_SUMMARY": str(root / "summary"),
@@ -232,11 +244,19 @@ class ReviewRequestTest(unittest.TestCase):
                     replies = [self.pr, {"permission": "write"}, {"permission": permission}]
                     with patch("subprocess.check_output", side_effect=[json.dumps(r) for r in replies]):
                         review.main()
+                    receipt = json.loads((root / "review-authorization.json").read_text())
+                    self.assertEqual(receipt["decision"], "denied" if permission == "read" else "allowed")
+                    self.assertEqual(receipt["permissions"][-1]["permission"], permission)
+                    self.assertEqual(receipt["requester"]["id"], 11)
+                    self.assertEqual(receipt["triggering_actor_login"], "rerunner")
+                    self.assertNotIn("body", json.dumps(receipt))
                     if permission == "read":
                         self.assertFalse((root / "output").exists())
                         self.assertIn("skipping", (root / "summary").read_text())
                     else:
-                        self.assertEqual((root / "output").read_text(), "eligible=true\npr_number=7400\n")
+                        self.assertTrue(
+                            (root / "output").read_text().startswith("eligible=true\npr_number=7400\nrequest_context=")
+                        )
 
 
 if __name__ == "__main__":
