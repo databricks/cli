@@ -29,8 +29,8 @@ func NewUninstallCmd() *cobra.Command {
 
 By default, removes all skills. Use --skills to remove specific skills only.
 
-A global-scope uninstall also turns off the automatic installation of
-Databricks AI tools on CLI upgrades; 'databricks aitools auto-install enable'
+A global-scope uninstall that removes anything also turns off the automatic
+installation of Databricks AI tools on CLI upgrades; 'databricks aitools auto-install enable'
 turns it back on.
 
 The command exits with code 1 when every removal it attempts fails.`,
@@ -109,17 +109,18 @@ The command exits with code 1 when every removal it attempts fails.`,
 			if state != nil && skillsInstalled(state, opts.Skills) {
 				waitForTelemetryAuth(ctx)
 			}
-			// Auto-install only ever installs in global scope, so only a global
-			// uninstall could be undone by it on the next CLI upgrade. A partial
-			// one counts too: the update it runs re-adds removed skills.
-			if scope == installer.ScopeGlobal {
-				if err := autoinstall.SetOptedOut(ctx, true); err != nil {
-					log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
-				}
-			}
 			result, err := uninstallSkillsFn(ctx, opts)
 			if err != nil {
 				return err
+			}
+			// Auto-install only ever installs in global scope, so only a global
+			// uninstall could be undone by it on the next CLI upgrade. A partial
+			// one counts too: the update it runs re-adds removed skills. A run
+			// that removed nothing (a mistyped skill, nothing installed) does not.
+			if scope == installer.ScopeGlobal && (result.PluginsRemoved > 0 || result.SkillsChanged > 0) {
+				if err := autoinstall.SetOptedOut(ctx, true); err != nil {
+					log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
+				}
 			}
 			// A plugin or skill that could not be removed is only a warning, unless
 			// no copy of any skill and no plugin was removed at all. A plugin record

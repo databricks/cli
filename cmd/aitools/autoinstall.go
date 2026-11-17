@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -24,7 +25,9 @@ Databricks Runtime, and only touches the global scope.
 It stays off after 'databricks aitools auto-install disable', a global-scope
 'databricks aitools uninstall', or a "no" to the skills prompt of
 'databricks apps init', until 'databricks aitools auto-install enable'.
-Setting ` + autoinstall.EnvVar + `=false turns it off in that environment.`,
+Setting ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes,
+on) turns it off in that environment.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newAutoInstallToggleCmd(true))
 	cmd.AddCommand(newAutoInstallToggleCmd(false))

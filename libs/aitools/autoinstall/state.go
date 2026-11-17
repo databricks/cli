@@ -22,6 +22,10 @@ import (
 // and this state must outlive upgrades and `databricks cache clear`.
 const stateFileName = "auto-install.json"
 
+// EnvVar turns auto-install off when set to anything but a true value (true,
+// 1, yes, on), including an empty or unparseable value.
+const EnvVar = "DATABRICKS_AITOOLS_AUTO_INSTALL"
+
 // State is what auto-install remembers across CLI versions.
 type State struct {
 	// LastVersion is the CLI version auto-install last ran for.
@@ -176,9 +180,6 @@ func updateState(ctx context.Context, change func(*State)) error {
 	change(&s)
 	return save(ctx, s)
 }
-
-// EnvVar turns auto-install off when set to false (or 0, no, off).
-const EnvVar = "DATABRICKS_AITOOLS_AUTO_INSTALL"
 
 // EnvOptedOut reports whether EnvVar turns auto-install off.
 func EnvOptedOut(ctx context.Context) bool {
