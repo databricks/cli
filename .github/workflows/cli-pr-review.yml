@@ -1,6 +1,10 @@
 name: CLI PR review
 
-# Run trusted workflow code; never check out or execute the PR here.
+# Review ready, same-repository PRs on open/reopen/push. Comment exactly /review
+# to request another review, including on a draft. Author and requester need write
+# access; comment requests also require MEMBER, OWNER, or COLLABORATOR association.
+# The job summary links the backend run. Feedback is advisory and posted inline.
+# Run only trusted workflow code; never check out or execute the PR here.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -19,6 +23,7 @@ jobs:
         (github.event_name == 'issue_comment' &&
          github.event.issue.pull_request &&
          github.event.comment.user.type == 'User' &&
+         contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association) &&
          github.event.comment.body == '/review')
       )
     runs-on:
@@ -33,48 +38,31 @@ jobs:
       pr_number: ${{ steps.request.outputs.pr_number }}
 
     steps:
-      # Check real repo access: membership labels can be hidden from Apps.
+      # Pin the validator to the trusted workflow revision, not the PR head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
       - name: Validate review request
         id: request
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-          EVENT_NAME: ${{ github.event_name }}
-          REQUESTER: ${{ github.event.comment.user.login }}
-          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
-          gh api "repos/databricks/cli/pulls/$PR_NUMBER" > "$RUNNER_TEMP/review-pr.json"
-          if ! jq -e --arg event "$EVENT_NAME" --arg head "$EVENT_HEAD" '
-            .state == "open" and .base.ref == "main" and
-            .head.repo.full_name == "databricks/cli" and .head.repo.fork == false and
-            .user.type == "User" and
-            ($event == "issue_comment" or (.draft == false and .head.sha == $head))
-          ' "$RUNNER_TEMP/review-pr.json" >/dev/null; then
-            echo "PR is ineligible or this event was superseded; skipping review." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          author=$(jq -r '.user.login' "$RUNNER_TEMP/review-pr.json")
-          for user in "$author" ${REQUESTER:+"$REQUESTER"}; do
-            user=$(jq -rn --arg user "$user" '$user | @uri')
-            permission=$(gh api "repos/databricks/cli/collaborators/$user/permission" --jq '.permission')
-            if [[ ! "$permission" =~ ^(admin|maintain|write)$ ]]; then
-              echo "PR author and /review requester must have write access; skipping review." >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-          done
-          echo "eligible=true" >> "$GITHUB_OUTPUT"
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        run: python3 .github/scripts/cli_pr_review.py
 
   review:
     needs: validate
     if: needs.validate.outputs.eligible == 'true' && github.ref == 'refs/heads/main'
+    # Only validated requests can supersede an older request for this PR.
+    concurrency:
+      group: cli-pr-review-${{ needs.validate.outputs.pr_number }}
+      cancel-in-progress: true
     # Cross-org dispatch needs the same approved network as integration tests.
     runs-on:
       group: databricks-release-runner-group-emu-access
       labels: linux-ubuntu-latest-emu-access
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions: {}
     environment:
       name: test-trigger-is

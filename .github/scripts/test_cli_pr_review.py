@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+
+import copy
+import json
+import os
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import cli_pr_review as review
+
+
+class ReviewRequestTest(unittest.TestCase):
+    def setUp(self):
+        self.pr = {
+            "state": "open",
+            "base": {"ref": "main"},
+            "head": {"sha": "a" * 40, "repo": {"full_name": "databricks/cli", "fork": False}},
+            "draft": False,
+            "user": {"login": "author", "type": "User"},
+        }
+        self.automatic = {
+            "repository": {"full_name": "databricks/cli"},
+            "action": "opened",
+            "number": 7400,
+            "pull_request": copy.deepcopy(self.pr),
+        }
+        self.comment = {
+            "repository": {"full_name": "databricks/cli"},
+            "action": "created",
+            "issue": {"number": 7400, "pull_request": {}},
+            "comment": {
+                "body": "/review",
+                "author_association": "MEMBER",
+                "user": {"login": "requester", "type": "User"},
+            },
+        }
+        self.permissions = {"author": "write", "requester": "maintain"}
+
+        def api(path):
+            if path == "repos/databricks/cli/pulls/7400":
+                return self.pr
+            user = path.split("/")[-2]
+            return {"permission": self.permissions[user]}
+
+        self.api = Mock(side_effect=api)
+
+    def test_automatic_events(self):
+        for action in ["opened", "reopened", "synchronize", "ready_for_review"]:
+            with self.subTest(action=action):
+                self.automatic["action"] = action
+                self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
+
+    def test_ineligible_prs(self):
+        cases = [
+            ("state", "closed"),
+            ("base", {"ref": "release"}),
+            ("head", {"sha": "a" * 40, "repo": {"full_name": "other/cli", "fork": True}}),
+            ("head", {"sha": "a" * 40, "repo": {"full_name": "databricks/cli", "fork": True}}),
+            ("head", {"sha": "a" * 40, "repo": None}),
+            ("user", {"login": "bot", "type": "Bot"}),
+        ]
+        original = copy.deepcopy(self.pr)
+        for key, value in cases:
+            for name, event in [("pull_request_target", self.automatic), ("issue_comment", self.comment)]:
+                with self.subTest(key=key, value=value, event=name):
+                    self.pr = {**original, key: value}
+                    self.api.reset_mock()
+                    self.assertIsNone(review.validate_request(name, event, self.api))
+                    self.assertEqual(self.api.call_count, 1)
+
+    def test_drafts_and_new_commits_require_explicit_request(self):
+        for change in ["draft", "head"]:
+            with self.subTest(change=change):
+                if change == "draft":
+                    self.pr["draft"] = True
+                else:
+                    self.pr["draft"] = False
+                    self.pr["head"]["sha"] = "b" * 40
+                self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
+                self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
+
+    def test_comment_filter(self):
+        for key, value in [
+            ("body", "looks good"),
+            ("body", "/review\nrun a command"),
+            ("body", "$(touch /tmp/should-not-execute)"),
+            ("author_association", "CONTRIBUTOR"),
+            ("author_association", "FIRST_TIMER"),
+            ("author_association", "NONE"),
+            ("user", {"login": "bot", "type": "Bot"}),
+        ]:
+            with self.subTest(key=key, value=value):
+                event = copy.deepcopy(self.comment)
+                event["comment"][key] = value
+                self.assertIsNone(review.validate_request("issue_comment", event, self.api))
+        self.api.assert_not_called()
+
+    def test_association_still_requires_actual_write_access(self):
+        for association in ["MEMBER", "OWNER", "COLLABORATOR"]:
+            for permission in ["read", "triage", "none", "write", "maintain", "admin"]:
+                with self.subTest(association=association, permission=permission):
+                    self.comment["comment"]["author_association"] = association
+                    self.permissions["requester"] = permission
+                    expected = 7400 if permission in {"write", "maintain", "admin"} else None
+                    self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), expected)
+
+    def test_author_also_needs_write_access(self):
+        self.permissions["author"] = "read"
+        self.permissions["requester"] = "admin"
+        self.assertIsNone(review.validate_request("issue_comment", self.comment, self.api))
+        self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
+
+    def test_author_requesting_review_is_checked_once(self):
+        self.comment["comment"]["user"]["login"] = "author"
+        self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
+        self.assertEqual(self.api.call_count, 2)
+
+    def test_wrong_event_or_repository(self):
+        cases = [("push", self.automatic)]
+        edited = copy.deepcopy(self.comment)
+        edited["action"] = "edited"
+        cases.append(("issue_comment", edited))
+        issue = copy.deepcopy(self.comment)
+        del issue["issue"]["pull_request"]
+        cases.append(("issue_comment", issue))
+        foreign = copy.deepcopy(self.automatic)
+        foreign["repository"]["full_name"] = "other/cli"
+        cases.append(("pull_request_target", foreign))
+        for name, event in cases:
+            with self.subTest(name=name, event=event):
+                self.assertIsNone(review.validate_request(name, event, self.api))
+        self.api.assert_not_called()
+
+    def test_invalid_pr_number_never_reaches_api(self):
+        for number in [0, -1, "7400", "1/../../secrets", True]:
+            with self.subTest(number=number):
+                self.automatic["number"] = number
+                with self.assertRaises(ValueError):
+                    review.validate_request("pull_request_target", self.automatic, self.api)
+        self.api.assert_not_called()
+
+    def test_api_error_cannot_authorize_dispatch(self):
+        for fail_at in [0, 1, 2]:
+            with self.subTest(fail_at=fail_at):
+                replies = [self.pr, {"permission": "write"}, {"permission": "maintain"}]
+                replies[fail_at] = subprocess.CalledProcessError(1, ["gh", "api"])
+                api = Mock(side_effect=replies)
+                with self.assertRaises(subprocess.CalledProcessError):
+                    review.validate_request("issue_comment", self.comment, api)
+
+    def test_main_outputs_only_after_authorization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            event_path = root / "event.json"
+            event_path.write_text(json.dumps(self.comment))
+            env = {
+                "GITHUB_EVENT_PATH": str(event_path),
+                "GITHUB_EVENT_NAME": "issue_comment",
+                "GITHUB_OUTPUT": str(root / "output"),
+                "GITHUB_STEP_SUMMARY": str(root / "summary"),
+            }
+            for permission in ["read", "write"]:
+                with self.subTest(permission=permission), patch.dict(os.environ, env):
+                    replies = [self.pr, {"permission": "write"}, {"permission": permission}]
+                    with patch("subprocess.check_output", side_effect=[json.dumps(r) for r in replies]):
+                        review.main()
+                    if permission == "read":
+                        self.assertFalse((root / "output").exists())
+                        self.assertIn("skipping", (root / "summary").read_text())
+                    else:
+                        self.assertEqual((root / "output").read_text(), "eligible=true\npr_number=7400\n")
+
+
+if __name__ == "__main__":
+    unittest.main()
