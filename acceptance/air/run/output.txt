@@ -90,7 +90,7 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 === torch import on the Standard environment warns before submitting
 
 >>> [CLI] air run -f torch-standard.yaml --dry-run
-Warning: train.py imports torch, but PyTorch is not declared: environment version 6 (Standard) does not include it, so the run may fail after waiting for a GPU. Set environment.version: databricks_ai_v6, or add torch to environment.dependencies.
+Warning: train.py contains a torch import, but Standard environment 6 does not include PyTorch and no torch dependency was detected, so this code path may fail. Consider using databricks_ai_v6 or adding torch to dependencies.
 Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
 

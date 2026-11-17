@@ -44,9 +44,9 @@ func TestMissingTorchWarning(t *testing.T) {
 
 			got := missingTorchWarning(t.Context(), cfg, path)
 			if tc.want {
-				assert.Contains(t, got, "train.py imports torch, but PyTorch is not declared")
+				assert.Contains(t, got, "train.py contains a torch import, but Standard environment 6 does not include PyTorch")
 				assert.Contains(t, got, "may fail")
-				assert.Contains(t, got, "environment.version: databricks_ai_v6")
+				assert.Contains(t, got, "Consider using databricks_ai_v6")
 			} else {
 				assert.Empty(t, got)
 			}
@@ -72,7 +72,7 @@ func TestMissingTorchWarningHonorsRuntimeImageOverride(t *testing.T) {
 
 	// Submission uses DATABRICKS_DL_RUNTIME_IMAGE when environment.version is unset.
 	assert.Empty(t, missingTorchWarning(env.Set(t.Context(), dlRuntimeImageEnv, "databricks_ai_v6"), cfg, path))
-	assert.Contains(t, missingTorchWarning(env.Set(t.Context(), dlRuntimeImageEnv, "CLIENT-GPU-6"), cfg, path), "environment version 6 (Standard)")
+	assert.Contains(t, missingTorchWarning(env.Set(t.Context(), dlRuntimeImageEnv, "CLIENT-GPU-6"), cfg, path), "Standard environment 6 does not include PyTorch")
 }
 
 func TestMissingTorchWarningScansPinnedCommit(t *testing.T) {
@@ -84,7 +84,7 @@ func TestMissingTorchWarningScansPinnedCommit(t *testing.T) {
 		writeRepoFile(t, repo, "src/train.py", "print('hi')\n")
 		cfg := writeTorchRunConfig(t, repo, "  git:\n    commit: "+sha+"\n")
 
-		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(repo, "run.yaml")), "src/train.py imports torch")
+		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(repo, "run.yaml")), "src/train.py contains a torch import")
 	})
 
 	t.Run("import only in the working tree", func(t *testing.T) {
@@ -105,6 +105,6 @@ func TestMissingTorchWarningScansPinnedCommit(t *testing.T) {
 		dir := filepath.Join(repo, "proj")
 		cfg := writeTorchRunConfig(t, dir, "  git:\n    commit: "+sha+"\n  include_paths:\n    - model\n")
 
-		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(dir, "run.yaml")), "Warning: model/train.py imports torch")
+		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(dir, "run.yaml")), "Warning: model/train.py contains a torch import")
 	})
 }
