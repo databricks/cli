@@ -2,10 +2,11 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ so this checks the theme, not the production prompt flows.`,
 				group = huh.NewMultiSelect[string]().Title("Pick items").Options(options...).Value(&picked)
 			}
 
-			if err := huh.NewForm(huh.NewGroup(group)).WithTheme(theme).Run(); err != nil {
+			if err := cmdio.RunHuhForm(ctx, huh.NewForm(huh.NewGroup(group)).WithTheme(theme)); err != nil {
 				return err
 			}
 
@@ -74,22 +75,14 @@ so this checks the theme, not the production prompt flows.`,
 			}
 			cmdio.LogString(ctx, "answer: "+answer)
 
-			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", cmdio.HasDarkBackground()))
-
-			// The blurred button colour is an AdaptiveColor, which hides the choice
-			// behind one value. lipgloss resolves it with the default renderer, the
-			// one the theme's styles render with, so print the side it picks.
-			fg := theme.Focused.BlurredButton.GetForeground()
-			if adaptive, ok := fg.(lipgloss.AdaptiveColor); ok {
-				dark := cmdio.HasDarkBackground()
-				resolved := adaptive.Light
-				if dark {
-					resolved = adaptive.Dark
-				}
-				cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%s (resolved, dark_background=%t)", resolved, dark))
-			} else {
-				cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%+v (not an AdaptiveColor, not resolved)", fg))
-			}
+			// The appkit theme is a huh.ThemeFunc, so its colours depend on the
+			// background, queried once here for the probe. The blurred button is
+			// the colour the theme picks for that background.
+			dark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", dark))
+			fg := theme.Theme(dark).Focused.BlurredButton.GetForeground()
+			r, g, b, _ := fg.RGBA()
+			cmdio.LogString(ctx, fmt.Sprintf("blurred_button=#%02x%02x%02x (resolved, dark_background=%t)", r>>8, g>>8, b>>8, dark))
 			return nil
 		},
 	}

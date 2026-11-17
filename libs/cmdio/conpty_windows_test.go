@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,7 +87,7 @@ func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
 	r, color := NewRenderer(ctx, f)
 	assert.True(t, color)
 	assert.Equal(t, colorprofile.ANSI, r.Profile())
-	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
+	assert.NotEqual(t, "hi", r.Render(r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi")))
 }
 
 func TestNewRendererMSYSPipeHonorsCLICOLOR(t *testing.T) {

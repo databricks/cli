@@ -15,7 +15,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -450,7 +450,7 @@ func findMissingBindingValues(resources []manifest.Resource, values, authModes m
 // promptForBindingValue asks for a value of a binding field and stores it in values.
 func promptForBindingValue(ctx context.Context, mv missingBindingValue, values map[string]string) error {
 	var value string
-	err := huh.NewInput().
+	err := cmdio.RunHuhField(ctx, huh.NewInput().
 		Title(fmt.Sprintf("%s %s", mv.resource.Alias, mv.field)).
 		Description(fmt.Sprintf("Needed by the %s binding in databricks.yml", mv.yamlKey)).
 		Value(&value).
@@ -460,8 +460,7 @@ func promptForBindingValue(ctx context.Context, mv missingBindingValue, values m
 			}
 			return nil
 		}).
-		WithTheme(prompt.AppkitTheme()).
-		Run()
+		WithTheme(prompt.AppkitTheme()))
 	if err != nil {
 		return err
 	}
@@ -582,14 +581,13 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		}
 
 		var selected []string
-		err := huh.NewMultiSelect[string]().
+		err := cmdio.RunHuhField(ctx, huh.NewMultiSelect[string]().
 			Title("Select features").
 			Description("space to toggle, enter to confirm").
 			Options(options...).
 			Value(&selected).
 			Height(8).
-			WithTheme(theme).
-			Run()
+			WithTheme(theme))
 		if err != nil {
 			return nil, err
 		}
@@ -650,12 +648,11 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 
 	// Step 4: Description
 	config.Description = prompt.DefaultAppDescription
-	err := huh.NewInput().
+	err := cmdio.RunHuhField(ctx, huh.NewInput().
 		Title("Description").
 		Placeholder(prompt.DefaultAppDescription).
 		Value(&config.Description).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +689,7 @@ func promptForAuthModes(ctx context.Context, resources []manifest.Resource, them
 
 	const mixed = "mixed"
 	appMode := generator.AuthModeSP
-	err := huh.NewSelect[string]().
+	err := cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("How should the app access resources?").
 		Options(
 			huh.NewOption("Service principal", generator.AuthModeSP),
@@ -700,8 +697,7 @@ func promptForAuthModes(ctx context.Context, resources []manifest.Resource, them
 			huh.NewOption("Mixed (choose per resource)", mixed),
 		).
 		Value(&appMode).
-		WithTheme(theme).
-		Run()
+		WithTheme(theme))
 	if err != nil {
 		return nil, err
 	}
@@ -711,7 +707,7 @@ func promptForAuthModes(ctx context.Context, resources []manifest.Resource, them
 		mode := appMode
 		if appMode == mixed {
 			mode = generator.AuthModeSP
-			err := huh.NewSelect[string]().
+			err := cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 				Title(fmt.Sprintf("How should the app access %s?", r.Alias)).
 				Options(
 					huh.NewOption("On behalf of user", generator.AuthModeOBO),
@@ -719,8 +715,7 @@ func promptForAuthModes(ctx context.Context, resources []manifest.Resource, them
 					huh.NewOption("Both", generator.AuthModeBoth),
 				).
 				Value(&mode).
-				WithTheme(theme).
-				Run()
+				WithTheme(theme))
 			if err != nil {
 				return nil, err
 			}
@@ -755,12 +750,11 @@ func promptForResource(ctx context.Context, r manifest.Resource, theme prompt.Th
 	if fn, ok := prompt.GetPromptFunc(r.Type); ok {
 		if !required {
 			var configure bool
-			err := huh.NewConfirm().
+			err := cmdio.RunHuhField(ctx, huh.NewConfirm().
 				Title(fmt.Sprintf("Configure %s?", r.Alias)).
-				Description(r.Description + " (optional)").
+				Description(r.Description+" (optional)").
 				Value(&configure).
-				WithTheme(theme).
-				Run()
+				WithTheme(theme))
 			if err != nil {
 				return nil, err
 			}
@@ -793,7 +787,7 @@ func promptForResource(ctx context.Context, r manifest.Resource, theme prompt.Th
 		})
 	}
 
-	if err := input.WithTheme(theme).Run(); err != nil {
+	if err := cmdio.RunHuhField(ctx, input.WithTheme(theme)); err != nil {
 		return nil, err
 	}
 

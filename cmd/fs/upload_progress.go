@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 
 	"github.com/databricks/cli/libs/cmdio"
 	files "github.com/databricks/sdk-go/files/v2"
