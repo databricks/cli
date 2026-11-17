@@ -19,4 +19,4 @@ Error: device code login is not enabled for this host
 
 === Device authorization requests
 
->>> print_requests.py //oidc/v1/device/auth
+>>> print_requests.py //device/auth

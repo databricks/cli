@@ -19,4 +19,4 @@ trace DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.we
 
 # Every host is rejected before the device authorization request.
 title "Device authorization requests"
-trace print_requests.py //oidc/v1/device/auth
+trace print_requests.py //device/auth
