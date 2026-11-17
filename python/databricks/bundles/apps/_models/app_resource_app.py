@@ -20,8 +20,14 @@ class AppResourceApp:
     """"""
 
     name: VariableOrOptional[str] = None
+    """
+    Name of the app to grant access to.
+    """
 
     permission: VariableOrOptional[AppResourceAppAppPermission] = None
+    """
+    Permission to grant on that app.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceAppDict") -> "Self":
@@ -35,8 +41,14 @@ class AppResourceAppDict(TypedDict, total=False):
     """"""
 
     name: VariableOrOptional[str]
+    """
+    Name of the app to grant access to.
+    """
 
     permission: VariableOrOptional[AppResourceAppAppPermissionParam]
+    """
+    Permission to grant on that app.
+    """
 
 
 AppResourceAppParam = AppResourceAppDict | AppResourceApp

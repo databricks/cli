@@ -1,0 +1,57 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  runner:
+    default: var-user@example.com
+
+# Every job inherits this run_as unless it sets its own.
+run_as:
+  user_name: bundle-user@example.com
+
+resources:
+  jobs:
+    inherited_unchanged:
+      name: inherited-unchanged-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    inherited_to_user:
+      name: inherited-to-user-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    inherited_to_sp:
+      name: inherited-to-sp-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    variable_to_user:
+      name: variable-to-user-$UNIQUE_NAME
+      run_as:
+        user_name: ${var.runner}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    target_override_to_group:
+      name: target-override-to-group-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+targets:
+  default:
+    resources:
+      jobs:
+        target_override_to_group:
+          run_as:
+            user_name: target-user@example.com

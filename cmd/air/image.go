@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -72,6 +73,7 @@ func configureImageDocker(ctx context.Context, profile string) (string, error) {
 
 	var output bytes.Buffer
 	cmd := exec.CommandContext(ctx, executable, "auth", "docker", "configure", profile)
+	cmd.Env = agents.SelfExecEnv(os.Environ())
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	if err := cmd.Run(); err != nil {

@@ -51,6 +51,16 @@ class Environment:
     The version is a string, consisting of an integer.
     """
 
+    image_uri: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Customer-provided container image to use as the whole environment for this workload, stored in
+    Databricks Artifact Registry and named by its Unity Catalog name and tag, as
+    `catalog.schema.artifact:tag`. Cannot be combined with `environment_version` or
+    `base_environment`.
+    """
+
     java_dependencies: VariableOrList[str] = field(default_factory=list)
     """
     List of Java dependencies. Each dependency is a string representing a Java library path. For example: `/Volumes/path/to/test.jar`.
@@ -107,6 +117,16 @@ class EnvironmentDict(TypedDict, total=False):
     The environment version used by this environment. Either `environment_version` or `base_environment` must be provided.
     Each version comes with a specific Python version and a set of Python packages.
     The version is a string, consisting of an integer.
+    """
+
+    image_uri: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Customer-provided container image to use as the whole environment for this workload, stored in
+    Databricks Artifact Registry and named by its Unity Catalog name and tag, as
+    `catalog.schema.artifact:tag`. Cannot be combined with `environment_version` or
+    `base_environment`.
     """
 
     java_dependencies: VariableOrList[str]

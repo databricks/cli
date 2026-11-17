@@ -57,12 +57,19 @@ class AppResource:
 
     name: VariableOr[str]
     """
-    Name of the App Resource.
+    Key that identifies the resource within the app. The app configuration (app.yaml) references
+    the resource by this key.
     """
 
     app: VariableOrOptional[AppResourceApp] = None
+    """
+    Another app in the workspace that this app is granted access to.
+    """
 
     database: VariableOrOptional[AppResourceDatabase] = None
+    """
+    Lakebase Provisioned database the app is granted access to.
+    """
 
     description: VariableOrOptional[str] = None
     """
@@ -70,20 +77,45 @@ class AppResource:
     """
 
     experiment: VariableOrOptional[AppResourceExperiment] = None
+    """
+    MLflow experiment the app is granted access to.
+    """
 
     genie_space: VariableOrOptional[AppResourceGenieSpace] = None
+    """
+    Genie space the app is granted access to.
+    """
 
     job: VariableOrOptional[AppResourceJob] = None
+    """
+    Lakeflow job the app is granted access to.
+    """
 
     postgres: VariableOrOptional[AppResourcePostgres] = None
+    """
+    Lakebase Autoscaling Postgres database the app is granted access to.
+    """
 
     secret: VariableOrOptional[AppResourceSecret] = None
+    """
+    Secret the app is granted access to.
+    """
 
     serving_endpoint: VariableOrOptional[AppResourceServingEndpoint] = None
+    """
+    Model serving endpoint the app is granted access to.
+    """
 
     sql_warehouse: VariableOrOptional[AppResourceSqlWarehouse] = None
+    """
+    SQL warehouse the app is granted access to.
+    """
 
     uc_securable: VariableOrOptional[AppResourceUcSecurable] = None
+    """
+    Unity Catalog securable (volume, table, function, connection or model service) the app is
+    granted a privilege on.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceDict") -> "Self":
@@ -98,12 +130,19 @@ class AppResourceDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    Name of the App Resource.
+    Key that identifies the resource within the app. The app configuration (app.yaml) references
+    the resource by this key.
     """
 
     app: VariableOrOptional[AppResourceAppParam]
+    """
+    Another app in the workspace that this app is granted access to.
+    """
 
     database: VariableOrOptional[AppResourceDatabaseParam]
+    """
+    Lakebase Provisioned database the app is granted access to.
+    """
 
     description: VariableOrOptional[str]
     """
@@ -111,20 +150,45 @@ class AppResourceDict(TypedDict, total=False):
     """
 
     experiment: VariableOrOptional[AppResourceExperimentParam]
+    """
+    MLflow experiment the app is granted access to.
+    """
 
     genie_space: VariableOrOptional[AppResourceGenieSpaceParam]
+    """
+    Genie space the app is granted access to.
+    """
 
     job: VariableOrOptional[AppResourceJobParam]
+    """
+    Lakeflow job the app is granted access to.
+    """
 
     postgres: VariableOrOptional[AppResourcePostgresParam]
+    """
+    Lakebase Autoscaling Postgres database the app is granted access to.
+    """
 
     secret: VariableOrOptional[AppResourceSecretParam]
+    """
+    Secret the app is granted access to.
+    """
 
     serving_endpoint: VariableOrOptional[AppResourceServingEndpointParam]
+    """
+    Model serving endpoint the app is granted access to.
+    """
 
     sql_warehouse: VariableOrOptional[AppResourceSqlWarehouseParam]
+    """
+    SQL warehouse the app is granted access to.
+    """
 
     uc_securable: VariableOrOptional[AppResourceUcSecurableParam]
+    """
+    Unity Catalog securable (volume, table, function, connection or model service) the app is
+    granted a privilege on.
+    """
 
 
 AppResourceParam = AppResourceDict | AppResource

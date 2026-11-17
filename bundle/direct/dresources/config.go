@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"go.yaml.in/yaml/v3"
 )
@@ -47,6 +49,39 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 		b.Values = append(b.Values, json.RawMessage(raw))
 	}
 	return nil
+}
+
+// IsBackendDefault reports whether remote, the remote value at path, matches any of
+// the backend-default rules (and the rule's allowed values, if specified).
+func (c *ResourceLifecycleConfig) IsBackendDefault(path *structpath.PathNode, remote any) bool {
+	for _, rule := range c.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return true
+		}
+		if matchesAllowedValue(remote, rule.Values) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
 }
 
 // RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
