@@ -9,6 +9,7 @@ import (
 	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
@@ -198,30 +199,25 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case tea.KeyMsg:
+	}
+
+	if in, ok := teainput.Decode(msg); ok && !in.Paste {
 		if m.iterDone {
 			return m, nil
 		}
-		return m.handleKey(msg)
+		return m.handleKey(in.Key)
 	}
 	return m, nil
 }
 
-func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type { //nolint:exhaustive // the pager only cares about a few keys
-	case tea.KeyEnter:
+func (m *pagerModel[T]) handleKey(key string) (tea.Model, tea.Cmd) {
+	switch key {
+	case "enter":
 		return m, m.startDrain()
-	case tea.KeyEsc, tea.KeyCtrlC:
+	case "esc", "ctrl+c", "q", "Q":
 		return m, m.quit()
-	case tea.KeySpace:
+	case "space", "alt+space": // Alt+Space has always advanced the pager.
 		return m, m.startAdvance()
-	case tea.KeyRunes:
-		switch msg.String() {
-		case " ":
-			return m, m.startAdvance()
-		case "q", "Q":
-			return m, m.quit()
-		}
 	}
 	return m, nil
 }

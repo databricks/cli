@@ -41,3 +41,20 @@ func TestPromptBaseline_AltKeyNoop(t *testing.T) {
 	// missed it.
 	assert.Equal(t, "hello", v)
 }
+
+// TestPromptBaseline_AltCtrlHNoop pins that Alt+Ctrl+H (ESC BS, which some
+// terminals send for Alt+Backspace) deletes nothing, like Alt+Backspace.
+func TestPromptBaseline_AltCtrlHNoop(t *testing.T) {
+	t.Parallel()
+	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
+		Label: "Workspace name",
+	})
+	tm.WaitFor("Workspace name")
+
+	tm.Type("hello")
+	tm.Type("\x1b\x08")
+	tm.Type(termtest.KeyEnter)
+	v, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "hello", v)
+}
