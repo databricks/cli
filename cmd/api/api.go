@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/skillsinvoked"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -105,6 +106,7 @@ func makeCommand(method string) *cobra.Command {
 			// Skips the default profile when DATABRICKS_HOST is set (#5616).
 			root.ResolveDefaultProfile(cmd.Context(), cfg)
 
+			skillsinvoked.Apply(cfg)
 			api, err := client.New(cfg)
 			if err != nil {
 				return err

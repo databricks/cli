@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/liteswap"
+	"github.com/databricks/cli/libs/skillsinvoked"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -173,6 +174,7 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 		WorkspaceID: w.WorkspaceID,
 	}
 	liteswap.Apply(ctx, cfg)
+	skillsinvoked.Apply(cfg)
 
 	for k := range config.ConfigAttributes {
 		attr := &config.ConfigAttributes[k]

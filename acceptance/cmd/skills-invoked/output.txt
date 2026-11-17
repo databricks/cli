@@ -1,0 +1,125 @@
+
+=== Env var sends the header on a workspace GET
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core,databricks:databricks-jobs"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== Env var sends the header on a bundle-free GET
+
+>>> [CLI] clusters list
+
+>>> print_requests.py --get //clusters/list
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/clusters/list"
+}
+
+=== Env var sends the header on databricks api
+
+>>> [CLI] api get /api/2.0/clusters/list
+
+>>> print_requests.py --get //clusters/list
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/clusters/list"
+}
+
+=== Env var sends the header on the files API used by fs
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/vol
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/vol
+
+>>> print_requests.py --get //fs/directories
+{
+  "method": "PUT",
+  "path": "/api/2.0/fs/directories/Volumes/main/default/vol"
+}
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/fs/directories/Volumes/main/default/vol"
+}
+
+=== Env var sends the header from bundle commands
+
+>>> [CLI] bundle validate
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== Flag wins over env var
+
+>>> [CLI] current-user me --skills-invoked from-flag
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "from-flag"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== Invalid entries are dropped and the rest is normalized
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "headers": {
+    "X-Databricks-Skills-Invoked": [
+      "databricks-core,databricks:databricks-jobs"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== No header when unset
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== Flag is hidden from help
+
+>>> [CLI] --help

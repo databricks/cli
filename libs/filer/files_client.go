@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/skillsinvoked"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
@@ -248,6 +249,9 @@ func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, 
 		client.WithCredentials(configCredentials{cfg: cfg}),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
+		// The files client does not go through cfg.Headers. The transport wraps the
+		// same default transport the client would otherwise use.
+		client.WithHTTPClient(&http.Client{Transport: skillsinvoked.Transport(http.DefaultTransport)}),
 	}
 	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
 	// "none" sentinel means "no workspace ID", so it is not forwarded.
