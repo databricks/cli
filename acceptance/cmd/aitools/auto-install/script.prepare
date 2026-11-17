@@ -4,8 +4,9 @@ auto_install_state() {
     if [ -f "$path" ]; then cat "$path"; else echo "(no auto-install state)"; fi
 }
 
-# The host's own CI flag or opt-out would change every case.
-unset CI DATABRICKS_AITOOLS_AUTO_INSTALL
+# The host's own CI flag or opt-out would change every case. CI detection also
+# reads the providers' own variables (the SDK's useragent.CiCdProvider list).
+unset CI DATABRICKS_AITOOLS_AUTO_INSTALL GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI     TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID BUILD_ID PROJECT_NUMBER LOCATION CODEBUILD_BUILD_ARN TFC_RUN_ID
 # Telemetry is printed by print_telemetry.
 unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
 
