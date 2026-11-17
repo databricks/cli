@@ -42,7 +42,7 @@ def validate_request(event_name, event, api=github_api):
         if (
             event["action"] != "created"
             or "pull_request" not in event["issue"]
-            or comment["body"] != "/review"
+            or comment["body"].strip() != "/review"
             or comment["user"]["type"] != "User"
         ):
             return None

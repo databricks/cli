@@ -116,11 +116,23 @@ class ReviewRequestTest(unittest.TestCase):
                 self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
                 self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
 
+    def test_review_command_surrounding_whitespace(self):
+        """Whitespace around the command is allowed; write access is still required."""
+        for body in ["/review", " /review", "/review ", "\n/review\n", "\t/review\r\n", "\u00a0/review\u00a0"]:
+            for permission in ["write", "read"]:
+                with self.subTest(body=body, permission=permission):
+                    self.comment["comment"]["body"] = body
+                    self.permissions["requester"] = permission
+                    expected = 7400 if permission == "write" else None
+                    self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), expected)
+
     def test_comment_filter(self):
         """Unrecognized comments are rejected without contacting GitHub."""
         for key, value in [
             ("body", "looks good"),
             ("body", "/review\nrun a command"),
+            ("body", " /review extra "),
+            ("body", "/reviewer"),
             ("body", "$(touch /tmp/should-not-execute)"),
             ("user", {"login": "bot", "type": "Bot"}),
         ]:
