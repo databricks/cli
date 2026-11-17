@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bytes"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -76,4 +77,17 @@ func TestHasTerminal(t *testing.T) {
 			assert.Equal(t, tc.want, HasTerminal(ctx))
 		})
 	}
+}
+
+func TestIsLinePromptSupported(t *testing.T) {
+	ctx := t.Context()
+	terminal := InContext(ctx, NewIO(ctx, flags.OutputText, FakeTTYReader(strings.NewReader("")), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.True(t, IsLinePromptSupported(terminal))
+
+	piped := InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader(""), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.False(t, IsLinePromptSupported(piped))
+
+	t.Cleanup(func() { stdinReadInBackground.Store(false) })
+	MarkStdinReadInBackground()
+	assert.False(t, IsLinePromptSupported(terminal), "another goroutine reads stdin")
 }

@@ -132,6 +132,12 @@ func Declined() bool {
 	return declined.Load()
 }
 
+// ResetDeclined forgets a Decline in this process. It exists for tests that
+// decline more than once in one process.
+func ResetDeclined() {
+	declined.Store(false)
+}
+
 // ChildEnv returns the environment for a CLI process this one starts: the
 // current environment, with auto-install turned off when the user declined in
 // this process, so the child honors the answer even if storing it failed.

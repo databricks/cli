@@ -52,11 +52,6 @@ func (c Capabilities) SupportsLinePrompt() bool {
 	return c.stdinIsTTY && c.stdoutIsTTY && c.stderrIsTTY
 }
 
-// HasTTY returns true if stdin, stdout or stderr is a terminal.
-func (c Capabilities) HasTTY() bool {
-	return c.stdinIsTTY || c.stdoutIsTTY || c.stderrIsTTY
-}
-
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func (c Capabilities) SupportsColor(w io.Writer) bool {

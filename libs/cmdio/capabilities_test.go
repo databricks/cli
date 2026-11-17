@@ -165,13 +165,6 @@ func TestCapabilities_SupportsLinePrompt(t *testing.T) {
 	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: false}.SupportsLinePrompt(), "stderr not TTY")
 }
 
-func TestCapabilities_HasTTY(t *testing.T) {
-	assert.False(t, Capabilities{}.HasTTY())
-	assert.True(t, Capabilities{stdinIsTTY: true}.HasTTY())
-	assert.True(t, Capabilities{stdoutIsTTY: true}.HasTTY())
-	assert.True(t, Capabilities{stderrIsTTY: true}.HasTTY())
-}
-
 func TestDetectGitBash(t *testing.T) {
 	ctx := t.Context()
 	assert.False(t, detectGitBash(ctx))

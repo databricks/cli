@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"os"
+	"os/signal"
 	"runtime"
 	"slices"
 	"strings"
@@ -89,9 +91,19 @@ func autoInstall(ctx context.Context, path []string) {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return
 	}
-	if reason := autoinstall.Decide(in); !reason.Due() {
+	reason := autoinstall.Decide(in)
+	if !reason.Due() {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
 		return
+	}
+	// A run that would ask before installing but cannot skips before the lock
+	// and the gate lookup: it would skip after them too, and it repeats on
+	// every such run until a run in a terminal asks.
+	if reason == autoinstall.ReasonGateOff && in.State.LastVersion != version && autoInstallAsks(ctx) && !cmdio.IsLinePromptSupported(ctx) {
+		if tools, err := planTools(quietContext(ctx)); err == nil && len(tools.newAgents()) > 0 {
+			skipUnaskable(ctx, in.State.ID, autoinstall.NewID())
+			return
+		}
 	}
 
 	unlock, ok := autoinstall.TryLock(ctx)
@@ -114,7 +126,7 @@ func autoInstall(ctx context.Context, path []string) {
 
 	// The gate costs a manifest lookup, so it is resolved only when it is
 	// what decides the run.
-	reason := autoinstall.Decide(in)
+	reason = autoinstall.Decide(in)
 	if reason == autoinstall.ReasonGateOff {
 		gateCtx, cancel := context.WithTimeout(ctx, gateTimeout)
 		in.GateOn = autoinstall.GateOn(gateCtx, version)
@@ -166,15 +178,14 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 			log.Debugf(ctx, "auto-install: failed before asking: %v", err)
 			r.settleFailed(ctx, err)
 			return
-		case tools.existing == nil && len(tools.plan) > 0:
+		case len(tools.newAgents()) > 0:
+			// autoInstall skips this case before the lock; the state it
+			// decided on may have changed since.
 			if !cmdio.IsLinePromptSupported(ctx) {
-				// The question could not be seen or answered safely, and
-				// installing without it would skip the consent. A later run
-				// in a terminal asks.
-				log.Debugf(ctx, "auto-install: skipped: cannot ask, stdin, stdout or stderr is not a terminal")
+				skipUnaskable(ctx, prior.ID, r.id)
 				return
 			}
-			if !r.ask(ctx, tools.plan) {
+			if !r.ask(ctx, tools.newAgents()) {
 				return
 			}
 		}
@@ -224,53 +235,80 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 // autoInstallAsks reports whether a person may be at the terminal, so
 // auto-install asks before installing: stdin, stdout or stderr is a terminal
 // and no coding agent is detected (see installPromptsSupported). It asks only
-// when all three are terminals and skips otherwise; the install without
-// asking is left to runs with no terminal at all. The question is a
-// plain-text line, so NO_COLOR, TERM=dumb and Git Bash, which turn off the TUI
-// prompts of install, do not skip it.
+// when the question can be seen and answered (cmdio.IsLinePromptSupported)
+// and skips otherwise; the install without asking is left to runs with no
+// terminal at all. The question is a plain-text line, so NO_COLOR, TERM=dumb
+// and Git Bash, which turn off the TUI prompts of install, do not skip it.
 func autoInstallAsks(ctx context.Context) bool {
-	return cmdio.HasTTY(ctx) && useragent.AgentProvider() == ""
+	return cmdio.HasTerminal(ctx) && useragent.AgentProvider() == ""
 }
 
-// ask asks whether to install for the agents in plan and reports whether to go
+// skipUnaskable skips a run that would ask before installing but cannot: the
+// question could not be seen or answered safely, and installing without it
+// would skip the consent. The version is not settled, so a later run in a
+// terminal asks. A machine with no stored ID (stored) gets id, so that every
+// such run does not draw a new holdout bucket.
+func skipUnaskable(ctx context.Context, stored, id string) {
+	log.Debugf(ctx, "auto-install: skipped: cannot ask (stdin, stdout or stderr is not a terminal, the CLI runs in the background, or stdin is still being read)")
+	if stored != "" {
+		return
+	}
+	if err := autoinstall.SaveID(ctx, id); err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+	}
+}
+
+// ask asks whether to install for the agents names and reports whether to go
 // ahead. The version is settled before asking, so the question is asked once
 // per version even when it is never answered: the process is killed, stdin
-// is closed, or nobody answers within promptTimeout (an unrecognized agent in
-// a pseudo-terminal). Only "no" stores the opt-out.
-func (r autoInstallRun) ask(ctx context.Context, plan []agentPlanItem) bool {
+// is closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
+// unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
+// no. Only "no" stores the opt-out. What was typed before the question, such
+// as the next command typed while this one ran, is discarded unread.
+func (r autoInstallRun) ask(ctx context.Context, names []string) bool {
 	if err := autoinstall.Record(ctx, r.version, 0, r.id); err != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
 		return false
 	}
-	names := make([]string, len(plan))
-	for i, it := range plan {
-		names[i] = it.agent.DisplayName
+	if err := cmdio.DiscardInput(ctx); err != nil {
+		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
 	}
 	actx, cancel := context.WithTimeout(ctx, promptTimeout)
 	defer cancel()
+	// Ctrl+C dismisses the question instead of killing a command that
+	// succeeded.
+	actx, stop := signal.NotifyContext(actx, os.Interrupt)
+	defer stop()
 	ans, err := cmdio.AskCancellable(actx, "Install Databricks AI tools for "+strings.Join(names, ", ")+"? [Y/n]", "")
 	if err != nil {
 		log.Debugf(ctx, "auto-install: skipped: the prompt was not answered: %v", err)
-		if errors.Is(err, context.DeadlineExceeded) {
-			cmdio.LogString(ctx, "")
-		}
+		// End the question's line.
+		cmdio.LogString(ctx, "")
+		r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
 		return false
 	}
 	switch strings.ToLower(strings.TrimSpace(ans)) {
 	case "", "y", "yes":
 		return true
+	case "n", "no":
+		r.decline(ctx)
+		return false
 	}
-	r.decline(ctx)
+	log.Debugf(ctx, "auto-install: skipped: the answer was neither yes nor no")
+	r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
+	cmdio.LogString(ctx, "Skipped. To install Databricks AI tools later, run: databricks aitools install")
 	return false
 }
 
 // decline stores a "no" at the prompt as the opt-out, so no later version
 // asks again.
 func (r autoInstallRun) decline(ctx context.Context) {
-	if err := autoinstall.SetOptedOut(ctx, true); err != nil {
-		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
-	}
 	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
+	if err := autoinstall.Decline(ctx); err != nil {
+		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
+		cmdio.LogString(ctx, "Skipped. To install Databricks AI tools later, run: databricks aitools install")
+		return
+	}
 	cmdio.LogString(ctx, "Skipped. You won't be asked again; to install Databricks AI tools later, run: databricks aitools install")
 }
 
@@ -389,6 +427,22 @@ func planTools(ctx context.Context) (toolsPlan, error) {
 		})
 	}
 	return toolsPlan{globalDir: globalDir, plan: plan}, nil
+}
+
+// newAgents names the agents a fresh install gives tools to: skills, or a
+// plugin whose CLI is on PATH. An agent that keeps the plugin it has gets
+// nothing. It is empty when an existing installation is updated.
+func (t toolsPlan) newAgents() []string {
+	if t.existing != nil {
+		return nil
+	}
+	var names []string
+	for _, it := range t.plan {
+		if it.delivery == deliverySkills || (it.delivery == deliveryPlugin && !it.cliMissing) {
+			names = append(names, it.agent.DisplayName)
+		}
+	}
+	return names
 }
 
 // agentCLIsStoppable reports whether a timeout stops an agent CLI together

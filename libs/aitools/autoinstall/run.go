@@ -96,6 +96,17 @@ func Record(ctx context.Context, version string, attempts int, id string) error 
 	})
 }
 
+// SaveID stores id as the machine identifier unless one is stored already,
+// without settling a version. A run that skips before Record calls it, so
+// that the machine keeps its holdout bucket on later runs.
+func SaveID(ctx context.Context, id string) error {
+	return updateState(ctx, func(s *State) {
+		if s.ID == "" {
+			s.ID = id
+		}
+	})
+}
+
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI
 // processes (agents often run several at once) do not install at the same
 // time. ok is false when another process holds it or it cannot be taken; that

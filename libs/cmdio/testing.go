@@ -102,17 +102,6 @@ func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 	}
 }
 
-// NewTestIOWithInputTTY returns a cmdIO that detects its capabilities from ctx
-// and the streams as [NewIO] does, except that stdin counts as a terminal.
-// Wrap out or err with [FakeTTY] to make them terminals too. It exists so
-// tests can check how NO_COLOR, TERM=dumb and redirected output affect a
-// command that reads an answer from stdin.
-func NewTestIOWithInputTTY(ctx context.Context, in io.Reader, out, err io.Writer) *cmdIO {
-	c := NewIO(ctx, flags.OutputText, in, out, err, "", "")
-	c.capabilities.stdinIsTTY = true
-	return c
-}
-
 // NewTestContextWithStdout creates a cmdio context that captures stdout output.
 // Stderr is discarded. Use this for testing data output and results.
 func NewTestContextWithStdout(ctx context.Context) (context.Context, *bytes.Buffer) {
