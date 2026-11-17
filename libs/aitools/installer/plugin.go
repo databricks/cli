@@ -83,7 +83,7 @@ func runAgentCmd(ctx context.Context, timeout time.Duration, argv []string) (str
 	defer cancel()
 	// A timed-out agent CLI is stopped with its descendants: one left running
 	// would hold the output pipes open and block past the timeout.
-	out, err := process.Background(cctx, argv, process.WithProcessGroup())
+	out, err := process.BackgroundInGroup(cctx, argv)
 	if err != nil && errors.Is(cctx.Err(), context.DeadlineExceeded) {
 		return out, &agentCmdTimeoutError{timeout: timeout, err: err}
 	}

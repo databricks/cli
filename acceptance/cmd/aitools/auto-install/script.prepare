@@ -59,7 +59,7 @@ gate() {
 
 # cursor_skills lists the skills installed for Cursor.
 cursor_skills() {
-    local skills
-    skills=$("$ls_bin" "${USERPROFILE:-$HOME}/.cursor/skills" 2>/dev/null || true)
+    local dir="${USERPROFILE:-$HOME}/.cursor/skills" skills=""
+    if [ -d "$dir" ]; then skills=$("$ls_bin" "$dir"); fi
     echo "${skills:-(no skills)}"
 }

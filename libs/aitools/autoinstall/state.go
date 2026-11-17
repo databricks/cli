@@ -37,6 +37,12 @@ type State struct {
 	// `databricks apps init`.
 	OptedOut bool `json:"opted_out,omitempty"`
 
+	// Installing is set while auto-install makes a first install, and stays
+	// set when the install did not finish. The skills such an install left
+	// have no install state, like the ones the user put there, so a later run
+	// uses it to finish the install instead of leaving the skills alone.
+	Installing bool `json:"installing,omitempty"`
+
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
 	// machine. The CLI has no other stable machine identifier.
@@ -99,13 +105,19 @@ func save(ctx context.Context, s State) error {
 
 // SetOptedOut turns auto-install off (true) or back on (false), keeping the
 // rest of the state. A state file that cannot be read is replaced: the user's
-// explicit choice matters more than a broken record.
+// explicit choice matters more than a broken record. Where the state lock
+// cannot be taken at all (a filesystem without locks), it writes without it:
+// auto-install cannot run there, so nothing else writes the state.
 func SetOptedOut(ctx context.Context, optedOut bool) error {
 	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
-	if err != nil {
+	switch {
+	case errors.Is(err, errLockHeld):
 		return err
+	case err != nil:
+		log.Debugf(ctx, "Saving the auto-install state without its lock: %v", err)
+	default:
+		defer unlock()
 	}
-	defer unlock()
 	s, err := load(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Replacing unreadable auto-install state: %v", err)
@@ -132,11 +144,16 @@ func Declined() bool {
 	return declined.Load()
 }
 
-// ChildEnv returns the environment for a CLI process this one starts: the
-// current environment, with auto-install turned off when the user declined in
-// this process, so the child honors the answer even if storing it failed.
-func ChildEnv() []string {
-	environ := os.Environ()
+// ResetDeclined forgets a Decline in this process. Tests that decline use it
+// to clean up.
+func ResetDeclined() {
+	declined.Store(false)
+}
+
+// ChildEnv returns environ for a CLI process this one starts, with
+// auto-install turned off when the user declined in this process, so the child
+// honors the answer even if storing it failed.
+func ChildEnv(environ []string) []string {
 	if Declined() {
 		environ = append(environ, EnvVar+"=false")
 	}

@@ -76,7 +76,10 @@ func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context)
 		// must not install what the user just turned down.
 		if err := autoinstall.Decline(ctx); err != nil {
 			log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
+			return nil
 		}
+		// The prompt asked about now; say that the answer also holds later.
+		cmdio.LogString(ctx, "Databricks AI tools won't be installed automatically either. To turn that back on, run: databricks aitools auto-install enable")
 		return nil
 	}
 

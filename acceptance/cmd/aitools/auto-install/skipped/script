@@ -25,9 +25,9 @@ export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0
 title "commands that never trigger it"
 trace $CLI version
 trace $CLI aitools auto-install enable
-$CLI completion bash > /dev/null 2>&1
-$CLI __complete jobs > /dev/null 2>&1
-$CLI help jobs > /dev/null 2>&1
+$CLI completion bash &> LOG.completion
+$CLI __complete jobs &> LOG.complete
+$CLI help jobs &> LOG.help
 trace print_telemetry
 trace DATABRICKS_CACHE_ENABLED=false $CLI jobs list
 trace print_telemetry

@@ -42,7 +42,7 @@ my notes
 >>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.0 DATABRICKS_CLI_GITHUB_API_URL=[DATABRICKS_URL]/older [CLI] jobs list
 
 >>> print_telemetry
-{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"KEPT","holdout_arm":"TREATMENT","interactive":false}}
 
 >>> skill_file databricks-kept
 kept 2.0.0

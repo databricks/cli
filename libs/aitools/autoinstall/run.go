@@ -59,14 +59,19 @@ func CacheDisabled(ctx context.Context) bool {
 }
 
 // GateOn reports whether the compatibility manifest turns auto-install on for
-// version. A manifest that cannot be resolved reads as off.
-func GateOn(ctx context.Context, version string) bool {
-	on, err := clicompat.ResolveAutoInstall(ctx, version)
-	if err != nil {
-		log.Debugf(ctx, "auto-install: could not resolve the gate: %v", err)
-		return false
+// version. It fails when the manifest could not be fetched: the gate is then
+// unknown, not off.
+func GateOn(ctx context.Context, version string) (bool, error) {
+	return clicompat.ResolveAutoInstall(ctx, version)
+}
+
+// NextAttempt returns the number of the attempt a run for version makes after
+// prior: 1 for a version the state has not failed for.
+func NextAttempt(prior State, version string) int {
+	if prior.LastVersion == version {
+		return prior.Attempts + 1
 	}
-	return on
+	return 1
 }
 
 // NewID returns a random machine identifier for State.ID.
@@ -90,10 +95,18 @@ func Record(ctx context.Context, version string, attempts int, id string) error 
 	return updateState(ctx, func(s *State) {
 		s.LastVersion = version
 		s.Attempts = attempts
+		if attempts == 0 {
+			s.Installing = false
+		}
 		if s.ID == "" {
 			s.ID = id
 		}
 	})
+}
+
+// MarkInstalling sets State.Installing before a first install starts.
+func MarkInstalling(ctx context.Context) error {
+	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI

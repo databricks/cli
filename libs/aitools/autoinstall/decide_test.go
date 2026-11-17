@@ -9,7 +9,6 @@ import (
 func TestDecide(t *testing.T) {
 	// eligible is a run of a released version never seen before, with the gate on, in the treatment arm.
 	eligible := Inputs{
-		Command: []string{"jobs", "list"},
 		Version: "1.30.0",
 		GateOn:  true,
 		Bucket:  HoldoutPercent,
@@ -21,15 +20,8 @@ func TestDecide(t *testing.T) {
 	}{
 		{name: "eligible", modify: func(in *Inputs) {}, want: ReasonRun},
 
-		{name: "aitools subtree", modify: func(in *Inputs) { in.Command = []string{"aitools", "list"} }, want: ReasonSkippedCommand},
-		{name: "experimental aitools", modify: func(in *Inputs) { in.Command = []string{"experimental", "aitools", "tools", "query"} }, want: ReasonSkippedCommand},
-		{name: "help", modify: func(in *Inputs) { in.Command = []string{"help"} }, want: ReasonSkippedCommand},
-		{name: "version", modify: func(in *Inputs) { in.Command = []string{"version"} }, want: ReasonSkippedCommand},
-		{name: "completion", modify: func(in *Inputs) { in.Command = []string{"completion", "zsh"} }, want: ReasonSkippedCommand},
-		{name: "shell completion request", modify: func(in *Inputs) { in.Command = []string{"__complete"} }, want: ReasonSkippedCommand},
-		{name: "shell completion request without descriptions", modify: func(in *Inputs) { in.Command = []string{"__completeNoDesc"} }, want: ReasonSkippedCommand},
-		{name: "auth token", modify: func(in *Inputs) { in.Command = []string{"auth", "token"} }, want: ReasonSkippedCommand},
-		{name: "other auth command", modify: func(in *Inputs) { in.Command = []string{"auth", "describe"} }, want: ReasonRun},
+		{name: "skipped command", modify: func(in *Inputs) { in.SkippedCommand = true }, want: ReasonSkippedCommand},
+		{name: "Databricks Runtime", modify: func(in *Inputs) { in.OnRuntime = true }, want: ReasonOnRuntime},
 
 		{name: "cache disabled", modify: func(in *Inputs) { in.CacheDisabled = true }, want: ReasonCacheDisabled},
 		{name: "development build", modify: func(in *Inputs) { in.Version = "1.31.0-dev+abcdef123456" }, want: ReasonDevelopmentBuild},
@@ -56,7 +48,8 @@ func TestDecide(t *testing.T) {
 		{name: "last bucket is treatment", modify: func(in *Inputs) { in.Bucket = 99 }, want: ReasonRun},
 
 		{name: "skipped command before everything", modify: func(in *Inputs) {
-			in.Command = []string{"version"}
+			in.SkippedCommand = true
+			in.OnRuntime = true
 			in.CacheDisabled = true
 			in.CI = true
 		}, want: ReasonSkippedCommand},
@@ -72,7 +65,7 @@ func TestDecide(t *testing.T) {
 }
 
 func TestReasonDue(t *testing.T) {
-	notDue := []Reason{ReasonSkippedCommand, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted}
+	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted}
 	due := []Reason{ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun}
 	for _, r := range notDue {
 		assert.False(t, r.Due(), r)

@@ -1,8 +1,6 @@
 package autoinstall
 
 import (
-	"slices"
-
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
 )
@@ -24,6 +22,7 @@ type Reason string
 const (
 	// Not due: the run records and reports nothing.
 	ReasonSkippedCommand   Reason = "skipped_command"
+	ReasonOnRuntime        Reason = "on_runtime"
 	ReasonCacheDisabled    Reason = "cache_disabled"
 	ReasonDevelopmentBuild Reason = "development_build"
 	ReasonAlreadyRan       Reason = "already_ran"
@@ -44,7 +43,7 @@ const (
 // settles the version. A run that is not due changes nothing.
 func (r Reason) Due() bool {
 	switch r {
-	case ReasonSkippedCommand, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted:
+	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted:
 		return false
 	case ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun:
 		return true
@@ -54,8 +53,12 @@ func (r Reason) Due() bool {
 
 // Inputs is everything Decide depends on.
 type Inputs struct {
-	// Command is the command path below the root, e.g. ["auth", "token"].
-	Command []string
+	// SkippedCommand is set for a command that never triggers auto-install.
+	SkippedCommand bool
+
+	// OnRuntime is set on Databricks Runtime, where the home directory does
+	// not outlive the cluster and the CLI version is the platform's.
+	OnRuntime bool
 
 	// CacheDisabled is DATABRICKS_CACHE_ENABLED=false.
 	CacheDisabled bool
@@ -66,7 +69,7 @@ type Inputs struct {
 	// State is the persisted state: last version, attempts and opt-out.
 	State State
 
-	// CI is the CI env var check of the version-check notice.
+	// CI is set when the CLI runs in continuous integration.
 	CI bool
 
 	// EnvOptOut is DATABRICKS_AITOOLS_AUTO_INSTALL=false, or a "no" earlier in
@@ -80,14 +83,6 @@ type Inputs struct {
 	Bucket int
 }
 
-// skippedCommands never trigger auto-install anywhere in their path: help
-// and shell completion output is read by machines or shown on every
-// keystroke, `version` is how a user checks what was just installed, and the
-// aitools subtree manages the tools explicitly. "__complete" and
-// "__completeNoDesc" are cobra.ShellCompRequestCmd and
-// cobra.ShellCompNoDescRequestCmd.
-var skippedCommands = []string{"aitools", "help", "version", "completion", "__complete", "__completeNoDesc"}
-
 // Decide returns whether this run should install, settle the version, or do
 // nothing. The checks run from cheapest to most expensive, so callers can
 // leave GateOn false and look the gate up only when Decide returns
@@ -95,8 +90,10 @@ var skippedCommands = []string{"aitools", "help", "version", "completion", "__co
 // the holdout arm only exists once the feature is on.
 func Decide(in Inputs) Reason {
 	switch {
-	case isSkippedCommand(in.Command):
+	case in.SkippedCommand:
 		return ReasonSkippedCommand
+	case in.OnRuntime:
+		return ReasonOnRuntime
 	case in.CacheDisabled:
 		return ReasonCacheDisabled
 	// Development and snapshot builds change version with every commit, so
@@ -127,13 +124,4 @@ func Decide(in Inputs) Reason {
 // InHoldout reports whether a machine in bucket belongs to the holdout.
 func InHoldout(bucket int) bool {
 	return bucket < HoldoutPercent
-}
-
-func isSkippedCommand(path []string) bool {
-	for _, name := range path {
-		if slices.Contains(skippedCommands, name) {
-			return true
-		}
-	}
-	return slices.Equal(path, []string{"auth", "token"})
 }
