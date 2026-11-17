@@ -1,1 +1,1 @@
-* `databricks aitools install` now cancels the agent picker when you press Esc, as Ctrl+C does, and exits with the same "user aborted" error. Its help line now says how to cancel.
+* `databricks aitools install` now cancels the agent picker when you press Esc, as Ctrl+C does, and exits with the same "user aborted" error. Its help line now says how to cancel. ([#7721](https://github.com/databricks/cli/pull/7721))
