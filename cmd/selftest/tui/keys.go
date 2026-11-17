@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -66,17 +64,16 @@ With --raw, bubbletea is bypassed: when stdin is a terminal it is put in raw
 mode, and each chunk of bytes read is printed as hex and quoted text.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
 			in := cmd.InOrStdin()
 			out := cmd.ErrOrStderr()
 			if raw {
-				return runRawKeys(ctx, in, out, timeout)
+				return runRawKeys(in, out, timeout)
 			}
 			// Mirrors cmdio's runTUI options. cmdio does not expose a way to run a
 			// custom model, so keep these in sync with libs/cmdio/io.go.
 			// Raw mode clears OPOST, so "\n" would not return the carriage.
 			eol := "\n"
-			if _, ok := rawInputFile(ctx, in); ok {
+			if _, ok := rawInputFile(in); ok {
 				eol = "\r\n"
 			}
 			p := tea.NewProgram(&keysModel{out: out, eol: eol},
@@ -104,20 +101,22 @@ mode, and each chunk of bytes read is printed as hex and quoted text.`,
 }
 
 // rawInputFile returns stdin as a file when it is a terminal. bubbletea and the
-// --raw path put that file in raw mode, which is why output needs "\r\n".
-func rawInputFile(ctx context.Context, in io.Reader) (*os.File, bool) {
+// --raw path put that file in raw mode, which is why output needs "\r\n". An
+// MSYS2 pty pipe counts as a terminal for cmdio but can't be put in raw mode,
+// so this asks the file itself.
+func rawInputFile(in io.Reader) (*os.File, bool) {
 	f, ok := in.(*os.File)
-	return f, ok && cmdio.IsInputTTY(ctx)
+	return f, ok && term.IsTerminal(int(f.Fd())) //nolint:forbidigo // raw mode needs a real terminal, not what cmdio counts as one
 }
 
 // runRawKeys reads stdin in raw mode without bubbletea. After an early return
 // the reader goroutine can be blocked on Read or on sending a chunk; the
 // process exits once the command finishes, so it does not need to be joined.
-func runRawKeys(ctx context.Context, in io.Reader, out io.Writer, timeout time.Duration) error {
+func runRawKeys(in io.Reader, out io.Writer, timeout time.Duration) error {
 	// Raw mode clears OPOST, so "\n" would not return the carriage. Print
 	// "\r\n" in that case so each line starts at column 0.
 	eol := "\n"
-	if f, ok := rawInputFile(ctx, in); ok {
+	if f, ok := rawInputFile(in); ok {
 		state, err := term.MakeRaw(int(f.Fd()))
 		if err != nil {
 			return err

@@ -20,11 +20,14 @@ var profileEnvVars = []string{
 func newProfileCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "profile",
-		Short: "Print the color decision cmdio makes for stdout and stderr",
+		Short: "Print the color and prompt decisions cmdio makes for stdout and stderr",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmd.OutOrStdout()
+			// NO_COLOR only removes color; TERM=dumb also rules out prompts and
+			// spinners. The env block below has the raw values, this line the decision.
+			fmt.Fprintf(w, "interactive=%s prompt=%t\n", cmdio.GetInteractiveMode(ctx), cmdio.IsPromptSupported(ctx))
 			for _, s := range []struct {
 				name string
 				out  io.Writer

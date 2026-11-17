@@ -10,10 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pagerDefaultHeader matches the header that real list commands render.
-var pagerDefaultHeader = cmdio.Heredoc(`
-	{{header "Name"}}	{{header "State"}}`)
-
 // pagerRowTemplate matches the row template used by real list commands.
 var pagerRowTemplate = cmdio.Heredoc(`
 	{{range .}}{{.Name|green}}	{{.State}}
@@ -94,6 +90,9 @@ func newPagerCmd() *cobra.Command {
 			if failAfter < -1 {
 				return fmt.Errorf("--fail-after must be -1 or greater, got %d", failAfter)
 			}
+			if failAfter > items {
+				return fmt.Errorf("--fail-after %d is past the end of --items %d, so the error would never be injected", failAfter, items)
+			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -106,8 +105,7 @@ func newPagerCmd() *cobra.Command {
 			return cmdio.RenderIterator(cmd.Context(), it)
 		},
 		Annotations: map[string]string{
-			"headerTemplate": pagerDefaultHeader,
-			"template":       pagerRowTemplate,
+			"template": pagerRowTemplate,
 		},
 	}
 	cmd.Flags().IntVar(&items, "items", 50, "number of rows to yield")
