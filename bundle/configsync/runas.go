@@ -18,13 +18,14 @@ import (
 // run_as holds a single principal key, so when the remote switches kind (for
 // example user_name to service_principal_name) the new key is the edit itself,
 // and dropping it while removing the old key leaves "run_as: {}".
-var errPermissionsNotRead = errors.New("permissions were not read")
-
 const (
 	runAsField           = "run_as"
 	jobRunAsPattern      = "resources.jobs.*." + runAsField
 	jobRunAsChildPattern = jobRunAsPattern + ".*"
 )
+
+// errPermissionsNotRead reports that a job's ACL was not read, so its owner is unknown.
+var errPermissionsNotRead = errors.New("permissions were not read")
 
 // isJobRunAsPath reports whether path is a job's run_as or one of its keys.
 // Unlike other backend defaults, these are synced when the config lacks them:
