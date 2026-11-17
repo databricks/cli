@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 
 	"github.com/stretchr/testify/assert"
@@ -70,10 +71,10 @@ func TestResolveTestSelections(t *testing.T) {
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
-	assert.Equal(t, startTestUpdateRequest{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
-	assert.Equal(t, startTestUpdateRequest{
+	assert.Equal(t, pipelines.StartUpdate{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
+	assert.Equal(t, pipelines.StartUpdate{
 		TestOnly:    true,
-		TestOptions: &testOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
+		TestOptions: &pipelines.PipelineTestOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
 	}, newStartTestUpdateRequest([]string{"/Workspace/tests"}, []string{"-k", "orders"}))
 }
 
@@ -112,7 +113,7 @@ func TestBundleTestSelectionPath(t *testing.T) {
 
 	// A path outside the synchronized files is an error. The error shows forward slashes.
 	_, err = bundleTestSelectionPath(syncRoot, syncRoot, filesRoot, filepath.Join("..", "tests"))
-	assert.ErrorContains(t, err, "is outside the synchronized bundle files in "+filepath.ToSlash(syncRoot))
+	assert.ErrorContains(t, err, "is not in the files synced from "+filepath.ToSlash(syncRoot))
 }
 
 func TestNotPipelineKeyError(t *testing.T) {
