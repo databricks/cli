@@ -5,9 +5,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
@@ -281,6 +284,28 @@ func (s *Stats) CollectSelectedIDs(selectors []string) {
 // CollectStateIDs records the ids present in the state that was read.
 func (s *Stats) CollectStateIDs(typeAndIDs []string) {
 	s.StateResourceIDs = collectResourceIDs(typeAndIDs)
+}
+
+// WithProfileAuth sets the auth config from an explicitly selected profile when
+// loading the target failed before the bundle set its own, so the failure can
+// still be reported. Without the target its workspace is unknown, so nothing is
+// set without a profile or when the profile does not resolve.
+func WithProfileAuth(ctx context.Context, profile string) context.Context {
+	if cmdctx.HasConfigUsed(ctx) {
+		return ctx
+	}
+	if profile == "" {
+		profile = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
+	}
+	if profile == "" {
+		return ctx
+	}
+	w := config.Workspace{Profile: profile}
+	client, err := w.Client(ctx)
+	if err != nil {
+		return ctx
+	}
+	return cmdctx.SetConfigUsed(ctx, client.Config)
 }
 
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.

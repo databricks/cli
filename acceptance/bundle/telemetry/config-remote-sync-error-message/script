@@ -3,7 +3,20 @@ trace musterr $CLI bundle config-remote-sync
 
 trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
 
-# Selecting the target fails before the auth config is set; the failure is still reported.
-trace musterr $CLI bundle config-remote-sync -t bad
+cat > .databrickscfg <<EOT
+[myprofile]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+EOT
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+
+# Selecting the target fails before the auth config is set; with an explicit profile the failure is still reported.
+trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
 
 trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
+# Without a profile, or with one that does not resolve, nothing is sent.
+trace musterr $CLI bundle config-remote-sync -t bad
+trace musterr $CLI bundle config-remote-sync -t bad -p missing
+
+trace errcode print_requests.py //telemetry-ext

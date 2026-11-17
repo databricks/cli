@@ -217,35 +217,6 @@ func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	return b
 }
 
-// ConfigureBundleAuth sets the auth configuration in the command context when
-// configuring the bundle stopped before it did, for example because selecting
-// the target failed. It does nothing if the configuration cannot be resolved.
-func ConfigureBundleAuth(cmd *cobra.Command, b *bundle.Bundle) {
-	if cmdctx.HasConfigUsed(cmd.Context()) {
-		return
-	}
-	// The target's workspace was never merged. Without an explicit profile, a
-	// target that sets its own host or profile could point elsewhere, so don't guess.
-	if getProfile(cmd) == "" && targetsSetWorkspace(b) {
-		return
-	}
-	configureProfile(cmd, b)
-	client, err := b.WorkspaceClientE(cmd.Context())
-	if err != nil {
-		return
-	}
-	cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), client.Config))
-}
-
-func targetsSetWorkspace(b *bundle.Bundle) bool {
-	for _, t := range b.Config.Targets {
-		if t != nil && t.Workspace != nil && (t.Workspace.Host != "" || t.Workspace.Profile != "") {
-			return true
-		}
-	}
-	return false
-}
-
 // TryConfigureBundle configures a bundle on the command context
 // if there is one, but doesn't fail if there isn't one.
 func TryConfigureBundle(cmd *cobra.Command) *bundle.Bundle {

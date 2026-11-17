@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -219,72 +218,6 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
-}
-
-// setupTargetFailure loads a bundle whose default target assigns an undefined
-// variable, so configureBundle stops before setting the auth configuration.
-func setupTargetFailure(t *testing.T, cmd *cobra.Command, contents string) *bundle.Bundle {
-	setupDatabricksCfg(t)
-
-	rootPath := t.TempDir()
-	t.Chdir(rootPath)
-	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
-	require.NoError(t, err)
-
-	ctx := logdiag.InitContext(cmd.Context())
-	logdiag.SetCollect(ctx, true)
-	cmd.SetContext(ctx)
-	b := MustConfigureBundle(cmd)
-	diags := logdiag.FlushCollected(ctx)
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary, "variable undefined_var is not defined")
-	require.False(t, cmdctx.HasConfigUsed(cmd.Context()))
-	return b
-}
-
-func TestConfigureBundleAuthAfterTargetFailure(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	cmd := emptyCommand(t)
-	err := cmd.Flag("profile").Value.Set("PROFILE-2")
-	require.NoError(t, err)
-
-	b := setupTargetFailure(t, cmd, `
-workspace:
-  profile: PROFILE-1
-targets:
-  bad:
-    default: true
-    workspace:
-      profile: PROFILE-1
-    variables:
-      undefined_var: value
-`)
-
-	ConfigureBundleAuth(cmd, b)
-	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
-	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
-}
-
-func TestConfigureBundleAuthAfterTargetFailureSkipsTargetWorkspace(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	cmd := emptyCommand(t)
-	b := setupTargetFailure(t, cmd, `
-workspace:
-  host: https://x.test
-targets:
-  bad:
-    default: true
-    workspace:
-      profile: PROFILE-2
-    variables:
-      undefined_var: value
-`)
-
-	ConfigureBundleAuth(cmd, b)
-	assert.False(t, cmdctx.HasConfigUsed(cmd.Context()))
 }
 
 func TestBundleConfigureProfileEnvVariable(t *testing.T) {
