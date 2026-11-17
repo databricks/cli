@@ -42,7 +42,7 @@ ID    Name                State
 4321  some-test-cluster   
 9876  some-other-cluster  
 
-=== Within one session both lines print once, so 2>&1 pipelines see them only on the first command
+=== Within one session the text line prints at most once per hour and the native line at most once per 10 minutes, so a 2>&1 pipeline on the next command sees neither
 
 >>> [CLI] clusters list
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
@@ -52,6 +52,20 @@ ID    Name                State
 9876  some-other-cluster  
 
 >>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== A command outside a Claude Code subprocess leaves the native line due, so the next Claude Code command prints only that line
+
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] clusters list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+>>> [CLI] clusters list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 ID    Name                State
 4321  some-test-cluster   
 9876  some-other-cluster  
