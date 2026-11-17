@@ -259,8 +259,9 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 
 // FetchSkillsManifestWithFallback fetches the skills manifest at the given ref.
 // If the ref points to a non-existent tag (not-found error), it falls back to
-// the embedded manifest's skills version. Returns the manifest, the (possibly
-// updated) ref, and any error.
+// the embedded manifest's skills version. A manifest that names a skill or file
+// outside its directory fails with ErrUnsafeManifestPath, whatever the source.
+// Returns the manifest, the (possibly updated) ref, and any error.
 func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, ref string, allowFallback bool) (*Manifest, string, error) {
 	tag := strings.TrimPrefix(ref, "v")
 	manifest, err := src.FetchManifest(ctx, ref)
@@ -274,7 +275,13 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 			log.Warnf(ctx, "Could not resolve embedded skills version: %v", fbErr)
 		}
 	}
-	return manifest, ref, err
+	if err != nil {
+		return nil, ref, err
+	}
+	if err := checkManifestPaths(manifest); err != nil {
+		return nil, ref, err
+	}
+	return manifest, ref, nil
 }
 
 // installedSkillsRelease returns the newest recorded raw-skills release and
@@ -549,6 +556,14 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 	result := make(map[string]SkillMeta, len(candidates))
 	for name, meta := range candidates {
+		if reason := unportableSkill(name, meta.Files); reason != "" {
+			if isSpecific {
+				return nil, &SkillError{Skill: name, Reason: ReasonUnportableSkill, Detail: "cannot be installed: " + reason}
+			}
+			log.Warnf(ctx, "Skipping skill %q: %s", name, reason)
+			continue
+		}
+
 		if meta.IsExperimental() && !opts.IncludeExperimental {
 			if isSpecific {
 				return nil, &SkillError{Skill: name, Reason: ReasonExperimentalSkill, Detail: "is experimental; use --experimental to install"}

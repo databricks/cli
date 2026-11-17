@@ -325,3 +325,23 @@ func TestClassifyRealManifestFetchErrors(t *testing.T) {
 		})
 	}
 }
+
+// TestClassifyUnsafeManifestPath covers a manifest that downloads and parses
+// but names a file outside the skills directory: an invalid manifest, not a
+// failed download.
+func TestClassifyUnsafeManifestPath(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"version":"1","skills":{"databricks-core":{"version":"0.1.0","files":["../../.bashrc"]}}}`))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+	_, _, err := installer.FetchSkillsManifestWithFallback(t.Context(), &installer.GitHubManifestSource{}, "v1", false)
+	require.ErrorIs(t, err, installer.ErrUnsafeManifestPath)
+	assert.Equal(t, protos.AitoolsErrorCategoryManifestInvalid, classifyInstallError(err))
+}
+
+func TestClassifyUnportableSkill(t *testing.T) {
+	err := &installer.SkillError{Skill: "Databricks_Core", Reason: installer.ReasonUnportableSkill}
+	assert.Equal(t, protos.AitoolsErrorCategoryManifestInvalid, classifyInstallError(err))
+}
