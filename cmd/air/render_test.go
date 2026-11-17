@@ -12,15 +12,16 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )
 
-// asciiPalette returns a palette whose styles emit no escape codes, so render
-// output is plain text and assertions stay readable.
-func asciiPalette(t *testing.T) palette {
+// asciiPalette returns a palette for a color-less target and a function that
+// renders styled output the way it reaches that target (no escape codes). On
+// lipgloss v2 styles always render full color and are stripped at write time,
+// so tests assert on what reaches the target.
+func asciiPalette(t *testing.T) (palette, func(string) string) {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
-	return newPalette(r)
+	return newPalette(r), r.Render
 }
 
 // A local HTTP server exercises the SDK export path without a live workspace.
@@ -209,9 +210,9 @@ func TestSynthConfigYAML(t *testing.T) {
 }
 
 func TestColorizeConfigLine(t *testing.T) {
-	p := asciiPalette(t)
-	// Under the Ascii profile colorization adds no escapes, so each line is
-	// preserved verbatim (indentation included) regardless of its role.
+	p, plain := asciiPalette(t)
+	// Colorization only adds styling, so each line is preserved verbatim
+	// (indentation included) regardless of its role.
 	for _, line := range []string{
 		"experiment_name: stream-latency-test",
 		"compute:",
@@ -220,7 +221,7 @@ func TestColorizeConfigLine(t *testing.T) {
 		"command: |",
 		`  for i in $(seq 1 10); do echo "step $i"; done`,
 	} {
-		assert.Equal(t, line, colorizeConfigLine(p, line))
+		assert.Equal(t, line, plain(colorizeConfigLine(p, line)))
 	}
 }
 
@@ -233,8 +234,8 @@ func TestIsConfigKey(t *testing.T) {
 }
 
 func TestRenderBox(t *testing.T) {
-	p := asciiPalette(t)
-	out := renderBox(p, configBoxTitle, "experiment_name: stream-latency-test\ncompute:")
+	p, plain := asciiPalette(t)
+	out := plain(renderBox(p, configBoxTitle, "experiment_name: stream-latency-test\ncompute:"))
 	lines := strings.Split(out, "\n")
 
 	// Title sits in the top border; corners are rounded; every row is the same width.
@@ -250,8 +251,8 @@ func TestRenderBox(t *testing.T) {
 }
 
 func TestRenderFields(t *testing.T) {
-	p := asciiPalette(t)
-	out := renderFields(p, false, runView{
+	p, plain := asciiPalette(t)
+	out := plain(renderFields(p, false, runView{
 		runID:        "836121283738861",
 		dashboardURL: "https://h.test/jobs/runs/836121283738861",
 		status:       "SUCCESS",
@@ -265,7 +266,7 @@ func TestRenderFields(t *testing.T) {
 		user:         "user@example.com",
 		accelerators: "1x A10",
 		environment:  "4",
-	})
+	}))
 
 	// Labels are padded to the longest ("Accelerators"), so values align.
 	assert.Contains(t, out, "Run ID        ")
@@ -283,8 +284,8 @@ func TestRenderFields(t *testing.T) {
 }
 
 func TestRenderFieldsStripsControlCharacters(t *testing.T) {
-	p := asciiPalette(t)
-	out := renderFields(p, false, runView{
+	p, plain := asciiPalette(t)
+	raw := renderFields(p, false, runView{
 		runID:        "1",
 		status:       "SUCCESS",
 		submitted:    "2026-06-03 04:17 UTC",
@@ -298,6 +299,12 @@ func TestRenderFieldsStripsControlCharacters(t *testing.T) {
 		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
 	})
 
+	// On lipgloss v2 styles always render full color (stripped at write
+	// time), so check the injected sequences on the raw output only.
+	for _, injected := range []string{"\x1b]0;", "\x1b]8;;", "\x1b[2J", "\x1b[31m", "\r", "\x07"} {
+		assert.NotContains(t, raw, injected)
+	}
+	out := plain(raw)
 	assert.Contains(t, out, "Experiment    experiment")
 	assert.Contains(t, out, "MLflow Run    runname")
 	assert.Contains(t, out, "User          user@example.com")
@@ -307,12 +314,15 @@ func TestRenderFieldsStripsControlCharacters(t *testing.T) {
 }
 
 func TestLink(t *testing.T) {
-	p := asciiPalette(t)
+	p, plain := asciiPalette(t)
 	// Color off: the bare label, no URL.
-	assert.Equal(t, "label", link(false, p.blue, "label", "https://h.test"))
-	assert.Equal(t, "label", link(false, p.blue, "label", ""))
+	assert.Equal(t, "label", plain(link(false, p.blue, "label", "https://h.test")))
+	assert.Equal(t, "label", plain(link(false, p.blue, "label", "")))
 	// With color on, the label is wrapped in an OSC 8 hyperlink to the url.
-	assert.Contains(t, link(true, p.blue, "label", "https://h.test"), termenv.Hyperlink("https://h.test", "label"))
+	linked := link(true, p.blue, "label", "https://h.test")
+	assert.True(t, strings.HasPrefix(linked, "\x1b]8;;https://h.test\x1b\\"), linked)
+	assert.True(t, strings.HasSuffix(linked, "\x1b]8;;\x1b\\"), linked)
+	assert.Equal(t, "label", plain(linked))
 }
 
 func TestStatusStyleSelectors(t *testing.T) {

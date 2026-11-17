@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -55,7 +54,7 @@ type palette struct {
 	red   lipgloss.Style // failed status
 }
 
-func newPalette(r *lipgloss.Renderer) palette {
+func newPalette(r *cmdio.Renderer) palette {
 	fg := func(hex string) lipgloss.Style { return r.NewStyle().Foreground(lipgloss.Color(hex)) }
 	return palette{
 		n7:     fg("#6E6E70"),
@@ -101,6 +100,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// emits no SGR codes; combined with the link fallback below this gives clean,
 	// un-escaped output under --no-color / NO_COLOR / piped stdout.
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	out = renderer.Writer(out)
 	p := newPalette(renderer)
 
 	// The list detail pane (list_detail.go) renders through here without going
@@ -509,7 +509,7 @@ func link(colorOn bool, style lipgloss.Style, label, url string) string {
 	// through lipgloss.Render instead corrupts it: lipgloss re-styles each rune
 	// and splits the "\x1b]8;;" introducer, so the terminal can't parse the
 	// sequence and prints it literally.
-	return termenv.Hyperlink(url, style.Underline(true).Render(label))
+	return cmdio.Hyperlink(url, style.Underline(true).Render(label))
 }
 
 // statusStyle maps a run status to its accent color: green for success, red for
