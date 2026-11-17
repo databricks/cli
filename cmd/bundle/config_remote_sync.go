@@ -182,7 +182,7 @@ Examples:
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
 		}
-		cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), cmd.Flag("profile").Value.String()))
+		cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), b, cmd.Flag("profile").Value.String()))
 
 		// The diagnostics are already on stderr; record the first one instead of the sentinel.
 		if errors.Is(err, root.ErrAlreadyPrinted) {

@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -291,7 +292,7 @@ func (s *Stats) CollectStateIDs(typeAndIDs []string) {
 // loading the bundle or its target failed before the bundle set its own, so the
 // failure can still be reported. Without the target its workspace is unknown, so
 // nothing is set without a profile or when the profile does not resolve.
-func WithProfileAuth(ctx context.Context, profile string) context.Context {
+func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile string) context.Context {
 	if cmdctx.HasConfigUsed(ctx) {
 		return ctx
 	}
@@ -299,7 +300,12 @@ func WithProfileAuth(ctx context.Context, profile string) context.Context {
 	if profile == "" {
 		return ctx
 	}
-	w := config.Workspace{Profile: profile}
+	var w config.Workspace
+	if b != nil {
+		// As in bundle auth, a profile for another host than the bundle's is rejected.
+		w = b.Config.Workspace
+	}
+	w.Profile = profile
 	client, err := w.Client(ctx)
 	if err != nil {
 		return ctx
