@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -34,8 +35,20 @@ func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundl
 		}
 	}
 
-	unmanaged, skipped := readUnmanagedPermissions(ctx, b, plan)
-	for resourceKey, permissions := range unmanaged {
+	remote, skipped := readRemotePermissions(ctx, b, plan)
+	currentUser := currentUserName(b)
+	for resourceKey, permissions := range remote {
+		if entry := plan.Plan[resourceKey+".permissions"]; entry != nil && entry.Action == deployplan.Create {
+			if err := addUndeployedPermissionsChanges(changes, b, resourceKey, permissions); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		permissions = withoutCurrentUserManage(permissions, currentUser)
+		if len(permissions) == 0 {
+			continue
+		}
 		value, err := normalizeValue(permissions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
@@ -93,6 +106,31 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 	return nil
 }
 
+// addUndeployedPermissionsChanges compares the remote ACL of a deployed resource with the
+// permissions its config declares but that were never deployed, e.g. after an import was saved.
+// The plan creates those without reading the ACL, and creating them replaces it, so a grant made
+// since would be dropped by the next deploy.
+func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKey string, remote []dresources.StatePermission) error {
+	permissionsKey := resourceKey + ".permissions"
+	sv, ok := b.DeploymentBundle.StateCache.Load(permissionsKey)
+	if !ok {
+		return fmt.Errorf("no config state for %s", permissionsKey)
+	}
+	local := sv.Value.(*dresources.PermissionsState)
+	remoteState := &dresources.PermissionsState{ObjectID: local.ObjectID, EmbeddedSlice: remote}
+	adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
+	diff, err := structdiff.GetStructDiff(remoteState, local, adapter.KeyedSlices())
+	if err != nil {
+		return fmt.Errorf("failed to compare permissions of %s: %w", resourceKey, err)
+	}
+
+	entry := &deployplan.PlanEntry{RemoteState: remoteState, Changes: make(deployplan.Changes)}
+	for _, ch := range diff {
+		entry.Changes[ch.Path.String()] = &deployplan.ChangeDesc{Action: deployplan.Update, New: ch.New, Remote: ch.Old}
+	}
+	return addDeclaredPermissionsChanges(changes, b, permissionsKey, entry)
+}
+
 // declaredPrincipals returns the permissions written in the resource's config as the plan's
 // selectors, e.g. "[user_name='a']". Entries added by mutators have no location.
 func declaredPrincipals(b *bundle.Bundle, resourceKey string) map[string]bool {
@@ -123,19 +161,19 @@ func (c Changes) set(resourceKey, fieldPath string, change *ConfigChangeDesc) {
 	c[resourceKey][fieldPath] = change
 }
 
-// readUnmanagedPermissions reads the remote permissions of deployed resources whose config
-// declares none, keyed by resource. They are imported as a whole: the current ACL cannot tell
-// grants made before the deployment from the ones made since. A resource whose ACL cannot be
-// read is returned as skipped, so the rest of the sync still goes through.
-func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (map[string][]dresources.StatePermission, []SkippedChange) {
+// readRemotePermissions reads the remote permissions of deployed resources whose ACL the plan
+// does not read, keyed by resource. Those that declare no permissions are imported as a whole:
+// the current ACL cannot tell grants made before the deployment from the ones made since. A
+// resource whose ACL cannot be read is returned as skipped, so the rest of the sync still goes
+// through.
+func readRemotePermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (map[string][]dresources.StatePermission, []SkippedChange) {
 	var mu sync.Mutex
 	var g errgroup.Group
 	g.SetLimit(permissionsReadLimit)
 	result := make(map[string][]dresources.StatePermission)
 	var skipped []SkippedChange
-	currentUser := currentUserName(b)
 
-	for resourceKey, adapter := range unmanagedPermissionsAdapters(b, plan) {
+	for resourceKey, adapter := range unreadPermissionsAdapters(b, plan) {
 		g.Go(func() error {
 			permissions, err := readPermissions(ctx, b, adapter, resourceKey)
 			mu.Lock()
@@ -144,10 +182,7 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 				skipped = append(skipped, permissionsReadSkip(resourceKey, err))
 				return nil
 			}
-			permissions = withoutCurrentUserManage(permissions, currentUser)
-			if len(permissions) > 0 {
-				result[resourceKey] = permissions
-			}
+			result[resourceKey] = permissions
 			return nil
 		})
 	}
@@ -167,17 +202,17 @@ func permissionsReadSkip(resourceKey string, err error) SkippedChange {
 	return SkippedChange{ResourceKey: resourceKey, Reason: reason, Error: err.Error()}
 }
 
-// unmanagedPermissionsAdapters returns the permissions adapter of every deployed resource whose
-// config declares no permissions. A state-only permissions entry is deleted on the next deploy
-// without changing the ACL, so it does not count.
-func unmanagedPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[string]*dresources.Adapter {
+// unreadPermissionsAdapters returns the permissions adapter of every deployed resource whose
+// config declares no permissions, or declares permissions that were never deployed. A state-only
+// permissions entry is deleted on the next deploy without changing the ACL, so it does not count.
+func unreadPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[string]*dresources.Adapter {
 	result := make(map[string]*dresources.Adapter)
 	for resourceKey, entry := range plan.Plan {
 		if isPermissionsOrGrantsSubResource(resourceKey) || !entry.Action.KeepsID() {
 			continue
 		}
 		permissionsKey := resourceKey + ".permissions"
-		if permissions := plan.Plan[permissionsKey]; permissions != nil && permissions.Action != deployplan.Delete {
+		if permissions := plan.Plan[permissionsKey]; permissions != nil && permissions.Action != deployplan.Delete && permissions.Action != deployplan.Create {
 			continue
 		}
 		adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
