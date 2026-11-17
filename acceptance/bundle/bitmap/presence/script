@@ -22,6 +22,11 @@ diff.py out.bitmap.txt decoded-python.txt
 trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap -o json < bitmap.b64 > decoded-python.json
 diff.py out.bitmap.json decoded-python.json
 
+# A value passed with --var gives the same bits as BUNDLE_VAR_off_flag (test.toml): the bits
+# record what the config sets, not how a variable got its value.
+trace $CLI bundle bitmap bitmap -o text --var off_flag=false > var-flag.txt
+diff.py out.bitmap.txt var-flag.txt
+
 trace $CLI bundle bitmap update-schema --validate
 
 title "decode rejects input that is not an encoded bitmap\n"
