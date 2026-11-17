@@ -1,0 +1,1 @@
+* Fix the token storage mode (`auth_storage`) being read from the file named by `DATABRICKS_CONFIG_FILE` instead of the config file the profile was loaded from. ([#0](https://github.com/databricks/cli/pull/0))
