@@ -8,11 +8,11 @@ trace $CLI bundle plan
 
 # Deleting an agent moves it to trash, where its pinned ID remains reserved.
 title "Deploy cannot reuse the pinned ID"
-musterr $CLI bundle deploy
+trace musterr $CLI bundle deploy
 
 trace $CLI bundle destroy --auto-approve
 
 # Destroy clears bundle state, but the trashed agent still reserves its ID.
-musterr $CLI bundle deploy
+trace musterr $CLI bundle deploy
 
 trace $CLI bundle destroy --auto-approve
