@@ -226,7 +226,7 @@ func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch 
 
 	deadline := time.Now().Add(branchReadyTimeout)
 	for branchState(branch) == postgres.BranchStatusStateInit {
-		if time.Now().After(deadline) {
+		if !time.Now().Before(deadline) {
 			log.Warnf(ctx, "branch %s is still initializing after %s", branch.Name, branchReadyTimeout)
 			break
 		}
