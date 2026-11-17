@@ -1,1 +1,0 @@
-* Add `--resume` and `--timeout` to `databricks pipelines test`. `--resume` reads the results of an earlier test run without starting a new one. ([#7426](https://github.com/databricks/cli/pull/7426))
