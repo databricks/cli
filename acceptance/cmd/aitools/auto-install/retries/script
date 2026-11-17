@@ -1,0 +1,22 @@
+use_home home
+gate true
+
+title "a failed attempt is silent and retried on the next run, up to 10 attempts"
+for i in 1 2 3 4 5 6 7 8 9; do
+    DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+done
+# One line per distinct event with its count (uniq -c pads differently by platform).
+trace print_telemetry | sort | uniq -c | sed 's/^ *//'
+trace auto_install_state
+trace DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+trace print_telemetry
+
+title "after 10 attempts the version gets no more"
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+
+title "a new version starts over"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
+trace print_telemetry
+trace auto_install_state

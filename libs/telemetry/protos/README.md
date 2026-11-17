@@ -30,3 +30,16 @@ wait for it. Neither does a run of `install`, `update` or `uninstall` that ends 
 confirmation step (a flag error, a cancelled prompt, no agent detected, a `--path` dump), nor an
 `update` or `uninstall` that finds nothing installed. A run that does not wait still uploads,
 within the upload timeout, when auth has already resolved.
+
+On the first run of a new CLI version, the CLI can install Databricks AI tools for the coding agents
+on the machine (see `databricks aitools auto-install --help`). It logs an `aitools_auto_install_event`
+with the outcome (`INSTALLED`, `UP_TO_DATE`, `KEPT`, `SKIPPED_CI`, `SKIPPED_OPTOUT`,
+`SKIPPED_HOLDOUT`, `SKIPPED_NO_AGENTS`, `SKIPPED_PLATFORM`, `FAILED`, `RETRIES_EXHAUSTED`), the
+machine's holdout arm and, for a failure, its error category: once per version and machine, plus
+once per retry of a failed attempt. Nothing is logged for a version whose outcome is settled, on
+Databricks Runtime, or while the feature is turned off remotely (the CI and opt-out checks come
+first and are logged either way). An install with no tools installed yet also logs an
+`aitools_install_event` with `trigger` `AUTO_FIRST_RUN`; installs by `databricks aitools install`
+leave `trigger` unset. The holdout arm comes from a random machine id kept in
+`~/.databricks/aitools/auto-install.json`; the id itself is never sent. Like the other aitools
+events, these upload at exit only when the command resolved auth.

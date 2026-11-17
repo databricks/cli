@@ -31,7 +31,7 @@ func TestLoadCorruptFileFails(t *testing.T) {
 
 func TestSetOptedOutKeepsOtherFields(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
-	require.NoError(t, Save(ctx, State{LastVersion: "1.2.3", Attempts: 2}))
+	require.NoError(t, save(ctx, State{LastVersion: "1.2.3", Attempts: 2}))
 
 	require.NoError(t, SetOptedOut(ctx, true))
 	s, err := Load(ctx)

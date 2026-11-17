@@ -213,7 +213,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if isHintExemptCommand(cmd) {
 		return
 	}
-	if isCredentialHelperCommand(cmd) {
+	if IsCredentialHelperCommand(cmd) {
 		return
 	}
 	if env.Get(ctx, selfExecEnv) != "" {
@@ -282,7 +282,7 @@ func (h *agentHint) claim(ctx context.Context, key string) bool {
 // stdin even when the output goes through a pipe (`2>&1 | less`), so any
 // terminal means a human may read the tag raw.
 func claudeNativeHintLine(ctx context.Context) string {
-	if env.Get(ctx, claudeChildSessionEnv) == "" || inCI(ctx) {
+	if env.Get(ctx, claudeChildSessionEnv) == "" || InCI(ctx) {
 		return ""
 	}
 	if cmdio.HasTerminal(ctx) {
@@ -291,13 +291,13 @@ func claudeNativeHintLine(ctx context.Context) string {
 	return claudeNativeHint
 }
 
-// inCI reports whether the CLI runs in CI: the generic CI variable set to
+// InCI reports whether the CLI runs in CI: the generic CI variable set to
 // anything but an explicit false (some providers set it to their own name), or
 // any provider the SDK detects for its user agent (e.g. Azure Pipelines'
 // TF_BUILD, which doesn't set CI). The false values are the ones env.GetBool
 // accepts; GetBool itself can't be used because it also maps a provider name
 // to false.
-func inCI(ctx context.Context) bool {
+func InCI(ctx context.Context) bool {
 	switch strings.ToLower(env.Get(ctx, ciEnv)) {
 	case "", "0", "f", "false", "no", "off":
 	default:
@@ -306,9 +306,9 @@ func inCI(ctx context.Context) bool {
 	return useragent.CiCdProvider() != ""
 }
 
-// isCredentialHelperCommand reports whether cmd is `databricks auth token` or
+// IsCredentialHelperCommand reports whether cmd is `databricks auth token` or
 // `databricks auth docker token`.
-func isCredentialHelperCommand(cmd *cobra.Command) bool {
+func IsCredentialHelperCommand(cmd *cobra.Command) bool {
 	if cmd.Name() != tokenCommandName {
 		return false
 	}

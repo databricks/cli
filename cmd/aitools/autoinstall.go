@@ -19,11 +19,12 @@ func newAutoInstallCmd() *cobra.Command {
 On the first run of a new CLI version, the CLI can install the Databricks AI
 tools (skills and plugins) for the coding agents already on this machine, as
 'databricks aitools install --scope=global' does, or update an existing
-installation, as 'databricks aitools update' does. It never runs in CI and only
-touches the global scope.
+installation, as 'databricks aitools update' does. It never runs in CI or on
+Databricks Runtime, and only touches the global scope.
 
-It stays off after 'databricks aitools auto-install disable' or a global-scope
-'databricks aitools uninstall', until 'databricks aitools auto-install enable'.
+It stays off after 'databricks aitools auto-install disable', a global-scope
+'databricks aitools uninstall', or a "no" to the skills prompt of
+'databricks apps init', until 'databricks aitools auto-install enable'.
 Setting ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes,
 on) turns it off in that environment.`,
 		RunE: root.ReportUnknownSubcommand,
