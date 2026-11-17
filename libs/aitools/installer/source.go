@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/databricks/cli/libs/clicompat"
@@ -63,8 +65,44 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to parse manifest: %w", err)}
 	}
 
+	if err := validateManifestPaths(&manifest); err != nil {
+		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("invalid skills manifest: %w", err)}
+	}
 	normalizeManifest(&manifest)
 	return &manifest, nil
+}
+
+// skillNamePattern is the Agent Skills name format
+// (https://agentskills.io/specification#name-field): lowercase letters, digits
+// and single hyphens. Every name is a directory under the skills dir, next to
+// the installer's state file, so the format also keeps names from aliasing each
+// other or that file on case-insensitive filesystems or through Windows
+// trailing dots and spaces.
+var skillNamePattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// windowsDeviceNamePattern matches the names Windows resolves to a device in
+// any directory. They are rejected on every OS so a manifest is valid or
+// invalid the same way everywhere.
+var windowsDeviceNamePattern = regexp.MustCompile(`^(con|prn|aux|nul|com[1-9]|lpt[1-9])$`)
+
+// validateManifestPaths rejects skill names and files that would be written
+// outside the skill's own directory. The manifest comes from the network, so it
+// must not be able to name ../../.bashrc.
+func validateManifestPaths(m *Manifest) error {
+	for name, meta := range m.Skills {
+		if len(name) > 64 || !skillNamePattern.MatchString(name) {
+			return fmt.Errorf("skill name %q must be at most 64 lowercase letters, digits and single hyphens", name)
+		}
+		if windowsDeviceNamePattern.MatchString(name) {
+			return fmt.Errorf("skill name %q is a reserved Windows device name", name)
+		}
+		for _, file := range meta.Files {
+			if !filepath.IsLocal(file) {
+				return fmt.Errorf("skill %q lists file %q outside its directory", name, file)
+			}
+		}
+	}
+	return nil
 }
 
 // normalizeManifest stamps SourceName and defaults RepoDir for older manifests.
