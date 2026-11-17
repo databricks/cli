@@ -75,8 +75,8 @@ func missingTorchWarning(ctx context.Context, cfg *runConfig, configPath string)
 	if file == "" {
 		return ""
 	}
-	return fmt.Sprintf("Warning: %s imports torch, but PyTorch is not declared: environment version %s (Standard) does not include it, so the run may fail after waiting for a GPU. Set environment.version: %s6, or add torch to environment.dependencies.",
-		file, version, databricksAIPrefix)
+	return fmt.Sprintf("Warning: %s contains a torch import, but Standard environment %s does not include PyTorch and no torch dependency was detected, so this code path may fail. Consider using %s%s or adding torch to dependencies.",
+		file, version, databricksAIPrefix, version)
 }
 
 // mayProvideTorch reports whether an environment.dependencies entry could install
