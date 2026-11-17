@@ -293,7 +293,7 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 		},
 	}}
 
-	changes, _, err := ExtractChanges(ctx, &bundle.Bundle{}, plan, nil)
+	changes, _, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
 	require.NoError(t, err)
 
 	_, hasPerms := changes["resources.jobs.my_job.permissions"]
@@ -357,7 +357,7 @@ resources:
 		},
 	}}
 
-	changes, _, err := ExtractChanges(t.Context(), b, plan, nil)
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	assert.Equal(t, Changes{
 		"resources.jobs.my_job": {
@@ -462,7 +462,7 @@ resources:
 		},
 	}}
 
-	changes, _, err := ExtractChanges(t.Context(), b, plan, nil)
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	assert.Equal(t, Changes{
 		"resources.apps.my_app": {
@@ -529,7 +529,7 @@ func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
 		},
 	}}
 
-	changes, _, err := ExtractChanges(t.Context(), &bundle.Bundle{}, plan, nil)
+	changes, _, err := ExtractChanges(t.Context(), &bundle.Bundle{}, plan)
 	require.NoError(t, err)
 
 	assert.Equal(t, ResourceChanges{

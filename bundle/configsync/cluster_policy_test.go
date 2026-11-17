@@ -699,7 +699,7 @@ func policyTestBundle(t *testing.T, resourceKey string, config map[string]any) *
 
 func filterPolicyTestChanges(t *testing.T, b *bundle.Bundle, plan *deployplan.Plan) (configsync.Changes, []configsync.SkippedChange, error) {
 	t.Helper()
-	changes, _, err := configsync.ExtractChanges(t.Context(), b, plan, nil)
+	changes, _, err := configsync.ExtractChanges(t.Context(), b, plan)
 	require.NoError(t, err)
 	inputs := []any{plan, changes}
 	for _, entry := range plan.Plan {

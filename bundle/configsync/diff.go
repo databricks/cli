@@ -139,10 +139,11 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
 // plan, and the resources whose remote permissions could not be read.
-// syncRunAs holds the plan keys of the jobs whose remote run_as is synced
-// even when the config does not set one (see RunAsSelection).
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, syncRunAs map[string]bool) (Changes, []SkippedChange, error) {
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
+	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
+	unmanaged, skipped := readUnmanagedPermissions(ctx, b, plan)
+	owners := jobOwners(ctx, b, plan, unmanaged)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -159,7 +160,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				change, err := convertPlanChange(resourceKey, path, changeDesc, syncRunAs[resourceKey], b.Config.Presets.NamePrefix)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, owners[resourceKey], b.Config.Presets.NamePrefix)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
@@ -176,8 +177,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	skipped, err := addPermissionsChanges(ctx, changes, b, plan)
-	if err != nil {
+	if err := addPermissionsChanges(changes, b, plan, unmanaged); err != nil {
 		return nil, nil, err
 	}
 
@@ -185,16 +185,15 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 }
 
 // convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
-// nothing to write back. syncRunAs reports whether the resource is a job selected to sync an
-// unset run_as.
-func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, syncRunAs bool, namePrefix string) (*ConfigChangeDesc, error) {
+// nothing to write back. owner is the principal the resource runs as by default, if it is a job.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, owner, namePrefix string) (*ConfigChangeDesc, error) {
 	fullPath := resourceKey + "." + path
 	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
 		!keepSkippedRunAsChange(fullPath, changeDesc) {
 		return nil, nil
 	}
 	// Runs before applyLifecycle, which lets every whole run_as through.
-	if skipJobRunAs(fullPath, changeDesc, syncRunAs) {
+	if skipJobRunAs(fullPath, changeDesc, owner) {
 		return nil, nil
 	}
 	synced, err := applyLifecycle(resourceKey, path, changeDesc)

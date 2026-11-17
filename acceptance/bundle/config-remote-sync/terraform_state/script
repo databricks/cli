@@ -8,9 +8,8 @@ title "Replay a terraform deployment of the bundle (captured from a real terrafo
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
 job_id="$(read_id.py test_job)"
 
-# Jobs updated by the terraform engine carry an explicit run_as naming the job's identity. A run_as
-# the config does not set is synced only with --sync-run-as-ids, so only max_concurrent_runs must be
-# detected.
+# Jobs updated by the terraform engine carry an explicit run_as naming the job's owner. That is what
+# a config without run_as means, so only max_concurrent_runs must be detected.
 edit_resource.py jobs $job_id <<EOF2
 r["max_concurrent_runs"] = 3
 r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
@@ -24,8 +23,4 @@ trace find.py '\.databricks/.*(\.tfstate|resources.*\.json)'
 
 title "Saving writes the remote change into the config"
 trace $CLI bundle config-remote-sync --save
-trace cat databricks.yml
-
-title "With --sync-run-as-ids the job's run_as is written too"
-trace $CLI bundle config-remote-sync --save --sync-run-as-ids "jobs:$job_id"
 trace cat databricks.yml

@@ -25,7 +25,6 @@ import (
 func newConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
 	var selectIDs []string
-	var syncRunAsIDs []string
 
 	cmd := &cobra.Command{
 		Use:   "config-remote-sync",
@@ -45,16 +44,12 @@ Examples:
   databricks bundle config-remote-sync --save
 
   # Restrict the sync to a single resource by its type and deployed resource ID
-  databricks bundle config-remote-sync --select-ids jobs:123456789 --save
-
-  # Also sync the job's remote run_as when the configuration does not set one
-  databricks bundle config-remote-sync --select-ids jobs:123456789 --sync-run-as-ids jobs:123456789 --save`,
+  databricks bundle config-remote-sync --select-ids jobs:123456789 --save`,
 		Hidden: true, // Used by DABs in the Workspace only
 	}
 
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 	cmd.Flags().StringSliceVar(&selectIDs, "select-ids", nil, "Sync only the given resources, each as <type>:<id> (e.g. jobs:123456789). Can be repeated or comma-separated.")
-	cmd.Flags().StringSliceVar(&syncRunAsIDs, "sync-run-as-ids", nil, "Also sync the remote run_as of the given jobs, each as jobs:<id>, when the configuration does not set one. Pass only jobs whose run_as was just changed remotely; with --select-ids, a job must also be selected there. Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS == "windows" {
@@ -95,21 +90,13 @@ Examples:
 				// ProcessBundleRet has already opened the direct state for reading.
 				deployBundle := &b.DeploymentBundle
 
-				// Validated here, like --select-ids, so an invalid value is reported
-				// through WriteResult and telemetry.
-				runAs, err := configsync.ParseRunAsSelection(syncRunAsIDs)
-				if err != nil {
-					return err
-				}
-
 				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				deployed := configsync.IndexDeployedResources(&deployBundle.StateDB)
-				detected, permissionsSkipped, err := configsync.ExtractChanges(ctx, b, plan, runAs.ResourceKeys(ctx, deployed))
+				detected, permissionsSkipped, err := configsync.ExtractChanges(ctx, b, plan)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -118,7 +105,7 @@ Examples:
 
 				// Record the ids present in state and the ids requested: on failure
 				// they are what classifies the miss.
-				stats.CollectStateIDs(slices.Collect(maps.Keys(deployed)))
+				stats.CollectStateIDs(slices.Collect(maps.Keys(configsync.IndexDeployedResources(&deployBundle.StateDB))))
 
 				if len(selectIDs) > 0 {
 					stats.CollectSelectedIDs(selectIDs)

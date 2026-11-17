@@ -3,10 +3,12 @@ package configsync
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -40,82 +42,99 @@ func TestKeepSkippedRunAsChange(t *testing.T) {
 func TestSkipJobRunAs(t *testing.T) {
 	sp := jobs.JobRunAs{ServicePrincipalName: testSPID}
 	user := jobs.JobRunAs{UserName: "user@example.com"}
+	owner := "owner@example.com"
 
 	tests := []struct {
-		name     string
-		path     string
-		cd       *deployplan.ChangeDesc
-		selected bool
-		want     bool
+		name string
+		path string
+		cd   *deployplan.ChangeDesc
+		want bool
+	}{
+		{"set remotely to another principal", testRunAsPath, &deployplan.ChangeDesc{Remote: sp}, false},
+		{"set remotely as a pointer", testRunAsPath, &deployplan.ChangeDesc{Remote: &sp}, false},
+		{"set remotely to the owner", testRunAsPath, &deployplan.ChangeDesc{Remote: jobs.JobRunAs{UserName: owner}}, true},
+		{"set remotely to the owner as a service principal", testRunAsPath, &deployplan.ChangeDesc{Remote: jobs.JobRunAs{ServicePrincipalName: owner}}, true},
+		{"removed from config, kept remotely", testRunAsPath, &deployplan.ChangeDesc{Old: user, Remote: user}, false},
+		{"set in config and remotely", testRunAsPath, &deployplan.ChangeDesc{New: user, Remote: sp}, true},
+		{"removed remotely", testRunAsPath, &deployplan.ChangeDesc{Old: user, New: user}, true},
+		{"removed from config and remotely", testRunAsPath, &deployplan.ChangeDesc{Old: user}, true},
+		{"run_as key", testRunAsPath + ".service_principal_name", &deployplan.ChangeDesc{Remote: testSPID}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, skipJobRunAs(tt.path, tt.cd, owner))
+		})
+	}
+
+	// Without a known owner, no remote run_as is synced.
+	assert.True(t, skipJobRunAs(testRunAsPath, &deployplan.ChangeDesc{Remote: sp}, ""))
+}
+
+func TestJobOwners(t *testing.T) {
+	const jobKey = "resources.jobs.my_job"
+	unsetRunAs := map[string]*deployplan.ChangeDesc{"run_as": {Remote: jobs.JobRunAs{UserName: "user@example.com"}}}
+	job := &deployplan.PlanEntry{
+		RemoteState: &dresources.JobRemote{CreatorUserName: "creator@example.com"},
+		Changes:     unsetRunAs,
+	}
+	acl := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanManage, UserName: "manager@example.com"},
+		{Level: iam.PermissionLevelIsOwner, ServicePrincipalName: testSPID},
+	}
+
+	tests := []struct {
+		name      string
+		plan      map[string]*deployplan.PlanEntry
+		unmanaged map[string][]dresources.StatePermission
+		want      map[string]string
 	}{
 		{
-			name:     "set remotely on a selected job",
-			path:     testRunAsPath,
-			cd:       &deployplan.ChangeDesc{Remote: sp},
-			selected: true,
-			want:     false,
+			name:      "owner from the unmanaged ACL",
+			plan:      map[string]*deployplan.PlanEntry{jobKey: job},
+			unmanaged: map[string][]dresources.StatePermission{jobKey: acl},
+			want:      map[string]string{jobKey: testSPID},
 		},
 		{
-			name: "set remotely on a job that is not selected",
-			path: testRunAsPath,
-			cd:   &deployplan.ChangeDesc{Remote: sp},
-			want: true,
+			name: "owner from the declared permissions",
+			plan: map[string]*deployplan.PlanEntry{
+				jobKey:                  job,
+				jobKey + ".permissions": {RemoteState: &dresources.PermissionsState{EmbeddedSlice: acl}},
+			},
+			want: map[string]string{jobKey: testSPID},
 		},
 		{
-			name:     "removed from config, kept remotely, selected",
-			path:     testRunAsPath,
-			cd:       &deployplan.ChangeDesc{Old: user, Remote: user},
-			selected: true,
-			want:     false,
+			name:      "creator when the ACL has no owner",
+			plan:      map[string]*deployplan.PlanEntry{jobKey: job},
+			unmanaged: map[string][]dresources.StatePermission{jobKey: acl[:1]},
+			want:      map[string]string{jobKey: "creator@example.com"},
 		},
 		{
-			name:     "set in config and remotely",
-			path:     testRunAsPath,
-			cd:       &deployplan.ChangeDesc{New: user, Remote: sp},
-			selected: true,
-			want:     true,
+			name: "unknown when the ACL was not read",
+			plan: map[string]*deployplan.PlanEntry{jobKey: job},
+			want: map[string]string{},
 		},
 		{
-			name:     "removed remotely",
-			path:     testRunAsPath,
-			cd:       &deployplan.ChangeDesc{Old: user, New: user},
-			selected: true,
-			want:     true,
+			name: "unknown when declared permissions can't be read",
+			plan: map[string]*deployplan.PlanEntry{jobKey: job, jobKey + ".permissions": {}},
+			want: map[string]string{},
 		},
 		{
-			name:     "removed from config and remotely",
-			path:     testRunAsPath,
-			cd:       &deployplan.ChangeDesc{Old: user},
-			selected: true,
-			want:     true,
+			name: "run_as set in config",
+			plan: map[string]*deployplan.PlanEntry{jobKey: {
+				RemoteState: job.RemoteState,
+				Changes:     map[string]*deployplan.ChangeDesc{"run_as": {New: jobs.JobRunAs{UserName: "user@example.com"}, Remote: jobs.JobRunAs{UserName: "user@example.com"}}},
+			}},
+			want: map[string]string{},
 		},
 		{
-			name:     "run_as key",
-			path:     testRunAsPath + ".service_principal_name",
-			cd:       &deployplan.ChangeDesc{Remote: testSPID},
-			selected: false,
-			want:     false,
+			name: "not a job",
+			plan: map[string]*deployplan.PlanEntry{jobKey: {RemoteState: &dresources.PermissionsState{}, Changes: unsetRunAs}},
+			want: map[string]string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, skipJobRunAs(tt.path, tt.cd, tt.selected))
+			assert.Equal(t, tt.want, jobOwners(t.Context(), &bundle.Bundle{}, &deployplan.Plan{Plan: tt.plan}, tt.unmanaged))
 		})
-	}
-}
-
-func TestParseRunAsSelection(t *testing.T) {
-	selection, err := ParseRunAsSelection([]string{"jobs:123", "jobs:456"})
-	require.NoError(t, err)
-	deployed := map[string]string{
-		"jobs:123":      "resources.jobs.first",
-		"jobs:789":      "resources.jobs.other",
-		"pipelines:456": "resources.pipelines.pipeline",
-	}
-	assert.Equal(t, map[string]bool{"resources.jobs.first": true}, selection.ResourceKeys(t.Context(), deployed))
-
-	for _, selector := range []string{"123", "jobs:", "pipelines:123"} {
-		_, err := ParseRunAsSelection([]string{selector})
-		assert.ErrorContains(t, err, "invalid --sync-run-as-ids value", selector)
 	}
 }

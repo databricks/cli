@@ -11,8 +11,17 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
 
-    not_selected:
-      name: not-selected-$UNIQUE_NAME
+    # The remote run_as names the owner, which is what no run_as means.
+    run_as_to_owner:
+      name: run-as-to-owner-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # Ownership moves to another user, who becomes the default run_as.
+    transferred_owner:
+      name: transferred-owner-$UNIQUE_NAME
       tasks:
         - task_key: main
           notebook_task:
