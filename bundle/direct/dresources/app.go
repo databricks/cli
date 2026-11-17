@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -247,11 +249,7 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if !alreadyStarted {
-			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
-			if err != nil {
-				return err
-			}
-			startedApp, err := startWaiter.Get()
+			startedApp, err := r.startApp(ctx, id)
 			if err != nil {
 				return err
 			}
@@ -277,6 +275,27 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	}
 
 	return nil
+}
+
+// startApp starts the app compute and waits for it to become active. A start of an app whose
+// compute is already ACTIVE is rejected with 400 BAD_REQUEST ("Cannot start app X as its compute
+// is in ACTIVE state"). That happens when apply retries DoUpdate after a transient error in the
+// start waiter: the first start already went through, so the app is in the state we want.
+func (r *ResourceApp) startApp(ctx context.Context, id string) (*apps.App, error) {
+	startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
+	if err == nil {
+		return startWaiter.Get()
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode != http.StatusBadRequest {
+		return nil, err
+	}
+	app, getErr := r.client.Apps.GetByName(ctx, id)
+	if getErr != nil || app.ComputeStatus == nil || app.ComputeStatus.State != apps.ComputeStateActive {
+		return nil, err
+	}
+	log.Debugf(ctx, "app %s compute is already active, ignoring start error: %s", id, err)
+	return app, nil
 }
 
 // hasAppChanges reports whether the plan entry contains any Update changes

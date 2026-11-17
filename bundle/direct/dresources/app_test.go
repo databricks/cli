@@ -248,3 +248,54 @@ func TestWithMissingServicePrincipalHint(t *testing.T) {
 		assert.Contains(t, got.Error(), `delete it with "databricks apps delete myapp"`)
 	}
 }
+
+// A retried DoUpdate starts the app a second time after the first start went through, and the
+// backend rejects the second start. Only an ACTIVE compute makes that rejection a success.
+func TestAppStartApp_RejectedStart(t *testing.T) {
+	tests := []struct {
+		state   apps.ComputeState
+		wantErr bool
+	}{
+		{state: apps.ComputeStateActive, wantErr: false},
+		{state: apps.ComputeStateStopped, wantErr: true},
+		{state: apps.ComputeStateStarting, wantErr: true},
+		{state: apps.ComputeStateDeleting, wantErr: true},
+		{state: "", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.state), func(t *testing.T) {
+			server := testserver.New(t)
+			startCalls := 0
+			server.Handle("POST", "/api/2.0/apps/{name}/start", func(req testserver.Request) any {
+				startCalls++
+				return testserver.Response{
+					StatusCode: 400,
+					Body: map[string]string{
+						"error_code": "BAD_REQUEST",
+						"message":    "Cannot start app " + req.Vars["name"] + " as its compute is in ACTIVE state.",
+					},
+				}
+			})
+			server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+				app := apps.App{Name: req.Vars["name"]}
+				if tt.state != "" {
+					app.ComputeStatus = &apps.ComputeStatus{State: tt.state}
+				}
+				return app
+			})
+			testserver.AddDefaultHandlers(server)
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+			require.NoError(t, err)
+			r := (&ResourceApp{}).New(client)
+
+			app, err := r.startApp(t.Context(), "test-app")
+			assert.Equal(t, 1, startCalls)
+			if tt.wantErr {
+				require.ErrorContains(t, err, "Cannot start app test-app")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, apps.ComputeStateActive, app.ComputeStatus.State)
+		})
+	}
+}

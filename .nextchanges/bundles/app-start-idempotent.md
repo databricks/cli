@@ -1,0 +1,1 @@
+* Treat starting an app whose compute is already active as success in the direct deployment engine. A retried deploy after a transient error no longer fails with "Cannot start app ... as its compute is in ACTIVE state". ([#PRNUM](https://github.com/databricks/cli/pull/PRNUM))
