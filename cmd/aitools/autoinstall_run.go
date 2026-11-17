@@ -269,8 +269,8 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 // and no coding agent is detected (see installPromptsSupported). It asks only
 // when the question can be seen and answered (cmdio.IsLinePromptSupported)
 // and skips otherwise; the install without asking is left to runs with no
-// terminal at all. The question is a plain-text line, so NO_COLOR, TERM=dumb
-// and Git Bash, which turn off the TUI prompts of install, do not skip it.
+// terminal at all. The question is a plain-text line, so TERM=dumb and an
+// MSYS2 pty pipe, which turn off the TUI prompts of install, do not skip it.
 func autoInstallAsks(ctx context.Context) bool {
 	return cmdio.HasTerminal(ctx) && useragent.AgentProvider() == ""
 }

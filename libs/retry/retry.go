@@ -102,19 +102,27 @@ func IsTransientRead(ctx context.Context, err error) bool {
 
 // With retries fn while check returns true for the error, up to MaxRetries times.
 func With[T any](ctx context.Context, check func(context.Context, error) bool, fn func() (T, error)) (T, error) {
-	wait := interval(ctx)
 	for attempt := 0; ; attempt++ {
 		result, err := fn()
 		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
-		log.Warnf(ctx, "%s", retryMessage(err))
-		select {
-		case <-ctx.Done():
+		if err := Pause(ctx, err); err != nil {
 			var zero T
-			return zero, ctx.Err()
-		case <-time.After(wait):
+			return zero, err
 		}
+	}
+}
+
+// Pause reports that the call that failed with err is retried and waits out the pause between
+// attempts, for callers that run their own retry loop. It returns ctx.Err() if ctx is done first.
+func Pause(ctx context.Context, err error) error {
+	log.Warnf(ctx, "%s", retryMessage(err))
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(interval(ctx)):
+		return nil
 	}
 }
 

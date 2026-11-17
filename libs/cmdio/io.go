@@ -90,7 +90,7 @@ func IsPromptSupported(ctx context.Context) bool {
 // is in the terminal's foreground process group (a background job that reads
 // it is stopped), and no goroutine reads stdin in the background (see
 // [MarkStdinReadInBackground]). Unlike IsPromptSupported, it does not depend
-// on NO_COLOR, TERM=dumb or Git Bash.
+// on TERM=dumb or an MSYS2 pty pipe, which only matter for the TUI prompts.
 func IsLinePromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	if !c.capabilities.SupportsLinePrompt() || stdinReadInBackground.Load() {
@@ -125,8 +125,8 @@ func DiscardInput(ctx context.Context) error {
 
 // IsInputTTY reports whether stdin is a terminal, so that a user can type
 // input into the command. Unlike IsPromptSupported, it does not depend on
-// stderr, NO_COLOR, TERM=dumb or Git Bash, which only matter for rendering
-// prompts.
+// stderr or TERM=dumb, which only matter for rendering prompts, and it accepts
+// MSYS2 pty pipes, which carry line input but not keystrokes.
 func IsInputTTY(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.stdinIsTTY
@@ -142,7 +142,7 @@ func IsPagerSupported(ctx context.Context) bool {
 }
 
 // HasTerminal reports whether stdin, stdout or stderr is a terminal. Unlike
-// GetInteractiveMode it ignores colour preferences (NO_COLOR, TERM=dumb).
+// GetInteractiveMode it ignores TERM=dumb.
 func HasTerminal(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.stdinIsTTY || c.capabilities.stdoutIsTTY || c.capabilities.stderrIsTTY
@@ -213,8 +213,6 @@ func MockDiscard(ctx context.Context) context.Context {
 			stdinIsTTY:  false,
 			stdoutIsTTY: false,
 			stderrIsTTY: false,
-			color:       false,
-			isGitBash:   false,
 		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),
