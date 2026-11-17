@@ -1,0 +1,1 @@
+* Backspace in the search box of interactive tables now deletes a whole character instead of one byte, so it no longer leaves a broken character behind after non-ASCII input such as `é`. ([#7741](https://github.com/databricks/cli/pull/7741))

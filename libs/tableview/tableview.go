@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -334,8 +335,8 @@ func (m model) updateSearch(in teainput.Event) (tea.Model, tea.Cmd) {
 		m.viewport.Height++
 		return m, nil
 	case "backspace":
-		if len(m.searchInput) > 0 {
-			m.searchInput = m.searchInput[:len(m.searchInput)-1]
+		if _, size := utf8.DecodeLastRuneInString(m.searchInput); size > 0 {
+			m.searchInput = m.searchInput[:len(m.searchInput)-size]
 		}
 		return m, nil
 	default:
