@@ -246,7 +246,7 @@ one.`,
 		}
 
 		data := buildGetData(run)
-		annotateTask(fullRun, run, &data)
+		annotateTask(run, len(airTaskKeys(fullRun)), &data)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
 		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
 		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
@@ -339,17 +339,18 @@ func selectAirTask(run *jobs.Run, key string) (*jobs.Run, error) {
 	return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))
 }
 
-// annotateTask records which AI runtime task of full the view shows: selected
-// is full narrowed to it (see selectAirTask). The text cell is set only when
-// full has several AI runtime tasks.
-func annotateTask(full, selected *jobs.Run, data *getData) {
-	t := leadTask(selected)
+// annotateTask records which AI runtime task the view shows: selected is the
+// run narrowed to it (see selectAirTask), and airTasks is how many AI runtime
+// tasks the whole run has. TaskKey stays null for a run without one; the text
+// cell is set only when there are several to tell apart.
+func annotateTask(selected *jobs.Run, airTasks int, data *getData) {
+	t := airTask(selected)
 	if t == nil {
 		return
 	}
 	key := t.TaskKey
 	data.TaskKey = &key
-	if len(airTaskKeys(full)) > 1 {
+	if airTasks > 1 {
 		data.TaskDisplay = key
 	}
 }

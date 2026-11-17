@@ -31,7 +31,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 │                                                                │
 │  Run ID        123                                             │
 │  Task          eval                                            │
-│  Status        ● SUCCESS                                       │
+│  Status        ● FAILED                                        │
 │  Submitted     2023-11-14 22:13 UTC                            │
 │  Retries       0                                               │
 │  Max Retries   2                                               │
@@ -43,6 +43,8 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 │  Environment   5                                               │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
+
+Failure reason: eval: loss is NaN
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
@@ -90,7 +92,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
   "data": {
     "run_id": "123",
     "task_key": "eval",
-    "status": "SUCCESS",
+    "status": "FAILED",
     "started_at": "[TIMESTAMP]",
     "duration_seconds": 8,
     "attempt_number": 0,
@@ -99,6 +101,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
     "mlflow_experiment_id": "exp1",
     "mlflow_run_id": "run1",
+    "termination_reason": "eval: loss is NaN",
     "est_remaining_seconds": null,
     "est_percent_complete": null,
     "user": "user@example.com",

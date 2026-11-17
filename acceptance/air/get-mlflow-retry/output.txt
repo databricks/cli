@@ -7,7 +7,7 @@
   "ts": "[TIMESTAMP]",
   "data": {
     "run_id": "123",
-    "task_key": "train",
+    "task_key": null,
     "status": "FAILED",
     "started_at": "[TIMESTAMP]",
     "duration_seconds": 12,

@@ -572,3 +572,31 @@ func TestListAirRunsOneRowPerAirTask(t *testing.T) {
 	assert.Equal(t, []string{"1", "1", "2"}, []string{rows[0].RunID, rows[1].RunID, rows[2].RunID})
 	assert.Equal(t, []string{"a", "b", ""}, []string{rows[0].TaskKey, rows[1].TaskKey, rows[2].TaskKey})
 }
+
+func TestListAirRunsLimitCountsRunsNotRows(t *testing.T) {
+	// The first run has two AI Runtime tasks, so it lists as two rows; --limit 1
+	// still shows that whole run, and --limit 2 also shows the next run.
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	body := runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c"))
+
+	for _, tt := range []struct {
+		limit int
+		want  []string
+	}{
+		{1, []string{"1", "1"}},
+		{2, []string{"1", "1", "2"}},
+	} {
+		srv := runsServer(t, body)
+		rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(tt.limit)
+		require.NoError(t, err)
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.RunID
+		}
+		assert.Equal(t, tt.want, ids, "limit %d", tt.limit)
+	}
+}

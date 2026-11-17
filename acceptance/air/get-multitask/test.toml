@@ -8,7 +8,9 @@ Response.Body = ''
 # A multi-task job in the shape of the official DAB example (universe
 # ai-compute/dabs/examples/03_multitask_dag): a notebook prep task first, then the
 # ai_runtime_task that depends on it, plus a second ai_runtime_task. `air get`
-# must read the AI Runtime task wherever it sits, not tasks[0].
+# must read the AI Runtime task wherever it sits, not tasks[0]. The tasks end
+# differently (train succeeds, eval fails, so the run fails): each view must
+# report its own task's status, not the run's.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -17,8 +19,8 @@ Response.Body = '''
   "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
   "creator_user_name": "user@example.com",
   "start_time": 1700000000000,
-  "end_time": 1700000012000,
-  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "end_time": 1700000020000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Task eval failed"},
   "environments": [
     {"environment_key": "default", "spec": {"environment_version": "5"}}
   ],
@@ -56,7 +58,7 @@ Response.Body = '''
       "max_retries": 2,
       "start_time": 1700000012000,
       "end_time": 1700000020000,
-      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "eval: loss is NaN"},
       "depends_on": [{"task_key": "train"}],
       "environment_key": "default",
       "ai_runtime_task": {

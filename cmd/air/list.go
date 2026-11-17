@@ -136,7 +136,7 @@ Filters:
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
-	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show")
+	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task")
 	cmd.Flags().BoolVar(&allStatus, "all-status", false, "Show runs in all states (default: active only)")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
 	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs by KEY=VALUE (repeatable)")
@@ -396,9 +396,12 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 	}
 }
 
+// next returns the rows of the next want matching runs. A run with several AI
+// runtime tasks yields one row per task, so want counts runs, not rows.
 func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 	var entries []listedRun
-	for len(entries) < want && s.scanned < s.maxScan && s.iter.HasNext(s.ctx) {
+	runs := 0
+	for runs < want && s.scanned < s.maxScan && s.iter.HasNext(s.ctx) {
 		base, err := s.iter.Next(s.ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
@@ -420,13 +423,27 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 			continue
 		}
 		// One row per AI runtime task, each filtered on its own task.
+		matched := false
 		for _, e := range buildListRows(run, s.host, s.workspaceID) {
 			if s.filters.matchesFields(e.fields) {
 				entries = append(entries, e.entry)
+				matched = true
 			}
+		}
+		if matched {
+			runs++
 		}
 	}
 	return entries, nil
+}
+
+// countRuns returns how many distinct runs the entries belong to.
+func countRuns(entries []listedRun) int {
+	seen := make(map[int64]bool, len(entries))
+	for _, e := range entries {
+		seen[e.runID] = true
+	}
+	return len(seen)
 }
 
 func (s *jobsScanStrategy) done() bool {

@@ -428,7 +428,7 @@ func TestGetRunMLflowRetryJSON(t *testing.T) {
 	t.Run("an older retry's mlflow run names the retry", func(t *testing.T) {
 		data := getRunJSON(t, srv, "123")
 		assert.JSONEq(t, `{
-			"run_id":"123","task_key":"train","status":"FAILED","started_at":"2023-11-14T22:13:20+00:00",
+			"run_id":"123","task_key":null,"status":"FAILED","started_at":"2023-11-14T22:13:20+00:00",
 			"duration_seconds":12,"attempt_number":2,"experiment_name":null,
 			"dashboard_url":"`+host+`/jobs/runs/123?o=9999",
 			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R0/logs",
@@ -444,7 +444,7 @@ func TestGetRunMLflowRetryJSON(t *testing.T) {
 	t.Run("the latest attempt's mlflow run has no mlflow_retry key", func(t *testing.T) {
 		data := getRunJSON(t, srv, "124")
 		assert.JSONEq(t, `{
-			"run_id":"124","task_key":"train","status":"SUCCESS","started_at":"2023-11-14T22:13:20+00:00",
+			"run_id":"124","task_key":null,"status":"SUCCESS","started_at":"2023-11-14T22:13:20+00:00",
 			"duration_seconds":12,"attempt_number":0,"experiment_name":null,
 			"dashboard_url":"`+host+`/jobs/runs/124?o=9999",
 			"mlflow_url":"`+host+`/ml/experiments/E1/runs/R1/logs",
@@ -933,4 +933,26 @@ func TestGetRunSelectsAirTask(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(out), &e))
 		assert.Equal(t, jsonError{Code: "INVALID_ARGS", Kind: "PERMANENT", Message: `run 5 has no AI Runtime task "prep"; its AI Runtime tasks are: train, eval`}, e.Error)
 	})
+}
+
+func TestAnnotateTaskIsNullWithoutAnAirTask(t *testing.T) {
+	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{notebookTask("prep", 51)}}
+	selected, err := selectAirTask(run, "")
+	require.NoError(t, err)
+	var data getData
+	annotateTask(selected, len(airTaskKeys(run)), &data)
+	assert.Nil(t, data.TaskKey, "matches air list, which reports no task, and --task-key prep, which errors")
+	assert.Empty(t, data.TaskDisplay)
+
+	two := &jobs.Run{RunId: 6, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 61, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 62, "e", "GPU_1xA10", 1),
+	}}
+	selected, err = selectAirTask(two, "eval")
+	require.NoError(t, err)
+	data = getData{}
+	annotateTask(selected, len(airTaskKeys(two)), &data)
+	require.NotNil(t, data.TaskKey)
+	assert.Equal(t, "eval", *data.TaskKey)
+	assert.Equal(t, "eval", data.TaskDisplay)
 }

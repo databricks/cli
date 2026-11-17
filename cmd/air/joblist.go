@@ -58,8 +58,9 @@ func airTaskKeys(r *jobs.Run) []string {
 
 // taskRun returns a copy of r narrowed to the task runs (every attempt, in
 // order) of the AI runtime task with the given key, so the display helpers,
-// which read a run's tasks, report that task alone. It returns nil when key is
-// not one of the run's AI runtime tasks.
+// which read a run's tasks, report that task alone. Its state is that task's
+// (see taskState). It returns nil when key is not one of the run's AI runtime
+// tasks.
 func taskRun(r *jobs.Run, key string) *jobs.Run {
 	if !slices.Contains(airTaskKeys(r), key) {
 		return nil
@@ -71,13 +72,37 @@ func taskRun(r *jobs.Run, key string) *jobs.Run {
 			narrowed.Tasks = append(narrowed.Tasks, r.Tasks[i])
 		}
 	}
+	latest := &narrowed.Tasks[len(narrowed.Tasks)-1]
+	if state := taskState(r, latest); state != r.State {
+		narrowed.State = state
+		narrowed.Status = latest.Status
+	}
 	return &narrowed
 }
 
-// airWrapperTask returns the run's first AI runtime task run as the Jobs API
-// reports it (for a sweep, the foreach wrapper, which carries the state and
+// taskState returns the state to report for the task whose latest attempt is
+// latest: that attempt's state, so one task's result doesn't stand for another
+// (a successful train next to a failed eval, or an AI runtime task skipped
+// because its prep task failed). It keeps the run's state when the task has
+// none, and while the run is still active after a failed attempt, since the
+// task may be waiting to retry and runs/get doesn't reliably report how many
+// retries are left.
+func taskState(r *jobs.Run, latest *jobs.RunTask) *jobs.RunState {
+	s := latest.State
+	if s == nil {
+		return r.State
+	}
+	failed := isTerminalState(s) && s.ResultState != jobs.RunResultStateSuccess
+	if failed && !isTerminal(r) {
+		return r.State
+	}
+	return s
+}
+
+// airTask returns the task run of the run's first AI runtime task as the Jobs
+// API reports it (for a sweep, the foreach wrapper, which carries the state and
 // timing), or nil when the run has none.
-func airWrapperTask(r *jobs.Run) *jobs.RunTask {
+func airTask(r *jobs.Run) *jobs.RunTask {
 	i := firstAirTaskIndex(r)
 	if i < 0 {
 		return nil
@@ -85,11 +110,11 @@ func airWrapperTask(r *jobs.Run) *jobs.RunTask {
 	return &r.Tasks[i]
 }
 
-// leadTask returns the task run whose state and timing stand for the run: its
-// first AI runtime task (for a sweep, the foreach wrapper), else, for a run
-// without one, its first task; nil when the run has no tasks.
+// leadTask is airTask with a fallback to the first task for a run without an AI
+// runtime task (such as a legacy gen_ai_compute_task without a training
+// script), whose fields `air get` still shows; nil when the run has no tasks.
 func leadTask(r *jobs.Run) *jobs.RunTask {
-	if t := airWrapperTask(r); t != nil {
+	if t := airTask(r); t != nil {
 		return t
 	}
 	if len(r.Tasks) == 0 {
@@ -187,10 +212,12 @@ func jobTiming(r *jobs.Run) (startMillis, endMillis int64) {
 // isTerminal reports whether a run has finished and its details are immutable,
 // so its row is safe to cache.
 func isTerminal(r *jobs.Run) bool {
-	if r.State == nil {
-		return false
-	}
-	switch r.State.LifeCycleState {
+	return r.State != nil && isTerminalState(r.State)
+}
+
+// isTerminalState reports whether a run or task state is final.
+func isTerminalState(s *jobs.RunState) bool {
+	switch s.LifeCycleState {
 	case jobs.RunLifeCycleStateTerminated, jobs.RunLifeCycleStateInternalError, jobs.RunLifeCycleStateSkipped:
 		return true
 	default:

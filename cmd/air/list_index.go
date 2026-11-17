@@ -70,9 +70,11 @@ func (s *indexStrategy) next(want int) ([]listedRun, error) {
 		want = min(want, s.limit-s.returned)
 	}
 
+	// want counts runs, as on the scan path: a run with several AI runtime
+	// tasks hydrates into one row per task.
 	var entries []listedRun
-	for len(entries) < want && s.pos < len(s.ids) {
-		end := min(s.pos+want-len(entries), len(s.ids))
+	for runs := 0; runs < want && s.pos < len(s.ids); runs = countRuns(entries) {
+		end := min(s.pos+want-runs, len(s.ids))
 		batch := s.ids[s.pos:end]
 		s.pos = end
 

@@ -77,7 +77,7 @@ Flags:
       --all-users[=true|false]    Show runs from all users
       --filter stringArray        Filter runs by KEY=VALUE (repeatable)
   -h, --help[=true|false]         help for list
-      --limit int                 Maximum number of runs to show (default 20)
+      --limit int                 Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task (default 20)
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -231,6 +231,9 @@ Global Flags:
 >>> [CLI] air cancel --help
 Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
+
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
 
 --all prompts for confirmation. Use --yes to skip the prompt.
 

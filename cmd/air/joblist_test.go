@@ -261,3 +261,101 @@ func TestJobTimingUsesTheAirTask(t *testing.T) {
 	assert.Equal(t, int64(200), start)
 	assert.Equal(t, int64(260), end)
 }
+
+// finished returns a task run whose latest attempt ended in result.
+func finished(task jobs.RunTask, life jobs.RunLifeCycleState, result jobs.RunResultState) jobs.RunTask {
+	task.State = &jobs.RunState{LifeCycleState: life, ResultState: result}
+	return task
+}
+
+func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
+	failedRun := &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}
+	tests := []struct {
+		name     string
+		runState *jobs.RunState
+		tasks    []jobs.RunTask
+		key      string
+		want     string
+	}{
+		{
+			name:     "succeeded task next to a failed one",
+			runState: failedRun,
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+				finished(aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+			},
+			key:  "train",
+			want: "SUCCESS",
+		},
+		{
+			name:     "the failed task",
+			runState: failedRun,
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+				finished(aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+			},
+			key:  "eval",
+			want: "FAILED",
+		},
+		{
+			name:     "skipped because the prep notebook failed",
+			runState: failedRun,
+			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateSkipped, jobs.RunResultStateUpstreamFailed),
+			},
+			key:  "train",
+			want: "UPSTREAM_FAILED",
+		},
+		{
+			name:     "latest attempt is the one reported",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+				func() jobs.RunTask {
+					t := finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess)
+					t.AttemptNumber = 1
+					return t
+				}(),
+			},
+			key:  "train",
+			want: "SUCCESS",
+		},
+		{
+			name:     "a failed attempt in an active run may be retried, so the run's state stands",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+			},
+			key:  "train",
+			want: "RUNNING",
+		},
+		{
+			name:     "a queued task in a running run is waiting for compute",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateQueued, ""),
+			},
+			key:  "train",
+			want: "PENDING",
+		},
+		{
+			name:     "a task without a state falls back to the run",
+			runState: failedRun,
+			tasks:    []jobs.RunTask{aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)},
+			key:      "train",
+			want:     "FAILED",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := &jobs.Run{RunId: 1, State: tt.runState, Tasks: tt.tasks}
+			narrowed := taskRun(run, tt.key)
+			require.NotNil(t, narrowed)
+			assert.Equal(t, tt.want, displayRunStatus(narrowed))
+			assert.Equal(t, tt.want, buildListRow(narrowed, "https://example.test", 0).Status)
+			assert.Same(t, tt.runState, run.State, "the source run keeps its state")
+		})
+	}
+}

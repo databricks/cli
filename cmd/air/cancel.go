@@ -47,6 +47,9 @@ func newCancelCommand() *cobra.Command {
 		Long: `Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
 
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
+
 --all prompts for confirmation. Use --yes to skip the prompt.`,
 	}
 
@@ -107,8 +110,9 @@ all active runs submitted by the current user.
 			}
 
 			// A job with several AI runtime tasks lists one row per task; the
-			// run is cancelled (and previewed) once.
-			rows = firstRowPerRun(rows)
+			// run is cancelled (and previewed) once, naming all its tasks.
+			var taskKeys map[string][]string
+			rows, taskKeys = firstRowPerRun(rows)
 			runIDs = make([]string, 0, len(rows))
 			for i := range rows {
 				if rows[i].RunID != "" {
@@ -126,7 +130,7 @@ all active runs submitted by the current user.
 			}
 
 			if !yes {
-				displayCancelPreview(ctx, rows, host)
+				displayCancelPreview(ctx, rows, taskKeys, host)
 				confirmed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nCancel %d run(s) in %s?", len(runIDs), host))
 				if err != nil {
 					return err
@@ -218,35 +222,40 @@ func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string, s
 	return err
 }
 
-// firstRowPerRun keeps the first row of each run id, in order.
-func firstRowPerRun(rows []listRow) []listRow {
-	seen := make(map[string]bool, len(rows))
+// firstRowPerRun keeps the first row of each run id, in order, and returns the
+// task keys of every row by run id, so the preview can name all the AI runtime
+// tasks a cancel stops.
+func firstRowPerRun(rows []listRow) ([]listRow, map[string][]string) {
+	taskKeys := make(map[string][]string, len(rows))
 	unique := make([]listRow, 0, len(rows))
 	for _, row := range rows {
-		if seen[row.RunID] {
-			continue
+		if _, seen := taskKeys[row.RunID]; !seen {
+			unique = append(unique, row)
+			taskKeys[row.RunID] = nil
 		}
-		seen[row.RunID] = true
-		unique = append(unique, row)
+		if row.TaskKey != "" {
+			taskKeys[row.RunID] = append(taskKeys[row.RunID], row.TaskKey)
+		}
 	}
-	return unique
+	return unique, taskKeys
 }
 
 // displayCancelPreview shows the runs that `cancel --all` is about to terminate.
-func displayCancelPreview(ctx context.Context, rows []listRow, host string) {
+func displayCancelPreview(ctx context.Context, rows []listRow, taskKeys map[string][]string, host string) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "\nWorkspace: %s\n", host)
 	fmt.Fprintf(&sb, "Found %d active run(s) to cancel:\n\n", len(rows))
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "Run ID\tExperiment\tStarted")
+	fmt.Fprintln(tw, "Run ID\tExperiment\tAI Runtime tasks\tStarted")
 	for i := range rows {
 		experiment := orNA(rows[i].Experiment)
 		started := na
 		if rows[i].StartedAt != nil {
 			started = *rows[i].StartedAt
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", rows[i].RunID, experiment, started)
+		tasks := orNA(strings.Join(taskKeys[rows[i].RunID], ", "))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", rows[i].RunID, experiment, tasks, started)
 	}
 	tw.Flush()
 

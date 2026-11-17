@@ -42,7 +42,7 @@ func listedRunFor(run *jobs.Run, host string, workspaceID int64) listedRunFields
 // building dashboard URLs.
 func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 	taskKey := ""
-	if t := airWrapperTask(run); t != nil {
+	if t := airTask(run); t != nil {
 		taskKey = t.TaskKey
 	}
 	experiment := jobExperiment(run)

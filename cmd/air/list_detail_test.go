@@ -33,7 +33,7 @@ func TestRunLogsSnapshotFailedRetryWithoutLogs(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123)
+	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123, "")
 	require.NoError(t, err)
 	assert.Equal(t, "No logs available for run 123. Run terminated in state FAILED: Out of capacity. "+
 		"Earlier retries may have logs; pass --retry N (0 through 1) to see them\n"+
@@ -85,7 +85,7 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 	require.NoError(t, err)
 	info, err := runDetailText(ctx, w, 7, "")
 	require.NoError(t, err)
-	logs, err := runLogsSnapshot(ctx, w, 7)
+	logs, err := runLogsSnapshot(ctx, w, 7, "")
 	require.NoError(t, err)
 
 	// Then each links retry 1's MLflow run and names that retry.
@@ -291,4 +291,14 @@ func TestRunDetailTextShowsTheSelectedAirTask(t *testing.T) {
 	assert.Contains(t, info, "Experiment    exp-eval")
 	assert.Contains(t, info, "Accelerators  8x H100")
 	assert.Contains(t, info, "Task          eval")
+}
+
+func TestLogTaskNote(t *testing.T) {
+	run := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 71, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 72, "e", "GPU_1xA10", 1),
+	}}
+	assert.Equal(t, `Note: these are the logs of task "eval", the run's latest task, not of the selected task "train". Logs are not yet available per task.`, logTaskNote(run, "train"))
+	assert.Empty(t, logTaskNote(run, "eval"), "the logs are the selected task's")
+	assert.Empty(t, logTaskNote(run, ""), "no task selected")
 }
