@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -286,7 +287,23 @@ func (c *deployConfig) validateCheckpoint() error {
 	if m.Entry == nil && (m.ModelConfig != nil || m.Streamable != nil) {
 		return errors.New("model.model_config and model.streamable apply to model.entry, not to command")
 	}
+	if m.ModelConfig != nil {
+		if _, err := modelConfigJSON(m.ModelConfig); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// modelConfigJSON encodes model_config as the JSON object the server reads.
+// YAML can hold values JSON can't, such as .nan, .inf and mappings whose keys
+// aren't strings, and those are rejected rather than dropped.
+func modelConfigJSON(config map[string]any) (string, error) {
+	raw, err := json.Marshal(config)
+	if err != nil {
+		return "", fmt.Errorf("model.model_config must hold only values JSON can: strings, finite numbers, booleans, null, lists and mappings with string keys: %w", err)
+	}
+	return string(raw), nil
 }
 
 // validateVolumeDirectory checks a Unity Catalog volume directory the server

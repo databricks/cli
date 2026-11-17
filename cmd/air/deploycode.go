@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,7 +74,10 @@ func collectEntryCode(ctx context.Context, cfg *deployConfig, configPath string)
 	foundEntry := false
 	for _, f := range files {
 		rel := filepath.ToSlash(f.rel)
-		content, err := os.ReadFile(filepath.Join(root, f.rel))
+		content, err := readListedFile(filepath.Join(root, f.rel), f.size)
+		if errors.Is(err, errCodeFileChanged) {
+			return nil, fmt.Errorf("code_source file %s changed while air deploy was reading it; run air deploy again", rel)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to read code_source file %s: %w", rel, err)
 		}
@@ -91,6 +95,39 @@ func collectEntryCode(ctx context.Context, cfg *deployConfig, configPath string)
 		return nil, fmt.Errorf("model.entry %s isn't among the files code_source sends from %s; check that it exists, isn't ignored by git and is under code_source.include_paths", code.EntryFile, filepath.ToSlash(root))
 	}
 	return code, nil
+}
+
+// errCodeFileChanged reports a code file that isn't the one listed anymore.
+var errCodeFileChanged = errors.New("code file changed since it was listed")
+
+// readListedFile reads the regular file of size bytes listed at path. It opens
+// the file before checking it, so a file replaced after the listing, such as by a
+// symlink to a file outside the project, is refused rather than sent.
+func readListedFile(path string, size int64) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	opened, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	atPath, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !atPath.Mode().IsRegular() || !os.SameFile(opened, atPath) || opened.Size() != size {
+		return nil, errCodeFileChanged
+	}
+	content, err := io.ReadAll(io.LimitReader(f, size+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(content)) != size {
+		return nil, errCodeFileChanged
+	}
+	return content, nil
 }
 
 // ignoredTrackedFiles returns the files that a .gitignore rule matches although

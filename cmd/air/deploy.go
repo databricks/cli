@@ -295,7 +295,10 @@ func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	// Printed to stderr in every output mode, before the first request, so a run
 	// that is killed can still be continued with this key.
 	cmdio.LogString(ctx, fmt.Sprintf("Registering a version of %s with idempotency key %s", cfg.RegisteredModel, key))
-	req := cfg.registrationRequest(key, code)
+	req, err := cfg.registrationRequest(key, code)
+	if err != nil {
+		return nil, withCode(codeInvalidArgs, false, err)
+	}
 	req.RetryFailedStaging = opts.retryFailedStaging
 
 	progress := func(*registerModelPackageResponse) {}

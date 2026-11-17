@@ -2,7 +2,6 @@ package aircmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -166,7 +165,7 @@ func (e *finalizeError) Unwrap() error { return e.err }
 // registrationRequest builds the request that registers cfg's checkpoint under key.
 // code is the collected code of model.entry, and is nil when a command serves the
 // checkpoint.
-func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonModel) registerModelPackageRequest {
+func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonModel) (registerModelPackageRequest, error) {
 	req := registerModelPackageRequest{
 		RegisteredModel: c.RegisteredModel,
 		IdempotencyKey:  key,
@@ -188,13 +187,15 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonM
 			Streamable:  c.Model.Streamable,
 		}
 		if c.Model.ModelConfig != nil {
-			// The YAML decoded as JSON-compatible values; the server reads a JSON object.
-			raw, _ := json.Marshal(c.Model.ModelConfig)
-			checkpoint.PythonModel.ModelConfig = string(raw)
+			raw, err := modelConfigJSON(c.Model.ModelConfig)
+			if err != nil {
+				return registerModelPackageRequest{}, err
+			}
+			checkpoint.PythonModel.ModelConfig = raw
 		}
 	}
 	req.Checkpoint = checkpoint
-	return req
+	return req, nil
 }
 
 // registerAndFinalize registers req's version and makes it ready to serve,
@@ -219,6 +220,9 @@ func registerAndFinalize(ctx context.Context, w *databricks.WorkspaceClient, req
 	}
 	if resp.ModelVersion == "" {
 		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned no version", req.RegisteredModel))
+	}
+	if !modelVersionRe().MatchString(resp.ModelVersion) {
+		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned %q, which isn't a version number", req.RegisteredModel, stripControl(resp.ModelVersion)))
 	}
 	if err := checkStagingStatus(resp.StagingStatus, req.RegisteredModel, resp.ModelVersion); err != nil {
 		return nil, err

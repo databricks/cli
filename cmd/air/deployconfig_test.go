@@ -59,7 +59,8 @@ func TestLoadDeployConfigCheckpoint(t *testing.T) {
 	assert.Equal(t, modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}}, cfg.servingEnvironment())
 	assert.Equal(t, map[string]string{"LOG_LEVEL": "info", "HF_TOKEN": "{{secrets/llm/hf_token}}"}, cfg.servedEnvironmentVars())
 
-	req := cfg.registrationRequest("key-1", nil)
+	req, err := cfg.registrationRequest("key-1", nil)
+	require.NoError(t, err)
 	assert.Equal(t, registerModelPackageRequest{
 		RegisteredModel: "main.models.qwen",
 		IdempotencyKey:  "key-1",
@@ -77,7 +78,9 @@ func TestLoadDeployConfigAudioCheckpoint(t *testing.T) {
 		t.Run(task, func(t *testing.T) {
 			cfg, err := loadDeployConfigText(t, strings.Replace(checkpointDeployConfig, "task: llm/v1/chat", "task: "+task, 1))
 			require.NoError(t, err)
-			assert.Equal(t, task, cfg.registrationRequest("key-1", nil).Checkpoint.Task)
+			req, err := cfg.registrationRequest("key-1", nil)
+			require.NoError(t, err)
+			assert.Equal(t, task, req.Checkpoint.Task)
 		})
 	}
 }
@@ -109,7 +112,8 @@ func TestLoadDeployConfigPythonCheckpoint(t *testing.T) {
 
 	streamable := false
 	code := &modelPackagePythonModel{EntryFile: "model.py", EntrySource: "import mlflow\n", Files: []modelPackageFile{{Path: "util/a.py", Content: "x = 1\n"}}}
-	req := cfg.registrationRequest("key-1", code)
+	req, err := cfg.registrationRequest("key-1", code)
+	require.NoError(t, err)
 	assert.Equal(t, registerModelPackageRequest{
 		RegisteredModel: "main.ml.whisper",
 		IdempotencyKey:  "key-1",
@@ -133,7 +137,8 @@ func TestLoadDeployConfigPythonCheckpointWithoutTask(t *testing.T) {
 	text = strings.Replace(text, "  model_config: {language: en, beams: 4}\n  streamable: false\n", "", 1)
 	cfg, err := loadDeployConfigText(t, text)
 	require.NoError(t, err)
-	req := cfg.registrationRequest("k", &modelPackagePythonModel{EntryFile: "model.py"})
+	req, err := cfg.registrationRequest("k", &modelPackagePythonModel{EntryFile: "model.py"})
+	require.NoError(t, err)
 	assert.Empty(t, req.Checkpoint.Task)
 	assert.Nil(t, req.Checkpoint.PythonModel.Streamable)
 	assert.Empty(t, req.Checkpoint.PythonModel.ModelConfig)
@@ -179,7 +184,23 @@ compute: {workload_type: GPU_SMALL, workload_size: Small}
 func TestLoadDeployConfigExperimentPath(t *testing.T) {
 	cfg, err := loadDeployConfigText(t, checkpointDeployConfig+"mlflow_experiment_path: /Shared/qwen\n")
 	require.NoError(t, err)
-	assert.Equal(t, "/Shared/qwen", cfg.registrationRequest("k", nil).ExperimentPath)
+	req, err := cfg.registrationRequest("k", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "/Shared/qwen", req.ExperimentPath)
+}
+
+func TestLoadDeployConfigRejectsModelConfigJSONCantHold(t *testing.T) {
+	for name, value := range map[string]string{
+		"NaN":                 "{ratio: .nan}",
+		"infinity":            "{limit: .inf}",
+		"non-string map keys": "{weights: {1: a}}",
+	} {
+		t.Run(name, func(t *testing.T) {
+			text := strings.Replace(pythonCheckpointDeployConfig, "{language: en, beams: 4}", value, 1)
+			_, err := loadDeployConfigText(t, text)
+			assert.ErrorContains(t, err, "model.model_config must hold only values JSON can")
+		})
+	}
 }
 
 func TestLoadDeployConfigOverride(t *testing.T) {

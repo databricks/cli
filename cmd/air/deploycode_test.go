@@ -163,6 +163,34 @@ func TestCollectModelCodeRejectsSymlink(t *testing.T) {
 	assert.ErrorContains(t, err, "code_source path link.py isn't a regular file")
 }
 
+func TestReadListedFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "model.py")
+	require.NoError(t, os.WriteFile(path, []byte("x = 1\n"), 0o600))
+	content, err := readListedFile(path, 6)
+	require.NoError(t, err)
+	assert.Equal(t, "x = 1\n", string(content))
+}
+
+func TestReadListedFileRefusesAFileReplacedByASymlink(t *testing.T) {
+	dir := t.TempDir()
+	secret := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(secret, []byte("token\n"), 0o600))
+	path := filepath.Join(dir, "model.py")
+	if err := os.Symlink(secret, path); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	// Listed as a regular file of the secret's size, then replaced by the link.
+	_, err := readListedFile(path, 6)
+	assert.ErrorIs(t, err, errCodeFileChanged)
+}
+
+func TestReadListedFileRefusesAFileThatChangedSize(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "model.py")
+	require.NoError(t, os.WriteFile(path, []byte("x = 1\ny = 2\n"), 0o600))
+	_, err := readListedFile(path, 6)
+	assert.ErrorIs(t, err, errCodeFileChanged)
+}
+
 func TestCollectModelCodeTooManyFiles(t *testing.T) {
 	files := map[string]string{"agent.py": "x\n"}
 	for i := range maxCodeFiles + 1 {

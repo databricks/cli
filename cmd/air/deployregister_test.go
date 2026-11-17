@@ -347,6 +347,14 @@ func TestRegisterAndFinalizeRejectsARegistrationWithoutAVersion(t *testing.T) {
 	assert.Empty(t, fake.finalizeRequests)
 }
 
+func TestRegisterAndFinalizeRejectsAVersionThatIsntANumber(t *testing.T) {
+	fake := newFakeModelServing(t, `{"model_id": "m-1", "registered_model": "main.models.qwen", "model_version": "3; rm", "ready": false, "staging_status": {"model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`)
+
+	_, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
+	assert.ErrorContains(t, err, `registering a version of main.models.qwen returned "3; rm", which isn't a version number`)
+	assert.Empty(t, fake.finalizeRequests)
+}
+
 func TestRegisterAndFinalizeRetriesTransientErrors(t *testing.T) {
 	fake := newFakeModelServing(t, serverErrorResponse, stagingInProgress)
 	fake.statuses = []string{serverErrorResponse, statusSucceeded}
