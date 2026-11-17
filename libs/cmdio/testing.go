@@ -59,11 +59,6 @@ type TestIOOptions struct {
 	// the way [NewIO] does, instead of leaving them off.
 	ColorFromEnv bool
 
-	// NoColor and Dumb set the color capabilities directly. They are
-	// independent: NoColor keeps prompts and the pager, Dumb refuses them.
-	NoColor bool
-	Dumb    bool
-
 	// StdoutNotTTY and StderrNotTTY report the stream as redirected.
 	StdoutNotTTY bool
 	StderrNotTTY bool
@@ -78,8 +73,6 @@ func NewTestIOWithOptions(ctx context.Context, in io.Reader, out, err io.Writer,
 	if opts.ColorFromEnv {
 		c.capabilities.noColor, c.capabilities.dumb = colorFromEnv(ctx)
 	}
-	c.capabilities.noColor = c.capabilities.noColor || opts.NoColor
-	c.capabilities.dumb = c.capabilities.dumb || opts.Dumb
 	c.capabilities.stdoutIsTTY = !opts.StdoutNotTTY
 	c.capabilities.stderrIsTTY = !opts.StderrNotTTY
 	return c

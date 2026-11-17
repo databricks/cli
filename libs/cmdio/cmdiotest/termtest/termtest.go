@@ -465,8 +465,9 @@ func (tt *Term[T]) WaitForExit(grace time.Duration) bool {
 }
 
 // WaitForReplies blocks until every query the program has written so far has
-// been answered and the replies have been read. Call it before typing when
-// the test must not interleave keys with replies. It needs Options.Responder.
+// been answered: the replies are written to the program's input, which may not
+// have read them yet. Call it before typing when the test must not interleave
+// keys with replies. It needs Options.Responder.
 func (tt *Term[T]) WaitForReplies() {
 	tt.t.Helper()
 	tt.drainPending()
