@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 REPOSITORY = "databricks/cli"
-PR_ACTIONS = {"opened", "reopened", "synchronize", "ready_for_review"}
+PR_ACTIONS = {"opened", "reopened", "synchronize", "ready_for_review", "edited"}
 WRITE_PERMISSIONS = {"write", "maintain", "admin"}
 
 
@@ -30,8 +30,12 @@ def validate_request(event_name, event, api=github_api):
     if event_name == "pull_request_target":
         if event["action"] not in PR_ACTIONS:
             return None
+        # Retargeting changes the diff; edits to the title or description do not need a review.
+        if event["action"] == "edited" and "base" not in event.get("changes", {}):
+            return None
         number = event["number"]
         expected_head = event["pull_request"]["head"]["sha"]
+        expected_base = event["pull_request"]["base"]["ref"]
     elif event_name == "issue_comment":
         comment = event["comment"]
         # Comments on ordinary issues, edited commands, and extra instructions do not count.
@@ -54,13 +58,15 @@ def validate_request(event_name, event, api=github_api):
     head_repo = pr["head"]["repo"]
     if (
         pr["state"] != "open"
-        or pr["base"]["ref"] != "main"
         or head_repo is None
         or head_repo["full_name"] != REPOSITORY
         or head_repo["fork"]
         or pr["user"]["type"] != "User"
         # A manual /review can review a draft or the latest commit; an old automatic event cannot.
-        or (event_name == "pull_request_target" and (pr["draft"] or pr["head"]["sha"] != expected_head))
+        or (
+            event_name == "pull_request_target"
+            and (pr["draft"] or pr["head"]["sha"] != expected_head or pr["base"]["ref"] != expected_base)
+        )
     ):
         return None
 

@@ -1,14 +1,15 @@
 name: CLI PR review
 
-# Review ready, same-repository PRs on open/reopen/push. Comment exactly /review
+# Review ready, same-repository PRs targeting any branch. Comment exactly /review
 # to request another review, including on a draft. Author and requester need write
 # access, checked through the GitHub API before the backend is dispatched.
 # The job summary links the backend run. Feedback is advisory and posted inline.
 # Run only trusted workflow code; never check out or execute the PR here.
 on:
+  # This event uses the default branch's workflow, including for release-branch PRs.
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request_target
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
-    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
   issue_comment:
     types: [created]
 
@@ -22,6 +23,7 @@ jobs:
     if: |
       github.repository == 'databricks/cli' && (
         (github.event_name == 'pull_request_target' &&
+         (github.event.action != 'edited' || github.event.changes.base) &&
          !github.event.pull_request.draft &&
          github.event.pull_request.head.repo.full_name == github.repository &&
          !github.event.pull_request.head.repo.fork) ||

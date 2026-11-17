@@ -59,10 +59,9 @@ class ReviewRequestTest(unittest.TestCase):
                 self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
 
     def test_ineligible_prs(self):
-        """Closed, wrong-base, fork, deleted-repository, and bot PRs stop before permission lookup."""
+        """Closed, fork, deleted-repository, and bot PRs stop before permission lookup."""
         cases = [
             ("state", "closed"),
-            ("base", {"ref": "release"}),
             ("head", {"sha": "a" * 40, "repo": {"full_name": "other/cli", "fork": True}}),
             ("head", {"sha": "a" * 40, "repo": {"full_name": "databricks/cli", "fork": True}}),
             ("head", {"sha": "a" * 40, "repo": None}),
@@ -77,6 +76,33 @@ class ReviewRequestTest(unittest.TestCase):
                     self.api.reset_mock()
                     self.assertIsNone(review.validate_request(name, event, self.api))
                     self.assertEqual(self.api.call_count, 1)
+
+    def test_non_main_targets(self):
+        """Release and feature branches use the same permission checks as main."""
+        for base in ["main", "release/v1.2", "maintenance", "feature/stack"]:
+            with self.subTest(base=base):
+                self.pr["base"]["ref"] = base
+                self.automatic["pull_request"]["base"]["ref"] = base
+                self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
+                self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
+                self.permissions["author"] = "read"
+                self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
+                self.assertIsNone(review.validate_request("issue_comment", self.comment, self.api))
+                self.permissions["author"] = "write"
+
+    def test_retargeting_and_unrelated_edits(self):
+        """Retargeting starts a fresh review; title/body edits and old target events are skipped."""
+        self.automatic["action"] = "edited"
+        for changes in [{}, {"title": {"from": "Old title"}}, {"body": {"from": "Old description"}}]:
+            with self.subTest(changes=changes):
+                self.automatic["changes"] = changes
+                self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
+        self.api.assert_not_called()
+        self.automatic["changes"] = {"base": {"ref": {"from": "release/v1.2"}}}
+        self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
+        self.pr["base"]["ref"] = "release/v1.3"
+        self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
+        self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
 
     def test_drafts_and_new_commits_require_explicit_request(self):
         """A manual request can review the latest draft; a stale automatic event is skipped."""
