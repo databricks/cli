@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"path"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -228,13 +230,26 @@ func TestCp_writeModes(t *testing.T) {
 		},
 	}
 
+	// The target filer records the modes of each write, and fails a write whose
+	// directory the walk has not created yet: skipping the check is only safe
+	// because of that Mkdir.
 	newTargetFiler := func(got map[string][]filer.WriteMode) *mockFiler {
 		var mu sync.Mutex
+		created := map[string]bool{}
 		return &mockFiler{
-			write: func(ctx context.Context, path string, r io.Reader, mode ...filer.WriteMode) error {
+			mkdir: func(ctx context.Context, dir string) error {
 				mu.Lock()
 				defer mu.Unlock()
-				got[path] = mode
+				created[dir] = true
+				return nil
+			},
+			write: func(ctx context.Context, p string, r io.Reader, mode ...filer.WriteMode) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if slices.Contains(mode, filer.CreateParentDirectories) && !created[path.Dir(p)] {
+					return fmt.Errorf("write to %s before Mkdir of its directory", p)
+				}
+				got[p] = mode
 				return nil
 			},
 		}

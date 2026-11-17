@@ -1,1 +1,1 @@
-* `databricks fs cp -r` no longer checks that the parent directory exists before each file it copies, cutting the number of requests for a copy of many small files by about half. ([#7711](https://github.com/databricks/cli/pull/7711))
+* `databricks fs cp -r` no longer checks that each file's parent directory exists before writing it, because the copy has already created that directory. This saves one request per file: a copy to a Volume sends one request per small file instead of two. ([#7711](https://github.com/databricks/cli/pull/7711))

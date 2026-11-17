@@ -103,8 +103,8 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			// The walk has already created the target directory for this file,
-			// so tell the filer not to check that it exists before every write.
+			// The walk already created the target directory, so skip the filer's
+			// per-file parent-directory check.
 			return c.cpFileToFile(ctx, sourcePath, targetPath, filer.CreateParentDirectories)
 		})
 		return nil
@@ -124,8 +124,8 @@ func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) er
 	return c.cpFileToFile(ctx, sourcePath, targetPath)
 }
 
-// cpFileToFile copies a single file. Callers pass extraModes to add write modes
-// beyond the one implied by --overwrite.
+// cpFileToFile copies one file. extraModes are passed to Write, in addition to
+// OverwriteIfExists when --overwrite is set.
 func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string, extraModes ...filer.WriteMode) error {
 	// Get reader for file at source path
 	r, err := c.sourceFiler.Read(ctx, sourcePath)

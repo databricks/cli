@@ -13,10 +13,10 @@ trap cleanup EXIT
 TARGET="dbfs:/Volumes/main/default/fs-cp-r-requests/dst"
 trace $CLI fs cp -r localdir ${TARGET} 2>&1 | sort
 
-title "Recursive copy: one mkdir per directory, one upload per file, no per-file directory check"
+title "Recursive copy: a directory PUT per directory, a file PUT per file, no directory HEAD per file"
 trace print_requests.py --sort //api/2.0/fs/ | jq -c '{method, path}'
 
-title "Single-file copy still checks the parent directory"
+title "Single-file copy still stats the target and checks its parent directory"
 trace $CLI fs cp localdir/a.txt ${TARGET}/sub/single.txt
 trace print_requests.py --sort //api/2.0/fs/ | jq -c '{method, path}'
 
