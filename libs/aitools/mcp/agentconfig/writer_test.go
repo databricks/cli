@@ -891,13 +891,13 @@ func TestUpsertRefusesEnvThatIsNotATable(t *testing.T) {
 // config file the user made read-only. The file keeps its bytes and mode. An add
 // that needs no write still succeeds.
 func TestWriteRefusesReadOnlyFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Windows does not honor unix file modes")
-	}
 	if os.Geteuid() == 0 {
 		t.Skip("root writes read-only files")
 	}
 	path := filepath.Join(t.TempDir(), "config.json")
+	// Windows maps the mode to the read-only attribute. Writable again before the
+	// temporary directory is removed.
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
 	writeFile(t, path, []byte(`{"mcpServers":{"other":{"command":"npx"}}}`), 0o600)
 	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
 	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
@@ -913,9 +913,11 @@ func TestWriteRefusesReadOnlyFile(t *testing.T) {
 	_, err = Remove(t.Context(), a, testName)
 	require.ErrorContains(t, err, refused)
 	assert.Equal(t, before, readFile(t, path))
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o400), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o400), info.Mode().Perm())
+	}
 
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 	require.NoError(t, err)

@@ -283,7 +283,7 @@ func checkWritable(a *agents.Agent, path string) error {
 	case errors.Is(err, fs.ErrNotExist):
 		return nil
 	case errors.Is(err, fs.ErrPermission):
-		return fmt.Errorf("%s is read-only; make it writable or leave %s out of --agents", filepath.ToSlash(path), a.Name)
+		return fmt.Errorf("%s is read-only; make it writable or leave %s out of --agents: %w", filepath.ToSlash(path), a.Name, err)
 	case err != nil:
 		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}

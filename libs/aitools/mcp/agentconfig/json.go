@@ -235,7 +235,10 @@ func (d *jsonDoc) put(root []string, name string, entry map[string]any, keys []s
 	if err != nil {
 		return err
 	}
-	return checkEdit(before, after, root, name, entry, sameEntry)
+	if err := checkEdit(before, after, root, name, entry, sameEntry); err != nil {
+		return fmt.Errorf("server %q: %w", name, err)
+	}
+	return nil
 }
 
 // decoded returns the document as plain values, without comments and trailing commas.
