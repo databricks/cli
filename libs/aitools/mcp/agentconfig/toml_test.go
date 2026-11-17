@@ -106,12 +106,12 @@ func TestTOMLRefusesInlineRootTable(t *testing.T) {
 func TestCheckEditRejectsOtherChanges(t *testing.T) {
 	before := map[string]any{"model": "a", "mcp_servers": map[string]any{}}
 	after := map[string]any{"model": "b", "mcp_servers": map[string]any{testName: testEntry(testCmd, testArgs("test"), nil)}}
-	err := checkEdit(before, after, []string{"mcp_servers"}, testName, testEntry(testCmd, testArgs("test"), nil), sameTOML)
+	err := checkEdit(before, after, []string{"mcp_servers"}, testName, testEntry(testCmd, testArgs("test"), nil), sameTOML, sameTOML)
 	assert.ErrorContains(t, err, "changed other settings")
 
 	after["model"] = "a"
-	assert.NoError(t, checkEdit(before, after, []string{"mcp_servers"}, testName, testEntry(testCmd, testArgs("test"), nil), sameTOML))
-	assert.ErrorContains(t, checkEdit(before, after, []string{"mcp_servers"}, testName, nil, sameTOML), "did not remove")
+	assert.NoError(t, checkEdit(before, after, []string{"mcp_servers"}, testName, testEntry(testCmd, testArgs("test"), nil), sameTOML, sameTOML))
+	assert.ErrorContains(t, checkEdit(before, after, []string{"mcp_servers"}, testName, nil, sameTOML, sameTOML), "did not remove")
 }
 
 func TestTOMLKeepsBOMAndCRLF(t *testing.T) {

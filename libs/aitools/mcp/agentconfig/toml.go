@@ -150,7 +150,7 @@ func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []stri
 	if _, err := toml.Decode(text, &parsed); err != nil {
 		return fmt.Errorf("server %q: the edited file does not decode: %w", name, err)
 	}
-	if err := checkEdit(d.root, parsed, root, name, entry, sameTOML); err != nil {
+	if err := checkEdit(d.root, parsed, root, name, entry, sameTOML, sameTOML); err != nil {
 		return fmt.Errorf("server %q: %w", name, err)
 	}
 	d.text = []byte(text)

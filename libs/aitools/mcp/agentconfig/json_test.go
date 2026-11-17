@@ -2,6 +2,7 @@ package agentconfig
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -348,12 +349,47 @@ func TestJSONCheckEditAcceptsOnlyTheEdit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := checkEdit(tc.before, tc.after, tc.root, testName, tc.entry, sameEntry)
+			err := checkEdit(tc.before, tc.after, tc.root, testName, tc.entry, sameShape, sameEntry)
 			if tc.want == "" {
 				assert.NoError(t, err)
 				return
 			}
 			assert.ErrorContains(t, err, tc.want)
+		})
+	}
+}
+
+// TestJSONCheckEditComparesOtherMembersAsBytes checks that a change to a member off
+// the root path is refused even though the check does not decode that member.
+func TestJSONCheckEditComparesOtherMembersAsBytes(t *testing.T) {
+	parsed, err := parseJSON([]byte(`{"other":{"a":1},"mcpServers":{}}`))
+	require.NoError(t, err)
+	d := parsed.(*jsonDoc)
+	root := []string{"mcpServers"}
+	before := d.shape(root, testName)
+	require.NoError(t, d.apply([]patch{{op: opReplace, path: "/other/a", value: []byte("2")}}))
+	after := d.shape(root, testName)
+	assert.ErrorContains(t, checkEdit(before, after, root, testName, nil, sameShape, sameEntry), "changed other settings")
+}
+
+// BenchmarkJSONAddBesideLargeMember times an add to a config whose other top-level
+// member is large, as ~/.claude.json is, where the check must not decode that member.
+// The file is parsed again for each run, outside the timer.
+func BenchmarkJSONAddBesideLargeMember(b *testing.B) {
+	entry := testEntry(testCmd, testArgs("test"), nil)
+	for _, size := range []int{1 << 20, 16 << 20} {
+		b.Run(fmt.Sprintf("%dMB", size>>20), func(b *testing.B) {
+			data := []byte(`{"history":"` + strings.Repeat("x", size) + `","mcpServers":{}}`)
+			b.ReportAllocs()
+			for b.Loop() {
+				b.StopTimer()
+				doc, err := parseJSON(data)
+				require.NoError(b, err)
+				b.StartTimer()
+				if err := doc.put([]string{"mcpServers"}, testName, entry, nil); err != nil {
+					b.Fatal(err)
+				}
+			}
 		})
 	}
 }

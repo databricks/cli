@@ -423,11 +423,12 @@ func envTable(v any) (map[string]any, error) {
 
 // checkEdit verifies an edit to a document, in memory and before it is saved: the
 // server is entry (or gone when entry is nil), and nothing else in the document
-// changed. same compares two documents in the terms of their format. A removal
-// drops the containers it leaves empty, up to the root, as withoutServer does, and
-// the check accepts that drop and nothing else.
-func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any, same func(a, b map[string]any) (bool, error)) error {
-	eq, err := same(withoutServer(before, root, name), withoutServer(after, root, name))
+// changed. sameRest compares the document without the server, and sameEntry
+// compares the server with entry; both compare in the terms of the format. A
+// removal drops the containers it leaves empty, up to the root, as withoutServer
+// does, and the check accepts that drop and nothing else.
+func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any, sameRest, sameEntry func(a, b map[string]any) (bool, error)) error {
+	eq, err := sameRest(withoutServer(before, root, name), withoutServer(after, root, name))
 	if err != nil {
 		return err
 	}
@@ -444,7 +445,7 @@ func checkEdit(before, after map[string]any, root []string, name string, entry m
 	if !found {
 		return errors.New("the edit did not add the server")
 	}
-	eq, err = same(got, entry)
+	eq, err = sameEntry(got, entry)
 	if err != nil {
 		return err
 	}

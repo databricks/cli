@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -221,33 +222,66 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 
 // put writes entry as server name under root. A nil entry removes it. With keys,
 // an existing server changes only those keys, and its other keys keep their bytes.
-// The edited tree is checked against the tree before the edit, as the TOML edits are.
-// The tree is changed in place, so after a failed check the document is not saved.
+// The edited tree is checked against the tree before the edit, as the TOML edits are,
+// but only the root path and the server are decoded: see shape. The tree is changed
+// in place, so after a failed check the document is not saved.
 func (d *jsonDoc) put(root []string, name string, entry map[string]any, keys []string) error {
-	before, err := d.decoded()
-	if err != nil {
-		return err
-	}
+	before := d.shape(root, name)
 	if err := d.edit(root, name, entry, keys); err != nil {
 		return err
 	}
-	after, err := d.decoded()
-	if err != nil {
-		return err
-	}
-	if err := checkEdit(before, after, root, name, entry, sameEntry); err != nil {
+	after := d.shape(root, name)
+	if err := checkEdit(before, after, root, name, entry, sameShape, sameEntry); err != nil {
 		return fmt.Errorf("server %q: %w", name, err)
 	}
 	return nil
 }
 
-// decoded returns the document as plain values, without comments and trailing commas.
-func (d *jsonDoc) decoded() (map[string]any, error) {
-	out, ok := decodeObject(&d.root)
-	if !ok {
-		return nil, errors.New("the document does not decode as JSON")
+// rawJSON is a member of a document kept as its bytes, without decoding.
+type rawJSON string
+
+// shape returns the document as checkEdit compares it. The containers on the path
+// to name and the server are decoded, and every other member is kept as its raw
+// bytes: they are copied, not decoded, so an unrelated member costs a copy of its
+// bytes and no more. The edit leaves those members as they were, and the bytes show it.
+func (d *jsonDoc) shape(root []string, name string) map[string]any {
+	return shapeOf(d.root.Value.(*hujson.Object), root, name)
+}
+
+func shapeOf(obj *hujson.Object, root []string, name string) map[string]any {
+	out := make(map[string]any, len(obj.Members))
+	for i := range obj.Members {
+		m := &obj.Members[i]
+		key := memberName(*m)
+		switch {
+		case len(root) > 0 && key == root[0]:
+			if child, ok := m.Value.Value.(*hujson.Object); ok {
+				out[key] = shapeOf(child, root[1:], name)
+				continue
+			}
+		case len(root) == 0 && key == name:
+			if entry, ok := decodeObject(&m.Value); ok {
+				out[key] = entry
+				continue
+			}
+		}
+		out[key] = rawValue(&m.Value)
 	}
-	return out, nil
+	return out
+}
+
+// rawValue returns the bytes of a member's value. The layout after the value is
+// left out, since removing the last member moves the trailing comma that follows it.
+func rawValue(v *hujson.Value) rawJSON {
+	bare := *v
+	bare.AfterExtra = nil
+	return rawJSON(bare.Pack())
+}
+
+// sameShape compares two documents as shape returns them. Raw members must match
+// byte for byte.
+func sameShape(a, b map[string]any) (bool, error) {
+	return reflect.DeepEqual(a, b), nil
 }
 
 // edit applies the edit that put describes.
