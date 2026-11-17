@@ -3,6 +3,7 @@
 package functions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,23 +19,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "functions",
-		Short: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
-		Long: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "functions",
+	Short:   `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
 
   The function implementation can be any SQL expression or Query, and it can be
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
-  the form __catalog_name__.__schema_name__.__function_name__.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  the form __catalog_name__.__schema_name__.__function_name__.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

@@ -1,9 +1,13 @@
 package cmdio
 
 import (
+	"bytes"
+	"io"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,12 +42,38 @@ func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
 }
 
 func TestIsInputTTY(t *testing.T) {
-	// Prompts are not supported without stderr as a terminal and with color,
+	// Prompts are not supported without stderr as a terminal,
 	// but a user can still type into stdin.
 	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stdinIsTTY: true}})
 	assert.True(t, IsInputTTY(ctx))
 	assert.False(t, IsPromptSupported(ctx))
 
-	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true, color: true}})
+	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
 	assert.False(t, IsInputTTY(ctx))
+}
+
+func TestHasTerminal(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		in      io.Reader
+		out     io.Writer
+		err     io.Writer
+		noColor bool
+		want    bool
+	}{
+		{name: "no terminal", out: io.Discard, err: io.Discard},
+		{name: "stdin", in: FakeTTYReader(&bytes.Buffer{}), out: io.Discard, err: io.Discard, want: true},
+		{name: "stdout", out: FakeTTY(io.Discard), err: io.Discard, want: true},
+		{name: "stderr", out: io.Discard, err: FakeTTY(io.Discard), want: true},
+		{name: "stderr with NO_COLOR", out: io.Discard, err: FakeTTY(io.Discard), noColor: true, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			if tc.noColor {
+				ctx = env.Set(ctx, "NO_COLOR", "1")
+			}
+			ctx = InContext(ctx, NewIO(ctx, flags.OutputText, tc.in, tc.out, tc.err, "", ""))
+			assert.Equal(t, tc.want, HasTerminal(ctx))
+		})
+	}
 }

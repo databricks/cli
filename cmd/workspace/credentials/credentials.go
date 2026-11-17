@@ -3,6 +3,7 @@
 package credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "credentials",
-		Short: `A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.`,
-		Long: `A credential represents an authentication and authorization mechanism for
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "credentials",
+	Short:   `A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A credential represents an authentication and authorization mechanism for
   accessing services on your cloud tenant. Each credential is subject to Unity
   Catalog access-control policies that control which users and groups can access
   the credential.
 
   To create credentials, you must be a Databricks account admin or have the
   CREATE SERVICE CREDENTIAL privilege. The user who creates the credential can
-  delegate ownership to another user or group to manage permissions on it.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  delegate ownership to another user or group to manage permissions on it.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateCredential())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-credential command

@@ -6,13 +6,19 @@ which config options were set, the outcome and latency, and how long packaging a
 uploading the code snapshot took. It never includes code, paths, names, parameters,
 or image references. Set `DATABRICKS_CLI_DISABLE_TELEMETRY=1` to opt out.
 
-The CLI logs an `aitools_hint_event` each time it prints the Claude Code install hint (any
-non-aitools command) or the `apps init` skills tip or install prompt. It carries only the kind of
-hint (`hint_kind`); the command it was shown on is the entry's `execution_context.command`. The
-event uploads at exit only when the command resolved auth. The install hint prints at most once per
-Claude Code session per hour, so when the command that printed it resolves no auth (e.g.
-`databricks version`), that session logs no install hint event for the next hour even though the
-agent saw the hint.
+The CLI logs an `aitools_hint_event` for each install-hint line it prints for a coding agent
+(Claude Code's native `<claude-code-hint>` line and its text line are one event each; another
+agent's text line is one event) and for the `apps init` skills tip or install prompt. The install
+hint is never printed on hint-exempt commands (`hintExemptCommands` in
+`libs/aitools/agents/hint.go`: aitools, `auth`, one-shot lookups, help, completion) or in CLI
+processes the CLI started itself. It carries only the kind of hint (`hint_kind`); the command it was
+shown on is the entry's `execution_context.command`. The event uploads at exit only when the command
+resolved auth. The text line prints at most once per hour per agent session (or per agent on the
+machine, for agents without a session id). Claude Code's native line prints at most once per 10
+minutes per session, but its event is logged at most once per text-line print: only for the first
+native line printed since the text line last printed. So when the command that printed a line
+resolves no auth (e.g. `databricks bundle schema`), no event for that line is uploaded until the
+text line prints again, even though the agent saw the hint.
 
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED

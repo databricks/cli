@@ -1,3 +1,7 @@
+title "code_source outside the bundle directory: the error suggests the code directory's parent as --output-dir"
+# Runs first: the in-place conversion below writes databricks.yml into src's parent.
+musterr trace $CLI air convert-to-dabs workloads/eval.yaml
+
 title "convert an AIR run YAML into a DABs bundle (in place, next to the source)"
 trace $CLI air convert-to-dabs train.yaml
 
@@ -31,3 +35,6 @@ trace grep -E 'environment_version|base_environment' databricks.yml
 
 title "the Databricks AI bundle validates"
 trace $CLI bundle validate
+
+title "a parent that already holds a bundle is not suggested: converting there would replace it"
+musterr trace $CLI air convert-to-dabs workloads/eval.yaml

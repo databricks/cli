@@ -3,6 +3,7 @@
 package repos
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "repos",
-		Short: `The Repos API allows users to manage their git repos.`,
-		Long: `The Repos API allows users to manage their git repos. Users can use the API to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "repos",
+	Short:   `The Repos API allows users to manage their git repos.`,
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Repos API allows users to manage their git repos. Users can use the API to
   access all repos that they have manage permissions on.
 
   Databricks Repos is a visual Git client in Databricks. It supports common Git
@@ -31,14 +37,13 @@ func New() *cobra.Command {
 
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
-  control, collaboration, and CI/CD.`,
-		GroupID: "workspace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  control, collaboration, and CI/CD.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

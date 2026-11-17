@@ -1,0 +1,1 @@
+* Fix shell completion in `databricks fs` commands for local paths typed with a leading `./` or repeated separators, which previously offered no suggestions. ([#7679](https://github.com/databricks/cli/pull/7679))

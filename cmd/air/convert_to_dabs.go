@@ -8,14 +8,17 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
 
@@ -264,9 +267,52 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", fmt.Errorf("code_source root_path %q is not inside the bundle directory %q; bundle deploy can only upload files under the bundle's sync root. Move the code inside the bundle, or set sync.paths in databricks.yml to a directory that contains both (note that widens what gets synced)", snap.RootPath, bundleDir)
+		return "", codeOutsideBundleError(snap, root, bundleDir)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
+}
+
+// codeOutsideBundleError explains a code directory outside the bundle directory. For
+// a working-tree snapshot it names the code directory's parent as an --output-dir,
+// unless that parent already holds a bundle: sibling workloads that share a code
+// directory would each be sent there and replace one another's bundle. As in
+// codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
+// repository.
+func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) error {
+	remedy := "move the code inside the bundle directory"
+	if snap.Git == nil {
+		parent := filepath.Dir(root)
+		if name := bundleFileIn(parent); name != "" {
+			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
+		} else if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok {
+			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", quoted, remedy)
+		} else {
+			remedy = "pass --output-dir with the code directory's parent, or " + remedy
+		}
+	}
+	return fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and convert-to-dabs can package only code inside the bundle directory; %s", snap.RootPath, quotedPath(root), bundleDir, remedy)
+}
+
+// quotedPath quotes a local path the way the --output-dir suggestion does, so a
+// Windows path keeps single backslashes instead of the doubled ones %q prints. It
+// falls back to %q for a path the user's shell can't quote, such as one with
+// control characters.
+func quotedPath(path string) string {
+	if quoted, ok := shellquote.Arg(runtime.GOOS, path); ok {
+		return quoted
+	}
+	return fmt.Sprintf("%q", path)
+}
+
+// bundleFileIn returns the name of the bundle configuration file in dir, or "" when
+// it has none.
+func bundleFileIn(dir string) string {
+	for _, name := range config.FileNames {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			return name
+		}
+	}
+	return ""
 }
 
 // nv builds a dyn.Value at "position" n: yamlsaver orders a map's keys by their
@@ -370,7 +416,7 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
 	envSpec := map[string]dyn.Value{}
 	if strings.HasPrefix(envVersion, databricksAIPrefix) {
-		envSpec["base_environment"] = nv("workspace-base-environments/"+envVersion, 1)
+		envSpec["base_environment"] = nv(workspaceBaseEnvironmentPrefix+envVersion, 1)
 	} else {
 		envSpec["environment_version"] = nv(envVersion, 1)
 	}

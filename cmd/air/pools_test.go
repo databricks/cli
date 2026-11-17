@@ -36,7 +36,7 @@ func TestPoolsCommandShape(t *testing.T) {
 	assert.NoError(t, get.Args(get, []string{})) // id optional: resolved when there's one pool
 	assert.Error(t, get.Args(get, []string{"a", "b"}))
 
-	assert.True(t, hasSubcommand(New(), "pools"))
+	assert.True(t, hasSubcommand(root.NewCommand(t.Context(), Spec), "pools"))
 	assert.False(t, hasSubcommand(newListCommand(), "pools"))
 	assert.False(t, hasSubcommand(newGetCommand(), "pool"))
 }
