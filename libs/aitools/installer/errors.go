@@ -57,6 +57,9 @@ const (
 	ReasonVersionIncompatible = "version-incompatible"
 	// ReasonExperimentalSkill: the named skill is experimental and --experimental was not set.
 	ReasonExperimentalSkill = "experimental-skill"
+	// ReasonUnportableSkill: the manifest lists the skill with a name or file
+	// path that is not portable, so it is never installed.
+	ReasonUnportableSkill = "unportable-skill"
 )
 
 func (e *SkillError) Error() string {

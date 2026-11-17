@@ -340,3 +340,8 @@ func TestClassifyUnsafeManifestPath(t *testing.T) {
 	require.ErrorIs(t, err, installer.ErrUnsafeManifestPath)
 	assert.Equal(t, protos.AitoolsErrorCategoryManifestInvalid, classifyInstallError(err))
 }
+
+func TestClassifyUnportableSkill(t *testing.T) {
+	err := &installer.SkillError{Skill: "Databricks_Core", Reason: installer.ReasonUnportableSkill}
+	assert.Equal(t, protos.AitoolsErrorCategoryManifestInvalid, classifyInstallError(err))
+}

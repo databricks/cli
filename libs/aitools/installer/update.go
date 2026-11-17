@@ -144,6 +144,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
+		// Keep the installed copy of a skill this CLI cannot install portably,
+		// as for one that needs a newer CLI.
+		if reason := unportableSkill(name, meta.Files); reason != "" {
+			log.Warnf(ctx, "Skipping skill %q: %s", name, reason)
+			result.Skipped = append(result.Skipped, name)
+			continue
+		}
+
 		// Filter experimental skills unless state opted in.
 		if meta.IsExperimental() && !state.IncludeExperimental {
 			log.Debugf(ctx, "Skipping experimental skill %s", name)

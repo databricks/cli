@@ -73,7 +73,12 @@ func TestInstallRecovery(t *testing.T) {
 		{
 			name: "manifest names a path outside the skills directory",
 			err:  fmt.Errorf("%w: skill %q lists file %q", installer.ErrUnsafeManifestPath, "databricks-core", "../../.bashrc"),
-			want: "No files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run 'databricks aitools install', and report the manifest from raw.githubusercontent.com at " + cliIssuesURL + ".",
+			want: "No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run 'databricks aitools install', and report the manifest from raw.githubusercontent.com at " + cliIssuesURL + ".",
+		},
+		{
+			name: "named skill is not portable",
+			err:  &installer.SkillError{Skill: "Databricks_Core", Reason: installer.ReasonUnportableSkill, Detail: "cannot be installed"},
+			want: "No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run 'databricks aitools install', and report the manifest from raw.githubusercontent.com at " + cliIssuesURL + ".",
 		},
 		{
 			name: "manifest fetch without a response",

@@ -86,17 +86,14 @@ var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 })
 
-// checkManifestPaths makes every skill name and file in m safe to join onto a
-// local directory. The manifest comes from the network, so it must not be able
-// to name ../../.bashrc. A name or file that reaches outside its directory, or
-// a skill named like the state file, fails the whole manifest: only a broken or
-// tampered manifest lists one. A skill whose name or files are merely not
-// portable is dropped with a warning, the way resolveSkills skips a skill this
-// CLI is too old for, so one such entry does not break every install. Both
-// rules are the same on every OS, so a manifest is treated the same everywhere.
-func checkManifestPaths(ctx context.Context, m *Manifest) error {
-	names := slices.Sorted(maps.Keys(m.Skills))
-	for _, name := range names {
+// checkManifestPaths fails a manifest that names a skill or file outside its
+// directory, or a skill named like the state file. The manifest comes from the
+// network, so it must not be able to name ../../.bashrc, and only a broken or
+// tampered manifest lists such an entry. The rule is the same on every OS.
+// Entries that stay inside their directory but are not portable are left to
+// unportableSkill, which skips only that skill.
+func checkManifestPaths(m *Manifest) error {
+	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
 		if name == "" || name == "." || name == ".." || name == stateFileName || strings.ContainsAny(name, `/\`) {
 			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
 		}
@@ -104,12 +101,6 @@ func checkManifestPaths(ctx context.Context, m *Manifest) error {
 			if escapesDir(file) {
 				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
 			}
-		}
-	}
-	for _, name := range names {
-		if reason := unportableSkill(name, m.Skills[name].Files); reason != "" {
-			log.Warnf(ctx, "Skipping skill %s: %s", name, reason)
-			delete(m.Skills, name)
 		}
 	}
 	return nil
@@ -139,9 +130,12 @@ func escapesDir(file string) bool {
 }
 
 // unportableSkill returns why a skill that stays inside its directory still
-// cannot be installed the same way on every OS, or "" if it can. Files must be
-// clean slash-separated paths, so the paths recorded in the install state match
-// the ones update walks on disk.
+// cannot be installed the same way on every OS, or "" if it can. Install skips
+// such a skill and update keeps the installed copy, the way both treat a skill
+// that needs a newer CLI. Each file must be a clean slash-separated path, so
+// the paths recorded in the install state match the ones update walks on disk.
+// Each element is limited to letters, digits, '.', '_' and '-', does not end in
+// a dot and is not a Windows device name, and no two files differ only in case.
 func unportableSkill(name string, files []string) string {
 	if len(name) > maxSkillNameLength || !skillNamePattern().MatchString(name) {
 		return fmt.Sprintf("the name is not at most %d lowercase letters, digits and single hyphens", maxSkillNameLength)
@@ -149,19 +143,34 @@ func unportableSkill(name string, files []string) string {
 	if isWindowsDeviceName(name) {
 		return "the name is a reserved Windows device name"
 	}
+	seen := make(map[string]string, len(files))
 	for _, file := range files {
-		if file == "." || path.Clean(file) != file || strings.ContainsAny(file, `\:`) {
+		if file == "." || path.Clean(file) != file {
 			return fmt.Sprintf("file %q is not a clean slash-separated path", file)
 		}
 		for elem := range strings.SplitSeq(file, "/") {
+			if !portableElementPattern().MatchString(elem) || strings.HasSuffix(elem, ".") {
+				return fmt.Sprintf("file %q has a path element that is not portable", file)
+			}
 			stem, _, _ := strings.Cut(elem, ".")
 			if isWindowsDeviceName(stem) {
 				return fmt.Sprintf("file %q names a reserved Windows device", file)
 			}
 		}
+		folded := strings.ToLower(file)
+		if other, ok := seen[folded]; ok {
+			return fmt.Sprintf("files %q and %q differ only in case", other, file)
+		}
+		seen[folded] = file
 	}
 	return ""
 }
+
+// portableElementPattern is the characters a file path element may use: ones
+// that mean the same thing in a file name on every OS.
+var portableElementPattern = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+})
 
 // isWindowsDeviceName reports whether s, in any case, is a name Windows
 // resolves to a device in every directory.

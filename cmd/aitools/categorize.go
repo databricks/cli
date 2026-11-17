@@ -142,6 +142,9 @@ func skillErrorCategory(e *installer.SkillError) protos.AitoolsErrorCategory {
 		return protos.AitoolsErrorCategoryVersionIncompatible
 	case installer.ReasonExperimentalSkill:
 		return protos.AitoolsErrorCategoryExperimentalSkill
+	// The manifest lists the skill in a form it cannot be installed in.
+	case installer.ReasonUnportableSkill:
+		return protos.AitoolsErrorCategoryManifestInvalid
 	default:
 		return protos.AitoolsErrorCategoryUncategorized
 	}

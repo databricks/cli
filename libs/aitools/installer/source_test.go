@@ -2,12 +2,10 @@ package installer
 
 import (
 	"errors"
-	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -104,8 +102,8 @@ func TestFetchManifestSizeCap(t *testing.T) {
 }
 
 // TestCheckManifestPaths covers every skill name and file in a fetched
-// manifest becoming a local path: an escape fails the manifest, an entry that
-// is not portable drops only its skill.
+// manifest becoming a local path: an escape fails the manifest, and an entry
+// that is not portable makes unportableSkill skip only its skill.
 func TestCheckManifestPaths(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -113,7 +111,7 @@ func TestCheckManifestPaths(t *testing.T) {
 		file  string
 		// wantErr is the error after the ErrUnsafeManifestPath prefix.
 		wantErr string
-		// wantSkipped is true when the skill is dropped from the manifest.
+		// wantSkipped is true when unportableSkill skips the skill.
 		wantSkipped bool
 	}{
 		{name: "regular file", skill: "databricks-core", file: "SKILL.md"},
@@ -157,25 +155,35 @@ func TestCheckManifestPaths(t *testing.T) {
 		{name: "file with a colon", skill: "databricks-core", file: "notes:v2.md", wantSkipped: true},
 		{name: "file named like a device", skill: "databricks-core", file: "references/aux.md", wantSkipped: true},
 		{name: "directory named like a device", skill: "databricks-core", file: "CON/SKILL.md", wantSkipped: true},
+		{name: "file with a question mark", skill: "databricks-core", file: "references/what?.md", wantSkipped: true},
+		{name: "file with a control character", skill: "databricks-core", file: "references/a\x1b.md", wantSkipped: true},
+		{name: "file with a superscript device name", skill: "databricks-core", file: "COM\u00b9.md", wantSkipped: true},
+		{name: "console device file", skill: "databricks-core", file: "CONIN$", wantSkipped: true},
+		{name: "device stem with a trailing space", skill: "databricks-core", file: "aux .md", wantSkipped: true},
+		{name: "element with a trailing dot", skill: "databricks-core", file: "references./auth.md", wantSkipped: true},
+		{name: "file with a trailing dot", skill: "databricks-core", file: "SKILL.md.", wantSkipped: true},
+		{name: "dotfile", skill: "databricks-core", file: "references/.gitkeep"},
+		{name: "underscore and hyphen in a file", skill: "databricks-core", file: "scripts/run_job-v2.py"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := &Manifest{Skills: map[string]SkillMeta{
-				tc.skill:      {Files: []string{tc.file}},
-				"other-skill": {Files: []string{"SKILL.md"}},
-			}}
-			err := checkManifestPaths(t.Context(), m)
+			m := &Manifest{Skills: map[string]SkillMeta{tc.skill: {Files: []string{tc.file}}}}
+			err := checkManifestPaths(m)
 			if tc.wantErr != "" {
 				require.ErrorIs(t, err, ErrUnsafeManifestPath)
 				assert.EqualError(t, err, ErrUnsafeManifestPath.Error()+": "+tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			_, kept := m.Skills[tc.skill]
-			assert.Equal(t, !tc.wantSkipped, kept)
-			assert.Contains(t, m.Skills, "other-skill")
+			assert.Equal(t, tc.wantSkipped, unportableSkill(tc.skill, []string{tc.file}) != "")
 		})
 	}
+}
+
+func TestUnportableSkillFilesDifferingOnlyInCase(t *testing.T) {
+	assert.Equal(t, `files "SKILL.md" and "skill.md" differ only in case`, unportableSkill("databricks-core", []string{"SKILL.md", "skill.md"}))
+	assert.Equal(t, `files "refs/a.md" and "REFS/a.md" differ only in case`, unportableSkill("databricks-core", []string{"refs/a.md", "REFS/a.md"}))
+	assert.Empty(t, unportableSkill("databricks-core", []string{"SKILL.md", "references/SKILL.md"}))
 }
 
 func TestCheckManifestPathsReportsTheFirstSkillInOrder(t *testing.T) {
@@ -185,7 +193,7 @@ func TestCheckManifestPathsReportsTheFirstSkillInOrder(t *testing.T) {
 		"../c":    {Files: []string{"SKILL.md"}},
 	}}
 	for range 10 {
-		assert.EqualError(t, checkManifestPaths(t.Context(), m), ErrUnsafeManifestPath.Error()+`: skill name "../c"`)
+		assert.EqualError(t, checkManifestPaths(m), ErrUnsafeManifestPath.Error()+`: skill name "../c"`)
 	}
 }
 
@@ -197,14 +205,6 @@ func TestFetchSkillsManifestChecksEverySource(t *testing.T) {
 	}}}
 	_, _, err := FetchSkillsManifestWithFallback(t.Context(), src, "v1", false)
 	require.ErrorIs(t, err, ErrUnsafeManifestPath)
-
-	src = &mockManifestSource{manifest: &Manifest{Skills: map[string]SkillMeta{
-		"databricks-core": {Files: []string{"SKILL.md"}},
-		"Databricks_Sql":  {Files: []string{"SKILL.md"}},
-	}}}
-	manifest, _, err := FetchSkillsManifestWithFallback(t.Context(), src, "v1", false)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"databricks-core"}, slices.Collect(maps.Keys(manifest.Skills)))
 }
 
 func TestInstallRejectsStateFileSkillNameWithoutTouchingState(t *testing.T) {
@@ -231,4 +231,24 @@ func TestInstallRejectsStateFileSkillNameWithoutTouchingState(t *testing.T) {
 	after, err := os.ReadFile(statePath)
 	require.NoError(t, err)
 	assert.Equal(t, string(before), string(after))
+}
+
+func TestInstallSkipsUnportableSkill(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	m := testManifest()
+	m.Skills["Databricks_Core"] = SkillMeta{Version: "0.1.0", Files: []string{"SKILL.md"}}
+	agent := testAgent(tmp)
+
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m}, []*agents.Agent{agent}, InstallOptions{}))
+	skillsDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	assert.DirExists(t, filepath.Join(skillsDir, "databricks-sql"))
+	assert.NoDirExists(t, filepath.Join(skillsDir, "Databricks_Core"))
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: m}, []*agents.Agent{agent}, InstallOptions{SpecificSkills: []string{"Databricks_Core"}})
+	skillErr, ok := errors.AsType[*SkillError](err)
+	require.True(t, ok, "got %v", err)
+	assert.Equal(t, ReasonUnportableSkill, skillErr.Reason)
 }
