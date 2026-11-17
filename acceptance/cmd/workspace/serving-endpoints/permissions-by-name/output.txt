@@ -7,15 +7,24 @@
 >>> [CLI] serving-endpoints get-permissions my-endpoint
 {"object_id":"/serving-endpoints/[ENDPOINT_ID]"}
 
-=== The ID still works
+=== A 32-character ID and root are passed through with no lookup
 
->>> [CLI] serving-endpoints get-permissions [ENDPOINT_ID]
-{"object_id":"/serving-endpoints/[ENDPOINT_ID]"}
+>>> [CLI] serving-endpoints get-permissions 0123456789abcdef0123456789ABCDEF
+{"object_id":"/serving-endpoints/0123456789abcdef0123456789ABCDEF"}
 
-=== A name that doesn't resolve gets the API's error
+>>> [CLI] serving-endpoints get-permissions root
+{"object_id":"/serving-endpoints/root"}
+
+=== A name that doesn't resolve returns the lookup error
 
 >>> musterr [CLI] serving-endpoints get-permissions no-such-endpoint
-Error: 'no-such-endpoint' is not a valid Inference Endpoint ID.
+Error: "no-such-endpoint" is not a serving endpoint ID, and looking it up as an endpoint name failed: Resource serving.ServingEndpointDetailed not found: no-such-endpoint
+
+=== Help shows the name is accepted
+
+>>> [CLI] serving-endpoints get-permissions --help
+    NAME_OR_ID: The name or ID of the serving endpoint for which to get or manage
+  databricks serving-endpoints get-permissions NAME_OR_ID [flags]
 
 >>> print_requests.py //serving-endpoints //permissions --get
 {
@@ -55,17 +64,13 @@ Error: 'no-such-endpoint' is not a valid Inference Endpoint ID.
 }
 {
   "method": "GET",
-  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]"
+  "path": "/api/2.0/permissions/serving-endpoints/0123456789abcdef0123456789ABCDEF"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]"
+  "path": "/api/2.0/permissions/serving-endpoints/root"
 }
 {
   "method": "GET",
   "path": "/api/2.0/serving-endpoints/no-such-endpoint"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/permissions/serving-endpoints/no-such-endpoint"
 }

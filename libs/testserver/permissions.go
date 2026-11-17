@@ -205,8 +205,14 @@ func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId stri
 
 // servingEndpointIDError mirrors the permissions API, which rejects a value
 // that isn't shaped like a serving endpoint ID, such as the endpoint's name.
+// The real API accepts "root" or 32 hex characters (InferenceEndpointId). This
+// fake also accepts dashed UUIDs, because that is the form nextUUID mints for
+// its endpoint IDs; uuid.Parse accepts both that and the 32-character form.
 func servingEndpointIDError(requestObjectType, objectId string) *Response {
 	if requestObjectType != "serving-endpoints" {
+		return nil
+	}
+	if objectId == "root" {
 		return nil
 	}
 	if _, err := uuid.Parse(objectId); err == nil {
