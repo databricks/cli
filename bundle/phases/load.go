@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -26,6 +27,7 @@ func LoadDefaultTarget(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	bundle.ApplyContext(ctx, b, mutator.SelectDefaultTarget())
+	recordConfig(b)
 }
 
 func LoadNamedTarget(ctx context.Context, b *bundle.Bundle, target string) {
@@ -37,4 +39,13 @@ func LoadNamedTarget(ctx context.Context, b *bundle.Bundle, target string) {
 	}
 
 	bundle.ApplyContext(ctx, b, mutator.SelectTarget(target))
+	recordConfig(b)
+}
+
+// recordConfig starts the bundle bitmap from the config as the user wrote it: the
+// files with the selected target merged in. It runs before command-line flags
+// (--var, --profile, --force-lock, ...) and the initialize phase set any field.
+func recordConfig(b *bundle.Bundle) {
+	b.Bitmap = bitmap.NewBuilder(bitmap.EmbeddedSchema())
+	b.Bitmap.Mark(b.Config.Value())
 }

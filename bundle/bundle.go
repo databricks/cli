@@ -236,10 +236,10 @@ type Bundle struct {
 	Telemetry Telemetry
 
 	// Bitmap holds the config bits of the bundle bitmap: what users configure,
-	// not what the CLI derives. Initialize creates it from the loaded files with
-	// the selected target merged in, before it fills in defaults; the Python
-	// mutator adds the resources Python defines, and the end of Initialize adds
-	// the values of fields set through ${var.*} references.
+	// not what the CLI derives. Loading with a target creates it from the files
+	// with the target merged in, before flags or Initialize set any field; the
+	// Python mutator adds the resources Python defines, and the end of Initialize
+	// adds the values of fields set through ${var.*} references.
 	Bitmap *bitmap.Builder
 }
 
