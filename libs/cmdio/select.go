@@ -257,7 +257,7 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// A paste is literal filter text: it doesn't navigate or toggle
 		// search the way typed "j", "k" or "/" do.
 		if m.searchActive && in.Text != "" {
-			m.appendFilter(in.Text)
+			m.appendFilter(teainput.FirstLine(in.Text))
 		}
 		return m, nil
 	}

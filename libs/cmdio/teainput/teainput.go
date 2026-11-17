@@ -42,7 +42,7 @@ func Decode(msg tea.Msg) (Event, bool) {
 		return Event{Text: string(k.Runes), Paste: true}, true
 	}
 
-	switch k.Type { //nolint:exhaustive // only runes, space, backspace and tab carry Alt or text
+	switch k.Type { //nolint:exhaustive // only runes and space carry Alt or text
 	case tea.KeyRunes:
 		if k.Alt {
 			if len(k.Runes) == 1 {
@@ -62,10 +62,6 @@ func Decode(msg tea.Msg) (Event, bool) {
 			return Event{Key: "alt+space"}, true
 		}
 		return printable(" "), true
-	case tea.KeyBackspace, tea.KeyTab:
-		if k.Alt {
-			return Event{Key: k.String()}, true
-		}
 	}
 	return Event{Key: k.String()}, true
 }

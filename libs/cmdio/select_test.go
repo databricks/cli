@@ -69,4 +69,8 @@ func TestSelectPaste(t *testing.T) {
 	m = next.(*selectModel)
 	assert.True(t, m.searchActive, "a pasted / inside search is literal")
 	assert.Equal(t, "b/x", m.filter)
+
+	next, _ = m.Update(teainput.Paste("y\nz"))
+	m = next.(*selectModel)
+	assert.Equal(t, "b/xy", m.filter, "a pasted line break ends the pasted text")
 }
