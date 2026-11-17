@@ -1,1 +1,1 @@
-* Messages cmdio writes to stderr (warnings, hints and similar) no longer carry color codes when stderr is redirected to a file or pipe while stdout is a terminal. Stderr that is a terminal keeps its colors, including with `CI` or `CLICOLOR=0` set.
+* Messages cmdio writes to stderr (warnings, hints and similar) no longer carry color codes when stderr is redirected to a file or pipe while stdout is a terminal. Stderr that is a terminal keeps its colors, including with `CI` or `CLICOLOR=0` set. ([#7738](https://github.com/databricks/cli/pull/7738))
