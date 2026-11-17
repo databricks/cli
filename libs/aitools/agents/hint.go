@@ -60,11 +60,6 @@ const (
 	// unattended runs.
 	ciEnv = "CI"
 
-	// aiToolsCommandName is the top-level command whose subtree is never hinted:
-	// telling the agent to run `databricks aitools install` while it is already
-	// running an aitools command makes no sense.
-	aiToolsCommandName = "aitools"
-
 	// airCommandName is the top-level command whose runnable subcommands swap
 	// the generic install hint for the AI Runtime skill recommendation. Bare
 	// `databricks air` and `--help` render help without running the pre-run
@@ -214,12 +209,12 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // subcommand Claude Code instead gets the AI Runtime skill recommendation,
 // which names the skill, what it covers, and how to preview it: an agent
 // running air has an AI Runtime task for that skill to help with. It is a
-// no-op for human callers, unsupported agents, aitools commands themselves,
-// the `auth token` and `auth docker token` credential helpers, a CLI process
-// the CLI started itself, when there is no output stream, and once the
-// tooling is present. Bare `databricks air` and `--help` render help without
-// running the pre-run hook; the air help footer carries the same
-// recommendation there.
+// no-op for human callers, unsupported agents, hint-exempt commands
+// (isHintExemptCommand), the `auth token` and `auth docker token` credential
+// helpers, a CLI process the CLI started itself, when there is no output
+// stream, and once the tooling is present. Bare `databricks air` and
+// `--help` render help without running the pre-run hook; the air help footer
+// carries the same recommendation there.
 // Both lines, the agent-native one (if any) and the model-facing text, and
 // their hint-shown events are throttled together per session, or per agent on
 // this machine for agents without a session id (fallbackKey).
@@ -233,7 +228,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if hint == nil {
 		return
 	}
-	if isAIToolsCommand(cmd) {
+	if isHintExemptCommand(cmd) {
 		return
 	}
 	if isCredentialHelperCommand(cmd) {
@@ -324,11 +319,33 @@ func isCredentialHelperCommand(cmd *cobra.Command) bool {
 	return parent != nil && parent.Name() == authCommandName
 }
 
-// isAIToolsCommand reports whether cmd is the aitools command or one of its
-// subcommands, walking the parent chain (mirrors versioncheck.isExemptCommand).
-func isAIToolsCommand(cmd *cobra.Command) bool {
-	for c := cmd; c != nil; c = c.Parent() {
-		if c.Name() == aiToolsCommandName {
+// hintExemptCommands are the commands, with their subcommands, on which no
+// tooling hint prints. Paths are relative to the root command. The aitools
+// trees are exempt because telling the agent to run aitools while it already
+// runs aitools makes no sense. The rest are plumbing or one-shot lookups (auth
+// checks, "who am I", version, help, shell completion): the agent has no task
+// to apply the skills to. The nudge eval measured only "who am I": 0 of 20
+// runs installed the tooling.
+var hintExemptCommands = []string{
+	"aitools",
+	"experimental aitools",
+	"auth",
+	"configure",
+	"current-user me",
+	"version",
+	"completion",
+	"help",
+	cobra.ShellCompRequestCmd,
+}
+
+// isHintExemptCommand reports whether cmd is one of hintExemptCommands or a
+// subcommand of one.
+func isHintExemptCommand(cmd *cobra.Command) bool {
+	path := cmd.CommandPath()
+	root := cmd.Root().CommandPath()
+	for _, exempt := range hintExemptCommands {
+		full := root + " " + exempt
+		if path == full || strings.HasPrefix(path, full+" ") {
 			return true
 		}
 	}
@@ -474,8 +491,7 @@ func SelfExecEnv(environ []string) []string {
 // ExecutionContext.Command names the command the hint was shown on.
 //
 // The event is buffered and uploaded by cmd/root at exit, which needs resolved
-// auth: a hint shown on a command that never resolves auth (e.g. `databricks
-// version`) is not uploaded.
+// auth: a hint shown on a command that never resolves auth is not uploaded.
 func logHintShown(ctx context.Context, kind protos.AitoolsHintKind) {
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		AitoolsHintEvent: &protos.AitoolsHintEvent{HintKind: kind},

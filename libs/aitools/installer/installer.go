@@ -487,7 +487,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
+	// Name the directory so an agent can open the installed SKILL.md files
+	// instead of searching the filesystem for them.
+	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s in %s.", len(targetSkills), noun, filepath.ToSlash(baseDir)))
 	return nil
 }
 

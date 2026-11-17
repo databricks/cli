@@ -259,10 +259,7 @@ func TestMaybeHint_AgentAuthTokenSilent(t *testing.T) {
 func TestMaybeHint_AgentAIToolsCommandSilent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	parent := &cobra.Command{Use: aiToolsCommandName}
-	child := &cobra.Command{Use: "install"}
-	parent.AddCommand(child)
-	MaybeHint(ctx, child, noPluginRecorded)
+	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded)
 	assert.Empty(t, stderr.String())
 }
 

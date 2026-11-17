@@ -48,7 +48,7 @@ func claudeCtx(t *testing.T, home string) (context.Context, *bytes.Buffer) {
 	return ctx, stderr
 }
 
-func regularCmd() *cobra.Command { return &cobra.Command{Use: "current-user"} }
+func regularCmd() *cobra.Command { return commandAt("clusters list") }
 
 func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
@@ -235,13 +235,49 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	ctx, stderr := claudeCtx(t, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
 
-	parent := &cobra.Command{Use: aiToolsCommandName}
-	child := &cobra.Command{Use: "install"}
-	parent.AddCommand(child)
-
-	MaybeHint(ctx, child, noPluginRecorded)
+	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
+}
+
+// commandAt builds a command tree under a "databricks" root and returns the
+// command at the space-separated path, e.g. "current-user me".
+func commandAt(path string) *cobra.Command {
+	cmd := &cobra.Command{Use: "databricks"}
+	for name := range strings.FieldsSeq(path) {
+		child := &cobra.Command{Use: name}
+		cmd.AddCommand(child)
+		cmd = child
+	}
+	return cmd
+}
+
+func TestIsHintExemptCommand(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"aitools install", true},
+		{"experimental aitools skills install", true},
+		{"auth login", true},
+		{"auth token", true},
+		{"configure", true},
+		{"current-user me", true},
+		{"completion bash", true},
+		{"help", true},
+		{cobra.ShellCompRequestCmd, true},
+		{"version", true},
+		{"authz", false},
+		{"bundle help", false},
+		{"current-user", false},
+		{"clusters list", false},
+		{"jobs run-now", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			assert.Equal(t, tc.want, isHintExemptCommand(commandAt(tc.path)))
+		})
+	}
 }
 
 func TestMaybeHint_NoIONoPanic(t *testing.T) {
@@ -364,6 +400,9 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 				writeClaudeSkill(t, home, "databricks")
 			},
 		},
+		// The auth cases below root the tree at auth, so only the credential-helper
+		// check applies; under the databricks root, hintExemptCommands covers all
+		// of auth.
 		{
 			name: "auth token prints nothing",
 			env:  map[string]string{claudeChildSessionEnv: "1"},
@@ -420,12 +459,7 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 		{
 			name: "aitools command prints nothing",
 			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd: func() *cobra.Command {
-				parent := &cobra.Command{Use: aiToolsCommandName}
-				child := &cobra.Command{Use: "install"}
-				parent.AddCommand(child)
-				return child
-			},
+			cmd:  func() *cobra.Command { return commandAt("aitools install") },
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -620,19 +654,6 @@ func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
 
 // --- AI Runtime skill hint on air subcommands ---
 
-// commandAt builds the command tree for a space-separated path under a
-// "databricks" root and returns the leaf, so ancestry checks see the same
-// shape as the real CLI.
-func commandAt(path string) *cobra.Command {
-	cmd := &cobra.Command{Use: "databricks"}
-	for name := range strings.FieldsSeq(path) {
-		child := &cobra.Command{Use: name}
-		cmd.AddCommand(child)
-		cmd = child
-	}
-	return cmd
-}
-
 func airCmd() *cobra.Command { return commandAt("air list") }
 
 // writeProjectPluginManifest writes a manifest with one project-scope install
@@ -682,8 +703,7 @@ func TestAIRHintText(t *testing.T) {
 func TestMaybeHint_NonAIRCommandsKeepGenericHint(t *testing.T) {
 	setClaudeAgent(t)
 	for _, path := range []string{
-		"auth profiles", "current-user me", "clusters list", "jobs list",
-		"bundle deploy", "workspace list", "version",
+		"clusters list", "jobs list", "bundle deploy", "workspace list",
 		// The bare air node only renders help (the footer carries the tip), and
 		// the hidden alias points users at `databricks air`; neither is an air
 		// subcommand, so they keep the generic hint.
@@ -697,6 +717,24 @@ func TestMaybeHint_NonAIRCommandsKeepGenericHint(t *testing.T) {
 			assert.Equal(t, hintText+"\n", stderr.String())
 			assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
 			assert.NotContains(t, stderr.String(), airHintText)
+		})
+	}
+}
+
+// Hint-exempt non-air commands stay exactly as main keeps them: no hint of
+// either kind. auth profiles is here because it was the original complaint
+// this PR's scoping answers; main's exemption list now covers it.
+func TestMaybeHint_ExemptNonAIRCommandsSilent(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"auth profiles", "current-user me", "version",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, hintKinds(t, ctx))
 		})
 	}
 }
@@ -847,7 +885,7 @@ func TestMaybeHint_AIRSessionThrottle(t *testing.T) {
 	// marker, so a later air command stays quiet.
 	ctx4, stderr4 := newCtx()
 	ctx4 = env.Set(ctx4, claudeSessionEnv, "session-ghi")
-	MaybeHint(ctx4, commandAt("auth profiles"), noPluginRecorded)
+	MaybeHint(ctx4, commandAt("clusters list"), noPluginRecorded)
 	assert.Equal(t, hintText+"\n", stderr4.String())
 	ctx5, stderr5 := newCtx()
 	ctx5 = env.Set(ctx5, claudeSessionEnv, "session-ghi")
