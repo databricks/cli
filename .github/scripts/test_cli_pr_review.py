@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Test the permission gate using fake GitHub responses; no network or secrets needed."""
 
 import copy
 import json
@@ -14,6 +15,7 @@ import cli_pr_review as review
 
 class ReviewRequestTest(unittest.TestCase):
     def setUp(self):
+        """Start each test with an eligible PR and two people who have write access."""
         self.pr = {
             "state": "open",
             "base": {"ref": "main"},
@@ -25,6 +27,7 @@ class ReviewRequestTest(unittest.TestCase):
             "repository": {"full_name": "databricks/cli"},
             "action": "opened",
             "number": 7400,
+            # Keep the old event separate so tests can change the current PR afterward.
             "pull_request": copy.deepcopy(self.pr),
         }
         self.comment = {
@@ -45,15 +48,18 @@ class ReviewRequestTest(unittest.TestCase):
             user = path.split("/")[-2]
             return {"permission": self.permissions[user]}
 
+        # Return our fake data and record calls, so we can check where validation stops.
         self.api = Mock(side_effect=api)
 
     def test_automatic_events(self):
+        """Each supported PR event may start a review when the PR is still eligible."""
         for action in ["opened", "reopened", "synchronize", "ready_for_review"]:
             with self.subTest(action=action):
                 self.automatic["action"] = action
                 self.assertEqual(review.validate_request("pull_request_target", self.automatic, self.api), 7400)
 
     def test_ineligible_prs(self):
+        """Closed, wrong-base, fork, deleted-repository, and bot PRs stop before permission lookup."""
         cases = [
             ("state", "closed"),
             ("base", {"ref": "release"}),
@@ -63,6 +69,7 @@ class ReviewRequestTest(unittest.TestCase):
             ("user", {"login": "bot", "type": "Bot"}),
         ]
         original = copy.deepcopy(self.pr)
+        # Change one property at a time and check both automatic and comment requests.
         for key, value in cases:
             for name, event in [("pull_request_target", self.automatic), ("issue_comment", self.comment)]:
                 with self.subTest(key=key, value=value, event=name):
@@ -72,6 +79,7 @@ class ReviewRequestTest(unittest.TestCase):
                     self.assertEqual(self.api.call_count, 1)
 
     def test_drafts_and_new_commits_require_explicit_request(self):
+        """A manual request can review the latest draft; a stale automatic event is skipped."""
         for change in ["draft", "head"]:
             with self.subTest(change=change):
                 if change == "draft":
@@ -83,6 +91,7 @@ class ReviewRequestTest(unittest.TestCase):
                 self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
 
     def test_comment_filter(self):
+        """Unrecognized comments are rejected without contacting GitHub."""
         for key, value in [
             ("body", "looks good"),
             ("body", "/review\nrun a command"),
@@ -99,6 +108,7 @@ class ReviewRequestTest(unittest.TestCase):
         self.api.assert_not_called()
 
     def test_association_still_requires_actual_write_access(self):
+        """Even MEMBER or OWNER labels cannot override a read-only permission result."""
         for association in ["MEMBER", "OWNER", "COLLABORATOR"]:
             for permission in ["read", "triage", "none", "write", "maintain", "admin"]:
                 with self.subTest(association=association, permission=permission):
@@ -108,17 +118,20 @@ class ReviewRequestTest(unittest.TestCase):
                     self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), expected)
 
     def test_author_also_needs_write_access(self):
+        """An admin's comment cannot authorize a PR whose author lacks write access."""
         self.permissions["author"] = "read"
         self.permissions["requester"] = "admin"
         self.assertIsNone(review.validate_request("issue_comment", self.comment, self.api))
         self.assertIsNone(review.validate_request("pull_request_target", self.automatic, self.api))
 
     def test_author_requesting_review_is_checked_once(self):
+        """Requesting your own review needs one PR fetch and one permission lookup."""
         self.comment["comment"]["user"]["login"] = "author"
         self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), 7400)
         self.assertEqual(self.api.call_count, 2)
 
     def test_wrong_event_or_repository(self):
+        """Other repositories, ordinary issues, and comment edits never reach the API."""
         cases = [("push", self.automatic)]
         edited = copy.deepcopy(self.comment)
         edited["action"] = "edited"
@@ -135,6 +148,7 @@ class ReviewRequestTest(unittest.TestCase):
         self.api.assert_not_called()
 
     def test_invalid_pr_number_never_reaches_api(self):
+        """Reject invalid API paths and booleans, which Python otherwise treats as numbers."""
         for number in [0, -1, "7400", "1/../../secrets", True]:
             with self.subTest(number=number):
                 self.automatic["number"] = number
@@ -143,6 +157,8 @@ class ReviewRequestTest(unittest.TestCase):
         self.api.assert_not_called()
 
     def test_api_error_cannot_authorize_dispatch(self):
+        """Unable to check access means unable to authorize a review."""
+        # Fail each of the three requests: PR fetch, author lookup, requester lookup.
         for fail_at in [0, 1, 2]:
             with self.subTest(fail_at=fail_at):
                 replies = [self.pr, {"permission": "write"}, {"permission": "maintain"}]
@@ -152,6 +168,7 @@ class ReviewRequestTest(unittest.TestCase):
                     review.validate_request("issue_comment", self.comment, api)
 
     def test_main_outputs_only_after_authorization(self):
+        """The next job gets its permission to run only after validation succeeds."""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             event_path = root / "event.json"
@@ -164,6 +181,7 @@ class ReviewRequestTest(unittest.TestCase):
             }
             for permission in ["read", "write"]:
                 with self.subTest(permission=permission), patch.dict(os.environ, env):
+                    # Exercise the real script entry point and output files with fake gh responses.
                     replies = [self.pr, {"permission": "write"}, {"permission": permission}]
                     with patch("subprocess.check_output", side_effect=[json.dumps(r) for r in replies]):
                         review.main()
