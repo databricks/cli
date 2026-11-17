@@ -4,7 +4,8 @@ trace python3 make_archives.py $CLI archives
 trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE > /dev/null
 trace ls wheels | grep -c '^databricks-1.2.3-py3-none-.*\.whl$'
 
-# uv picks the wheel matching this platform from the directory.
+# uv must pick the wheel for this platform: the other wheels hold a placeholder
+# instead of the binary (see make_archives.py), so a wrong pick fails here.
 trace uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
 
 rm -fr archives wheels
