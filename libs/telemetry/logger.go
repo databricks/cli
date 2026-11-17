@@ -297,6 +297,8 @@ func newAPIClient(cfg *config.Config, running *atomic.Int32, retries bool) (*cli
 	if !retries {
 		// The SDK retries some connection errors regardless of ErrorRetriable,
 		// so a minimal retry window is needed to stop after the first attempt.
+		// The attempt itself runs on the caller's context, so the window only
+		// ends the retrying; TestSendMakesOneAttempt fails if that changes.
 		clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
 		clientCfg.TransientErrors = nil
 		clientCfg.RetryTimeout = time.Nanosecond
@@ -313,7 +315,8 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 		return struct{}{}, cfg.Authenticate(authReq)
 	})
 	if err != nil {
-		return fmt.Errorf("authenticating upload: %w", err)
+		// Authentication runs before the request is sent.
+		return &notSentError{fmt.Errorf("authenticating upload: %w", err)}
 	}
 	r.Header = authReq.Header
 	return nil
@@ -325,7 +328,7 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) error {
 	protoLogs, err := marshalLogs(logs)
 	if err != nil {
-		return err
+		return &notSentError{err}
 	}
 
 	var running atomic.Int32
@@ -333,7 +336,7 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 		return newAPIClient(cfg, &running, false)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create API client: %w", err)
+		return &notSentError{fmt.Errorf("failed to create API client: %w", err)}
 	}
 
 	resp, err := attempt(ctx, apiClient, protoLogs)
@@ -344,6 +347,30 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 		return &NotAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
 	}
 	return nil
+}
+
+// notSentError marks a Send failure that happened before the request was sent,
+// so the server cannot have stored the logs.
+type notSentError struct {
+	err error
+}
+
+func (e *notSentError) Error() string { return e.err.Error() }
+func (e *notSentError) Unwrap() error { return e.err }
+
+// NotSent reports whether err, returned by Send, shows that the server stored
+// none of the logs: the request was never sent, the server rejected it, or it
+// accepted none of the logs. Any other error is ambiguous, because the server
+// may have stored the logs before the error.
+func NotSent(err error) bool {
+	if _, ok := errors.AsType[*notSentError](err); ok {
+		return true
+	}
+	if e, ok := errors.AsType[*NotAcceptedError](err); ok {
+		return e.Accepted == 0
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500
 }
 
 // NotAcceptedError is returned by Send when the server accepted fewer logs than

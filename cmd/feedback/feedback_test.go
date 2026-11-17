@@ -3,7 +3,6 @@ package feedback
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -100,24 +98,6 @@ func TestCheckArgs(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestNotSent(t *testing.T) {
-	tests := []struct {
-		name string
-		err  error
-		want bool
-	}{
-		{name: "nothing accepted", err: fmt.Errorf("wrapped: %w", &telemetry.NotAcceptedError{Accepted: 0, Sent: 1}), want: true},
-		{name: "rejected", err: &apierr.APIError{StatusCode: 403}, want: true},
-		{name: "server error", err: &apierr.APIError{StatusCode: 500}},
-		{name: "connection reset", err: errors.New("connection reset by peer")},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, notSent(tt.err))
 		})
 	}
 }
@@ -266,24 +246,26 @@ func TestSummary(t *testing.T) {
 }
 
 func TestConfirm(t *testing.T) {
-	t.Run("accepted", func(t *testing.T) {
-		var stderr bytes.Buffer
-		ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("y\n"), io.Discard, &stderr))
-		confirmed, err := confirm(ctx, submission{text: "exact feedback"}, testWorkspace)
-		require.NoError(t, err)
-		assert.True(t, confirmed)
-		assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\n  exact feedback\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n\n")
-		assert.Contains(t, stderr.String(), "Send this feedback? [y/N]: ")
-	})
-
-	t.Run("declined", func(t *testing.T) {
-		var stderr bytes.Buffer
-		ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("\n"), io.Discard, &stderr))
-		confirmed, err := confirm(ctx, submission{text: "exact feedback"}, testWorkspace)
-		require.NoError(t, err)
-		assert.False(t, confirmed)
-		assert.Contains(t, stderr.String(), "Feedback not sent.")
-	})
+	tests := []struct {
+		name          string
+		answer        string
+		wantConfirmed bool
+		wantStderr    string
+	}{
+		{name: "accepted", answer: "y\n", wantConfirmed: true, wantStderr: "Send this feedback? [y/N]: "},
+		{name: "declined", answer: "\n", wantStderr: "Feedback not sent."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stderr bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(tt.answer), io.Discard, &stderr))
+			confirmed, err := confirm(ctx, submission{text: "exact feedback"}, testWorkspace)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantConfirmed, confirmed)
+			assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\n  exact feedback\n\nWorkspace: "+testWorkspace+"\nDatabricks may contact you: no\n\n")
+			assert.Contains(t, stderr.String(), tt.wantStderr)
+		})
+	}
 }
 
 func TestCheckApproval(t *testing.T) {

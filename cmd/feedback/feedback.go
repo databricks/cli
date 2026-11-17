@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -202,7 +201,7 @@ func send(ctx context.Context, s submission, yes bool) error {
 		},
 	}})
 	if err != nil {
-		if notSent(err) {
+		if telemetry.NotSent(err) {
 			return fmt.Errorf("feedback %s was not sent: %w", id, err)
 		}
 		// The upload may have been accepted before the error, so retrying can
@@ -211,16 +210,6 @@ func send(ctx context.Context, s submission, yes bool) error {
 	}
 
 	return cmdio.RenderWithTemplate(ctx, receipt{Received: true, FeedbackID: id}, "", receiptTemplate)
-}
-
-// notSent reports whether err shows that the server stored nothing: it rejected
-// the request, or did not accept the feedback.
-func notSent(err error) bool {
-	if _, ok := errors.AsType[*telemetry.NotAcceptedError](err); ok {
-		return true
-	}
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500
 }
 
 func validateMessage(message string) (string, error) {
@@ -235,9 +224,11 @@ func validateMessage(message string) (string, error) {
 // must be a top-level command and picks the owning team, so "bundle deploy"
 // reaches bundles. The rest is not checked against the command tree, which would
 // mean building every command; instead every word is limited to the characters
-// of command names, so flags, paths, arguments and terminal control sequences
-// cannot reach origin or the approval prompt. The origin joins the words with
-// underscores, as the CLI names commands elsewhere (bundle_deploy).
+// of command names, so flags, paths and terminal control sequences cannot reach
+// origin or the approval prompt. A plain word after the first, such as an
+// argument or a subcommand typo, is not told apart from a subcommand. The
+// origin joins the words with underscores, as the CLI names commands elsewhere
+// (bundle_deploy).
 func resolveCommand(cmd *cobra.Command, command string) (string, string, error) {
 	words := strings.Fields(command)
 	if len(words) == 0 {
@@ -283,7 +274,8 @@ func needsApproval(yes bool) bool {
 
 // checkApproval returns an error when the user must approve the feedback but
 // there is no terminal to ask in. It needs only the input, so it runs before
-// authenticating.
+// authenticating. Only stdin has to be a terminal: confirm reads a plain line,
+// which works where cmdio.IsPromptSupported says no (TERM=dumb, MSYS2 pipes).
 func checkApproval(ctx context.Context, yes bool) error {
 	if !needsApproval(yes) || cmdio.IsInputTTY(ctx) {
 		return nil
