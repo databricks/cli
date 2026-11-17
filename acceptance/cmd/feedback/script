@@ -27,6 +27,7 @@ musterr trace $CLI feedback --target dev "hello"
 
 title "Input errors are reported before authenticating"
 musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI feedback "   "
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent $CLI feedback "hello"
 
 title "General CLI feedback"
 trace $CLI feedback "the CLI should support ..."

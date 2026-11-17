@@ -25,13 +25,15 @@ func TestValidateMessage(t *testing.T) {
 		{name: "trimmed", message: "  feedback\n", want: "feedback"},
 		{name: "maximum runes", message: strings.Repeat("é", messageLimit), want: strings.Repeat("é", messageLimit)},
 		{name: "blank", message: " \n", wantErr: true},
+		{name: "only invisible characters", message: "\u200b\ufe0f\u3164", wantErr: true},
+		{name: "visible after invisible", message: "\u200bx", want: "\u200bx"},
 		{name: "too long", message: strings.Repeat("x", messageLimit+1), wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := validateMessage(tt.message)
 			if tt.wantErr {
-				assert.EqualError(t, err, "feedback message must contain 1 to 10000 characters")
+				assert.EqualError(t, err, "feedback message must contain 1 to 10000 characters, including a visible one")
 				return
 			}
 			require.NoError(t, err)
@@ -115,7 +117,7 @@ func TestNewSubmission(t *testing.T) {
 		},
 		{name: "zero run ID", opts: options{runID: "0"}, message: "x", wantErr: "--run-id must be a positive job run ID"},
 		{name: "non-numeric run ID", opts: options{runID: "abc"}, message: "x", wantErr: "--run-id must be a positive job run ID"},
-		{name: "blank message", message: " ", wantErr: "feedback message must contain 1 to 10000 characters"},
+		{name: "blank message", message: " ", wantErr: "feedback message must contain 1 to 10000 characters, including a visible one"},
 		{name: "unknown command", opts: options{command: "nope"}, message: "x", wantErr: `unknown command "nope"` + commandHint},
 		{
 			name: "target", flags: []string{"--target", "dev"}, message: "x",
@@ -166,6 +168,11 @@ func TestSummary(t *testing.T) {
 			name: "format characters cannot reorder or hide text",
 			s:    submission{text: "a\u202eb\u200bc\U000E0041 d\u00a0é"},
 			want: `a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nDatabricks may contact you: no\n",
+		},
+		{
+			name: "variation selectors and fillers cannot carry hidden text",
+			s:    submission{text: "ok👍\ufe0f\U000E0100\u3164\u034f e\u0301"},
+			want: `ok👍\ufe0f\U000e0100\u3164\u034f ` + "e\u0301\n\nDatabricks may contact you: no\n",
 		},
 	}
 	for _, tt := range tests {

@@ -192,8 +192,8 @@ func send(ctx context.Context, s submission, yes bool) error {
 
 func validateMessage(message string) (string, error) {
 	text := strings.TrimSpace(message)
-	if text == "" || utf8.RuneCountInString(text) > messageLimit {
-		return "", fmt.Errorf("feedback message must contain 1 to %d characters", messageLimit)
+	if utf8.RuneCountInString(text) > messageLimit || !strings.ContainsFunc(text, visible) {
+		return "", fmt.Errorf("feedback message must contain 1 to %d characters, including a visible one", messageLimit)
 	}
 	return text, nil
 }
@@ -255,7 +255,7 @@ func confirm(ctx context.Context, s submission) (bool, error) {
 // approve.
 func summary(s submission) string {
 	var b strings.Builder
-	b.WriteString(escapeNonGraphic(s.text))
+	b.WriteString(escapeInvisible(s.text))
 	b.WriteString("\n\n")
 	if s.command != "" {
 		fmt.Fprintf(&b, "Command: %s\n", s.command)
@@ -271,19 +271,33 @@ func summary(s submission) string {
 	return b.String()
 }
 
-// escapeNonGraphic escapes the characters that are not graphic, other than
-// newlines and tabs: control and format characters such as escape sequences,
-// bidi overrides and zero-width characters, which could hide, reorder or
-// overwrite part of the message in the terminal.
-func escapeNonGraphic(text string) string {
+// escapeInvisible escapes the runes that invisible reports, so none of them can
+// hide, reorder or overwrite part of the message in the terminal.
+func escapeInvisible(text string) string {
 	var b strings.Builder
 	for _, r := range text {
-		if !unicode.IsGraphic(r) && r != '\n' && r != '\t' {
-			quoted := strconv.QuoteRune(r)
+		if invisible(r) {
+			quoted := strconv.QuoteRuneToASCII(r)
 			b.WriteString(quoted[1 : len(quoted)-1])
 			continue
 		}
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// invisible reports whether a terminal would not show r as written, other than
+// a newline or tab: characters that are not graphic, such as escape sequences,
+// bidi overrides and zero-width characters, and the variation selectors and
+// fillers that Unicode marks as default ignorable, which can carry hidden text.
+func invisible(r rune) bool {
+	if r == '\n' || r == '\t' {
+		return false
+	}
+	return !unicode.IsGraphic(r) || unicode.In(r, unicode.Variation_Selector, unicode.Other_Default_Ignorable_Code_Point)
+}
+
+// visible reports whether r shows up as a mark in the terminal.
+func visible(r rune) bool {
+	return !unicode.IsSpace(r) && !invisible(r)
 }

@@ -68,7 +68,7 @@ Thank you! Your feedback was sent. Reference: [UUID][4]
 === Validation errors send nothing
 
 >>> [CLI] feedback    
-Error: feedback message must contain 1 to 10000 characters
+Error: feedback message must contain 1 to 10000 characters, including a visible one
 
 >>> [CLI] feedback
 Error: accepts 1 arg(s), received 0
@@ -109,7 +109,12 @@ Error: --target selects a bundle target, which feedback does not use; use --prof
 === Input errors are reported before authenticating
 
 >>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] feedback    
-Error: feedback message must contain 1 to 10000 characters
+Error: feedback message must contain 1 to 10000 characters, including a visible one
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent [CLI] feedback hello
+Error: feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message
+
+Note for AI agents (test-agent): show the user the exact feedback message and pass --yes only after the user approves sending it
 
 === General CLI feedback
 
