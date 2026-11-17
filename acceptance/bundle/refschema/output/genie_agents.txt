@@ -1,4 +1,5 @@
-resources.genie_agents.*.definition	*genieagents.GenieAgentDefinition	ALL
+resources.genie_agents.*.create_time	*time.Time	ALL
+resources.genie_agents.*.definition	genieagents.GenieAgentDefinition	ALL
 resources.genie_agents.*.definition.benchmarks	*genieagents.GenieAgentBenchmarks	ALL
 resources.genie_agents.*.definition.benchmarks.questions	[]genieagents.GenieAgentBenchmarkQuestion	ALL
 resources.genie_agents.*.definition.benchmarks.questions[*]	genieagents.GenieAgentBenchmarkQuestion	ALL
@@ -104,6 +105,8 @@ resources.genie_agents.*.definition.instructions.text_instructions[*].content	st
 resources.genie_agents.*.definition.instructions.text_instructions[*].id	string	ALL
 resources.genie_agents.*.description	string	ALL
 resources.genie_agents.*.display_name	string	ALL
+resources.genie_agents.*.effective_parent_path	string	ALL
+resources.genie_agents.*.etag	string	ALL
 resources.genie_agents.*.genie_agent_id	string	ALL
 resources.genie_agents.*.id	string	INPUT
 resources.genie_agents.*.lifecycle	resources.Lifecycle	INPUT
@@ -112,7 +115,9 @@ resources.genie_agents.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT
 resources.genie_agents.*.lifecycle.depends_on[*].resource	string	INPUT
 resources.genie_agents.*.lifecycle.prevent_destroy	bool	INPUT
 resources.genie_agents.*.modified_status	string	INPUT
+resources.genie_agents.*.name	string	ALL
 resources.genie_agents.*.parent_path	string	ALL
+resources.genie_agents.*.update_time	*time.Time	ALL
 resources.genie_agents.*.url	string	INPUT
 resources.genie_agents.*.warehouse_id	string	ALL
 resources.genie_agents.*.permissions.object_id	string	ALL

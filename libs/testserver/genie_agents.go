@@ -2,6 +2,8 @@ package testserver
 
 import (
 	"encoding/json"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,9 +94,19 @@ func (s *FakeWorkspace) GenieAgentUpdate(req Request) Response {
 		return *resp
 	}
 
+	if etag := req.URL.Query().Get("etag"); etag != "" && etag != agent.Etag {
+		return genieAgentEtagMismatch()
+	}
+
 	var body genieagents.GenieAgent
 	if err := json.Unmarshal(req.Body, &body); err != nil {
 		return genieAgentInvalidRequest(err)
+	}
+
+	// The etag covers the definition only, so a metadata-only update keeps it.
+	if !reflect.DeepEqual(agent.Definition, body.Definition) {
+		next, _ := strconv.Atoi(agent.Etag)
+		agent.Etag = strconv.Itoa(next + 1)
 	}
 
 	// update_mask "*" replaces every updatable field with the body's value and
@@ -122,8 +134,12 @@ func (s *FakeWorkspace) GenieAgentDelete(req Request) Response {
 	defer s.LockUnlock()()
 
 	agentId := req.Vars["genie_agent_id"]
-	if _, ok := s.GenieAgents[agentId]; !ok {
+	agent, ok := s.GenieAgents[agentId]
+	if !ok {
 		return genieAgentNotFound()
+	}
+	if etag := req.URL.Query().Get("etag"); etag != "" && etag != agent.Etag {
+		return genieAgentEtagMismatch()
 	}
 
 	delete(s.GenieAgents, agentId)
@@ -150,6 +166,16 @@ func genieAgentNotFound() Response {
 		Body: map[string]string{
 			"error_code": "RESOURCE_DOES_NOT_EXIST",
 			"message":    "Genie Agent not found",
+		},
+	}
+}
+
+func genieAgentEtagMismatch() Response {
+	return Response{
+		StatusCode: 409,
+		Body: map[string]string{
+			"error_code": "ABORTED",
+			"message":    "Genie Agent definition changed; get the agent and retry",
 		},
 	}
 }

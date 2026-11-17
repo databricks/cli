@@ -152,7 +152,7 @@ var RequiredFields = map[string][]string{
 	"resources.features.*.time_window.tumbling":                                 {"window_duration"},
 	"resources.features.*.timeseries_column":                                    {"name"},
 
-	"resources.genie_agents.*":                                                                {"display_name", "warehouse_id", "definition"},
+	"resources.genie_agents.*":                                                                {"definition", "display_name", "warehouse_id"},
 	"resources.genie_agents.*.definition.benchmarks.questions[*]":                             {"id", "question"},
 	"resources.genie_agents.*.definition.benchmarks.questions[*].answer[*]":                   {"content", "format"},
 	"resources.genie_agents.*.definition.config.sample_questions[*]":                          {"id", "question"},

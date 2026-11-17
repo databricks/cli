@@ -1238,19 +1238,25 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "[Private Preview]",
+                    "description": "[Private Preview] A Genie Agent resource.",
                     "properties": {
                       "definition": {
-                        "description": "The definition of the Genie Agent: its sample questions, data sources, instructions, and benchmarks. Must set at least one field. Replaced as a whole on update.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentDefinition"
+                        "description": "[Private Preview] The definition of the Genie Agent: its sample questions, data sources, instructions, and benchmarks. Must set at least one field. Replaced as a whole on update.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentDefinition",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "description": {
-                        "description": "Description of the Genie Agent. The maximum length is 4,096 characters.",
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] Description of the Genie Agent. The maximum length is 4,096 characters.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "display_name": {
-                        "description": "Display name of the Genie Agent. Must be unique within its folder. The maximum length is 63 characters.",
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] Display name of the Genie Agent. Must be unique within its folder. The maximum length is 63 characters.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "genie_agent_id": {
                         "description": "Client-specified ID for the agent: 32 lowercase hexadecimal characters (a UUID without dashes), not all zeros. Assigned by the server if omitted. Immutable: changing this field recreates the resource. After bundle destroy or deletion, the agent remains in trash with its ID reserved until permanently removed. Omit this field to let the server assign an ID.",
@@ -1261,8 +1267,10 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
-                        "description": "Workspace folder in which to create the Genie Agent. Defaults to the bundle's workspace resource path (${workspace.resource_path}). On update, setting it moves the agent and clearing it does not.",
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] Workspace folder in which to create the Genie Agent. Defaults to the bundle's workspace resource path (${workspace.resource_path}). On update, setting it moves the agent and clearing it does not.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
@@ -1270,15 +1278,17 @@
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "warehouse_id": {
-                        "description": "ID of the SQL warehouse used by this Genie Agent.",
-                        "$ref": "#/$defs/string"
+                        "description": "[Private Preview] ID of the SQL warehouse used by this Genie Agent.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
                     "required": [
+                      "definition",
                       "display_name",
-                      "warehouse_id",
-                      "definition"
+                      "warehouse_id"
                     ],
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true

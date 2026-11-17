@@ -14,36 +14,20 @@ import (
 
 // GenieAgentConfig is the bundle-authored state for a Genie Agent.
 //
-// It mirrors ResourceMcpService: the SDK models the create input `genie_agent_id`
-// as a URL parameter (`json:"-"`) outside the GenieAgent body and derives the
-// resource `name` (`agents/{genie_agent_id}`) server-side, so we expose a flat
-// struct with the identity plus the mutable body. The server-derived `name`,
-// `etag`, timestamps and `effective_parent_path` stay out of the config type;
-// the engine tracks the bare `genie_agent_id` as the resource id.
+// It embeds the SDK body. The SDK models the create input `genie_agent_id` as a
+// URL parameter (`json:"-"`) outside the body and derives the resource `name`
+// (`agents/{genie_agent_id}`) server-side, so the ID is added here. The
+// output-only SDK fields (etag, create_time, update_time, effective_parent_path)
+// are removed from the bundle schema by the generator and zeroed by PrepareState.
 type GenieAgentConfig struct {
+	genieagents.GenieAgent
+
 	// Client-specified ID for the agent: 32 lowercase hexadecimal characters
 	// (a UUID without dashes), not all zeros. Assigned by the server if
 	// omitted. Immutable: changing it recreates the resource. After bundle destroy
 	// or deletion, the agent remains in trash with its ID reserved until
 	// permanently removed. Omit this field to let the server assign an ID.
 	GenieAgentId string `json:"genie_agent_id,omitempty"`
-	// Display name of the Genie Agent. Must be unique within its folder. The
-	// maximum length is 63 characters.
-	DisplayName string `json:"display_name"`
-	// Description of the Genie Agent. The maximum length is 4,096 characters.
-	Description string `json:"description,omitempty"`
-	// Warehouse associated with the Genie Agent.
-	WarehouseId string `json:"warehouse_id"`
-	// The workspace folder to create the Genie Agent in. Defaults to the
-	// bundle's workspace resource path (${workspace.resource_path}). On update,
-	// setting it moves the agent and clearing it does not.
-	ParentPath string `json:"parent_path,omitempty"`
-	// The definition of the Genie Agent: its sample questions, data sources,
-	// instructions, and benchmarks. Must set at least one field. Replaced as a
-	// whole on update.
-	Definition *genieagents.GenieAgentDefinition `json:"definition"`
-
-	ForceSendFields []string `json:"-" url:"-"`
 }
 
 func (c *GenieAgentConfig) UnmarshalJSON(b []byte) error {

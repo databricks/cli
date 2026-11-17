@@ -35,56 +35,25 @@ func (*ResourceGenieAgent) New(client *databricks.WorkspaceClient) *ResourceGeni
 }
 
 func (*ResourceGenieAgent) PrepareState(input *resources.GenieAgent) *resources.GenieAgentConfig {
-	return &input.GenieAgentConfig
+	state := input.GenieAgentConfig
+	// Server-derived fields are never user input. Zeroing them keeps the saved
+	// state and local diffs to the authored body; their remote values are read by
+	// DoRead and skipped via ignore_remote_changes.
+	state.Name = ""
+	state.Etag = ""
+	state.CreateTime = nil
+	state.UpdateTime = nil
+	state.EffectiveParentPath = ""
+	return &state
 }
 
-// genieAgentBody builds the GenieAgent write payload from the bundle config.
-// `name` is server-derived and the create/update paths carry the id, so it is
-// never sent; the remaining fields are output-only and stay zero.
-func genieAgentBody(config *resources.GenieAgentConfig) genieagents.GenieAgent {
-	body := genieagents.GenieAgent{
-		DisplayName: config.DisplayName,
-		Description: config.Description,
-		WarehouseId: config.WarehouseId,
-		ParentPath:  config.ParentPath,
-
-		// A nil config definition marshals as the zero value, which the API
-		// rejects (the definition must set at least one field).
-		Definition: genieagents.GenieAgentDefinition{
-			Benchmarks:   nil,
-			Config:       nil,
-			DataSources:  nil,
-			Instructions: nil,
-		},
-
-		// Output-only fields; `name` is carried by the request path.
-		Name:                "",
-		Etag:                "",
-		CreateTime:          nil,
-		UpdateTime:          nil,
-		EffectiveParentPath: "",
-		ForceSendFields:     nil,
-	}
-	if config.Definition != nil {
-		body.Definition = *config.Definition
-	}
-	return body
-}
-
-// responseToGenieAgentConfig converts a returned GenieAgent into the bundle
-// state. The server-derived name, etag, timestamps and effective_parent_path
-// have no config counterpart and are dropped here. The API returns parent_path
-// exactly as submitted; effective_parent_path may omit /Workspace and is ignored.
+// responseToGenieAgentConfig converts a returned GenieAgent into remote state.
+// The API returns parent_path exactly as submitted; effective_parent_path may
+// omit /Workspace.
 func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieAgentConfig {
-	definition := agent.Definition
 	return &resources.GenieAgentConfig{
-		GenieAgentId:    strings.TrimPrefix(agent.Name, genieAgentNamePrefix),
-		DisplayName:     agent.DisplayName,
-		Description:     agent.Description,
-		Definition:      &definition,
-		WarehouseId:     agent.WarehouseId,
-		ParentPath:      agent.ParentPath,
-		ForceSendFields: nil,
+		GenieAgent:   *agent,
+		GenieAgentId: strings.TrimPrefix(agent.Name, genieAgentNamePrefix),
 	}
 }
 
@@ -110,7 +79,7 @@ func (r *ResourceGenieAgent) DoRead(ctx context.Context, id string) (*resources.
 // parity with genie_spaces on the same backend object.
 func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.GenieAgentConfig) (string, *resources.GenieAgentConfig, error) {
 	req := genieagents.CreateGenieAgentRequest{
-		GenieAgent:      genieAgentBody(config),
+		GenieAgent:      config.GenieAgent,
 		GenieAgentId:    config.GenieAgentId,
 		ForceSendFields: nil,
 	}
@@ -136,16 +105,16 @@ func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.Gen
 // so removing a field from config clears it. definition is replaced as a whole;
 // paths within it are not supported.
 //
-// Etag is intentionally left empty (here and in DoDelete): it guards concurrent
-// definition edits, which a serial bundle deploy does not have. Drift is
-// detected on read by comparing the full config against the GET response,
-// matching ResourceMcpService.
-func (r *ResourceGenieAgent) DoUpdate(ctx context.Context, id string, config *resources.GenieAgentConfig, _ *PlanEntry) (*resources.GenieAgentConfig, error) {
+// The etag is the one from the remote read the plan was built on, so the update
+// fails if the definition was edited after planning instead of overwriting it.
+// Metadata edits do not change the etag, so they never trigger this. Drift is
+// otherwise detected on read by comparing the full config against the GET response.
+func (r *ResourceGenieAgent) DoUpdate(ctx context.Context, id string, config *resources.GenieAgentConfig, planEntry *PlanEntry) (*resources.GenieAgentConfig, error) {
 	resp, err := r.client.GenieAgents.UpdateGenieAgent(ctx, genieagents.UpdateGenieAgentRequest{
-		GenieAgent:      genieAgentBody(config),
+		GenieAgent:      config.GenieAgent,
 		Name:            genieAgentNamePrefix + id,
 		UpdateMask:      fieldmask.FieldMask{Paths: []string{"*"}},
-		Etag:            "",
+		Etag:            plannedGenieAgentEtag(planEntry),
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -154,6 +123,23 @@ func (r *ResourceGenieAgent) DoUpdate(ctx context.Context, id string, config *re
 	return responseToGenieAgentConfig(resp), nil
 }
 
+// plannedGenieAgentEtag returns the etag from the plan's remote read. An empty
+// etag sends no precondition, which only happens when the plan carries no remote state.
+func plannedGenieAgentEtag(planEntry *PlanEntry) string {
+	if planEntry == nil {
+		return ""
+	}
+	remote, ok := planEntry.RemoteState.(*resources.GenieAgentConfig)
+	if !ok || remote == nil {
+		return ""
+	}
+	return remote.Etag
+}
+
+// DoDelete sends no etag. The engine passes only the persisted state here, and
+// PrepareState does not persist the etag, so no plan-time etag is available. Using
+// the etag from the last deploy instead would make destroy fail after any
+// definition edit made since then.
 func (r *ResourceGenieAgent) DoDelete(ctx context.Context, id string, _ *resources.GenieAgentConfig) error {
 	// Delete moves the agent to trash; NOT_FOUND afterwards means it is gone
 	// (the trash is not readable through this API).

@@ -584,6 +584,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	notUserNamed := []string{
 		"Apps",
 		"Features",
+		"GenieAgents",
 		"FeatureSpecs",
 		"SecretScopes",
 		"Secrets",

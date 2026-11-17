@@ -343,7 +343,7 @@ var testConfig map[string]any = map[string]any{
 		Description:  "Test genie agent",
 		WarehouseId:  "test-warehouse-id",
 		ParentPath:   "/Workspace/Users/user@example.com",
-		Definition: &genieagents.GenieAgentDefinition{
+		Definition: genieagents.GenieAgentDefinition{
 			Config: &genieagents.GenieAgentConfig{
 				SampleQuestions: []genieagents.GenieAgentSampleQuestion{
 					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What were total sales?"},
