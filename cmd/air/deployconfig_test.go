@@ -191,14 +191,14 @@ func TestLoadDeployConfigExperimentPath(t *testing.T) {
 
 func TestLoadDeployConfigRejectsModelConfigJSONCantHold(t *testing.T) {
 	for name, value := range map[string]string{
-		"NaN":                 "{ratio: .nan}",
-		"infinity":            "{limit: .inf}",
-		"non-string map keys": "{weights: {1: a}}",
+		"NaN":               "{ratio: .nan}",
+		"infinity":          "{limit: .inf}",
+		"negative infinity": "{weights: [1, -.inf]}",
 	} {
 		t.Run(name, func(t *testing.T) {
 			text := strings.Replace(pythonCheckpointDeployConfig, "{language: en, beams: 4}", value, 1)
 			_, err := loadDeployConfigText(t, text)
-			assert.ErrorContains(t, err, "model.model_config must hold only values JSON can")
+			assert.ErrorContains(t, err, "model.model_config must hold only values JSON can, so no .nan or .inf")
 		})
 	}
 }

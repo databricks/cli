@@ -296,12 +296,12 @@ func (c *deployConfig) validateCheckpoint() error {
 }
 
 // modelConfigJSON encodes model_config as the JSON object the server reads.
-// YAML can hold values JSON can't, such as .nan, .inf and mappings whose keys
-// aren't strings, and those are rejected rather than dropped.
+// YAML can hold numbers JSON can't, .nan and .inf, and those are rejected rather
+// than dropped.
 func modelConfigJSON(config map[string]any) (string, error) {
 	raw, err := json.Marshal(config)
 	if err != nil {
-		return "", fmt.Errorf("model.model_config must hold only values JSON can: strings, finite numbers, booleans, null, lists and mappings with string keys: %w", err)
+		return "", fmt.Errorf("model.model_config must hold only values JSON can, so no .nan or .inf: %w", err)
 	}
 	return string(raw), nil
 }
