@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 )
 
 // Glyphs drawn into the prompt's rendered output. cursorBlock stands in for
@@ -117,17 +118,21 @@ func (m *promptModel) glyph() string {
 func (m *promptModel) Init() tea.Cmd { return nil }
 
 func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	key, ok := msg.(tea.KeyMsg)
+	in, ok := teainput.Decode(msg)
 	if !ok {
 		return m, nil
 	}
+	if in.Paste {
+		m.insert([]rune(in.Text))
+		return m, nil
+	}
 
-	switch key.Type {
-	case tea.KeyCtrlC:
+	switch in.Key {
+	case "ctrl+c":
 		m.cancelled = true
 		return m, tea.Quit
 
-	case tea.KeyEnter, tea.KeyCtrlJ:
+	case "enter", "ctrl+j":
 		// Enter sends CR, Ctrl+J sends LF; treat both as submit.
 		m.touched = true
 		if m.validate != nil {
@@ -139,7 +144,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.submitted = true
 		return m, tea.Quit
 
-	case tea.KeyDelete, tea.KeyCtrlD:
+	case "delete", "ctrl+d":
 		// Delete and Ctrl+D both exit the prompt with EOF, even on a
 		// non-empty buffer. Surprising at first glance, but it matches the
 		// previous prompt library and is pinned by a baseline test —
@@ -147,23 +152,20 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.deleted = true
 		return m, tea.Quit
 
-	case tea.KeyLeft, tea.KeyCtrlB:
+	case "left", "ctrl+b":
 		if m.cursor > 0 {
 			m.cursor--
 		}
 
-	case tea.KeyRight, tea.KeyCtrlF:
+	case "right", "ctrl+f":
 		if m.cursor < len(m.runes) {
 			m.cursor++
 		}
 
-	case tea.KeyBackspace, tea.KeyCtrlH:
+	case "backspace", "ctrl+h":
 		// Backspace sends DEL, Ctrl+H sends BS; treat both as backspace.
-		// Alt+Backspace (the word-delete combo) is dropped rather than
-		// falling through as a plain backspace.
-		if key.Alt {
-			return m, nil
-		}
+		// Alt+Backspace (the word-delete combo) is named "alt+backspace" and
+		// falls to the default branch rather than acting as a plain backspace.
 		if m.cursor == 0 {
 			return m, nil
 		}
@@ -171,37 +173,31 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cursor--
 		m.submitErr = nil
 
-	case tea.KeyRunes, tea.KeySpace:
-		// Alt+<rune> (e.g. Alt+f, Alt+b) are word-nav combos we do not
-		// support. Drop them rather than inserting the rune literally —
-		// the baseline tests pin this as a no-op, and silently typing
-		// "f" when the user pressed Alt+f would be a regression.
-		if key.Alt {
-			return m, nil
-		}
-		typed := key.Runes
-		if key.Type == tea.KeySpace {
-			typed = []rune{' '}
-		}
-		// Some terminals send an empty bracketed paste when the clipboard is
-		// empty. Nothing changes, so it must not count as an edit or clear the
-		// error line.
-		if len(typed) == 0 {
-			return m, nil
-		}
-		tail := append([]rune{}, m.runes[m.cursor:]...)
-		m.runes = append(m.runes[:m.cursor], typed...)
-		m.runes = append(m.runes, tail...)
-		m.cursor += len(typed)
-		m.touched = true
-		m.submitErr = nil
-
 	default:
-		// All other key types are intentionally inert (Home/End,
-		// Ctrl+W/Ctrl+U, Ctrl+P/N, function keys, etc.).
+		// Printable input carries Text. Alt+<rune> (e.g. Alt+f, Alt+b) are
+		// word-nav combos we do not support and carry no Text, so they are
+		// dropped rather than inserting the rune literally — the baseline
+		// tests pin this as a no-op. All other keys (Home/End, Ctrl+W/Ctrl+U,
+		// Ctrl+P/N, function keys, etc.) are intentionally inert too.
+		m.insert([]rune(in.Text))
 	}
 
 	return m, nil
+}
+
+// insert types runes at the cursor. Some terminals send an empty bracketed
+// paste when the clipboard is empty; nothing changes, so it must not count as
+// an edit or clear the error line.
+func (m *promptModel) insert(typed []rune) {
+	if len(typed) == 0 {
+		return
+	}
+	tail := append([]rune{}, m.runes[m.cursor:]...)
+	m.runes = append(m.runes[:m.cursor], typed...)
+	m.runes = append(m.runes, tail...)
+	m.cursor += len(typed)
+	m.touched = true
+	m.submitErr = nil
 }
 
 func (m *promptModel) View() string { return m.render() }
