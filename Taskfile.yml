@@ -468,7 +468,7 @@ tasks:
       # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
       #
       # CLI_GOCOVERDIR_UNIT (an absolute path) turns on coverage of every package by
-      # every test (tools/coverpack.py reads it). It is a coverage directory, not
+      # every test (tools/coverpack reads it). It is a coverage directory, not
       # -coverprofile, because --rerun-fails runs go test again with the same flags and
       # that would overwrite the profile with the coverage of the rerun alone.
       - '[ -z "$CLI_GOCOVERDIR_UNIT" ] || mkdir -p "$CLI_GOCOVERDIR_UNIT"'

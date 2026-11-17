@@ -212,8 +212,9 @@ jobs:
           UNIT_DIR: ${{ steps.cover.outputs.unit }}
           ACC_DIR: ${{ steps.cover.outputs.acc }}
         run: |
-          uv run tools/coverpack.py --unit "$UNIT_DIR" --acc "$ACC_DIR" -o "$RUNNER_TEMP/coverage.bin.zst" \
-            --meta "{\"sha\": \"$SHA\", \"os\": \"$OS\", \"cell\": \"$CELL\", \"pr\": ${PR_NUMBER:-null}}"
+          go -C tools run ./coverpack -root "$GITHUB_WORKSPACE" -unit "$UNIT_DIR" -acc "$ACC_DIR" \
+            -o "$RUNNER_TEMP/coverage.bin.zst" \
+            -meta "{\"sha\": \"$SHA\", \"os\": \"$OS\", \"cell\": \"$CELL\", \"pr\": ${PR_NUMBER:-null}}"
 
       - name: Upload coverage
         if: ${{ always() && steps.cover.outputs.acc != '' }}
