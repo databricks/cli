@@ -133,7 +133,7 @@ config.mlflow_artifact_location
 
 >>> [CLI] air run -h config.compute.accelerator_pool_id
 config.compute.accelerator_pool_id
-  GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected; the workload will not fall back to on-demand capacity. When omitted, workspace capacity selection applies.
+  GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected. When omitted, workspace capacity selection applies.
 
   Type:     string
   Required: no

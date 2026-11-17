@@ -83,7 +83,7 @@ func gpusPerNode(g gpuType) (int, error) {
 type computeConfig struct {
 	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
-	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected; the workload will not fall back to on-demand capacity. When omitted, workspace capacity selection applies." group:"GPU Pools (optional)"`
+	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected. When omitted, workspace capacity selection applies." group:"GPU Pools (optional)"`
 	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
