@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,11 +26,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "postgres",
-		Short: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
-		Long: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "postgres",
+	Short:   `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
+	GroupID: "postgres",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
   infrastructure, including projects, branches, compute endpoints, and roles.
 
   This API manages database infrastructure only. To query or modify data, use
@@ -40,14 +46,13 @@ func New() *cobra.Command {
   Resources are identified by hierarchical resource names like
   projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
   name field on each resource contains this full path and is output-only. Note
-  that name refers to this resource path, not the user-visible display_name.`,
-		GroupID: "postgres",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  that name refers to this resource path, not the user-visible display_name.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAcknowledgeAssessmentWarnings())
@@ -118,8 +123,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start acknowledge-assessment-warnings command

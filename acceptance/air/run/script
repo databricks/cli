@@ -26,6 +26,13 @@ git add src
 git commit -qm 'Add src'
 trace $CLI air run -f with-code-source.yaml --dry-run
 
+title "include_paths entry that selects no files is rejected"
+musterr trace $CLI air run -f include-unmatched.yaml --dry-run
+
+title "include_paths pathspec that selects files outside root_path is rejected"
+# :(top) resolves against the repository root, so from root_path src it selects ../valid.yaml.
+musterr trace $CLI air run -f include-outside-root.yaml --dry-run
+
 title "git-ignored root_path is rejected instead of selecting no files"
 echo '.scratch/' > .gitignore
 mkdir -p .scratch/proj
@@ -33,11 +40,30 @@ echo 'print(1)' > .scratch/proj/main.py
 errcode trace $CLI air run -f ignored-root.yaml --dry-run
 rm -fr .git .gitignore .scratch
 
+title "a non-git root_path selects the same files when run from its subdirectory"
+# sub/main.py shadows main.py; a listing relative to the working directory would pick 1 file.
+mkdir -p proj/sub proj/data
+echo 'print(1)' > proj/main.py
+echo 'print(2)' > proj/sub/main.py
+echo 'a,b' > proj/data/x.csv
+cp non-git-subdir.yaml proj/sub/workload.yaml
+(cd proj/sub && trace $CLI air run -f workload.yaml --dry-run)
+rm -fr proj
+
+title "torch import on the Standard environment warns before submitting"
+trace $CLI air run -f torch-standard.yaml --dry-run
+
+title "the Databricks AI environment provides torch, so no warning"
+trace $CLI air run -f torch-databricks-ai.yaml --dry-run
+
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run
 
 title "invalid config is rejected"
 errcode trace $CLI air run -f invalid.yaml --dry-run
+
+title "unknown field suggests the near match"
+errcode trace $CLI air run -f unknown-field.yaml --dry-run
 
 title "missing --file"
 errcode trace $CLI air run --dry-run

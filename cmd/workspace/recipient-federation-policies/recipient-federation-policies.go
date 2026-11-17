@@ -3,6 +3,7 @@
 package recipient_federation_policies
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "recipient-federation-policies",
-		Short: `*Public Preview* The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "recipient-federation-policies",
+	Short:   `*Public Preview* The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.`,
+	GroupID: "sharing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The Recipient Federation Policies APIs are only applicable in the open sharing
   model where the recipient object has the authentication type of
@@ -47,14 +53,13 @@ The Recipient Federation Policies APIs are only applicable in the open sharing
 
   For more information, see
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
-  and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed`,
-		GroupID: "sharing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -66,8 +71,6 @@ The Recipient Federation Policies APIs are only applicable in the open sharing
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

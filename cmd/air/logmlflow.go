@@ -83,12 +83,22 @@ var artifactDownloadClient = &http.Client{
 // The tail length is --tail, else the default cap. MLflow chunks are not
 // time-indexed, so --minutes cannot restrict the window here.
 func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	return mlflowLogFallbackReporting(ctx, w, out, req, status, status)
+}
+
+// mlflowLogFallbackReporting is mlflowLogFallback for a handoff from a
+// Bricklens stream that may have seen newer state (latest) than status. The
+// path and loop still follow status: a run that was being followed keeps the
+// active stream, whose lenient first pass, grace wait and re-read let late
+// artifacts print uncapped, instead of switching to the capped completed tail.
+// Only the reported lifecycle state comes from latest.
+func mlflowLogFallbackReporting(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status, latest logRunStatus) (bool, error) {
 	if req.windowMinutes > 0 {
 		cmdio.LogString(ctx, "Warning: --minutes is ignored when logs are served from MLflow artifacts.")
 	}
 
 	if !status.terminal() && !req.staticView {
-		return streamMLflowLogs(ctx, w, out, req, status)
+		return followMLflowLogs(ctx, w, out, req, status, latest)
 	}
 	return fetchMLflowLogTail(ctx, w, out, req, status)
 }
@@ -152,6 +162,13 @@ func mlflowLogsExist(ctx context.Context, w *databricks.WorkspaceClient, req log
 }
 
 func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	return followMLflowLogs(ctx, w, out, req, status, status)
+}
+
+// followMLflowLogs streams MLflow log chunks, driving the loop from status.
+// reported is the freshest status the caller knows; it is surfaced instead of
+// status until the first refresh, so a handoff never reports a stale state.
+func followMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status, reported logRunStatus) (bool, error) {
 	lineOffsets := make(map[string]int)
 	currentRunID := ""
 	printed := false
@@ -159,13 +176,13 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 
 	for {
 		if req.onStatusChange != nil {
-			current := status.displayState()
+			current := reported.displayState()
 			if current != previousState {
 				req.onStatusChange(current, previousState)
 				previousState = current
 			}
 		}
-		req.reportRetry(ctx, out, status, nil)
+		req.reportRetry(ctx, out, reported, nil)
 
 		mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
 		if err != nil {
@@ -229,6 +246,7 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 			continue
 		}
 		status = refreshed
+		reported = refreshed
 	}
 }
 

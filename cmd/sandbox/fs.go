@@ -41,10 +41,11 @@ var sandboxFsExamples = map[string]string{
 }
 
 func newFsCommand() *cobra.Command {
-	cmd := filesystem.NewWithPathResolver(sandboxFilerForPath)
-	// The top-level fs command belongs to a help group that the sandbox command
-	// doesn't define, and cobra panics on an undefined group.
-	cmd.GroupID = ""
+	cmd := &cobra.Command{
+		Use:   "fs",
+		Short: "Filesystem related commands",
+	}
+	filesystem.AddCommands(cmd, sandboxFilerForPath)
 	cmd.Long = `Transfer files between your local filesystem and sandboxes.
 
 Use <sandbox-id>:/absolute/path for sandbox paths. A sandbox name from the

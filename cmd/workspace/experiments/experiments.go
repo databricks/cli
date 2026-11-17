@@ -3,6 +3,7 @@
 package experiments
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,11 +23,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "experiments",
-		Short: `Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.`,
-		Long: `Experiments are the primary unit of organization in MLflow; all MLflow runs
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "experiments",
+	Short:   `Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.`,
+	GroupID: "ml",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Experiments are the primary unit of organization in MLflow; all MLflow runs
   belong to an experiment. Each experiment lets you visualize, search, and
   compare runs, as well as download run artifacts or metadata for analysis in
   other tools. Experiments are maintained in a Databricks hosted MLflow tracking
@@ -34,14 +40,13 @@ func New() *cobra.Command {
 
   Experiments are located in the workspace file tree. You manage experiments
   using the same tools you use to manage other workspace objects such as
-  folders, notebooks, and libraries.`,
-		GroupID: "ml",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  folders, notebooks, and libraries.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateExperiment())
@@ -92,8 +97,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-experiment command

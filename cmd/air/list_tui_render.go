@@ -23,6 +23,8 @@ const (
 	colBlue    = lipgloss.Color("#6CA8F0") // MLflow link
 )
 
+// mlflowColWidth is the MLflow column's width in a wide terminal, and the width
+// MLflow labels are cut to when the rows are built.
 const mlflowColWidth = 22
 
 // listStyles renders the runs table. The renderer carries the color profile, so
@@ -35,16 +37,45 @@ func newListStyles(r *lipgloss.Renderer) listStyles {
 	return listStyles{r: r}
 }
 
-// listCols holds the computed width of each variable-width column. MLflow is
-// fixed (a short link) and the gutter is one cell.
+// listColumn identifies a table column, in display order.
+type listColumn int
+
+const (
+	columnRunID listColumn = iota
+	columnExperiment
+	columnStatus
+	columnStarted
+	columnDuration
+	columnProgress
+	columnMLflow
+	columnUser
+	columnAccel
+)
+
+const numListColumns = int(columnAccel) + 1
+
+var listColumnNames = [numListColumns]string{
+	"Run ID", "Experiment", "Status", "Started", "Duration", "Progress", "MLflow", "User", "Accelerators",
+}
+
+// hideOrder lists the columns a too-narrow terminal drops, lowest priority
+// first.
+var hideOrder = []listColumn{columnAccel, columnUser, columnMLflow, columnProgress}
+
+// listCols holds the computed width of each column; the gutter is one cell.
+// compactStarted switches Started to its short form; hidden columns are left
+// out of the rendered rows.
 type listCols struct {
-	runID, experiment, status, started, duration, progress, user, accel int
+	runID, experiment, status, started, duration, progress, mlflow, user, accel int
+	compactStarted                                                              bool
+	hidden                                                                      uint16 // bit i set when listColumn i is hidden
 }
 
 // columnCap bounds the widest free-text columns so one long value can't dominate
 // the row.
 const columnCap = 36
 
+// computeListCols sizes every column to its content.
 func computeListCols(rows []listRow) listCols {
 	c := listCols{
 		runID:      len("Run ID"),
@@ -53,6 +84,7 @@ func computeListCols(rows []listRow) listCols {
 		started:    len("Started"),
 		duration:   len("Duration"),
 		progress:   len("Progress"),
+		mlflow:     mlflowColWidth,
 		user:       len("User"),
 		accel:      len("Accelerators"),
 	}
@@ -76,19 +108,68 @@ const (
 	userMinWidth       = 8
 )
 
-// tableWidth is the full width of a rendered row: every column plus the gutter
-// and the two-cell separators.
-func (c listCols) tableWidth() int {
-	const separators = 9 * 2
-	return 1 + c.runID + c.experiment + c.status + c.started + c.duration +
-		c.progress + mlflowColWidth + c.user + c.accel + separators
+func (c listCols) width(col listColumn) int {
+	switch col {
+	case columnRunID:
+		return c.runID
+	case columnExperiment:
+		return c.experiment
+	case columnStatus:
+		return c.status
+	case columnStarted:
+		return c.started
+	case columnDuration:
+		return c.duration
+	case columnProgress:
+		return c.progress
+	case columnMLflow:
+		return c.mlflow
+	case columnUser:
+		return c.user
+	case columnAccel:
+		return c.accel
+	}
+	return 0
 }
 
-// fitWidth shrinks the flexible columns (Experiment, User) until the table fits
-// in width cells, so a long value truncates instead of pushing the columns to
-// its right off screen. It takes from the wider column first and stops at the
-// floors: a terminal too narrow for the fixed columns still overflows. A width
-// of 0 means the terminal size is unknown and leaves the columns alone.
+func (c listCols) shown(col listColumn) bool {
+	return c.hidden&(1<<col) == 0
+}
+
+// hiddenNames lists the hidden columns' titles in table order.
+func (c listCols) hiddenNames() []string {
+	var names []string
+	for col := range listColumn(numListColumns) {
+		if !c.shown(col) {
+			names = append(names, listColumnNames[col])
+		}
+	}
+	return names
+}
+
+// rightAligned reports whether col's cells are right-aligned (the numeric ones).
+func rightAligned(col listColumn) bool {
+	return col == columnDuration || col == columnProgress
+}
+
+// tableWidth is the full width of a rendered row: the gutter plus every shown
+// column and its two-cell separator.
+func (c listCols) tableWidth() int {
+	w := 1
+	for col := range listColumn(numListColumns) {
+		if c.shown(col) {
+			w += c.width(col) + 2
+		}
+	}
+	return w
+}
+
+// fitWidth shrinks the flexible columns (Experiment, and User unless it is
+// hidden) until the table fits in width cells, so a long value truncates instead
+// of pushing the columns to its right off screen. It takes from the wider column
+// first and stops at the floors: a terminal too narrow for the fixed columns
+// still overflows. A width of 0 means the terminal size is unknown and leaves
+// the columns alone.
 func (c listCols) fitWidth(width int) listCols {
 	if width <= 0 {
 		return c
@@ -97,7 +178,7 @@ func (c listCols) fitWidth(width int) listCols {
 	userFloor := min(c.user, userMinWidth)
 	for overflow := c.tableWidth() - width; overflow > 0; overflow-- {
 		canShrinkExperiment := c.experiment > experimentFloor
-		canShrinkUser := c.user > userFloor
+		canShrinkUser := c.shown(columnUser) && c.user > userFloor
 		switch {
 		case canShrinkExperiment && (!canShrinkUser || c.experiment >= c.user):
 			c.experiment--
@@ -110,22 +191,60 @@ func (c listCols) fitWidth(width int) listCols {
 	return c
 }
 
+// compact switches the fixed columns to their short forms: Started as
+// "MM-DD HH:MM" and MLflow as wide as its widest label rather than the full
+// mlflowColWidth. Labels were already cut to that width when the rows were
+// built, so they are never shortened again here.
+func (c listCols) compact(rows []listRow) listCols {
+	c.compactStarted = true
+	c.started = len("Started")
+	c.mlflow = len("MLflow")
+	for _, r := range rows {
+		c.started = max(c.started, lipgloss.Width(startedCompact(r)))
+		c.mlflow = max(c.mlflow, lipgloss.Width(mlflowLabel(r)))
+	}
+	c.mlflow = min(c.mlflow, mlflowColWidth)
+	return c
+}
+
+// layoutListCols lays the interactive table out for a terminal width cells
+// wide. Experiment and User shrink to their floors first. If the table is still
+// too wide, the fixed columns compact, and then whole columns are hidden in
+// hideOrder until it fits or none are left to hide; after each of those steps
+// Experiment and User are refitted, so they widen into any spare cells. A
+// terminal wide enough for the uncompacted table gets exactly that, and a
+// width of 0 (unknown) leaves the natural widths alone.
+func layoutListCols(rows []listRow, width int) listCols {
+	natural := computeListCols(rows)
+	if width <= 0 {
+		return natural
+	}
+	cols := natural.fitWidth(width)
+	if cols.tableWidth() <= width {
+		return cols
+	}
+	compact := natural.compact(rows)
+	cols = compact.fitWidth(width)
+	for _, col := range hideOrder {
+		if cols.tableWidth() <= width {
+			break
+		}
+		compact.hidden |= 1 << col
+		cols = compact.fitWidth(width)
+	}
+	return cols
+}
+
 // renderHeader renders the muted column-title row.
 func (s listStyles) renderHeader(cols listCols) string {
 	h := func(text string, width int, right bool) string {
 		return s.r.NewStyle().Foreground(colN9).Render(pad(text, width, right))
 	}
-	cells := []string{
-		pad(" ", 1, false),
-		h("Run ID", cols.runID, false),
-		h("Experiment", cols.experiment, false),
-		h("Status", cols.status, false),
-		h("Started", cols.started, false),
-		h("Duration", cols.duration, true),
-		h("Progress", cols.progress, true),
-		h("MLflow", mlflowColWidth, false),
-		h("User", cols.user, false),
-		h("Accelerators", cols.accel, false),
+	cells := []string{pad(" ", 1, false)}
+	for col := range listColumn(numListColumns) {
+		if cols.shown(col) {
+			cells = append(cells, h(listColumnNames[col], cols.width(col), rightAligned(col)))
+		}
 	}
 	// Trim trailing pad on the final column so rows carry no trailing whitespace.
 	return strings.TrimRight(strings.Join(cells, "  "), " ")
@@ -161,17 +280,34 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 
 	// Underline only cells that actually carry a link, so unlinked text isn't
 	// styled as clickable.
-	cells := []string{
-		s.cell(base, gutter, 1, fg(colN7), false, false, ""),
-		s.cell(base, r.RunID, cols.runID, fg(colRunID), false, runIDLink != "", runIDLink),
-		s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, experimentLink != "", experimentLink),
-		s.cell(base, "● "+listRowStatus(r), cols.status, fg(statusColor(listRowStatus(r))), false, false, ""),
-		s.cell(base, startedDisplay(r), cols.started, fg(colN9), false, false, ""),
-		s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, ""),
-		s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), true, false, ""),
-		s.mlflowCell(base, r, selected, links),
-		s.cell(base, r.User, cols.user, fg(colN9), false, false, ""),
-		s.cell(base, r.Accelerators, cols.accel, fg(colN9), false, false, ""),
+	cell := func(col listColumn) string {
+		switch col {
+		case columnRunID:
+			return s.cell(base, r.RunID, cols.runID, fg(colRunID), false, runIDLink != "", runIDLink)
+		case columnExperiment:
+			return s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, experimentLink != "", experimentLink)
+		case columnStatus:
+			return s.cell(base, "● "+listRowStatus(r), cols.status, fg(statusColor(listRowStatus(r))), false, false, "")
+		case columnStarted:
+			return s.cell(base, cols.startedText(r), cols.started, fg(colN9), false, false, "")
+		case columnDuration:
+			return s.cell(base, r.Duration, cols.duration, fg(colN9), rightAligned(col), false, "")
+		case columnProgress:
+			return s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), rightAligned(col), false, "")
+		case columnMLflow:
+			return s.mlflowCell(base, cols.mlflow, r, selected, links)
+		case columnUser:
+			return s.cell(base, r.User, cols.user, fg(colN9), false, false, "")
+		case columnAccel:
+			return s.cell(base, r.Accelerators, cols.accel, fg(colN9), false, false, "")
+		}
+		return ""
+	}
+	cells := []string{s.cell(base, gutter, 1, fg(colN7), false, false, "")}
+	for col := range listColumn(numListColumns) {
+		if cols.shown(col) {
+			cells = append(cells, cell(col))
+		}
 	}
 	// Trim the final column's trailing pad so rows carry no trailing whitespace.
 	return strings.TrimRight(strings.Join(cells, base.Render("  ")), " ")
@@ -206,29 +342,31 @@ func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipglos
 	return rendered + padStr
 }
 
-// mlflowCell renders the fixed-width MLflow column: a short, blue, underlined
-// OSC 8 hyperlink (when links are enabled), or "-" when the run has no link.
-func (s listStyles) mlflowCell(base lipgloss.Style, r listRow, selected, links bool) string {
-	if r.MLflowURL == "" || r.MLflowURL == "-" {
-		fg := colN9
-		if selected {
-			fg = colN12
-		}
-		return s.cell(base, "-", mlflowColWidth, fg, false, false, "")
-	}
+// mlflowCell renders the MLflow column: a short, blue, underlined OSC 8
+// hyperlink (when links are enabled), or "-" when the run has no link.
+func (s listStyles) mlflowCell(base lipgloss.Style, width int, r listRow, selected, links bool) string {
+	label := mlflowLabel(r)
 	fg := colBlue
+	if label == "-" {
+		fg = colN9
+	}
 	if selected {
 		fg = colN12
 	}
 	link := ""
-	if links {
+	if links && label != "-" {
 		link = r.MLflowURL
 	}
-	label := r.MLflowLabel
-	if label == "" || label == "-" {
-		label = "-"
+	return s.cell(base, label, width, fg, false, label != "-", link)
+}
+
+// mlflowLabel is the text shown in the row's MLflow cell: its label, or "-"
+// when the run has no link or no label.
+func mlflowLabel(r listRow) string {
+	if r.MLflowURL == "" || r.MLflowURL == "-" || r.MLflowLabel == "" || r.MLflowLabel == "-" {
+		return "-"
 	}
-	return s.cell(base, label, mlflowColWidth, fg, false, true, link)
+	return r.MLflowLabel
 }
 
 // statusColor maps an air run status word to its data color.
@@ -265,6 +403,27 @@ func startedDisplay(r listRow) string {
 		return s[:19]
 	}
 	return s
+}
+
+// startedCompact is the short form of the row's ISO start timestamp for a
+// narrow terminal ("01-02 15:04"), or "-" when the run hasn't started. A value
+// that isn't an ISO timestamp is shown as is.
+func startedCompact(r listRow) string {
+	if r.StartedAt == nil {
+		return "-"
+	}
+	s := *r.StartedAt
+	if len(s) >= 16 && s[4] == '-' && s[7] == '-' && s[10] == 'T' {
+		return s[5:10] + " " + s[11:16]
+	}
+	return s
+}
+
+func (c listCols) startedText(r listRow) string {
+	if c.compactStarted {
+		return startedCompact(r)
+	}
+	return startedDisplay(r)
 }
 
 // pad pads (or truncates) s to a visible width of n, right-aligned when right is

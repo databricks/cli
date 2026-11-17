@@ -3,6 +3,7 @@
 package sql_results_download
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "sql-results-download",
-		Short: `*Public Preview* Controls whether users within the workspace are allowed to download results from the SQL Editor and AI/BI Dashboards UIs.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "sql-results-download",
+	Short: `*Public Preview* Controls whether users within the workspace are allowed to download results from the SQL Editor and AI/BI Dashboards UIs.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether users within the workspace are allowed to download results
   from the SQL Editor and AI/BI Dashboards UIs. By default, this setting is
-  enabled (set to true)`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  enabled (set to true)`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -42,8 +47,6 @@ Controls whether users within the workspace are allowed to download results
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

@@ -3,6 +3,7 @@
 package domains
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,20 +21,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "domains",
-		Short: `*Public Preview* Manage domains for organizing and discovering data assets.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "domains",
+	Short:   `*Public Preview* Manage domains for organizing and discovering data assets.`,
+	GroupID: "domains",
+	Build:   buildCommand,
+}
 
-Manage domains for organizing and discovering data assets.`,
-		GroupID: "domains",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Manage domains for organizing and discovering data assets.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateDomain())
@@ -46,8 +51,6 @@ Manage domains for organizing and discovering data assets.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-domain command

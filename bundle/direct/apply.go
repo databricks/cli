@@ -299,7 +299,10 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	// Delete is idempotent: if a failed attempt did delete the resource, the retry gets a NotFound.
+	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
+	})
 	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.

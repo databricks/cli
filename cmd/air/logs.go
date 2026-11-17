@@ -45,7 +45,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
-	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
+	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing; not combinable with --tail or --minutes")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	cmd.Flags().MarkHidden("review")
 
@@ -247,9 +247,9 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
 		req.retryTracker = newRetryTracker(status)
 	}
-	success, err := streamBricklensLogs(ctx, w, out, req, status)
+	success, latest, err := streamBricklensLogsWithLatestStatus(ctx, w, out, req, status)
 	if errors.Is(err, errBricklensFeatureDisabled) {
-		return mlflowLogFallback(ctx, w, out, req, status)
+		return mlflowLogFallbackReporting(ctx, w, out, req, status, latest)
 	}
 	return success, err
 }

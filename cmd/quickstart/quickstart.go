@@ -1,9 +1,11 @@
 package quickstart
 
 import (
-	_ "embed"
+	"context"
 	"fmt"
 	"strings"
+
+	_ "embed"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -22,26 +24,27 @@ var humanQuickstart string
 //go:embed quickstart-agent.md
 var agentQuickstart string
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "quickstart",
-		Args:  root.NoArgs,
-		Short: "Print an introduction to the Databricks CLI",
-		Long: `Print a short introduction to the Databricks CLI: authentication, profiles,
+// Spec declares the quickstart command.
+var Spec = root.CommandSpec{
+	Use:   "quickstart",
+	Short: "Print an introduction to the Databricks CLI",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Args = root.NoArgs
+	cmd.Long = `Print a short introduction to the Databricks CLI: authentication, profiles,
 building with Declarative Automation Bundles, and where to go next.
 
 Prints a human-friendly guide by default. When stdout is not an interactive
 terminal (for example, when a coding agent runs the command), it prints a
-denser, agent-oriented version instead.`,
-	}
+denser, agent-oriented version instead.`
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		content := quickstartFor(cmdio.IsPromptSupported(cmd.Context()))
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
 	}
-
-	return cmd
 }
 
 // quickstartFor returns the quickstart text for the caller. Interactive

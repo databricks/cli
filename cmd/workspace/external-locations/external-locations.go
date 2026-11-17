@@ -3,6 +3,7 @@
 package external_locations
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "external-locations",
-		Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
-		Long: `An external location is an object that combines a cloud storage path with a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "external-locations",
+	Short:   `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `An external location is an object that combines a cloud storage path with a
   storage credential that authorizes access to the cloud storage path. Each
   external location is subject to Unity Catalog access-control policies that
   control which users and groups can access the credential. If a user does not
@@ -34,14 +40,13 @@ func New() *cobra.Command {
   credentials directly.
 
   To create external locations, you must be a metastore admin or a user with the
-  **CREATE_EXTERNAL_LOCATION** privilege.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  **CREATE_EXTERNAL_LOCATION** privilege.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -54,8 +59,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

@@ -138,17 +138,17 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
+// plan, and the resources whose remote permissions could not be read.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
 		// ("resources.<type>.<name>.permissions" / ".grants"; see splitResourcePath
-		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
-		// to YAML: their fields (e.g. object_id) are server-populated with no source
-		// location, and bundle-level permissions have no per-resource YAML node at all,
-		// so resolving them would fail the whole sync. Skip them instead.
+		// in bundle/direct/bundle_plan.go). Their fields (e.g. object_id) are
+		// server-populated with no source location, so they cannot be written back
+		// as is; permissions are added below under their parent resource instead,
+		// and grants are skipped.
 		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
@@ -157,34 +157,13 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				fullPath := resourceKey + "." + path
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
-					!keepSkippedRunAsChange(fullPath, changeDesc) {
-					continue
-				}
-				synced, err := applyLifecycle(resourceKey, path, changeDesc)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, b.Config.Presets.NamePrefix)
 				if err != nil {
-					return nil, fmt.Errorf("failed to apply lifecycle rules for path %s: %w", path, err)
+					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
-				if synced == nil {
-					continue
+				if change != nil {
+					resourceChanges[path] = change
 				}
-
-				change, err := convertChangeDesc(fullPath, synced)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
-				}
-				if change.Operation == OperationSkip {
-					continue
-				}
-				// The state snapshot holds real per-field values, so New != Old
-				// means the local config diverged from the last deploy and this
-				// change overwrites that pending edit.
-				if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
-					change.LocalEdit = true
-				}
-				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
-				resourceChanges[path] = change
 			}
 		}
 
@@ -195,5 +174,43 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	return changes, nil
+	skipped, err := addPermissionsChanges(ctx, changes, b, plan)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return changes, skipped, nil
+}
+
+// convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
+// nothing to write back.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
+	fullPath := resourceKey + "." + path
+	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
+		!keepSkippedRunAsChange(fullPath, changeDesc) {
+		return nil, nil
+	}
+	synced, err := applyLifecycle(resourceKey, path, changeDesc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply lifecycle rules: %w", err)
+	}
+	if synced == nil {
+		return nil, nil
+	}
+
+	change, err := convertChangeDesc(fullPath, synced)
+	if err != nil {
+		return nil, err
+	}
+	if change.Operation == OperationSkip {
+		return nil, nil
+	}
+	// The state snapshot holds real per-field values, so New != Old
+	// means the local config diverged from the last deploy and this
+	// change overwrites that pending edit.
+	if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+		change.LocalEdit = true
+	}
+	change.Value = stripNamePrefix(fullPath, change.Value, namePrefix)
+	return change, nil
 }

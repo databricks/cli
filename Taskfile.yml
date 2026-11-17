@@ -265,6 +265,13 @@ tasks:
     cmds:
       - 'uv run -p ">=3.11" --no-project python tools/validate_codeowners.py'
 
+  test-cli-wheels:
+    # release-build.yml runs the scripts themselves on the release binaries.
+    desc: Unit-test the scripts that build and validate the CLI wheels for PyPI
+    dir: tools
+    cmds:
+      - 'uv run -q -p ">=3.11" --no-project --with-requirements requirements.txt python -m unittest -q test_build_cli_wheels test_validate_cli_wheels'
+
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
     env:
@@ -314,6 +321,7 @@ tasks:
       - task: check-codeowners
       - task: check-lockfiles
       - task: check-agents-setup
+      - task: test-cli-wheels
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -626,9 +634,25 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
       - cat test-output-unit.json test-output-acc.json > test-output.json
-      - rm -fr ./acceptance/build/cover-merged/
+      - rm -fr ./acceptance/build/cover-merged/ ./acceptance/build/cover-batches/
       - mkdir -p acceptance/build/cover-merged/
-      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
+      # A full run writes thousands of per-test dirs; joined into one -i argument they exceed
+      # Linux's 128KB per-argument limit ("argument list too long"), so merge in batches.
+      - |
+        batch=""; n=0; i=0
+        for d in acceptance/build/cover/*; do
+          batch="$batch,$d"; n=$((n+1))
+          if [ $n -eq 500 ]; then
+            i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+            go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+            batch=""; n=0
+          fi
+        done
+        if [ -n "$batch" ]; then
+          i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+          go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+        fi
+        go tool covdata merge -i "$(printf '%s,' acceptance/build/cover-batches/* | sed 's/,$//')" -o acceptance/build/cover-merged/
       - go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
 
   showcover:

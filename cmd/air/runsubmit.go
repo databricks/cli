@@ -34,6 +34,11 @@ const defaultDlRuntimeImage = "CLIENT-GPU-6"
 // carries the runtime channel.
 const aiRuntimeEnvironmentKey = "default"
 
+// workspaceBaseEnvironmentPrefix is the name prefix of every workspace base
+// environment, for example the Databricks-provided databricks_ai_v6 or a custom
+// dbe_<uuid>.
+const workspaceBaseEnvironmentPrefix = "workspace-base-environments/"
+
 // dlRuntimeImage resolves the bare runtime channel (config version, else env,
 // else default), always stripping the CLIENT-GPU- prefix.
 func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
@@ -50,7 +55,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
 	environment := &compute.Environment{}
 	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+		environment.BaseEnvironment = workspaceBaseEnvironmentPrefix + dlImage
 	} else {
 		environment.EnvironmentVersion = dlImage
 	}
