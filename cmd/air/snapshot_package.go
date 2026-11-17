@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -168,12 +169,22 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
 		}
+		// Pathspec magic such as ":(top)x" or ":/x" can select files above root_path.
+		if !filepath.IsLocal(filepath.FromSlash(name)) {
+			return nil, fmt.Errorf("code_source include_paths select %q, which is outside root_path %s", name, filepath.ToSlash(repoPath))
+		}
 		info, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
+		}
+		// git lists a nested repository or a submodule as a directory, which tarpack
+		// does not pack; keep the listing to what lands in the archive so the empty
+		// and include_paths checks below see the same thing.
+		if !info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0 {
+			continue
 		}
 		linkTarget := ""
 		if info.Mode()&os.ModeSymlink != 0 {
@@ -193,7 +204,43 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 	if len(files) == 0 {
 		return nil, emptySnapshotError(ctx, repoPath, includePaths, isGitRepo)
 	}
+	if unmatched := unmatchedIncludePaths(includePaths, files); len(unmatched) > 0 {
+		return nil, fmt.Errorf("code_source include_paths select no files under %s: %s. Check that these paths exist under root_path and hold files git does not ignore%s; empty directories, nested git repositories and submodules add no files", filepath.ToSlash(repoPath), strings.Join(unmatched, ", "), ignoreRuleHint(isGitRepo))
+	}
 	return files, nil
+}
+
+// unmatchedIncludePaths returns the plain-path include_paths entries that select none
+// of files. git ls-files drops a pathspec that matches nothing, so a mistyped entry
+// would silently be missing from the snapshot. Entries git reads as patterns are left
+// to git, since a path-prefix comparison cannot evaluate them.
+func unmatchedIncludePaths(includePaths []string, files []snapshotFile) []string {
+	var unmatched []string
+	for _, p := range includePaths {
+		if isPathspecPattern(p) {
+			continue
+		}
+		prefix := path.Clean(filepath.ToSlash(p))
+		matched := prefix == "."
+		for _, file := range files {
+			rel := filepath.ToSlash(file.rel)
+			if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			unmatched = append(unmatched, p)
+		}
+	}
+	return unmatched
+}
+
+// isPathspecPattern reports whether git matches p as a pattern rather than as a
+// literal path: pathspec magic (":!x", ":(exclude)x", ":/x", ...) or a glob. git
+// treats a backslash as an escape; on Windows ToSlash turns it into a separator first.
+func isPathspecPattern(p string) bool {
+	return strings.HasPrefix(p, ":") || strings.ContainsAny(filepath.ToSlash(p), `*?[\`)
 }
 
 // emptySnapshotError explains why no file was selected for the snapshot. An empty
@@ -211,7 +258,16 @@ func emptySnapshotError(ctx context.Context, repoPath string, includePaths []str
 		}
 	}
 	if len(includePaths) > 0 {
-		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and are not ignored by git (`git check-ignore -v <path>`)", prefix, strings.Join(includePaths, ", "))
+		return fmt.Errorf("%s: no file under include_paths (%s) is selected. Check that the paths exist under root_path and hold files git does not ignore%s; empty directories, nested git repositories and submodules add no files", prefix, strings.Join(includePaths, ", "), ignoreRuleHint(isGitRepo))
 	}
-	return fmt.Errorf("%s: the directory is empty or all of its files are excluded by .gitignore rules (`git check-ignore -v <path>` shows the rule for a file). Check code_source.root_path", prefix)
+	return fmt.Errorf("%s: the directory is empty, holds only nested git repositories or submodules, or all of its files are excluded by .gitignore rules%s. Check code_source.root_path", prefix, ignoreRuleHint(isGitRepo))
+}
+
+// ignoreRuleHint points at git's ignore-rule lookup, which only works inside a git
+// repository.
+func ignoreRuleHint(isGitRepo bool) string {
+	if !isGitRepo {
+		return ""
+	}
+	return " (`git check-ignore -v <file>` shows the rule for a file)"
 }
