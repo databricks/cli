@@ -1,3 +1,7 @@
+trap "rm -fr dist" EXIT
+mkdir dist
+cp $TESTDIR/../../../artifacts/whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-any.whl dist
+
 title "Test dependencies use the patched wheel, with extras kept"
 trace $CLI bundle deploy
 trace print_requests.py //api/2.0/pipelines --nostamp | jq '.body.testing.environment.dependencies'
