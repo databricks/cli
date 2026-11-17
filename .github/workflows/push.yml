@@ -212,7 +212,7 @@ jobs:
           UNIT_DIR: ${{ steps.cover.outputs.unit }}
           ACC_DIR: ${{ steps.cover.outputs.acc }}
         run: |
-          uv run tools/coverpack.py --unit "$UNIT_DIR" --acc "$ACC_DIR" -o "$RUNNER_TEMP/coverage.txt.zst" \
+          uv run tools/coverpack.py --unit "$UNIT_DIR" --acc "$ACC_DIR" -o "$RUNNER_TEMP/coverage.bin.zst" \
             --meta "{\"sha\": \"$SHA\", \"os\": \"$OS\", \"cell\": \"$CELL\", \"pr\": ${PR_NUMBER:-null}}"
 
       - name: Upload coverage
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-${{ matrix.os.name }}-${{ matrix.deployment.name }}
-          path: ${{ runner.temp }}/coverage.txt.zst
+          path: ${{ runner.temp }}/coverage.bin.zst
           if-no-files-found: warn
           retention-days: 7
           # Already compressed.
