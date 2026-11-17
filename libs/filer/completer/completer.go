@@ -4,7 +4,6 @@ import (
 	"context"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
@@ -42,20 +41,21 @@ func (c *completer) SetIsLocalPath(i bool) {
 
 func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, error) {
 	trailingSeparator := "/"
-	separators := "/"
 	joinFunc := path.Join
+	splitFunc := path.Split
 
-	// Use filepath functions if we are in a local path.
+	// Use filepath functions if we are in a local path. On Windows,
+	// filepath.Split splits on both '/' and '\'.
 	if c.isLocalPath {
 		joinFunc = filepath.Join
+		splitFunc = filepath.Split
 		trailingSeparator = string(filepath.Separator)
-		separators += trailingSeparator
 	}
 
 	// Shells only offer completions that start with the word being completed,
 	// so keep the directory part of p as typed. Joining it with the entry name
 	// would clean it and turn "./sr" into "src", which the shell then discards.
-	typedDir := p[:strings.LastIndexAny(p, separators)+1]
+	typedDir, _ := splitFunc(p)
 
 	// List the directory part of p: nested entries after a trailing separator,
 	// adjacent ones for a partial name. Split it the same way as typedDir;
