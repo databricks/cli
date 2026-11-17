@@ -32,13 +32,13 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		inputSecret.SchemaName,
 		inputSecret.Name)
 
-	// Check if secret already exists
+	// UC answers 409 ALREADY_EXISTS (verified on AWS, Azure and GCP).
 	if _, exists := s.UCSecrets[fullName]; exists {
 		return Response{
 			StatusCode: 409,
 			Body: map[string]any{
-				"error_code": "RESOURCE_ALREADY_EXISTS",
-				"message":    fmt.Sprintf("Secret %s already exists", fullName),
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Secret '%s' already exists", fullName),
 			},
 		}
 	}
