@@ -365,6 +365,33 @@ func TestFilesClientDoesNotRetryLargeNonSeekableUpload(t *testing.T) {
 	assert.Equal(t, []string{"abc"}, *uploads)
 }
 
+// countingReader counts Read calls on a non-seekable reader, modelling a DBFS
+// read handle that makes one API call per Read.
+type countingReader struct {
+	r     io.Reader
+	calls int
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	c.calls++
+	return c.r.Read(p)
+}
+
+func TestFilesClientBuffersUploadInLargeReads(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	uploads := uploadsWithOneThrottle(server)
+	f := newFilesClientWithFastRetries(t, server)
+
+	content := strings.Repeat("x", filesReplayReadSize)
+	src := &countingReader{r: strings.NewReader(content)}
+	require.NoError(t, f.Write(ctx, "hello", src, CreateParentDirectories))
+	assert.Len(t, *uploads, 2)
+	// One Read fills the buffer and one more returns EOF; io.ReadAll's own
+	// growing chunks would take about 20.
+	assert.LessOrEqual(t, src.calls, 3)
+}
+
 func setReplayBufferSize(t *testing.T, n int) {
 	old := filesReplayBufferSize
 	filesReplayBufferSize = n

@@ -52,8 +52,10 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		return nil, "", err
 	}
 
-	// Writes are not retried: a write without overwrite may fail on the file its own earlier
-	// attempt created, and an overwrite would need to buffer the streamed source to replay it.
+	// Writes are not retried here: a write without overwrite may fail on the file its own
+	// earlier attempt created, and replaying a streamed source needs buffering. The Files API
+	// filer (Volumes) retries its own uploads when the source is seekable or small enough
+	// to buffer; DBFS writes get one attempt.
 	return retry.FilerExceptWrites(f), path, nil
 }
 

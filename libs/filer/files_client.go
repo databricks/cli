@@ -1,6 +1,7 @@
 package filer
 
 import (
+	"bufio"
 	"bytes"
 	"cmp"
 	"context"
@@ -322,6 +323,9 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 // upload stays bounded. A variable so tests can lower it.
 var filesReplayBufferSize = 8 << 20
 
+// filesReplayReadSize is the size of the reads replayable makes from the source.
+const filesReplayReadSize = 1 << 20
+
 // replayable returns a reader that can be rewound to start before each upload
 // attempt. A non-seekable reader (including a pipe, which is an *os.File whose
 // Seek fails) is read into memory if it is at most filesReplayBufferSize bytes;
@@ -333,12 +337,16 @@ func replayable(reader io.Reader) (rs io.ReadSeeker, start int64, stream io.Read
 			return s, start, nil, nil
 		}
 	}
-	head, err := io.ReadAll(io.LimitReader(reader, int64(filesReplayBufferSize)+1))
+	// io.ReadAll asks for small, growing chunks, and a DBFS read handle makes one
+	// API call per Read; a 1 MiB buffer (the DBFS block size) keeps that to one
+	// call per MiB.
+	br := bufio.NewReaderSize(reader, filesReplayReadSize)
+	head, err := io.ReadAll(io.LimitReader(br, int64(filesReplayBufferSize)+1))
 	if err != nil {
 		return nil, 0, nil, fmt.Errorf("reading upload body: %w", err)
 	}
 	if len(head) > filesReplayBufferSize {
-		return nil, 0, io.MultiReader(bytes.NewReader(head), reader), nil
+		return nil, 0, io.MultiReader(bytes.NewReader(head), br), nil
 	}
 	return bytes.NewReader(head), 0, nil, nil
 }
