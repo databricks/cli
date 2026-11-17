@@ -1,1 +1,1 @@
-* Interactive prompts, selection lists and the pager enable the kitty keyboard protocol and modifyOtherKeys in terminals that support them, and restore the previous keyboard mode on exit.
+* Interactive prompts, selection lists and the pager enable the kitty keyboard protocol and modifyOtherKeys in terminals that support them, and restore the previous keyboard mode on exit. ([#7742](https://github.com/databricks/cli/pull/7742))

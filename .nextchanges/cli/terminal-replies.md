@@ -1,0 +1,1 @@
+* Prompts and selection lists that exit before the terminal answers its startup queries no longer leave the answers, such as `^[[?2026;2$y`, at the shell prompt. ([#7742](https://github.com/databricks/cli/pull/7742))
