@@ -63,7 +63,7 @@ jobs:
     runs-on:
       group: databricks-release-runner-group-emu-access
       labels: linux-ubuntu-latest-emu-access
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions: {}
     environment:
       name: test-trigger-is
