@@ -13,10 +13,15 @@ import (
 // Scope is deliberately narrow: bubbletea's stock renderer (which is what
 // the cmdio prompt/select models run through) emits a small subset of CSI
 // sequences — cursor moves, erase-line, set/reset-mode for cursor
-// visibility — plus printable runes, CR, LF, and BS. SGR styling, alt-screen
-// switches, scroll regions, charsets, OSC, DCS, and friends are recognised
-// by the underlying ansi parser but intentionally ignored: they do not
-// affect cell text.
+// visibility — plus printable runes, CR, LF, and BS. Alt-screen switches,
+// scroll regions, charsets, DCS, and friends are recognised by the
+// underlying ansi parser but intentionally ignored: they do not affect cell
+// text. SGR styling, DEC private modes, keyboard protocol switches and
+// terminal queries are recorded alongside the text for the styled, modes
+// and queries goldens (see observe.go), without changing what String
+// returns. Cursor movement covers the usual CUU/CUD/CUP family and the
+// unprefixed SCO save/restore pair (CSI s and CSI u); prefixed forms such as
+// the kitty keyboard CSI ? u and CSI > n u do not move the cursor.
 type emulator struct {
 	width, height int
 	grid          [][]rune
@@ -24,6 +29,20 @@ type emulator struct {
 
 	// Saved cursor (DECSC/DECRC; ESC 7 / ESC 8).
 	savedRow, savedCol int
+
+	// mapNewline makes LF also return to column 0, like a cooked tty's
+	// ONLCR. Off by default: bubbletea v1 writes CRLF itself.
+	mapNewline bool
+
+	// Observation state for the styled, modes and queries goldens. None of
+	// it affects cell text (see observe.go).
+	styles          [][]cellStyle
+	pen             cellStyle
+	privateModes    map[int]bool
+	modeEvents      []modeEvent
+	kittyStack      []int
+	modifyOtherKeys int
+	queries         []string
 
 	parser *ansi.Parser
 }
@@ -37,19 +56,25 @@ func newEmulator(width, height int) *emulator {
 		Execute:   e.handleControl,
 		HandleCsi: e.handleCsi,
 		HandleEsc: e.handleEsc,
+		HandleOsc: e.handleOsc,
 	})
 	return e
 }
 
-// reset clears the screen and homes the cursor.
+// reset clears the screen, homes the cursor, and resets the pen and the
+// private modes.
 func (e *emulator) reset() {
 	e.grid = make([][]rune, e.height)
+	e.styles = make([][]cellStyle, e.height)
 	for i := range e.grid {
 		e.grid[i] = make([]rune, e.width)
+		e.styles[i] = make([]cellStyle, e.width)
 		for j := range e.grid[i] {
 			e.grid[i][j] = ' '
 		}
 	}
+	e.pen = cellStyle{}
+	e.privateModes = map[int]bool{}
 	e.row, e.col = 0, 0
 	e.savedRow, e.savedCol = 0, 0
 }
@@ -83,6 +108,7 @@ func (e *emulator) handlePrint(r rune) {
 	}
 	if e.inBounds() {
 		e.grid[e.row][e.col] = r
+		e.styles[e.row][e.col] = e.pen
 	}
 	e.col++
 }
@@ -101,15 +127,20 @@ func (e *emulator) handleControl(b byte) {
 		if e.row+1 < e.height {
 			e.row++
 		}
+		if e.mapNewline {
+			e.col = 0
+		}
 	case 0x0d: // CR: start of line.
 		e.col = 0
 	}
 }
 
 // handleCsi handles the CSI sequences emitted by bubbletea's renderer.
-// Only commands that affect cell positions or contents matter. SGR (colors,
-// 'm') and DEC private modes ('h'/'l' with '?' prefix) are no-ops.
+// Only commands that affect cell positions or contents matter. SGR ('m') and
+// the mode and query sequences do not move the cursor or change cell text;
+// observeCsi records the ones the goldens pin.
 func (e *emulator) handleCsi(cmd ansi.Cmd, params ansi.Params) {
+	e.observeCsi(cmd, params)
 	n, _, _ := params.Param(0, 1)
 	switch cmd.Final() {
 	case 'A': // CUU: cursor up
@@ -142,9 +173,13 @@ func (e *emulator) handleCsi(cmd ansi.Cmd, params ansi.Params) {
 		n, _, _ := params.Param(0, 0)
 		e.eraseLine(n)
 	case 's': // SCO save cursor
-		e.savedRow, e.savedCol = e.row, e.col
-	case 'u': // SCO restore cursor
-		e.row, e.col = e.savedRow, e.savedCol
+		if cmd.Prefix() == 0 {
+			e.savedRow, e.savedCol = e.row, e.col
+		}
+	case 'u': // SCO restore cursor; prefixed forms are kitty keyboard sequences.
+		if cmd.Prefix() == 0 {
+			e.row, e.col = e.savedRow, e.savedCol
+		}
 		// All other CSI commands (SGR 'm', mode set/reset 'h'/'l', cursor
 		// show/hide '?25h/l', etc.) are no-ops for cell text.
 	}
@@ -171,15 +206,15 @@ func (e *emulator) eraseLine(n int) {
 	switch n {
 	case 0:
 		for i := e.col; i < e.width; i++ {
-			line[i] = ' '
+			e.clearCell(e.row, i)
 		}
 	case 1:
 		for i := 0; i <= e.col && i < e.width; i++ {
-			line[i] = ' '
+			e.clearCell(e.row, i)
 		}
 	case 2:
 		for i := range line {
-			line[i] = ' '
+			e.clearCell(e.row, i)
 		}
 	}
 }
@@ -192,23 +227,32 @@ func (e *emulator) eraseDisplay(n int) {
 		e.eraseLine(0)
 		for r := e.row + 1; r < e.height; r++ {
 			for c := range e.grid[r] {
-				e.grid[r][c] = ' '
+				e.clearCell(r, c)
 			}
 		}
 	case 1:
 		for r := range e.row {
 			for c := range e.grid[r] {
-				e.grid[r][c] = ' '
+				e.clearCell(r, c)
 			}
 		}
 		e.eraseLine(1)
 	case 2, 3:
 		for r := range e.grid {
 			for c := range e.grid[r] {
-				e.grid[r][c] = ' '
+				e.clearCell(r, c)
 			}
 		}
 	}
+}
+
+// clearCell blanks one cell and resets its style. Erased cells take the
+// default style rather than the pen's background. The pins do not cover an
+// erase under a colored background, so this is a modelling choice, not a
+// measured property of bubbletea.
+func (e *emulator) clearCell(r, c int) {
+	e.grid[r][c] = ' '
+	e.styles[r][c] = cellStyle{}
 }
 
 func (e *emulator) inBounds() bool {
