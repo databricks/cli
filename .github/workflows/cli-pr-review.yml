@@ -6,6 +6,9 @@ name: CLI PR review
 # The job summary links the backend run. Feedback is advisory and posted inline.
 # Run only trusted workflow code; never check out or execute the PR here.
 on:
+  # TEMPORARY: authorized test on this PR only; removed after the run.
+  pull_request:
+    types: [synchronize]
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: [main]
@@ -19,18 +22,7 @@ concurrency:
 
 jobs:
   validate:
-    if: |
-      github.repository == 'databricks/cli' && (
-        (github.event_name == 'pull_request_target' &&
-         !github.event.pull_request.draft &&
-         github.event.pull_request.head.repo.full_name == github.repository &&
-         !github.event.pull_request.head.repo.fork) ||
-        (github.event_name == 'issue_comment' &&
-         github.event.issue.pull_request &&
-         github.event.comment.user.type == 'User' &&
-         contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association) &&
-         github.event.comment.body == '/review')
-      )
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 4738 && github.event.pull_request.head.repo.full_name == 'databricks/cli' && github.head_ref == 'add-claude-code-workflow' && github.actor == 'shreyas-goenka'
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -50,15 +42,43 @@ jobs:
           persist-credentials: false
           sparse-checkout: .github/scripts
 
-      - name: Validate review request
-        id: request
+      - name: Prepare real comment test
+        id: test-comment
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 .github/scripts/cli_pr_review.py
+        run: |
+          gh api repos/databricks/cli/issues/comments/6948316969 > "$RUNNER_TEMP/test-comment.json"
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+          comment = json.loads((root / 'test-comment.json').read_text())
+          assert comment['user']['login'] == 'shreyas-goenka'
+          assert comment['body'] == '/review'
+          print('Workflow-token comment association:', comment['author_association'])
+          payload = {'action': 'created', 'repository': event['repository'],
+                     'issue': {'number': 4738, 'pull_request': {}}, 'comment': comment}
+          (root / 'test-event.json').write_text(json.dumps(payload))
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as f:
+              f.write('association=' + comment['author_association'] + '\n')
+          PYTHON
+
+      - name: Validate review request
+        id: request
+        if: contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), steps.test-comment.outputs.association)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: GITHUB_EVENT_NAME=issue_comment GITHUB_EVENT_PATH="$RUNNER_TEMP/test-event.json" python3 .github/scripts/cli_pr_review.py
+
+      - name: Confirm request passed
+        env:
+          ELIGIBLE: ${{ steps.request.outputs.eligible }}
+        run: test "$ELIGIBLE" = true
 
   review:
     needs: validate
-    if: needs.validate.outputs.eligible == 'true' && github.ref == 'refs/heads/main'
+    if: needs.validate.outputs.eligible == 'true' && (github.event_name == 'pull_request' && github.event.pull_request.number == 4738 && github.event.pull_request.head.repo.full_name == 'databricks/cli' && github.head_ref == 'add-claude-code-workflow' && github.actor == 'shreyas-goenka')
     # Cross-org dispatch needs the same approved network as integration tests.
     runs-on:
       group: databricks-release-runner-group-emu-access
