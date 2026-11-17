@@ -198,7 +198,7 @@ func (m *pagerModel[T]) handleKey(key string) (tea.Model, tea.Cmd) {
 		return m, m.startDrain()
 	case "esc", "ctrl+c", "q", "Q":
 		return m, tea.Quit
-	case "space", "alt+space": // Alt+Space has always advanced the pager.
+	case "space":
 		return m, m.startAdvance()
 	}
 	return m, nil
