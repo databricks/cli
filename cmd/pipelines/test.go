@@ -25,7 +25,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
@@ -36,17 +35,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// newStartTestUpdateRequest returns the Start Update request of a test run.
+// newStartTestUpdateRequest returns the Start Update request of a test run. It always sends
+// test_options, empty to run every test: only a request with test_options is rejected where the
+// testing API is off; without them, the service runs its older test-only update instead.
 func newStartTestUpdateRequest(selection, pytestArgs []string) pipelines.StartUpdate {
-	req := pipelines.StartUpdate{TestOnly: true}
-	if len(selection) > 0 || len(pytestArgs) > 0 {
-		req.TestOptions = &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs}
+	return pipelines.StartUpdate{
+		TestOnly:    true,
+		TestOptions: &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs},
 	}
-	return req
 }
-
-// pipelinesTestEnvVar enables the experimental pipelines test command.
-const pipelinesTestEnvVar = "DATABRICKS_CLI_PIPELINES_TEST"
 
 const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
 
@@ -542,9 +539,6 @@ type testFlags struct {
 
 // checkTestFlags rejects the flag combinations that pipelines test does not support, before any API call.
 func checkTestFlags(cmd *cobra.Command, args []string, f testFlags) error {
-	if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
-		return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
-	}
 	if cmd.ArgsLenAtDash() >= 0 {
 		return errors.New("the -- separator is not supported: " + pytestArgHint)
 	}
@@ -616,8 +610,6 @@ func testCommand() *cobra.Command {
 		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
 		Short: "*Experimental* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
-
-This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
 
 KEY is the unique name of the pipeline, as defined in its YAML file.
 It is required when test selections are given. If there is only one pipeline

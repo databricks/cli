@@ -3,6 +3,7 @@ package pipelines
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -81,7 +82,12 @@ func TestResolveTestSelections(t *testing.T) {
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
-	assert.Equal(t, pipelines.StartUpdate{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
+	all := newStartTestUpdateRequest(nil, nil)
+	assert.Equal(t, pipelines.StartUpdate{TestOnly: true, TestOptions: &pipelines.PipelineTestOptions{}}, all)
+	// An empty test_options must reach the service, where it is rejected if the testing API is off.
+	body, err := json.Marshal(all)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"test_only": true, "test_options": {}}`, string(body))
 	assert.Equal(t, pipelines.StartUpdate{
 		TestOnly:    true,
 		TestOptions: &pipelines.PipelineTestOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
