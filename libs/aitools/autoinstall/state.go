@@ -37,9 +37,14 @@ type State struct {
 
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
-	// `databricks aitools uninstall` and by a "no" to the skills prompt of
-	// `databricks apps init`.
+	// `databricks aitools uninstall`, by declining the install prompt and by a
+	// "no" to the skills prompt of `databricks apps init`.
 	OptedOut bool `json:"opted_out,omitempty"`
+
+	// AcceptedVersion is the CLI version whose install prompt the user
+	// answered "yes". Retries of that version install without asking again;
+	// any other version asks.
+	AcceptedVersion string `json:"accepted_version,omitempty"`
 
 	// Installing is set while auto-install makes a first install, and stays
 	// set when the install did not finish. The skills such an install left

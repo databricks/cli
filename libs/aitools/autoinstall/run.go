@@ -109,6 +109,26 @@ func MarkInstalling(ctx context.Context) error {
 	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
+// SaveID stores id as the machine identifier unless one is stored already,
+// without settling a version, and returns the stored identifier. Runs that
+// draw an ID save it before using it, so concurrent runs agree on the
+// machine's holdout bucket.
+func SaveID(ctx context.Context, id string) (string, error) {
+	err := updateState(ctx, func(s *State) {
+		if s.ID == "" {
+			s.ID = id
+		}
+		id = s.ID
+	})
+	return id, err
+}
+
+// Accept records that the user answered "yes" at the install prompt of
+// version (State.AcceptedVersion).
+func Accept(ctx context.Context, version string) error {
+	return updateState(ctx, func(s *State) { s.AcceptedVersion = version })
+}
+
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI
 // processes (agents often run several at once) do not install at the same
 // time. ok is false when another process holds it or it cannot be taken; that

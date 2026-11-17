@@ -44,6 +44,21 @@ func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 	assert.Equal(t, "1.30.0", s.LastVersion)
 }
 
+func TestSaveIDKeepsTheFirstID(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	id, err := SaveID(ctx, "first")
+	require.NoError(t, err)
+	assert.Equal(t, "first", id)
+	id, err = SaveID(ctx, "second")
+	require.NoError(t, err)
+	assert.Equal(t, "first", id, "the stored ID is returned")
+
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{ID: "first"}, s, "the version is not settled")
+}
+
 func TestLoadWaitsForStateLock(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 

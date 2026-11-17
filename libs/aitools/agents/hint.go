@@ -216,7 +216,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if IsCredentialHelperCommand(cmd) {
 		return
 	}
-	if env.Get(ctx, selfExecEnv) != "" {
+	if IsSelfExec(ctx) {
 		return
 	}
 	if !cmdio.HasIO(ctx) {
@@ -425,6 +425,12 @@ func sessionID(ctx context.Context, sessionEnv string) string {
 		return ""
 	}
 	return env.Get(ctx, sessionEnv)
+}
+
+// IsSelfExec reports whether this CLI process was started by the CLI itself
+// (see SelfExecEnv).
+func IsSelfExec(ctx context.Context) bool {
+	return env.Get(ctx, selfExecEnv) != ""
 }
 
 // SelfExecEnv returns environ plus the marker that keeps a CLI process the
