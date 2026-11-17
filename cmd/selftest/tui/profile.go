@@ -3,7 +3,9 @@ package tui
 import (
 	"fmt"
 	"io"
+	"os"
 
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -42,7 +44,7 @@ func newProfileCmd() *cobra.Command {
 			} {
 				r, color := cmdio.NewRenderer(ctx, s.out)
 				fmt.Fprintf(w, "%s: supports_color=%t profile=%s dark_background=%t\n",
-					s.name, color, r.Profile(), cmdio.HasDarkBackground())
+					s.name, color, r.Profile(), lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
 			}
 			fmt.Fprintln(w, "env:")
 			for _, name := range profileEnvVars {

@@ -14,12 +14,12 @@ func TestSelectModelNoColor(t *testing.T) {
 
 	m, err := newSelectModel(opts, true)
 	require.NoError(t, err)
-	assert.Contains(t, m.View(), ansiBlue)
+	assert.Contains(t, m.render(), ansiBlue)
 
 	// NO_COLOR drops the blue "?" but keeps bold/underline on the cursor row.
 	m, err = newSelectModel(opts, false)
 	require.NoError(t, err)
-	v := m.View()
+	v := m.render()
 	assert.NotContains(t, v, ansiBlue)
 	assert.Contains(t, v, ansiBold)
 	assert.Contains(t, v, ansiUnderline)
@@ -32,14 +32,14 @@ func TestRunSelectNoColor(t *testing.T) {
 		return err
 	}
 
-	assert.Contains(t, runWithKeys(t, false, "Pick", "\r", run), ansiBlue)
+	assert.True(t, hasSGR(runWithKeys(t, false, "Pick", "\r", run), ansiBlue))
 
 	// NO_COLOR: the prompt still runs, without the blue "?", but the cursor
 	// row keeps its bold and underline.
 	out := runWithKeys(t, true, "Pick", "\r", run)
-	assert.NotContains(t, out, ansiBlue)
-	assert.Contains(t, out, ansiBold)
-	assert.Contains(t, out, ansiUnderline)
+	assert.False(t, hasSGR(out, ansiBlue))
+	assert.True(t, hasSGR(out, ansiBold))
+	assert.True(t, hasSGR(out, ansiUnderline))
 }
 
 // A paste is text, not keys: outside search it neither moves the cursor nor

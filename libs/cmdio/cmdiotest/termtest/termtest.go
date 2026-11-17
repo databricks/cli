@@ -213,6 +213,11 @@ type Options struct {
 	// Windows.
 	MapNewline bool
 
+	// StdinTTY makes stdin look like a terminal to cmdio, so the paths that
+	// need one run, such as NewTeaProgram's wait for the terminal's replies
+	// before quitting. Input still comes from the pipe.
+	StdinTTY bool
+
 	// ScreenRows, when positive, replaces the emulator's height of
 	// [cmdio.TestTerminalHeight] rows. LF on the last row scrolls the top
 	// line off the screen, so programs that print more lines than that (the
@@ -349,7 +354,11 @@ func RunWith[T any](t *testing.T, opts Options, fn func(ctx context.Context) (T,
 	} else {
 		stdout = io.Discard
 	}
-	cio := cmdio.NewTestIOWithOptions(ctx, inR, stdout, screen, cmdio.TestIOOptions{
+	var in io.Reader = inR
+	if opts.StdinTTY {
+		in = cmdio.FakeTTYReader(inR)
+	}
+	cio := cmdio.NewTestIOWithOptions(ctx, in, stdout, screen, cmdio.TestIOOptions{
 		HeaderTemplate: opts.HeaderTemplate,
 		Template:       opts.Template,
 		ColorFromEnv:   opts.ColorFromEnv,

@@ -2,120 +2,103 @@ package cmdio
 
 import (
 	"context"
+	"image/color"
 	"io"
+	"os"
 	"strings"
-	"sync"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 )
 
 // This file owns how cmdio colors styled output: which color profile a writer
 // gets (NewRenderer), stripping or downsampling at write time (Renderer.Writer
-// and Renderer.Render), and the Color, LightDark and Hyperlink helpers whose
-// lipgloss counterparts change shape in v2. Callers still use lipgloss.Style
-// and lipgloss.Width directly.
+// and Renderer.Render), and the Color, LightDark and Hyperlink helpers.
+// Callers still use lipgloss.Style and lipgloss.Width directly.
 //
 // Callers write styled strings through Renderer.Writer because that is where
-// lipgloss v2 applies the profile: v2 styles always emit full-color SGR.
+// the profile is applied: lipgloss v2 styles always emit full-color SGR.
+// Bubble Tea programs get a profile via tea.WithColorProfile (see
+// teaprogram.go).
 
-// Color is a color value accepted by lipgloss styles: lipgloss.TerminalColor
-// on v1, image/color.Color on v2. Palettes and signatures use it instead of the
-// concrete lipgloss.Color string type, which v2 turns into a function.
-type Color = lipgloss.TerminalColor
+// Color is a color value accepted by lipgloss styles. Any image/color.Color
+// works; lipgloss.Color returns one.
+type Color = color.Color
 
 // Renderer carries the color profile for output written to a specific writer.
 type Renderer struct {
-	lg      *lipgloss.Renderer
 	profile colorprofile.Profile
 }
 
 // NewRenderer returns a renderer targeting w, along with whether w supports
-// color. The profile starts from termenv's probe of w and is adjusted where
-// cmdio knows better:
-//   - when w doesn't support color (NO_COLOR, TERM=dumb, or w is piped or
-//     redirected), styles minted from the renderer emit no SGR escapes and
-//     output written through Writer has all escape sequences stripped;
-//   - when w is an MSYS2 pty pipe (no ConPTY; see conpty.go), which cmdio
-//     treats as a terminal but termenv can't recognize, the profile is raised
-//     from Ascii to basic ANSI unless CLICOLOR=0 asks for no color
-//     (termenv.EnvNoColor). termenv's CI check is not honored there: it only
-//     guesses that CI output isn't a terminal, and this one is.
-//
-// On every other writer termenv's profile stands, including Ascii for
-// CLICOLOR=0 or CI on a terminal.
+// color. When it does not (NO_COLOR, TERM=dumb, or w is piped or redirected)
+// output written through Writer has all escape sequences stripped. Otherwise
+// the profile is the one lipgloss v1 rendered with; see colorDepth.
 func NewRenderer(ctx context.Context, w io.Writer) (*Renderer, bool) {
-	lg := lipgloss.NewRenderer(w)
 	if !SupportsColor(ctx, w) {
-		lg.SetColorProfile(termenv.Ascii)
-		return &Renderer{lg: lg, profile: colorprofile.NoTTY}, false
+		return &Renderer{profile: colorprofile.NoTTY}, false
 	}
-	if isMSYSPipe(w) && lg.ColorProfile() == termenv.Ascii && !termenv.EnvNoColor() {
-		lg.SetColorProfile(termenv.ANSI)
+	return &Renderer{profile: colorDepth(w)}, true
+}
+
+// colorDepth returns the color depth for a writer cmdio already decided
+// supports color. lipgloss v2 no longer picks one, and colorprofile's rules
+// differ from termenv's (it ignores CLICOLOR=0 and CI, and maps tmux and
+// COLORTERM=yes differently), so cmdio keeps asking termenv, which lipgloss v1
+// used, to keep colors where they were:
+//   - termenv's profile for w, read from the process environment. That is
+//     Ascii for CLICOLOR=0 or CI unless CLICOLOR_FORCE is set, and Ascii when
+//     termenv can't see a terminal, e.g. TERM unset on Linux and macOS;
+//   - raised from Ascii to basic ANSI when w is an MSYS2 pty pipe (no ConPTY;
+//     see conpty.go), which cmdio treats as a terminal but termenv can't
+//     recognize, unless CLICOLOR=0 asks for no color. termenv's CI check is
+//     not honored there: it only guesses that CI output isn't a terminal,
+//     and this one is.
+func colorDepth(w io.Writer) colorprofile.Profile {
+	return colorDepthFor(termenvEnviron{os.Environ()}, isTermenvTTY(w), isMSYSPipe(w))
+}
+
+// colorDepthFor is colorDepth for an environment and the two facts it needs
+// about the writer, so tests can vary them.
+func colorDepthFor(environ termenv.Environ, tty, msysPipe bool) colorprofile.Profile {
+	// termenv's terminal check treats CI as "not a terminal" (termenv
+	// v0.16.0 termenv.go:32). WithTTY skips that check, so apply it here.
+	if environ.Getenv("CI") != "" {
+		tty = false
 	}
-	return &Renderer{lg: lg, profile: colorprofileFromTermenv(lg.ColorProfile())}, true
-}
-
-// NewStyle returns a style whose colors are rendered for this renderer.
-func (r *Renderer) NewStyle() lipgloss.Style {
-	return r.lg.NewStyle()
-}
-
-// Profile returns the renderer's color profile. On v1, styles minted from the
-// renderer already render at it; Writer and Render only act when color is off.
-func (r *Renderer) Profile() colorprofile.Profile {
-	return r.profile
-}
-
-// Writer wraps w so styled strings written to it match the renderer's profile.
-// When color is off it strips every escape sequence. When color is on it
-// passes output through unchanged: on v1, styles minted from this renderer
-// already render at its profile. (On v2 the writer always downsamples.)
-//
-// Stripping works per Write call, as colorprofile.Writer does, so an escape
-// sequence split across two writes leaks its tail. Write whole styled strings.
-func (r *Renderer) Writer(w io.Writer) io.Writer {
-	if r.profile != colorprofile.NoTTY {
-		return w
+	o := termenv.NewOutput(io.Discard, termenv.WithEnvironment(environ), termenv.WithTTY(tty))
+	p := colorprofileFromTermenv(o.EnvColorProfile())
+	if msysPipe && p == colorprofile.Ascii && !o.EnvNoColor() {
+		return colorprofile.ANSI
 	}
-	return &profileWriter{w: &colorprofile.Writer{Forward: w, Profile: r.profile}}
+	return p
 }
 
-// Render returns s as it reaches the target through Writer: escapes stripped
-// when color is off, unchanged otherwise.
-func (r *Renderer) Render(s string) string {
-	var b strings.Builder
-	_, _ = r.Writer(&b).Write([]byte(s))
-	return b.String()
+// isTermenvTTY reports whether termenv considers w a terminal: only an
+// *os.File for which isatty says so. MSYS2 pty pipes and fakes are not.
+func isTermenvTTY(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	return ok && isatty.IsTerminal(f.Fd()) //nolint:forbidigo // mirrors termenv's own check
 }
 
-// LightDark returns a function picking the light or dark variant of a color,
-// mirroring lipgloss v2's LightDark.
-func LightDark(isDark bool) func(light, dark Color) Color {
-	return func(light, dark Color) Color {
-		if isDark {
-			return dark
+// termenvEnviron adapts a KEY=VALUE list to termenv.Environ.
+type termenvEnviron struct{ vars []string }
+
+func (e termenvEnviron) Environ() []string { return e.vars }
+
+func (e termenvEnviron) Getenv(key string) string {
+	for _, kv := range e.vars {
+		if k, v, ok := strings.Cut(kv, "="); ok && k == key {
+			return v
 		}
-		return light
 	}
+	return ""
 }
 
-// HasDarkBackground reports whether the terminal on stdout has a dark
-// background, queried at most once. It defaults to true when stdout isn't a
-// terminal that can be queried, even if stderr is one.
-var HasDarkBackground = sync.OnceValue(lipgloss.HasDarkBackground)
-
-// Hyperlink wraps label in an OSC 8 terminal hyperlink to url. Callers decide
-// whether the target supports it; output written through a color-less
-// Renderer.Writer has the escape stripped.
-func Hyperlink(url, label string) string {
-	const osc8, st = "\x1b]8;;", "\x1b\\"
-	return osc8 + url + st + label + osc8 + st
-}
-
-// colorprofileFromTermenv maps the termenv profile lipgloss v1 renders with to
-// the colorprofile profile Renderer.Profile reports.
+// colorprofileFromTermenv maps a termenv profile to the colorprofile one
+// lipgloss v2 and Bubble Tea use.
 func colorprofileFromTermenv(p termenv.Profile) colorprofile.Profile {
 	switch p {
 	case termenv.TrueColor:
@@ -127,6 +110,47 @@ func colorprofileFromTermenv(p termenv.Profile) colorprofile.Profile {
 	default:
 		return colorprofile.Ascii
 	}
+}
+
+// NewStyle returns a style to be written through this renderer's Writer.
+func (r *Renderer) NewStyle() lipgloss.Style {
+	return lipgloss.NewStyle()
+}
+
+// Profile returns the color profile output is downsampled to.
+func (r *Renderer) Profile() colorprofile.Profile {
+	return r.profile
+}
+
+// Writer wraps w so styled strings written to it are downsampled to the
+// renderer's profile; when color is off it strips every escape sequence.
+//
+// Downsampling works per Write call, as colorprofile.Writer does, so an escape
+// sequence split across two writes leaks its tail. Write whole styled strings.
+func (r *Renderer) Writer(w io.Writer) io.Writer {
+	return &profileWriter{w: &colorprofile.Writer{Forward: w, Profile: r.profile}}
+}
+
+// Render downsamples an already-styled string to the renderer's profile.
+func (r *Renderer) Render(s string) string {
+	var b strings.Builder
+	_, _ = r.Writer(&b).Write([]byte(s))
+	return b.String()
+}
+
+// LightDark returns a function picking the light or dark variant of a color.
+// It is lipgloss.LightDark; callers go through cmdio so palettes don't depend
+// on the lipgloss major version.
+func LightDark(isDark bool) func(light, dark Color) Color {
+	return lipgloss.LightDark(isDark)
+}
+
+// Hyperlink wraps label in an OSC 8 terminal hyperlink to url. Callers decide
+// whether the target supports it; output written through a color-less
+// Renderer.Writer has the escape stripped.
+func Hyperlink(url, label string) string {
+	const osc8, st = "\x1b]8;;", "\x1b\\"
+	return osc8 + url + st + label + osc8 + st
 }
 
 // profileWriter reports the caller's byte count on success. colorprofile.Writer

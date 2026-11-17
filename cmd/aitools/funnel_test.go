@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/agents"

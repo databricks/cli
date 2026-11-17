@@ -7,8 +7,9 @@ import (
 	"os"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -29,14 +30,12 @@ type keysModel struct {
 func (m *keysModel) Init() tea.Cmd { return nil }
 
 func (m *keysModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	key, ok := msg.(tea.KeyMsg)
+	ev, ok := teainput.Decode(msg)
 	if !ok {
 		return m, nil
 	}
-	line := fmt.Sprintf("key=%q type=%d runes=%q alt=%t paste=%t",
-		key.String(), key.Type, string(key.Runes), key.Alt, key.Paste)
-	fmt.Fprint(m.out, line+m.eol)
-	if key.Type == tea.KeyCtrlC {
+	fmt.Fprint(m.out, describeKey(msg, ev)+m.eol)
+	if ev.Key == "ctrl+c" {
 		m.ctrlC++
 		if m.ctrlC >= keysExitCtrlC {
 			return m, tea.Quit
@@ -45,7 +44,17 @@ func (m *keysModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *keysModel) View() string { return "" }
+func (m *keysModel) View() tea.View { return tea.NewView("") }
+
+// describeKey prints the message bubbletea delivered next to the event the
+// models see, so a decoding difference shows on the same line.
+func describeKey(msg tea.Msg, ev teainput.Event) string {
+	if k, ok := msg.(tea.KeyPressMsg); ok {
+		return fmt.Sprintf("key=%q code=%U mod=%d text=%q decoded=%q text=%q",
+			k.String(), k.Code, k.Mod, k.Text, ev.Key, ev.Text)
+	}
+	return fmt.Sprintf("paste text=%q decoded=%q", ev.Text, ev.Key)
+}
 
 func newKeysCmd() *cobra.Command {
 	var (

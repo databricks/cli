@@ -1,10 +1,10 @@
 -- changes --
 ?25 reset
 ?2004 set
-?25 reset
-?2004 reset
+modifyOtherKeys 2
+kitty-keyboard push 1
+modifyOtherKeys 0
+kitty-keyboard pop 1
 ?25 set
-?1002 reset
-?1003 reset
-?1006 reset
+?2004 reset
 -- active at end --

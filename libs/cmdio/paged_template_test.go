@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
@@ -35,13 +35,10 @@ func (it *numberIterator) Next(_ context.Context) (int, error) {
 	return it.pos, nil
 }
 
-// ansiStripPattern is broader than ansiCSIPattern: tea emits non-SGR
-// sequences (cursor moves, erase-line, bracketed-paste toggles) that
-// the production width calculation doesn't need to strip.
-var ansiStripPattern = regexp.MustCompile("\x1b\\[[?]?[0-9;]*[A-Za-z]")
-
+// stripANSI removes every escape sequence: tea emits cursor moves,
+// erase-line, mode toggles and terminal queries besides SGR.
 func stripANSI(s string) string {
-	return ansiStripPattern.ReplaceAllString(s, "")
+	return ansi.Strip(s)
 }
 
 // screenLines returns the lines a terminal would show for s: tea redraws
@@ -220,7 +217,7 @@ func assertSameContentLines(t *testing.T, want, got string) {
 func nonEmptyLines(s string) []string {
 	var out []string
 	for l := range strings.SplitSeq(s, "\n") {
-		t := strings.TrimRight(l, " \r\t")
+		t := strings.TrimRight(ansi.Strip(l), " \r\t")
 		if t == "" {
 			continue
 		}

@@ -10,12 +10,13 @@ import (
 	"testing"
 	"text/template"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -642,7 +643,7 @@ func TestServiceSelectKeepsCursorInView(t *testing.T) {
 			form.Init()
 			form.Update(tea.WindowSizeMsg{Width: size.width, Height: size.height})
 			for range len(rows) {
-				form.Update(tea.KeyMsg{Type: tea.KeyDown})
+				form.Update(teainput.Press("down"))
 			}
 
 			view := form.View()
@@ -721,19 +722,19 @@ func TestPickerEscCancelsLikeCtrlC(t *testing.T) {
 	field := serviceSelectField("system.ai", []serviceRow{{service: mcp.Service{FullName: "system.ai.a", Leaf: "a"}}}, 0, &selected)
 	m := newMultiSelectPicker(field, "system.ai")
 	m.form.Init()
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	m.Update(teainput.Press("/"))
 	require.True(t, field.GetFiltering())
 
-	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m.Update(teainput.Press("esc"))
 	assert.False(t, m.cancelled, "the first Esc leaves the search")
 	assert.False(t, field.GetFiltering())
 
-	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m.Update(teainput.Press("esc"))
 	assert.True(t, m.cancelled, "Esc outside the search cancels the picker")
 
 	confirm := newPicker(huh.NewForm(huh.NewGroup(huh.NewConfirm().Title("Proceed?"))).WithShowHelp(false), nil)
 	confirm.form.Init()
-	confirm.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	confirm.Update(teainput.Press("esc"))
 	assert.True(t, confirm.cancelled, "Esc cancels a confirm")
 }
 
@@ -745,14 +746,14 @@ func TestPickerEnterSubmitsAndCtrlCInterrupts(t *testing.T) {
 	m := newMultiSelectPicker(field, "")
 	m.Init()
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m.Update(teainput.Press("space"))
+	_, cmd := m.Update(teainput.Press("enter"))
 	assert.Equal(t, tea.QuitMsg{}, quitMsg(m, cmd, 10))
 	assert.Equal(t, []int{0}, selected)
 
 	m = newMultiSelectPicker(huh.NewMultiSelect[int]().Options(huh.NewOption("a", 0)).Value(&selected), "")
 	m.Init()
-	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	_, cmd = m.Update(teainput.Press("ctrl+c"))
 	assert.Equal(t, tea.InterruptMsg{}, quitMsg(m, cmd, 10))
 }
 
@@ -786,14 +787,14 @@ func TestMultiSelectHelpFollowsSearch(t *testing.T) {
 	m := newMultiSelectPicker(field, "system.ai")
 	m.form.Init()
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	assert.Contains(t, m.View(), "system.ai: space to toggle, enter to confirm")
+	assert.Contains(t, m.View().Content, "system.ai: space to toggle, enter to confirm")
 
-	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
-	assert.Contains(t, m.View(), multiSelectSearchHelp)
+	m.Update(teainput.Press("/"))
+	assert.Contains(t, m.View().Content, multiSelectSearchHelp)
 
-	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m.Update(teainput.Press("enter"))
 	assert.False(t, field.GetFiltering())
-	assert.Contains(t, m.View(), "system.ai: space to toggle, enter to confirm")
+	assert.Contains(t, m.View().Content, "system.ai: space to toggle, enter to confirm")
 }
 
 // TestPromptProfileRowsShowHostAndMarker checks that every row of the profile picker shows its host, and that the
@@ -834,20 +835,20 @@ func TestProceedPickerEscCancelsLikeCtrlC(t *testing.T) {
 	m := newProceedPicker(&proceed)
 	m.Init()
 	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	assert.Contains(t, m.View(), "Proceed?")
-	assert.Contains(t, m.View(), "esc to cancel")
+	assert.Contains(t, m.View().Content, "Proceed?")
+	assert.Contains(t, m.View().Content, "esc to cancel")
 
-	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m.Update(teainput.Press("esc"))
 	assert.True(t, m.cancelled, "Esc cancels the confirm")
 
 	m = newProceedPicker(&proceed)
 	m.Init()
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	_, cmd := m.Update(teainput.Press("ctrl+c"))
 	assert.Equal(t, tea.InterruptMsg{}, quitMsg(m, cmd, 10), "Ctrl+C interrupts the confirm")
 
 	m = newProceedPicker(&proceed)
 	m.Init()
-	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd = m.Update(teainput.Press("enter"))
 	assert.Equal(t, tea.QuitMsg{}, quitMsg(m, cmd, 10), "Enter confirms the confirm")
 	assert.True(t, proceed, "the default answer is yes")
 }
@@ -861,13 +862,13 @@ func TestMCPAgentPickerCancelsOnEsc(t *testing.T) {
 	p := newMultiSelectPicker(field, "")
 	p.Init()
 	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	assert.Contains(t, p.View(), multiSelectHelp)
-	assert.NotContains(t, p.View(), "enter to install")
+	assert.Contains(t, p.View().Content, multiSelectHelp)
+	assert.NotContains(t, p.View().Content, "enter to install")
 
-	_, cmd := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	_, cmd := p.Update(teainput.Press("esc"))
 	assert.True(t, p.cancelled)
 	assert.Equal(t, tea.QuitMsg{}, cmd())
-	assert.Empty(t, p.View())
+	assert.Empty(t, p.View().Content)
 }
 
 // TestLocationAnswerEscStops checks that Esc at the location prompt stops listing, as an empty answer does, while Ctrl+C

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // SGR (Select Graphic Rendition) escapes; see

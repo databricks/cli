@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"unicode/utf8"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 )
 
@@ -246,7 +246,8 @@ func parsePromptTemplate(funcs template.FuncMap, name, src string) (*template.Te
 	return t, nil
 }
 
-func (m *selectModel) Init() tea.Cmd { return tea.HideCursor }
+// Init is a no-op: Bubble Tea hides the cursor while a program runs.
+func (m *selectModel) Init() tea.Cmd { return nil }
 
 func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	in, ok := teainput.Decode(msg)
@@ -359,7 +360,7 @@ func (m *selectModel) appendFilter(s string) {
 	m.recomputeMatches()
 }
 
-func (m *selectModel) View() string { return m.render() }
+func (m *selectModel) View() tea.View { return tea.NewView(m.render()) }
 
 func (m *selectModel) render() string {
 	var b strings.Builder

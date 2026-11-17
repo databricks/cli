@@ -19,6 +19,11 @@ var moduleToGitHub = map[string]string{
 	"gopkg.in/ini.v1":            "go-ini/ini",
 	"go.yaml.in/yaml/v4":         "yaml/go-yaml",
 	"dario.cat/mergo":            "darccio/mergo",
+
+	"charm.land/bubbles/v2":   "charmbracelet/bubbles",
+	"charm.land/bubbletea/v2": "charmbracelet/bubbletea",
+	"charm.land/huh/v2":       "charmbracelet/huh",
+	"charm.land/lipgloss/v2":  "charmbracelet/lipgloss",
 }
 
 // Modules excluded from NOTICE requirements (Databricks-owned).

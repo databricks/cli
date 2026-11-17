@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/clicompat"

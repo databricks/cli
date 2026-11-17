@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	bubblespinner "github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	bubblespinner "charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
@@ -38,6 +38,9 @@ type pagerModel[T any] struct {
 	iter    listing.Iterator[T]
 	pager   *templatePager
 	spinner bubblespinner.Model
+	// spinnerRenderer renders the spinner's style to the profile lipgloss v1
+	// used, which the program's profile (see teaColorProfile) may exceed.
+	spinnerRenderer *Renderer
 	// fetch is bound at construction with the caller's context captured
 	// so we don't have to stash ctx on the struct (tea.Cmd has no ctx
 	// parameter of its own). It takes the paging state as arguments and
@@ -78,10 +81,11 @@ func newPagerModel[T any](
 	m := &pagerModel[T]{
 		iter:     iter,
 		pager:    pager,
-		spinner:  newPagerSpinner(ctx, out),
+		spinner:  newPagerSpinner(),
 		pageSize: pageSize,
 		limit:    limit,
 	}
+	m.spinnerRenderer, _ = NewRenderer(ctx, out)
 	m.fetch = func(pageSize, limit, total int) tea.Cmd {
 		return func() tea.Msg { return m.doFetch(ctx, pageSize, limit, total) }
 	}
@@ -90,14 +94,13 @@ func newPagerModel[T any](
 
 // newPagerSpinner builds a spinner matching the one the cmdio package's
 // NewSpinner uses, so interactive feedback looks the same everywhere.
-func newPagerSpinner(ctx context.Context, out io.Writer) bubblespinner.Model {
+func newPagerSpinner() bubblespinner.Model {
 	s := bubblespinner.New()
 	s.Spinner = bubblespinner.Spinner{
 		Frames: []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"},
 		FPS:    time.Second / 5,
 	}
-	r, _ := NewRenderer(ctx, out)
-	s.Style = r.NewStyle().Foreground(lipgloss.Color("10"))
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	return s
 }
 
@@ -253,14 +256,14 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 	return m.fetch(m.pageSize, m.limit, m.total)
 }
 
-func (m *pagerModel[T]) View() string { return m.render() }
+func (m *pagerModel[T]) View() tea.View { return tea.NewView(m.render()) }
 
 func (m *pagerModel[T]) render() string {
 	switch {
 	case m.iterDone || m.err != nil:
 		return ""
 	case m.fetching:
-		return m.spinner.View() + " " + pagerLoadingText
+		return m.spinnerRenderer.Render(m.spinner.View()) + " " + pagerLoadingText
 	case m.drainAll || !m.hasPrinted:
 		return ""
 	default:

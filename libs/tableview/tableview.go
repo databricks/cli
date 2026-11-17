@@ -9,9 +9,9 @@ import (
 	"text/tabwriter"
 	"unicode/utf8"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -61,14 +61,14 @@ func RunWithOptions(ctx context.Context, w io.Writer, columns []string, rows [][
 		searchStyle:          r.NewStyle().Foreground(lipgloss.Color("229")),
 	}
 
-	teaOpts := []tea.ProgramOption{tea.WithOutput(w)}
+	teaOpts := []tea.ProgramOption{tea.WithOutput(w), tea.WithColorProfile(r.Profile())}
 	if opts.Input != nil {
 		teaOpts = append(teaOpts, tea.WithInput(opts.Input))
 	}
-	p := tea.NewProgram(m, teaOpts...)
 	if opts.Width > 0 && opts.Height > 0 {
-		go p.Send(tea.WindowSizeMsg{Width: opts.Width, Height: opts.Height})
+		teaOpts = append(teaOpts, tea.WithWindowSize(opts.Width, opts.Height))
 	}
+	p := cmdio.NewTeaProgram(m, opts.Input, teaOpts...)
 	_, err := p.Run()
 	return err
 }
@@ -212,13 +212,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reserve room for the sticky header above the viewport.
 		height := msg.Height - fh - len(m.header)
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width, height)
+			m.viewport = viewport.New(viewport.WithWidth(msg.Width), viewport.WithHeight(height))
 			m.viewport.SetHorizontalStep(horizontalScrollStep)
 			m.viewport.SetContent(m.renderContent())
 			m.ready = true
 		} else {
-			m.viewport.Width = msg.Width
-			m.viewport.Height = height
+			m.viewport.SetWidth(msg.Width)
+			m.viewport.SetHeight(height)
 		}
 		return m, nil
 	}
@@ -244,7 +244,7 @@ func (m model) updateNormal(msg tea.Msg, key string) (tea.Model, tea.Cmd) {
 	case "/":
 		m.searching = true
 		m.searchInput = ""
-		m.viewport.Height--
+		m.viewport.SetHeight(m.viewport.Height() - 1)
 		return m, nil
 	case "n":
 		if len(m.matchLines) > 0 {
@@ -269,10 +269,10 @@ func (m model) updateNormal(msg tea.Msg, key string) (tea.Model, tea.Cmd) {
 		m.moveCursor(1)
 		return m, nil
 	case "pgup", "b":
-		m.moveCursor(-m.viewport.Height)
+		m.moveCursor(-m.viewport.Height())
 		return m, nil
 	case "pgdown", "f", "space":
-		m.moveCursor(m.viewport.Height)
+		m.moveCursor(m.viewport.Height())
 		return m, nil
 	case "g":
 		m.cursor = 0
@@ -303,12 +303,12 @@ func (m *model) moveCursor(delta int) {
 
 // scrollToCursor ensures the cursor line is visible in the viewport.
 func (m *model) scrollToCursor() {
-	top := m.viewport.YOffset
-	bottom := top + m.viewport.Height - 1
+	top := m.viewport.YOffset()
+	bottom := top + m.viewport.Height() - 1
 	if m.cursor < top {
 		m.viewport.SetYOffset(m.cursor)
 	} else if m.cursor > bottom {
-		m.viewport.SetYOffset(m.cursor - m.viewport.Height + 1)
+		m.viewport.SetYOffset(m.cursor - m.viewport.Height() + 1)
 	}
 }
 
@@ -319,7 +319,7 @@ func (m model) updateSearch(in teainput.Event) (tea.Model, tea.Cmd) {
 		m.searchQuery = m.searchInput
 		m.matchLines = findMatches(m.lines, m.searchQuery)
 		m.matchIdx = 0
-		m.viewport.Height++
+		m.viewport.SetHeight(m.viewport.Height() + 1)
 		// Move cursor to first match and re-render.
 		if len(m.matchLines) > 0 {
 			m.cursor = m.matchLines[0]
@@ -332,7 +332,7 @@ func (m model) updateSearch(in teainput.Event) (tea.Model, tea.Cmd) {
 	case "esc", "ctrl+c":
 		m.searching = false
 		m.searchInput = ""
-		m.viewport.Height++
+		m.viewport.SetHeight(m.viewport.Height() + 1)
 		return m, nil
 	case "backspace":
 		if _, size := utf8.DecodeLastRuneInString(m.searchInput); size > 0 {
@@ -346,7 +346,7 @@ func (m model) updateSearch(in teainput.Event) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m model) View() string { return m.render() }
+func (m model) View() tea.View { return tea.NewView(m.render()) }
 
 func (m model) render() string {
 	if !m.ready {

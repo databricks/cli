@@ -5,21 +5,37 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
-// v1KeyTypes maps the keystroke names used by [Event.Key] to v1 key types.
-var v1KeyTypes = func() map[string]tea.KeyType {
-	m := map[string]tea.KeyType{}
-	// v1 key types are control codes (0..127) and negative special keys.
-	for k := tea.KeyType(-128); k < 128; k++ {
-		if name := k.String(); name != "" && name != " " {
-			m[name] = k
-		}
-	}
-	m["space"] = tea.KeySpace
-	return m
-}()
+// namedKeys maps the non-printable keystroke names used by [Event.Key] to key
+// codes.
+var namedKeys = map[string]rune{
+	"enter":     tea.KeyEnter,
+	"tab":       tea.KeyTab,
+	"backspace": tea.KeyBackspace,
+	"esc":       tea.KeyEscape,
+	"space":     tea.KeySpace,
+	"delete":    tea.KeyDelete,
+	"insert":    tea.KeyInsert,
+	"up":        tea.KeyUp,
+	"down":      tea.KeyDown,
+	"left":      tea.KeyLeft,
+	"right":     tea.KeyRight,
+	"home":      tea.KeyHome,
+	"end":       tea.KeyEnd,
+	"pgup":      tea.KeyPgUp,
+	"pgdown":    tea.KeyPgDown,
+}
+
+var modifierPrefixes = []struct {
+	prefix string
+	mod    tea.KeyMod
+}{
+	{"ctrl+", tea.ModCtrl},
+	{"alt+", tea.ModAlt},
+	{"shift+", tea.ModShift},
+}
 
 // Press builds the message for a key press, named like [Event.Key]
 // (e.g. "enter", "ctrl+c", "alt+backspace", "space", "q"). It exists so model
@@ -27,30 +43,44 @@ var v1KeyTypes = func() map[string]tea.KeyType {
 // that is neither a known key nor a single rune, so a misspelled key fails
 // the test instead of being typed as text.
 func Press(key string) tea.Msg {
-	alt := false
-	if rest, ok := strings.CutPrefix(key, "alt+"); ok && rest != "" {
-		alt, key = true, rest
-	}
-	if t, ok := v1KeyTypes[key]; ok {
-		msg := tea.KeyMsg{Type: t, Alt: alt}
-		if t == tea.KeySpace {
-			msg.Runes = []rune{' '}
+	var mod tea.KeyMod
+	for _, p := range modifierPrefixes {
+		if rest, ok := strings.CutPrefix(key, p.prefix); ok && rest != "" {
+			mod |= p.mod
+			key = rest
 		}
-		return msg
 	}
+
+	if code, ok := namedKeys[key]; ok {
+		k := tea.Key{Code: code, Mod: mod}
+		if code == tea.KeySpace && mod == 0 {
+			k.Text = " "
+		}
+		return tea.KeyPressMsg(k)
+	}
+
 	if utf8.RuneCountInString(key) != 1 {
 		panic(fmt.Sprintf("teainput.Press: unknown key %q", key))
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key), Alt: alt}
+	r, _ := utf8.DecodeRuneInString(key)
+	k := tea.Key{Code: r, Mod: mod}
+	if mod&^tea.ModShift == 0 {
+		k.Text = key
+	}
+	return tea.KeyPressMsg(k)
 }
 
 // Type builds the message for typing text as a single event, like a burst of
 // fast typing.
 func Type(text string) tea.Msg {
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(text)}
+	r, _ := utf8.DecodeRuneInString(text)
+	if utf8.RuneCountInString(text) > 1 {
+		r = tea.KeyExtended
+	}
+	return tea.KeyPressMsg(tea.Key{Code: r, Text: text})
 }
 
 // Paste builds the message for a bracketed paste of text.
 func Paste(text string) tea.Msg {
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(text), Paste: true}
+	return tea.PasteMsg{Content: text}
 }
