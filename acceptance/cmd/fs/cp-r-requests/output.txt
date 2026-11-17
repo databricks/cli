@@ -1,0 +1,33 @@
+
+>>> [CLI] fs cp -r localdir dbfs:/Volumes/main/default/fs-cp-r-requests/dst
+localdir/a.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/a.txt
+localdir/b.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/b.txt
+localdir/sub/c.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/sub/c.txt
+
+=== Recursive copy: one mkdir per directory, one upload per file, no per-file directory check
+
+>>> print_requests.py --sort //api/2.0/fs/
+{"method":"PUT","path":"/api/2.0/fs/directories/Volumes/main/default/fs-cp-r-requests/dst"}
+{"method":"PUT","path":"/api/2.0/fs/directories/Volumes/main/default/fs-cp-r-requests/dst/sub"}
+{"method":"PUT","path":"/api/2.0/fs/files/Volumes/main/default/fs-cp-r-requests/dst/a.txt"}
+{"method":"PUT","path":"/api/2.0/fs/files/Volumes/main/default/fs-cp-r-requests/dst/b.txt"}
+{"method":"PUT","path":"/api/2.0/fs/files/Volumes/main/default/fs-cp-r-requests/dst/sub/c.txt"}
+
+=== Single-file copy still checks the parent directory
+
+>>> [CLI] fs cp localdir/a.txt dbfs:/Volumes/main/default/fs-cp-r-requests/dst/sub/single.txt
+localdir/a.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/sub/single.txt
+
+>>> print_requests.py --sort //api/2.0/fs/
+{"method":"HEAD","path":"/api/2.0/fs/directories/Volumes/main/default/fs-cp-r-requests/dst/sub"}
+{"method":"HEAD","path":"/api/2.0/fs/directories/Volumes/main/default/fs-cp-r-requests/dst/sub/single.txt"}
+{"method":"HEAD","path":"/api/2.0/fs/files/Volumes/main/default/fs-cp-r-requests/dst/sub/single.txt"}
+{"method":"PUT","path":"/api/2.0/fs/files/Volumes/main/default/fs-cp-r-requests/dst/sub/single.txt"}
+
+=== Copied files
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-r-requests/dst/a.txt
+one
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-r-requests/dst/sub/c.txt
+three

@@ -1,0 +1,25 @@
+# fs cp -r creates each target directory during the walk, so it should not
+# check the parent directory again before writing each file.
+mkdir -p localdir/sub
+echo one > localdir/a.txt
+echo two > localdir/b.txt
+echo three > localdir/sub/c.txt
+
+cleanup() {
+  rm -rf localdir "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+TARGET="dbfs:/Volumes/main/default/fs-cp-r-requests/dst"
+trace $CLI fs cp -r localdir ${TARGET} 2>&1 | sort
+
+title "Recursive copy: one mkdir per directory, one upload per file, no per-file directory check"
+trace print_requests.py --sort //api/2.0/fs/ | jq -c '{method, path}'
+
+title "Single-file copy still checks the parent directory"
+trace $CLI fs cp localdir/a.txt ${TARGET}/sub/single.txt
+trace print_requests.py --sort //api/2.0/fs/ | jq -c '{method, path}'
+
+title "Copied files"
+trace $CLI fs cat ${TARGET}/a.txt
+trace $CLI fs cat ${TARGET}/sub/c.txt

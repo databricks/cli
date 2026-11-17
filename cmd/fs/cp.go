@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -102,7 +103,9 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			return c.cpFileToFile(ctx, sourcePath, targetPath)
+			// The walk has already created the target directory for this file,
+			// so tell the filer not to check that it exists before every write.
+			return c.cpFileToFile(ctx, sourcePath, targetPath, filer.CreateParentDirectories)
 		})
 		return nil
 	})
@@ -121,7 +124,9 @@ func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) er
 	return c.cpFileToFile(ctx, sourcePath, targetPath)
 }
 
-func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) error {
+// cpFileToFile copies a single file. Callers pass extraModes to add write modes
+// beyond the one implied by --overwrite.
+func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string, extraModes ...filer.WriteMode) error {
 	// Get reader for file at source path
 	r, err := c.sourceFiler.Read(ctx, sourcePath)
 	if err != nil {
@@ -140,12 +145,11 @@ func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) 
 		closeProgress = stop
 	}
 
-	var writeErr error
+	modes := slices.Clone(extraModes)
 	if c.overwrite {
-		writeErr = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
-	} else {
-		writeErr = c.targetFiler.Write(ctx, targetPath, r)
+		modes = append(modes, filer.OverwriteIfExists)
 	}
+	writeErr := c.targetFiler.Write(ctx, targetPath, r, modes...)
 	closeProgress()
 
 	// skip if file already exists
