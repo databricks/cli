@@ -44,24 +44,18 @@ func TestCapabilities_SupportsInteractive(t *testing.T) {
 }
 
 func TestCapabilities_SupportsPrompt(t *testing.T) {
-	tty := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}
-	with := func(f func(*Capabilities)) Capabilities {
-		c := tty
-		f(&c)
-		return c
-	}
 	tests := []struct {
 		name     string
 		caps     Capabilities
 		expected bool
 	}{
-		{"full TTY support", tty, true},
-		{"MSYS2 pipe stdin blocks prompts", with(func(c *Capabilities) { c.stdinIsMSYSPipe = true }), false},
-		{"stdin not TTY", with(func(c *Capabilities) { c.stdinIsTTY = false }), false},
-		{"stdout not TTY (prompts write to stderr, so this is OK)", with(func(c *Capabilities) { c.stdoutIsTTY = false }), true},
-		{"stderr not TTY", with(func(c *Capabilities) { c.stderrIsTTY = false }), false},
-		{"NO_COLOR still prompts", with(func(c *Capabilities) { c.noColor = true }), true},
-		{"TERM=dumb", with(func(c *Capabilities) { c.dumb = true }), false},
+		{"full TTY support", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}, true},
+		{"MSYS2 pipe stdin blocks prompts", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, stdinIsMSYSPipe: true}, false},
+		{"stdin not TTY", Capabilities{stdoutIsTTY: true, stderrIsTTY: true}, false},
+		{"stdout not TTY (prompts write to stderr, so this is OK)", Capabilities{stdinIsTTY: true, stderrIsTTY: true}, true},
+		{"stderr not TTY", Capabilities{stdinIsTTY: true, stdoutIsTTY: true}, false},
+		{"NO_COLOR still prompts", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, true},
+		{"TERM=dumb", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, dumb: true}, false},
 		{"no TTY support at all", Capabilities{}, false},
 	}
 
@@ -73,20 +67,22 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 }
 
 func TestCapabilities_SupportsPager(t *testing.T) {
-	tty := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}
-	assert.True(t, tty.SupportsPager())
+	tests := []struct {
+		name     string
+		caps     Capabilities
+		expected bool
+	}{
+		{"full TTY support", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}, true},
+		{"NO_COLOR keeps the pager (uncolored)", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, true},
+		{"TERM=dumb can't redraw", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, dumb: true}, false},
+		{"stdout redirected", Capabilities{stdinIsTTY: true, stderrIsTTY: true}, false},
+	}
 
-	c := tty
-	c.noColor = true
-	assert.True(t, c.SupportsPager(), "NO_COLOR keeps the pager (uncolored)")
-
-	c = tty
-	c.dumb = true
-	assert.False(t, c.SupportsPager(), "TERM=dumb can't redraw")
-
-	c = tty
-	c.stdoutIsTTY = false
-	assert.False(t, c.SupportsPager(), "stdout redirected")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.caps.SupportsPager())
+		})
+	}
 }
 
 func TestCapabilities_SupportsColor(t *testing.T) {
@@ -111,17 +107,22 @@ func TestCapabilities_SupportsColor(t *testing.T) {
 }
 
 func TestCapabilities_SupportsStreamColor(t *testing.T) {
-	c := Capabilities{stdoutIsTTY: true, stderrIsTTY: true}
-	assert.True(t, c.SupportsStdoutColor())
-	assert.True(t, c.SupportsStderrColor())
+	tests := []struct {
+		name           string
+		caps           Capabilities
+		stdout, stderr bool
+	}{
+		{"both TTYs", Capabilities{stdoutIsTTY: true, stderrIsTTY: true}, true, true},
+		{"NO_COLOR", Capabilities{stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, false, false},
+		{"only stdout TTY", Capabilities{stdoutIsTTY: true}, true, false},
+	}
 
-	c.noColor = true
-	assert.False(t, c.SupportsStdoutColor())
-	assert.False(t, c.SupportsStderrColor())
-
-	c = Capabilities{stdoutIsTTY: true}
-	assert.True(t, c.SupportsStdoutColor())
-	assert.False(t, c.SupportsStderrColor())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.stdout, tt.caps.SupportsStdoutColor())
+			assert.Equal(t, tt.stderr, tt.caps.SupportsStderrColor())
+		})
+	}
 }
 
 func TestCapabilities_InteractiveMode(t *testing.T) {

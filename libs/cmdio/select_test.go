@@ -30,11 +30,11 @@ func TestRunSelectNoColor(t *testing.T) {
 		return err
 	}
 
-	assert.Contains(t, runWithKeys(t, false, "\r", run), ansiBlue)
+	assert.Contains(t, runWithKeys(t, false, "Pick", "\r", run), ansiBlue)
 
 	// NO_COLOR: the prompt still runs, without the blue "?", but the cursor
 	// row keeps its bold and underline.
-	out := runWithKeys(t, true, "\r", run)
+	out := runWithKeys(t, true, "Pick", "\r", run)
 	assert.NotContains(t, out, ansiBlue)
 	assert.Contains(t, out, ansiBold)
 	assert.Contains(t, out, ansiUnderline)

@@ -139,18 +139,6 @@ func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
 	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
 }
 
-func TestNewRendererKeepsTermenvProfile(t *testing.T) {
-	ctx := ttyContext(t)
-
-	// cmdio says a FakeTTY supports color, but it isn't an MSYS2 pty pipe, so
-	// termenv's own decision (Ascii: it can't see a terminal) stands. The same
-	// holds for CLICOLOR=0 or CI on a real terminal. The MSYS2 pipe case is
-	// covered in conpty_windows_test.go.
-	r, color := cmdio.NewRenderer(ctx, cmdio.FakeTTY(&bytes.Buffer{}))
-	assert.True(t, color)
-	assert.Equal(t, termenv.Ascii, r.ColorProfile())
-}
-
 func TestRenderFuncMap(t *testing.T) {
 	ctx := ttyContext(t)
 	fm := cmdio.RenderFuncMap(ctx)
