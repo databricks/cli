@@ -31,10 +31,11 @@ const (
 	// the output and decides when to prompt: only in an attended interactive
 	// session, at most once per session, and once ever per plugin for that
 	// Claude Code user config (so in practice once per machine), whatever the
-	// answer. It is still throttled with the text hint: Claude Code strips it
-	// only from the tool output, so in a `2>&1 | jq` pipeline the next process
-	// reads it raw, and after a "No" repeating it can't lead to an install. The
-	// format is fixed by Claude Code: https://code.claude.com/docs/en/plugins/cli-hints
+	// answer. It is still throttled per session (see nativeHintThrottle): Claude
+	// Code strips it only from the tool output, so in a `2>&1 | jq` pipeline the
+	// next process reads it raw, and after a "No" repeating it can't lead to an
+	// install. The format is fixed by Claude Code:
+	// https://code.claude.com/docs/en/plugins/cli-hints
 	claudeNativeHint = `<claude-code-hint v="1" type="plugin" value="` + databricksPluginID + "@" + claudeOfficialMarketplace + `" />`
 
 	// claudeChildSessionEnv is set only in subprocesses Claude Code itself
@@ -66,20 +67,44 @@ const (
 	selfExecEnv = "DATABRICKS_CLI_SELF_EXEC"
 
 	// claudeSessionEnv is Claude Code's per-session identifier. It keys the
-	// per-session throttle shared by the text and native lines (at most one
-	// hint per hintSessionTTL per session); when unset (older Claude) the hint
-	// degrades to per-command.
+	// per-session throttles of the text and native lines; when unset (older
+	// Claude) both lines degrade to per-command.
 	claudeSessionEnv = "CLAUDE_CODE_SESSION_ID"
-
-	// hintCacheComponent names the cache bucket holding "already hinted"
-	// markers (per session, or per agent on this machine).
-	hintCacheComponent = "aitools-hint"
 )
 
-// hintSessionTTL is how long a session's "already hinted" marker lives. Within
-// that window a session is hinted at most once; after it expires the hint may
-// fire again for the same session.
-const hintSessionTTL = time.Hour
+// hintThrottle is an "already hinted" marker in the file cache, per throttle
+// key (see agentHint.throttleKey): a line it guards prints at most once per
+// ttl per key.
+type hintThrottle struct {
+	// component names the cache bucket holding the markers. Each throttle needs
+	// its own: a cache expires every file in its bucket by its own ttl.
+	component string
+	ttl       time.Duration
+}
+
+var (
+	// textHintThrottle throttles the model-facing text hint, which the model
+	// reads in every tool output it lands in.
+	textHintThrottle = hintThrottle{component: "aitools-hint", ttl: time.Hour}
+
+	// nativeHintThrottle throttles the agent-native line on its own, shorter
+	// clock. The session id doesn't tell the main loop from a subagent or a
+	// hook (a subagent's commands carry the parent's session id and the
+	// child-session marker), and Claude Code strips the line there without
+	// prompting; with the text hint's hour, a subagent making the session's
+	// first call would hide the dialog from the main loop for that hour.
+	// Claude Code prompts at most once per session anyway, so repeating the
+	// line costs only a raw tag in a `2>&1` pipeline every ten minutes, and a
+	// session waits at most that long for the dialog.
+	nativeHintThrottle = hintThrottle{component: "aitools-native-hint", ttl: 10 * time.Minute}
+
+	// nativeEventThrottle keeps the native line's hint-shown event on the text
+	// hint's clock, so a native-only repeat triggers no telemetry upload at
+	// exit and native-event counts don't grow with session length. Its marker
+	// holds whether that event was logged in the current text window: each
+	// text print starts a window and rewrites it.
+	nativeEventThrottle = hintThrottle{component: "aitools-native-hint-event", ttl: textHintThrottle.ttl}
+)
 
 // agentHint describes how one calling agent is nudged to install the
 // Databricks AI tooling.
@@ -89,16 +114,16 @@ type agentHint struct {
 	installed func(ctx context.Context) bool
 
 	// text is the model-facing recommendation, printed at most once per
-	// hintSessionTTL per session (see sessionEnv), or per agent on this machine
-	// when there is no session id (see fallbackKey), together with native.
+	// textHintThrottle per session (see sessionEnv), or per agent on this
+	// machine when there is no session id (see fallbackKey).
 	text string
 
 	// textKind tags the hint-shown event logged when text prints.
 	textKind protos.AitoolsHintKind
 
 	// sessionEnv names the env var carrying the agent's session id, which keys
-	// the throttle for both lines. When it is empty or unset at runtime,
-	// fallbackKey keys the throttle instead.
+	// the throttles of both lines. When it is empty or unset at runtime,
+	// fallbackKey keys them instead.
 	sessionEnv string
 
 	// sessionKeyPrefix namespaces the session id in the throttle key, so one
@@ -108,7 +133,7 @@ type agentHint struct {
 	sessionKeyPrefix string
 
 	// fallbackKey keys the throttle when there is no session id, so the hint
-	// prints at most once per hintSessionTTL on this machine. Empty means no
+	// prints at most once per textHintThrottle on this machine. Empty means no
 	// throttle without a session id (Claude Code).
 	fallbackKey string
 
@@ -119,8 +144,9 @@ type agentHint struct {
 	durableThrottle bool
 
 	// native returns a line the agent itself acts on (for Claude Code, its
-	// plugin install prompt), or "" when none applies to this invocation. It
-	// shares the text's per-session throttle. Nil for agents without one.
+	// plugin install prompt), or "" when none applies to this invocation. It is
+	// throttled per session by nativeHintThrottle, only when it prints. Nil for
+	// agents without one (all but Claude Code).
 	native func(ctx context.Context) string
 
 	// nativeKind tags the hint-shown event logged when the native line prints.
@@ -170,9 +196,10 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // token` and `auth docker token` credential helpers, a CLI process the CLI
 // started itself, when there is no output stream, and once the tooling is
 // present.
-// Both lines, the agent-native one (if any) and the model-facing text, and
-// their hint-shown events are throttled together per session, or per agent on
-// this machine for agents without a session id (fallbackKey).
+// The agent-native line (if any) and the model-facing text are throttled
+// independently, per session or, for agents without a session id, per agent
+// on this machine (fallbackKey). Both hint-shown events follow the text's
+// clock (see nativeEventThrottle).
 // pluginRecorded reads the CLI install record for agents whose plugin has no
 // manifest reader here (see Agent.DatabricksTooling).
 // Best-effort: it never fails the command. Besides the stderr lines, it logs a
@@ -195,34 +222,52 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if !cmdio.HasIO(ctx) {
 		return
 	}
-	// Check the throttle before the filesystem probe, so a throttled session
-	// skips the plugin/skills detection. The marker is written only once a hint
-	// is due, so an already-installed environment never burns it.
+	// Check the throttles before the filesystem probe, so a throttled session
+	// skips the plugin/skills detection. A marker is written only once its
+	// line is due, so an already-installed environment never burns one, and
+	// neither does a native line withheld from this invocation.
 	key := hint.throttleKey(ctx)
-	if alreadyHintedThisSession(ctx, key) {
+	native := hint.nativeLine(ctx)
+	if native != "" && nativeHintThrottle.seen(ctx, key) {
+		native = ""
+	}
+	textDue := !textHintThrottle.seen(ctx, key)
+	if native == "" && !textDue {
 		return
 	}
 	if hint.installed(ctx) {
 		return
 	}
-	if !hint.claim(ctx, key) {
+	// Only agents without a native line have a durable throttle, so a failed
+	// claim leaves nothing to print.
+	if textDue && !hint.claim(ctx, key) {
 		return
 	}
-	if native := hint.nativeLine(ctx); native != "" {
+	if native != "" {
 		cmdio.LogString(ctx, native)
-		logHintShown(ctx, hint.nativeKind)
+		nativeHintThrottle.record(ctx, key)
+		// A text print starts a new text window, in which this is the first
+		// native print.
+		if textDue || !nativeEventThrottle.seen(ctx, key) {
+			logHintShown(ctx, hint.nativeKind)
+			nativeEventThrottle.set(ctx, key, true)
+		}
+	} else if textDue && hint.native != nil {
+		nativeEventThrottle.set(ctx, key, false)
 	}
-	cmdio.LogString(ctx, hint.text)
-	logHintShown(ctx, hint.textKind)
+	if textDue {
+		cmdio.LogString(ctx, hint.text)
+		logHintShown(ctx, hint.textKind)
+	}
 }
 
-// claim records the throttle key and reports whether the hint may print. A
-// durable throttle allows it only once the marker has persisted.
+// claim records the text's throttle key and reports whether the text may
+// print. A durable throttle allows it only once the marker has persisted.
 func (h *agentHint) claim(ctx context.Context, key string) bool {
 	if h.durableThrottle {
 		return claimHintMarker(ctx, key)
 	}
-	recordSessionHint(ctx, key)
+	textHintThrottle.record(ctx, key)
 	return true
 }
 
@@ -343,26 +388,34 @@ func (h *agentHint) throttleKey(ctx context.Context) string {
 	return h.fallbackKey
 }
 
-// alreadyHintedThisSession reports whether the throttle key was hinted within
-// the last hintSessionTTL. With no key it returns false so the hint fires per
-// command.
-func alreadyHintedThisSession(ctx context.Context, key string) bool {
+// markers returns the file cache holding t's markers.
+func (t hintThrottle) markers(ctx context.Context) *cache.Cache {
+	return cache.NewCache(ctx, t.component, t.ttl, nil)
+}
+
+// seen reports whether key was marked true within the last t.ttl. With no key
+// it returns false so the line prints per command.
+func (t hintThrottle) seen(ctx context.Context, key string) bool {
 	if key == "" {
 		return false
 	}
-	c := cache.NewCache(ctx, hintCacheComponent, hintSessionTTL, nil)
-	_, seen := cache.Get[bool](ctx, c, key)
-	return seen
+	marked, ok := cache.Get[bool](ctx, t.markers(ctx), key)
+	return ok && marked
 }
 
-// recordSessionHint marks the throttle key as hinted, so later commands stay
-// quiet until the marker expires (hintSessionTTL). No-op when the key is "".
-func recordSessionHint(ctx context.Context, key string) {
+// record marks key, so later commands skip the line until the marker expires
+// (t.ttl). No-op when the key is "".
+func (t hintThrottle) record(ctx context.Context, key string) {
+	t.set(ctx, key, true)
+}
+
+// set writes key's marker, restarting its ttl; seen reports it only when
+// marked is true. No-op when the key is "".
+func (t hintThrottle) set(ctx context.Context, key string, marked bool) {
 	if key == "" {
 		return
 	}
-	c := cache.NewCache(ctx, hintCacheComponent, hintSessionTTL, nil)
-	cache.Put(ctx, c, key, true)
+	cache.Put(ctx, t.markers(ctx), key, marked)
 }
 
 // sessionID returns the value of sessionEnv, or "" when the agent has no

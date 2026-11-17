@@ -56,7 +56,7 @@ func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 // caching turned off (DATABRICKS_CACHE_ENABLED=false): nothing persists, so
 // these agents get no hint.
 func claimHintMarker(ctx context.Context, key string) bool {
-	c := cache.NewCache(ctx, hintCacheComponent, hintSessionTTL, nil)
+	c := textHintThrottle.markers(ctx)
 	cache.Put(ctx, c, key, true)
 	_, ok := cache.Get[bool](ctx, c, key)
 	return ok
