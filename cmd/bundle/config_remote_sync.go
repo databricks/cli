@@ -181,9 +181,8 @@ Examples:
 		})
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
-			// Failing to select the target returns before the auth config is set.
-			cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), cmd.Flag("profile").Value.String()))
 		}
+		cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), cmd.Flag("profile").Value.String()))
 
 		// The diagnostics are already on stderr; record the first one instead of the sentinel.
 		if errors.Is(err, root.ErrAlreadyPrinted) {

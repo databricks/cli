@@ -1,6 +1,7 @@
 package configsync
 
 import (
+	"cmp"
 	"context"
 	"slices"
 	"strings"
@@ -287,16 +288,14 @@ func (s *Stats) CollectStateIDs(typeAndIDs []string) {
 }
 
 // WithProfileAuth sets the auth config from an explicitly selected profile when
-// loading the target failed before the bundle set its own, so the failure can
-// still be reported. Without the target its workspace is unknown, so nothing is
-// set without a profile or when the profile does not resolve.
+// loading the bundle or its target failed before the bundle set its own, so the
+// failure can still be reported. Without the target its workspace is unknown, so
+// nothing is set without a profile or when the profile does not resolve.
 func WithProfileAuth(ctx context.Context, profile string) context.Context {
 	if cmdctx.HasConfigUsed(ctx) {
 		return ctx
 	}
-	if profile == "" {
-		profile = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
-	}
+	profile = cmp.Or(profile, env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"))
 	if profile == "" {
 		return ctx
 	}
