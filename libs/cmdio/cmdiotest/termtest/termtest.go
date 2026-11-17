@@ -117,9 +117,15 @@ const (
 	// Other Key* constants are single non-Esc bytes or complete "\x1b[..."
 	// CSI sequences, whose terminator commits the parse before any follow-up
 	// byte matters.
-	// 20 ms matches the ESC-disambiguation timeouts neovim and tmux use
-	// for the same problem.
-	escDisambiguationDelay = 20 * time.Millisecond
+	// bubbletea v2 additionally holds a lone Esc until ultraviolet's
+	// EscTimeout expires, and that timer starts when the reader receives the
+	// byte, not when Type writes it. bubbletea leaves the timeout at
+	// ultraviolet's DefaultEscTimeout of 50 ms and doesn't expose it
+	// (charm.land/bubbletea/v2 v2.1.1 tty.go:75; ultraviolet
+	// terminal_reader.go:27,49). 100 ms, twice that, leaves room for a
+	// reader running late under CI load. v1 has no such timeout, so there it
+	// only needs to beat the next write.
+	escDisambiguationDelay = 100 * time.Millisecond
 
 	// settleQuiet is how long [Term.Settle] waits for output to stop. A
 	// keystroke's redraw lands well within it.
@@ -325,7 +331,11 @@ func RunWith[T any](t *testing.T, opts Options, fn func(ctx context.Context) (T,
 		finished: make(chan struct{}),
 		term:     newEmulator(cmdio.TestTerminalWidth, screenRows(opts.ScreenRows)),
 	}
-	tt.term.mapNewline = opts.MapNewline
+	// MapNewline only turns LF mapping on: newEmulator already maps LF to CR LF
+	// off Windows, which bubbletea v2 relies on when its input is a pipe.
+	if opts.MapNewline {
+		tt.term.mapNewline = true
+	}
 	ctx := t.Context()
 	for k, v := range opts.Env {
 		ctx = env.Set(ctx, k, v) //nolint:fatcontext // one value per variable, set once before the run
