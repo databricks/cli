@@ -759,7 +759,8 @@ func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
 
 	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 	require.ErrorContains(t, err, "not inside the bundle")
-	assert.Contains(t, err.Error(), fmt.Sprintf("(%q)", filepath.Join(dir, "ray")))
+	assert.Contains(t, err.Error(), "("+quotedPath(filepath.Join(dir, "ray"))+")")
+	assert.Contains(t, err.Error(), "convert-to-dabs can package only code inside the bundle directory")
 	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
 	require.True(t, ok)
 	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
@@ -788,7 +789,7 @@ func TestConvertToDabsCodeOutsideBundleSkipsParentWithBundle(t *testing.T) {
 
 			_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 			require.ErrorContains(t, err, "not inside the bundle")
-			assert.Contains(t, err.Error(), fmt.Sprintf("%q already holds a bundle (%s)", dir, name))
+			assert.Contains(t, err.Error(), fmt.Sprintf("%s already holds a bundle (%s)", quotedPath(dir), name))
 			assert.NotContains(t, err.Error(), "to write the bundle to the code directory's parent")
 		})
 	}
@@ -806,6 +807,14 @@ func TestConvertToDabsCodeOutsideBundleQuotesOutputDir(t *testing.T) {
 	require.True(t, ok)
 	require.NotEqual(t, dir, quoted)
 	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
+}
+
+// Paths in the error keep their native separators, single backslashes on Windows,
+// and fall back to Go quoting when the shell can't quote them.
+func TestQuotedPath(t *testing.T) {
+	plain := filepath.Join("work", "ray")
+	assert.Equal(t, plain, quotedPath(plain))
+	assert.Equal(t, `"bad\nname"`, quotedPath("bad\nname"))
 }
 
 // A git-pinned snapshot is archived from the bundle root, and a parent of the code

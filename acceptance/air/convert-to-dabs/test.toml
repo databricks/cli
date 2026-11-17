@@ -3,6 +3,6 @@
 Ignore = ["databricks.yml", "generated_artifacts", "generated-b300", "generated-docker"]
 
 [[Repls]]
-# Fix the quoted code directory path for Windows, where %q doubles its backslashes.
-Old = 'TEST_TMP_DIR]\\\\src'
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TEST_TMP_DIR]\\src'
 New = 'TEST_TMP_DIR]/src'

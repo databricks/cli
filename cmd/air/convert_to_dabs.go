@@ -283,14 +283,25 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) 
 	if snap.Git == nil {
 		parent := filepath.Dir(root)
 		if name := bundleFileIn(parent); name != "" {
-			remedy = fmt.Sprintf("%q already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", parent, name, remedy)
+			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
 		} else if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok {
 			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", quoted, remedy)
 		} else {
 			remedy = "pass --output-dir with the code directory's parent, or " + remedy
 		}
 	}
-	return fmt.Errorf("code_source root_path %q (%q) is not inside the bundle directory %q, and the bundle convert-to-dabs writes packages only code inside its directory; %s", snap.RootPath, root, bundleDir, remedy)
+	return fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and convert-to-dabs can package only code inside the bundle directory; %s", snap.RootPath, quotedPath(root), bundleDir, remedy)
+}
+
+// quotedPath quotes a local path the way the --output-dir suggestion does, so a
+// Windows path keeps single backslashes instead of the doubled ones %q prints. It
+// falls back to %q for a path the user's shell can't quote, such as one with
+// control characters.
+func quotedPath(path string) string {
+	if quoted, ok := shellquote.Arg(runtime.GOOS, path); ok {
+		return quoted
+	}
+	return fmt.Sprintf("%q", path)
 }
 
 // bundleFileIn returns the name of the bundle configuration file in dir, or "" when
