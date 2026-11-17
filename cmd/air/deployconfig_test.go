@@ -43,7 +43,7 @@ endpoint: support-agent
 compute:
   workload_type: GPU_SMALL
   workload_size: Small
-  scale_to_zero: true
+  scale_to_zero_enabled: true
 `
 
 func loadDeployConfigText(t *testing.T, text string, overrides ...string) (*deployConfig, error) {
@@ -212,7 +212,7 @@ func TestLoadDeployConfigOverride(t *testing.T) {
 
 func TestLoadDeployConfigRejectsUnknownOverride(t *testing.T) {
 	_, err := loadDeployConfigText(t, checkpointDeployConfig, "compute.accelerator_type=GPU_1xH100")
-	assert.ErrorContains(t, err, `invalid --override "compute.accelerator_type": "accelerator_type" is not a known field; available fields are: scale_to_zero, workload_size, workload_type`)
+	assert.ErrorContains(t, err, `invalid --override "compute.accelerator_type": "accelerator_type" is not a known field; available fields are: scale_to_zero_enabled, workload_size, workload_type`)
 }
 
 func TestLoadDeployConfigRejectsUnknownField(t *testing.T) {

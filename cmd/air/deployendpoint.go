@@ -22,9 +22,9 @@ func (c *deployConfig) servedEntity(version string) serving.ServedEntityInput {
 		EntityVersion:      version,
 		WorkloadType:       serving.ServingModelWorkloadType(c.Compute.WorkloadType),
 		WorkloadSize:       c.Compute.WorkloadSize,
-		ScaleToZeroEnabled: c.Compute.ScaleToZero,
+		ScaleToZeroEnabled: c.Compute.ScaleToZeroEnabled,
 		EnvironmentVars:    c.servedEnvironmentVars(),
-		// scale_to_zero: false is the user's choice, so send it rather than leave it
+		// scale_to_zero_enabled: false is the user's choice, so send it rather than leave it
 		// to the server's default.
 		ForceSendFields: []string{"ScaleToZeroEnabled"},
 	}

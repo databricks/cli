@@ -99,7 +99,7 @@ func TestDeployCheckpointJSON(t *testing.T) {
 	served := endpoints.endpoint.Config.ServedEntities[0]
 	assert.Equal(t, "3", served.EntityVersion)
 	assert.Equal(t, map[string]string{"LOG_LEVEL": "info", "HF_TOKEN": "{{secrets/llm/hf_token}}"}, served.EnvironmentVars)
-	// scale_to_zero: false is sent, not left to the server's default.
+	// scale_to_zero_enabled: false is sent, not left to the server's default.
 	require.Len(t, endpoints.rawWrites, 1)
 	assert.Contains(t, endpoints.rawWrites[0], `"scale_to_zero_enabled":false`)
 }

@@ -122,9 +122,9 @@ type deployCodeSourceConfig struct {
 
 // deployComputeConfig is the `compute` block: the served entity's workload.
 type deployComputeConfig struct {
-	WorkloadType string `yaml:"workload_type" help:"Serving compute, e.g. CPU, GPU_SMALL, GPU_MEDIUM or GPU_LARGE. A checkpoint is served on a GPU workload type." required:"yes"`
-	WorkloadSize string `yaml:"workload_size" help:"How far the endpoint scales: Small, Medium or Large." required:"yes"`
-	ScaleToZero  bool   `yaml:"scale_to_zero" help:"Whether the endpoint scales to zero when idle (default: false)."`
+	WorkloadType       string `yaml:"workload_type" help:"Serving compute, e.g. CPU, GPU_SMALL, GPU_MEDIUM or GPU_LARGE. A checkpoint is served on a GPU workload type." required:"yes"`
+	WorkloadSize       string `yaml:"workload_size" help:"How far the endpoint scales: Small, Medium or Large." required:"yes"`
+	ScaleToZeroEnabled bool   `yaml:"scale_to_zero_enabled" help:"Whether the endpoint scales to zero when idle (default: false)."`
 }
 
 // sourceFields lists, per model.type, the optional fields that apply to it, in
