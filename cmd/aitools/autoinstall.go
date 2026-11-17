@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -23,7 +24,9 @@ touches the global scope.
 
 It stays off after 'databricks aitools auto-install disable' or a global-scope
 'databricks aitools uninstall', until 'databricks aitools auto-install enable'.
-Setting ` + autoinstall.EnvVar + `=false turns it off in that environment.`,
+Setting ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes,
+on) turns it off in that environment.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newAutoInstallToggleCmd(true))
 	cmd.AddCommand(newAutoInstallToggleCmd(false))

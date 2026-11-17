@@ -3,6 +3,8 @@
 # and files).
 Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_SKILLS_REF = "test-ref"
+# Pin it so an opt-out exported in the developer's shell does not change the output.
+Env.DATABRICKS_AITOOLS_AUTO_INSTALL = "true"
 
 Ignore = [
     "home",
