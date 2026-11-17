@@ -9,7 +9,7 @@ import (
 
 func TestPressRoundTrips(t *testing.T) {
 	for _, key := range []string{
-		"enter", "ctrl+c", "ctrl+j", "ctrl+h", "alt+ctrl+h", "backspace", "alt+backspace",
+		"enter", "alt+enter", "ctrl+c", "alt+ctrl+c", "ctrl+j", "ctrl+h", "alt+ctrl+h", "backspace", "alt+backspace",
 		"esc", "tab", "alt+tab", "shift+tab", "delete", "up", "down", "left", "right",
 		"space", "alt+space", "q", "Q", "alt+f", "ctrl+n", "ctrl+p",
 	} {

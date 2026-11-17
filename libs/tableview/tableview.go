@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 
 	"github.com/databricks/cli/libs/cmdio"
 )
@@ -219,12 +220,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = height
 		}
 		return m, nil
+	}
 
-	case tea.KeyMsg:
+	if in, ok := teainput.Decode(msg); ok {
 		if m.searching {
-			return m.updateSearch(msg)
+			return m.updateSearch(in)
 		}
-		return m.updateNormal(msg)
+		return m.updateNormal(msg, in.Key)
 	}
 
 	var cmd tea.Cmd
@@ -232,8 +234,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
+// updateNormal handles a key outside search mode. msg is the raw message,
+// passed on to the viewport for keys the table doesn't handle itself.
+func (m model) updateNormal(msg tea.Msg, key string) (tea.Model, tea.Cmd) {
+	switch key {
 	case "q", "esc", "ctrl+c":
 		return m, tea.Quit
 	case "/":
@@ -266,7 +270,7 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "pgup", "b":
 		m.moveCursor(-m.viewport.Height)
 		return m, nil
-	case "pgdown", "f", " ":
+	case "pgdown", "f", "space":
 		m.moveCursor(m.viewport.Height)
 		return m, nil
 	case "g":
@@ -307,8 +311,8 @@ func (m *model) scrollToCursor() {
 	}
 }
 
-func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
+func (m model) updateSearch(in teainput.Event) (tea.Model, tea.Cmd) {
+	switch in.Key {
 	case "enter":
 		m.searching = false
 		m.searchQuery = m.searchInput
@@ -335,10 +339,8 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	default:
-		// Only accept printable characters.
-		if len(msg.String()) == 1 || msg.Type == tea.KeyRunes {
-			m.searchInput += msg.String()
-		}
+		// Only accept printable characters (typed or pasted).
+		m.searchInput += in.Text
 		return m, nil
 	}
 }
