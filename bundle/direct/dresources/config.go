@@ -129,6 +129,14 @@ type ResourceLifecycleConfig struct {
 	// the resource by its recorded ID, so it can only be backend normalization.
 	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
 
+	// ParentIDFields: the ID fields that name the resource's parent (a volume's catalog_name and
+	// schema_name). The backend moves the resource along with a renamed parent, so a change to one
+	// of these that only follows the parent's rename re-keys the resource instead of recreating it
+	// at its old ID (see followsParentRename and addParentMoves). Any other field, such as a name
+	// that references the parent's name, is the resource's own and never follows it. Requires
+	// IDFromState.
+	ParentIDFields []FieldRule `yaml:"parent_id_fields,omitempty"`
+
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
 	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
@@ -201,6 +209,7 @@ var empty = ResourceLifecycleConfig{
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
+	ParentIDFields:        nil,
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,

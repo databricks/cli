@@ -22,8 +22,9 @@ trace $CLI bundle deploy --auto-approve
 trace print_requests.py --sort //unity-catalog
 
 title "The old model and secret are gone; the new ones are in the shared schema"
-trace musterr $CLI registered-models get "$SHARED.test_app_${UNIQUE_NAME}"
-trace musterr $CLI secrets-uc get-secret "$SHARED.test_app_${UNIQUE_NAME}"
+# Not traced: the "not found" messages differ between UC and the test server.
+$CLI registered-models get "$SHARED.test_app_${UNIQUE_NAME}" &> /dev/null && echo "old model still exists" || echo "old model is gone"
+$CLI secrets-uc get-secret "$SHARED.test_app_${UNIQUE_NAME}" &> /dev/null && echo "old secret still exists" || echo "old secret is gone"
 trace $CLI registered-models get "$SHARED.test_app_renamed_${UNIQUE_NAME}" | jq '{full_name}'
 trace $CLI secrets-uc get-secret "$SHARED.test_app_renamed_${UNIQUE_NAME}" | jq '{full_name}'
 
