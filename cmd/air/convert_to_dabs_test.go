@@ -203,7 +203,7 @@ func TestConvertToDabsPreservesPoolPriorityAndUnityCatalogImage(t *testing.T) {
 			cfg := minimalConfig
 			var computeOptions string
 			if tc.poolID != "" {
-				computeOptions += "  pool_id: " + tc.poolID + "\n"
+				computeOptions += "  accelerator_pool_id: " + tc.poolID + "\n"
 			}
 			if tc.priorityClass != "" {
 				computeOptions += "  priority_class: " + tc.priorityClass + "\n"

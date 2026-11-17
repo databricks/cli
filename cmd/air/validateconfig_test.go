@@ -455,7 +455,7 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
 	cfg := baseRunConfig()
-	cfg.Compute.PoolID = new("cap-8xh100-res")
+	cfg.Compute.AcceleratorPoolID = new("cap-8xh100-res")
 	cfg.Compute.PriorityClass = new("NORMAL")
 	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
@@ -495,19 +495,16 @@ func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
 
 func TestValidateConfigRequestPoolSelectors(t *testing.T) {
 	for _, tc := range []struct {
-		name             string
-		poolID, legacyID *string
-		want             string
+		name   string
+		poolID *string
+		want   string
 	}{
 		{name: "omitted"},
 		{name: "explicit", poolID: new("pool-1"), want: "pool-1"},
-		{name: "legacy", legacyID: new("pool-1"), want: "pool-1"},
-		{name: "both", poolID: new("pool-1"), legacyID: new("pool-1"), want: "pool-1"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := baseRunConfig()
 			cfg.Compute.AcceleratorPoolID = tc.poolID
-			cfg.Compute.PoolID = tc.legacyID
 			require.NoError(t, cfg.Compute.validate())
 			req := validateConfigRequest(t.Context(), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 			task := req["task"].(map[string]any)

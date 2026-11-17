@@ -436,7 +436,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload.IdempotencyToken = token
 
 	poolID := ""
-	if selectedPoolID := cfg.Compute.acceleratorPoolID(); selectedPoolID != nil {
+	if selectedPoolID := cfg.Compute.AcceleratorPoolID; selectedPoolID != nil {
 		poolID = *selectedPoolID
 	}
 	priorityClass := ""

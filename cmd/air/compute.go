@@ -84,8 +84,7 @@ type computeConfig struct {
 	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected; the workload will not fall back to on-demand capacity. When omitted, workspace capacity selection applies." group:"GPU Pools (optional)"`
-	PoolID            *string `yaml:"pool_id" help:"Compatibility alias for accelerator_pool_id. If both are set, their IDs must match." group:"GPU Pools (optional)"`
-	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id (or its pool_id alias)." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
@@ -107,27 +106,15 @@ func (c *computeConfig) validate() error {
 		return fmt.Errorf("compute.num_accelerators for %s must be a multiple of %d, got %d", c.AcceleratorType, perNode, c.NumAccelerators)
 	}
 
-	for _, field := range []struct {
-		name  string
-		value *string
-	}{
-		{"accelerator_pool_id", c.AcceleratorPoolID},
-		{"pool_id", c.PoolID},
-	} {
-		if field.value == nil {
-			continue
-		}
-		v := strings.TrimSpace(*field.value)
+	if c.AcceleratorPoolID != nil {
+		v := strings.TrimSpace(*c.AcceleratorPoolID)
 		if v == "" {
-			return fmt.Errorf("compute.%s cannot be empty", field.name)
+			return errors.New("compute.accelerator_pool_id cannot be empty")
 		}
 		if len(v) > 255 {
-			return fmt.Errorf("compute.%s must be 255 characters or less, got %d", field.name, len(v))
+			return fmt.Errorf("compute.accelerator_pool_id must be 255 characters or less, got %d", len(v))
 		}
-		*field.value = v
-	}
-	if c.AcceleratorPoolID != nil && c.PoolID != nil && *c.AcceleratorPoolID != *c.PoolID {
-		return errors.New("compute.accelerator_pool_id and compute.pool_id must match when both are set")
+		*c.AcceleratorPoolID = v
 	}
 
 	if c.PriorityClass != nil {
@@ -137,19 +124,11 @@ func (c *computeConfig) validate() error {
 		}
 		// A priority class only ranks pending work within a pool, so it requires
 		// one.
-		if c.acceleratorPoolID() == nil {
-			return errors.New("compute.priority_class requires compute.accelerator_pool_id (or compute.pool_id) — priority applies only within a GPU pool")
+		if c.AcceleratorPoolID == nil {
+			return errors.New("compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU pool")
 		}
 		*c.PriorityClass = string(p)
 	}
 
 	return nil
-}
-
-// acceleratorPoolID resolves the compatibility alias after config validation.
-func (c *computeConfig) acceleratorPoolID() *string {
-	if c.AcceleratorPoolID != nil {
-		return c.AcceleratorPoolID
-	}
-	return c.PoolID
 }

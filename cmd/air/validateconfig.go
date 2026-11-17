@@ -280,7 +280,7 @@ func validateConfigRequest(ctx context.Context, cfg *runConfig, commandPath stri
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
 		compute["accelerator_count"] = cfg.Compute.NumAccelerators
-		putOpt(compute, "accelerator_pool_id", cfg.Compute.acceleratorPoolID())
+		putOpt(compute, "accelerator_pool_id", cfg.Compute.AcceleratorPoolID)
 	}
 	deployment := map[string]any{"compute": compute}
 	if len(containers) == 0 {

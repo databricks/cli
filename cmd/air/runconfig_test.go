@@ -793,7 +793,7 @@ func TestResolveConfigField_Containers(t *testing.T) {
 	compute, err := resolveConfigField("config.compute")
 	require.NoError(t, err)
 	assert.Equal(t, "object", compute.typeName)
-	require.Len(t, compute.children, 5)
+	require.Len(t, compute.children, 4)
 }
 
 func TestResolveConfigField_Errors(t *testing.T) {
@@ -910,7 +910,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.Contains(t, fields, "  Fields:\n    num_accelerators     (required) ")
 	assert.Contains(t, fields, "    accelerator_type     (required) ")
 	assert.NotContains(t, fields, "pool_id")
-	assert.Contains(t, capacity, "    pool_id ")
+	assert.NotContains(t, capacity, "    pool_id ")
 	assert.Contains(t, capacity, "    accelerator_pool_id ")
 	assert.Contains(t, capacity, "    priority_class ")
 
@@ -1224,9 +1224,9 @@ func TestLoadRunConfigAcceleratorPool(t *testing.T) {
 		name, fields, wantErr string
 	}{
 		{name: "explicit", fields: "  accelerator_pool_id: pool-1\n"},
-		{name: "legacy", fields: "  pool_id: pool-1\n"},
-		{name: "both", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n"},
-		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: "must match"},
+		{name: "legacy rejected", fields: "  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"`},
+		{name: "alias rejected alongside selector", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"`},
+		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: `unknown field "compute.pool_id"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tc.fields))
@@ -1235,7 +1235,7 @@ func TestLoadRunConfigAcceleratorPool(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, new("pool-1"), cfg.Compute.acceleratorPoolID())
+			assert.Equal(t, new("pool-1"), cfg.Compute.AcceleratorPoolID)
 		})
 	}
 }

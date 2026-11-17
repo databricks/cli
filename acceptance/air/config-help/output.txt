@@ -118,7 +118,6 @@ config.compute
 
   GPU Pools (optional):
     accelerator_pool_id  GPU Pool to run on, by ID.
-    pool_id              Compatibility alias for accelerator_pool_id.
     priority_class       Scheduling priority within the pool: NORMAL or HIGH.
 
 For details on a field, run "databricks air run -h config.compute.<field>".
@@ -139,16 +138,9 @@ config.compute.accelerator_pool_id
   Type:     string
   Required: no
 
->>> [CLI] air run -h config.compute.pool_id
-config.compute.pool_id
-  Compatibility alias for accelerator_pool_id. If both are set, their IDs must match.
-
-  Type:     string
-  Required: no
-
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id (or its pool_id alias).
+  Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id.
 
   Type:     string
   Required: no
@@ -239,7 +231,7 @@ config.compute.num_accelerators
 >>> [CLI] air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
-fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, pool_id, priority_class
+fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, priority_class
 
 === free-form map keys are not schema fields
 
