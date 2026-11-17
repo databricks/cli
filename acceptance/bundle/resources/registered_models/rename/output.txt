@@ -28,7 +28,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Rename the model: it is renamed in place, keeping its versions
+=== Rename the model: it is renamed in place, not recreated
 
 >>> update_file.py databricks.yml name: mymodel name: mymodel2
 
