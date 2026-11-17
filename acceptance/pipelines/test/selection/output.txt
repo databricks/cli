@@ -21,7 +21,8 @@ Update: [UUID][1]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
-    "test_only": true
+    "test_only": true,
+    "test_options": {}
   }
 }
 
