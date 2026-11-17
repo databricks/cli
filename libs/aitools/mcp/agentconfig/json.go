@@ -221,7 +221,34 @@ func (d *jsonDoc) set(root []string, name string, entry map[string]any) error {
 
 // put writes entry as server name under root. A nil entry removes it. With keys,
 // an existing server changes only those keys, and its other keys keep their bytes.
+// The edited tree is checked against the tree before the edit, as the TOML edits are.
+// The tree is changed in place, so after a failed check the document is not saved.
 func (d *jsonDoc) put(root []string, name string, entry map[string]any, keys []string) error {
+	before, err := d.decoded()
+	if err != nil {
+		return err
+	}
+	if err := d.edit(root, name, entry, keys); err != nil {
+		return err
+	}
+	after, err := d.decoded()
+	if err != nil {
+		return err
+	}
+	return checkEdit(before, after, root, name, entry, sameEntry)
+}
+
+// decoded returns the document as plain values, without comments and trailing commas.
+func (d *jsonDoc) decoded() (map[string]any, error) {
+	out, ok := decodeObject(&d.root)
+	if !ok {
+		return nil, errors.New("the document does not decode as JSON")
+	}
+	return out, nil
+}
+
+// edit applies the edit that put describes.
+func (d *jsonDoc) edit(root []string, name string, entry map[string]any, keys []string) error {
 	switch {
 	case entry == nil:
 		return d.remove(root, name)

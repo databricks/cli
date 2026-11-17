@@ -263,3 +263,97 @@ func TestJSONRemoveLastDropsEmptyContainers(t *testing.T) {
 		}
 	}
 }
+
+// TestJSONCheckEditAcceptsOnlyTheEdit checks the check after a JSON edit. An edit
+// that changes another setting, a sibling, or the server's own value is refused.
+// A removal may drop the containers it leaves empty, up to the root, and nothing else.
+func TestJSONCheckEditAcceptsOnlyTheEdit(t *testing.T) {
+	entry := testEntry(testCmd, testArgs("test"), nil)
+	for _, tc := range []struct {
+		name   string
+		root   []string
+		entry  map[string]any
+		before map[string]any
+		after  map[string]any
+		want   string
+	}{
+		{
+			name:   "add with an other setting changed",
+			root:   []string{"mcpServers"},
+			entry:  entry,
+			before: map[string]any{"theme": "dark", "mcpServers": map[string]any{}},
+			after:  map[string]any{"theme": "light", "mcpServers": map[string]any{testName: entry}},
+			want:   "changed other settings",
+		},
+		{
+			name:   "add that writes a different server",
+			root:   []string{"mcpServers"},
+			entry:  entry,
+			before: map[string]any{"mcpServers": map[string]any{}},
+			after:  map[string]any{"mcpServers": map[string]any{testName: map[string]any{"command": "other"}}},
+			want:   "wrote a different server",
+		},
+		{
+			name:   "add that does not write the server",
+			root:   []string{"mcpServers"},
+			entry:  entry,
+			before: map[string]any{"mcpServers": map[string]any{}},
+			after:  map[string]any{"mcpServers": map[string]any{}},
+			want:   "did not add the server",
+		},
+		{
+			name:   "removal that leaves the server",
+			root:   []string{"mcpServers"},
+			before: map[string]any{"mcpServers": map[string]any{testName: entry}},
+			after:  map[string]any{"mcpServers": map[string]any{testName: entry}},
+			want:   "did not remove the server",
+		},
+		{
+			name:   "removal that also drops a sibling server",
+			root:   []string{"mcpServers"},
+			before: map[string]any{"mcpServers": map[string]any{testName: entry, "other": map[string]any{"command": "x"}}},
+			after:  map[string]any{"mcpServers": map[string]any{}},
+			want:   "changed other settings",
+		},
+		{
+			name:   "removal that also drops an unrelated empty container",
+			root:   []string{"mcpServers"},
+			before: map[string]any{"mcpServers": map[string]any{testName: entry}, "extra": map[string]any{}},
+			after:  map[string]any{},
+			want:   "changed other settings",
+		},
+		{
+			name:   "removal of the last server drops the root table",
+			root:   []string{"mcpServers"},
+			before: map[string]any{"theme": "dark", "mcpServers": map[string]any{testName: entry}},
+			after:  map[string]any{"theme": "dark"},
+		},
+		{
+			name:   "removal of the last server drops each container up to the root",
+			root:   []string{"mcp", "servers"},
+			before: map[string]any{"mcp": map[string]any{"servers": map[string]any{testName: entry}}},
+			after:  map[string]any{},
+		},
+		{
+			name:   "removal keeps a sibling of an emptied container",
+			root:   []string{"mcp", "servers"},
+			before: map[string]any{"mcp": map[string]any{"servers": map[string]any{testName: entry}, "other": 1.0}},
+			after:  map[string]any{"mcp": map[string]any{"other": 1.0}},
+		},
+		{
+			name:   "removal of an absent server changes nothing",
+			root:   []string{"mcpServers"},
+			before: map[string]any{"mcpServers": map[string]any{}},
+			after:  map[string]any{"mcpServers": map[string]any{}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkEdit(tc.before, tc.after, tc.root, testName, tc.entry, sameEntry)
+			if tc.want == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tc.want)
+		})
+	}
+}

@@ -2,9 +2,7 @@ package agentconfig
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -152,7 +150,7 @@ func (d *tomlDoc) put(root []string, name string, entry map[string]any, _ []stri
 	if _, err := toml.Decode(text, &parsed); err != nil {
 		return fmt.Errorf("server %q: the edited file does not decode: %w", name, err)
 	}
-	if err := checkEdit(d.root, parsed, root, name, entry); err != nil {
+	if err := checkEdit(d.root, parsed, root, name, entry, sameTOML); err != nil {
 		return fmt.Errorf("server %q: %w", name, err)
 	}
 	d.text = []byte(text)
@@ -222,39 +220,6 @@ func isBlankLine(line []byte) bool {
 	return strings.TrimSpace(string(line)) == ""
 }
 
-// checkEdit verifies an edit: the server is entry (or gone when entry is nil),
-// and nothing else in the document changed.
-func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any) error {
-	same, err := sameTOML(withoutServer(before, root, name), withoutServer(after, root, name))
-	if err != nil {
-		return err
-	}
-	if !same {
-		return errors.New("the edit changed other settings")
-	}
-	got, found, err := (&tomlDoc{root: after}).entry(root, name)
-	if err != nil {
-		return err
-	}
-	if entry == nil {
-		if found {
-			return errors.New("the edit did not remove the server")
-		}
-		return nil
-	}
-	if !found {
-		return errors.New("the edit did not add the server")
-	}
-	same, err = sameTOML(got, entry)
-	if err != nil {
-		return err
-	}
-	if !same {
-		return errors.New("the edit wrote a different server")
-	}
-	return nil
-}
-
 // sameTOML compares two tables by their TOML text. JSON has no inf or nan, which
 // TOML allows in any table, so the comparison is made in TOML.
 func sameTOML(a, b map[string]any) (bool, error) {
@@ -275,28 +240,6 @@ func tomlText(table map[string]any) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
-}
-
-// withoutServer returns doc without the server name under root. The tables on
-// the way are copied, so doc is not changed. A table left empty is dropped, so
-// a file without the table and one whose table only held the server compare equal.
-func withoutServer(doc map[string]any, root []string, name string) map[string]any {
-	out := maps.Clone(doc)
-	if len(root) == 0 {
-		delete(out, name)
-		return out
-	}
-	child, ok := out[root[0]].(map[string]any)
-	if !ok {
-		return out
-	}
-	rest := withoutServer(child, root[1:], name)
-	if len(rest) == 0 {
-		delete(out, root[0])
-	} else {
-		out[root[0]] = rest
-	}
-	return out
 }
 
 // defined reports whether the key path root exists in the document. A table on the

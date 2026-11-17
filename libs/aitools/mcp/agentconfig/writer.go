@@ -403,6 +403,79 @@ func envTable(v any) (map[string]any, error) {
 	return table, nil
 }
 
+// checkEdit verifies an edit to a document, in memory and before it is saved: the
+// server is entry (or gone when entry is nil), and nothing else in the document
+// changed. same compares two documents in the terms of their format. A removal
+// drops the containers it leaves empty, up to the root, as withoutServer does, and
+// the check accepts that drop and nothing else.
+func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any, same func(a, b map[string]any) (bool, error)) error {
+	eq, err := same(withoutServer(before, root, name), withoutServer(after, root, name))
+	if err != nil {
+		return err
+	}
+	if !eq {
+		return errors.New("the edit changed other settings")
+	}
+	got, found := serverIn(after, root, name)
+	if entry == nil {
+		if found {
+			return errors.New("the edit did not remove the server")
+		}
+		return nil
+	}
+	if !found {
+		return errors.New("the edit did not add the server")
+	}
+	eq, err = same(got, entry)
+	if err != nil {
+		return err
+	}
+	if !eq {
+		return errors.New("the edit wrote a different server")
+	}
+	return nil
+}
+
+// serverIn returns the table of server name under root, and whether name is there
+// at all. A name that holds something other than a table is found, with a nil table.
+func serverIn(doc map[string]any, root []string, name string) (map[string]any, bool) {
+	for _, key := range root {
+		child, ok := doc[key].(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		doc = child
+	}
+	v, ok := doc[name]
+	if !ok {
+		return nil, false
+	}
+	entry, _ := v.(map[string]any)
+	return entry, true
+}
+
+// withoutServer returns doc without the server name under root. The tables on
+// the way are copied, so doc is not changed. A table left empty is dropped, so
+// a file without the table and one whose table only held the server compare equal.
+func withoutServer(doc map[string]any, root []string, name string) map[string]any {
+	out := maps.Clone(doc)
+	if len(root) == 0 {
+		delete(out, name)
+		return out
+	}
+	child, ok := out[root[0]].(map[string]any)
+	if !ok {
+		return out
+	}
+	rest := withoutServer(child, root[1:], name)
+	if len(rest) == 0 {
+		delete(out, root[0])
+	} else {
+		out[root[0]] = rest
+	}
+	return out
+}
+
 // sameEntry compares two entries as JSON values, so the in-memory Go types of a
 // freshly built entry and one decoded from a file compare equal.
 func sameEntry(a, b map[string]any) (bool, error) {
