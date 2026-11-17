@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -67,11 +66,10 @@ type submission struct {
 
 // Spec declares the feedback command.
 var Spec = root.CommandSpec{
-	Use:           "feedback MESSAGE",
-	Short:         "Send feedback about the Databricks CLI to Databricks",
-	GroupID:       "development",
-	NeedsFullTree: true,
-	Build:         buildCommand,
+	Use:     "feedback MESSAGE",
+	Short:   "Send feedback about the Databricks CLI to Databricks",
+	GroupID: "development",
+	Build:   buildCommand,
 }
 
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
@@ -101,9 +99,7 @@ approves it.`
 	cmd.Flags().BoolVar(&opts.canBeContacted, "can-be-contacted", false, "Allow Databricks to contact you about this feedback")
 	cmd.Flags().BoolVarP(&opts.yes, "yes", "y", false, "Confirm sending feedback written by an AI agent")
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		return checkArgs(cmd, opts.command, args)
-	}
+	cmd.Args = checkArgs
 
 	var s submission
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -127,27 +123,11 @@ approves it.`
 // the message, or a --command with several words, was not quoted. The error
 // says what to quote rather than printing a command to paste, which would drop
 // the user's other flags and depend on their shell's quoting.
-func checkArgs(cmd *cobra.Command, command string, args []string) error {
-	if len(args) <= 1 {
-		return root.ExactArgs(1)(cmd, args)
+func checkArgs(cmd *cobra.Command, args []string) error {
+	if len(args) > 1 {
+		return fmt.Errorf("the message must be one argument, but received %d; put quotes around the whole message, and around --command if it has several words", len(args))
 	}
-	if command != "" {
-		// Extend --command with the arguments for as long as it still names a
-		// command, so the error names the whole command.
-		path := strings.Fields(command)
-		extended := false
-		for _, arg := range args {
-			next := append(slices.Clone(path), arg)
-			if _, ok := findCommand(cmd, next); !ok {
-				break
-			}
-			path, extended = next, true
-		}
-		if extended {
-			return fmt.Errorf("--command takes the command as one argument; put quotes around %q", strings.Join(path, " "))
-		}
-	}
-	return fmt.Errorf("the message must be one argument, but received %d; put quotes around the whole message", len(args))
+	return root.ExactArgs(1)(cmd, args)
 }
 
 func newSubmission(cmd *cobra.Command, message string, opts *options) (submission, error) {
@@ -161,10 +141,7 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	if err != nil {
 		return submission{}, err
 	}
-	component, origin, err := resolveCommand(cmd, opts.command)
-	if err != nil {
-		return submission{}, err
-	}
+	component, origin := resolveCommand(opts.command)
 	s := submission{
 		text:           text,
 		command:        strings.Join(strings.Fields(opts.command), " "),
@@ -251,33 +228,20 @@ func validateMessage(message string) (string, error) {
 	return text, nil
 }
 
-func resolveCommand(cmd *cobra.Command, command string) (string, string, error) {
-	if command == "" {
-		return defaultComponent, "cli", nil
-	}
-	target, ok := findCommand(cmd, strings.Fields(command))
-	if !ok {
-		return "", "", fmt.Errorf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
+// resolveCommand returns the component and origin for --command. Its first word
+// picks the owning team, so "bundle deploy" reaches bundles without the CLI
+// building every command to check the path. The origin joins the words with
+// underscores, as the CLI names commands elsewhere (bundle_deploy).
+func resolveCommand(command string) (string, string) {
+	words := strings.Fields(command)
+	if len(words) == 0 {
+		return defaultComponent, "cli"
 	}
 	component := defaultComponent
-	if productComponent, ok := productComponents[topLevelName(target)]; ok {
+	if productComponent, ok := productComponents[words[0]]; ok {
 		component = productComponent
 	}
-	return component, root.CommandString(target), nil
-}
-
-// findCommand returns the command at path, and false if path does not name a
-// command, has words left over, or is empty.
-func findCommand(cmd *cobra.Command, path []string) (*cobra.Command, bool) {
-	target, rest, err := cmd.Root().Find(path)
-	return target, err == nil && len(rest) == 0 && target != cmd.Root()
-}
-
-func topLevelName(cmd *cobra.Command) string {
-	for cmd.HasParent() && cmd.Parent().HasParent() {
-		cmd = cmd.Parent()
-	}
-	return cmd.Name()
+	return component, strings.Join(words, "_")
 }
 
 // needsApproval reports whether the user must approve the feedback before it is

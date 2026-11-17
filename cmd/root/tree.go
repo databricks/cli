@@ -30,10 +30,8 @@ func (t *Tree) Add(specs ...CommandSpec) {
 		// Copy the fields so that the caller changing them later can't make
 		// the placeholder and the built command differ.
 		build := spec.Build
-		needsFullTree := spec.NeedsFullTree
 		spec = specFields(spec.command())
 		spec.Build = build
-		spec.NeedsFullTree = needsFullTree
 		placeholder := spec.command()
 		// Cobra only lists a command in help and completion if it is
 		// runnable or has subcommands; a placeholder has no subcommands.
@@ -118,18 +116,14 @@ func (t *Tree) buildForArgs(ctx context.Context, args []string) {
 	if err != nil {
 		return
 	}
-	spec, pending := t.pending[cmd]
+	_, pending := t.pending[cmd]
 	switch {
 	case cmd.Parent() == t.cmd && (cmd.Name() == "help" || isCompletionRequest(cmd)):
 		// Help and completion resolve commands from their own arguments, the
 		// way cobra parses them. Building everything avoids parsing them here.
 		t.buildAll(ctx)
 	case pending:
-		if spec.NeedsFullTree {
-			t.buildAll(ctx)
-		} else {
-			t.replace(ctx, cmd)
-		}
+		t.replace(ctx, cmd)
 	}
 }
 

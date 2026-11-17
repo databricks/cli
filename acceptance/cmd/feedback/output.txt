@@ -95,16 +95,10 @@ Global Flags:
 
 
 >>> [CLI] feedback deploy is slow
-Error: the message must be one argument, but received 3; put quotes around the whole message
+Error: the message must be one argument, but received 3; put quotes around the whole message, and around --command if it has several words
 
 >>> [CLI] feedback --command bundle deploy deploy is slow
-Error: --command takes the command as one argument; put quotes around "bundle deploy"
-
->>> [CLI] feedback --command no-such-command hello
-Error: unknown command "no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
-
->>> [CLI] feedback --command bundle no-such-command hello
-Error: unknown command "bundle no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
+Error: the message must be one argument, but received 2; put quotes around the whole message, and around --command if it has several words
 
 >>> [CLI] feedback --run-id abc hello
 Error: --run-id must be a positive job run ID

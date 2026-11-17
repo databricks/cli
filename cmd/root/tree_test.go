@@ -109,25 +109,3 @@ func TestAddCopiesSpecFields(t *testing.T) {
 	aliases[0] = "new"
 	require.NoError(t, r.Execute(t.Context(), []string{"old", "--help"}))
 }
-
-func TestRunningCommandCanResolveNestedCommand(t *testing.T) {
-	var built []string
-	r := newTestRoot(t, &built)
-	var resolved string
-	var remaining []string
-	r.Add(root.CommandSpec{
-		Use:           "inspect",
-		NeedsFullTree: true,
-		Build: func(ctx context.Context, cmd *cobra.Command) {
-			cmd.RunE = func(cmd *cobra.Command, args []string) error {
-				target, rest, err := cmd.Root().Find([]string{"one", "child"})
-				resolved = target.CommandPath()
-				remaining = rest
-				return err
-			}
-		},
-	})
-	require.NoError(t, r.Execute(t.Context(), []string{"inspect"}))
-	assert.Equal(t, "databricks one child", resolved)
-	assert.Empty(t, remaining)
-}

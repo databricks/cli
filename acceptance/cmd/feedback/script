@@ -22,8 +22,6 @@ musterr trace $CLI feedback "   "
 musterr trace $CLI feedback
 musterr trace $CLI feedback deploy is slow
 musterr trace $CLI feedback --command bundle deploy "deploy is slow"
-musterr trace $CLI feedback --command "no-such-command" "hello"
-musterr trace $CLI feedback --command "bundle no-such-command" "hello"
 musterr trace $CLI feedback --run-id abc "hello"
 musterr trace $CLI feedback --target dev "hello"
 

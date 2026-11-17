@@ -61,71 +61,34 @@ const (
 
 const testWorkspace = "https://workspace.test"
 
-const commandHint = `; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`
-
 // newTestFeedbackCommand returns the feedback command under a root with the
-// root's bundle target flags and a few commands --command can name.
+// root's bundle target flags.
 func newTestFeedbackCommand() *cobra.Command {
 	rootCmd := &cobra.Command{Use: "databricks"}
 	rootCmd.PersistentFlags().String("target", "", "")
 	rootCmd.PersistentFlags().String("environment", "", "")
 	feedbackCmd := &cobra.Command{Use: "feedback"}
 	rootCmd.AddCommand(feedbackCmd)
-	for _, path := range []string{"air run", "bundle deploy", "bundle deployment bind", "version"} {
-		parent := rootCmd
-		for name := range strings.FieldsSeq(path) {
-			var child *cobra.Command
-			for _, c := range parent.Commands() {
-				if c.Name() == name {
-					child = c
-				}
-			}
-			if child == nil {
-				child = &cobra.Command{Use: name}
-				parent.AddCommand(child)
-			}
-			parent = child
-		}
-	}
 	return feedbackCmd
 }
 
 func TestCheckArgs(t *testing.T) {
 	tests := []struct {
 		name    string
-		command string
 		args    []string
 		wantErr string
 	}{
 		{name: "one message", args: []string{"deploy is slow"}},
 		{name: "no message", wantErr: "accepts 1 arg(s), received 0"},
 		{
-			name:    "unquoted message",
-			args:    []string{"costs", "$HOME", "or", "`whoami`"},
-			wantErr: "the message must be one argument, but received 4; put quotes around the whole message",
-		},
-		{
-			name:    "unquoted --command",
-			command: "bundle",
-			args:    []string{"deploy", "deploy is slow"},
-			wantErr: `--command takes the command as one argument; put quotes around "bundle deploy"`,
-		},
-		{
-			name:    "unquoted nested --command",
-			command: "bundle",
-			args:    []string{"deployment", "bind", "bind fails"},
-			wantErr: `--command takes the command as one argument; put quotes around "bundle deployment bind"`,
-		},
-		{
-			name:    "words that are not a subcommand",
-			command: "bundle",
-			args:    []string{"nope", "slow"},
-			wantErr: "the message must be one argument, but received 2; put quotes around the whole message",
+			name:    "unquoted message or --command",
+			args:    []string{"deploy", "is", "slow"},
+			wantErr: "the message must be one argument, but received 3; put quotes around the whole message, and around --command if it has several words",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := checkArgs(newTestFeedbackCommand(), tt.command, tt.args)
+			err := checkArgs(newTestFeedbackCommand(), tt.args)
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -171,33 +134,23 @@ func TestWorkspaceLabel(t *testing.T) {
 }
 
 func TestResolveCommand(t *testing.T) {
-	feedbackCmd := newTestFeedbackCommand()
-
 	tests := []struct {
 		name          string
 		command       string
 		wantComponent string
 		wantOrigin    string
-		wantErr       string
 	}{
 		{name: "general", wantComponent: defaultComponent, wantOrigin: "cli"},
+		{name: "blank", command: " ", wantComponent: defaultComponent, wantOrigin: "cli"},
 		{name: "air subcommand", command: "air run", wantComponent: "ModelTraining.AIRuntime", wantOrigin: "air_run"},
 		{name: "bundle group", command: "bundle", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle"},
 		{name: "bundle subcommand", command: "bundle  deploy", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_deploy"},
-		{name: "other command", command: "version", wantComponent: defaultComponent, wantOrigin: "version"},
-		{name: "unknown top level", command: "unknown", wantErr: `unknown command "unknown"` + commandHint},
-		{name: "unknown subcommand", command: "bundle unknown", wantErr: `unknown command "bundle unknown"` + commandHint},
-		{name: "with arguments", command: "bundle deploy -t dev", wantErr: `unknown command "bundle deploy -t dev"` + commandHint},
-		{name: "blank", command: " ", wantErr: `unknown command " "` + commandHint},
+		{name: "any text after a product's name", command: "bundle not-a-command", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_not-a-command"},
+		{name: "other command", command: "jobs list", wantComponent: defaultComponent, wantOrigin: "jobs_list"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			component, origin, err := resolveCommand(feedbackCmd, tt.command)
-			if tt.wantErr != "" {
-				assert.EqualError(t, err, tt.wantErr)
-				return
-			}
-			require.NoError(t, err)
+			component, origin := resolveCommand(tt.command)
 			assert.Equal(t, tt.wantComponent, component)
 			assert.Equal(t, tt.wantOrigin, origin)
 		})
@@ -225,7 +178,6 @@ func TestNewSubmission(t *testing.T) {
 		{name: "zero run ID", opts: options{runID: "0"}, message: "x", wantErr: runIDError},
 		{name: "non-numeric run ID", opts: options{runID: "abc"}, message: "x", wantErr: runIDError},
 		{name: "blank message", message: " ", wantErr: messageError},
-		{name: "unknown command", opts: options{command: "nope"}, message: "x", wantErr: `unknown command "nope"` + commandHint},
 		{
 			name: "target", flags: []string{"--target", "dev"}, message: "x",
 			wantErr: "--target selects a bundle target, which feedback does not use; use --profile to choose the workspace",

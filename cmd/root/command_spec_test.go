@@ -16,9 +16,7 @@ func TestSpecFields(t *testing.T) {
 	specType := reflect.TypeFor[root.CommandSpec]()
 	for i := range specType.NumField() {
 		field := specType.Field(i)
-		// NeedsFullTree tells the tree how to build the command; it is not a
-		// command field.
-		if field.Name == "Build" || field.Name == "NeedsFullTree" {
+		if field.Name == "Build" {
 			continue
 		}
 		t.Run(field.Name, func(t *testing.T) {
