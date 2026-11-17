@@ -33,10 +33,9 @@ func TestDecode(t *testing.T) {
 		{"shift+tab", tea.KeyMsg{Type: tea.KeyShiftTab}, teainput.Event{Key: "shift+tab"}},
 		{"delete", tea.KeyMsg{Type: tea.KeyDelete}, teainput.Event{Key: "delete"}},
 		{"up", tea.KeyMsg{Type: tea.KeyUp}, teainput.Event{Key: "up"}},
-		// Alt on keys the models always treated as plain keys is dropped.
-		{"alt enter", tea.KeyMsg{Type: tea.KeyEnter, Alt: true}, teainput.Event{Key: "enter"}},
-		{"alt ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC, Alt: true}, teainput.Event{Key: "ctrl+c"}},
-		{"alt left", tea.KeyMsg{Type: tea.KeyLeft, Alt: true}, teainput.Event{Key: "left"}},
+		{"alt enter", tea.KeyMsg{Type: tea.KeyEnter, Alt: true}, teainput.Event{Key: "alt+enter"}},
+		{"alt ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC, Alt: true}, teainput.Event{Key: "alt+ctrl+c"}},
+		{"alt left", tea.KeyMsg{Type: tea.KeyLeft, Alt: true}, teainput.Event{Key: "alt+left"}},
 		// Several runes in one read are text. They carry no key name, so a burst
 		// that spells a key name is typed, not pressed.
 		{"burst", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("jk")}, teainput.Event{Text: "jk"}},
