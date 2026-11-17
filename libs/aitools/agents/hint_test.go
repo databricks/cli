@@ -633,7 +633,7 @@ func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
 			require.NoError(t, os.MkdirAll(cwd, 0o755))
 			t.Chdir(cwd)
 
-			MaybeHint(ctx, regularCmd())
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
 			assert.Empty(t, stderr.String())
 		})
 	}
