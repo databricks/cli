@@ -252,26 +252,81 @@ func TestRegisterAndFinalizeReturnsWhyTheServerWontFinalize(t *testing.T) {
 	assert.Len(t, fake.finalizeRequests, 1)
 }
 
-func TestRegisterAndFinalizeWaitsOutAStatusWithoutAState(t *testing.T) {
-	fake := newFakeModelServing(t, stagingInProgress)
-	fake.statuses = []string{`{}`, `{"status": {"state": "IN_PROGRESS"}}`, statusSucceeded}
-
-	resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
-	require.NoError(t, err)
-	assert.True(t, resp.Ready)
-	assert.Equal(t, []string{"IN_PROGRESS", "IN_PROGRESS", "IN_PROGRESS", "SUCCEEDED"}, states)
-	assert.Len(t, fake.statusRequests, 3)
-	assert.Len(t, fake.finalizeRequests, 1)
+// Staging statuses that break the contract: the server always reports a known state
+// for both the weights and the serving environment.
+var malformedStagingStatuses = map[string]struct {
+	status  string
+	wantErr string
+}{
+	"no status":                       {`null`, "it has no staging status"},
+	"no weights":                      {`{"state": "IN_PROGRESS", "environment_artifact": {"state": "SUCCEEDED"}}`, "its staging status has no state for the weights"},
+	"weights without a state":         {`{"state": "IN_PROGRESS", "model_artifact": {}, "environment_artifact": {"state": "SUCCEEDED"}}`, "its staging status has no state for the weights"},
+	"unknown weights state":           {`{"state": "IN_PROGRESS", "model_artifact": {"state": "COPYING"}, "environment_artifact": {"state": "SUCCEEDED"}}`, `unknown state "COPYING" for the weights`},
+	"no environment":                  {`{"state": "IN_PROGRESS", "model_artifact": {"state": "IN_PROGRESS"}}`, "its staging status has no state for the serving environment"},
+	"unknown environment state":       {`{"state": "IN_PROGRESS", "model_artifact": {"state": "IN_PROGRESS"}, "environment_artifact": {"state": "BUILDING"}}`, `unknown state "BUILDING" for the serving environment`},
+	"control characters in the state": {`{"state": "IN_PROGRESS", "model_artifact": {"state": "X\u001b[31m"}, "environment_artifact": {"state": "SUCCEEDED"}}`, `unknown state "X" for the weights`},
 }
 
-func TestRegisterAndFinalizeKeepsAnEnvironmentStateTheFinalizeOmits(t *testing.T) {
+func TestRegisterAndFinalizeRejectsAMalformedRegistrationStatus(t *testing.T) {
+	for name, tt := range malformedStagingStatuses {
+		t.Run(name, func(t *testing.T) {
+			fake := newFakeModelServing(t, `{"model_id": "m-1", "registered_model": "main.models.qwen", "model_version": "3", "ready": false, "staging_status": `+tt.status+`}`)
+
+			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
+			assert.ErrorContains(t, err, "air deploy can't read Model Serving's response about version 3 of main.models.qwen: ")
+			assert.ErrorContains(t, err, tt.wantErr)
+			assert.Nil(t, resp)
+			assert.Empty(t, states)
+			assert.Empty(t, fake.statusRequests)
+			assert.Empty(t, fake.finalizeRequests)
+		})
+	}
+}
+
+func TestRegisterAndFinalizeRejectsAMalformedPolledStatus(t *testing.T) {
+	for name, tt := range malformedStagingStatuses {
+		t.Run(name, func(t *testing.T) {
+			fake := newFakeModelServing(t, stagingInProgress)
+			fake.statuses = []string{`{"status": ` + tt.status + `}`, statusSucceeded}
+
+			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
+			assert.ErrorContains(t, err, tt.wantErr)
+			code, retryable := deployErrorCode(err)
+			assert.Equal(t, codeInternalError, code)
+			assert.True(t, retryable)
+			// It stops at the malformed status instead of reading it as progress.
+			assert.Equal(t, []string{"IN_PROGRESS"}, states)
+			assert.Len(t, fake.statusRequests, 1)
+			assert.Empty(t, fake.finalizeRequests)
+			assert.False(t, resp.Ready)
+		})
+	}
+}
+
+func TestRegisterAndFinalizeRejectsAMalformedFinalizedStatus(t *testing.T) {
+	for name, tt := range malformedStagingStatuses {
+		t.Run(name, func(t *testing.T) {
+			fake := newFakeModelServing(t, stagingSucceeded)
+			fake.finalizations = []string{`{"model_version": "3", "staging_status": ` + tt.status + `}`}
+
+			resp, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
+			_, ok := errors.AsType[*finalizeError](err)
+			assert.True(t, ok)
+			assert.ErrorContains(t, err, tt.wantErr)
+			assert.False(t, resp.Ready)
+		})
+	}
+}
+
+func TestRegisterAndFinalizeUsesTheFinalizedStatusAsItIs(t *testing.T) {
 	environmentFailed := strings.Replace(stagingSucceeded, `"environment_artifact": {"state": "SUCCEEDED"}`, `"environment_artifact": {"state": "FAILED"}`, 1)
 	fake := newFakeModelServing(t, environmentFailed)
-	fake.finalizations = []string{`{"model_version": "3", "staging_status": {"model_artifact": {"state": "SUCCEEDED"}}}`}
+	fake.finalizations = []string{`{"model_version": "3", "staging_status": {"state": "SUCCEEDED", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`}
 
 	resp, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
 	require.NoError(t, err)
-	assert.Equal(t, stagingStateFailed, resp.environmentState())
+	// The finalize response's status replaces the registration's, not merged with it.
+	assert.Equal(t, stagingStateSucceeded, resp.environmentState())
 }
 
 func TestRegisterAndFinalizeRejectsAnotherFinalizedVersion(t *testing.T) {
@@ -290,18 +345,6 @@ func TestRegisterAndFinalizeRejectsARegistrationWithoutAVersion(t *testing.T) {
 	_, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
 	assert.ErrorContains(t, err, "registering a version of main.models.qwen returned no version")
 	assert.Empty(t, fake.finalizeRequests)
-}
-
-func TestRegisterAndFinalizeFinalizesAModelFromCodeWithoutPolling(t *testing.T) {
-	fake := newFakeModelServing(t, `{"model_id": "m-2", "registered_model": "a.b.c", "model_version": "1", "ready": false}`)
-	fake.finalizations = []string{`{"model_id": "m-2", "registered_model": "a.b.c", "model_version": "1"}`}
-	req := registerModelPackageRequest{RegisteredModel: "a.b.c", IdempotencyKey: "k", Code: &modelPackageCode{EntryFile: "agent.py"}}
-
-	resp, _, err := registerTestCheckpoint(t, fake, req)
-	require.NoError(t, err)
-	assert.True(t, resp.Ready)
-	assert.Empty(t, fake.statusRequests)
-	assert.Equal(t, []finalizeModelPackageRequest{{RegisteredModel: "a.b.c", ModelVersion: "1"}}, fake.finalizeRequests)
 }
 
 func TestRegisterAndFinalizeRetriesTransientErrors(t *testing.T) {
@@ -367,25 +410,16 @@ func TestRegisterPythonCheckpointRequestJSON(t *testing.T) {
 }
 
 func TestRegisterModelPackageRequestJSON(t *testing.T) {
-	raw, err := json.Marshal(registerModelPackageRequest{
-		RegisteredModel: "a.b.c",
-		IdempotencyKey:  "k",
-		Code: &modelPackageCode{
-			EntryFile:   "agent.py",
-			EntrySource: "x = 1\n",
-			Files:       []modelPackageFile{{Path: "tools/a.py", Content: ""}},
-			Environment: modelPackageEnvironment{Runtime: "client.6", Dependencies: []string{"mlflow"}},
-		},
-	})
+	raw, err := json.Marshal(checkpointRequest())
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
-		"registered_model": "a.b.c",
-		"idempotency_key": "k",
-		"code": {
-			"entry_file": "agent.py",
-			"entry_source": "x = 1\n",
-			"files": [{"path": "tools/a.py", "content": ""}],
-			"environment": {"runtime": "client.6", "dependencies": ["mlflow"]}
+		"registered_model": "main.models.qwen",
+		"idempotency_key": "key-1",
+		"checkpoint": {
+			"volume_path": "/Volumes/main/models/weights/qwen3_8b",
+			"serving_command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b",
+			"task": "llm/v1/chat",
+			"environment": {"runtime": "client.6-gpu"}
 		}
 	}`, string(raw))
 }

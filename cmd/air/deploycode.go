@@ -15,7 +15,7 @@ import (
 	"unicode/utf8"
 )
 
-// Limits of a model from code, as the server enforces them.
+// Limits of the Python code of model.entry, as the server enforces them.
 const (
 	// maxCodePackageBytes caps the code files plus the dependency lines. The server
 	// also counts the small environment file it writes, so this check rejects only
@@ -32,13 +32,13 @@ const pythonCacheDir = "__pycache__"
 // codePathSegmentRe matches a segment of a code file path the server can place.
 var codePathSegmentRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]*$`) })
 
-// collectModelCode reads a model from code from code_source: model.entry and the
-// other files under code_source.include_paths, as UTF-8 text, selected as a
-// code_source snapshot selects them. Files git ignores aren't sent, and nor are
+// collectEntryCode reads the Python code that serves a checkpoint from
+// code_source: model.entry and the other files under code_source.include_paths,
+// as UTF-8 text, selected as a code_source snapshot selects them. Files git ignores aren't sent, and nor are
 // hidden files and directories or __pycache__ directories, whose names the
 // server can't place or which hold no source. configPath locates a relative
 // code_source.root_path.
-func collectModelCode(ctx context.Context, cfg *deployConfig, configPath string) (*modelPackageCode, error) {
+func collectEntryCode(ctx context.Context, cfg *deployConfig, configPath string) (*modelPackagePythonModel, error) {
 	root, err := resolveRootPath(ctx, cfg.CodeSource.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return nil, err
@@ -59,13 +59,14 @@ func collectModelCode(ctx context.Context, cfg *deployConfig, configPath string)
 		}
 	}
 
-	code := &modelPackageCode{EntryFile: *cfg.Model.Entry, Environment: cfg.servingEnvironment()}
-	if cfg.Task != nil {
-		code.Task = *cfg.Task
+	code := &modelPackagePythonModel{EntryFile: *cfg.Model.Entry}
+	var dependencies []string
+	if cfg.Environment != nil {
+		dependencies = cfg.Environment.Dependencies
 	}
 	// Check the listing before reading anything, so a root_path that holds large
 	// data fails fast instead of being read into memory.
-	if err := checkCodeFiles(files, code.Environment.Dependencies); err != nil {
+	if err := checkCodeFiles(files, dependencies); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +128,7 @@ func ignoredTrackedFiles(ctx context.Context, root string, files []snapshotFile)
 func checkCodeFiles(files []snapshotFile, dependencies []string) error {
 	// One of the files is the entry file, which the limit doesn't count.
 	if len(files) > maxCodeFiles+1 {
-		return fmt.Errorf("code_source sends %d files, but a model from code can include at most %d besides model.entry; narrow it with code_source.include_paths", len(files), maxCodeFiles)
+		return fmt.Errorf("code_source sends %d files, but model.entry can bring at most %d other files; narrow it with code_source.include_paths", len(files), maxCodeFiles)
 	}
 	var size int64
 	for _, dependency := range dependencies {
@@ -143,14 +144,14 @@ func checkCodeFiles(files []snapshotFile, dependencies []string) error {
 		}
 		size += f.size
 		if size > maxCodePackageBytes {
-			return fmt.Errorf("code_source files and environment.dependencies total more than %d bytes, the most a model from code can hold; narrow code_source.include_paths", maxCodePackageBytes)
+			return fmt.Errorf("code_source files and environment.dependencies total more than %d bytes, the most a checkpoint's Python code can hold; narrow code_source.include_paths", maxCodePackageBytes)
 		}
 	}
 	return nil
 }
 
 // codeFilePaths lists the files of code, entry file first, as dry runs show them.
-func codeFilePaths(code *modelPackageCode) []string {
+func codeFilePaths(code *modelPackagePythonModel) []string {
 	paths := []string{code.EntryFile}
 	for _, f := range code.Files {
 		paths = append(paths, f.Path)

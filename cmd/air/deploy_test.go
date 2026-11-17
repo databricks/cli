@@ -317,23 +317,26 @@ compute: {workload_type: GPU_MEDIUM, workload_size: Small}
 	assert.NotContains(t, buf.String(), "idempotency_key")
 }
 
-func TestDeployCodeSendsTheFiles(t *testing.T) {
+func TestDeployEntrySendsThePythonModel(t *testing.T) {
 	cfg, _ := writeCodeTree(t, map[string]string{"agent.py": "import tools\n", "tools/__init__.py": "x = 1\n"})
-	codeReady := `{"model_id": "m-2", "registered_model": "main.agents.support", "model_version": "1", "ready": true}`
-	srv, fake := deployServer(t, newFakeEndpoints(t, nil), codeReady)
+	ready := `{"model_id": "m-2", "registered_model": "main.agents.support", "model_version": "1", "ready": true,
+		"staging_status": {"state": "SUCCEEDED", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
+	srv, fake := deployServer(t, newFakeEndpoints(t, nil), ready)
 
 	var buf bytes.Buffer
-	require.NoError(t, runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, codeConfigAt(cfg.CodeSource.RootPath)))
+	require.NoError(t, runDeployCmd(t, flags.OutputJSON, &buf, srv.URL, entryConfigAt(cfg.CodeSource.RootPath)))
 	bodies := fake.requests()
 	require.Len(t, bodies, 1)
-	assert.Equal(t, &modelPackageCode{
-		EntryFile:   "agent.py",
-		EntrySource: "import tools\n",
-		Files:       []modelPackageFile{{Path: "tools/__init__.py", Content: "x = 1\n"}},
+	assert.Equal(t, &modelPackageCheckpoint{
+		VolumePath: "/Volumes/main/models/weights/support",
+		PythonModel: &modelPackagePythonModel{
+			EntryFile:   "agent.py",
+			EntrySource: "import tools\n",
+			Files:       []modelPackageFile{{Path: "tools/__init__.py", Content: "x = 1\n"}},
+		},
 		Task:        "agent/v1/responses",
-		Environment: modelPackageEnvironment{Runtime: "client.5", Dependencies: []string{"mlflow==3.5.0"}},
-	}, bodies[0].Code)
-	assert.Nil(t, bodies[0].Checkpoint)
+		Environment: modelPackageEnvironment{Runtime: "client.5-gpu", Dependencies: []string{"mlflow==3.5.0"}},
+	}, bodies[0].Checkpoint)
 }
 
 func TestDeployDryRunNeedsNoWorkspace(t *testing.T) {
@@ -358,11 +361,11 @@ func TestDeployDryRunListsCodeFiles(t *testing.T) {
 	cfg, _ := writeCodeTree(t, map[string]string{"agent.py": "x\n", "tools/a.py": "a\n"})
 
 	var buf bytes.Buffer
-	require.NoError(t, runDeployCmd(t, flags.OutputText, &buf, "", codeConfigAt(cfg.CodeSource.RootPath), "dry-run", "true"))
-	assert.Contains(t, buf.String(), "Dry run: the model from code would include 2 file(s):\n  agent.py\n  tools/a.py\n")
+	require.NoError(t, runDeployCmd(t, flags.OutputText, &buf, "", entryConfigAt(cfg.CodeSource.RootPath), "dry-run", "true"))
+	assert.Contains(t, buf.String(), "Dry run: model.entry would send 2 file(s):\n  agent.py\n  tools/a.py\n")
 
 	buf.Reset()
-	require.NoError(t, runDeployCmd(t, flags.OutputJSON, &buf, "", codeConfigAt(cfg.CodeSource.RootPath), "dry-run", "true"))
+	require.NoError(t, runDeployCmd(t, flags.OutputJSON, &buf, "", entryConfigAt(cfg.CodeSource.RootPath), "dry-run", "true"))
 	var got struct {
 		Data deployResult `json:"data"`
 	}
@@ -370,9 +373,9 @@ func TestDeployDryRunListsCodeFiles(t *testing.T) {
 	assert.Equal(t, []string{"agent.py", "tools/a.py"}, got.Data.CodeFiles)
 }
 
-// codeConfigAt is codeDeployConfig with its code at root.
-func codeConfigAt(root string) string {
-	return strings.Replace(codeDeployConfig, "root_path: .", "root_path: "+strconv.Quote(filepath.ToSlash(root)), 1)
+// entryConfigAt is entryDeployConfig with its code at root.
+func entryConfigAt(root string) string {
+	return strings.Replace(entryDeployConfig, "root_path: .", "root_path: "+strconv.Quote(filepath.ToSlash(root)), 1)
 }
 
 func TestDeployFlagValidation(t *testing.T) {

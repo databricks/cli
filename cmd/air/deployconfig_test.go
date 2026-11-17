@@ -26,9 +26,11 @@ env_variables:
   LOG_LEVEL: info
 `
 
-const codeDeployConfig = `registered_model: main.agents.support
+// entryDeployConfig is a checkpoint served by Python code, model.entry.
+const entryDeployConfig = `registered_model: main.agents.support
 model:
-  type: code
+  type: checkpoint
+  path: /Volumes/main/models/weights/support
   entry: agent.py
 task: agent/v1/responses
 code_source:
@@ -39,7 +41,7 @@ environment:
   dependencies: [mlflow==3.5.0]
 endpoint: support-agent
 compute:
-  workload_type: CPU
+  workload_type: GPU_SMALL
   workload_size: Small
   scale_to_zero: true
 `
@@ -106,7 +108,7 @@ func TestLoadDeployConfigPythonCheckpoint(t *testing.T) {
 	assert.Equal(t, "client.6-gpu", cfg.servingRuntime())
 
 	streamable := false
-	code := &modelPackageCode{EntryFile: "model.py", EntrySource: "import mlflow\n", Files: []modelPackageFile{{Path: "util/a.py", Content: "x = 1\n"}}}
+	code := &modelPackagePythonModel{EntryFile: "model.py", EntrySource: "import mlflow\n", Files: []modelPackageFile{{Path: "util/a.py", Content: "x = 1\n"}}}
 	req := cfg.registrationRequest("key-1", code)
 	assert.Equal(t, registerModelPackageRequest{
 		RegisteredModel: "main.ml.whisper",
@@ -131,16 +133,16 @@ func TestLoadDeployConfigPythonCheckpointWithoutTask(t *testing.T) {
 	text = strings.Replace(text, "  model_config: {language: en, beams: 4}\n  streamable: false\n", "", 1)
 	cfg, err := loadDeployConfigText(t, text)
 	require.NoError(t, err)
-	req := cfg.registrationRequest("k", &modelPackageCode{EntryFile: "model.py"})
+	req := cfg.registrationRequest("k", &modelPackagePythonModel{EntryFile: "model.py"})
 	assert.Empty(t, req.Checkpoint.Task)
 	assert.Nil(t, req.Checkpoint.PythonModel.Streamable)
 	assert.Empty(t, req.Checkpoint.PythonModel.ModelConfig)
 }
 
-func TestLoadDeployConfigCodeOnCPU(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, codeDeployConfig)
+func TestLoadDeployConfigEntryCheckpointServedEntity(t *testing.T) {
+	cfg, err := loadDeployConfigText(t, entryDeployConfig)
 	require.NoError(t, err)
-	assert.Equal(t, "client.5", cfg.servingRuntime())
+	assert.Equal(t, "client.5-gpu", cfg.servingRuntime())
 	assert.Nil(t, cfg.servedEnvironmentVars())
 
 	entity := cfg.servedEntity("4")
@@ -161,20 +163,23 @@ compute: {workload_type: CPU, workload_size: Small}
 	assert.Equal(t, "7", *cfg.Model.Version)
 }
 
-func TestLoadDeployConfigSavedModelDir(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, `registered_model: main.ml.churn
-model: {type: saved_model_dir, path: /Volumes/main/ml/runs/model}
-mlflow_experiment_path: /Shared/churn
+func TestLoadDeployConfigRejectsUnsupportedModelTypes(t *testing.T) {
+	for _, modelType := range []string{"code", "saved_model_dir"} {
+		t.Run(modelType, func(t *testing.T) {
+			_, err := loadDeployConfigText(t, `registered_model: main.ml.churn
+model: {type: `+modelType+`, path: /Volumes/main/ml/runs/model}
 endpoint: churn
-compute: {workload_type: CPU, workload_size: Small}
+compute: {workload_type: GPU_SMALL, workload_size: Small}
 `)
+			assert.ErrorContains(t, err, `model.type must be one of checkpoint, registered, got "`+modelType+`"`)
+		})
+	}
+}
+
+func TestLoadDeployConfigExperimentPath(t *testing.T) {
+	cfg, err := loadDeployConfigText(t, checkpointDeployConfig+"mlflow_experiment_path: /Shared/qwen\n")
 	require.NoError(t, err)
-	assert.Equal(t, registerModelPackageRequest{
-		RegisteredModel: "main.ml.churn",
-		IdempotencyKey:  "k",
-		SavedModel:      &modelPackageSavedModel{VolumePath: "/Volumes/main/ml/runs/model"},
-		ExperimentPath:  "/Shared/churn",
-	}, cfg.registrationRequest("k", nil))
+	assert.Equal(t, "/Shared/qwen", cfg.registrationRequest("k", nil).ExperimentPath)
 }
 
 func TestLoadDeployConfigOverride(t *testing.T) {
@@ -207,7 +212,7 @@ func TestDeployConfigValidation(t *testing.T) {
 	}{
 		{"bad model name", replaceFirst("main.models.qwen", "qwen"), "registered_model must be a Unity Catalog model name"},
 		{"backticked model name", replaceFirst("main.models.qwen", "main.models.`qwen`"), "registered_model must be a Unity Catalog model name"},
-		{"unknown type", replaceFirst("type: checkpoint", "type: pickle"), `model.type must be one of checkpoint, code, saved_model_dir, registered, got "pickle"`},
+		{"unknown type", replaceFirst("type: checkpoint", "type: pickle"), `model.type must be one of checkpoint, registered, got "pickle"`},
 		{"checkpoint without task", replaceFirst("task: llm/v1/chat\n", ""), "task is required when command is set"},
 		{"checkpoint without command", dropLine("command:"), "exactly one of command and model.entry is required when model.type is checkpoint"},
 		{"checkpoint with command and entry", replaceFirst("  type: checkpoint\n", "  type: checkpoint\n  entry: a.py\n"), "exactly one of command and model.entry is required when model.type is checkpoint"},
@@ -248,24 +253,22 @@ func TestDeployConfigValidation(t *testing.T) {
 }
 
 func TestDeployConfigSourceFields(t *testing.T) {
-	base := "endpoint: e\ncompute: {workload_type: CPU, workload_size: Small}\nregistered_model: a.b.c\n"
+	base := "endpoint: e\ncompute: {workload_type: GPU_SMALL, workload_size: Small}\nregistered_model: a.b.c\n"
 	tests := []struct {
 		name    string
 		source  string
 		wantErr string
 	}{
-		{"code without entry", "model: {type: code}\ncode_source: {root_path: .}\n", "model.entry is required when model.type is code"},
-		{"code without code_source", "model: {type: code, entry: agent.py}\n", "code_source is required when model.type is code"},
-		{"code with command", "model: {type: code, entry: agent.py}\ncode_source: {root_path: .}\ncommand: x\n", "command can't be set when model.type is code"},
-		{"code entry in a directory", "model: {type: code, entry: src/agent.py}\ncode_source: {root_path: .}\n", "model.entry must name a .py file directly under code_source.root_path"},
-		{"code entry not python", "model: {type: code, entry: agent.ipynb}\ncode_source: {root_path: .}\n", "model.entry must name a .py file"},
-		{"code without include_paths", "model: {type: code, entry: agent.py}\ncode_source: {root_path: .}\n", "code_source.include_paths is required: list the files and directories to send"},
-		{"code include pathspec magic", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\":!creds.json\"]}\n", `code_source.include_paths must name files and directories, without patterns or surrounding spaces, got ":!creds.json"`},
-		{"code include glob", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\"*\"]}\n", `code_source.include_paths must name files and directories, without patterns or surrounding spaces, got "*"`},
-		{"code include padded", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\" agent.py\"]}\n", `got " agent.py"`},
-		{"code include traversal", "model: {type: code, entry: agent.py}\ncode_source: {root_path: ., include_paths: [../x]}\n", "code_source.include_paths cannot contain '..' traversal"},
-		{"saved model with task", "model: {type: saved_model_dir, path: /Volumes/a/b/c/m}\ntask: llm/v1/chat\n", "task can't be set when model.type is saved_model_dir"},
-		{"saved model with environment", "model: {type: saved_model_dir, path: /Volumes/a/b/c/m}\nenvironment: {version: 6}\n", "environment can't be set when model.type is saved_model_dir"},
+		{"checkpoint entry without code_source", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\n", "code_source is required when model.entry is set"},
+		{"checkpoint entry in a directory", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: src/agent.py}\ncode_source: {root_path: ., include_paths: [src]}\n", "model.entry must name a .py file directly under code_source.root_path"},
+		{"checkpoint entry not python", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.ipynb}\ncode_source: {root_path: ., include_paths: [agent.ipynb]}\n", "model.entry must name a .py file"},
+		{"checkpoint entry without include_paths", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: .}\n", "code_source.include_paths is required: list the files and directories to send"},
+		{"checkpoint include pathspec magic", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\":!creds.json\"]}\n", `code_source.include_paths must name files and directories, without patterns or surrounding spaces, got ":!creds.json"`},
+		{"checkpoint include glob", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\"*\"]}\n", `code_source.include_paths must name files and directories, without patterns or surrounding spaces, got "*"`},
+		{"checkpoint include padded", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: ., include_paths: [\" agent.py\"]}\n", `got " agent.py"`},
+		{"checkpoint include traversal", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: ., include_paths: [../x]}\n", "code_source.include_paths cannot contain '..' traversal"},
+		{"checkpoint entry with command", "model: {type: checkpoint, path: /Volumes/a/b/c/m, entry: agent.py}\ncode_source: {root_path: ., include_paths: [agent.py]}\ntask: llm/v1/chat\ncommand: x\n", "exactly one of command and model.entry is required"},
+		{"registered with entry", "model: {type: registered, version: 3, entry: agent.py}\n", "model.entry can't be set when model.type is registered"},
 		{"registered without version", "model: {type: registered}\n", "model.version is required when model.type is registered"},
 		{"registered with path", "model: {type: registered, version: 3, path: /Volumes/a/b/c/m}\n", "model.path can't be set when model.type is registered"},
 		{"registered with token", "model: {type: registered, version: 3}\nidempotency_token: k\n", "idempotency_token can't be set when model.type is registered"},

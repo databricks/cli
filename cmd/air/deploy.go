@@ -70,7 +70,8 @@ func withCode(code string, retryable bool, err error) error {
 type deployResult struct {
 	Status string `json:"status"`
 	DryRun bool   `json:"dry_run,omitempty"`
-	// CodeFiles lists, on a dry run of a model from code, the files it would send.
+	// CodeFiles lists, on a dry run of a checkpoint served by model.entry, the
+	// files it would send.
 	CodeFiles       []string `json:"code_files,omitempty"`
 	RegisteredModel string   `json:"registered_model,omitempty"`
 	ModelVersion    string   `json:"model_version,omitempty"`
@@ -110,11 +111,10 @@ func newDeployCommandWithPollInterval(pollInterval time.Duration) *cobra.Command
 		Long: `Register a model in Unity Catalog and serve it on a Model Serving endpoint.
 
 The deployment is described by a YAML file (see --file). The model is a
-checkpoint (weights in a Unity Catalog volume and the command that serves
-them), a model from code, a model directory saved by MLflow, or an existing
-model version. air deploy registers a new version, waits until it is ready,
-then creates or updates the endpoint to serve it and waits until the endpoint
-is ready.
+checkpoint (weights in a Unity Catalog volume, served by a command or by a
+Python file that builds an MLflow model) or an existing model version.
+air deploy registers a new version, waits until it is ready, then creates or
+updates the endpoint to serve it and waits until the endpoint is ready.
 
 Registration is idempotent: run air deploy again with the idempotency key it
 prints to continue an interrupted deployment. To look up a YAML field, pass
@@ -201,9 +201,9 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 		return withCode(codeInvalidArgs, false, err)
 	}
 
-	var code *modelPackageCode
+	var code *modelPackagePythonModel
 	if cfg.Model.Entry != nil {
-		code, err = collectModelCode(ctx, cfg, opts.file)
+		code, err = collectEntryCode(ctx, cfg, opts.file)
 		if err != nil {
 			return withCode(codeInvalidArgs, false, err)
 		}
@@ -269,9 +269,9 @@ func runDeploy(cmd *cobra.Command, opts deployOptions, pollInterval time.Duratio
 	return nil
 }
 
-// renderDeployDryRun reports a valid config and, for a model from code, the
-// files a deployment would send.
-func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPackageCode, jsonOut bool) error {
+// renderDeployDryRun reports a valid config and, for a checkpoint served by
+// model.entry, the files a deployment would send.
+func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPackagePythonModel, jsonOut bool) error {
 	var files []string
 	if code != nil {
 		files = codeFilePaths(code)
@@ -280,7 +280,7 @@ func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPacka
 		return renderEnvelope(ctx, deployResult{Status: "DRY_RUN_OK", DryRun: true, CodeFiles: files})
 	}
 	if code != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("Dry run: the model from code would include %d file(s):", len(files)))
+		cmdio.LogString(ctx, fmt.Sprintf("Dry run: model.entry would send %d file(s):", len(files)))
 		for _, f := range files {
 			cmdio.LogString(ctx, "  "+f)
 		}
@@ -291,7 +291,7 @@ func renderDeployDryRun(ctx context.Context, cfg *deployConfig, code *modelPacka
 
 // registerDeployment registers the version and makes it ready to serve, showing
 // progress on a spinner when show is true. Its errors say how to continue.
-func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg *deployConfig, opts deployOptions, code *modelPackageCode, key string, pollInterval time.Duration, show bool) (*registerModelPackageResponse, error) {
+func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg *deployConfig, opts deployOptions, code *modelPackagePythonModel, key string, pollInterval time.Duration, show bool) (*registerModelPackageResponse, error) {
 	// Printed to stderr in every output mode, before the first request, so a run
 	// that is killed can still be continued with this key.
 	cmdio.LogString(ctx, fmt.Sprintf("Registering a version of %s with idempotency key %s", cfg.RegisteredModel, key))
@@ -312,11 +312,7 @@ func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 	}
 	resume := deployResumeCommand(w.Config.Profile, opts, key)
 	if errors.Is(err, errStagingFailed) {
-		source := "the checkpoint's weights"
-		if cfg.Model.Path != nil {
-			source = "the weights in " + *cfg.Model.Path
-		}
-		return nil, withCode(codeStagingFailed, true, fmt.Errorf("copying %s into version %s of %s failed. Check that you can read every file, then run:\n  %s --retry-failed-staging", source, stripControl(resp.ModelVersion), cfg.RegisteredModel, resume))
+		return nil, withCode(codeStagingFailed, true, fmt.Errorf("copying the weights in %s into version %s of %s failed. Check that you can read every file, then run:\n  %s --retry-failed-staging", *cfg.Model.Path, stripControl(resp.ModelVersion), cfg.RegisteredModel, resume))
 	}
 	if stopped := deployStopped(ctx, err); stopped != nil {
 		continuing := ""

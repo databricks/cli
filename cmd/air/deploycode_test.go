@@ -25,13 +25,13 @@ func codeTreeConfig(t *testing.T, dir string, files map[string]string) (*deployC
 	for rel, content := range files {
 		writeRepoFile(t, dir, filepath.FromSlash(rel), content)
 	}
-	entry, task := "agent.py", "agent/v1/responses"
+	entry, task, path := "agent.py", "agent/v1/responses", "/Volumes/main/models/weights/support"
 	cfg := &deployConfig{
-		Model:       &deployModelConfig{Type: modelTypeCode, Entry: &entry},
+		Model:       &deployModelConfig{Type: modelTypeCheckpoint, Path: &path, Entry: &entry},
 		Task:        &task,
 		CodeSource:  &deployCodeSourceConfig{RootPath: dir},
 		Environment: &deployEnvironmentConfig{Dependencies: []string{"mlflow==3.5.0"}},
-		Compute:     &deployComputeConfig{WorkloadType: "CPU", WorkloadSize: "Small"},
+		Compute:     &deployComputeConfig{WorkloadType: "GPU_SMALL", WorkloadSize: "Small"},
 	}
 	return cfg, filepath.Join(dir, "deploy.yaml")
 }
@@ -50,12 +50,10 @@ func TestCollectModelCode(t *testing.T) {
 		"configs/prompts/__init__.py.md": "not hidden\n",
 	})
 
-	code, err := collectModelCode(t.Context(), cfg, configPath)
+	code, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	assert.Equal(t, "agent.py", code.EntryFile)
 	assert.Equal(t, "import tools.search\n", code.EntrySource)
-	assert.Equal(t, "agent/v1/responses", code.Task)
-	assert.Equal(t, modelPackageEnvironment{Runtime: "client.6", Dependencies: []string{"mlflow==3.5.0"}}, code.Environment)
 
 	var paths []string
 	for _, f := range code.Files {
@@ -74,9 +72,9 @@ func TestCollectModelCodeIsDeterministic(t *testing.T) {
 	cfg, configPath := writeCodeTree(t, map[string]string{
 		"agent.py": "x = 1\n", "b.py": "b\n", "a/c.py": "c\n", "a.py": "a\n",
 	})
-	first, err := collectModelCode(t.Context(), cfg, configPath)
+	first, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
-	second, err := collectModelCode(t.Context(), cfg, configPath)
+	second, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	assert.Equal(t, first, second)
 }
@@ -86,7 +84,7 @@ func TestCollectModelCodeIncludePaths(t *testing.T) {
 		"agent.py": "x = 1\n", "tools/a.py": "a\n", "data/big.csv": "1,2\n",
 	})
 	cfg.CodeSource.IncludePaths = []string{"agent.py", "tools"}
-	code, err := collectModelCode(t.Context(), cfg, configPath)
+	code, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	require.Len(t, code.Files, 1)
 	assert.Equal(t, "tools/a.py", code.Files[0].Path)
@@ -110,7 +108,7 @@ func TestCollectModelCodeErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, configPath := writeCodeTree(t, tt.files)
 			cfg.CodeSource.IncludePaths = tt.include
-			_, err := collectModelCode(t.Context(), cfg, configPath)
+			_, err := collectEntryCode(t.Context(), cfg, configPath)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
@@ -121,7 +119,7 @@ func TestCollectModelCodeLeavesOutIgnoredFiles(t *testing.T) {
 		"agent.py": "x\n", "credentials.json": "{}\n", "tools/a.py": "a\n",
 	})
 	require.NoError(t, os.WriteFile(filepath.Join(cfg.CodeSource.RootPath, ".gitignore"), []byte("credentials.json\n"), 0o600))
-	code, err := collectModelCode(t.Context(), cfg, configPath)
+	code, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"agent.py", "tools/a.py"}, codeFilePaths(code))
 }
@@ -133,14 +131,14 @@ func TestCollectModelCodeRefusesTrackedIgnoredFiles(t *testing.T) {
 	writeRepoFile(t, repo, ".gitignore", "creds.json\n")
 	cfg.CodeSource.IncludePaths = []string{"agent.py", "creds.json"}
 
-	_, err := collectModelCode(t.Context(), cfg, configPath)
+	_, err := collectEntryCode(t.Context(), cfg, configPath)
 	assert.ErrorContains(t, err, "code_source file creds.json matches a .gitignore rule but is tracked by git")
 }
 
 func TestCollectModelCodeOutsideGit(t *testing.T) {
 	cfg, configPath := codeTreeConfig(t, t.TempDir(), map[string]string{"agent.py": "x\n", "tools/a.py": "a\n", "credentials.json": "{}\n"})
 	cfg.CodeSource.IncludePaths = []string{"agent.py", "tools"}
-	code, err := collectModelCode(t.Context(), cfg, configPath)
+	code, err := collectEntryCode(t.Context(), cfg, configPath)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"agent.py", "tools/a.py"}, codeFilePaths(code))
 }
@@ -151,7 +149,7 @@ func TestCollectModelCodeChecksSizesBeforeReading(t *testing.T) {
 	cfg, configPath := writeCodeTree(t, map[string]string{
 		"agent.py": "x\n", "data.bin": strings.Repeat("\xff", maxCodePackageBytes+1),
 	})
-	_, err := collectModelCode(t.Context(), cfg, configPath)
+	_, err := collectEntryCode(t.Context(), cfg, configPath)
 	assert.ErrorContains(t, err, "total more than 4194304 bytes")
 }
 
@@ -161,7 +159,7 @@ func TestCollectModelCodeRejectsSymlink(t *testing.T) {
 	if err := os.Symlink("real.py", filepath.Join(dir, "link.py")); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
-	_, err := collectModelCode(t.Context(), cfg, configPath)
+	_, err := collectEntryCode(t.Context(), cfg, configPath)
 	assert.ErrorContains(t, err, "code_source path link.py isn't a regular file")
 }
 
@@ -171,8 +169,8 @@ func TestCollectModelCodeTooManyFiles(t *testing.T) {
 		files[fmt.Sprintf("pkg/m%d.py", i)] = ""
 	}
 	cfg, configPath := writeCodeTree(t, files)
-	_, err := collectModelCode(t.Context(), cfg, configPath)
-	assert.ErrorContains(t, err, "code_source sends 1002 files, but a model from code can include at most 1000 besides model.entry")
+	_, err := collectEntryCode(t.Context(), cfg, configPath)
+	assert.ErrorContains(t, err, "code_source sends 1002 files, but model.entry can bring at most 1000 other files")
 }
 
 func TestSentCodePath(t *testing.T) {

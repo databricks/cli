@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -45,18 +46,17 @@ const (
 	stagingStateFailed = "FAILED"
 )
 
-// registerModelPackageRequest is the RegisterModelPackageRequest body. Exactly one
-// of Checkpoint, Code and SavedModel is set.
+// registerModelPackageRequest is the RegisterModelPackageRequest body.
 type registerModelPackageRequest struct {
 	RegisteredModel    string                  `json:"registered_model"`
 	IdempotencyKey     string                  `json:"idempotency_key"`
 	Checkpoint         *modelPackageCheckpoint `json:"checkpoint,omitempty"`
-	Code               *modelPackageCode       `json:"code,omitempty"`
-	SavedModel         *modelPackageSavedModel `json:"saved_model,omitempty"`
 	ExperimentPath     string                  `json:"experiment_path,omitempty"`
 	RetryFailedStaging bool                    `json:"retry_failed_staging,omitempty"`
 }
 
+// modelPackageCheckpoint is a checkpoint's weights in a volume and what serves
+// them: exactly one of ServingCommand and PythonModel is set.
 type modelPackageCheckpoint struct {
 	VolumePath     string                   `json:"volume_path"`
 	ServingCommand string                   `json:"serving_command,omitempty"`
@@ -77,21 +77,11 @@ type modelPackagePythonModel struct {
 // baseEnvironmentDatabricksAI names the Databricks AI environment to the server.
 const baseEnvironmentDatabricksAI = "databricks-ai"
 
-type modelPackageCode struct {
-	EntryFile   string                  `json:"entry_file"`
-	EntrySource string                  `json:"entry_source"`
-	Files       []modelPackageFile      `json:"files,omitempty"`
-	Task        string                  `json:"task,omitempty"`
-	Environment modelPackageEnvironment `json:"environment"`
-}
-
+// modelPackageFile is a source file the entry file imports, by path relative to
+// code_source.root_path.
 type modelPackageFile struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`
-}
-
-type modelPackageSavedModel struct {
-	VolumePath string `json:"volume_path"`
 }
 
 type modelPackageEnvironment struct {
@@ -143,8 +133,8 @@ type stagingStatusResponse struct {
 	Status *modelStagingStatus `json:"status,omitempty"`
 }
 
-// weightsState is the staging state of a checkpoint's weights, or "" when the
-// response reports none.
+// weightsState is the staging state of a checkpoint's weights, or "" before a
+// response reports it.
 func (r *registerModelPackageResponse) weightsState() string {
 	if r.StagingStatus == nil || r.StagingStatus.ModelArtifact == nil {
 		return ""
@@ -152,8 +142,8 @@ func (r *registerModelPackageResponse) weightsState() string {
 	return r.StagingStatus.ModelArtifact.State
 }
 
-// environmentState is the staging state of the serving environment, or "" when the
-// response reports none.
+// environmentState is the staging state of the serving environment, or "" before
+// a response reports it.
 func (r *registerModelPackageResponse) environmentState() string {
 	if r.StagingStatus == nil || r.StagingStatus.EnvironmentArtifact == nil {
 		return ""
@@ -173,9 +163,10 @@ func (e *finalizeError) Error() string { return e.err.Error() }
 
 func (e *finalizeError) Unwrap() error { return e.err }
 
-// registrationRequest builds the request that registers cfg's model under key.
-// code is the collected code of model.entry, and is nil when there is none.
-func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) registerModelPackageRequest {
+// registrationRequest builds the request that registers cfg's checkpoint under key.
+// code is the collected code of model.entry, and is nil when a command serves the
+// checkpoint.
+func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonModel) registerModelPackageRequest {
 	req := registerModelPackageRequest{
 		RegisteredModel: c.RegisteredModel,
 		IdempotencyKey:  key,
@@ -183,45 +174,39 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackageCode) r
 	if c.MLflowExperimentPath != nil {
 		req.ExperimentPath = *c.MLflowExperimentPath
 	}
-	switch c.Model.Type {
-	case modelTypeCheckpoint:
-		checkpoint := &modelPackageCheckpoint{VolumePath: *c.Model.Path, Environment: c.servingEnvironment()}
-		if c.Task != nil {
-			checkpoint.Task = *c.Task
-		}
-		if c.Command != nil {
-			checkpoint.ServingCommand = *c.Command
-		} else {
-			checkpoint.PythonModel = &modelPackagePythonModel{
-				EntryFile:   code.EntryFile,
-				EntrySource: code.EntrySource,
-				Files:       code.Files,
-				Streamable:  c.Model.Streamable,
-			}
-			if c.Model.ModelConfig != nil {
-				// The YAML decoded as JSON-compatible values; the server reads a JSON object.
-				raw, _ := json.Marshal(c.Model.ModelConfig)
-				checkpoint.PythonModel.ModelConfig = string(raw)
-			}
-		}
-		req.Checkpoint = checkpoint
-	case modelTypeCode:
-		req.Code = code
-	case modelTypeSavedModelDir:
-		req.SavedModel = &modelPackageSavedModel{VolumePath: *c.Model.Path}
+	checkpoint := &modelPackageCheckpoint{VolumePath: *c.Model.Path, Environment: c.servingEnvironment()}
+	if c.Task != nil {
+		checkpoint.Task = *c.Task
 	}
+	if c.Command != nil {
+		checkpoint.ServingCommand = *c.Command
+	} else {
+		checkpoint.PythonModel = &modelPackagePythonModel{
+			EntryFile:   code.EntryFile,
+			EntrySource: code.EntrySource,
+			Files:       code.Files,
+			Streamable:  c.Model.Streamable,
+		}
+		if c.Model.ModelConfig != nil {
+			// The YAML decoded as JSON-compatible values; the server reads a JSON object.
+			raw, _ := json.Marshal(c.Model.ModelConfig)
+			checkpoint.PythonModel.ModelConfig = string(raw)
+		}
+	}
+	req.Checkpoint = checkpoint
 	return req
 }
 
 // registerAndFinalize registers req's version and makes it ready to serve,
-// calling progress with the registration response and every staging update. A
+// calling progress with the registration response and every staging update. The
 // checkpoint's weights are copied into the version after registering: while they
-// are, it polls the staging status, a read. It then finalizes the version, for
-// every source; the server checks that the version is ready to finalize. A
-// version that is already ready, such as one an earlier run finalized, is
-// returned as it is. On error it returns the last response it got, nil before
-// the first one; errStagingFailed when staging failed, and a *finalizeError when
-// finalizing did.
+// are, it polls the staging status, a read. It then finalizes the version; the
+// server checks that the version is ready to finalize. A version that is already
+// ready, such as one an earlier run finalized, is returned as it is. Each
+// response's staging status replaces the last one, and a status without both
+// artifacts' states is an error, not progress. On error it returns the last
+// response it got, nil before the first one; errStagingFailed when staging
+// failed, and a *finalizeError when finalizing did.
 func registerAndFinalize(ctx context.Context, w *databricks.WorkspaceClient, req registerModelPackageRequest, interval time.Duration, progress func(*registerModelPackageResponse)) (*registerModelPackageResponse, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -235,14 +220,15 @@ func registerAndFinalize(ctx context.Context, w *databricks.WorkspaceClient, req
 	if resp.ModelVersion == "" {
 		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned no version", req.RegisteredModel))
 	}
+	if err := checkStagingStatus(resp.StagingStatus, req.RegisteredModel, resp.ModelVersion); err != nil {
+		return nil, err
+	}
 	progress(&resp)
 	if resp.Ready {
 		return &resp, nil
 	}
-	if req.Checkpoint != nil {
-		if err := p.waitForWeights(ctx, req.RegisteredModel, &resp, progress); err != nil {
-			return &resp, err
-		}
+	if err := p.waitForWeights(ctx, req.RegisteredModel, &resp, progress); err != nil {
+		return &resp, err
 	}
 	if resp.weightsState() == stagingStateFailed {
 		return &resp, errStagingFailed
@@ -255,27 +241,38 @@ func registerAndFinalize(ctx context.Context, w *databricks.WorkspaceClient, req
 	if finalized.ModelVersion != resp.ModelVersion {
 		return &resp, &finalizeError{withCode(codeInternalError, true, fmt.Errorf("the server finalized version %q instead", stripControl(finalized.ModelVersion)))}
 	}
+	if err := checkStagingStatus(finalized.StagingStatus, req.RegisteredModel, resp.ModelVersion); err != nil {
+		return &resp, &finalizeError{err}
+	}
 	resp.Ready = true
-	resp.StagingStatus = mergeStagingStatus(resp.StagingStatus, finalized.StagingStatus)
+	resp.StagingStatus = finalized.StagingStatus
 	return &resp, nil
 }
 
-// mergeStagingStatus is newer, with each artifact it doesn't report kept from
-// older.
-func mergeStagingStatus(older, newer *modelStagingStatus) *modelStagingStatus {
-	if newer == nil {
-		return older
+// knownStagingStates are the artifact states the staging status API reports.
+var knownStagingStates = []string{stagingStateNotStaged, stagingStateInProgress, stagingStateSucceeded, stagingStateFailed}
+
+// checkStagingStatus checks that status, from a response about version of model,
+// reports a known state for both the weights and the serving environment, as the
+// server always does. Anything else is a response air deploy can't act on, so it
+// fails rather than being read as progress until the timeout.
+func checkStagingStatus(status *modelStagingStatus, model, version string) error {
+	var problem string
+	switch {
+	case status == nil:
+		problem = "it has no staging status"
+	case status.ModelArtifact == nil || status.ModelArtifact.State == "":
+		problem = "its staging status has no state for the weights"
+	case !slices.Contains(knownStagingStates, status.ModelArtifact.State):
+		problem = fmt.Sprintf("its staging status has an unknown state %q for the weights", stripControl(status.ModelArtifact.State))
+	case status.EnvironmentArtifact == nil || status.EnvironmentArtifact.State == "":
+		problem = "its staging status has no state for the serving environment"
+	case !slices.Contains(knownStagingStates, status.EnvironmentArtifact.State):
+		problem = fmt.Sprintf("its staging status has an unknown state %q for the serving environment", stripControl(status.EnvironmentArtifact.State))
+	default:
+		return nil
 	}
-	merged := *newer
-	if older != nil {
-		if merged.ModelArtifact == nil {
-			merged.ModelArtifact = older.ModelArtifact
-		}
-		if merged.EnvironmentArtifact == nil {
-			merged.EnvironmentArtifact = older.EnvironmentArtifact
-		}
-	}
-	return &merged
+	return withCode(codeInternalError, true, fmt.Errorf("air deploy can't read Model Serving's response about version %s of %s: %s", stripControl(version), model, problem))
 }
 
 // modelServingPoller sends the requests of a registration that can take many
@@ -286,17 +283,12 @@ type modelServingPoller struct {
 	interval time.Duration
 }
 
-// waitForWeights polls the staging status of resp's version of model, updating
-// resp, until its weights are copied, failed to copy, or have no staging record.
-// A state it doesn't know, or a status without one, is waited out like a copy in
-// progress, until the context ends.
+// waitForWeights polls the staging status of resp's version of model, replacing
+// resp's status with each one, until its weights are copied, failed to copy, or
+// have no staging record. resp's status was checked, and so is each new one.
 func (p modelServingPoller) waitForWeights(ctx context.Context, model string, resp *registerModelPackageResponse, progress func(*registerModelPackageResponse)) error {
 	statusReq := stagingStatusRequest{Model: model, ModelVersion: resp.ModelVersion}
-	for {
-		switch resp.weightsState() {
-		case stagingStateSucceeded, stagingStateFailed, stagingStateNotStaged:
-			return nil
-		}
+	for resp.weightsState() == stagingStateInProgress {
 		if err := sleepOrCancel(ctx, p.interval); err != nil {
 			return err
 		}
@@ -304,9 +296,13 @@ func (p modelServingPoller) waitForWeights(ctx context.Context, model string, re
 		if err := p.post(ctx, stagingStatusPath, statusReq, &status); err != nil {
 			return err
 		}
-		resp.StagingStatus = mergeStagingStatus(resp.StagingStatus, status.Status)
+		if err := checkStagingStatus(status.Status, model, resp.ModelVersion); err != nil {
+			return err
+		}
+		resp.StagingStatus = status.Status
 		progress(resp)
 	}
+	return nil
 }
 
 // post sends a request, repeating it after a transient failure the SDK doesn't

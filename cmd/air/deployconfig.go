@@ -25,14 +25,12 @@ import (
 
 // Model sources, as model.type.
 const (
-	modelTypeCheckpoint    = "checkpoint"
-	modelTypeCode          = "code"
-	modelTypeSavedModelDir = "saved_model_dir"
-	modelTypeRegistered    = "registered"
+	modelTypeCheckpoint = "checkpoint"
+	modelTypeRegistered = "registered"
 )
 
 // modelTypes lists model.type values in the order the help and errors name them.
-var modelTypes = []string{modelTypeCheckpoint, modelTypeCode, modelTypeSavedModelDir, modelTypeRegistered}
+var modelTypes = []string{modelTypeCheckpoint, modelTypeRegistered}
 
 // Audio tasks: their requests are multipart uploads of a recording, sent to the
 // endpoint's audio route rather than to invocations.
@@ -76,18 +74,18 @@ var endpointNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCo
 // workloadSizes are the concurrency tiers a served entity scales to.
 var workloadSizes = []string{"Small", "Medium", "Large"}
 
-// entryFileRe matches the name of a model from code's entry file, which the server
-// places at the model's root.
+// entryFileRe matches the name of model.entry, the Python file the server places
+// at the model's root.
 var entryFileRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]*\.py$`) })
 
 // deployConfig is the `air deploy` YAML schema: a model to register in Unity
 // Catalog and the serving endpoint that serves it.
 type deployConfig struct {
 	RegisteredModel string                   `yaml:"registered_model" help:"Unity Catalog model, as <catalog>.<schema>.<model>. air deploy registers a new version of it, creating the model if it doesn't exist, unless model.type is registered." required:"yes" group:"Model"`
-	Model           *deployModelConfig       `yaml:"model" help:"What to serve: a checkpoint, a model from code, a model directory saved by MLflow, or an existing version." required:"yes" group:"Model"`
+	Model           *deployModelConfig       `yaml:"model" help:"What to serve: a checkpoint, or an existing version." required:"yes" group:"Model"`
 	Task            *string                  `yaml:"task" help:"The model's task as MLflow names it. Required with command, and then one Model Serving serves a command for, such as llm/v1/chat, llm/v1/embeddings or llm/v1/audio/transcriptions. Optional with model.entry, e.g. llm/v1/chat or agent/v1/responses, where it selects MLflow's signature; a model without a task has no signature." required:"when command is set" group:"Model"`
 	Command         *string                  `yaml:"command" help:"Shell command that starts a model server over a checkpoint's weights, at most 32,768 characters, serving task on port 8080. It runs from the directory where model.path appears under its own name. Set either command or model.entry." required:"when model.type is checkpoint and model.entry is not set" group:"Model"`
-	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve on and the packages to install, for a checkpoint or a model from code." group:"Model"`
+	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve a checkpoint on and the packages to install." group:"Model"`
 	CodeSource      *deployCodeSourceConfig  `yaml:"code_source" help:"Local code of model.entry, sent with the registration and stored in the model version, where anyone who can read the model can read it. Only the files under include_paths are sent, leaving out files git ignores, hidden files and directories (names starting with '.') and __pycache__ directories; run with --dry-run to list them." required:"when model.entry is set" group:"Model"`
 
 	Endpoint     string               `yaml:"endpoint" help:"Serving endpoint to serve the model on. It is created if it doesn't exist. An endpoint that serves one version of registered_model is updated to serve this version instead, with the compute, environment variables and secrets in this file replacing the ones it has; air deploy doesn't change an endpoint that serves anything else." required:"yes" group:"Serving"`
@@ -101,9 +99,9 @@ type deployConfig struct {
 
 // deployModelConfig is the `model` block: where the served model comes from.
 type deployModelConfig struct {
-	Type        string         `yaml:"type" help:"One of checkpoint (weights in a volume, served by command or by the Python file model.entry), code (a Python file from code_source, no weights), saved_model_dir (a model directory saved by MLflow in a volume) or registered (an existing version of registered_model)." required:"yes"`
-	Path        *string        `yaml:"path" help:"Unity Catalog volume directory, as /Volumes/<catalog>/<schema>/<volume>/<path>, holding a checkpoint's weights or a model saved by MLflow. Model Serving copies it, with its subdirectories, into the version, where it appears under its own name: command finds it there, and model.entry reads its path as context.artifacts[\"<its name>\"]." required:"when type is checkpoint or saved_model_dir"`
-	Entry       *string        `yaml:"entry" help:"Python file directly under code_source.root_path that builds the model and calls mlflow.models.set_model, e.g. model.py. Model Serving's model server loads it and calls its predict; for a checkpoint, set either entry or command." required:"when type is code"`
+	Type        string         `yaml:"type" help:"One of checkpoint (weights in a volume, served by command or by the Python file model.entry) or registered (an existing version of registered_model)." required:"yes"`
+	Path        *string        `yaml:"path" help:"Unity Catalog volume directory, as /Volumes/<catalog>/<schema>/<volume>/<path>, holding a checkpoint's weights. Model Serving copies it, with its subdirectories, into the version, where it appears under its own name: command finds it there, and model.entry reads its path as context.artifacts[\"<its name>\"]." required:"when type is checkpoint"`
+	Entry       *string        `yaml:"entry" help:"Python file directly under code_source.root_path that builds the model and calls mlflow.models.set_model, e.g. model.py. Model Serving's model server loads it and calls its predict. Set either entry or command." required:"when type is checkpoint and command is not set"`
 	ModelConfig map[string]any `yaml:"model_config" help:"Settings model.entry reads as context.model_config, as MLflow's log_model(model_config=...) records them."`
 	Streamable  *bool          `yaml:"streamable" help:"Whether model.entry answers streaming requests with predict_stream. MLflow detects this from the class when it logs a model; here it is declared. Defaults to true for a chat or agent task and false otherwise."`
 	Version     *string        `yaml:"version" help:"Version of registered_model to serve, e.g. 3." required:"when type is registered"`
@@ -112,10 +110,10 @@ type deployModelConfig struct {
 // deployEnvironmentConfig is the `environment` block of a deployment.
 type deployEnvironmentConfig struct {
 	Version      *stringOrInt `yaml:"version" help:"Serverless environment to serve on: 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment (default: 6), as for air run. The model uses its Python version. Standard includes CUDA but not PyTorch; the Databricks AI environment adds PyTorch, Transformers and vLLM, and needs GPU compute. A command that doesn't install SGLang runs on the Databricks AI environment either way."`
-	Dependencies []string     `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000. A model from code must list mlflow or mlflow-skinny."`
+	Dependencies []string     `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000."`
 }
 
-// deployCodeSourceConfig is the `code_source` block of a model from code.
+// deployCodeSourceConfig is the `code_source` block: the local code of model.entry.
 type deployCodeSourceConfig struct {
 	RootPath     string   `yaml:"root_path" help:"Directory holding the model's code. A relative path resolves against the YAML file's directory." required:"yes"`
 	IncludePaths []string `yaml:"include_paths" help:"Files and directories to send, relative to root_path and without \"..\", e.g. [agent.py, tools]." required:"yes"`
@@ -132,18 +130,14 @@ type deployComputeConfig struct {
 // addition to the required ones in requiredSourceFields. Every other source field
 // is rejected, so a field the source can't use is never silently dropped.
 var sourceFields = map[string][]string{
-	modelTypeCheckpoint:    {"model.entry", "model.model_config", "model.streamable", "task", "command", "code_source", "environment", "idempotency_token", "mlflow_experiment_path"},
-	modelTypeCode:          {"task", "environment", "idempotency_token", "mlflow_experiment_path"},
-	modelTypeSavedModelDir: {"idempotency_token", "mlflow_experiment_path"},
-	modelTypeRegistered:    {},
+	modelTypeCheckpoint: {"model.entry", "model.model_config", "model.streamable", "task", "command", "code_source", "environment", "idempotency_token", "mlflow_experiment_path"},
+	modelTypeRegistered: {},
 }
 
 // requiredSourceFields lists the fields each model.type requires.
 var requiredSourceFields = map[string][]string{
-	modelTypeCheckpoint:    {"model.path"},
-	modelTypeCode:          {"model.entry", "code_source"},
-	modelTypeSavedModelDir: {"model.path"},
-	modelTypeRegistered:    {"model.version"},
+	modelTypeCheckpoint: {"model.path"},
+	modelTypeRegistered: {"model.version"},
 }
 
 // validate runs structural validation over the whole config, returning the
@@ -276,7 +270,6 @@ func (c *deployConfig) validateSource() error {
 	return nil
 }
 
-// validate checks the environment version and dependency lines.
 // validateCheckpoint checks the fields of a checkpoint: weights to copy, and
 // exactly one way to serve them.
 func (c *deployConfig) validateCheckpoint() error {
@@ -305,6 +298,7 @@ func validateVolumeDirectory(field, v string) error {
 	return nil
 }
 
+// validate checks the environment version and dependency lines.
 func (e *deployEnvironmentConfig) validate() error {
 	if e.Version != nil {
 		if _, _, err := e.runtimeVersion(); err != nil {
@@ -438,6 +432,22 @@ func deploySchema() configField {
     task: llm/v1/chat
     command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --served-model-name base --host 0.0.0.0 --port 8080
     endpoint: qwen-chat
+    compute:
+      workload_type: GPU_MEDIUM
+      workload_size: Small
+
+  A checkpoint served by Python code, model.py, which calls mlflow.models.set_model:
+    registered_model: main.models.whisper
+    model:
+      type: checkpoint
+      path: /Volumes/main/models/weights/whisper
+      entry: model.py
+    code_source:
+      root_path: .
+      include_paths: [model.py]
+    environment:
+      version: databricks_ai_v6
+    endpoint: whisper
     compute:
       workload_type: GPU_MEDIUM
       workload_size: Small`,
