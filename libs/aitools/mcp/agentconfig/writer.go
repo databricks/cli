@@ -39,6 +39,9 @@ var (
 	// ErrConfigInvalid means an agent config file exists but cannot be parsed.
 	// Such a file is never written to.
 	ErrConfigInvalid = errors.New("agent config file cannot be parsed")
+	// ErrReadOnly means an agent config file exists and the user cannot write it,
+	// so the write is refused. The error is a *ReadOnlyError.
+	ErrReadOnly = errors.New("agent config file is read-only")
 )
 
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
@@ -159,7 +162,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
-	if err := checkWritable(a, path); err != nil {
+	if err := checkWritable(path); err != nil {
 		return path, "", err
 	}
 	if err := save(path, doc); err != nil {
@@ -201,7 +204,7 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if err := doc.put(root, name, nil, nil); err != nil {
 		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
-	if err := checkWritable(a, path); err != nil {
+	if err := checkWritable(path); err != nil {
 		return false, err
 	}
 	if err := save(path, doc); err != nil {
@@ -273,17 +276,32 @@ func load(spec *mcpconfig.Spec, path string) (document, error) {
 	return doc, nil
 }
 
+// ReadOnlyError is a write refused because the config file at Path is read-only.
+// It matches ErrReadOnly, and wraps the error that opening the file returned.
+type ReadOnlyError struct {
+	Path string
+	Err  error
+}
+
+func (e *ReadOnlyError) Error() string {
+	return fmt.Sprintf("%s is read-only; make it writable: %v", e.Path, e.Err)
+}
+
+func (e *ReadOnlyError) Unwrap() error { return e.Err }
+
+func (e *ReadOnlyError) Is(target error) bool { return target == ErrReadOnly }
+
 // checkWritable refuses an existing config file that the user cannot write. The
 // save replaces the file by rename, which needs write permission only on the
 // directory, so a read-only file would be replaced anyway. A file the user made
 // read-only is one they mean to keep as it is. A missing file is not refused.
-func checkWritable(a *agents.Agent, path string) error {
+func checkWritable(path string) error {
 	f, err := os.OpenFile(path, os.O_WRONLY, 0)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return nil
 	case errors.Is(err, fs.ErrPermission):
-		return fmt.Errorf("%s is read-only; make it writable or leave %s out of --agents: %w", filepath.ToSlash(path), a.Name, err)
+		return &ReadOnlyError{Path: filepath.ToSlash(path), Err: err}
 	case err != nil:
 		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}

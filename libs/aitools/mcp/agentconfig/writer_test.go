@@ -3,6 +3,7 @@ package agentconfig
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -906,11 +907,14 @@ func TestWriteRefusesReadOnlyFile(t *testing.T) {
 
 	require.NoError(t, os.Chmod(path, 0o400))
 	before := readFile(t, path)
-	refused := filepath.ToSlash(path) + " is read-only; make it writable or leave test out of --agents"
+	refused := filepath.ToSlash(path) + " is read-only; make it writable"
 
 	_, _, err = Upsert(t.Context(), a, testName, testCmd, testArgs("changed"), nil, false)
+	require.ErrorIs(t, err, ErrReadOnly)
+	require.ErrorIs(t, err, fs.ErrPermission)
 	require.ErrorContains(t, err, refused)
 	_, err = Remove(t.Context(), a, testName)
+	require.ErrorIs(t, err, ErrReadOnly)
 	require.ErrorContains(t, err, refused)
 	assert.Equal(t, before, readFile(t, path))
 	if runtime.GOOS != "windows" {
