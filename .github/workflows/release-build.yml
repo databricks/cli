@@ -215,6 +215,7 @@ jobs:
           sparse-checkout: |
             .github
             tools/build_cli_wheels.py
+            tools/validate_cli_wheels.py
             LICENSE
 
       - name: Setup JFrog
@@ -236,6 +237,9 @@ jobs:
 
       - name: Check wheel metadata
         run: uvx twine@6.2.0 check --strict cli-wheels/*
+
+      - name: Validate wheels
+        run: uv run -q --no-project --with packaging==25.0 python tools/validate_cli_wheels.py cli-wheels
 
       - name: Smoke test linux-amd64 wheel
         run: |

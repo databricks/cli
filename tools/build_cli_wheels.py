@@ -54,11 +54,18 @@ PLATFORMS = {
 ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
 
 
+def posix_list(paths: list[Path]) -> list[str]:
+    """Paths for messages, with forward slashes so output is the same on Windows."""
+    return sorted(p.as_posix() for p in paths)
+
+
 def read_version(artifact_dir: Path) -> str:
     """Return the CLI version from the databricks_cli_<version>_SHA256SUMS file name."""
     sums_files = list(artifact_dir.glob("databricks_cli_*_SHA256SUMS"))
     if len(sums_files) != 1:
-        raise SystemExit(f"expected exactly one databricks_cli_*_SHA256SUMS in {artifact_dir}, found {sums_files}")
+        raise SystemExit(
+            f"expected exactly one databricks_cli_*_SHA256SUMS in {artifact_dir.as_posix()}, found {posix_list(sums_files)}"
+        )
     return sums_files[0].name[len("databricks_cli_") : -len("_SHA256SUMS")]
 
 
@@ -81,7 +88,9 @@ def find_archive(artifact_dir: Path, goos: str, goarch: str) -> Path:
     ext = "zip" if goos == "windows" else "tar.gz"
     matches = list(artifact_dir.glob(f"databricks_cli_*{goos}_{goarch}.{ext}"))
     if len(matches) != 1:
-        raise SystemExit(f"expected exactly one {goos}/{goarch} .{ext} archive in {artifact_dir}, found {matches}")
+        raise SystemExit(
+            f"expected exactly one {goos}/{goarch} .{ext} archive in {artifact_dir.as_posix()}, found {posix_list(matches)}"
+        )
     return matches[0]
 
 
@@ -92,7 +101,7 @@ def extract_binary(archive: Path, binary_name: str) -> bytes:
     with tarfile.open(archive) as t:
         f = t.extractfile(binary_name)
         if f is None:
-            raise SystemExit(f"{binary_name} is not a regular file in {archive}")
+            raise SystemExit(f"{binary_name} is not a regular file in {archive.as_posix()}")
         return f.read()
 
 
