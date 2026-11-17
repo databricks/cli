@@ -247,5 +247,11 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 		}
 	}
 
+	// Set after EnsureResolved, so InsecureSkipVerify from a profile or env var is known.
+	// A transport set by the caller (e.g. in tests) is kept.
+	if cfg.HTTPTransport == nil {
+		cfg.HTTPTransport = workspaceTransport(cfg.InsecureSkipVerify)
+	}
+
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }

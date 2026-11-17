@@ -79,7 +79,9 @@ func isInactivityTimeout(err error) bool {
 //     processing the request.
 //   - unexpected EOF, where the connection was cut mid-response. Observed on GET /clusters/get and
 //     POST /workspace-files/import-file.
-var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF"}
+//   - http2: client connection lost, where the HTTP/2 health check found the connection dead and
+//     closed it (see bundle/config/transport.go). The retry goes out on a new connection.
+var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF", "http2: client connection lost"}
 
 // IsTransientRead returns true for errors worth retrying on an idempotent call (a read or an
 // overwriting write): the transient server errors IsTransient covers, plus the transport errors
