@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  secret_value:
+    description: The secret's value
+
+resources:
+  schemas:
+    app:
+      catalog_name: main
+      name: test_app_$UNIQUE_NAME
+    shared:
+      catalog_name: main
+      name: test_shared_$UNIQUE_NAME
+  # Both live in the shared schema and take their own name from the app schema's name.
+  registered_models:
+    model1:
+      catalog_name: main
+      schema_name: ${resources.schemas.shared.name}
+      name: ${resources.schemas.app.name}
+  secrets:
+    secret1:
+      catalog_name: main
+      schema_name: ${resources.schemas.shared.name}
+      name: ${resources.schemas.app.name}
+      value: ${var.secret_value}

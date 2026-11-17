@@ -1,0 +1,8 @@
+Cloud = true
+Badness = "The model and the secret take their name from the renamed schema but live in another one. Their recreate deletes them at the new name, which does not exist yet, so the old ones are left behind in the shared schema."
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
