@@ -2,10 +2,10 @@ package direct
 
 import (
 	"context"
-	"github.com/databricks/cli/bundle/deployplan"
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/structs/structpath"
