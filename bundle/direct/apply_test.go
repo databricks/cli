@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"github.com/databricks/cli/bundle/deployplan"
 	"path/filepath"
 	"testing"
 
@@ -80,7 +81,7 @@ func TestUpdateWithIDFailsOnEmptyID(t *testing.T) {
 	d := &DeploymentUnit{ResourceKey: "resources.fakes.foo", Adapter: adapter}
 	require.NoError(t, db.SaveState(t.Context(), d.ResourceKey, "old-id", &emptyIDState{Name: "foo"}, nil))
 
-	err = d.UpdateWithID(t.Context(), db, "old-id", &emptyIDState{Name: "bar"}, nil)
+	err = d.UpdateWithID(t.Context(), db, "old-id", &emptyIDState{Name: "bar"}, &deployplan.PlanEntry{})
 	require.EqualError(t, err, "update returned an empty resource id")
 
 	assert.Equal(t, "old-id", db.GetResourceID(d.ResourceKey))

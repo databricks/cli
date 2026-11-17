@@ -23,14 +23,13 @@ kill_after.py "PATCH /api/2.1/unity-catalog/models/$NEW_MODEL" 0 1
 trace errcode $CLI bundle deploy -q
 trace print_requests.py //unity-catalog
 
-title "The model is gone from its recorded path. A model has no recorded id, so the plan does not find it at its new path and creates it again"
-trace print_state.py | jq '.state["resources.registered_models.model1"] | {__id__}'
+title "The model's new path was recorded before its update, so the plan updates it there"
 trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at
 
-title "The create fails: the model is already there"
-trace errcode $CLI bundle deploy --force-lock
+title "The next deploy updates the model at its new path"
+trace $CLI bundle deploy --force-lock
 trace print_requests.py //unity-catalog
 trace $CLI registered-models get "$NEW_MODEL" | jq '{full_name, comment, created_at}'
 
-title "The next plan creates it again"
+title "Redeploy is a no-op"
 trace $CLI bundle plan
