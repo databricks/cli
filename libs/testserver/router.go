@@ -42,6 +42,7 @@ type Router struct {
 	mux      *http.ServeMux
 	exact    map[string]map[string]HandlerFunc
 	wildcard map[string]bool
+	fallback map[string]map[string]HandlerFunc
 
 	// Dispatch is invoked when a route matches. vars holds the path values for
 	// wildcard routes and is nil for exact routes.
@@ -55,8 +56,15 @@ func NewRouter() *Router {
 		mux:      http.NewServeMux(),
 		exact:    map[string]map[string]HandlerFunc{},
 		wildcard: map[string]bool{},
+		fallback: map[string]map[string]HandlerFunc{},
 	}
 	r.mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		if h, ok := r.fallback[req.URL.Path][req.Method]; ok {
+			if r.Dispatch != nil {
+				r.Dispatch(w, req, h, nil)
+			}
+			return
+		}
 		if r.NotFound != nil {
 			r.NotFound(w, req)
 		}
@@ -91,6 +99,19 @@ func (r *Router) Handle(method, path string, handler HandlerFunc) {
 			r.Dispatch(w, req, handler, vars)
 		}
 	})
+}
+
+// HandleFallback registers a handler for an exact method+path that serves
+// only requests no other registration matches, whenever that one is made.
+// Unlike the first-wins rule of Handle, this lets a handler installed when
+// the server is created be overridden by a test stub registered later.
+func (r *Router) HandleFallback(method, path string, handler HandlerFunc) {
+	if r.fallback[path] == nil {
+		r.fallback[path] = map[string]HandlerFunc{}
+	}
+	if _, ok := r.fallback[path][method]; !ok {
+		r.fallback[path][method] = handler
+	}
 }
 
 // HandleRaw registers a handler with the raw ResponseWriter and Request, bypassing
