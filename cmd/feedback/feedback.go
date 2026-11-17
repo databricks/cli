@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -145,7 +146,7 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	if utf8.RuneCountInString(opts.command) > commandLimit {
 		return submission{}, fmt.Errorf("--command must be at most %d characters", commandLimit)
 	}
-	component, origin, err := resolveCommand(cmd, opts.command)
+	component, origin, err := resolveCommand(opts.command)
 	if err != nil {
 		return submission{}, err
 	}
@@ -226,27 +227,21 @@ func validateMessage(message string) (string, error) {
 }
 
 // resolveCommand returns the component and origin for --command. The first word
-// must be a top-level command and picks the owning team. Checking later words
-// would mean building every command, so they are only limited to command-name
+// picks the owning team. The command is not looked up, which would mean
+// building the command tree; its words are only limited to command-name
 // characters, which keeps flags, paths and control sequences out of origin and
 // the approval prompt. The origin joins the words with underscores, as in
 // bundle_deploy.
-func resolveCommand(cmd *cobra.Command, command string) (string, string, error) {
+func resolveCommand(command string) (string, string, error) {
 	words := strings.Fields(command)
 	if len(words) == 0 {
 		return defaultComponent, "cli", nil
 	}
-	// Top-level commands are registered on the root before they are built.
-	top, rest, err := cmd.Root().Find(words[:1])
-	valid := err == nil && len(rest) == 0 && top != cmd.Root()
 	for _, word := range words {
-		valid = valid && isCommandWord(word)
+		if !isCommandWord(word) {
+			return "", "", fmt.Errorf(`invalid --command %q; it takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
+		}
 	}
-	if !valid {
-		return "", "", fmt.Errorf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
-	}
-	// An alias resolves to the command's name.
-	words[0] = top.Name()
 	component := defaultComponent
 	if productComponent, ok := productComponents[words[0]]; ok {
 		component = productComponent
@@ -292,10 +287,14 @@ func checkApproval(ctx context.Context, yes bool) error {
 func confirm(ctx context.Context, s submission, workspace string) (bool, error) {
 	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s, workspace))
 	confirmed, err := cmdio.AskYesOrNo(ctx, "Send this feedback?")
-	if err != nil {
+	switch {
+	case errors.Is(err, io.EOF):
+		// Ctrl-D ends the input without an answer or a newline.
+		cmdio.LogString(ctx, "\nFeedback not sent.")
+		return false, nil
+	case err != nil:
 		return false, err
-	}
-	if !confirmed {
+	case !confirmed:
 		cmdio.LogString(ctx, "Feedback not sent.")
 	}
 	return confirmed, nil

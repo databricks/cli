@@ -60,19 +60,13 @@ const (
 const testWorkspace = "https://workspace.test"
 
 // newTestFeedbackCommand returns the feedback command under a root with the
-// root's bundle target flags and a few top-level commands, without subcommands
-// like the CLI's unbuilt placeholders.
+// root's bundle target flags.
 func newTestFeedbackCommand() *cobra.Command {
 	rootCmd := &cobra.Command{Use: "databricks"}
 	rootCmd.PersistentFlags().String("target", "", "")
 	rootCmd.PersistentFlags().String("environment", "", "")
 	feedbackCmd := &cobra.Command{Use: "feedback"}
-	rootCmd.AddCommand(
-		feedbackCmd,
-		&cobra.Command{Use: "air"},
-		&cobra.Command{Use: "bundle"},
-		&cobra.Command{Use: "jobs", Aliases: []string{"job"}},
-	)
+	rootCmd.AddCommand(feedbackCmd)
 	return feedbackCmd
 }
 
@@ -134,9 +128,7 @@ func TestResolveCommand(t *testing.T) {
 		{name: "bundle subcommand", command: "bundle  deploy", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_deploy"},
 		{name: "unchecked subcommand", command: "bundle not-a-command", wantComponent: "DeveloperEcosystem.CoreDabs", wantOrigin: "bundle_not-a-command"},
 		{name: "other command", command: "jobs list", wantComponent: defaultComponent, wantOrigin: "jobs_list"},
-		{name: "alias", command: "job list", wantComponent: defaultComponent, wantOrigin: "jobs_list"},
-		{name: "unknown top level", command: "bundel deploy", wantErr: true},
-		{name: "databricks prefix", command: "databricks bundle deploy", wantErr: true},
+		{name: "unchecked top level", command: "bundel deploy", wantComponent: defaultComponent, wantOrigin: "bundel_deploy"},
 		{name: "flag", command: "bundle deploy -t dev", wantErr: true},
 		{name: "path argument", command: "bundle sync ./src", wantErr: true},
 		{name: "uppercase", command: "Bundle deploy", wantErr: true},
@@ -144,9 +136,9 @@ func TestResolveCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			component, origin, err := resolveCommand(newTestFeedbackCommand(), tt.command)
+			component, origin, err := resolveCommand(tt.command)
 			if tt.wantErr {
-				assert.EqualError(t, err, fmt.Sprintf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, tt.command))
+				assert.EqualError(t, err, fmt.Sprintf(`invalid --command %q; it takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, tt.command))
 				return
 			}
 			require.NoError(t, err)
@@ -258,6 +250,7 @@ func TestConfirm(t *testing.T) {
 	}{
 		{name: "accepted", answer: "y\n", wantConfirmed: true, wantStderr: "Send this feedback? [y/N]: "},
 		{name: "declined", answer: "\n", wantStderr: "Feedback not sent."},
+		{name: "input ended", answer: "", wantStderr: "Send this feedback? [y/N]: \nFeedback not sent."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -65,6 +65,27 @@ Thank you! Your feedback was sent. Reference: [UUID][4]
   }
 }
 
+=== A command without a product team goes to the CLI team
+
+>>> [CLI] feedback --command no-such-command hello
+Thank you! Your feedback was sent. Reference: [UUID][6]
+
+>>> print_requests.py //telemetry-ext
+{
+  "frontend_log_event_id": "[UUID][6]",
+  "entry": {
+    "fast_feedback_log": {
+      "reference_event_id": "[UUID][7]",
+      "parent_ui": "DeveloperEcosystem.DatabricksCLI",
+      "origin": "no-such-command",
+      "can_be_contacted": false,
+      "ui_versions": "cli:[CLI_VERSION]",
+      "user_agent": "cli/[CLI_VERSION] cmd/feedback",
+      "text": "hello"
+    }
+  }
+}
+
 === Validation errors send nothing
 
 >>> [CLI] feedback    
@@ -100,14 +121,8 @@ Error: the message must be one argument, but received 3; put quotes around the w
 >>> [CLI] feedback --command bundle deploy deploy is slow
 Error: the message must be one argument, but received 2; put quotes around the whole message, and around --command if it has several words
 
->>> [CLI] feedback --command no-such-command hello
-Error: unknown command "no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
-
->>> [CLI] feedback --command databricks bundle deploy hello
-Error: unknown command "databricks bundle deploy"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
-
 >>> [CLI] feedback --command bundle deploy -t dev hello
-Error: unknown command "bundle deploy -t dev"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
+Error: invalid --command "bundle deploy -t dev"; it takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
 
 >>> [CLI] feedback --run-id abc hello
 Error: --run-id must be a positive job run ID
@@ -128,14 +143,14 @@ Note for AI agents (test-agent): show the user the exact feedback message and th
 === General CLI feedback
 
 >>> [CLI] feedback the CLI should support ...
-Thank you! Your feedback was sent. Reference: [UUID][6]
+Thank you! Your feedback was sent. Reference: [UUID][8]
 
 >>> print_requests.py //telemetry-ext
 {
-  "frontend_log_event_id": "[UUID][6]",
+  "frontend_log_event_id": "[UUID][8]",
   "entry": {
     "fast_feedback_log": {
-      "reference_event_id": "[UUID][7]",
+      "reference_event_id": "[UUID][9]",
       "parent_ui": "DeveloperEcosystem.DatabricksCLI",
       "origin": "cli",
       "can_be_contacted": false,
@@ -156,14 +171,14 @@ Note for AI agents (test-agent): show the user the exact feedback message and th
 === An AI agent with --yes
 
 >>> AGENT=test-agent [CLI] feedback --yes hello
-Thank you! Your feedback was sent. Reference: [UUID][8]
+Thank you! Your feedback was sent. Reference: [UUID][10]
 
 >>> print_requests.py //telemetry-ext
 {
-  "frontend_log_event_id": "[UUID][8]",
+  "frontend_log_event_id": "[UUID][10]",
   "entry": {
     "fast_feedback_log": {
-      "reference_event_id": "[UUID][9]",
+      "reference_event_id": "[UUID][11]",
       "parent_ui": "DeveloperEcosystem.DatabricksCLI",
       "origin": "cli",
       "can_be_contacted": false,
@@ -177,14 +192,14 @@ Thank you! Your feedback was sent. Reference: [UUID][8]
 === Feedback is sent even with telemetry disabled
 
 >>> DATABRICKS_CLI_DISABLE_TELEMETRY=1 [CLI] feedback telemetry is disabled
-Thank you! Your feedback was sent. Reference: [UUID][10]
+Thank you! Your feedback was sent. Reference: [UUID][12]
 
 >>> print_requests.py //telemetry-ext
 {
-  "frontend_log_event_id": "[UUID][10]",
+  "frontend_log_event_id": "[UUID][12]",
   "entry": {
     "fast_feedback_log": {
-      "reference_event_id": "[UUID][11]",
+      "reference_event_id": "[UUID][13]",
       "parent_ui": "DeveloperEcosystem.DatabricksCLI",
       "origin": "cli",
       "can_be_contacted": false,
@@ -198,14 +213,14 @@ Thank you! Your feedback was sent. Reference: [UUID][10]
 === A broken bundle does not block feedback
 
 >>> withdir broken-bundle [CLI] feedback bundle config does not block feedback
-Thank you! Your feedback was sent. Reference: [UUID][12]
+Thank you! Your feedback was sent. Reference: [UUID][14]
 
 >>> print_requests.py //telemetry-ext
 {
-  "frontend_log_event_id": "[UUID][12]",
+  "frontend_log_event_id": "[UUID][14]",
   "entry": {
     "fast_feedback_log": {
-      "reference_event_id": "[UUID][13]",
+      "reference_event_id": "[UUID][15]",
       "parent_ui": "DeveloperEcosystem.DatabricksCLI",
       "origin": "cli",
       "can_be_contacted": false,

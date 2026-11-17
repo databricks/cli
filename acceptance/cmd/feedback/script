@@ -17,13 +17,15 @@ title "Feedback can name a nested command"
 trace $CLI feedback --command "bundle  deploy" "deploy is slow"
 print_feedback
 
+title "A command without a product team goes to the CLI team"
+trace $CLI feedback --command "no-such-command" "hello"
+print_feedback
+
 title "Validation errors send nothing"
 musterr trace $CLI feedback "   "
 musterr trace $CLI feedback
 musterr trace $CLI feedback deploy is slow
 musterr trace $CLI feedback --command bundle deploy "deploy is slow"
-musterr trace $CLI feedback --command "no-such-command" "hello"
-musterr trace $CLI feedback --command "databricks bundle deploy" "hello"
 musterr trace $CLI feedback --command "bundle deploy -t dev" "hello"
 musterr trace $CLI feedback --run-id abc "hello"
 musterr trace $CLI feedback --target dev "hello"
