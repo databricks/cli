@@ -353,7 +353,7 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 	case err != nil:
 		return err
 	case resp.NumProtoSuccess < int64(len(protoLogs)):
-		return &NotAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
+		return &notAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
 	}
 	return nil
 }
@@ -375,20 +375,20 @@ func NotSent(err error) bool {
 	if _, ok := errors.AsType[*notSentError](err); ok {
 		return true
 	}
-	if e, ok := errors.AsType[*NotAcceptedError](err); ok {
+	if e, ok := errors.AsType[*notAcceptedError](err); ok {
 		return e.Accepted == 0
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500
 }
 
-// NotAcceptedError is returned by Send when the server accepted fewer logs than
+// notAcceptedError is returned by Send when the server accepted fewer logs than
 // were sent, so the others were not stored.
-type NotAcceptedError struct {
+type notAcceptedError struct {
 	Accepted, Sent int64
 }
 
-func (e *NotAcceptedError) Error() string {
+func (e *notAcceptedError) Error() string {
 	return fmt.Sprintf("only %d of %d logs were accepted", e.Accepted, e.Sent)
 }
 

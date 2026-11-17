@@ -478,8 +478,8 @@ func TestNotSent(t *testing.T) {
 		want bool
 	}{
 		{name: "never sent", err: fmt.Errorf("wrapped: %w", &notSentError{errors.New("no client")}), want: true},
-		{name: "nothing accepted", err: &NotAcceptedError{Accepted: 0, Sent: 1}, want: true},
-		{name: "some accepted", err: &NotAcceptedError{Accepted: 1, Sent: 2}},
+		{name: "nothing accepted", err: &notAcceptedError{Accepted: 0, Sent: 1}, want: true},
+		{name: "some accepted", err: &notAcceptedError{Accepted: 1, Sent: 2}},
 		{name: "rejected", err: &apierr.APIError{StatusCode: 400}, want: true},
 		{name: "server error", err: &apierr.APIError{StatusCode: 500}},
 		{name: "connection reset", err: errors.New("connection reset by peer")},
