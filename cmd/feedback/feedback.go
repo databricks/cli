@@ -159,8 +159,13 @@ func send(ctx context.Context, s submission, yes bool) error {
 	}
 	if needsApproval(yes) {
 		confirmed, err := confirm(ctx, s)
-		if err != nil || !confirmed {
+		if err != nil {
 			return err
+		}
+		if !confirmed {
+			// confirm told the user; the exit code tells the agent that ran the
+			// command that nothing was sent.
+			return root.ErrAlreadyPrinted
 		}
 	}
 
@@ -255,7 +260,9 @@ func confirm(ctx context.Context, s submission) (bool, error) {
 // approve.
 func summary(s submission) string {
 	var b strings.Builder
-	b.WriteString(escapeInvisible(s.text))
+	// Indent the message so that none of its lines can pass for one of the
+	// fields below it.
+	b.WriteString("  " + strings.ReplaceAll(escapeInvisible(s.text), "\n", "\n  "))
 	b.WriteString("\n\n")
 	if s.command != "" {
 		fmt.Fprintf(&b, "Command: %s\n", s.command)

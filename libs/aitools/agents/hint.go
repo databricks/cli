@@ -288,7 +288,7 @@ var hintExemptCommands = []string{
 	"configure",
 	"current-user me",
 	"version",
-	"feedback",
+	"feedback", // A one-shot report: the agent has no task to apply the skills to.
 	"completion",
 	"help",
 	cobra.ShellCompRequestCmd,

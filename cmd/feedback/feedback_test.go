@@ -2,14 +2,22 @@ package feedback
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
+	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +41,7 @@ func TestValidateMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := validateMessage(tt.message)
 			if tt.wantErr {
-				assert.EqualError(t, err, "feedback message must contain 1 to 10000 characters, including a visible one")
+				assert.EqualError(t, err, messageError)
 				return
 			}
 			require.NoError(t, err)
@@ -41,6 +49,11 @@ func TestValidateMessage(t *testing.T) {
 		})
 	}
 }
+
+const (
+	messageError = "feedback message must contain 1 to 10000 characters, including a visible one"
+	runIDError   = "--run-id must be a positive job run ID"
+)
 
 const commandHint = `; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`
 
@@ -115,9 +128,9 @@ func TestNewSubmission(t *testing.T) {
 				origin: "bundle_deploy", runID: "123", canBeContacted: true,
 			},
 		},
-		{name: "zero run ID", opts: options{runID: "0"}, message: "x", wantErr: "--run-id must be a positive job run ID"},
-		{name: "non-numeric run ID", opts: options{runID: "abc"}, message: "x", wantErr: "--run-id must be a positive job run ID"},
-		{name: "blank message", message: " ", wantErr: "feedback message must contain 1 to 10000 characters, including a visible one"},
+		{name: "zero run ID", opts: options{runID: "0"}, message: "x", wantErr: runIDError},
+		{name: "non-numeric run ID", opts: options{runID: "abc"}, message: "x", wantErr: runIDError},
+		{name: "blank message", message: " ", wantErr: messageError},
 		{name: "unknown command", opts: options{command: "nope"}, message: "x", wantErr: `unknown command "nope"` + commandHint},
 		{
 			name: "target", flags: []string{"--target", "dev"}, message: "x",
@@ -152,27 +165,32 @@ func TestSummary(t *testing.T) {
 		{
 			name: "message only",
 			s:    submission{text: "line one\n\tline two"},
-			want: "line one\n\tline two\n\nDatabricks may contact you: no\n",
+			want: "  line one\n  \tline two\n\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "all fields",
 			s:    submission{text: "slow", command: "air run", runID: "42", canBeContacted: true},
-			want: "slow\n\nCommand: air run\nRun ID: 42\nDatabricks may contact you: yes\n",
+			want: "  slow\n\nCommand: air run\nRun ID: 42\nDatabricks may contact you: yes\n",
+		},
+		{
+			name: "message lines cannot pass for fields",
+			s:    submission{text: "slow\nDatabricks may contact you: no", canBeContacted: true},
+			want: "  slow\n  Databricks may contact you: no\n\nDatabricks may contact you: yes\n",
 		},
 		{
 			name: "control characters cannot hide text",
 			s:    submission{text: "great\x1b[8m hidden\x1b[0m\r\u0085"},
-			want: `great\x1b[8m hidden\x1b[0m\r\u0085` + "\n\nDatabricks may contact you: no\n",
+			want: `  great\x1b[8m hidden\x1b[0m\r\u0085` + "\n\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "format characters cannot reorder or hide text",
 			s:    submission{text: "a\u202eb\u200bc\U000E0041 d\u00a0é"},
-			want: `a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nDatabricks may contact you: no\n",
+			want: `  a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "variation selectors and fillers cannot carry hidden text",
 			s:    submission{text: "ok👍\ufe0f\U000E0100\u3164\u034f e\u0301"},
-			want: `ok👍\ufe0f\U000e0100\u3164\u034f ` + "e\u0301\n\nDatabricks may contact you: no\n",
+			want: `  ok👍\ufe0f\U000e0100\u3164\u034f ` + "e\u0301\n\nDatabricks may contact you: no\n",
 		},
 	}
 	for _, tt := range tests {
@@ -189,7 +207,7 @@ func TestConfirm(t *testing.T) {
 		confirmed, err := confirm(ctx, submission{text: "exact feedback"})
 		require.NoError(t, err)
 		assert.True(t, confirmed)
-		assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\nexact feedback\n\nDatabricks may contact you: no\n\n")
+		assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\n  exact feedback\n\nDatabricks may contact you: no\n\n")
 		assert.Contains(t, stderr.String(), "Send this feedback? [y/N]: ")
 	})
 
@@ -240,6 +258,52 @@ func TestCheckApproval(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestSendAsksBeforeSending(t *testing.T) {
+	tests := []struct {
+		name     string
+		answer   string
+		wantSent []string
+		wantErr  error
+	}{
+		{name: "approved", answer: "y\n", wantSent: []string{"exact feedback"}},
+		{name: "declined", answer: "n\n", wantErr: root.ErrAlreadyPrinted},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.SetAgent(t, "test-agent")
+			server := testserver.New(t)
+			var sent []string
+			server.Handle(http.MethodPost, "/telemetry-ext", func(req testserver.Request) any {
+				var body telemetry.RequestBody
+				require.NoError(t, json.Unmarshal(req.Body, &body))
+				for _, raw := range body.ProtoLogs {
+					var entry protos.FrontendLog
+					require.NoError(t, json.Unmarshal([]byte(raw), &entry))
+					sent = append(sent, entry.Entry.FastFeedbackLog.Text)
+				}
+				return telemetry.ResponseBody{NumProtoSuccess: int64(len(body.ProtoLogs))}
+			})
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+			require.NoError(t, err)
+
+			var stdout, stderr bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(tt.answer), &stdout, &stderr))
+			ctx = cmdctx.SetWorkspaceClient(ctx, w)
+			ctx = cmdctx.GenerateExecId(ctx)
+			err = send(ctx, submission{text: "exact feedback", component: defaultComponent, origin: "cli"}, false)
+
+			assert.ErrorIs(t, err, tt.wantErr)
+			assert.Equal(t, tt.wantSent, sent)
+			assert.Contains(t, stderr.String(), "  exact feedback\n")
+			if tt.wantErr == nil {
+				assert.Contains(t, stdout.String(), "Thank you! Your feedback was sent.")
+			} else {
+				assert.Empty(t, stdout.String())
+			}
 		})
 	}
 }
