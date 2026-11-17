@@ -567,27 +567,32 @@ func TestSendMakesOneAttempt(t *testing.T) {
 }
 
 func TestSendFailingBeforeConnectingIsNotSent(t *testing.T) {
-	// Resolve the config while the server is up, because the SDK retries its
-	// host metadata lookup for minutes; then close it to refuse the upload.
-	closed := httptest.NewServer(http.NotFoundHandler())
-	refused := &config.Config{Host: closed.URL, Token: "token"}
-	require.NoError(t, refused.EnsureResolved())
-	closed.Close()
-
-	// The client does not trust the certificate of this server.
+	// The client does not trust the certificate of this server. It starts
+	// first so that it cannot take the port of the closed listener below.
 	untrusted := httptest.NewTLSServer(http.NotFoundHandler())
 	t.Cleanup(untrusted.Close)
 
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	refused := "http://" + listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	// The SDK retries its host metadata lookup for minutes when it fails.
+	noMetadata := func(context.Context, string) (*config.HostMetadata, error) {
+		return nil, nil
+	}
+
 	tests := []struct {
 		name string
-		cfg  *config.Config
+		host string
 	}{
-		{name: "connection refused", cfg: refused},
-		{name: "untrusted certificate", cfg: &config.Config{Host: untrusted.URL, Token: "token"}},
+		{name: "connection refused", host: refused},
+		{name: "untrusted certificate", host: untrusted.URL},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Send(t.Context(), tt.cfg, testFeedbackLog())
+			cfg := &config.Config{Host: tt.host, Token: "token", HostMetadataResolver: noMetadata}
+			err := Send(t.Context(), cfg, testFeedbackLog())
 			require.Error(t, err)
 			assert.True(t, NotSent(err), "error: %v", err)
 		})
