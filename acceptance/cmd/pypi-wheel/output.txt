@@ -11,14 +11,12 @@ databricks_cli_1.2.3_windows_amd64.zip
 databricks_cli_1.2.3_windows_arm64.zip
 
 >>> python3 [TESTROOT]/../tools/build_cli_wheels.py archives wheels [TESTROOT]/../LICENSE
-
->>> ls wheels
-databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
-databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
-databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
-databricks-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl
-databricks-1.2.3-py3-none-win_amd64.whl
-databricks-1.2.3-py3-none-win_arm64.whl
+wheels/databricks-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl
+wheels/databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
+wheels/databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
+wheels/databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
+wheels/databricks-1.2.3-py3-none-win_amd64.whl
+wheels/databricks-1.2.3-py3-none-win_arm64.whl
 
 >>> python3 show_wheels.py wheels
 == databricks-1.2.3-py3-none-macosx_13_0_arm64.whl

@@ -169,7 +169,7 @@ def main() -> None:
         archive = find_archive(artifact_dir, goos, goarch)
         binary_name = "databricks.exe" if goos == "windows" else "databricks"
         binary = extract_binary(archive, binary_name)
-        print(build_wheel(out_dir, version, platform_tag, binary_name, binary, license_text))
+        print(build_wheel(out_dir, version, platform_tag, binary_name, binary, license_text).as_posix())
 
 
 if __name__ == "__main__":

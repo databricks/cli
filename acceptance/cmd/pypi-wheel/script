@@ -2,9 +2,7 @@
 # to check that a wheel built by build_cli_wheels.py is usable by Python tooling.
 trace python3 make_archives.py $CLI archives
 trace ls archives
-# The script prints the wheel paths; they are listed below with ls, which also works on Windows.
-trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE > /dev/null
-trace ls wheels
+trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE
 trace python3 show_wheels.py wheels
 
 # uv must pick the wheel for this platform: the other wheels hold a placeholder
