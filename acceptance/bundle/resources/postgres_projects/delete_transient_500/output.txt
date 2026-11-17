@@ -18,6 +18,6 @@ All files and directories at the following location will be deleted: /Workspace/
 Warn: destroying resources.postgres_projects.my_project: retrying after 500 Internal Server Error from DELETE /api/2.0/postgres/projects/test-pg-proj
 Destroy: 1 deleted
 
->>> print_requests.py --get //postgres
+>>> print_requests.py --method DELETE --summary //postgres
 DELETE /api/2.0/postgres/projects/test-pg-proj
 DELETE /api/2.0/postgres/projects/test-pg-proj
