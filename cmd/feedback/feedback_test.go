@@ -178,6 +178,10 @@ func TestNewSubmission(t *testing.T) {
 		{name: "non-numeric run ID", opts: options{runID: "abc"}, message: "x", wantErr: runIDError},
 		{name: "blank message", message: " ", wantErr: messageError},
 		{
+			name: "long command", opts: options{command: "bundle " + strings.Repeat("a", commandLimit)}, message: "x",
+			wantErr: fmt.Sprintf("--command must be at most %d characters", commandLimit),
+		},
+		{
 			name: "target", flags: []string{"--target", "dev"}, message: "x",
 			wantErr: "--target selects a bundle target, which feedback does not use; use --profile to choose the workspace",
 		},

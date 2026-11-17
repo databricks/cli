@@ -26,6 +26,8 @@ import (
 
 const (
 	messageLimit = 10000
+	// commandLimit is well above the longest command path, about 80 characters.
+	commandLimit = 200
 	sendTimeout  = 30 * time.Second
 
 	defaultComponent = "DeveloperEcosystem.DatabricksCLI"
@@ -139,6 +141,9 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	text, err := validateMessage(message)
 	if err != nil {
 		return submission{}, err
+	}
+	if utf8.RuneCountInString(opts.command) > commandLimit {
+		return submission{}, fmt.Errorf("--command must be at most %d characters", commandLimit)
 	}
 	component, origin, err := resolveCommand(cmd, opts.command)
 	if err != nil {
