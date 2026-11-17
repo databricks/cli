@@ -71,6 +71,11 @@ func TestInstallRecovery(t *testing.T) {
 			want: "raw.githubusercontent.com answered with something that is not a skills manifest (a proxy or captive portal page, or a broken mirror). Check what this machine gets from raw.githubusercontent.com, then re-run 'databricks aitools install'.",
 		},
 		{
+			name: "manifest names a path outside the skills directory",
+			err:  fmt.Errorf("%w: skill %q lists file %q", installer.ErrUnsafeManifestPath, "databricks-core", "../../.bashrc"),
+			want: "No files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run 'databricks aitools install', and report the manifest from raw.githubusercontent.com at " + cliIssuesURL + ".",
+		},
+		{
 			name: "manifest fetch without a response",
 			err:  &installer.FetchError{Stage: installer.FetchStageManifest, Err: fmt.Errorf("failed to fetch manifest: %w", dnsError)},
 			want: "Could not download Databricks skills from raw.githubusercontent.com. Check that this machine can reach it (set HTTPS_PROXY if you use a proxy), then re-run 'databricks aitools install'.",

@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
+	"slices"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/clicompat"
@@ -65,44 +69,109 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to parse manifest: %w", err)}
 	}
 
-	if err := validateManifestPaths(&manifest); err != nil {
-		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("invalid skills manifest: %w", err)}
-	}
 	normalizeManifest(&manifest)
 	return &manifest, nil
 }
+
+// maxSkillNameLength is the Agent Skills limit on the length of a skill name.
+const maxSkillNameLength = 64
 
 // skillNamePattern is the Agent Skills name format
 // (https://agentskills.io/specification#name-field): lowercase letters, digits
 // and single hyphens. Every name is a directory under the skills dir, next to
 // the installer's state file, so the format also keeps names from aliasing each
-// other or that file on case-insensitive filesystems or through Windows
-// trailing dots and spaces.
-var skillNamePattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+// other on case-insensitive filesystems or through Windows trailing dots and
+// spaces.
+var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+})
 
-// windowsDeviceNamePattern matches the names Windows resolves to a device in
-// any directory. They are rejected on every OS so a manifest is valid or
-// invalid the same way everywhere.
-var windowsDeviceNamePattern = regexp.MustCompile(`^(con|prn|aux|nul|com[1-9]|lpt[1-9])$`)
-
-// validateManifestPaths rejects skill names and files that would be written
-// outside the skill's own directory. The manifest comes from the network, so it
-// must not be able to name ../../.bashrc.
-func validateManifestPaths(m *Manifest) error {
-	for name, meta := range m.Skills {
-		if len(name) > 64 || !skillNamePattern.MatchString(name) {
-			return fmt.Errorf("skill name %q must be at most 64 lowercase letters, digits and single hyphens", name)
+// checkManifestPaths makes every skill name and file in m safe to join onto a
+// local directory. The manifest comes from the network, so it must not be able
+// to name ../../.bashrc. A name or file that reaches outside its directory, or
+// a skill named like the state file, fails the whole manifest: only a broken or
+// tampered manifest lists one. A skill whose name or files are merely not
+// portable is dropped with a warning, the way resolveSkills skips a skill this
+// CLI is too old for, so one such entry does not break every install. Both
+// rules are the same on every OS, so a manifest is treated the same everywhere.
+func checkManifestPaths(ctx context.Context, m *Manifest) error {
+	names := slices.Sorted(maps.Keys(m.Skills))
+	for _, name := range names {
+		if name == "" || name == "." || name == ".." || name == stateFileName || strings.ContainsAny(name, `/\`) {
+			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
 		}
-		if windowsDeviceNamePattern.MatchString(name) {
-			return fmt.Errorf("skill name %q is a reserved Windows device name", name)
-		}
-		for _, file := range meta.Files {
-			if !filepath.IsLocal(file) {
-				return fmt.Errorf("skill %q lists file %q outside its directory", name, file)
+		for _, file := range m.Skills[name].Files {
+			if escapesDir(file) {
+				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
 			}
 		}
 	}
+	for _, name := range names {
+		if reason := unportableSkill(name, m.Skills[name].Files); reason != "" {
+			log.Warnf(ctx, "Skipping skill %s: %s", name, reason)
+			delete(m.Skills, name)
+		}
+	}
 	return nil
+}
+
+// escapesDir reports whether file, joined onto a directory, names a path
+// outside it on some OS: an absolute path, a Windows drive, or more ".."
+// elements than the elements before them, with either slash as the separator.
+func escapesDir(file string) bool {
+	if strings.HasPrefix(file, "/") || strings.HasPrefix(file, `\`) || (len(file) >= 2 && file[1] == ':') {
+		return true
+	}
+	depth := 0
+	for _, elem := range strings.FieldsFunc(file, func(r rune) bool { return r == '/' || r == '\\' }) {
+		switch elem {
+		case ".":
+		case "..":
+			depth--
+			if depth < 0 {
+				return true
+			}
+		default:
+			depth++
+		}
+	}
+	return false
+}
+
+// unportableSkill returns why a skill that stays inside its directory still
+// cannot be installed the same way on every OS, or "" if it can. Files must be
+// clean slash-separated paths, so the paths recorded in the install state match
+// the ones update walks on disk.
+func unportableSkill(name string, files []string) string {
+	if len(name) > maxSkillNameLength || !skillNamePattern().MatchString(name) {
+		return fmt.Sprintf("the name is not at most %d lowercase letters, digits and single hyphens", maxSkillNameLength)
+	}
+	if isWindowsDeviceName(name) {
+		return "the name is a reserved Windows device name"
+	}
+	for _, file := range files {
+		if file == "." || path.Clean(file) != file || strings.ContainsAny(file, `\:`) {
+			return fmt.Sprintf("file %q is not a clean slash-separated path", file)
+		}
+		for elem := range strings.SplitSeq(file, "/") {
+			stem, _, _ := strings.Cut(elem, ".")
+			if isWindowsDeviceName(stem) {
+				return fmt.Sprintf("file %q names a reserved Windows device", file)
+			}
+		}
+	}
+	return ""
+}
+
+// isWindowsDeviceName reports whether s, in any case, is a name Windows
+// resolves to a device in every directory.
+func isWindowsDeviceName(s string) bool {
+	s = strings.ToLower(s)
+	switch s {
+	case "con", "prn", "aux", "nul":
+		return true
+	}
+	return len(s) == 4 && (strings.HasPrefix(s, "com") || strings.HasPrefix(s, "lpt")) && s[3] >= '1' && s[3] <= '9'
 }
 
 // normalizeManifest stamps SourceName and defaults RepoDir for older manifests.

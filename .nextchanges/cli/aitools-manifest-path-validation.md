@@ -1,1 +1,1 @@
-* `databricks aitools install` and `databricks aitools update` now reject a skills manifest whose skill names or file paths would write outside the skills directory, and fail before writing any files. ([#7722](https://github.com/databricks/cli/pull/7722))
+* `databricks aitools install`, `update` and `list` now refuse a skills manifest that names a skill or file outside the skills directory, before writing any files, and skip with a warning a skill whose name or file paths are not portable. ([#7722](https://github.com/databricks/cli/pull/7722))

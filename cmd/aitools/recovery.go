@@ -238,6 +238,9 @@ func installRecovery(ctx context.Context, inv installInvocation, err error) stri
 		return "The skills release this CLI selected is missing. Set DATABRICKS_SKILLS_REF to a release tag from " + skillsReleasesURL + " and re-run " + rerun + ", and report it at " + cliIssuesURL + "."
 	case protos.AitoolsErrorCategoryManifestInvalid:
 		host := skillsHost(ctx)
+		if errors.Is(err, installer.ErrUnsafeManifestPath) {
+			return "No files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run " + rerun + ", and report the manifest from " + host + " at " + cliIssuesURL + "."
+		}
 		return host + " answered with something that is not a skills manifest (a proxy or captive portal page, or a broken mirror). Check what this machine gets from " + host + ", then re-run " + rerun + "."
 	case protos.AitoolsErrorCategorySkillsFetchFailed:
 		return downloadRecovery(ctx, inv, ferr)

@@ -274,7 +274,13 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 			log.Warnf(ctx, "Could not resolve embedded skills version: %v", fbErr)
 		}
 	}
-	return manifest, ref, err
+	if err != nil {
+		return nil, ref, err
+	}
+	if err := checkManifestPaths(ctx, manifest); err != nil {
+		return nil, ref, err
+	}
+	return manifest, ref, nil
 }
 
 // installedSkillsRelease returns the newest recorded raw-skills release and
