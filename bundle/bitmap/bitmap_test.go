@@ -228,6 +228,12 @@ func TestBuilderResolveVariables(t *testing.T) {
 			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
 		},
 		{
+			"bool from an element of a list variable",
+			`resources: {jobs: {j: {queue: {enabled: "${var.flags[1]}"}}}}`,
+			`variables: {flags: {value: [true, false]}}`,
+			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
 			"undefined variable keeps presence only",
 			`resources: {jobs: {j: {queue: {enabled: "${var.missing}"}}}}`,
 			`variables: {flag: {value: true}}`,
