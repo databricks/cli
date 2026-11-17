@@ -640,6 +640,36 @@ func TestMaybeHint_TextPrintStartsNewNativeEventWindow(t *testing.T) {
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative}, hintKinds(t, ctx3))
 }
 
+// A command that prints both lines starts a new text window, so it logs the
+// native event even when the previous window's first native line printed late
+// and its event marker is still fresh.
+func TestMaybeHint_TextAndNativePrintStartsNewNativeEventWindow(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+
+	ctx1, stderr1 := sessionCtx(t, home, cacheDir, false)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Equal(t, hintText+"\n", stderr1.String())
+
+	// Late in the text window, the first native line prints and logs its event.
+	ageHintMarkers(t, cacheDir, textHintThrottle, 55*time.Minute)
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Equal(t, wantNativeHint+"\n", stderr2.String())
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative}, hintKinds(t, ctx2))
+
+	// The text and native markers expire; the event marker is still fresh.
+	ageHintMarkers(t, cacheDir, textHintThrottle, textHintThrottle.ttl+time.Minute)
+	ageHintMarkers(t, cacheDir, nativeHintThrottle, nativeHintThrottle.ttl+time.Minute)
+	ctx3, stderr3 := sessionCtx(t, home, cacheDir, true)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr3.String())
+	assert.Equal(t, []protos.AitoolsHintKind{
+		protos.AitoolsHintKindClaudeCodeNative,
+		protos.AitoolsHintKindInstallText,
+	}, hintKinds(t, ctx3))
+}
+
 func TestMaybeHint_NativeHintSilentOnTerminal(t *testing.T) {
 	// The fakes make one stream look like a terminal, as in tmux or screen
 	// started from inside Claude Code, where nothing strips the tag. A person

@@ -15,10 +15,10 @@ processes the CLI started itself. It carries only the kind of hint (`hint_kind`)
 shown on is the entry's `execution_context.command`. The event uploads at exit only when the command
 resolved auth. The text line prints at most once per hour per agent session (or per agent on the
 machine, for agents without a session id). Claude Code's native line prints at most once per 10
-minutes per session, but its event is logged at most once per hour: only for the first native line
-printed since the text line last printed. So when the command that printed a line resolves no auth
-(e.g. `databricks bundle schema`), no event for that line is uploaded for that hour even though the
-agent saw the hint.
+minutes per session, but its event is logged at most once per text-line print: only for the first
+native line printed since the text line last printed. So when the command that printed a line
+resolves no auth (e.g. `databricks bundle schema`), no event for that line is uploaded until the
+text line prints again, even though the agent saw the hint.
 
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED
