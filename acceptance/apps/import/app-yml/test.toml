@@ -1,0 +1,6 @@
+Badness = "Inlining loses data: app.yml's valueFrom is copied verbatim but bundle config expects value_from, so WAREHOUSE_ID is deployed with no value (only a warning) while app.yml is deleted; the unquoted 3.10 is re-typed as a number and deployed as 3.1."
+
+# Fix path with reverse slashes in the output for Windows.
+[[Repls]]
+Old = 'TEST_TMP_DIR]\\out'
+New = 'TEST_TMP_DIR]/out'
