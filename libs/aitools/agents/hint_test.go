@@ -602,9 +602,7 @@ func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
 }
 
-// writeProjectSkill lays out a project-scoped install the way
-// `aitools install --scope project` does: the canonical copy under the project,
-// symlinked from Claude's project skills dir.
+// writeProjectSkill creates a project-scoped Claude skill symlink.
 func writeProjectSkill(t *testing.T, project, name string) {
 	canonical := filepath.Join(project, ".databricks", "aitools", "skills", name)
 	require.NoError(t, os.MkdirAll(canonical, 0o755))
@@ -616,28 +614,27 @@ func writeProjectSkill(t *testing.T, project, name string) {
 }
 
 func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
-	setClaudeAgent(t)
-	home := t.TempDir()
-	ctx, stderr := claudeCtx(t, home)
-	project := t.TempDir()
-	writeProjectSkill(t, project, "databricks-ai-runtime")
-	t.Chdir(project)
+	for _, tc := range []struct {
+		name string
+		// subdir is where the command runs, relative to the project root.
+		subdir string
+	}{
+		{name: "project root"},
+		{name: "repo subdirectory", subdir: "train"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			home := t.TempDir()
+			ctx, stderr := claudeCtx(t, home)
+			project := t.TempDir()
+			require.NoError(t, os.Mkdir(filepath.Join(project, ".git"), 0o755))
+			writeProjectSkill(t, project, "databricks-ai-runtime")
+			cwd := filepath.Join(project, tc.subdir)
+			require.NoError(t, os.MkdirAll(cwd, 0o755))
+			t.Chdir(cwd)
 
-	MaybeHint(ctx, regularCmd())
-	assert.Empty(t, stderr.String())
-}
-
-func TestMaybeHint_ProjectSkillsInParentOfRepoSubdirSilent(t *testing.T) {
-	setClaudeAgent(t)
-	home := t.TempDir()
-	ctx, stderr := claudeCtx(t, home)
-	repo := t.TempDir()
-	require.NoError(t, os.Mkdir(filepath.Join(repo, ".git"), 0o755))
-	writeProjectSkill(t, repo, "databricks-ai-runtime")
-	sub := filepath.Join(repo, "train")
-	require.NoError(t, os.Mkdir(sub, 0o755))
-	t.Chdir(sub)
-
-	MaybeHint(ctx, regularCmd())
-	assert.Empty(t, stderr.String())
+			MaybeHint(ctx, regularCmd())
+			assert.Empty(t, stderr.String())
+		})
+	}
 }
