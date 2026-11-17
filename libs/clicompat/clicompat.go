@@ -56,6 +56,13 @@ const (
 type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
+
+	// AutoInstall turns on the automatic installation of Databricks AI tools
+	// on the first run of a new CLI version in this range. Off when absent, so
+	// the feature ships off and can be turned on (or off again) remotely; a
+	// change reaches a machine on its first run of a version after the change.
+	// CLIs that predate the field ignore it.
+	AutoInstall bool `json:"auto_install,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -285,6 +292,16 @@ func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return entry.AgentSkills, nil
+}
+
+// ResolveAutoInstall reports whether the manifest entry for cliVersion turns on
+// the automatic installation of Databricks AI tools.
+func ResolveAutoInstall(ctx context.Context, cliVersion string) (bool, error) {
+	entry, err := resolveEntry(ctx, cliVersion)
+	if err != nil {
+		return false, err
+	}
+	return entry.AutoInstall, nil
 }
 
 // --- Local manifest cache ---
