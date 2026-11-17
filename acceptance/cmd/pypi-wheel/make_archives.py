@@ -30,7 +30,8 @@ for goos in ("linux", "darwin", "windows"):
                 z.writestr("databricks.exe", data)
         else:
             path = out / f"databricks_cli_1.2.3_{goos}_{goarch}.tar.gz"
-            with tarfile.open(path, "w:gz") as t:
+            # Compression only costs test time: the builder reads the archive either way.
+            with tarfile.open(path, "w:gz", compresslevel=0) as t:
                 info = tarfile.TarInfo("databricks")
                 info.size = len(data)
                 info.mode = 0o755
