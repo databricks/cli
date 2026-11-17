@@ -18,7 +18,7 @@ wheels/databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
 wheels/databricks-1.2.3-py3-none-win_amd64.whl
 wheels/databricks-1.2.3-py3-none-win_arm64.whl
 
->>> uv run -q --no-project --with packaging==25.0 python [TESTROOT]/../tools/validate_cli_wheels.py wheels
+>>> uv run -q --no-project --with packaging python [TESTROOT]/../tools/validate_cli_wheels.py wheels
 valid: wheels/databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
 valid: wheels/databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
 valid: wheels/databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl

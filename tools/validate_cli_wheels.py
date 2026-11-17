@@ -7,7 +7,7 @@ stricter than `twine check`), WHEEL tags, RECORD hashes and sizes, and that
 each wheel installs only the CLI binary. Also requires exactly one wheel per
 supported platform, all with the same version.
 
-Requires `packaging`. Usage: validate_cli_wheels.py <wheels-dir>
+Requires `packaging` (see requirements.txt). Usage: validate_cli_wheels.py <wheels-dir>
 """
 
 import base64

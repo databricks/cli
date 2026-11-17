@@ -216,6 +216,7 @@ jobs:
             .github
             tools/build_cli_wheels.py
             tools/validate_cli_wheels.py
+            tools/requirements.txt
             LICENSE
 
       - name: Setup JFrog
@@ -239,15 +240,17 @@ jobs:
         run: uvx twine@6.2.0 check --strict cli-wheels/*
 
       - name: Validate wheels
-        run: uv run -q --no-project --with packaging==25.0 python tools/validate_cli_wheels.py cli-wheels
+        run: uv run -q -p ">=3.11" --no-project --with-requirements tools/requirements.txt python tools/validate_cli_wheels.py cli-wheels
 
-      - name: Smoke test linux-amd64 wheel
+      # uv picks the wheel for the runner's platform from the directory, as it would
+      # from PyPI. --no-index keeps it from resolving "databricks" on the index.
+      - name: Smoke test the wheel for this runner
         run: |
           cli_version=$(basename cli-artifact/databricks_cli_*_SHA256SUMS)
           cli_version=${cli_version#databricks_cli_}
           cli_version=${cli_version%_SHA256SUMS}
           uv venv "$RUNNER_TEMP/venv"
-          uv pip install --python "$RUNNER_TEMP/venv" cli-wheels/*manylinux*x86_64.whl
+          uv pip install --python "$RUNNER_TEMP/venv" --no-index --find-links cli-wheels databricks
           "$RUNNER_TEMP/venv/bin/databricks" --version | tee /dev/stderr | grep -F "$cli_version"
 
       - name: Upload CLI wheels

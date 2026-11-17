@@ -3,8 +3,9 @@
 trace python3 make_archives.py $CLI archives
 trace ls archives
 trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE
-# packaging comes from the vendored packages; the test runs offline.
-trace uv run -q --no-project --with packaging==25.0 python $TESTROOT/../tools/validate_cli_wheels.py wheels
+# Offline, so packaging comes from the vendored packages rather than the
+# tools/requirements.txt pin (they can differ after a Dependabot bump).
+trace uv run -q --no-project --with packaging python $TESTROOT/../tools/validate_cli_wheels.py wheels
 trace python3 show_wheels.py wheels
 
 # uv must pick the wheel for this platform: the other wheels hold a placeholder
