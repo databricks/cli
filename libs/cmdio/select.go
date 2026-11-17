@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 )
 
 const (
@@ -248,16 +249,16 @@ func parsePromptTemplate(funcs template.FuncMap, name, src string) (*template.Te
 func (m *selectModel) Init() tea.Cmd { return tea.HideCursor }
 
 func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	key, ok := msg.(tea.KeyMsg)
+	in, ok := teainput.Decode(msg)
 	if !ok {
 		return m, nil
 	}
-	switch key.Type {
-	case tea.KeyCtrlC:
+	switch in.Key {
+	case "ctrl+c":
 		m.cancelled = true
 		return m, tea.Quit
 
-	case tea.KeyEnter, tea.KeyCtrlJ:
+	case "enter", "ctrl+j":
 		// Enter on an empty filtered list is intentionally inert; only
 		// Ctrl+C escapes from a "No results" panel.
 		if len(m.matches) == 0 {
@@ -266,25 +267,22 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.submitted = true
 		return m, tea.Quit
 
-	case tea.KeyUp, tea.KeyCtrlP:
+	case "up", "ctrl+p":
 		m.cursorUp()
 
-	case tea.KeyDown, tea.KeyCtrlN:
+	case "down", "ctrl+n":
 		m.cursorDown()
 
-	case tea.KeyLeft, tea.KeyCtrlB:
+	case "left", "ctrl+b":
 		m.pageUp()
 
-	case tea.KeyRight, tea.KeyCtrlF:
+	case "right", "ctrl+f":
 		m.pageDown()
 
-	case tea.KeyBackspace, tea.KeyCtrlH:
+	case "backspace", "ctrl+h":
 		// Backspace sends DEL, Ctrl+H sends BS; treat both as filter
-		// backspace. Alt+Backspace (word-delete) is dropped rather than
-		// deleting a single rune.
-		if key.Alt {
-			return m, nil
-		}
+		// backspace. Alt+Backspace (word-delete) is named "alt+backspace"
+		// and falls to the default branch rather than deleting a rune.
 		if !m.searchActive || m.filter == "" {
 			return m, nil
 		}
@@ -293,65 +291,63 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.recomputeMatches()
 
-	case tea.KeyTab, tea.KeyRunes, tea.KeySpace:
-		// Alt+<rune> are word-nav combos; drop them rather than letting
-		// the rune sneak into the filter buffer. The baseline tests pin
-		// this as a no-op for parity with the previous prompt library.
-		if key.Alt {
+	case "tab":
+		if m.searchActive {
+			m.appendFilter("\t")
+		}
+
+	case "esc":
+		// Esc is intentionally inert.
+
+	default:
+		// Alt+<rune> are word-nav combos and carry no Text, so they can't
+		// sneak into the filter buffer. The baseline tests pin this as a
+		// no-op for parity with the previous prompt library. Other keys
+		// (Home/End, Ctrl+U/W, function keys, …) carry no Text either.
+		if in.Text == "" {
 			return m, nil
 		}
 		if !m.searchActive {
 			// Outside search mode, vim-style shortcuts navigate the list and
 			// "/" toggles search when a Searcher is configured. Anything
-			// else is dropped. Multiple runes can arrive in a single KeyMsg
+			// else is dropped. Multiple runes can arrive in a single event
 			// when the user types quickly, so dispatch per-rune.
-			if key.Type == tea.KeyRunes {
-				for _, r := range key.Runes {
-					switch r {
-					case 'j':
-						m.cursorDown()
-					case 'k':
-						m.cursorUp()
-					case 'l':
-						m.pageDown()
-					case 'h':
-						m.pageUp()
-					case '/':
-						if m.searcher != nil {
-							m.searchActive = true
-						}
+			for _, r := range in.Text {
+				switch r {
+				case 'j':
+					m.cursorDown()
+				case 'k':
+					m.cursorUp()
+				case 'l':
+					m.pageDown()
+				case 'h':
+					m.pageUp()
+				case '/':
+					if m.searcher != nil {
+						m.searchActive = true
 					}
 				}
 			}
 			return m, nil
 		}
-		switch key.Type {
-		case tea.KeyTab:
-			m.filter += "\t"
-		case tea.KeySpace:
-			m.filter += " "
-		default:
-			// "/" toggles search off: clear the filter and exit search
-			// mode. Any other runes batched in the same KeyMsg are dropped
-			// — when the user types "/" the surrounding characters almost
-			// certainly belong to a toggle, not the filter.
-			if slices.Contains(key.Runes, '/') {
-				m.filter = ""
-				m.searchActive = false
-				m.recomputeMatches()
-				return m, nil
-			}
-			m.filter += string(key.Runes)
+		// "/" toggles search off: clear the filter and exit search mode.
+		// Any other runes batched in the same event are dropped — when the
+		// user types "/" the surrounding characters almost certainly belong
+		// to a toggle, not the filter.
+		if strings.ContainsRune(in.Text, '/') {
+			m.filter = ""
+			m.searchActive = false
+			m.recomputeMatches()
+			return m, nil
 		}
-		m.recomputeMatches()
-
-	case tea.KeyEsc:
-		// Esc is intentionally inert.
-
-	default:
-		// Other key types (Home/End, Ctrl+U/W, function keys, …) are no-ops.
+		m.appendFilter(in.Text)
 	}
 	return m, nil
+}
+
+func (m *selectModel) appendFilter(s string) {
+	m.filter += s
+	m.recomputeMatches()
 }
 
 func (m *selectModel) View() string { return m.render() }
