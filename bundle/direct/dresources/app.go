@@ -410,7 +410,7 @@ func (r *ResourceApp) retryWhileComputeSettles(ctx context.Context, name string,
 		if !isComputeUpdatingError(err) {
 			return false
 		}
-		log.Warnf(ctx, "App %s compute is UPDATING; waiting up to %s for it to settle before retrying", name, computeSettleTimeout)
+		log.Warnf(ctx, "%s", computeUpdatingRetryMessage(name))
 		settled, waitErr = r.waitForComputeToSettle(ctx, name)
 		return waitErr == nil
 	}, func() (struct{}, error) {
@@ -423,6 +423,13 @@ func (r *ResourceApp) retryWhileComputeSettles(ctx context.Context, name string,
 		return nil, fmt.Errorf("%w (waiting for the app compute to settle failed: %s)", err, waitErr.Error())
 	}
 	return settled, err
+}
+
+// computeUpdatingRetryMessage is the warning logged before waiting for the compute. Like
+// libs/retry, it says "retrying after" so that acceptance tests suppress it
+// (SuppressLines.warn_retry): whether a cloud run hits the race is timing dependent.
+func computeUpdatingRetryMessage(name string) string {
+	return fmt.Sprintf("app %s compute is UPDATING: retrying after it settles (waiting up to %s)", name, computeSettleTimeout)
 }
 
 func isComputeTransitional(app *apps.App) bool {

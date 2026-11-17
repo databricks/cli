@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -524,4 +526,15 @@ func TestAppDoUpdate_RetriesWhileComputeSettles(t *testing.T) {
 			assert.Equal(t, tc.wantDeploys, deploys)
 		})
 	}
+}
+
+// TestComputeUpdatingRetryMessage_SuppressedInAcceptanceTests guards the wording: the warning
+// only appears when a cloud run hits the race, so it must match SuppressLines.warn_retry.
+func TestComputeUpdatingRetryMessage_SuppressedInAcceptanceTests(t *testing.T) {
+	raw, err := os.ReadFile("../../../acceptance/test.toml")
+	require.NoError(t, err)
+	m := regexp.MustCompile(`(?m)^SuppressLines\.warn_retry = '(.*)'$`).FindSubmatch(raw)
+	require.NotNil(t, m, "SuppressLines.warn_retry not found in acceptance/test.toml")
+	pattern := regexp.MustCompile(string(m[1]))
+	assert.Regexp(t, pattern, "Warn: "+computeUpdatingRetryMessage("test-app"))
 }
