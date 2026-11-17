@@ -13,8 +13,10 @@ func Log(ctx context.Context, str fmt.Stringer) {
 
 // LogString writes str to the error writer, followed by a newline.
 func LogString(ctx context.Context, str string) {
-	c := fromContext(ctx)
-	_, _ = io.WriteString(c.err, str+"\n")
+	// Callers style str with cmdio.Yellow and friends, which check stdout's
+	// color support, but str goes to stderr. With stdout a terminal and stderr
+	// redirected, the escapes are stripped here.
+	_, _ = io.WriteString(fromContext(ctx).stderrWriter(ctx), str+"\n")
 }
 
 type quietKey struct{}
