@@ -23,3 +23,22 @@ func TestRegisteredModelsCreate_RejectsExistingModel(t *testing.T) {
 	// The existing model is kept as it was.
 	assert.Equal(t, "first", workspace.RegisteredModels["main.default.mymodel"].Comment)
 }
+
+func TestRegisteredModelsUpdate_RejectsRenameOntoExistingModel(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	for _, name := range []string{"model_a", "model_b"} {
+		body := `{"catalog_name": "main", "schema_name": "default", "name": "` + name + `"}`
+		require.Equal(t, 0, workspace.RegisteredModelsCreate(Request{Body: []byte(body)}).StatusCode)
+	}
+
+	response := workspace.RegisteredModelsUpdate(Request{Body: []byte(`{"new_name": "model_b"}`)}, "main.default.model_a")
+	assert.Equal(t, 400, response.StatusCode)
+	assert.Equal(t, map[string]string{
+		"error_code": "RESOURCE_ALREADY_EXISTS",
+		"message":    "Routine or Model 'model_b' already exists",
+	}, response.Body)
+
+	// Both models are kept as they were.
+	assert.Contains(t, workspace.RegisteredModels, "main.default.model_a")
+	assert.Contains(t, workspace.RegisteredModels, "main.default.model_b")
+}

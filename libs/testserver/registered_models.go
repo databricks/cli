@@ -28,15 +28,8 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
-	// UC names the model by its short name here (verified on AWS).
 	if _, ok := s.RegisteredModels[fullName]; ok {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body: map[string]string{
-				"error_code": "RESOURCE_ALREADY_EXISTS",
-				"message":    fmt.Sprintf("Routine or Model '%s' already exists", createRequest.Name),
-			},
-		}
+		return registeredModelAlreadyExists(createRequest.Name)
 	}
 
 	registeredModel := catalog.RegisteredModelInfo{
@@ -69,10 +62,7 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 
 	existing, ok := s.RegisteredModels[fullName]
 	if !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("registered model %s not found", fullName),
-		}
+		return registeredModelNotFound(fullName)
 	}
 
 	fields, errResponse := parseUpdateFields(req.Body)
@@ -95,6 +85,13 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 				"error_code": "INVALID_PARAMETER_VALUE",
 				"message":    "UpdateRegisteredModel Both new_name and name cannot be specified.",
 			},
+		}
+	}
+
+	if updateRequest.NewName != "" {
+		newFullName := existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
+		if _, taken := s.RegisteredModels[newFullName]; taken && newFullName != fullName {
+			return registeredModelAlreadyExists(updateRequest.NewName)
 		}
 	}
 
@@ -248,6 +245,18 @@ func (s *FakeWorkspace) RegisteredModelsDeleteAlias(fullName, aliasName string) 
 	})
 	s.RegisteredModels[fullName] = model
 	return Response{}
+}
+
+// registeredModelAlreadyExists is UC's answer to a create or rename onto a taken name; it names the
+// model by its short name (verified on AWS).
+func registeredModelAlreadyExists(name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "RESOURCE_ALREADY_EXISTS",
+			"message":    fmt.Sprintf("Routine or Model '%s' already exists", name),
+		},
+	}
 }
 
 func registeredModelNotFound(fullName string) Response {
