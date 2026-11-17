@@ -50,6 +50,8 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "experiment_name": "my-exp",
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "mlflow_experiment_id": "exp1",
+    "mlflow_run_id": "run1",
     "est_remaining_seconds": null,
     "est_percent_complete": null,
     "user": "user@example.com",

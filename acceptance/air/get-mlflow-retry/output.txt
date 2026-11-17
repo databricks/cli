@@ -14,6 +14,8 @@
     "experiment_name": null,
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
     "mlflow_url": null,
+    "mlflow_experiment_id": null,
+    "mlflow_run_id": null,
     "termination_reason": "Out of capacity",
     "est_remaining_seconds": null,
     "est_percent_complete": null,

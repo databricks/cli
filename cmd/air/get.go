@@ -34,6 +34,13 @@ type getData struct {
 	ExperimentName  *string `json:"experiment_name"`
 	DashboardURL    string  `json:"dashboard_url"`
 	MLflowURL       *string `json:"mlflow_url"`
+	// MLflowExperimentID and MLflowRunID identify the MLflow run MLflowURL links
+	// to. For a finished run whose last retry never started an MLflow run, they
+	// come from the newest earlier retry that has one, which MLflowRetry names.
+	// Like MLflowURL, they are null whenever no MLflow run is found, including
+	// when a get-output call fails.
+	MLflowExperimentID *string `json:"mlflow_experiment_id"`
+	MLflowRunID        *string `json:"mlflow_run_id"`
 	// MLflowRetry is the retry the MLflow IDs above came from when it isn't the
 	// run's latest (see mlflowIDsFromRetries), else absent.
 	MLflowRetry       *int    `json:"mlflow_retry,omitempty"`
@@ -224,6 +231,8 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
+			data.MLflowExperimentID = &ids.ExperimentID
+			data.MLflowRunID = &ids.RunID
 			data.MLflowRetry = ids.OlderRetry
 			// A remaining-time estimate only makes sense while the run is still
 			// training; a terminal run is either done or stopped mid-progress.
