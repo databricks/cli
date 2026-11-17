@@ -41,10 +41,8 @@ class ComputeSpec:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional ID of a pre-provisioned accelerator capacity reservation to run
-    this AI Runtime workload on. When set, the workload is scheduled onto the
-    referenced reserved capacity instead of the on-demand capacity shared among
-    all Databricks customers.
+    [Private Preview] Legacy alias for `accelerator_pool_id`. Use `accelerator_pool_id` for new
+    configurations. If both fields are set, they must contain the same ID.
     """
 
     @classmethod
@@ -77,10 +75,8 @@ class ComputeSpecDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Optional ID of a pre-provisioned accelerator capacity reservation to run
-    this AI Runtime workload on. When set, the workload is scheduled onto the
-    referenced reserved capacity instead of the on-demand capacity shared among
-    all Databricks customers.
+    [Private Preview] Legacy alias for `accelerator_pool_id`. Use `accelerator_pool_id` for new
+    configurations. If both fields are set, they must contain the same ID.
     """
 
 

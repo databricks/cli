@@ -1,0 +1,2 @@
+# Local paths use the OS separator, so completions differ on Windows.
+GOOS.windows = false

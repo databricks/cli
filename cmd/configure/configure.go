@@ -1,8 +1,11 @@
 package configure
 
 import (
+	"context"
 	"errors"
 	"fmt"
+
+	"github.com/databricks/cli/cmd/root"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -93,19 +96,22 @@ func configureNonInteractive(cmd *cobra.Command, flags *configureFlags, cfg *con
 	return nil
 }
 
-func newConfigureCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "configure",
-		Short: "Configure authentication",
-		Long: `Configure authentication.
+// Spec declares the configure command.
+var Spec = root.CommandSpec{
+	Use:   "configure",
+	Short: "Configure authentication",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Configure authentication.
 
 This command adds a profile to your ~/.databrickscfg file.
 You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
 
 If this command is invoked in non-interactive mode, it will read the token from stdin.
 The host must be specified with the --host flag or the DATABRICKS_HOST environment variable.
-		`,
-	}
+		`
 
 	var flags configureFlags
 	flags.Register(cmd)
@@ -181,10 +187,4 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		}, clearKeys...)
 		return err
 	}
-
-	return cmd
-}
-
-func New() *cobra.Command {
-	return newConfigureCommand()
 }

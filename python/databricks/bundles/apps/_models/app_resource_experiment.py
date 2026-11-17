@@ -20,8 +20,14 @@ class AppResourceExperiment:
     """"""
 
     experiment_id: VariableOr[str]
+    """
+    ID of the MLflow experiment.
+    """
 
     permission: VariableOr[AppResourceExperimentExperimentPermission]
+    """
+    Permission to grant the app on the experiment.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceExperimentDict") -> "Self":
@@ -35,8 +41,14 @@ class AppResourceExperimentDict(TypedDict, total=False):
     """"""
 
     experiment_id: VariableOr[str]
+    """
+    ID of the MLflow experiment.
+    """
 
     permission: VariableOr[AppResourceExperimentExperimentPermissionParam]
+    """
+    Permission to grant the app on the experiment.
+    """
 
 
 AppResourceExperimentParam = AppResourceExperimentDict | AppResourceExperiment

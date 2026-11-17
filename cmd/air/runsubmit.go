@@ -34,6 +34,11 @@ const defaultDlRuntimeImage = "CLIENT-GPU-6"
 // carries the runtime channel.
 const aiRuntimeEnvironmentKey = "default"
 
+// workspaceBaseEnvironmentPrefix is the name prefix of every workspace base
+// environment, for example the Databricks-provided databricks_ai_v6 or a custom
+// dbe_<uuid>.
+const workspaceBaseEnvironmentPrefix = "workspace-base-environments/"
+
 // dlRuntimeImage resolves the bare runtime channel (config version, else env,
 // else default), always stripping the CLIENT-GPU- prefix.
 func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
@@ -50,7 +55,7 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
 	environment := &compute.Environment{}
 	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+		environment.BaseEnvironment = workspaceBaseEnvironmentPrefix + dlImage
 	} else {
 		environment.EnvironmentVersion = dlImage
 	}
@@ -468,12 +473,12 @@ func workspaceIDForRunLink(ctx context.Context, w *databricks.WorkspaceClient) i
 	defer cancel()
 	id, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		log.Debugf(ctx, "air run: could not resolve workspace ID for the run link: %v", err)
+		log.Debugf(ctx, "could not resolve workspace ID for the run link: %v", err)
 		return 0
 	}
 	workspaceID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		log.Debugf(ctx, "air run: workspace ID %q for the run link is not numeric", id)
+		log.Debugf(ctx, "workspace ID %q for the run link is not numeric", id)
 		return 0
 	}
 	return workspaceID

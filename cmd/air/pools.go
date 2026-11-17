@@ -184,7 +184,7 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 func newPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pools",
-		Short: "View GPU pools provisioned for your workspace",
+		Short: "View provisioned GPU pools, if any (not required to run)",
 		Long: `View GPU pools provisioned for your workspace.
 
 A GPU pool is dedicated accelerator capacity that your Databricks account team

@@ -3,6 +3,8 @@
 package temporary_volume_credentials
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,11 +17,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "temporary-volume-credentials",
-		Short: `*Public Preview* Temporary Volume Credentials are short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "temporary-volume-credentials",
+	Short:   `*Public Preview* Temporary Volume Credentials are short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Temporary Volume Credentials are short-lived, downscoped credentials used to
   access cloud storage locations where volume data is stored in Databricks.
@@ -37,14 +44,13 @@ Temporary Volume Credentials are short-lived, downscoped credentials used to
   user must be granted the EXTERNAL USE SCHEMA permission at the schema level by
   the catalog owner. Note that EXTERNAL USE SCHEMA is a schema level permission
   that can only be granted by the catalog owner explicitly and is not included
-  in schema ownership or ALL PRIVILEGES on the schema for security reasons.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  in schema ownership or ALL PRIVILEGES on the schema for security reasons.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryVolumeCredentials())
@@ -53,8 +59,6 @@ Temporary Volume Credentials are short-lived, downscoped credentials used to
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start generate-temporary-volume-credentials command

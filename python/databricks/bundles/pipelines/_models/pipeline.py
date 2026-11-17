@@ -41,6 +41,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipeline_testing import (
+    PipelineTesting,
+    PipelineTestingParam,
+)
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
     PipelinesEnvironmentParam,
@@ -66,7 +70,8 @@ class Pipeline(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    [Public Preview] Budget policy of this pipeline.
+    [Public Preview] ID (UUID) of the serverless budget policy applied to this pipeline. Only supported for serverless
+    pipelines.
     """
 
     cascade_on_destroy: VariableOrOptional[bool] = None
@@ -76,12 +81,16 @@ class Pipeline(Resource):
 
     catalog: VariableOrOptional[str] = None
     """
-    A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
+    A catalog in Unity Catalog to publish data from this pipeline to. Tables are published to the
+    schema set in `schema` (or the legacy `target`) inside this catalog, for example
+    `catalog`.`schema`.`table`; source code can also use fully qualified names to write to other
+    schemas and catalogs. If `catalog` is not specified, the pipeline uses the legacy Hive metastore.
     """
 
     channel: VariableOrOptional[str] = None
     """
-    SDP Release Channel that specifies which version to use.
+    Release channel that selects the pipeline runtime version: `CURRENT` (the default) or `PREVIEW`,
+    which runs on the upcoming runtime release.
     """
 
     clusters: VariableOrList[PipelineCluster] = field(default_factory=list)
@@ -113,7 +122,7 @@ class Pipeline(Resource):
 
     edition: VariableOrOptional[str] = None
     """
-    Pipeline product edition.
+    Pipeline product edition: `CORE`, `PRO`, or `ADVANCED`. Serverless pipelines require `ADVANCED`.
     """
 
     environment: VariableOrOptional[PipelinesEnvironment] = None
@@ -211,9 +220,8 @@ class Pipeline(Resource):
 
     run_as: VariableOrOptional[RunAs] = None
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    The user or service principal that the pipeline runs as. If not specified, the pipeline runs as
+    the user who created the pipeline.
     """
 
     schema: VariableOrOptional[str] = None
@@ -254,6 +262,13 @@ class Pipeline(Resource):
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
+    testing: VariableOrOptional[PipelineTesting] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Test configuration for this pipeline. Used only by test-only updates.
+    """
+
     usage_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -279,7 +294,8 @@ class PipelineDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    [Public Preview] Budget policy of this pipeline.
+    [Public Preview] ID (UUID) of the serverless budget policy applied to this pipeline. Only supported for serverless
+    pipelines.
     """
 
     cascade_on_destroy: VariableOrOptional[bool]
@@ -289,12 +305,16 @@ class PipelineDict(TypedDict, total=False):
 
     catalog: VariableOrOptional[str]
     """
-    A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
+    A catalog in Unity Catalog to publish data from this pipeline to. Tables are published to the
+    schema set in `schema` (or the legacy `target`) inside this catalog, for example
+    `catalog`.`schema`.`table`; source code can also use fully qualified names to write to other
+    schemas and catalogs. If `catalog` is not specified, the pipeline uses the legacy Hive metastore.
     """
 
     channel: VariableOrOptional[str]
     """
-    SDP Release Channel that specifies which version to use.
+    Release channel that selects the pipeline runtime version: `CURRENT` (the default) or `PREVIEW`,
+    which runs on the upcoming runtime release.
     """
 
     clusters: VariableOrList[PipelineClusterParam]
@@ -326,7 +346,7 @@ class PipelineDict(TypedDict, total=False):
 
     edition: VariableOrOptional[str]
     """
-    Pipeline product edition.
+    Pipeline product edition: `CORE`, `PRO`, or `ADVANCED`. Serverless pipelines require `ADVANCED`.
     """
 
     environment: VariableOrOptional[PipelinesEnvironmentParam]
@@ -424,9 +444,8 @@ class PipelineDict(TypedDict, total=False):
 
     run_as: VariableOrOptional[RunAsParam]
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    The user or service principal that the pipeline runs as. If not specified, the pipeline runs as
+    the user who created the pipeline.
     """
 
     schema: VariableOrOptional[str]
@@ -465,6 +484,13 @@ class PipelineDict(TypedDict, total=False):
     target: VariableOrOptional[str]
     """
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
+    testing: VariableOrOptional[PipelineTestingParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Test configuration for this pipeline. Used only by test-only updates.
     """
 
     usage_policy_id: VariableOrOptional[str]

@@ -457,7 +457,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	// non-interactive test, so only these plain lines remain.
 	assert.Contains(t, stderr.String(), "Using skills version")
 	assert.Contains(t, stderr.String(), "Fetching skills manifest...")
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 }
 
 func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string) {
@@ -782,7 +782,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skill.")
+	assert.Contains(t, stderr.String(), "Installed 1 skill in ")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -827,7 +827,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-iceberg")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -858,7 +858,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-iceberg")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), "Installed 3 skills.")
+	assert.Contains(t, stderr.String(), "Installed 3 skills in ")
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -893,7 +893,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
@@ -1105,7 +1105,7 @@ func TestLegacyFullInstallAllowed(t *testing.T) {
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
 	require.NoError(t, err)
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
@@ -1190,7 +1190,7 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in "+filepath.ToSlash(projectSkillsDir)+".")
 }
 
 func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
@@ -1261,7 +1261,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
-	assert.Contains(t, stderr.String(), "Installed 2 skills.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 }
 
 func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {

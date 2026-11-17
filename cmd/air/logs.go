@@ -10,10 +10,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +45,7 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
-	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
+	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing; not combinable with --tail or --minutes")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	cmd.Flags().MarkHidden("review")
 
@@ -145,14 +145,11 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".`,
 func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
-	// Validate credentials server-side before fetching (MustWorkspaceClient only
-	// attaches them), so a bad token fails clearly here.
-	if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-		return authError(ctx, cmd, err)
-	}
-
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
 	if err != nil {
+		if credErr := credentialError(ctx, w, err); credErr != nil {
+			return authError(ctx, cmd, credErr)
+		}
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
@@ -195,6 +192,14 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	}
 
 	out := cmd.OutOrStdout()
+	if !req.jsonOutput && !req.staticView && !status.terminal() {
+		runURL := req.runURL
+		if runURL == "" {
+			workspaceID, _ := strconv.ParseInt(w.Config.WorkspaceID, 10, 64)
+			runURL = dashboardURL(w.Config.Host, req.runID, workspaceID)
+		}
+		defer printJobRunLink(ctx, out, runURL)
+	}
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
@@ -242,9 +247,17 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
 		req.retryTracker = newRetryTracker(status)
 	}
-	success, err := streamBricklensLogs(ctx, w, out, req, status)
+	success, latest, err := streamBricklensLogsWithLatestStatus(ctx, w, out, req, status)
 	if errors.Is(err, errBricklensFeatureDisabled) {
-		return mlflowLogFallback(ctx, w, out, req, status)
+		return mlflowLogFallbackReporting(ctx, w, out, req, status, latest)
 	}
 	return success, err
+}
+
+// printJobRunLink leaves the run link below the streamed output, including on failure.
+func printJobRunLink(ctx context.Context, out io.Writer, runURL string) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
 }

@@ -154,7 +154,8 @@ func TestGetValidArgsFunctionLocalCompletionWindows(t *testing.T) {
 
 	v, cmd, _ := setupTest(t)
 	completions, directive := v.Validate(cmd, []string{}, "dir/")
-	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dir\\fileA", "dbfs:/"}, completions)
+	// The typed "dir/" is kept so the shell's prefix match still accepts the candidates.
+	assert.Equal(t, []string{"dir/dirA\\", "dir/dirB\\", "dir/fileA", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 

@@ -148,22 +148,33 @@ func TestLogStreamerRetriesOnDialFailure(t *testing.T) {
 	})
 	defer server.Close()
 
-	buf := &bytes.Buffer{}
+	writer := &syncBuffer{}
 	streamer := &logStreamer{
 		dialer:    &flakyDialer{failures: 1, inner: &websocket.Dialer{}},
 		url:       toWebSocketURL(server.URL),
 		tail:      0,
 		follow:    true,
 		prefetch:  0,
-		writer:    buf,
+		writer:    writer,
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	require.ErrorIs(t, streamer.Run(ctx), context.DeadlineExceeded)
-	assert.Contains(t, buf.String(), "msg1")
+	done := make(chan error, 1)
+	go func() {
+		done <- streamer.Run(ctx)
+	}()
+
+	// The retry happens only after initialReconnectBackoff, so a fixed short
+	// deadline leaves little time for the reconnect on a slow CI runner.
+	require.Eventually(t, func() bool {
+		return strings.Contains(writer.String(), "msg1")
+	}, 10*time.Second, 10*time.Millisecond, "expected a message after retrying the failed dial")
+	cancel()
+
+	require.ErrorIs(t, <-done, context.Canceled)
 }
 
 func TestLogStreamerSendsSearchTerm(t *testing.T) {
@@ -627,7 +638,7 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 		return "fresh", nil
 	}
 
-	buf := &bytes.Buffer{}
+	buf := &syncBuffer{}
 	streamer := &logStreamer{
 		dialer:        &websocket.Dialer{},
 		url:           toWebSocketURL(server.URL),

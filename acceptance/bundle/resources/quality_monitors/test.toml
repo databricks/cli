@@ -1,8 +1,3 @@
 # Test quality monitor output_schema_name updates
 Cloud = true
 RecordRequests = true
-
-# Fake SQL endpoint for local tests
-[[Server]]
-Pattern = "POST /api/2.0/sql/statements/"
-Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
