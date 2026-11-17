@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
@@ -90,19 +91,16 @@ is attached. Show the user the exact message and pass --yes only after the user
 approves it.`
 	cmd.Example = `  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
   databricks feedback --command "air run" --run-id 123 "logs omitted the failure reason"`
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		// An unquoted message arrives as several arguments.
-		if len(args) > 1 {
-			return fmt.Errorf("the message must be one argument, but received %d; quote it, for example: databricks feedback %q", len(args), strings.Join(args, " "))
-		}
-		return root.ExactArgs(1)(cmd, args)
-	}
 
 	var opts options
 	cmd.Flags().StringVar(&opts.command, "command", "", `CLI command the feedback is about, for example "bundle deploy"`)
 	cmd.Flags().StringVar(&opts.runID, "run-id", "", "ID of the job run the feedback is about")
 	cmd.Flags().BoolVar(&opts.canBeContacted, "can-be-contacted", false, "Allow Databricks to contact you about this feedback")
 	cmd.Flags().BoolVarP(&opts.yes, "yes", "y", false, "Confirm sending feedback written by an AI agent")
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		return checkArgs(cmd, opts.command, args)
+	}
 
 	var s submission
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -120,6 +118,24 @@ approves it.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return send(cmd.Context(), s, opts.yes)
 	}
+}
+
+// checkArgs requires the message as one argument. Several arguments mean that
+// the message, or a --command with several words, was not quoted; the error
+// shows the command with the quotes.
+func checkArgs(cmd *cobra.Command, command string, args []string) error {
+	if len(args) <= 1 {
+		return root.ExactArgs(1)(cmd, args)
+	}
+	if command != "" {
+		path := append(strings.Fields(command), args[0])
+		if target, rest, err := cmd.Root().Find(path); err == nil && len(rest) == 0 && target != cmd.Root() {
+			return fmt.Errorf("--command takes the command as one argument; quote it, for example: databricks feedback --command %s %s",
+				shellquote.BashArg(strings.Join(path, " ")), shellquote.BashArg(strings.Join(args[1:], " ")))
+		}
+	}
+	return fmt.Errorf("the message must be one argument, but received %d; quote it, for example: databricks feedback %s",
+		len(args), shellquote.BashArg(strings.Join(args, " ")))
 }
 
 func newSubmission(cmd *cobra.Command, message string, opts *options) (submission, error) {
@@ -163,8 +179,9 @@ func send(ctx context.Context, s submission, yes bool) error {
 		// needs it too so triage can distinguish agent reports.
 		ctx = useragent.InContext(ctx, useragent.AgentKey, provider)
 	}
+	cfg := cmdctx.WorkspaceClient(ctx).Config
 	if needsApproval(yes) {
-		confirmed, err := confirm(ctx, s)
+		confirmed, err := confirm(ctx, s, cfg.Host)
 		if err != nil {
 			return err
 		}
@@ -178,7 +195,7 @@ func send(ctx context.Context, s submission, yes bool) error {
 	id := uuid.New().String()
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
 	defer cancel()
-	err := telemetry.Send(sendCtx, cmdctx.WorkspaceClient(ctx).Config, []protos.FrontendLog{{
+	err := telemetry.Send(sendCtx, cfg, []protos.FrontendLog{{
 		FrontendLogEventID: id,
 		Entry: protos.FrontendLogEntry{
 			FastFeedbackLog: &protos.FastFeedbackLog{
@@ -250,8 +267,8 @@ func checkApproval(ctx context.Context, yes bool) error {
 
 // confirm asks the user to approve feedback an AI agent is about to send. It
 // returns false without error if the user declines.
-func confirm(ctx context.Context, s submission) (bool, error) {
-	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s))
+func confirm(ctx context.Context, s submission, workspace string) (bool, error) {
+	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s, workspace))
 	confirmed, err := cmdio.AskYesOrNo(ctx, "Send this feedback?")
 	if err != nil {
 		return false, err
@@ -262,14 +279,15 @@ func confirm(ctx context.Context, s submission) (bool, error) {
 	return confirmed, nil
 }
 
-// summary returns the message and the choices sent with it, for the user to
-// approve.
-func summary(s submission) string {
+// summary returns the message, the workspace it is filed in and the choices
+// sent with it, for the user to approve.
+func summary(s submission, workspace string) string {
 	var b strings.Builder
 	// Indent the message so that none of its lines can pass for one of the
 	// fields below it.
 	b.WriteString("  " + strings.ReplaceAll(escapeInvisible(s.text), "\n", "\n  "))
 	b.WriteString("\n\n")
+	fmt.Fprintf(&b, "Workspace: %s\n", workspace)
 	if s.command != "" {
 		fmt.Fprintf(&b, "Command: %s\n", s.command)
 	}

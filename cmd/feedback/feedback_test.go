@@ -55,6 +55,8 @@ const (
 	runIDError   = "--run-id must be a positive job run ID"
 )
 
+const testWorkspace = "https://workspace.test"
+
 const commandHint = `; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`
 
 // newTestFeedbackCommand returns the feedback command under a root with the
@@ -74,6 +76,45 @@ func newTestFeedbackCommand() *cobra.Command {
 		}
 	}
 	return feedbackCmd
+}
+
+func TestCheckArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		command string
+		args    []string
+		wantErr string
+	}{
+		{name: "one message", args: []string{"deploy is slow"}},
+		{name: "no message", wantErr: "accepts 1 arg(s), received 0"},
+		{
+			name:    "unquoted message",
+			args:    []string{"costs", "$HOME", "or", "`whoami`"},
+			wantErr: "the message must be one argument, but received 4; quote it, for example: databricks feedback 'costs $HOME or `whoami`'",
+		},
+		{
+			name:    "unquoted --command",
+			command: "bundle",
+			args:    []string{"deploy", "deploy is slow"},
+			wantErr: "--command takes the command as one argument; quote it, for example: databricks feedback --command 'bundle deploy' 'deploy is slow'",
+		},
+		{
+			name:    "words that are not a subcommand",
+			command: "bundle",
+			args:    []string{"nope", "slow"},
+			wantErr: "the message must be one argument, but received 2; quote it, for example: databricks feedback 'nope slow'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkArgs(newTestFeedbackCommand(), tt.command, tt.args)
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
 }
 
 func TestResolveCommand(t *testing.T) {
@@ -165,37 +206,37 @@ func TestSummary(t *testing.T) {
 		{
 			name: "message only",
 			s:    submission{text: "line one\n\tline two"},
-			want: "  line one\n  \tline two\n\nDatabricks may contact you: no\n",
+			want: "  line one\n  \tline two\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "all fields",
 			s:    submission{text: "slow", command: "air run", runID: "42", canBeContacted: true},
-			want: "  slow\n\nCommand: air run\nRun ID: 42\nDatabricks may contact you: yes\n",
+			want: "  slow\n\nWorkspace: https://workspace.test\nCommand: air run\nRun ID: 42\nDatabricks may contact you: yes\n",
 		},
 		{
 			name: "message lines cannot pass for fields",
 			s:    submission{text: "slow\nDatabricks may contact you: no", canBeContacted: true},
-			want: "  slow\n  Databricks may contact you: no\n\nDatabricks may contact you: yes\n",
+			want: "  slow\n  Databricks may contact you: no\n\nWorkspace: https://workspace.test\nDatabricks may contact you: yes\n",
 		},
 		{
 			name: "control characters cannot hide text",
 			s:    submission{text: "great\x1b[8m hidden\x1b[0m\r\u0085"},
-			want: `  great\x1b[8m hidden\x1b[0m\r\u0085` + "\n\nDatabricks may contact you: no\n",
+			want: `  great\x1b[8m hidden\x1b[0m\r\u0085` + "\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "format characters cannot reorder or hide text",
 			s:    submission{text: "a\u202eb\u200bc\U000E0041 d\u00a0é"},
-			want: `  a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nDatabricks may contact you: no\n",
+			want: `  a\u202eb\u200bc\U000e0041 d` + "\u00a0é\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n",
 		},
 		{
 			name: "variation selectors and fillers cannot carry hidden text",
 			s:    submission{text: "ok👍\ufe0f\U000E0100\u3164\u034f e\u0301"},
-			want: `  ok👍\ufe0f\U000e0100\u3164\u034f ` + "e\u0301\n\nDatabricks may contact you: no\n",
+			want: `  ok👍\ufe0f\U000e0100\u3164\u034f ` + "e\u0301\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, summary(tt.s))
+			assert.Equal(t, tt.want, summary(tt.s, testWorkspace))
 		})
 	}
 }
@@ -204,17 +245,17 @@ func TestConfirm(t *testing.T) {
 	t.Run("accepted", func(t *testing.T) {
 		var stderr bytes.Buffer
 		ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("y\n"), io.Discard, &stderr))
-		confirmed, err := confirm(ctx, submission{text: "exact feedback"})
+		confirmed, err := confirm(ctx, submission{text: "exact feedback"}, testWorkspace)
 		require.NoError(t, err)
 		assert.True(t, confirmed)
-		assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\n  exact feedback\n\nDatabricks may contact you: no\n\n")
+		assert.Contains(t, stderr.String(), "The following feedback will be sent to Databricks:\n\n  exact feedback\n\nWorkspace: https://workspace.test\nDatabricks may contact you: no\n\n")
 		assert.Contains(t, stderr.String(), "Send this feedback? [y/N]: ")
 	})
 
 	t.Run("declined", func(t *testing.T) {
 		var stderr bytes.Buffer
 		ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("\n"), io.Discard, &stderr))
-		confirmed, err := confirm(ctx, submission{text: "exact feedback"})
+		confirmed, err := confirm(ctx, submission{text: "exact feedback"}, testWorkspace)
 		require.NoError(t, err)
 		assert.False(t, confirmed)
 		assert.Contains(t, stderr.String(), "Feedback not sent.")
