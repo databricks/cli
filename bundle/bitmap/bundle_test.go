@@ -18,7 +18,10 @@ func TestWalkSchema(t *testing.T) {
 	schema, err := bitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
 	require.NoError(t, err)
 
+	seen := map[string]bool{}
 	for _, p := range schema {
+		assert.False(t, seen[p], "duplicate path %s", p)
+		seen[p] = true
 		assert.NotEqual(t, "targets", p)
 		assert.NotContains(t, p, "targets.")
 		assert.NotContains(t, p, "environments.")

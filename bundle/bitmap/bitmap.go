@@ -78,7 +78,10 @@ func WalkSchema(telemetryType reflect.Type) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(paths, tmPaths...), nil
+	// The walk visits some paths twice: a flattened embed at its parent's path,
+	// and a field together with an embedded field it shadows.
+	unique, _ := Merge(nil, append(paths, tmPaths...))
+	return unique, nil
 }
 
 // walkTypePaths walks a struct type and returns each field path, prefixed and
