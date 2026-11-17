@@ -41,29 +41,18 @@ var deviceCodeIncompatibleFlags = []string{
 	// Resource indicators are sent on the browser authorization request,
 	// which the device code flow does not make.
 	"resource",
-	// Device code login is only supported for workspace hosts.
-	"skip-workspace",
 }
 
 var (
-	errDeviceCodeNeedsHost     = errors.New("--use-device-code requires a workspace host. Pass it as an argument or with --host")
-	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
+	errDeviceCodeNeedsHost = errors.New("--use-device-code requires a host. Pass it as an argument or with --host")
 	// The cluster picker is interactive.
 	errDeviceCodeNonInteractiveCluster = errors.New("--configure-cluster is not supported by the non-interactive device code login. Set cluster_id on the profile after the login")
 )
 
-// isDeviceCodeSupportedForHost reports whether host is a workspace host. A
-// unified host is only recognized by its account-scoped discoveryURL, so with
-// an empty discoveryURL only classic account hosts are rejected.
-func isDeviceCodeSupportedForHost(host, discoveryURL string) bool {
-	return !isAccountOrUnifiedHost(host, discoveryURL)
-}
-
-// matchDeviceCodeProfiles matches the profiles that device code login does not
-// always reject. Profiles on unified hosts still match, because the discovery
-// URL that identifies them is not saved on the profile.
+// matchDeviceCodeProfiles matches the profiles that device code login can
+// use: those whose login is not scoped to resources.
 func matchDeviceCodeProfiles(p profile.Profile) bool {
-	return isDeviceCodeSupportedForHost(p.Host, "") && len(u2mResourcesFromProfile(&p)) == 0
+	return len(u2mResourcesFromProfile(&p)) == 0
 }
 
 // validateDeviceCodeLogin returns an error if device code login is not enabled

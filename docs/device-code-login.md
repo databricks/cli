@@ -6,14 +6,13 @@ approve the login in a browser on another device (for example your laptop or
 phone), and type the confirmation code it shows you back into the CLI.
 
 > [!WARNING]
-> Device code login is experimental. It is disabled by default, may change
-> without notice, and only supports workspace hosts.
-> Account hosts and unified (SPOG) hosts are not supported yet.
+> Device code login is experimental. It is disabled by default and may change
+> without notice.
 
 ## Prerequisites
 
-- The workspace must have device code login enabled. If it is not, the CLI
-  fails with `device code login is not enabled for this workspace`.
+- The workspace or account must have device code login enabled. If it is
+  not, the CLI fails with `device code login is not enabled for this host`.
 - Enable the feature in the CLI by setting `DATABRICKS_CLI_DEVICE_CODE=true`.
 
 ## Log in from a headless machine
@@ -34,12 +33,12 @@ Profile my-profile was successfully saved
 
 1. Run `databricks auth login` with `--use-device-code`. The host can be passed as
    an argument, with `--host`, or come from an existing profile. Otherwise the
-   CLI prompts for it. The profile picker leaves out profiles that device code
-   login cannot use: profiles for an account host and profiles saved with
-   `--resource`. Profiles for a unified host are still listed and are rejected
-   after you pick one.
-2. On another device, open the URL that the CLI shows, sign in to the
-   workspace if needed, and enter the code. The code expires after about 10
+   CLI prompts for it. The host can be a workspace host, an account host, or a
+   unified host. For an account or unified host, the CLI also needs the account
+   ID, like the browser-based login. The profile picker leaves out profiles
+   saved with `--resource`, which device code login cannot use.
+2. On another device, open the URL that the CLI shows, sign in if needed,
+   and enter the code. The code expires after about 10
    minutes.
 3. Confirm that you started this login yourself. Only approve a login that you
    initiated: approving it grants the CLI access to the Databricks API as you.
@@ -126,8 +125,8 @@ fail with a token refresh error and you need to run the login again.
 | Error or symptom | Likely cause | What to do |
 | --- | --- | --- |
 | `--use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it` | The feature is not enabled in the CLI. | Set `DATABRICKS_CLI_DEVICE_CODE=true`. |
-| `device code login is not enabled for this workspace` | The workspace does not advertise device code login. | Use a workspace where the feature is enabled. |
-| `--use-device-code is only supported for workspace hosts` | The host is an account or unified host. | Log in to a workspace host instead. |
+| `device code login is not enabled for this host` | The workspace or account does not advertise device code login. | Use a workspace or account where the feature is enabled. |
+| `the command is being run in a non-interactive environment, please specify an account ID using --account-id` | The non-interactive login to an account or unified host cannot prompt for the account ID. | Pass `--account-id`, or log in with a profile that has `account_id`. |
 | The browser says the code is invalid or expired | The code was mistyped, or more than ~10 minutes passed. | Re-enter the code carefully, or run the login again for a new code. Codes never contain `0`, `1`, `2`, `O`, `Z`, or `I`. |
 | `Invalid confirmation code` | The confirmation code was mistyped or left blank. | Re-enter the code. After 3 rejected codes, the login fails with `Invalid confirmation code (error code: invalid_request). Start login from scratch` and you need to run it again. |
 | `token exchange: Invalid device code` | The login expired. A confirmation code entered after the login expired is first rejected as `Invalid confirmation code`, and the workspace then discards the login. | Run the login again to get a new code. |

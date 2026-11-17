@@ -8,7 +8,6 @@ title "Device code login is disabled by default"
 
 title "Inputs device code login cannot honor are rejected"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --resource https://resource.test
-trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --skip-workspace
 
 # A profile scoped to resources is rejected like --resource.
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"

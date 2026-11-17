@@ -9,19 +9,13 @@ trace musterr $CLI auth login --profile new-profile --use-device-code
 
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-# The host is rejected before the CLI would prompt for an account ID, whether
-# it is passed directly or comes from a profile without one.
-title "Account host"
-trace musterr $CLI auth login --host https://accounts.cloud.databricks.test --profile test --use-device-code
-trace musterr $CLI auth login --profile account --use-device-code
-
-# An account-scoped discovery URL marks the host as a unified host.
-title "Unified host"
-trace DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server" musterr $CLI auth login --host $DATABRICKS_HOST --use-device-code
-
 title "Workspace without device code login"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
 trace musterr $CLI auth login --profile workspace --use-device-code
+
+# An account-scoped discovery URL marks the host as a unified host.
+title "Account without device code login"
+trace DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server" musterr $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123" --profile test --use-device-code
 
 # Every host is rejected before the device authorization request.
 title "Device authorization requests"

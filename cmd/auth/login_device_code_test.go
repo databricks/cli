@@ -59,26 +59,12 @@ func TestValidateDeviceCodeLogin(t *testing.T) {
 			flagVal: "https://workspace.test/ai-gateway/mcp-services/system.ai.github",
 			wantErr: "--use-device-code cannot be combined with --resource",
 		},
-		{
-			name:    "skip-workspace is incompatible",
-			envVal:  "1",
-			setFlag: "skip-workspace",
-			flagVal: "true",
-			wantErr: "--use-device-code cannot be combined with --skip-workspace",
-		},
-		{
-			name:    "skip-workspace set to its default",
-			envVal:  "1",
-			setFlag: "skip-workspace",
-			flagVal: "false",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), deviceCodeEnvVar, tt.envVal)
 			cmd := &cobra.Command{}
 			cmd.Flags().StringArray("resource", nil, "")
-			cmd.Flags().Bool("skip-workspace", false, "")
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
 			}
@@ -210,44 +196,6 @@ func TestFormatCode(t *testing.T) {
 	assert.Equal(t, "ABC", formatCode("ABC"))
 }
 
-func TestIsDeviceCodeSupportedForHost(t *testing.T) {
-	workspace := newDiscoveryServer(t, map[string]any{
-		"account_id":    "acct-123",
-		"workspace_id":  "12345",
-		"oidc_endpoint": "https://workspace.test/oidc",
-	})
-	unified := newDiscoveryServer(t, map[string]any{
-		"account_id":    "acct-123",
-		"oidc_endpoint": "https://spog.test/oidc/accounts/acct-123",
-	})
-	// Without an account ID, host discovery cannot fill in the placeholder
-	// and does not resolve the account-scoped discovery URL.
-	unifiedWithoutAccountID := newDiscoveryServer(t, map[string]any{
-		"oidc_endpoint": "https://spog.test/oidc/accounts/{account_id}",
-	})
-
-	tests := []struct {
-		name string
-		args auth.AuthArguments
-		want bool
-	}{
-		{name: "workspace host", args: auth.AuthArguments{Host: workspace.URL}, want: true},
-		{name: "workspace host with query params", args: auth.AuthArguments{Host: workspace.URL + "?o=12345"}, want: true},
-		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}},
-		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}},
-		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}},
-		{name: "unified host with account ID in query params", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL + "?a=acct-123"}},
-		{name: "unified host with account ID flag", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL, AccountID: "acct-123"}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := tt.args
-			require.NoError(t, setHost(t.Context(), nil, &args, nil))
-			assert.Equal(t, tt.want, isDeviceCodeSupportedForHost(args.Host, args.DiscoveryURL))
-		})
-	}
-}
-
 // setUpLogin isolates the environment of a login, using config as the contents
 // of .databrickscfg.
 func setUpLogin(t *testing.T, config string) {
@@ -337,8 +285,9 @@ func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {
 		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
 	}
 	tm := startDeviceCodeLogin(t, `[DEFAULT]
-host = https://accounts.cloud.databricks.test
-account_id = acct-123
+host = https://workspace.test
+auth_type = databricks-cli
+resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 `)
 	tm.WaitFor(profilePickerCreateNewLabel)
 	tm.Type(termtest.KeyEnter)
@@ -378,10 +327,9 @@ func TestMatchDeviceCodeProfiles(t *testing.T) {
 		want    bool
 	}{
 		{name: "workspace host", profile: profile.Profile{Host: "https://workspace.test"}, want: true},
-		// setHost prompts for the host of a profile without one.
+		// setHostAndAccountId prompts for the host of a profile without one.
 		{name: "no host", profile: profile.Profile{}, want: true},
-		{name: "classic account host", profile: profile.Profile{Host: "https://accounts.cloud.databricks.test", AccountID: "acct-123"}},
-		{name: "classic account host for DoD", profile: profile.Profile{Host: "https://accounts-dod.cloud.databricks.test", AccountID: "acct-123"}},
+		{name: "classic account host", profile: profile.Profile{Host: "https://accounts.cloud.databricks.test", AccountID: "acct-123"}, want: true},
 		{
 			name:    "scoped to resources",
 			profile: profile.Profile{Host: "https://workspace.test", AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
@@ -416,7 +364,7 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.WaitFor(profilePickerEnterHostLabel)
 	screen := tm.Snapshot()
 	assert.Contains(t, screen, "workspace-prof")
-	assert.NotContains(t, screen, "account-prof")
+	assert.Contains(t, screen, "account-prof")
 	assert.NotContains(t, screen, "scoped-prof")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()

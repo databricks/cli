@@ -247,7 +247,7 @@ a new profile is created.
 			}
 		}
 
-		// setHost normalizes the host only after the keyring probe and the
+		// setHostAndAccountId normalizes the host only after the keyring probe and the
 		// profile name prompt, so reject an invalid host before them. Only trim
 		// it here: an account ID from the query params would make the prompt
 		// suggest ACCOUNT-<id> for a workspace login.
@@ -386,7 +386,7 @@ a new profile is created.
 			}
 		}
 
-		// The non-interactive login cannot answer the host prompt of setHost.
+		// The non-interactive login cannot answer the host prompt of setHostAndAccountId.
 		if nonInteractive && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			return errDeviceCodeNeedsHost
 		}
@@ -394,7 +394,7 @@ a new profile is created.
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com. Discovery opens a browser on this machine,
 		// and device code login is meant for machines without one, so it skips
-		// discovery and setHost resolves the host instead.
+		// discovery and setHostAndAccountId resolves the host instead.
 		if !useDeviceCode && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
@@ -412,17 +412,7 @@ a new profile is created.
 			})
 		}
 
-		err = setHost(ctx, existingProfile, authArguments, args)
-		if err != nil {
-			return err
-		}
-		// Check the host once it is resolved, before setAccountID prompts for
-		// an account ID for account and unified hosts. A workspace without
-		// device code login enabled is rejected later by deviceCodeLogin.
-		if useDeviceCode && !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
-			return errDeviceCodeWorkspaceOnly
-		}
-		err = setAccountID(ctx, existingProfile, authArguments)
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
 		}
@@ -616,14 +606,6 @@ func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *p
 	return true
 }
 
-// setHostAndAccountId calls setHost and then setAccountID.
-func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
-	if err := setHost(ctx, existingProfile, authArguments, args); err != nil {
-		return err
-	}
-	return setAccountID(ctx, existingProfile, authArguments)
-}
-
 var errInvalidHost = errors.New("invalid host")
 
 const exampleHost = "https://<databricks-instance>.cloud.databricks.com"
@@ -685,7 +667,13 @@ func isHTTPScheme(scheme string) bool {
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
 // 2. Profile host, if available.
 // 3. Prompt the user for the host.
-func setHost(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+//
+// Set the account in the persistentAuth object based on the flags.
+// Follows the following precedence:
+// 1. --account-id flag.
+// 2. account-id from the specified profile, if available.
+// 3. Prompt the user for the account-id.
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -726,15 +714,7 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 	// .well-known/databricks-config endpoint. This is best-effort: failures
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
-	return nil
-}
 
-// Set the account in the persistentAuth object based on the flags.
-// Follows the following precedence:
-// 1. --account-id flag.
-// 2. account-id from the specified profile, if available.
-// 3. Prompt the user for the account-id.
-func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments) error {
 	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
@@ -754,13 +734,6 @@ func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArg
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
 // for unified hosts detected via account-scoped DiscoveryURL.
 func needsAccountIDPrompt(host, discoveryURL string) bool {
-	return isAccountOrUnifiedHost(host, discoveryURL)
-}
-
-// isAccountOrUnifiedHost reports whether host is a classic account host
-// (accounts.* or accounts-dod.*) or a unified host with an account-scoped
-// discoveryURL.
-func isAccountOrUnifiedHost(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(canonicalHost) {
 		return true

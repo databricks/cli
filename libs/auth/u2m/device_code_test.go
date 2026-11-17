@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -342,18 +343,81 @@ func TestNewDeviceCodeLogin_Resources(t *testing.T) {
 	assert.EqualError(t, err, "device code login does not support resource indicators")
 }
 
-func TestNewDeviceCodeLogin_AccountHost(t *testing.T) {
-	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
-	require.NoError(t, err)
-	p, err := NewPersistentAuth(t.Context(),
-		WithOAuthArgument(arg),
-		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
-	)
-	require.NoError(t, err)
-	defer p.Close()
+// accountDeviceCodeEndpointSupplier serves the endpoints of account xyz, which
+// only its discovery document advertises the device authorization endpoint of.
+type accountDeviceCodeEndpointSupplier struct {
+	MockOAuthEndpointSupplier
+	deviceAuthAdvertise bool
+}
 
-	_, err = p.NewDeviceCodeLogin(t.Context())
-	assert.EqualError(t, err, "device code login is only supported for workspace hosts")
+func (s accountDeviceCodeEndpointSupplier) GetEndpointsFromURL(_ context.Context, rawURL string) (*OAuthAuthorizationServer, error) {
+	host, ok := strings.CutSuffix(rawURL, "/oidc/accounts/xyz/.well-known/oauth-authorization-server")
+	if !ok {
+		return nil, ErrOAuthNotSupported
+	}
+	endpoints := &OAuthAuthorizationServer{
+		AuthorizationEndpoint: host + "/oidc/accounts/xyz/v1/authorize",
+		TokenEndpoint:         host + "/oidc/accounts/xyz/v1/token",
+	}
+	if s.deviceAuthAdvertise {
+		endpoints.DeviceAuthorizationEndpoint = host + "/oidc/accounts/xyz/v1/device/auth"
+	}
+	return endpoints, nil
+}
+
+func (s accountDeviceCodeEndpointSupplier) GetUnifiedOAuthEndpoints(ctx context.Context, host, accountId string) (*OAuthAuthorizationServer, error) {
+	return s.GetEndpointsFromURL(ctx, accountDiscoveryURL(host, accountId))
+}
+
+func TestNewDeviceCodeLogin_AccountLevel(t *testing.T) {
+	account, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	require.NoError(t, err)
+	unified, err := NewBasicUnifiedOAuthArgument("https://spog.test", "xyz")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		arg           OAuthArgument
+		advertise     bool
+		wantDeviceURL string
+		wantTokenURL  string
+	}{
+		{
+			name:          "account host",
+			arg:           account,
+			advertise:     true,
+			wantDeviceURL: "https://accounts.cloud.databricks.test/oidc/accounts/xyz/v1/device/auth",
+			wantTokenURL:  "https://accounts.cloud.databricks.test/oidc/accounts/xyz/v1/token",
+		},
+		{name: "account host not advertised", arg: account},
+		{
+			name:          "unified host",
+			arg:           unified,
+			advertise:     true,
+			wantDeviceURL: "https://spog.test/oidc/accounts/xyz/v1/device/auth",
+			wantTokenURL:  "https://spog.test/oidc/accounts/xyz/v1/token",
+		},
+		{name: "unified host not advertised", arg: unified},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewPersistentAuth(t.Context(),
+				WithOAuthArgument(tt.arg),
+				WithOAuthEndpointSupplier(accountDeviceCodeEndpointSupplier{deviceAuthAdvertise: tt.advertise}),
+			)
+			require.NoError(t, err)
+			defer p.Close()
+
+			l, err := p.NewDeviceCodeLogin(t.Context())
+			if tt.wantDeviceURL == "" {
+				assert.ErrorIs(t, err, ErrDeviceCodeNotSupported)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantDeviceURL, l.cfg.Endpoint.DeviceAuthURL)
+			assert.Equal(t, tt.wantTokenURL, l.cfg.Endpoint.TokenURL)
+		})
+	}
 }
 
 func TestNormalizeCode(t *testing.T) {
