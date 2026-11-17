@@ -220,15 +220,12 @@ func validateMessage(message string) (string, error) {
 	return text, nil
 }
 
-// resolveCommand returns the component and origin for --command. Its first word
-// must be a top-level command and picks the owning team, so "bundle deploy"
-// reaches bundles. The rest is not checked against the command tree, which would
-// mean building every command; instead every word is limited to the characters
-// of command names, so flags, paths and terminal control sequences cannot reach
-// origin or the approval prompt. A plain word after the first, such as an
-// argument or a subcommand typo, is not told apart from a subcommand. The
-// origin joins the words with underscores, as the CLI names commands elsewhere
-// (bundle_deploy).
+// resolveCommand returns the component and origin for --command. The first word
+// must be a top-level command and picks the owning team. Checking later words
+// would mean building every command, so they are only limited to command-name
+// characters, which keeps flags, paths and control sequences out of origin and
+// the approval prompt. The origin joins the words with underscores, as in
+// bundle_deploy.
 func resolveCommand(cmd *cobra.Command, command string) (string, string, error) {
 	words := strings.Fields(command)
 	if len(words) == 0 {
@@ -273,11 +270,12 @@ func needsApproval(yes bool) bool {
 }
 
 // checkApproval returns an error when the user must approve the feedback but
-// there is no terminal to ask in. It needs only the input, so it runs before
-// authenticating. Only stdin has to be a terminal: confirm reads a plain line,
-// which works where cmdio.IsPromptSupported says no (TERM=dumb, MSYS2 pipes).
+// there is no terminal to ask in. It needs only the terminal, so it runs before
+// authenticating. confirm shows the summary on stderr and reads a plain line
+// from stdin, so it works where cmdio.IsPromptSupported says no (TERM=dumb,
+// MSYS2 pipes).
 func checkApproval(ctx context.Context, yes bool) error {
-	if !needsApproval(yes) || cmdio.IsInputTTY(ctx) {
+	if !needsApproval(yes) || (cmdio.IsInputTTY(ctx) && cmdio.IsErrorTTY(ctx)) {
 		return nil
 	}
 	return errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +

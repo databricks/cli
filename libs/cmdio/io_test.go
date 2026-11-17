@@ -52,6 +52,14 @@ func TestIsInputTTY(t *testing.T) {
 	assert.False(t, IsInputTTY(ctx))
 }
 
+func TestIsErrorTTY(t *testing.T) {
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true, dumb: true}})
+	assert.True(t, IsErrorTTY(ctx))
+
+	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stdinIsTTY: true}})
+	assert.False(t, IsErrorTTY(ctx))
+}
+
 func TestHasTerminal(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

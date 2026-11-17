@@ -272,19 +272,21 @@ func TestCheckApproval(t *testing.T) {
 	const refusal = "feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
 		"Note for AI agents (test-agent): show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it"
 	tests := []struct {
-		name     string
-		agent    string
-		yes      bool
-		terminal bool
-		envKey   string
-		envValue string
-		wantErr  string
+		name           string
+		agent          string
+		yes            bool
+		terminal       bool
+		redirectStderr bool
+		envKey         string
+		envValue       string
+		wantErr        string
 	}{
 		{name: "human without a terminal"},
 		{name: "agent with --yes", agent: "test-agent", yes: true},
 		{name: "agent with a terminal", agent: "test-agent", terminal: true},
 		{name: "agent with a terminal and NO_COLOR", agent: "test-agent", terminal: true, envKey: "NO_COLOR", envValue: "1"},
 		{name: "agent with a dumb terminal", agent: "test-agent", terminal: true, envKey: "TERM", envValue: "dumb"},
+		{name: "agent with stderr redirected", agent: "test-agent", terminal: true, redirectStderr: true, wantErr: refusal},
 		{name: "agent without a terminal", agent: "test-agent", wantErr: refusal},
 	}
 	for _, tt := range tests {
@@ -298,7 +300,11 @@ func TestCheckApproval(t *testing.T) {
 			if tt.terminal {
 				in = cmdio.FakeTTYReader(in)
 			}
-			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, io.Discard, cmdio.FakeTTY(io.Discard), "", ""))
+			stderr := io.Discard
+			if !tt.redirectStderr {
+				stderr = cmdio.FakeTTY(stderr)
+			}
+			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, io.Discard, stderr, "", ""))
 			err := checkApproval(ctx, tt.yes)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
