@@ -266,7 +266,7 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it. It is experimental and needs `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`.
+    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -490,7 +490,7 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it. It is experimental and needs `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`.
+    [Private Preview] The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
     """
 
     usage_policy_id: VariableOrOptional[str]

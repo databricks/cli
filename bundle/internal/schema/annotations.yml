@@ -1467,7 +1467,7 @@ resources:
                 The name of the user granted the permission level.
         "testing":
           "description": |-
-            The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it. It is experimental and needs `DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_PIPELINE_TESTING=true`.
+            The test configuration of the pipeline. Only test-only updates, such as those started by `databricks pipelines test`, use it.
           "$fields":
             "environment":
               "$fields":
