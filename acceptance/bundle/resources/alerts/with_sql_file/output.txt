@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "display_name": "My alert",
+  "file_path": "sql/failed_runs.sql",
+  "query_text": "-- Alert query kept in its own file so it can be reviewed and linted as SQL.\nselect 2\n",
+  "custom_summary": "My alert"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-sql-file-[UNIQUE_NAME]/default/files...
+Created alerts.myalert
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "display_name": "My alert",
+  "lifecycle_state": "ACTIVE",
+  "custom_summary": "My alert",
+  "query_text": "-- Alert query kept in its own file so it can be reviewed and linted as SQL.\nselect 2\n",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+=== assert that no permanent drift happens
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== edit the .sql file and redeploy
+>>> [CLI] bundle plan
+update alerts.myalert
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-sql-file-[UNIQUE_NAME]/default/files...
+Updated alerts.myalert
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "query_text": "select 3\n"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.alerts.myalert
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-sql-file-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

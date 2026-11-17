@@ -1,0 +1,1 @@
+* Support `.sql` files in an alert's `file_path`, so `query_text` can live in its own SQL file while other fields stay in the bundle configuration. ([#7330](https://github.com/databricks/cli/pull/7330))

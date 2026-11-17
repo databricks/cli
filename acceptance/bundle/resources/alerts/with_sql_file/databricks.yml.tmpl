@@ -1,0 +1,26 @@
+bundle:
+  name: alerts-with-sql-file-$UNIQUE_NAME
+
+resources:
+  alerts:
+    myalert:
+      custom_summary: "My alert"
+      display_name: "My alert"
+      evaluation:
+        comparison_operator: "EQUAL"
+        notification:
+          notify_on_ok: false
+          retrigger_seconds: 1
+        source:
+          aggregation: "MAX"
+          display: "2"
+          name: "2"
+        threshold:
+          value:
+            double_value: 2
+      file_path: ./sql/failed_runs.sql
+      schedule:
+        pause_status: "UNPAUSED"
+        quartz_cron_schedule: "44 19 */1 * * ?"
+        timezone_id: "Europe/Amsterdam"
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID

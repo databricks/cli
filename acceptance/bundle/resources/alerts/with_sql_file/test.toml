@@ -1,0 +1,19 @@
+Cloud = true
+RecordRequests = false
+Ignore = [".databricks"]
+
+# Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
+# Use aggressive 5-minute timeout until the issue is resolved.
+# See: https://github.com/databricks/cli/issues/4221
+TimeoutCloud = "5m"
+
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+Env.MSYS_NO_PATHCONV = "1"
+
+# redact ?[ow]=[WORKSPACE_ID]. Different clouds can have different URL serialization, like [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID] vs [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?o=[WORKSPACE_ID].
+[[Repls]]
+Old = '\?[ow]=\[WORKSPACE_ID\]'
+New = ''
+Order = 1000
