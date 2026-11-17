@@ -19,7 +19,7 @@ func IsUnmanaged(entry map[string]any) bool {
 	// Remote entries name their URL differently per agent: url (Cursor, Claude
 	// Code), httpUrl (Gemini streamable HTTP), serverUrl (Antigravity).
 	for _, key := range []string{"url", "httpUrl", "serverUrl"} {
-		if url, _ := entry[key].(string); strings.Contains(url, "/ai-gateway/mcp-services/") {
+		if url, _ := entry[key].(string); strings.Contains(url, mcpconfig.MCPServicesPathPrefix) {
 			return true
 		}
 	}

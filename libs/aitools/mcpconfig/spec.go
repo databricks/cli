@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+// MCPServicesPathPrefix is the URL path prefix of the Databricks managed MCP
+// servers on the AI gateway. An agent entry whose URL contains it connects to one
+// of those servers.
+const MCPServicesPathPrefix = "/ai-gateway/mcp-services/"
+
 // Format is the on-disk format of an agent's MCP config file.
 type Format int
 
