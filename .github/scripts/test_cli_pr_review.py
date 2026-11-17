@@ -96,9 +96,6 @@ class ReviewRequestTest(unittest.TestCase):
             ("body", "looks good"),
             ("body", "/review\nrun a command"),
             ("body", "$(touch /tmp/should-not-execute)"),
-            ("author_association", "CONTRIBUTOR"),
-            ("author_association", "FIRST_TIMER"),
-            ("author_association", "NONE"),
             ("user", {"login": "bot", "type": "Bot"}),
         ]:
             with self.subTest(key=key, value=value):
@@ -107,15 +104,19 @@ class ReviewRequestTest(unittest.TestCase):
                 self.assertIsNone(review.validate_request("issue_comment", event, self.api))
         self.api.assert_not_called()
 
-    def test_association_still_requires_actual_write_access(self):
-        """Even MEMBER or OWNER labels cannot override a read-only permission result."""
-        for association in ["MEMBER", "OWNER", "COLLABORATOR"]:
+    def test_permissions_are_authoritative_regardless_of_association(self):
+        """A writer labeled CONTRIBUTOR is allowed; an OWNER with only read access is not."""
+        for association in ["MEMBER", "OWNER", "COLLABORATOR", "CONTRIBUTOR", "FIRST_TIMER", "NONE", None]:
             for permission in ["read", "triage", "none", "write", "maintain", "admin"]:
                 with self.subTest(association=association, permission=permission):
-                    self.comment["comment"]["author_association"] = association
+                    event = copy.deepcopy(self.comment)
+                    if association is None:
+                        del event["comment"]["author_association"]
+                    else:
+                        event["comment"]["author_association"] = association
                     self.permissions["requester"] = permission
                     expected = 7400 if permission in {"write", "maintain", "admin"} else None
-                    self.assertEqual(review.validate_request("issue_comment", self.comment, self.api), expected)
+                    self.assertEqual(review.validate_request("issue_comment", event, self.api), expected)
 
     def test_author_also_needs_write_access(self):
         """An admin's comment cannot authorize a PR whose author lacks write access."""

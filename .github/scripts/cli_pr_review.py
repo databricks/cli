@@ -12,8 +12,6 @@ from urllib.parse import quote
 
 REPOSITORY = "databricks/cli"
 PR_ACTIONS = {"opened", "reopened", "synchronize", "ready_for_review"}
-COMMENT_ASSOCIATIONS = {"MEMBER", "OWNER", "COLLABORATOR"}
-# Association describes a relationship; permission says what someone can do now.
 WRITE_PERMISSIONS = {"write", "maintain", "admin"}
 
 
@@ -42,7 +40,6 @@ def validate_request(event_name, event, api=github_api):
             or "pull_request" not in event["issue"]
             or comment["body"] != "/review"
             or comment["user"]["type"] != "User"
-            or comment["author_association"] not in COMMENT_ASSOCIATIONS
         ):
             return None
         number = event["issue"]["number"]
@@ -68,7 +65,7 @@ def validate_request(event_name, event, api=github_api):
         return None
 
     # 3. Check actual write access for the author and, for /review, the commenter too.
-    # Association labels do not establish current write access.
+    # GitHub can label a writer CONTRIBUTOR, so author_association is not a permission gate.
     # https://docs.github.com/en/rest/collaborators/collaborators#get-repository-permissions-for-a-user
     users = {pr["user"]["login"]}
     if requester:
