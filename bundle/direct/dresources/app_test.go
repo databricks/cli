@@ -533,7 +533,8 @@ func TestAppDoUpdate_RetriesWhileComputeSettles(t *testing.T) {
 func TestComputeUpdatingRetryMessage_SuppressedInAcceptanceTests(t *testing.T) {
 	raw, err := os.ReadFile("../../../acceptance/test.toml")
 	require.NoError(t, err)
-	m := regexp.MustCompile(`(?m)^SuppressLines\.warn_retry = '(.*)'$`).FindSubmatch(raw)
+	// The checkout may have CRLF line endings (Windows).
+	m := regexp.MustCompile(`(?m)^SuppressLines\.warn_retry = '(.*)'\r?$`).FindSubmatch(raw)
 	require.NotNil(t, m, "SuppressLines.warn_retry not found in acceptance/test.toml")
 	pattern := regexp.MustCompile(string(m[1]))
 	assert.Regexp(t, pattern, "Warn: "+computeUpdatingRetryMessage("test-app"))
