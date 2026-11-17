@@ -388,7 +388,7 @@ func enrichRunDetails(ctx context.Context, w *databricks.WorkspaceClient, run *j
 
 	data.EnvironmentVersion = nilIfEmpty(version)
 	data.BaseEnvironment = nilIfEmpty(base)
-	data.EnvironmentDisplay = orNA(version)
+	data.EnvironmentDisplay = orNA(environmentLabel(version, base))
 	data.configBody = body
 	if len(raw) > 0 {
 		// Normalize CRLF so the machine-readable output is identical for the

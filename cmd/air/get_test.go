@@ -609,7 +609,7 @@ func TestEnrichRunDetails(t *testing.T) {
 		{
 			name:     "base environment, config unreadable",
 			run:      `{"run_id": 1, "environments": [{"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai_v5"}}], ` + submitAiRuntime + `}`,
-			wantBase: new("workspace-base-environments/databricks_ai_v5"), wantEnvCell: na,
+			wantBase: new("workspace-base-environments/databricks_ai_v5"), wantEnvCell: "databricks_ai_v5",
 		},
 		{
 			name:        "legacy inline parameters",

@@ -206,6 +206,21 @@ func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, ru
 	return "", ""
 }
 
+// environmentLabel is the text shown for the Environment cell: the environment
+// version, else the ID of a workspace base environment, or "" for neither.
+// buildRunEnvironment submits a databricks_ai_v* image as a base environment
+// instead of an environment_version. Any other workspace base environment, such
+// as a custom dbe_<uuid>, shows its ID too.
+func environmentLabel(version, baseEnvironment string) string {
+	if version != "" {
+		return version
+	}
+	if id, ok := strings.CutPrefix(baseEnvironment, workspaceBaseEnvironmentPrefix); ok {
+		return id
+	}
+	return ""
+}
+
 // resolveConfigYAML returns the config box body: from the downloaded config file
 // when we have its path, else from the legacy task. It also returns the raw
 // config the body came from, or nil when the body is synthesized or empty.
@@ -421,13 +436,14 @@ func renderBox(p palette, title, body string) string {
 
 // renderFields draws the two-column summary: muted labels right-padded to the
 // longest one, neutral values, a status-colored Status, and blue Run ID / MLflow
-// Run hyperlinks. The experiment, MLflow run and user values are server-supplied
-// names, so they are stripped of control characters before they reach the
-// terminal.
+// Run hyperlinks. The experiment, MLflow run, user and environment values are
+// server-supplied, so they are stripped of control characters before they reach
+// the terminal.
 func renderFields(p palette, colorOn bool, v runView) string {
 	v.experiment = stripControl(v.experiment)
 	v.mlflowLabel = stripControl(v.mlflowLabel)
 	v.user = stripControl(v.user)
+	v.environment = stripControl(v.environment)
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),
