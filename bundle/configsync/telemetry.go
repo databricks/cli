@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 )
 
 // recoverTelemetry swallows any panic raised while collecting or emitting
@@ -292,6 +293,8 @@ func (s *Stats) CollectStateIDs(typeAndIDs []string) {
 // loading the bundle or its target failed before the bundle set its own, so the
 // failure can still be reported. Without the target its workspace is unknown, so
 // nothing is set without a profile or when the profile does not resolve.
+// Only the profile is used: the bundle config can name other hosts, and
+// telemetry must not be sent there.
 func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile string) context.Context {
 	if cmdctx.HasConfigUsed(ctx) {
 		return ctx
@@ -300,15 +303,17 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile string) cont
 	if profile == "" {
 		return ctx
 	}
-	var w config.Workspace
-	if b != nil {
-		// As in bundle auth, a profile for another host than the bundle's is rejected.
-		w = b.Config.Workspace
-	}
-	w.Profile = profile
+	w := config.Workspace{Profile: profile}
 	client, err := w.Client(ctx)
 	if err != nil {
 		return ctx
+	}
+	// As in bundle auth, a profile for another host than the bundle's is rejected.
+	if b != nil && b.Config.Workspace.Host != "" {
+		bundleHost := (&sdkconfig.Config{Host: b.Config.Workspace.Host}).CanonicalHostName()
+		if bundleHost != client.Config.CanonicalHostName() {
+			return ctx
+		}
 	}
 	return cmdctx.SetConfigUsed(ctx, client.Config)
 }

@@ -42,9 +42,5 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 >>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
 Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
 
-Warn: [hostmetadata] failed to fetch host metadata for https://other.test, will skip for 1m0s
 
 >>> errcode print_requests.py //telemetry-ext
-File [OUTPUT_DIR]/out.requests.txt not found
-
-Exit code: 1
