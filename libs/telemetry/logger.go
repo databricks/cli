@@ -341,9 +341,19 @@ func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) er
 		return err
 	}
 	if resp.NumProtoSuccess < int64(len(protoLogs)) {
-		return fmt.Errorf("only %d of %d logs were accepted", resp.NumProtoSuccess, len(protoLogs))
+		return &NotAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
 	}
 	return nil
+}
+
+// NotAcceptedError is returned by Send when the server accepted fewer logs than
+// were sent, so the others were not stored.
+type NotAcceptedError struct {
+	Accepted, Sent int64
+}
+
+func (e *NotAcceptedError) Error() string {
+	return fmt.Sprintf("only %d of %d logs were accepted", e.Accepted, e.Sent)
 }
 
 func marshalLogs(logs []protos.FrontendLog) ([]string, error) {

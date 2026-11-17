@@ -118,14 +118,14 @@ func (t *Tree) buildForArgs(ctx context.Context, args []string) {
 	if err != nil {
 		return
 	}
-	_, pending := t.pending[cmd]
+	spec, pending := t.pending[cmd]
 	switch {
 	case cmd.Parent() == t.cmd && (cmd.Name() == "help" || isCompletionRequest(cmd)):
 		// Help and completion resolve commands from their own arguments, the
 		// way cobra parses them. Building everything avoids parsing them here.
 		t.buildAll(ctx)
 	case pending:
-		if t.pending[cmd].NeedsFullTree {
+		if spec.NeedsFullTree {
 			t.buildAll(ctx)
 		} else {
 			t.replace(ctx, cmd)

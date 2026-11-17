@@ -3,6 +3,8 @@ package feedback
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -68,11 +71,19 @@ func newTestFeedbackCommand() *cobra.Command {
 	rootCmd.PersistentFlags().String("environment", "", "")
 	feedbackCmd := &cobra.Command{Use: "feedback"}
 	rootCmd.AddCommand(feedbackCmd)
-	for _, path := range []string{"air run", "bundle deploy", "version"} {
+	for _, path := range []string{"air run", "bundle deploy", "bundle deployment bind", "version"} {
 		parent := rootCmd
 		for name := range strings.FieldsSeq(path) {
-			child := &cobra.Command{Use: name}
-			parent.AddCommand(child)
+			var child *cobra.Command
+			for _, c := range parent.Commands() {
+				if c.Name() == name {
+					child = c
+				}
+			}
+			if child == nil {
+				child = &cobra.Command{Use: name}
+				parent.AddCommand(child)
+			}
 			parent = child
 		}
 	}
@@ -100,6 +111,12 @@ func TestCheckArgs(t *testing.T) {
 			wantErr: `--command takes the command as one argument; put quotes around "bundle deploy"`,
 		},
 		{
+			name:    "unquoted nested --command",
+			command: "bundle",
+			args:    []string{"deployment", "bind", "bind fails"},
+			wantErr: `--command takes the command as one argument; put quotes around "bundle deployment bind"`,
+		},
+		{
 			name:    "words that are not a subcommand",
 			command: "bundle",
 			args:    []string{"nope", "slow"},
@@ -114,6 +131,24 @@ func TestCheckArgs(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNotSent(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nothing accepted", err: fmt.Errorf("wrapped: %w", &telemetry.NotAcceptedError{Accepted: 0, Sent: 1}), want: true},
+		{name: "rejected", err: &apierr.APIError{StatusCode: 403}, want: true},
+		{name: "server error", err: &apierr.APIError{StatusCode: 500}},
+		{name: "connection reset", err: errors.New("connection reset by peer")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, notSent(tt.err))
 		})
 	}
 }

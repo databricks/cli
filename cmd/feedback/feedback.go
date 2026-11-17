@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -130,8 +132,18 @@ func checkArgs(cmd *cobra.Command, command string, args []string) error {
 		return root.ExactArgs(1)(cmd, args)
 	}
 	if command != "" {
-		path := append(strings.Fields(command), args[0])
-		if _, ok := findCommand(cmd, path); ok {
+		// Extend --command with the arguments for as long as it still names a
+		// command, so the error names the whole command.
+		path := strings.Fields(command)
+		extended := false
+		for _, arg := range args {
+			next := append(slices.Clone(path), arg)
+			if _, ok := findCommand(cmd, next); !ok {
+				break
+			}
+			path, extended = next, true
+		}
+		if extended {
 			return fmt.Errorf("--command takes the command as one argument; put quotes around %q", strings.Join(path, " "))
 		}
 	}
@@ -210,12 +222,25 @@ func send(ctx context.Context, s submission, yes bool) error {
 		},
 	}})
 	if err != nil {
+		if notSent(err) {
+			return fmt.Errorf("feedback %s was not sent: %w", id, err)
+		}
 		// The upload may have been accepted before the error, so retrying can
 		// file the same feedback twice.
 		return fmt.Errorf("feedback %s could not be confirmed as sent: %w", id, err)
 	}
 
 	return cmdio.RenderWithTemplate(ctx, receipt{Received: true, FeedbackID: id}, "", receiptTemplate)
+}
+
+// notSent reports whether err shows that the server stored nothing: it rejected
+// the request, or accepted none of its logs.
+func notSent(err error) bool {
+	if _, ok := errors.AsType[*telemetry.NotAcceptedError](err); ok {
+		return true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500
 }
 
 func validateMessage(message string) (string, error) {
