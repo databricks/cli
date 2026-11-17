@@ -250,15 +250,16 @@ func TestWithMissingServicePrincipalHint(t *testing.T) {
 }
 
 // A retried DoUpdate starts the app a second time after the first start went through, and the
-// backend rejects the second start. Only an ACTIVE compute makes that rejection a success.
+// backend rejects the second start. An ACTIVE compute makes that rejection a success, and a
+// STARTING one is waited for; any other state keeps the error.
 func TestAppStartApp_RejectedStart(t *testing.T) {
 	tests := []struct {
 		state   apps.ComputeState
 		wantErr bool
 	}{
 		{state: apps.ComputeStateActive, wantErr: false},
+		{state: apps.ComputeStateStarting, wantErr: false},
 		{state: apps.ComputeStateStopped, wantErr: true},
-		{state: apps.ComputeStateStarting, wantErr: true},
 		{state: apps.ComputeStateDeleting, wantErr: true},
 		{state: "", wantErr: true},
 	}
@@ -276,10 +277,17 @@ func TestAppStartApp_RejectedStart(t *testing.T) {
 					},
 				}
 			})
+			getCalls := 0
 			server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+				getCalls++
 				app := apps.App{Name: req.Vars["name"]}
-				if tt.state != "" {
-					app.ComputeStatus = &apps.ComputeStatus{State: tt.state}
+				state := tt.state
+				// A STARTING compute becomes ACTIVE on the next poll.
+				if state == apps.ComputeStateStarting && getCalls > 1 {
+					state = apps.ComputeStateActive
+				}
+				if state != "" {
+					app.ComputeStatus = &apps.ComputeStatus{State: state}
 				}
 				return app
 			})

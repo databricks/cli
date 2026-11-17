@@ -1,0 +1,4 @@
+# Local only: the lost response is staged by injecting a fault into the testserver.
+Cloud = false
+RecordRequests = true
+Ignore = [".databricks", "databricks.yml"]
