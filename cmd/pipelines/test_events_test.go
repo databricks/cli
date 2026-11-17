@@ -204,6 +204,27 @@ func TestReadTestEventsFollowsPages(t *testing.T) {
 	}, queries)
 }
 
+func TestReadTestEventsFollowsTokenAfterEmptyPage(t *testing.T) {
+	server := testserver.New(t)
+	pages := 0
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		pages++
+		if req.URL.Query().Get("page_token") == "" {
+			return map[string]any{"events": []map[string]string{}, "next_page_token": "page2"}
+		}
+		return map[string]any{"events": []map[string]string{{"id": "e1"}}}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	events, err := readTestEvents(t.Context(), w, "p1", "u1", "")
+	require.NoError(t, err)
+
+	require.Len(t, events, 1)
+	assert.Equal(t, "e1", events[0].Id)
+	assert.Equal(t, 2, pages)
+}
+
 // NFR3: a run of 200 cases spans several pages, and each case is counted once.
 func TestReadTestEvents200Cases(t *testing.T) {
 	const cases = 200

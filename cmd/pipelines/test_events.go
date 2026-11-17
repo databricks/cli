@@ -110,7 +110,8 @@ func readTestEvents(ctx context.Context, w *databricks.WorkspaceClient, pipeline
 			return nil, fmt.Errorf("failed to fetch pipeline events: %w", err)
 		}
 		events = append(events, page.Events...)
-		if page.NextPageToken == "" || len(page.Events) == 0 {
+		// A page can be empty and still have a next page, so only the token ends the read.
+		if page.NextPageToken == "" {
 			return events, nil
 		}
 		// A request with page_token must not repeat filter or order_by: the token carries them,
