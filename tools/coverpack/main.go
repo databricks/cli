@@ -28,6 +28,7 @@ import (
 	"maps"
 	"math/bits"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -371,6 +372,11 @@ func pack(o options) error {
 	missing := readSources(o.root, cat.layouts)
 	meta["go"] = runtime.Version()
 	meta["module"] = cat.module
+	commit, err := exec.Command("git", "-C", o.root, "rev-parse", "HEAD").Output()
+	if err != nil {
+		return fmt.Errorf("git rev-parse HEAD in %s: %w", o.root, err)
+	}
+	meta["commit"] = strings.TrimSpace(string(commit))
 	metaBytes, err := json.Marshal(meta)
 	if err != nil {
 		return err

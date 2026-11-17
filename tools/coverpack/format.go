@@ -4,7 +4,8 @@ package main
 // uvarint):
 //
 //	"CLICOV1\n"
-//	uvarint n, n bytes      meta, JSON: the -meta object plus "go" and "module"
+//	uvarint n, n bytes      meta, JSON: the -meta object plus "go", "module" and "commit" (the commit that was
+//	                        checked out and tested; for a PR, GitHub's merge of it into the base branch)
 //	uvarint L               layouts, sorted by path:
 //	  uvarint n, n bytes      path relative to the module ("bundle/deploy/x.go")
 //	  20 bytes                git blob sha of the file as read (zeros if it was not found)

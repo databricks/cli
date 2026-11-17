@@ -86,6 +86,12 @@ func TestPackMatchesCovdata(t *testing.T) {
 	src := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(src, "go.mod"), []byte("module example.com/m\n\ngo 1.22\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(src, "main.go"), []byte(program), 0o644))
+	git := []string{"GIT_CONFIG_GLOBAL=/dev/null", "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t"}
+	run(t, src, git, "git", "init", "-q")
+	run(t, src, git, "git", "add", ".")
+	run(t, src, git, "git", "commit", "-q", "-m", "program")
+	head, err := exec.Command("git", "-C", src, "rev-parse", "HEAD").Output()
+	require.NoError(t, err)
 	bin := filepath.Join(t.TempDir(), "bin")
 	run(t, src, []string{"GOWORK=off", "GOFLAGS="}, "go", "build", "-cover", "-o", bin, ".")
 
@@ -113,6 +119,7 @@ func TestPackMatchesCovdata(t *testing.T) {
 	assert.Equal(t, covered(textfmt(t, world)), got["test TestAccept/world"])
 	assert.Len(t, got, 5) // coverage (the meta), all, unit and the two tests
 	assert.Contains(t, buf.String(), `"module":"example.com/m"`)
+	assert.Contains(t, buf.String(), `"commit":"`+strings.TrimSpace(string(head))+`"`)
 	assert.Contains(t, got["all"], "example.com/m/main.go:23.2,24.1 1 0") // never() did not run
 }
 
