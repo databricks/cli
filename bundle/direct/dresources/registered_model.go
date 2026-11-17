@@ -165,7 +165,7 @@ func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string,
 	if err != nil {
 		return "", nil, err
 	}
-	return config.CatalogName + "." + config.SchemaName + "." + config.Name, response, nil
+	return response.FullName, response, nil
 }
 
 // syncChangedAliases applies the configured aliases when the plan changes them.
