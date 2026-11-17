@@ -134,8 +134,10 @@ func escapesDir(file string) bool {
 // such a skill and update keeps the installed copy, the way both treat a skill
 // that needs a newer CLI. Each file must be a clean slash-separated path, so
 // the paths recorded in the install state match the ones update walks on disk.
-// Each element is limited to letters, digits, '.', '_' and '-', does not end in
-// a dot and is not a Windows device name, and no two files differ only in case.
+// No path element may use a character Windows forbids in a file name, end in a
+// dot or a space, or be a Windows device name. No two paths, folders included,
+// may differ only in case, and no path may be both a file and a folder: either
+// would merge or collide on a case-insensitive filesystem.
 func unportableSkill(name string, files []string) string {
 	if len(name) > maxSkillNameLength || !skillNamePattern().MatchString(name) {
 		return fmt.Sprintf("the name is not at most %d lowercase letters, digits and single hyphens", maxSkillNameLength)
@@ -143,44 +145,67 @@ func unportableSkill(name string, files []string) string {
 	if isWindowsDeviceName(name) {
 		return "the name is a reserved Windows device name"
 	}
-	seen := make(map[string]string, len(files))
+	type seenPath struct {
+		path string
+		dir  bool
+	}
+	seen := make(map[string]seenPath, len(files))
 	for _, file := range files {
 		if file == "." || path.Clean(file) != file {
 			return fmt.Sprintf("file %q is not a clean slash-separated path", file)
 		}
-		for elem := range strings.SplitSeq(file, "/") {
-			if !portableElementPattern().MatchString(elem) || strings.HasSuffix(elem, ".") {
+		elems := strings.Split(file, "/")
+		for i, elem := range elems {
+			if strings.ContainsFunc(elem, isUnportableRune) || strings.HasSuffix(elem, ".") || strings.HasSuffix(elem, " ") {
 				return fmt.Sprintf("file %q has a path element that is not portable", file)
 			}
 			stem, _, _ := strings.Cut(elem, ".")
-			if isWindowsDeviceName(stem) {
+			if isWindowsDeviceName(strings.TrimRight(stem, " ")) {
 				return fmt.Sprintf("file %q names a reserved Windows device", file)
 			}
+			p := strings.Join(elems[:i+1], "/")
+			dir := i < len(elems)-1
+			folded := strings.ToLower(p)
+			prev, ok := seen[folded]
+			switch {
+			case !ok:
+				seen[folded] = seenPath{path: p, dir: dir}
+			case prev.path != p:
+				return fmt.Sprintf("paths %q and %q differ only in case", prev.path, p)
+			case prev.dir != dir:
+				return fmt.Sprintf("path %q is both a file and a folder", p)
+			}
 		}
-		folded := strings.ToLower(file)
-		if other, ok := seen[folded]; ok {
-			return fmt.Sprintf("files %q and %q differ only in case", other, file)
-		}
-		seen[folded] = file
 	}
 	return ""
 }
 
-// portableElementPattern is the characters a file path element may use: ones
-// that mean the same thing in a file name on every OS.
-var portableElementPattern = sync.OnceValue(func() *regexp.Regexp {
-	return regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
-})
+// isUnportableRune reports whether r cannot appear in a file name on Windows:
+// a control character or one of <>:"/\|?*.
+func isUnportableRune(r rune) bool {
+	return r < 0x20 || r == 0x7f || strings.ContainsRune(`<>:"\|?*`, r)
+}
 
 // isWindowsDeviceName reports whether s, in any case, is a name Windows
-// resolves to a device in every directory.
+// resolves to a device in every directory, as in Go's internal isReservedName.
 func isWindowsDeviceName(s string) bool {
 	s = strings.ToLower(s)
 	switch s {
-	case "con", "prn", "aux", "nul":
+	case "con", "prn", "aux", "nul", "conin$", "conout$":
 		return true
 	}
-	return len(s) == 4 && (strings.HasPrefix(s, "com") || strings.HasPrefix(s, "lpt")) && s[3] >= '1' && s[3] <= '9'
+	rest, ok := strings.CutPrefix(s, "com")
+	if !ok {
+		rest, ok = strings.CutPrefix(s, "lpt")
+	}
+	if !ok {
+		return false
+	}
+	switch rest {
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9", "\u00b9", "\u00b2", "\u00b3":
+		return true
+	}
+	return false
 }
 
 // normalizeManifest stamps SourceName and defaults RepoDir for older manifests.

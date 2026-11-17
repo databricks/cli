@@ -164,6 +164,15 @@ func TestCheckManifestPaths(t *testing.T) {
 		{name: "file with a trailing dot", skill: "databricks-core", file: "SKILL.md.", wantSkipped: true},
 		{name: "dotfile", skill: "databricks-core", file: "references/.gitkeep"},
 		{name: "underscore and hyphen in a file", skill: "databricks-core", file: "scripts/run_job-v2.py"},
+		{name: "file with plus signs", skill: "databricks-core", file: "references/c++.md"},
+		{name: "file with an at sign", skill: "databricks-core", file: "assets/logo@2x.png"},
+		{name: "template folder with braces", skill: "databricks-core", file: "{{.project_name}}/databricks.yml"},
+		{name: "file with an inner space", skill: "databricks-core", file: "references/getting started.md"},
+		{name: "file with parentheses, comma and tilde", skill: "databricks-core", file: "notes (v2),~draft.md"},
+		{name: "non-ASCII file", skill: "databricks-core", file: "references/caf\u00e9.md"},
+		{name: "element with a trailing space", skill: "databricks-core", file: "references /auth.md", wantSkipped: true},
+		{name: "file with a pipe", skill: "databricks-core", file: "a|b.md", wantSkipped: true},
+		{name: "file with a quote", skill: "databricks-core", file: `a"b.md`, wantSkipped: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -180,10 +189,26 @@ func TestCheckManifestPaths(t *testing.T) {
 	}
 }
 
-func TestUnportableSkillFilesDifferingOnlyInCase(t *testing.T) {
-	assert.Equal(t, `files "SKILL.md" and "skill.md" differ only in case`, unportableSkill("databricks-core", []string{"SKILL.md", "skill.md"}))
-	assert.Equal(t, `files "refs/a.md" and "REFS/a.md" differ only in case`, unportableSkill("databricks-core", []string{"refs/a.md", "REFS/a.md"}))
-	assert.Empty(t, unportableSkill("databricks-core", []string{"SKILL.md", "references/SKILL.md"}))
+func TestUnportableSkillPathClashes(t *testing.T) {
+	tests := []struct {
+		name  string
+		files []string
+		want  string
+	}{
+		{name: "files differing only in case", files: []string{"SKILL.md", "skill.md"}, want: `paths "SKILL.md" and "skill.md" differ only in case`},
+		{name: "folders differing only in case", files: []string{"refs/a.md", "REFS/b.md"}, want: `paths "refs" and "REFS" differ only in case`},
+		{name: "file and folder differing only in case", files: []string{"Refs", "refs/a.md"}, want: `paths "Refs" and "refs" differ only in case`},
+		{name: "path used as a file and a folder", files: []string{"scripts", "scripts/run.py"}, want: `path "scripts" is both a file and a folder`},
+		{name: "folder then file of the same path", files: []string{"scripts/run.py", "scripts"}, want: `path "scripts" is both a file and a folder`},
+		{name: "same file listed twice", files: []string{"SKILL.md", "SKILL.md"}},
+		{name: "same name in different folders", files: []string{"SKILL.md", "references/SKILL.md"}},
+		{name: "files sharing a folder", files: []string{"refs/a.md", "refs/b.md"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, unportableSkill("databricks-core", tc.files))
+		})
+	}
 }
 
 func TestCheckManifestPathsReportsTheFirstSkillInOrder(t *testing.T) {
