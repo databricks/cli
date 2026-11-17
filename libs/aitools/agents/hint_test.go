@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -47,7 +48,7 @@ func claudeCtx(t *testing.T, home string) (context.Context, *bytes.Buffer) {
 	return ctx, stderr
 }
 
-func regularCmd() *cobra.Command { return &cobra.Command{Use: "current-user"} }
+func regularCmd() *cobra.Command { return commandAt("clusters list") }
 
 func writePluginManifest(t *testing.T, home, body string) {
 	dir := filepath.Join(home, ".claude", "plugins")
@@ -234,13 +235,49 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	ctx, stderr := claudeCtx(t, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
 
-	parent := &cobra.Command{Use: aiToolsCommandName}
-	child := &cobra.Command{Use: "install"}
-	parent.AddCommand(child)
-
-	MaybeHint(ctx, child, noPluginRecorded)
+	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
+}
+
+// commandAt builds a command tree under a "databricks" root and returns the
+// command at the space-separated path, e.g. "current-user me".
+func commandAt(path string) *cobra.Command {
+	cmd := &cobra.Command{Use: "databricks"}
+	for name := range strings.FieldsSeq(path) {
+		child := &cobra.Command{Use: name}
+		cmd.AddCommand(child)
+		cmd = child
+	}
+	return cmd
+}
+
+func TestIsHintExemptCommand(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"aitools install", true},
+		{"experimental aitools skills install", true},
+		{"auth login", true},
+		{"auth token", true},
+		{"configure", true},
+		{"current-user me", true},
+		{"completion bash", true},
+		{"help", true},
+		{cobra.ShellCompRequestCmd, true},
+		{"version", true},
+		{"authz", false},
+		{"bundle help", false},
+		{"current-user", false},
+		{"clusters list", false},
+		{"jobs run-now", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			assert.Equal(t, tc.want, isHintExemptCommand(commandAt(tc.path)))
+		})
+	}
 }
 
 func TestMaybeHint_NoIONoPanic(t *testing.T) {
@@ -363,6 +400,9 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 				writeClaudeSkill(t, home, "databricks")
 			},
 		},
+		// The auth cases below root the tree at auth, so only the credential-helper
+		// check applies; under the databricks root, hintExemptCommands covers all
+		// of auth.
 		{
 			name: "auth token prints nothing",
 			env:  map[string]string{claudeChildSessionEnv: "1"},
@@ -404,12 +444,7 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 		{
 			name: "aitools command prints nothing",
 			env:  map[string]string{claudeChildSessionEnv: "1"},
-			cmd: func() *cobra.Command {
-				parent := &cobra.Command{Use: aiToolsCommandName}
-				child := &cobra.Command{Use: "install"}
-				parent.AddCommand(child)
-				return child
-			},
+			cmd:  func() *cobra.Command { return commandAt("aitools install") },
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

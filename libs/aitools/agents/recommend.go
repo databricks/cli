@@ -24,9 +24,8 @@ func PrintSkillsTip(ctx context.Context) {
 // MaybeVersionCheckTip prints skillsTipText after `databricks version --check`
 // when a coding agent is detected without Databricks tooling. Callers that
 // MaybeHint hints (Claude Code and the registry agents, see isHintedAgent) are
-// skipped: the root hook already names the install command for them, with its
-// own throttle, and a second, different command in the same run would compete
-// with it. installedPlugins is a parameter because this package
+// skipped: `version` is in hintExemptCommands, and the tip must not undo that
+// exemption for them. installedPlugins is a parameter because this package
 // cannot import the installer; callers pass installer.InstalledPluginAgents,
 // which counts a plugin recorded in the CLI install state with or without a
 // known version. No telemetry is logged: `databricks version` never resolves

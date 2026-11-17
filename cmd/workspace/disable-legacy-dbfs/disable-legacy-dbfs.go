@@ -3,6 +3,7 @@
 package disable_legacy_dbfs
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,15 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "disable-legacy-dbfs",
-		Short: `Disabling legacy DBFS has the following implications: 1.`,
-		Long: `Disabling legacy DBFS has the following implications:
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "disable-legacy-dbfs",
+	Short: `Disabling legacy DBFS has the following implications: 1.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Disabling legacy DBFS has the following implications:
 
   1. Access to DBFS root and DBFS mounts is disallowed (as well as the creation
   of new mounts). 2. Disables Databricks Runtime versions prior to 13.3LTS.
@@ -29,13 +34,13 @@ func New() *cobra.Command {
   When the setting is off, all DBFS functionality is enabled and no restrictions
   are imposed on Databricks Runtime versions. This setting can take up to 20
   minutes to take effect and requires a manual restart of all-purpose compute
-  clusters and SQL warehouses.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  clusters and SQL warehouses.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

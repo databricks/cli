@@ -1,0 +1,38 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The GetRun response for a run submitted with
+# `environment.version: databricks_ai_v6`. `air run` submits such a version as a
+# base_environment rather than an environment_version, and the Environment cell
+# shows it as the config wrote it.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "environments": [
+    {"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai_v6"}}
+  ],
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 3,
+      "environment_key": "default",
+      "ai_runtime_task": {
+        "experiment": "my-exp",
+        "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+      }
+    }
+  ]
+}
+'''

@@ -370,7 +370,7 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
 	envSpec := map[string]dyn.Value{}
 	if strings.HasPrefix(envVersion, databricksAIPrefix) {
-		envSpec["base_environment"] = nv("workspace-base-environments/"+envVersion, 1)
+		envSpec["base_environment"] = nv(workspaceBaseEnvironmentPrefix+envVersion, 1)
 	} else {
 		envSpec["environment_version"] = nv(envVersion, 1)
 	}

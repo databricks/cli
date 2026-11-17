@@ -8,7 +8,8 @@ Env.DATABRICKS_CACHE_ENABLED = "false"
 Pattern = "HEAD /"
 Response.Body = ''
 
-# Experiment and creator names with embedded escapes, for `air get` and `air list`.
+# Experiment, creator and base environment names with embedded escapes, for
+# `air get` and `air list`.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -19,6 +20,9 @@ Response.Body = '''
   "start_time": 1700000000000,
   "end_time": 1700000012000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "environments": [
+    {"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6"}}
+  ],
   "tasks": [{
     "task_key": "train",
     "run_id": 456,

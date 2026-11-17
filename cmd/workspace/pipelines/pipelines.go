@@ -3,6 +3,7 @@
 package pipelines
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "pipelines",
-		Short: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
-		Long: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "pipelines",
+	Short:   `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
+	GroupID: "lakeflow",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
   delete, start, and view details about pipelines.
 
   Spark Declarative Pipelines is a framework for building reliable,
@@ -37,14 +43,13 @@ func New() *cobra.Command {
   based on a target schema you define for each processing step. You can also
   enforce data quality with Spark Declarative Pipelines expectations.
   Expectations allow you to define expected data quality and specify how to
-  handle records that fail those expectations.`,
-		GroupID: "lakeflow",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  handle records that fail those expectations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newApplyEnvironment())
@@ -68,8 +73,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start apply-environment command

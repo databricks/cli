@@ -3,6 +3,7 @@
 package shares
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "shares",
-		Short: `A share is a container instantiated with :method:shares/create.`,
-		Long: `A share is a container instantiated with :method:shares/create. Once created
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "shares",
+	Short:   `A share is a container instantiated with :method:shares/create.`,
+	GroupID: "sharing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A share is a container instantiated with :method:shares/create. Once created
   you can iteratively register a collection of existing data assets defined
   within the metastore using :method:shares/update. You can register data assets
   under their original name, qualified by their original schema, or provide
-  alternate exposed names.`,
-		GroupID: "sharing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  alternate exposed names.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -48,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

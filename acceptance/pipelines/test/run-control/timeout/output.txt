@@ -1,0 +1,9 @@
+
+=== --timeout stops waiting but not the update, and prints the command that reads the results
+
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --resume [UUID][1] --timeout 1s --junit-xml out.report.xml
+Pipeline: [UUID][0]
+Update: [UUID][1]
+Running tests...
+JUnit report: out.report.xml
+Error: stopped waiting for update [UUID][1] after 1s; the update keeps running, to get its results run: databricks pipelines test --pipeline-id [UUID][0] --junit-xml out.report.xml --resume [UUID][1]
