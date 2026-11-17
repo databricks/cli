@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,19 +91,19 @@ func TestCheckArgs(t *testing.T) {
 		{
 			name:    "unquoted message",
 			args:    []string{"costs", "$HOME", "or", "`whoami`"},
-			wantErr: "the message must be one argument, but received 4; quote it, for example: databricks feedback 'costs $HOME or `whoami`'",
+			wantErr: "the message must be one argument, but received 4; put quotes around the whole message",
 		},
 		{
 			name:    "unquoted --command",
 			command: "bundle",
 			args:    []string{"deploy", "deploy is slow"},
-			wantErr: "--command takes the command as one argument; quote it, for example: databricks feedback --command 'bundle deploy' 'deploy is slow'",
+			wantErr: `--command takes the command as one argument; put quotes around "bundle deploy"`,
 		},
 		{
 			name:    "words that are not a subcommand",
 			command: "bundle",
 			args:    []string{"nope", "slow"},
-			wantErr: "the message must be one argument, but received 2; quote it, for example: databricks feedback 'nope slow'",
+			wantErr: "the message must be one argument, but received 2; put quotes around the whole message",
 		},
 	}
 	for _, tt := range tests {
@@ -113,6 +114,23 @@ func TestCheckArgs(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestWorkspaceLabel(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		want        string
+	}{
+		{name: "workspace host", want: "https://workspace.test"},
+		{name: "unified host", workspaceID: "123", want: "https://workspace.test (workspace ID 123)"},
+		{name: "no workspace sentinel", workspaceID: "none", want: "https://workspace.test"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, workspaceLabel(&config.Config{Host: "https://workspace.test", WorkspaceID: tt.workspaceID}))
 		})
 	}
 }

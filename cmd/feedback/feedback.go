@@ -16,9 +16,10 @@ import (
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
@@ -121,21 +122,20 @@ approves it.`
 }
 
 // checkArgs requires the message as one argument. Several arguments mean that
-// the message, or a --command with several words, was not quoted; the error
-// shows the command with the quotes.
+// the message, or a --command with several words, was not quoted. The error
+// says what to quote rather than printing a command to paste, which would drop
+// the user's other flags and depend on their shell's quoting.
 func checkArgs(cmd *cobra.Command, command string, args []string) error {
 	if len(args) <= 1 {
 		return root.ExactArgs(1)(cmd, args)
 	}
 	if command != "" {
 		path := append(strings.Fields(command), args[0])
-		if target, rest, err := cmd.Root().Find(path); err == nil && len(rest) == 0 && target != cmd.Root() {
-			return fmt.Errorf("--command takes the command as one argument; quote it, for example: databricks feedback --command %s %s",
-				shellquote.BashArg(strings.Join(path, " ")), shellquote.BashArg(strings.Join(args[1:], " ")))
+		if _, ok := findCommand(cmd, path); ok {
+			return fmt.Errorf("--command takes the command as one argument; put quotes around %q", strings.Join(path, " "))
 		}
 	}
-	return fmt.Errorf("the message must be one argument, but received %d; quote it, for example: databricks feedback %s",
-		len(args), shellquote.BashArg(strings.Join(args, " ")))
+	return fmt.Errorf("the message must be one argument, but received %d; put quotes around the whole message", len(args))
 }
 
 func newSubmission(cmd *cobra.Command, message string, opts *options) (submission, error) {
@@ -181,7 +181,7 @@ func send(ctx context.Context, s submission, yes bool) error {
 	}
 	cfg := cmdctx.WorkspaceClient(ctx).Config
 	if needsApproval(yes) {
-		confirmed, err := confirm(ctx, s, cfg.Host)
+		confirmed, err := confirm(ctx, s, workspaceLabel(cfg))
 		if err != nil {
 			return err
 		}
@@ -230,8 +230,8 @@ func resolveCommand(cmd *cobra.Command, command string) (string, string, error) 
 	if command == "" {
 		return defaultComponent, "cli", nil
 	}
-	target, rest, err := cmd.Root().Find(strings.Fields(command))
-	if err != nil || len(rest) > 0 || target == cmd.Root() {
+	target, ok := findCommand(cmd, strings.Fields(command))
+	if !ok {
 		return "", "", fmt.Errorf(`unknown command %q; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments`, command)
 	}
 	component := defaultComponent
@@ -239,6 +239,13 @@ func resolveCommand(cmd *cobra.Command, command string) (string, string, error) 
 		component = productComponent
 	}
 	return component, root.CommandString(target), nil
+}
+
+// findCommand returns the command at path, and false if path does not name a
+// command, has words left over, or is empty.
+func findCommand(cmd *cobra.Command, path []string) (*cobra.Command, bool) {
+	target, rest, err := cmd.Root().Find(path)
+	return target, err == nil && len(rest) == 0 && target != cmd.Root()
 }
 
 func topLevelName(cmd *cobra.Command) string {
@@ -277,6 +284,15 @@ func confirm(ctx context.Context, s submission, workspace string) (bool, error) 
 		cmdio.LogString(ctx, "Feedback not sent.")
 	}
 	return confirmed, nil
+}
+
+// workspaceLabel names the workspace feedback is filed in. A unified host
+// serves several workspaces, so there the host alone does not identify it.
+func workspaceLabel(cfg *config.Config) string {
+	if id := cfg.WorkspaceID; id != "" && id != profile.WorkspaceIDNone {
+		return fmt.Sprintf("%s (workspace ID %s)", cfg.Host, id)
+	}
+	return cfg.Host
 }
 
 // summary returns the message, the workspace it is filed in and the choices

@@ -95,10 +95,10 @@ Global Flags:
 
 
 >>> [CLI] feedback deploy is slow
-Error: the message must be one argument, but received 3; quote it, for example: databricks feedback 'deploy is slow'
+Error: the message must be one argument, but received 3; put quotes around the whole message
 
 >>> [CLI] feedback --command bundle deploy deploy is slow
-Error: --command takes the command as one argument; quote it, for example: databricks feedback --command 'bundle deploy' 'deploy is slow'
+Error: --command takes the command as one argument; put quotes around "bundle deploy"
 
 >>> [CLI] feedback --command no-such-command hello
 Error: unknown command "no-such-command"; --command takes a command path such as "bundle deploy", without the databricks prefix, flags or arguments
