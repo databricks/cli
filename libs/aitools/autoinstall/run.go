@@ -59,14 +59,19 @@ func CacheDisabled(ctx context.Context) bool {
 }
 
 // GateOn reports whether the compatibility manifest turns auto-install on for
-// version. A manifest that cannot be resolved reads as off.
-func GateOn(ctx context.Context, version string) bool {
-	on, err := clicompat.ResolveAutoInstall(ctx, version)
-	if err != nil {
-		log.Debugf(ctx, "auto-install: could not resolve the gate: %v", err)
-		return false
+// version. It fails when the manifest could not be fetched: the gate is then
+// unknown, not off.
+func GateOn(ctx context.Context, version string) (bool, error) {
+	return clicompat.ResolveAutoInstall(ctx, version)
+}
+
+// NextAttempt returns the number of the attempt a run for version makes after
+// prior: 1 for a version the state has not failed for.
+func NextAttempt(prior State, version string) int {
+	if prior.LastVersion == version {
+		return prior.Attempts + 1
 	}
-	return on
+	return 1
 }
 
 // NewID returns a random machine identifier for State.ID.
@@ -90,21 +95,38 @@ func Record(ctx context.Context, version string, attempts int, id string) error 
 	return updateState(ctx, func(s *State) {
 		s.LastVersion = version
 		s.Attempts = attempts
+		if attempts == 0 {
+			s.Installing = false
+		}
 		if s.ID == "" {
 			s.ID = id
 		}
 	})
 }
 
+// MarkInstalling sets State.Installing before a first install starts.
+func MarkInstalling(ctx context.Context) error {
+	return updateState(ctx, func(s *State) { s.Installing = true })
+}
+
 // SaveID stores id as the machine identifier unless one is stored already,
-// without settling a version. A run that skips before Record calls it, so
-// that the machine keeps its holdout bucket on later runs.
-func SaveID(ctx context.Context, id string) error {
-	return updateState(ctx, func(s *State) {
+// without settling a version, and returns the stored identifier. Runs that
+// draw an ID save it before using it, so concurrent runs agree on the
+// machine's holdout bucket.
+func SaveID(ctx context.Context, id string) (string, error) {
+	err := updateState(ctx, func(s *State) {
 		if s.ID == "" {
 			s.ID = id
 		}
+		id = s.ID
 	})
+	return id, err
+}
+
+// Accept records that the user answered "yes" at the install prompt of
+// version (State.AcceptedVersion).
+func Accept(ctx context.Context, version string) error {
+	return updateState(ctx, func(s *State) { s.AcceptedVersion = version })
 }
 
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI

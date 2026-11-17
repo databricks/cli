@@ -243,7 +243,7 @@ func notifyEnabled(ctx context.Context, cmd *cobra.Command) bool {
 
 func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions {
 	optedOut, _ := env.GetBool(ctx, disableEnv)
-	ci := InCI(ctx)
+	ci, _ := env.GetBool(ctx, ciEnv)
 	cacheDisabled := false
 	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {
 		cacheDisabled = true
@@ -263,14 +263,8 @@ func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions 
 		ci:               ci,
 		nonInteractive:   nonInteractive,
 		jsonOutput:       isJSONOutput(cmd),
-		exemptCommand:    isExemptCommand(cmd),
+		exemptCommand:    IsExemptCommand(cmd),
 	}
-}
-
-// InCI reports whether the CLI runs in continuous integration.
-func InCI(ctx context.Context) bool {
-	ci, _ := env.GetBool(ctx, ciEnv)
-	return ci
 }
 
 func isJSONOutput(cmd *cobra.Command) bool {
@@ -278,10 +272,10 @@ func isJSONOutput(cmd *cobra.Command) bool {
 	return f != nil && f.Value.String() == "json"
 }
 
-// isExemptCommand suppresses the notice for commands where it would be noise or
+// IsExemptCommand reports whether cmd gets no notice, as it for commands where it would be noise or
 // would corrupt machine-readable output: the version commands themselves, shell
 // completion, and help.
-func isExemptCommand(cmd *cobra.Command) bool {
+func IsExemptCommand(cmd *cobra.Command) bool {
 	for c := cmd; c != nil; c = c.Parent() {
 		switch c.Name() {
 		case "version", "completion", "help", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:

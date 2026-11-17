@@ -101,6 +101,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 }
 
 func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
+	t.Cleanup(autoinstall.ResetDeclined)
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -120,7 +121,11 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	ctx = telemetry.WithNewLogger(ctx)
 
 	// Drain stderr so the prompt write doesn't block.
-	go func() { _, _ = io.Copy(io.Discard, testIO.Stderr) }()
+	stderr := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(testIO.Stderr)
+		stderr <- string(b)
+	}()
 
 	errc := make(chan error, 1)
 	go func() {
@@ -139,6 +144,9 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, state.OptedOut)
 	assert.True(t, autoinstall.Declined())
+	// The user is told that the answer also holds for later installs.
+	testIO.Done()
+	assert.Contains(t, <-stderr, "databricks aitools auto-install enable")
 }
 
 func TestMaybeVersionCheckTip(t *testing.T) {

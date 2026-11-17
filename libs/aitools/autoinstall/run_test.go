@@ -47,8 +47,12 @@ func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 func TestSaveIDKeepsTheFirstID(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
-	require.NoError(t, SaveID(ctx, "first"))
-	require.NoError(t, SaveID(ctx, "second"))
+	id, err := SaveID(ctx, "first")
+	require.NoError(t, err)
+	assert.Equal(t, "first", id)
+	id, err = SaveID(ctx, "second")
+	require.NoError(t, err)
+	assert.Equal(t, "first", id, "the stored ID is returned")
 
 	s, err := Load(ctx)
 	require.NoError(t, err)
@@ -107,13 +111,54 @@ func TestLockReturnsOtherErrorsAtOnce(t *testing.T) {
 	assert.Equal(t, 1, tries)
 }
 
-func TestChildEnvCarriesTheRefusal(t *testing.T) {
-	t.Cleanup(func() { declined.Store(false) })
+func TestSetOptedOutWithoutLocks(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
-	assert.NotContains(t, ChildEnv(), EnvVar+"=false")
+	// An explicit opt-out must work where the filesystem has no locks.
+	orig := tryLock
+	t.Cleanup(func() { tryLock = orig })
+	tryLock = func(*os.File) error { return errors.New("no locks here") }
+	require.NoError(t, SetOptedOut(ctx, true))
+
+	s, err := load(ctx)
+	require.NoError(t, err)
+	assert.True(t, s.OptedOut)
+
+	// A lock another process holds is waited for, not skipped.
+	tryLock = func(*os.File) error { return errLockHeld }
+	assert.ErrorIs(t, SetOptedOut(ctx, false), errLockHeld)
+}
+
+func TestRecordClearsInstallingWhenSettled(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	require.NoError(t, MarkInstalling(ctx))
+	// A failed attempt leaves the marker for the next run.
+	require.NoError(t, Record(ctx, "1.30.0", 1, "machine"))
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.True(t, s.Installing)
+
+	require.NoError(t, Record(ctx, "1.30.0", 0, "machine"))
+	s, err = Load(ctx)
+	require.NoError(t, err)
+	assert.False(t, s.Installing)
+}
+
+func TestNextAttempt(t *testing.T) {
+	assert.Equal(t, 1, NextAttempt(State{}, "1.30.0"))
+	assert.Equal(t, 1, NextAttempt(State{LastVersion: "1.29.0", Attempts: 4}, "1.30.0"))
+	assert.Equal(t, 5, NextAttempt(State{LastVersion: "1.30.0", Attempts: 4}, "1.30.0"))
+}
+
+func TestChildEnvCarriesTheRefusal(t *testing.T) {
+	t.Cleanup(ResetDeclined)
+
+	environ := []string{"HOME=/home/user"}
+	assert.Equal(t, environ, ChildEnv(environ))
 
 	// A CLI child started after a "no" must not install either, even when
 	// the opt-out could not be stored.
 	declined.Store(true)
-	assert.Equal(t, EnvVar+"=false", ChildEnv()[len(ChildEnv())-1])
+	assert.Equal(t, []string{"HOME=/home/user", EnvVar + "=false"}, ChildEnv(environ))
 }

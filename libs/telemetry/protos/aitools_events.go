@@ -168,9 +168,21 @@ type AitoolsAutoInstallOutcome string
 
 const (
 	AitoolsAutoInstallOutcomeUnspecified AitoolsAutoInstallOutcome = "TYPE_UNSPECIFIED"
-	// The tools were installed, or an existing installation was updated.
+	// The tools were installed, or an existing installation was updated and
+	// changed.
 	AitoolsAutoInstallOutcomeInstalled AitoolsAutoInstallOutcome = "INSTALLED"
-	// The run was in CI (the CI env var is set).
+	// An existing installation was updated and nothing changed: it was current,
+	// or every outdated skill was kept because the user modified it.
+	AitoolsAutoInstallOutcomeUpToDate AitoolsAutoInstallOutcome = "UP_TO_DATE"
+	// The installed tools were left as they are: skills without install state
+	// (installed by hand, or by an older CLI), or skills newer than the release
+	// this CLI installs.
+	AitoolsAutoInstallOutcomeKept AitoolsAutoInstallOutcome = "KEPT"
+	// Every change would have run an agent CLI, which auto-install does not do
+	// on Windows: a plan of only plugin installs, or an update of an
+	// installation with plugins.
+	AitoolsAutoInstallOutcomeSkippedPlatform AitoolsAutoInstallOutcome = "SKIPPED_PLATFORM"
+	// The run was in CI (the CI env var, or a CI provider's own).
 	AitoolsAutoInstallOutcomeSkippedCI AitoolsAutoInstallOutcome = "SKIPPED_CI"
 	// The user turned auto-install off: DATABRICKS_AITOOLS_AUTO_INSTALL=false,
 	// `aitools auto-install disable`, a global `aitools uninstall`, "no" at
@@ -189,8 +201,7 @@ const (
 	// and auto-install stays on, so the next CLI version asks again.
 	AitoolsAutoInstallOutcomeUnanswered AitoolsAutoInstallOutcome = "UNANSWERED"
 	// The attempt failed or timed out; a later run of the same version
-	// retries. A failure before the install prompt settles the version
-	// instead, since a retry would install without asking.
+	// retries.
 	AitoolsAutoInstallOutcomeFailed AitoolsAutoInstallOutcome = "FAILED"
 	// The attempt failed and was the last one this CLI version gets.
 	AitoolsAutoInstallOutcomeRetriesExhausted AitoolsAutoInstallOutcome = "RETRIES_EXHAUSTED"

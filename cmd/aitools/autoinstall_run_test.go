@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -63,7 +64,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable"},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -72,7 +73,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "Y\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -99,10 +100,19 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantOutcome: protos.AitoolsAutoInstallOutcomeUnanswered,
 		},
 		{
-			name:         "a failure before asking settles the version",
+			name:         "a planning failure is a failed attempt, retried later",
 			installState: "not json",
-			wantState:    autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:    autoinstall.State{LastVersion: "1.30.0", Attempts: 1, ID: "treatment-machine"},
 			wantOutcome:  protos.AitoolsAutoInstallOutcomeFailed,
+		},
+		{
+			name:        "a failed install after yes says so",
+			env:         map[string]string{"DATABRICKS_SKILLS_BASE_URL": "http://127.0.0.1:1"},
+			wantPrompt:  true,
+			input:       "\n",
+			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
+			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
 			name:        "NO_COLOR still asks",
@@ -111,7 +121,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -151,13 +161,44 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantOutcome:      protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
-			name:        "a retry is not asked again",
-			state:       `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1}`,
+			name:        "a retry after yes is not asked again",
+			state:       `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1, "accepted_version": "1.30.0"}`,
 			input:       "",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
+			// A failed gate lookup uses up an attempt without asking.
+			name:        "a retry that was never asked asks",
+			state:       `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1}`,
+			wantPrompt:  true,
+			input:       "\n",
+			wantSkills:  true,
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
+			name:             "a retry that was never asked skips when it cannot ask",
+			state:            `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1}`,
+			stdoutRedirected: true,
+			input:            "\n",
+			wantState:        autoinstall.State{LastVersion: "1.30.0", Attempts: 1, ID: "treatment-machine"},
+		},
+		{
+			name:      "a CLI process started by the CLI does not ask",
+			env:       map[string]string{"DATABRICKS_CLI_SELF_EXEC": "1"},
+			input:     "\n",
+			wantState: autoinstall.State{ID: "treatment-machine"},
+		},
+		{
+			// Holdout and treatment machines both wait for a run that can ask.
+			name:             "a holdout machine that cannot ask waits too",
+			state:            `{"id": "holdout-machine"}`,
+			stderrRedirected: true,
+			input:            "\n",
+			wantState:        autoinstall.State{ID: "holdout-machine"},
 		},
 	}
 	for _, tc := range tests {
@@ -260,6 +301,7 @@ func TestToolsPlanNewAgents(t *testing.T) {
 // runAutoInstallHook runs the hook as the root command does after
 // `databricks jobs list` succeeded.
 func runAutoInstallHook(ctx context.Context) {
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 	root := &cobra.Command{Use: "databricks"}
 	jobs := &cobra.Command{Use: "jobs"}
 	list := &cobra.Command{Use: "list"}

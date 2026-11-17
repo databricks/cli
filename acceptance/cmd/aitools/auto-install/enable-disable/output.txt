@@ -38,6 +38,26 @@ Automatic installation of Databricks AI tools is disabled.
   "opted_out": true
 }
 
+=== a global uninstall that removes nothing leaves it on
+
+>>> [CLI] aitools uninstall --scope=global
+Error: no skills or plugins installed
+
+Exit code: 1
+
+>>> auto_install_state
+{}
+
+=== a global uninstall of a mistyped skill leaves it on
+
+>>> [CLI] aitools uninstall --scope=global --skills databricks-tset
+Error: skill "databricks-tset" is not installed
+
+Exit code: 1
+
+>>> auto_install_state
+{}
+
 === a global uninstall turns it off
 
 >>> [CLI] aitools uninstall --scope=global

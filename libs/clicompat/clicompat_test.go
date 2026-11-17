@@ -353,8 +353,23 @@ func TestResolveAutoInstall(t *testing.T) {
 	}
 }
 
-// The remote manifest is this same file on main, so turning auto_install on
-// anywhere is a launch decision: change this test in the PR that makes it.
+func TestResolveAutoInstallFailsOnTheEmbeddedFallback(t *testing.T) {
+	ctx := testContext(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	// Neither the remote nor a cached manifest is there: the gate is unknown,
+	// not off.
+	_, err := ResolveAutoInstall(ctx, "1.30.0")
+	assert.Error(t, err)
+}
+
+// TestManifestLeavesAutoInstallOff checks that no entry turns auto_install on.
+// The remote manifest is this same file on main, so turning it on anywhere is a
+// launch decision: change this test in the PR that makes it.
 func TestManifestLeavesAutoInstallOff(t *testing.T) {
 	m, err := parseManifest(build.CLICompatManifestJSON)
 	require.NoError(t, err)

@@ -9,6 +9,7 @@
 {
   "last_version": "1.30.0",
   "attempts": 9,
+  "installing": true,
   "id": "treatment-machine"
 }
 

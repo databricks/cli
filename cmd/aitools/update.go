@@ -78,7 +78,8 @@ type updateFlags struct {
 	skills, scope                string
 	project, global              bool
 	// keepModified is not a flag: auto-install sets it (see
-	// installer.UpdateOptions.KeepModified).
+	// installer.UpdateOptions.KeepModified). It also keeps the raw skills of
+	// agents that have, or could get, the plugin.
 	keepModified bool
 }
 
@@ -153,9 +154,16 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 			updatedAnything = true
 		}
 
-		migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
-		if err != nil {
-			return err
+		// With keepModified (auto-install), raw skills are not migrated to
+		// the plugin: the migration removes them without checking whether
+		// the user modified them, and the agent would load the plugin's
+		// copies instead.
+		var migrationCandidates []pluginMigrationCandidate
+		if !f.keepModified {
+			migrationCandidates, err = pluginMigrationCandidatesForScope(ctx, scope, state)
+			if err != nil {
+				return err
+			}
 		}
 		if f.check {
 			printPluginMigrationCheckResults(ctx, migrationCandidates)
@@ -226,8 +234,9 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 			fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
 			// Raw skills an earlier install gave an agent that now has the
 			// plugin would show every skill twice, so remove them as
-			// install does when it keeps the plugin.
-			if !f.check {
+			// install does when it keeps the plugin. Auto-install leaves
+			// them, as it does not migrate them either.
+			if !f.check && !f.keepModified {
 				for _, a := range manifestPlugins {
 					if err := updateCleanupLegacyFn(ctx, a, scope); err != nil {
 						log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", a.DisplayName, err)
