@@ -19,6 +19,8 @@ trace $CLI bundle bitmap decode -o compressed < bitmap.b64 > recoded.b64
 diff.py bitmap.b64 recoded.b64
 trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < bitmap.b64 > decoded-python.txt
 diff.py out.bitmap.txt decoded-python.txt
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap -o json < bitmap.b64 > decoded-python.json
+diff.py out.bitmap.json decoded-python.json
 
 trace $CLI bundle bitmap update-schema --validate
 
