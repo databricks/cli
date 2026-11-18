@@ -1,0 +1,5 @@
+
+>>> python3 server_test.py
+Server remains hidden from sandbox help
+Server starts without workspace credentials
+SIGTERM stops the server and its SSH child

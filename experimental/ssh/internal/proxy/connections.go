@@ -8,21 +8,33 @@ import (
 // ConnectionsManager manages concurrent websocket clients and sends a shutdown signal if no
 // clients are connected for a specified duration.
 type ConnectionsManager struct {
-	maxClients      int
-	shutdownDelay   time.Duration
-	shutdownTimer   *time.Timer
-	shutdownTimerMu sync.Mutex
-	connections     map[string]*proxyConnection
-	connectionsMu   sync.Mutex
-	TimedOut        chan bool
+	maxClients          int
+	shutdownDelay       time.Duration
+	shutdownTimer       *time.Timer
+	shutdownTimerMu     sync.Mutex
+	disableIdleShutdown bool
+	connections         map[string]*proxyConnection
+	connectionsMu       sync.Mutex
+	TimedOut            chan bool
 }
 
-func NewConnectionsManager(maxClients int, shutdownDelay time.Duration) *ConnectionsManager {
+// ConnectionsManagerOption configures connection lifetime management.
+type ConnectionsManagerOption func(*ConnectionsManager)
+
+// WithoutIdleShutdown leaves server lifetime management to the caller.
+func WithoutIdleShutdown() ConnectionsManagerOption {
+	return func(cm *ConnectionsManager) { cm.disableIdleShutdown = true }
+}
+
+func NewConnectionsManager(maxClients int, shutdownDelay time.Duration, options ...ConnectionsManagerOption) *ConnectionsManager {
 	cm := &ConnectionsManager{
 		maxClients:    maxClients,
 		shutdownDelay: shutdownDelay,
 		connections:   make(map[string]*proxyConnection),
-		TimedOut:      make(chan bool),
+		TimedOut:      make(chan bool, 1),
+	}
+	for _, option := range options {
+		option(cm)
 	}
 	cm.startShutdownTimer(shutdownDelay)
 	return cm
@@ -80,13 +92,19 @@ func (cm *ConnectionsManager) ExtendIdleTimeout(delay time.Duration) {
 }
 
 func (cm *ConnectionsManager) startShutdownTimer(delay time.Duration) {
+	if cm.disableIdleShutdown {
+		return
+	}
 	cm.shutdownTimerMu.Lock()
 	defer cm.shutdownTimerMu.Unlock()
 	if cm.shutdownTimer != nil {
 		cm.shutdownTimer.Stop()
 	}
 	cm.shutdownTimer = time.AfterFunc(delay, func() {
-		cm.TimedOut <- true
+		select {
+		case cm.TimedOut <- true:
+		default:
+		}
 	})
 }
 
@@ -96,4 +114,9 @@ func (cm *ConnectionsManager) cancelShutdownTimer() {
 	if cm.shutdownTimer != nil {
 		cm.shutdownTimer.Stop()
 	}
+}
+
+// Close stops the idle timer.
+func (cm *ConnectionsManager) Close() {
+	cm.cancelShutdownTimer()
 }

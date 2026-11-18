@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -23,15 +24,44 @@ type proxyServer struct {
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
 	resumeGrace         time.Duration
+	allowResume         bool
+	allowHandover       bool
+	singleSession       bool
+	sessionUsed         bool
+	sessionMu           sync.Mutex
 }
 
-func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc) *proxyServer {
-	return &proxyServer{
+// ServerOption configures the SSH transport capabilities.
+type ServerOption func(*proxyServer)
+
+// WithoutSessionResume rejects requests to resume an interrupted session.
+func WithoutSessionResume() ServerOption {
+	return func(server *proxyServer) { server.allowResume = false }
+}
+
+// WithoutHandover rejects requests to switch an active session to another WebSocket.
+func WithoutHandover() ServerOption {
+	return func(server *proxyServer) { server.allowHandover = false }
+}
+
+// WithSingleSession permits handovers but never starts a second SSH session.
+func WithSingleSession() ServerOption {
+	return func(server *proxyServer) { server.singleSession = true }
+}
+
+func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc, options ...ServerOption) *proxyServer {
+	server := &proxyServer{
 		ctx:                 ctx,
 		connections:         connections,
 		createServerCommand: createServerCommand,
 		resumeGrace:         proxyResumeGrace,
+		allowResume:         true,
+		allowHandover:       true,
 	}
+	for _, option := range options {
+		option(server)
+	}
+	return server
 }
 
 func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +75,20 @@ func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if !server.allowResume && (req.ResumeCapable || req.Reattach) {
+		http.Error(w, "Session resume is not supported", http.StatusBadRequest)
+		return
+	}
 	ctx := log.NewContext(server.ctx, log.GetLogger(server.ctx).With("session", id))
 	conn, exists := server.connections.Get(id)
 	switch {
 	case exists && conn != nil && req.Reattach:
 		server.handleReattach(ctx, w, r, conn, req)
 	case exists && conn != nil:
+		if !server.allowHandover {
+			http.Error(w, "Session handover is not supported", http.StatusBadRequest)
+			return
+		}
 		server.handleExistingConnection(ctx, w, r, conn)
 	case req.Reattach:
 		// The session is gone: its grace period expired, or the server restarted. Say so instead
@@ -117,6 +155,26 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 }
 
 func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string, req DialRequest) {
+	// Failed upgrades can retry; a started SSH session consumes this server permanently.
+	accepted := false
+	if server.singleSession {
+		server.sessionMu.Lock()
+		if server.sessionUsed {
+			server.sessionMu.Unlock()
+			http.Error(w, "SSH session already used", http.StatusServiceUnavailable)
+			return
+		}
+		server.sessionUsed = true
+		server.sessionMu.Unlock()
+		defer func() {
+			if !accepted {
+				server.sessionMu.Lock()
+				server.sessionUsed = false
+				server.sessionMu.Unlock()
+			}
+		}()
+	}
+
 	// The server never dials, so it passes no connection factory: reattaching, for it, means
 	// waiting for the client to come back.
 	var conn *proxyConnection
@@ -134,7 +192,10 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 	defer server.connections.Remove(id)
 
 	log.Infof(ctx, "Starting proxy server for new connection, count: %d", server.connections.Count())
-	err := runServerProxy(ctx, conn, server.createServerCommand, w, r)
+	err := runServerProxy(ctx, conn, func(ctx context.Context) *exec.Cmd {
+		accepted = true
+		return server.createServerCommand(ctx)
+	}, w, r)
 	if err != nil {
 		log.Errorf(ctx, "Proxy server error: %v", err)
 	} else {

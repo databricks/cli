@@ -239,3 +239,16 @@ func TestConnectionsManager_ShutdownTimer_NoRestartWhenConnectionsRemain(t *test
 		assert.False(t, timedOut, "Unexpected timeout signal while connections still exist")
 	})
 }
+
+func TestConnectionsManagerCloseStopsIdleTimer(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cm := NewConnectionsManager(1, time.Second)
+		cm.Close()
+		time.Sleep(2 * time.Second)
+		select {
+		case <-cm.TimedOut:
+			t.Fatal("closed manager timed out")
+		default:
+		}
+	})
+}
