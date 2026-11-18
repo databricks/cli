@@ -22,6 +22,7 @@ var patterns = []dyn.Pattern{
 	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	envDepsPattern.Append(dyn.AnyIndex()),
 	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
+	pipelineTestingEnvDepsPattern.Append(dyn.AnyIndex()),
 }
 
 type libData struct {
