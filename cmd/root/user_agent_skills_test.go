@@ -8,7 +8,9 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // skillNames returns n distinct skill names of exactly length bytes.
@@ -72,20 +74,29 @@ func TestParseSkills(t *testing.T) {
 func TestWithSkillsInUserAgent(t *testing.T) {
 	tests := []struct {
 		name             string
-		skills           string
+		env              string
+		args             []string
 		disableTelemetry string
 		want             string
 	}{
-		{"unset", "", "", ""},
-		{"set", "databricks-core,databricks-jobs", "", "skill/databricks-core skill/databricks-jobs"},
-		{"telemetry disabled", "databricks-core", "1", ""},
+		{"unset", "", nil, "", ""},
+		{"env var", "databricks-core,databricks-jobs", nil, "", "skill/databricks-core skill/databricks-jobs"},
+		{"flag", "", []string{"--skills-invoked", "databricks-core,databricks-jobs"}, "", "skill/databricks-core skill/databricks-jobs"},
+		{"flag wins over env var", "from-env", []string{"--skills-invoked", "from-flag"}, "", "skill/from-flag"},
+		{"empty flag still wins over env var", "from-env", []string{"--skills-invoked="}, "", ""},
+		{"telemetry disabled with env var", "databricks-core", nil, "1", ""},
+		{"telemetry disabled with flag", "", []string{"--skills-invoked", "databricks-core"}, "1", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{Use: "test"}
+			root.InitSkillsInvokedFlag(cmd)
+			require.NoError(t, cmd.ParseFlags(tt.args))
+
 			// Always set both: an empty value in the context overrides the host environment.
-			ctx := env.Set(t.Context(), root.SkillsInvokedEnvVar, tt.skills)
+			ctx := env.Set(t.Context(), root.SkillsInvokedEnvVar, tt.env)
 			ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", tt.disableTelemetry)
-			ua := useragent.FromContext(root.WithSkillsInUserAgent(ctx))
+			ua := useragent.FromContext(root.WithSkillsInUserAgent(ctx, cmd))
 			if tt.want == "" {
 				assert.NotContains(t, ua, "skill/")
 			} else {

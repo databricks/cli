@@ -11,16 +11,23 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/spf13/cobra"
 )
 
 // Experimental skill-usage tracking: the databricks-core agent skill
 // (https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-core)
-// tells agents to prefix CLI calls with this env var, set to the comma-separated
-// bare names of the skills they loaded. It may change or be removed without
-// notice. It is an env var rather than a flag so removing it doesn't change the
-// CLI's interface, and because older CLIs ignore unknown env vars but reject
-// unknown flags.
-const skillsInvokedEnvVar = "DATABRICKS_SKILLS_INVOKED"
+// tells agents to pass the comma-separated bare names of the skills they loaded.
+// It may change or be removed without notice.
+//
+// skillsInvokedFlag is what agents use: a command that still starts with
+// "databricks" keeps matching agent permission allowlists such as Claude Code's
+// Bash(databricks:*), which an env var prefix does not. It is hidden from help
+// and completion so it isn't part of the advertised interface. The env var is
+// kept for callers that set it in the environment.
+const (
+	skillsInvokedFlag   = "skills-invoked"
+	skillsInvokedEnvVar = "DATABRICKS_SKILLS_INVOKED"
+)
 
 // skillUserAgentKey is repeated once per skill: "skill/databricks-core skill/databricks-jobs".
 const skillUserAgentKey = "skill"
@@ -67,14 +74,23 @@ func parseSkills(ctx context.Context, raw string) []string {
 	return skills
 }
 
-// withSkillsInUserAgent adds one skill/<name> pair per skill in
-// skillsInvokedEnvVar (experimental tracking), unless the user opted out of
-// telemetry.
-func withSkillsInUserAgent(ctx context.Context) context.Context {
+func initSkillsInvokedFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(skillsInvokedFlag, "", "comma-separated agent skills that invoked this command")
+	cmd.PersistentFlags().MarkHidden(skillsInvokedFlag)
+}
+
+// withSkillsInUserAgent adds one skill/<name> pair per skill from the
+// skillsInvokedFlag flag, or skillsInvokedEnvVar when the flag isn't set
+// (experimental tracking), unless the user opted out of telemetry.
+func withSkillsInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
 	if telemetry.Disabled(ctx) {
 		return ctx
 	}
-	for _, skill := range parseSkills(ctx, env.Get(ctx, skillsInvokedEnvVar)) {
+	raw := env.Get(ctx, skillsInvokedEnvVar)
+	if f := cmd.Flag(skillsInvokedFlag); f.Changed {
+		raw = f.Value.String()
+	}
+	for _, skill := range parseSkills(ctx, raw) {
 		// Each skill adds its own pair to the same context; this is accumulation,
 		// not the accidental nesting fatcontext flags.
 		ctx = useragent.InContext(ctx, skillUserAgentKey, skill) //nolint:fatcontext
