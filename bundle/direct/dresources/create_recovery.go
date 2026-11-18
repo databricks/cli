@@ -55,7 +55,10 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 			// Without the time check, a resource that existed before the deploy would be taken over:
 			// our request would have failed with "already exists" only if it reached that check.
 			created, ok := rc.createTime(found)
-			if !ok || created.Before(rc.start.Add(-createTimeSkew)) {
+			if !ok {
+				return nil, fmt.Errorf("%w; %s exists but has no create time, so it is not known to be created by this deployment", createErr, rc.name)
+			}
+			if created.Before(rc.start.Add(-createTimeSkew)) {
 				return nil, fmt.Errorf("%w; %s exists but was not created by this deployment", createErr, rc.name)
 			}
 			// Info, not Warn: the deploy got the resource it asked for, so there is nothing to act on.
@@ -83,8 +86,9 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 	}
 }
 
-// isAlreadyExists reports whether a create request failed because the resource exists. Features
-// and dashboards answer with 409 ALREADY_EXISTS, serving endpoints with 400 RESOURCE_ALREADY_EXISTS.
+// isAlreadyExists reports whether a create request failed because the resource exists. Features,
+// dashboards and vector search endpoints answer with 409 ALREADY_EXISTS, serving endpoints with
+// 400 RESOURCE_ALREADY_EXISTS (observed on AWS, 2026-11).
 func isAlreadyExists(err error) bool {
 	return errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists)
 }

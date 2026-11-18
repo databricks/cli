@@ -1,3 +1,8 @@
+# dashboards/test.toml sets MSYS_NO_PATHCONV, which keeps Python from finding these helpers on
+# Windows; see the same workaround in acceptance/script.prepare.
+fault.py() { env -u MSYS_NO_PATHCONV "$(type -P fault.py)" "$@"; }
+print_requests.py() { env -u MSYS_NO_PATHCONV "$(type -P print_requests.py)" "$@"; }
+
 title "The create request times out but the dashboard was created: deploy uses the dashboard"
 # The first read of a new dashboard returns 404 (INJECT_STALE_ON_DIRECT), so the deploy repeats
 # the create, gets ALREADY_EXISTS, and finds the dashboard on the next look.

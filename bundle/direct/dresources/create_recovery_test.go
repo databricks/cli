@@ -106,7 +106,7 @@ func TestCreateRecoveryRejectsResourceThatPredatesRequest(t *testing.T) {
 func TestCreateRecoveryRejectsResourceWithoutCreateTime(t *testing.T) {
 	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{ml.Feature{FullName: testFeatureName}}}
 	_, _, err := createTestFeature(t, s, t.Context())
-	require.ErrorContains(t, err, "exists but was not created by this deployment")
+	require.ErrorContains(t, err, "exists but has no create time")
 }
 
 func TestCreateRecoveryRepeatsCreateWhileMissing(t *testing.T) {
