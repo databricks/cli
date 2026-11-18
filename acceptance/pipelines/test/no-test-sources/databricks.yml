@@ -1,0 +1,10 @@
+bundle:
+  name: test-pipeline-test-no-test-sources
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-test-no-test-sources
+      libraries:
+        - file:
+            path: pipeline_file.py
