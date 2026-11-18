@@ -1,11 +1,14 @@
 package sandbox
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -37,9 +40,15 @@ func NewServerCommand() *cobra.Command {
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, os.Interrupt)
 			defer stop()
+			output, err := openServerOutput(cmd.OutOrStdout())
+			if err != nil {
+				listener.Close()
+				return fmt.Errorf("open command output: %w", err)
+			}
+			defer output.Close()
 			return Serve(ctx, listener, ServerOptions{
-				SSHD: sshd, Config: config, ConnectTimeout: connectTimeout,
-			}, cmd.OutOrStdout())
+				SSHD: sshd, Config: config, ConnectTimeout: connectTimeout, OutputHeartbeat: 30 * time.Second,
+			}, output)
 		},
 	}
 	cmd.Flags().StringVar(&config, "sshd-config", "", "Prepared sshd configuration file")
@@ -53,3 +62,27 @@ func NewServerCommand() *cobra.Command {
 func validForwardPort(port int) bool {
 	return port >= 10000 && port <= 65535 && port != 10101 && port != 18767 && port != 19090
 }
+
+func openServerOutput(output io.Writer) (io.WriteCloser, error) {
+	if _, ok := output.(*bytes.Buffer); ok || output == io.Discard {
+		return serverOutputWriter{output}, nil
+	}
+	file, ok := output.(*os.File)
+	if !ok || runtime.GOOS != "linux" {
+		return nil, errors.New("server output must be a Linux command-execution pipe")
+	}
+	info, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if info.Mode()&os.ModeNamedPipe == 0 {
+		return nil, errors.New("server output must be a Linux command-execution pipe")
+	}
+	// Reopening inherited stdout registers its pipe with Go's poller, so
+	// Close interrupts blocked writes without changing the inherited fd.
+	return os.OpenFile(fmt.Sprintf("/proc/self/fd/%d", file.Fd()), os.O_WRONLY, 0)
+}
+
+type serverOutputWriter struct{ io.Writer }
+
+func (serverOutputWriter) Close() error { return nil }

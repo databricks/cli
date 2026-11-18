@@ -4,268 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
 	"strings"
+	"unicode"
 
-	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/execv"
-	"github.com/databricks/cli/libs/shellquote"
-	"github.com/spf13/cobra"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
-const defaultGatewayPort = "2222"
-
-func newSSHCommand() *cobra.Command {
-	var gatewayPort string
-
-	cmd := &cobra.Command{
-		Use:   "ssh [sandbox-id] [-- <ssh-args-or-command>...]",
-		Short: "SSH into a Sandbox environment",
-		Long: `SSH into a Sandbox environment.
-
-Connect to your default or a named sandbox via SSH. Extra arguments
-after -- are passed directly to the ssh process. This lets you run
-remote commands, set up port forwarding, or pass any other ssh flags.
-
-Examples:
-  databricks sandbox ssh                                  # interactive shell on default sandbox
-  databricks sandbox ssh happy-panda-1234                 # interactive shell on specific sandbox
-  databricks sandbox ssh -- ls -la /home                  # run command on default sandbox
-  databricks sandbox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific sandbox
-  databricks sandbox ssh -- -L 8080:localhost:8080        # port forwarding on default sandbox`,
-		Args:              cobra.ArbitraryArgs,
-		PreRunE:           root.MustWorkspaceClient,
-		ValidArgsFunction: completeSandboxIDs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			w := cmdctx.WorkspaceClient(ctx)
-
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
-
-			keyPath, err := sandboxKeyPath(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to determine sandbox key path: %w", err)
-			}
-			if _, err := os.Stat(keyPath); errors.Is(err, fs.ErrNotExist) {
-				return fmt.Errorf("sandbox SSH key not found at %s — run 'databricks sandbox register' first", keyPath)
-			}
-
-			var sandboxID string
-			var extraArgs []string
-
-			switch dashAt := cmd.ArgsLenAtDash(); dashAt {
-			case -1:
-				if len(args) > 0 {
-					sandboxID = args[0]
-				}
-			case 0:
-				extraArgs = args[dashAt:]
-			default:
-				sandboxID = args[0]
-				extraArgs = args[dashAt:]
-			}
-
-			api, err := newSandboxAPI(w)
-			if err != nil {
-				return err
-			}
-
-			// Surface deleted-key errors before ssh's opaque "Permission denied".
-			if err := verifyKeyRegistered(ctx, api, keyPath); err != nil {
-				return err
-			}
-
-			// Validating the sandbox against the server surfaces an unknown ID
-			// as a clear 404 instead of ssh's `Permission denied` when the
-			// gateway can't route it, and captures `gateway_host` for the
-			// resolution below.
-			sandboxID, sb, err := resolveSandbox(ctx, api, profile, sandboxID)
-			if err != nil {
-				return err
-			}
-			// "" when the lookup only warned.
-			var sandboxGatewayHost, sandboxStatus string
-			if sb != nil {
-				sandboxGatewayHost = sb.GatewayHost
-				sandboxStatus = sb.Status
-			}
-
-			// Drive start ourselves so the user sees a spinner instead
-			// of an opaque multi-minute hang inside ssh's connect path.
-			if sandboxStatus != "" && !strings.EqualFold(sandboxStatus, "running") {
-				final, err := ensureRunning(ctx, api, sandboxID, sandboxStatus)
-				if err != nil {
-					return err
-				}
-				if final.GatewayHost != "" {
-					sandboxGatewayHost = final.GatewayHost
-				}
-			}
-
-			// Resolution precedence: fresh API response → cached value
-			// for this profile. The server stamps the workspace's
-			// gateway on every Sandbox / SshKey response, so the cache
-			// is populated after the first call against the workspace
-			// (sandbox register / list / create / etc.).
-			host := sandboxGatewayHost
-			if host == "" {
-				host = getGatewayHost(ctx, profile)
-			}
-			if host == "" {
-				return errors.New("could not resolve the sandbox SSH gateway — run `databricks sandbox register` first")
-			}
-
-			// Persist whatever the server just told us, so the next invocation
-			// can short-circuit the explicit-id `get` above.
-			if sandboxGatewayHost != "" {
-				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
-			}
-
-			// No "Connecting…" spinner here. execSSHDirect replaces
-			// the CLI process via execv, so a deferred Close() would
-			// never run — and Bubble Tea hides the terminal cursor at
-			// init and only restores it on clean shutdown, leaving the
-			// cursor invisible for the entire ssh session and after it
-			// exits. The spinner couldn't animate during the handshake
-			// anyway (the CLI process is gone by then).
-			return execSSHDirect(sandboxID, host, gatewayPort, keyPath, extraArgs)
-		},
+// ResolveSSHName resolves the sandbox selection shared by SSH commands.
+func ResolveSSHName(ctx context.Context, w *databricks.WorkspaceClient, requested string) (string, error) {
+	profile := w.Config.Profile
+	if profile == "" {
+		profile = w.Config.Host
 	}
-
-	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Sandbox gateway SSH port")
-
-	return cmd
-}
-
-// verifyKeyRegistered confirms the local sandbox public key is still
-// registered with the workspace before we open the SSH socket. The
-// gateway itself already does this check during userauth, but the
-// SSH protocol's reply surface (USERAUTH_FAILURE has no free-form
-// reason; USERAUTH_BANNER is widely swallowed) flattens "unknown
-// key", "key registered but not authorized for this sandbox", and
-// "upstream service is down" into the same "Permission denied
-// (publickey)". This out-of-band HTTP check surfaces the specific
-// case in language the user can act on. listKeys errors fall
-// through with a warning so a transient API hiccup doesn't block a
-// connection the gateway could still route.
-func verifyKeyRegistered(ctx context.Context, api *sandboxAPI, keyPath string) error {
-	pub, err := os.ReadFile(keyPath + ".pub")
+	savedDefault := requested == ""
+	if savedDefault {
+		requested = getDefault(ctx, profile)
+	}
+	if requested == "" {
+		return "", errors.New("no default sandbox configured — specify a sandbox ID or run 'databricks sandbox default <id>'")
+	}
+	id, err := resolveLocalID(ctx, profile, strings.TrimPrefix(requested, "sandboxes/"))
 	if err != nil {
-		return fmt.Errorf("reading public key %s.pub: %w", keyPath, err)
+		return "", err
 	}
-	want := keyHash(string(pub))
-
-	keys, err := api.listKeys(ctx)
-	if err != nil {
-		warn(ctx, fmt.Sprintf("Could not verify SSH key registration: %v", err))
-		return nil
+	if id == "" || strings.ContainsAny(id, "/\\?#") || strings.ContainsFunc(id, unicode.IsSpace) {
+		return "", fmt.Errorf("invalid sandbox ID %q", id)
 	}
-	for _, k := range keys {
-		if k.KeyHash == want {
-			return nil
+	name := "sandboxes/" + id
+	if _, err := w.Sandbox.GetSandbox(ctx, sdk.GetSandboxRequest{Name: name}); err != nil {
+		if savedDefault && errors.Is(err, apierr.ErrNotFound) {
+			return "", fmt.Errorf("saved default %q is unavailable through the Sandbox API; verify the profile or choose another sandbox: %w", id, err)
 		}
+		return "", err
 	}
-	return fmt.Errorf("your sandbox SSH key (%s) is not registered with this workspace — run `databricks sandbox register` to re-register it", want)
-}
-
-// ensureRunning owns the lifecycle transition so SSH does not hang inside
-// connection setup. The caller must not have a spinner open.
-func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sandboxEntry, error) {
-	if strings.EqualFold(currentStatus, "running") {
-		return &sandboxEntry{SandboxID: id, Status: currentStatus}, nil
-	}
-
-	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
-	defer s.Close()
-
-	var sb *sandboxEntry
-	if strings.EqualFold(currentStatus, "stopping") {
-		stopped, err := waitForStopped(ctx, api, s, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, err
-		}
-		currentStatus = stopped.Status
-		s.Update("Starting " + id + "…")
-	}
-
-	if strings.EqualFold(currentStatus, "stopped") {
-		updated, err := api.start(ctx, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, fmt.Errorf("failed to start sandbox %s: %w", id, err)
-		}
-		sb = updated
-	}
-
-	if sb == nil || !strings.EqualFold(sb.Status, "running") {
-		final, err := waitForRunning(ctx, api, s, id)
-		if err != nil {
-			s.fail("Failed to start " + id)
-			return nil, err
-		}
-		sb = final
-	}
-
-	s.ok("Started " + cmdio.Bold(ctx, id))
-	return sb, nil
-}
-
-// execSSHDirect replaces the CLI process with ssh (or simulates that on
-// Windows via execv). All options are passed on the command line, so no
-// ~/.ssh/config entry is required.
-func execSSHDirect(sandboxID, host, port, keyPath string, extraArgs []string) error {
-	return execv.Execv(execv.Options{
-		Args: buildSSHArgs(sandboxID, host, port, keyPath, extraArgs),
-		Env:  os.Environ(),
-	})
-}
-
-// buildSSHArgs assembles the argv we hand to the `ssh` binary.
-//
-// `ssh` concatenates remote-command words with spaces and the remote
-// shell re-parses them. That makes the two natural user shapes
-// incompatible by default:
-//
-//   - Single arg that's already a complete shell command:
-//     `sandbox ssh <id> -- 'echo hi | head -3'`
-//     The user expects the remote shell to split and execute this
-//     string. ssh's "concat with spaces" is a no-op here, so we hand
-//     the arg through untouched.
-//
-//   - Multi-arg exec-style invocation:
-//     `sandbox ssh <id> -- bash -c 'echo hi'`
-//     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
-//     produces `bash -c echo hi` on the wire, which bash re-splits into
-//     `-c=echo` and `$0=hi` — losing the second word. We fix that by shell-quoting
-//     each arg before append, so the remote sees `bash -c 'echo hi'`.
-//
-// The heuristic: if there's exactly one extra arg, pass it untouched;
-// otherwise quote every arg. shellquote.BashArg leaves safe args alone,
-// so `ls -la /tmp` round-trips unchanged in the multi-arg path.
-func buildSSHArgs(sandboxID, host, port, keyPath string, extraArgs []string) []string {
-	args := []string{
-		"ssh",
-		"-i", keyPath,
-		"-p", port,
-		"-o", "IdentitiesOnly=yes",
-		"-o", "PreferredAuthentications=publickey",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=ERROR",
-		fmt.Sprintf("%s@%s", sandboxID, host),
-	}
-	if len(extraArgs) == 1 {
-		return append(args, extraArgs[0])
-	}
-	for _, a := range extraArgs {
-		args = append(args, shellquote.BashArg(a))
-	}
-	return args
+	return name, nil
 }
