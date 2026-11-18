@@ -1,12 +1,14 @@
 package cmdio
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/colorprofile"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,7 +45,7 @@ func TestSpinnerModelViewActive(t *testing.T) {
 	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	m.suffix = "loading"
 
-	view := m.View()
+	view := m.render()
 
 	assert.NotEmpty(t, view)
 	assert.Contains(t, view, "loading")
@@ -53,7 +55,7 @@ func TestSpinnerModelViewQuitting(t *testing.T) {
 	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
 	m.quitting = true
 
-	view := m.View()
+	view := m.render()
 
 	assert.Empty(t, view)
 }
@@ -148,4 +150,14 @@ func TestSpinnerStructConcurrentClose(t *testing.T) {
 
 	// Additional Close should still be safe
 	sp.Close()
+}
+
+func TestSpinnerGlyphFollowsRenderer(t *testing.T) {
+	// lipgloss v2 styles always emit color; the glyph must still follow the
+	// renderer's profile, which is NoTTY for a writer without color.
+	m := newSpinnerModel(MockDiscard(t.Context()), &bytes.Buffer{})
+	assert.NotContains(t, m.render(), "\x1b")
+
+	m.glyph = &Renderer{profile: colorprofile.ANSI}
+	assert.Contains(t, m.render(), "\x1b[92m")
 }

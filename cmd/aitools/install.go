@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -509,7 +509,7 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-func defaultPromptAgentSelection(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
+func defaultPromptAgentSelection(ctx context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
 	options := make([]huh.Option[string], 0, len(choices))
 	byName := make(map[string]*agents.Agent, len(choices))
 	for _, c := range choices {
@@ -518,12 +518,11 @@ func defaultPromptAgentSelection(_ context.Context, scope string, choices []agen
 	}
 
 	var selected []string
-	err := huh.NewMultiSelect[string]().
+	err := cmdio.RunHuhField(ctx, huh.NewMultiSelect[string]().
 		Title(agentPickerTitle(scope)).
 		Description("space to toggle, enter to install").
 		Options(options...).
-		Value(&selected).
-		Run()
+		Value(&selected))
 	if err != nil {
 		return nil, promptError(err)
 	}

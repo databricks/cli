@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/spf13/cobra"
 )
 
@@ -40,11 +41,13 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly boo
 			_, err := io.WriteString(out, emptyListMessage(activeOnly))
 			return err
 		}
-		_, err = tea.NewProgram(
+		_, err = cmdio.NewTeaProgram(
 			newListModel(r, f, first, color),
+			cmd.InOrStdin(),
 			tea.WithContext(ctx),
 			tea.WithInput(cmd.InOrStdin()),
 			tea.WithOutput(out),
+			tea.WithColorProfile(r.Profile()),
 		).Run()
 		if err != nil {
 			return err
@@ -132,7 +135,7 @@ type listModel struct {
 const detailHorizontalStep = 8
 
 func newListModel(r *cmdio.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
-	vp := viewport.New(0, 0)
+	vp := viewport.New()
 	vp.SetHorizontalStep(detailHorizontalStep)
 	return listModel{
 		rows:     rows,
@@ -195,8 +198,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.width = msg.Width
 		m.cols = layoutListCols(m.rows, m.width)
-		m.viewport.Width = msg.Width
-		m.viewport.Height = max(msg.Height-3, 1)
+		m.viewport.SetWidth(msg.Width)
+		m.viewport.SetHeight(max(msg.Height-3, 1))
 		m.viewport.SetContent(m.wrappedDetail())
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
@@ -238,10 +241,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetXOffset(0)
 		return m, nil
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		// Detail pane key handling.
 		if m.mode == modeDetail {
-			switch msg.String() {
+			switch teainput.KeyName(msg) {
 			case "esc", "q":
 				m.mode = modeList
 				return m, nil
@@ -256,7 +259,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// List pane key handling.
-		switch msg.String() {
+		switch teainput.KeyName(msg) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "esc":
@@ -320,7 +323,7 @@ func (m listModel) wrappedDetail() string {
 		if strings.IndexAny(plain, "╭│╰") == 0 || strings.Contains(plain, "://") {
 			continue
 		}
-		lines[i] = ansi.Wrap(line, m.viewport.Width, "")
+		lines[i] = ansi.Wrap(line, m.viewport.Width(), "")
 	}
 	return strings.Join(lines, "\n")
 }
@@ -335,7 +338,7 @@ func (m listModel) clampedOffset() int {
 	return max(offset, 0)
 }
 
-func (m listModel) View() string { return m.render() }
+func (m listModel) View() tea.View { return tea.NewView(m.render()) }
 
 func (m listModel) render() string {
 	if m.mode == modeDetail {

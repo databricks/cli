@@ -7,7 +7,8 @@ import (
 	"testing"
 	"text/template"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -135,7 +136,7 @@ func TestPagerModelBatchPromptsWhenMore(t *testing.T) {
 	assert.False(t, m.iterDone)
 	assert.True(t, m.hasPrinted)
 	assert.False(t, m.drainAll)
-	assert.Equal(t, pagerPromptText, m.View())
+	assert.Equal(t, pagerPromptText, m.render())
 	assert.Contains(t, printedText(t, runCmd(t, cmd)), "1\n2")
 }
 
@@ -161,10 +162,10 @@ func TestPagerModelBatchErrorTerminates(t *testing.T) {
 func TestPagerModelSpaceFetchesNext(t *testing.T) {
 	cases := []struct {
 		name string
-		key  tea.KeyMsg
+		key  tea.Msg
 	}{
-		{"KeySpace", tea.KeyMsg{Type: tea.KeySpace}},
-		{"KeyRunes space", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}},
+		{"KeySpace", teainput.Press("space")},
+		{"KeyRunes space", teainput.Type(" ")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -180,9 +181,9 @@ func TestPagerModelSpaceFetchesNext(t *testing.T) {
 func TestPagerModelEnterSetsDrainAll(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.hasPrinted = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(teainput.Press("enter"))
 	assert.True(t, m.drainAll)
-	assert.NotContains(t, m.View(), pagerPromptText, "no prompt while draining")
+	assert.NotContains(t, m.render(), pagerPromptText, "no prompt while draining")
 	_, ok := runCmd(t, cmd).(batchMsg)
 	assert.True(t, ok, "enter should fire a fetch")
 }
@@ -191,7 +192,7 @@ func TestPagerModelEnterIsNoOpWhileAlreadyDraining(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.hasPrinted = true
 	m.drainAll = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(teainput.Press("enter"))
 	assert.Nil(t, cmd, "re-entering drain shouldn't stack another fetch")
 }
 
@@ -200,7 +201,7 @@ func TestPagerModelSpaceIgnoredDuringFetch(t *testing.T) {
 	// fetch: doing so would run the iterator from two goroutines at once.
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.fetching = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	_, cmd := m.Update(teainput.Press("space"))
 	assert.Nil(t, cmd, "SPACE while fetching must not dispatch another fetch")
 }
 
@@ -209,7 +210,7 @@ func TestPagerModelEnterDuringFetchDefersFetch(t *testing.T) {
 	// fetch; the pending batchMsg will chain one when it arrives.
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.fetching = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := m.Update(teainput.Press("enter"))
 	assert.True(t, m.drainAll)
 	assert.Nil(t, cmd, "ENTER during fetch must defer to batchMsg chaining")
 }
@@ -217,12 +218,12 @@ func TestPagerModelEnterDuringFetchDefersFetch(t *testing.T) {
 func TestPagerModelQuitKeys(t *testing.T) {
 	cases := []struct {
 		name string
-		key  tea.KeyMsg
+		key  tea.Msg
 	}{
-		{"q", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}},
-		{"Q", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'Q'}}},
-		{"esc", tea.KeyMsg{Type: tea.KeyEsc}},
-		{"ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC}},
+		{"q", teainput.Press("q")},
+		{"Q", teainput.Press("Q")},
+		{"esc", teainput.Press("esc")},
+		{"ctrl+c", teainput.Press("ctrl+c")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -236,10 +237,10 @@ func TestPagerModelQuitKeys(t *testing.T) {
 }
 
 func TestPagerModelQuitKeysInterruptDrain(t *testing.T) {
-	for _, key := range []tea.KeyMsg{
-		{Type: tea.KeyRunes, Runes: []rune{'q'}},
-		{Type: tea.KeyEsc},
-		{Type: tea.KeyCtrlC},
+	for _, key := range []tea.Msg{
+		teainput.Press("q"),
+		teainput.Press("esc"),
+		teainput.Press("ctrl+c"),
 	} {
 		m := newTestPager(t, &numberIterator{n: 100}, 5)
 		m.hasPrinted = true
@@ -253,20 +254,20 @@ func TestPagerModelQuitKeysInterruptDrain(t *testing.T) {
 func TestPagerModelIgnoresKeysAfterDone(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 0}, 5)
 	m.iterDone = true
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	_, cmd := m.Update(teainput.Press("ctrl+c"))
 	assert.Nil(t, cmd, "keys after completion should be no-ops")
 }
 
 func TestPagerModelViewHiddenUntilFirstBatch(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 10}, 5)
-	assert.Empty(t, m.View(), "prompt must not flash before any output is rendered")
+	assert.Empty(t, m.render(), "prompt must not flash before any output is rendered")
 }
 
 func TestPagerModelViewShowsSpinnerWhileFetching(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.fetching = true
-	assert.Contains(t, m.View(), pagerLoadingText)
-	assert.NotContains(t, m.View(), pagerPromptText)
+	assert.Contains(t, m.render(), pagerLoadingText)
+	assert.NotContains(t, m.render(), pagerPromptText)
 }
 
 func TestPagerModelWindowSizeResizesPage(t *testing.T) {

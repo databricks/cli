@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,7 @@ func pagedOutput(
 func countContentLines(s string) int {
 	count := 0
 	for line := range strings.SplitSeq(s, "\n") {
-		trimmed := strings.TrimSpace(line)
+		trimmed := strings.TrimSpace(ansi.Strip(line))
 		if trimmed == "" || strings.Contains(trimmed, pagerPromptText) {
 			continue
 		}
@@ -199,7 +200,7 @@ func assertSameContentLines(t *testing.T, want, got string) {
 func nonEmptyLines(s string) []string {
 	var out []string
 	for l := range strings.SplitSeq(s, "\n") {
-		t := strings.TrimRight(l, " \r\t")
+		t := strings.TrimRight(ansi.Strip(l), " \r\t")
 		if t == "" {
 			continue
 		}

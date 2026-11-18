@@ -42,6 +42,28 @@ func TestQueriesPin_PromptQuitBeforeReplies(t *testing.T) {
 	termtest.GoldenText(t, "03-leftover", quoted(leftover))
 }
 
+// TestQueriesPin_PromptQuitBeforeRepliesTTY is TestQueriesPin_PromptQuitBeforeReplies
+// with stdin posing as a terminal. NewTeaProgram installs the reply guard only
+// on a terminal, so this is the path a user gets: the quit waits for the
+// cursor report, and no reply is left for the shell.
+func TestQueriesPin_PromptQuitBeforeRepliesTTY(t *testing.T) {
+	t.Parallel()
+	skipLeftoverOnWindows(t)
+	tm := termtest.RunWith(t, termtest.Options{Responder: slowTerminal, CaptureLeftover: true, StdinTTY: true}, func(ctx context.Context) (string, error) {
+		return cmdio.RunPrompt(ctx, cmdio.PromptOptions{Label: "Value"})
+	})
+	tm.WaitFor("Value")
+	typeKeys(tm, "ab")
+	tm.Type(termtest.KeyEnter)
+	pinPromptResult(t, tm, "01-result")
+	tm.GoldenQueries("02-queries")
+	leftover, err := tm.Leftover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	termtest.GoldenText(t, "03-leftover", quoted(leftover))
+}
+
 // TestQueriesPin_SelectQuitBeforeReplies is the select counterpart of
 // TestQueriesPin_PromptQuitBeforeReplies.
 func TestQueriesPin_SelectQuitBeforeReplies(t *testing.T) {

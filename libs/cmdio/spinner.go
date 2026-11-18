@@ -7,14 +7,17 @@ import (
 	"sync"
 	"time"
 
-	bubblespinner "github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	bubblespinner "charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // spinnerModel is the Bubble Tea model for the spinner.
 type spinnerModel struct {
-	spinner   bubblespinner.Model
+	spinner bubblespinner.Model
+	// glyph renders the spinner's own style to the profile lipgloss v1 used,
+	// which the program's profile (see teaColorProfile) may exceed.
+	glyph     *Renderer
 	suffix    string
 	quitting  bool
 	startTime time.Time // non-zero when elapsed time display is enabled
@@ -50,6 +53,7 @@ func newSpinnerModel(ctx context.Context, w io.Writer, opts ...SpinnerOption) sp
 
 	m := spinnerModel{
 		spinner: s,
+		glyph:   r,
 	}
 	for _, opt := range opts {
 		opt(&m)
@@ -81,7 +85,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m spinnerModel) View() string { return m.render() }
+func (m spinnerModel) View() tea.View { return tea.NewView(m.render()) }
 
 func (m spinnerModel) render() string {
 	if m.quitting {
@@ -93,7 +97,7 @@ func (m spinnerModel) render() string {
 		elapsed := time.Since(m.startTime)
 		result += fmt.Sprintf("%02d:%02d ", int(elapsed.Minutes()), int(elapsed.Seconds())%60)
 	}
-	result += m.spinner.View()
+	result += m.glyph.Render(m.spinner.View())
 	if m.suffix != "" {
 		result += " " + m.suffix
 	}
@@ -153,15 +157,21 @@ func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner 
 
 	// Create model and program
 	m := newSpinnerModel(ctx, c.err, opts...)
-	p := tea.NewProgram(
-		m,
+	teaOpts := []tea.ProgramOption{
 		tea.WithInput(nil),
 		tea.WithOutput(c.err),
+		tea.WithColorProfile(teaColorProfile(c.capabilities.SupportsStderrColor(), c.err)),
 
 		// Note: We don't let tea capture signals to match current behavior.
 		// This allows Ctrl-C to immediately terminate instead of being captured by Bubble Tea.
 		tea.WithoutSignalHandler(),
-	)
+	}
+	// NewTestIO's synthetic window size; nil in production. It is set up front
+	// because Run renders the first frame before a sent message lands.
+	if c.teaWindowSize != nil {
+		teaOpts = append(teaOpts, tea.WithWindowSize(c.teaWindowSize.Width, c.teaWindowSize.Height))
+	}
+	p := tea.NewProgram(m, teaOpts...)
 
 	// Acquire program slot (queues if another program is running)
 	c.acquireTeaProgram(p)
