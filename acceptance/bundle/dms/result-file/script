@@ -1,0 +1,44 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+export DATABRICKS_AUTO_DEPLOY_RESULT_FILE=result.json
+
+title "A first deploy reports the deployment it created and the version it recorded"
+trace $CLI bundle deploy
+add_repl "$(jq -r .deployment_id result.json)" DEPLOYMENT_ID
+trace jq . result.json
+
+title "A redeploy with no changes creates no version, so only the deployment is reported"
+trace $CLI bundle deploy
+trace jq . result.json
+
+title "A deploy that fails after its version exists still reports both"
+cat >> databricks.yml <<'EOT'
+  pipelines:
+    bar:
+      name: bar
+EOT
+trace musterr $CLI bundle deploy
+trace jq . result.json
+
+title "bundle validate does not write the file"
+rm result.json
+trace $CLI bundle validate > /dev/null
+trace test ! -e result.json
+
+title "A deploy that fails before any deployment exists still writes the file, with nothing to report"
+mkdir broken
+cd broken
+cat > databricks.yml <<'EOT'
+bundle:
+  name: dms-result-file-broken
+resources:
+  jobs:
+    foo:
+      name: ${var.missing}
+EOT
+trace musterr $CLI bundle deploy
+trace jq . result.json
+cd ..
+rm -rf broken
+
+# The deploys upload files in a nondeterministic order; only the result files above are asserted.
+rm -f "$OUT_REQUESTS"

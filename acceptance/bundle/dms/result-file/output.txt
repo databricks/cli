@@ -1,0 +1,60 @@
+
+=== A first deploy reports the deployment it created and the version it recorded
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-result-file-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq . result.json
+{
+  "deployment_id": "[DEPLOYMENT_ID]",
+  "version_name": "deployments/[DEPLOYMENT_ID]/versions/1"
+}
+
+=== A redeploy with no changes creates no version, so only the deployment is reported
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-result-file-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> jq . result.json
+{
+  "deployment_id": "[DEPLOYMENT_ID]"
+}
+
+=== A deploy that fails after its version exists still reports both
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-result-file-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.pipelines.bar: Invalid pipeline (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/pipelines
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Invalid pipeline
+
+Files: 2 uploaded, 0 deleted
+
+>>> jq . result.json
+{
+  "deployment_id": "[DEPLOYMENT_ID]",
+  "version_name": "deployments/[DEPLOYMENT_ID]/versions/2"
+}
+
+=== bundle validate does not write the file
+
+>>> [CLI] bundle validate
+
+>>> test ! -e result.json
+
+=== A deploy that fails before any deployment exists still writes the file, with nothing to report
+
+>>> musterr [CLI] bundle deploy
+Error: reference does not exist: ${var.missing}
+
+
+>>> jq . result.json
+{}

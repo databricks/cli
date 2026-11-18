@@ -1,0 +1,7 @@
+# Local only: the failing pipeline create is a [[Server]] stub, which the cloud harness ignores.
+Cloud = false
+
+[[Server]]
+Pattern = "POST /api/2.0/pipelines"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Invalid pipeline"}'''

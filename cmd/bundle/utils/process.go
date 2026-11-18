@@ -143,6 +143,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// diagnostic errors and regular Go errors.
 	if opts.Deploy {
 		defer func() {
+			// Ahead of the nil check: the result file is written on every exit.
+			phases.WriteDeployResult(ctx, b)
 			if b == nil {
 				return
 			}
