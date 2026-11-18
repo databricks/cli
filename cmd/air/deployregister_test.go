@@ -394,26 +394,33 @@ func TestRegisterAndFinalizeStopsWhenCanceled(t *testing.T) {
 	assert.Empty(t, fake.finalizeRequests)
 }
 
-func TestRegisterPythonCheckpointRequestJSON(t *testing.T) {
-	streamable := true
-	raw, err := json.Marshal(registerModelPackageRequest{
-		RegisteredModel: "a.b.c",
-		IdempotencyKey:  "k",
-		Checkpoint: &modelPackageCheckpoint{
-			VolumePath:  "/Volumes/a/b/c/w",
-			PythonModel: &modelPackagePythonModel{EntryFile: "model.py", EntrySource: "x = 1\n", ModelConfig: `{"k":"v"}`, Streamable: &streamable},
-			Environment: modelPackageEnvironment{Runtime: "client.6-gpu", BaseEnvironment: "databricks-ai"},
-		},
-	})
+func TestRegistrationRequestForCommandJSON(t *testing.T) {
+	cfg, err := loadDeployConfigText(t, commandDeployConfig+"mlflow_experiment_path: /Shared/qwen\n")
+	require.NoError(t, err)
+	raw, err := json.Marshal(cfg.registrationRequest("k"))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
-		"registered_model": "a.b.c",
+		"registered_model": "main.models.qwen",
 		"idempotency_key": "k",
 		"checkpoint": {
-			"volume_path": "/Volumes/a/b/c/w",
-			"python_model": {"entry_file": "model.py", "entry_source": "x = 1\n", "model_config": "{\"k\":\"v\"}", "streamable": true},
-			"environment": {"runtime": "client.6-gpu", "base_environment": "databricks-ai"}
-		}
+			"volume_path": "/Volumes/main/models/weights/qwen3_8b",
+			"serving_command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
+			"task": "llm/v1/chat",
+			"environment": {"runtime": "client.6-gpu", "dependencies": ["einops==0.8.0"]}
+		},
+		"experiment_path": "/Shared/qwen"
+	}`, string(raw))
+}
+
+func TestRegistrationRequestForDedicatedJSON(t *testing.T) {
+	cfg, err := loadDeployConfigText(t, dedicatedDeployConfig)
+	require.NoError(t, err)
+	raw, err := json.Marshal(cfg.registrationRequest("k"))
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"registered_model": "main.models.qwen",
+		"idempotency_key": "k",
+		"dedicated_checkpoint": {"volume_path": "/Volumes/main/models/weights/qwen3_8b"}
 	}`, string(raw))
 }
 

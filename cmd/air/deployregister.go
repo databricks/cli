@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -45,43 +46,35 @@ const (
 	stagingStateFailed = "FAILED"
 )
 
-// registerModelPackageRequest is the RegisterModelPackageRequest body.
+// registerModelPackageRequest is the RegisterModelPackageRequest body. It sets
+// exactly one of Checkpoint, a checkpoint served by command, and DedicatedCheckpoint,
+// a checkpoint served with dedicated inference.
 type registerModelPackageRequest struct {
-	RegisteredModel    string                  `json:"registered_model"`
-	IdempotencyKey     string                  `json:"idempotency_key"`
-	Checkpoint         *modelPackageCheckpoint `json:"checkpoint,omitempty"`
-	ExperimentPath     string                  `json:"experiment_path,omitempty"`
-	RetryFailedStaging bool                    `json:"retry_failed_staging,omitempty"`
+	RegisteredModel     string                  `json:"registered_model"`
+	IdempotencyKey      string                  `json:"idempotency_key"`
+	Checkpoint          *modelPackageCheckpoint `json:"checkpoint,omitempty"`
+	DedicatedCheckpoint *dedicatedCheckpoint    `json:"dedicated_checkpoint,omitempty"`
+	ExperimentPath      string                  `json:"experiment_path,omitempty"`
+	RetryFailedStaging  bool                    `json:"retry_failed_staging,omitempty"`
 }
 
-// modelPackageCheckpoint is a checkpoint's weights in a volume and what serves
-// them: exactly one of ServingCommand and PythonModel is set.
+// modelPackageCheckpoint is a checkpoint's weights in a volume and the command that
+// serves them.
 type modelPackageCheckpoint struct {
-	VolumePath     string                   `json:"volume_path"`
-	ServingCommand string                   `json:"serving_command,omitempty"`
-	PythonModel    *modelPackagePythonModel `json:"python_model,omitempty"`
-	Task           string                   `json:"task,omitempty"`
-	Environment    modelPackageEnvironment  `json:"environment"`
+	VolumePath     string                  `json:"volume_path"`
+	ServingCommand string                  `json:"serving_command"`
+	Task           string                  `json:"task"`
+	Environment    modelPackageEnvironment `json:"environment"`
 }
 
-// modelPackagePythonModel is the Python code that serves a checkpoint's weights.
-type modelPackagePythonModel struct {
-	EntryFile   string             `json:"entry_file"`
-	EntrySource string             `json:"entry_source"`
-	Files       []modelPackageFile `json:"files,omitempty"`
-	ModelConfig string             `json:"model_config,omitempty"`
-	Streamable  *bool              `json:"streamable,omitempty"`
+// dedicatedCheckpoint is a checkpoint's weights in a volume, served with dedicated
+// inference.
+type dedicatedCheckpoint struct {
+	VolumePath string `json:"volume_path"`
 }
 
 // baseEnvironmentDatabricksAI names the Databricks AI environment to the server.
 const baseEnvironmentDatabricksAI = "databricks-ai"
-
-// modelPackageFile is a source file the entry file imports, by path relative to
-// code_source.root_path.
-type modelPackageFile struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
-}
 
 type modelPackageEnvironment struct {
 	Runtime         string   `json:"runtime"`
@@ -163,9 +156,7 @@ func (e *finalizeError) Error() string { return e.err.Error() }
 func (e *finalizeError) Unwrap() error { return e.err }
 
 // registrationRequest builds the request that registers cfg's checkpoint under key.
-// code is the collected code of model.entry, and is nil when a command serves the
-// checkpoint.
-func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonModel) (registerModelPackageRequest, error) {
+func (c *deployConfig) registrationRequest(key string) registerModelPackageRequest {
 	req := registerModelPackageRequest{
 		RegisteredModel: c.RegisteredModel,
 		IdempotencyKey:  key,
@@ -173,29 +164,33 @@ func (c *deployConfig) registrationRequest(key string, code *modelPackagePythonM
 	if c.MLflowExperimentPath != nil {
 		req.ExperimentPath = *c.MLflowExperimentPath
 	}
-	checkpoint := &modelPackageCheckpoint{VolumePath: *c.Model.Path, Environment: c.servingEnvironment()}
-	if c.Task != nil {
-		checkpoint.Task = *c.Task
+	if c.variant() == variantDedicated {
+		req.DedicatedCheckpoint = &dedicatedCheckpoint{VolumePath: *c.Checkpoint}
+		return req
 	}
-	if c.Command != nil {
-		checkpoint.ServingCommand = *c.Command
-	} else {
-		checkpoint.PythonModel = &modelPackagePythonModel{
-			EntryFile:   code.EntryFile,
-			EntrySource: code.EntrySource,
-			Files:       code.Files,
-			Streamable:  c.Model.Streamable,
-		}
-		if c.Model.ModelConfig != nil {
-			raw, err := modelConfigJSON(c.Model.ModelConfig)
-			if err != nil {
-				return registerModelPackageRequest{}, err
-			}
-			checkpoint.PythonModel.ModelConfig = raw
-		}
+	req.Checkpoint = &modelPackageCheckpoint{
+		VolumePath:     *c.Checkpoint,
+		ServingCommand: *c.Command,
+		Task:           *c.Task,
+		Environment:    c.servingEnvironment(),
 	}
-	req.Checkpoint = checkpoint
-	return req, nil
+	return req
+}
+
+// servingEnvironment is the environment a command's checkpoint is registered with:
+// its runtime, dependencies and base environment. A command is served on
+// accelerators, so the runtime is the GPU one. The version was validated when the
+// config loaded.
+func (c *deployConfig) servingEnvironment() modelPackageEnvironment {
+	version, ai, _ := c.Environment.runtimeVersion()
+	environment := modelPackageEnvironment{
+		Runtime:      "client." + strconv.Itoa(version) + "-gpu",
+		Dependencies: c.Environment.Dependencies,
+	}
+	if ai {
+		environment.BaseEnvironment = baseEnvironmentDatabricksAI
+	}
+	return environment
 }
 
 // registerAndFinalize registers req's version and makes it ready to serve,
