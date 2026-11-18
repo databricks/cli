@@ -93,8 +93,8 @@ func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string,
 func (r *ReplacementsContext) appendLiteral(old, new string, order int) {
 	// Transform the input strings such that they can be used as literal strings in regular expressions.
 	pattern := regexp.QuoteMeta(old)
-	// A short numeric id (Litebox allocates two-digit ones) would otherwise also match inside
-	// UUIDs, timestamps and ports and cut them up.
+	// A short numeric id (Litebox allocates two-digit ones) would otherwise also match inside a
+	// longer alphanumeric run, such as a UUID segment, and cut it up.
 	if isAllDigits(old) {
 		pattern = `\b` + pattern + `\b`
 	}

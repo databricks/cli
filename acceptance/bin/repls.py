@@ -29,9 +29,15 @@ def read_entries():
 
 
 def literal_pattern(value):
-    """Mirror appendLiteral in libs/testdiff: a short numeric id must not match inside UUIDs."""
+    r"""Mirror appendLiteral in libs/testdiff: a short numeric id must not match inside UUIDs.
+
+    >>> literal_pattern("21")
+    '\\b21\\b'
+    >>> literal_pattern("a.1")
+    'a\\.1'
+    """
     pattern = re.escape(value)
-    return rf"\b{pattern}\b" if value.isdigit() else pattern
+    return rf"\b{pattern}\b" if re.fullmatch("[0-9]+", value) else pattern
 
 
 def read_repls():
