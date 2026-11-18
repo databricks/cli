@@ -1,0 +1,1 @@
+* `databricks fs cp -r` retries a temporary error (HTTP 408, 429, 5xx, or a network error) when listing a source directory or creating a target one, for up to about 5 minutes, instead of stopping the copy. ([#7787](https://github.com/databricks/cli/pull/7787))

@@ -1,0 +1,8 @@
+# A 500 on creating a target directory is retried in place, and the copy
+# succeeds.
+fault.py "PUT /api/2.0/fs/directories/**" 500 1 1
+
+trace cp_r localdir ${TARGET} --concurrency 2
+
+title "The PUT of dst/sub is sent twice"
+trace print_requests.py --summary --sort //api/2.0/fs/directories/

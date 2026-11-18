@@ -844,3 +844,138 @@ func TestProbeBackoffFromEnv(t *testing.T) {
 	assert.Equal(t, 100*time.Millisecond, r.probeBackoffMax)
 	assert.Equal(t, 100*time.Millisecond, r.probeBackoffMin, "a lower maximum lowers the minimum")
 }
+
+func TestRecursiveCopyWalkRetry(t *testing.T) {
+	unavailable := apiError(503, nil, "")
+	sec := func(n ...int) []time.Duration {
+		var out []time.Duration
+		for _, v := range n {
+			out = append(out, time.Duration(v)*time.Second)
+		}
+		return out
+	}
+	tests := []struct {
+		name       string
+		files      []string
+		listDir    string
+		readDir    func(attempt int) error
+		mkdir      func(p string, attempt int) error
+		write      func(clock *fakeClock, p string, attempt int) error
+		wantErr    error
+		wantStderr string
+		wantSleeps []time.Duration
+		wantLog    string
+	}{
+		{
+			name: "a Mkdir 500 is retried in place",
+			mkdir: func(p string, attempt int) error {
+				if p == "dst/sub" && attempt <= 2 {
+					return apiError(500, nil, "")
+				}
+				return nil
+			},
+			wantStderr: "Copied 2 files.\n",
+			wantSleeps: sec(2, 4),
+			wantLog:    "fs cp: retrying create directory dst/sub in 2s after: HTTP 500 Internal Server Error",
+		},
+		{
+			// The listing recovers after 4m30s of retries, then b.txt takes a
+			// minute and fails once. Its retry still runs, because the
+			// recovered listing counts as progress.
+			name:  "a listing recovering after a long retry leaves the files their stall timeout",
+			files: []string{"sub/b.txt"},
+			readDir: func(attempt int) error {
+				if attempt <= 12 {
+					return unavailable
+				}
+				return nil
+			},
+			write: func(clock *fakeClock, p string, attempt int) error {
+				if p != "dst/sub/b.txt" {
+					return nil
+				}
+				clock.Advance(time.Minute)
+				if attempt == 1 {
+					return unavailable
+				}
+				return nil
+			},
+			wantStderr: "Copied 1 file.\n",
+			wantSleeps: sec(2, 4, 8, 16, 30, 30, 30, 30, 30, 30, 30, 30, 2),
+			wantLog:    "fs cp: retrying list src/sub in 2s after: HTTP 503 Service Unavailable",
+		},
+		{
+			// The backoff is capped at 30s, and the retries add up to the
+			// stall timeout.
+			name:       "a listing failing for the stall timeout stops the copy",
+			listDir:    "src",
+			readDir:    func(int) error { return unavailable },
+			wantErr:    unavailable,
+			wantStderr: "Copy incomplete: 0 copied, 0 skipped (already existed), 0 failed, at least 0 not attempted.\nStopped early because of the error shown below.\n",
+			wantSleeps: sec(2, 4, 8, 16, 30, 30, 30, 30, 30, 30, 30, 30, 30),
+			wantLog:    "fs cp: retrying list src in 2s after: HTTP 503 Service Unavailable",
+		},
+		{
+			// a.txt fails after 6 minutes, which opens the breaker, and so does
+			// its probe 2s later, so b.txt finds the copy stalled. The walk then
+			// only counts files, and does not retry the failed listing of sub:
+			// the only sleep is the breaker's.
+			name:    "a stalled copy does not retry listings",
+			files:   []string{"a.txt", "b.txt", "sub/c.txt"},
+			readDir: func(int) error { return unavailable },
+			write: func(clock *fakeClock, p string, attempt int) error {
+				clock.Advance(6 * time.Minute)
+				return unavailable
+			},
+			wantErr:    errors.New("copy stopped: files kept failing and none was copied for 5 minutes"),
+			wantStderr: "Copy incomplete: 0 copied, 0 skipped (already existed), 1 failed, at least 1 not attempted.\nStopped: files kept failing and none was copied for 5 minutes, so no new files were started.\nFailed:\n  src/a.txt -> dst/a.txt: HTTP 503 Service Unavailable\n",
+			wantSleeps: sec(2),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			clock := &fakeClock{}
+			files := tt.files
+			if files == nil {
+				files = []string{"a.txt", "sub/b.txt"}
+			}
+			source := &flakySource{FakeFiler: testSource(files...), dir: "src/sub", readDir: func(int) error { return nil }}
+			if tt.listDir != "" {
+				source.dir = tt.listDir
+			}
+			if tt.readDir != nil {
+				source.readDir = tt.readDir
+			}
+			target := newScriptedTarget(t, cancel, func(ctx context.Context, p string, attempt int) error {
+				if tt.write == nil {
+					return nil
+				}
+				return tt.write(clock, p, attempt)
+			})
+			mkdirs := map[string]int{}
+			target.mkdir = func(ctx context.Context, p string) error {
+				mkdirs[p]++
+				if tt.mkdir == nil {
+					return nil
+				}
+				return tt.mkdir(p, mkdirs[p])
+			}
+			c := &copy{recursive: true, concurrency: 1, sourceFiler: source, targetFiler: target}
+			res := runCopy(t, ctx, c, nil, clock.install)
+
+			switch {
+			case tt.wantErr == nil:
+				assert.NoError(t, res.err)
+			case errors.Is(tt.wantErr, unavailable):
+				assert.ErrorIs(t, res.err, unavailable)
+			default:
+				assert.EqualError(t, res.err, tt.wantErr.Error())
+			}
+			assert.Equal(t, tt.wantStderr, res.stderr)
+			assert.Equal(t, tt.wantSleeps, clock.sleeps)
+			assert.Contains(t, res.log, tt.wantLog)
+		})
+	}
+}
