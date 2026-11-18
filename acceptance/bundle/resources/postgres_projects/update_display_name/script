@@ -12,10 +12,12 @@ print_requests() {
     rm -f "$OUT_REQUESTS"
 }
 
+# status.compute_last_active_time is set by the backend only once the project's compute
+# has run, so it appears in remote_state nondeterministically.
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.create.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state.status.compute_last_active_time)' > out.plan.create.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
@@ -27,7 +29,7 @@ trace $CLI postgres get-project "${project_name}" | project_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.no_change.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state.status.compute_last_active_time)' > out.plan.no_change.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
@@ -38,7 +40,7 @@ trace update_file.py databricks.yml "Original Name" "Updated Name"
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.update.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state.status.compute_last_active_time)' > out.plan.update.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
@@ -50,7 +52,7 @@ trace $CLI postgres get-project "${project_name}" | project_fields
 title "Restore display_name to original value"
 trace update_file.py databricks.yml "Updated Name" "Original Name"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.restore.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state.status.compute_last_active_time)' > out.plan.restore.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
