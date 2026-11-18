@@ -51,30 +51,44 @@ func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *
 }
 
 // WaitForDeploymentToComplete waits for active and pending deployments on an app to finish.
+// A deployment that ends in FAILED does not stop the caller: every caller deploys next,
+// and the new deployment replaces the failed one. Starting an app whose source_code_path
+// was set at Create triggers such a deployment, built from the app.yaml in the source
+// rather than from the bundle's inline config.
 func WaitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceClient, app *sdkapps.App) error {
-	if app.ActiveDeployment != nil &&
-		app.ActiveDeployment.Status != nil &&
-		app.ActiveDeployment.Status.State == sdkapps.AppDeploymentStateInProgress {
+	if isInProgress(app.ActiveDeployment) {
 		logProgress(ctx, "Waiting for the active deployment to complete...")
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.ActiveDeployment.DeploymentId, 20*time.Minute, nil)
-		if err != nil {
+		if err := waitForDeployment(ctx, w, app.Name, app.ActiveDeployment.DeploymentId); err != nil {
 			return err
 		}
 		logProgress(ctx, "Active deployment is completed!")
 	}
 
-	if app.PendingDeployment != nil &&
-		app.PendingDeployment.Status != nil &&
-		app.PendingDeployment.Status.State == sdkapps.AppDeploymentStateInProgress {
+	if isInProgress(app.PendingDeployment) {
 		logProgress(ctx, "Waiting for the pending deployment to complete...")
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.PendingDeployment.DeploymentId, 20*time.Minute, nil)
-		if err != nil {
+		if err := waitForDeployment(ctx, w, app.Name, app.PendingDeployment.DeploymentId); err != nil {
 			return err
 		}
 		logProgress(ctx, "Pending deployment is completed!")
 	}
 
 	return nil
+}
+
+func isInProgress(d *sdkapps.AppDeployment) bool {
+	return d != nil && d.Status != nil && d.Status.State == sdkapps.AppDeploymentStateInProgress
+}
+
+func waitForDeployment(ctx context.Context, w *databricks.WorkspaceClient, appName, deploymentID string) error {
+	var last *sdkapps.AppDeployment
+	_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, appName, deploymentID, 20*time.Minute, func(d *sdkapps.AppDeployment) {
+		last = d
+	})
+	if err != nil && last != nil && last.Status != nil && last.Status.State == sdkapps.AppDeploymentStateFailed {
+		logProgress(ctx, fmt.Sprintf("Deployment %s failed (%s), deploying again", deploymentID, last.Status.Message))
+		return nil
+	}
+	return err
 }
 
 // Deploy deploys the app using the provided deployment request.
