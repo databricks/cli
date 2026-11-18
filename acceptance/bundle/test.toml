@@ -12,6 +12,13 @@ Ignore = ["databricks.yml"]
 # The lowest Python version we support. Alternative to "uv run --python 3.10"
 Env.UV_PYTHON = "3.10"
 
+# Recording history is best effort: with recording on, the CLI only warns when a call to the
+# service fails. The plain run makes no such calls, and the goldens are shared, so a warning caused
+# by a dropped connection would fail the DMS=true run. Only transport-level causes are suppressed
+# (the lines go to the test log). An error the service returns is still compared, so a request
+# the service rejects still fails the test.
+SuppressLines.warn_dms_transport = '^Warn: (Failed to (record|complete) deployment history|Could not (enable|record|read) deployment history)\b.*(stream error: stream ID \S+; INTERNAL_ERROR; received from peer|unexpected EOF|context deadline exceeded)$'
+
 # The link a recorded deploy prints, dropped so a test asserts the same output whether or
 # not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and
 # the calls behind it by the bundle/dms tests.
