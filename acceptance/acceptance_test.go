@@ -758,8 +758,8 @@ func isSelectedVariant(changedTests map[string][]string, namedTests selection.Na
 
 // Return a reason to skip the test. Empty string means "don't skip". named is set for a test
 // the last commit message names by its own name (not by a path above it), which runs on cloud
-// even if it is CloudSlow. litebox is set when DMS connection settings were found.
-func getSkipReason(config *internal.TestConfig, configPath string, named, litebox bool) string {
+// even if it is CloudSlow.
+func getSkipReason(config *internal.TestConfig, configPath string, named, liteboxConfigured bool) string {
 	if Forcerun {
 		return ""
 	}
@@ -773,7 +773,7 @@ func getSkipReason(config *internal.TestConfig, configPath string, named, litebo
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
-	if litebox && config.Litebox != nil && !*config.Litebox {
+	if liteboxConfigured && config.Litebox != nil && !*config.Litebox {
 		return "Disabled via Litebox setting in " + configPath
 	}
 
