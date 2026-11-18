@@ -77,6 +77,9 @@ func isInactivityTimeout(err error) bool {
 // unanswered (see bundle/config/transport.go). It replaces the inactivity timeout for a request on
 // a dead connection, with the same uncertainty about whether the server applied it, and the retry
 // goes out on a new connection.
+//
+// We match the message because net/http builds it with errors.New in closeForLostPing and exports
+// no sentinel error or type for it.
 func isConnectionLost(err error) bool {
 	urlErr, ok := errors.AsType[*url.Error](err)
 	return ok && urlErr.Err.Error() == "http2: client connection lost"

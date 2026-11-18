@@ -198,7 +198,7 @@ func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
 		Token:   "token",
 	})
 	require.NoError(t, err)
-	// insecure_skip_verify comes from the profile, so it is only known after the config is resolved.
+	// skip_verify comes from the profile, so it is only known after the config is resolved.
 	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
 		Profile:            "insecure",
 		Host:               "https://insecure.cloud.databricks.test",

@@ -23,9 +23,12 @@ const (
 
 // newHealthCheckedTransport mirrors the SDK's default transport (httpclient.makeDefaultTransport,
 // which is unexported) and adds the HTTP/2 health check. Keep the two in sync on SDK upgrades.
+// experimental/ssh/internal/client/releases.go (newHTTP11Transport) is another hand copy of the
+// same defaults, HTTP/1.1-only; check it too.
 //
-// Only the bundle workspace client uses it. The token-refresh client the SDK builds while
-// resolving the config still uses the SDK default.
+// The bundle workspace client uses it, and so do workspace commands run in a bundle root:
+// cmd/root/auth.go builds their client from the bundle client's config. The token-refresh client
+// the SDK builds while resolving the config still uses the SDK default.
 func newHealthCheckedTransport(insecureSkipVerify bool) *http.Transport {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -46,7 +49,7 @@ func newHealthCheckedTransport(insecureSkipVerify bool) *http.Transport {
 	}
 	if insecureSkipVerify {
 		// The SDK only applies InsecureSkipVerify to its own transport, so we carry it over.
-		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // the user opted in via insecure_skip_verify
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // the user opted in via skip_verify
 	}
 	return t
 }
