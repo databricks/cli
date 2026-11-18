@@ -27,37 +27,37 @@ const permissionsReadLimit = 10
 
 // addPermissionsChanges adds remote permission changes to the permissions field of their
 // resource: per principal where the config declares permissions, and as a whole for deployed
-// resources that declare none. It returns the resources whose permissions could not be read.
-func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundle, plan *deployplan.Plan) ([]SkippedChange, error) {
+// resources that declare none. remote holds the ACLs read by readRemotePermissions.
+func addPermissionsChanges(changes Changes, b *bundle.Bundle, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) error {
 	for resourceKey, entry := range plan.Plan {
 		if err := addDeclaredPermissionsChanges(changes, b, resourceKey, entry); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	remote, skipped := readRemotePermissions(ctx, b, plan)
+	currentUser := currentUserName(b)
 	for resourceKey, permissions := range remote {
 		if entry := plan.Plan[resourceKey+".permissions"]; entry != nil && entry.Action == deployplan.Create {
 			if err := addUndeployedPermissionsChanges(changes, b, resourceKey, permissions); err != nil {
-				return nil, err
+				return err
 			}
 			continue
 		}
 
-		permissions = withoutCurrentUserDefaults(permissions, currentUserName(b), config.GetResourceTypeFromKey(resourceKey))
+		permissions = withoutCurrentUserDefaults(slices.Clone(permissions), currentUser, config.GetResourceTypeFromKey(resourceKey))
 		if len(permissions) == 0 {
 			continue
 		}
 		value, err := normalizeValue(permissions)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
+			return fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
 		}
 		changes.set(resourceKey, "permissions", &ConfigChangeDesc{
 			Operation: OperationAdd,
 			Value:     value,
 		})
 	}
-	return skipped, nil
+	return nil
 }
 
 // addDeclaredPermissionsChanges turns the plan's changes to a resource's permissions into
@@ -94,7 +94,7 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 		}
 
 		fieldPath := "permissions" + path
-		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, b.Config.Presets.NamePrefix)
+		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, "", b.Config.Presets.NamePrefix)
 		if err != nil {
 			return fmt.Errorf("failed to compute config change for path %s: %w", resourceKey+"."+path, err)
 		}
@@ -119,7 +119,7 @@ func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resource
 	// Without an entry for the current user, their default grants would be imported as new principals.
 	currentUser := currentUserName(b)
 	if !slices.ContainsFunc(local.EmbeddedSlice, func(p dresources.StatePermission) bool { return isCurrentUserPermission(p, currentUser) }) {
-		remote = withoutCurrentUserDefaults(remote, currentUser, config.GetResourceTypeFromKey(resourceKey))
+		remote = withoutCurrentUserDefaults(slices.Clone(remote), currentUser, config.GetResourceTypeFromKey(resourceKey))
 	}
 	remoteState := &dresources.PermissionsState{ObjectID: local.ObjectID, EmbeddedSlice: remote}
 	adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]

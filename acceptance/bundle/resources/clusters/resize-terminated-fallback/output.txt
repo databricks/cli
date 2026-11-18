@@ -7,7 +7,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create a plan while cluster is running: should show resize
 
->>> [CLI] bundle plan -o json
+>>> jq -r .plan["resources.clusters.test_cluster"].action plan.json
+resize
 
 === Terminate the cluster before applying the saved plan
 
