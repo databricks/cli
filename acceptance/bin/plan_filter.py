@@ -26,9 +26,9 @@ import nostamp
 
 
 def filter_plan(data, key=None):
-    entries = data.get("plan")
+    entries = data.get("plan") if isinstance(data, dict) else None
     if not isinstance(entries, dict):
-        raise SystemExit(f"plan_filter.py: input has no 'plan' object; keys: {sorted(data)}")
+        raise SystemExit("plan_filter.py: input is not a plan: no 'plan' object")
     for entry in entries.values():
         if isinstance(entry, dict):
             entry.pop("remote_state", None)
@@ -43,7 +43,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("key", nargs="?", help="resource key of the one entry to print, e.g. resources.jobs.foo")
     args = parser.parse_args()
-    data = filter_plan(json.load(sys.stdin), args.key)
+    text = sys.stdin.read()
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as ex:
+        raise SystemExit(f"plan_filter.py: input is not JSON ({ex}): {text[:200]!r}") from None
+    data = filter_plan(data, args.key)
     sys.stdout.write(nostamp.render(data, 2) + "\n")
 
 
