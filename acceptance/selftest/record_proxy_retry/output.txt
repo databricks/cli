@@ -1,0 +1,36 @@
+
+=== A request answered with a transient error is left out of the recorded requests; the CLI's repeat is recorded
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Postgres Project",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj/operations/[UUID]"
+}
+
+=== A request still failing when the CLI gives up is left out as well; the output shows the error
+
+>>> [CLI] current-user me
+Error: Fault injected by test.
+
+Exit code: 1
+
+>>> print_requests.py --get //scim

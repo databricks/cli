@@ -220,25 +220,88 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 }
 
-func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
-	mu := sync.Mutex{}
+// requestRecorder appends each request to out.requests.txt in outputDir as it arrives.
+type requestRecorder struct {
+	t              *testing.T
+	includeHeaders []string
+	outputDir      string
 
-	return func(request *testserver.Request) {
-		mu.Lock()
-		defer mu.Unlock()
+	mu sync.Mutex
+	// entries holds what was written for requests still waiting for a response; nil unless
+	// dropRetried is used.
+	entries map[*testserver.Request]string
+}
 
-		req := getLoggedRequest(request, includeHeaders)
-		reqJson, err := json.MarshalIndent(req, "", "  ")
-		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
-
-		requestsPath := filepath.Join(outputDir, "out.requests.txt")
-		f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-		assert.NoError(t, err)
-		defer f.Close()
-
-		_, err = f.WriteString(string(reqJson) + "\n")
-		assert.NoError(t, err)
+func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
+	r := &requestRecorder{
+		t:              t,
+		includeHeaders: includeHeaders,
+		outputDir:      outputDir,
 	}
+	if dropRetried {
+		r.entries = map[*testserver.Request]string{}
+	}
+	return r
+}
+
+func (r *requestRecorder) path() string {
+	return filepath.Join(r.outputDir, "out.requests.txt")
+}
+
+func (r *requestRecorder) record(request *testserver.Request) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	req := getLoggedRequest(request, r.includeHeaders)
+	reqJson, err := json.MarshalIndent(req, "", "  ")
+	assert.NoErrorf(r.t, err, "Failed to json-encode: %#v", req)
+	entry := string(reqJson) + "\n"
+
+	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	assert.NoError(r.t, err)
+	defer f.Close()
+
+	_, err = f.WriteString(entry)
+	assert.NoError(r.t, err)
+	if r.entries != nil {
+		r.entries[request] = entry
+	}
+}
+
+// isRetriedStatus reports whether the CLI retries a request answered with status (see
+// libs/retry and the SDK's own retries).
+func isRetriedStatus(status int) bool {
+	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
+}
+
+// dropRetried removes a request answered with a transient error from out.requests.txt. A real
+// workspace answers with such errors now and then; the CLI repeats the request and the repeat is
+// recorded, so dropping the failed attempt keeps the goldens stable. Only the proxy uses it: the
+// testserver answers with an error only when a test injects one, and its goldens show that.
+func (r *requestRecorder) dropRetried(request *testserver.Request, response *testserver.EncodedResponse) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	entry, ok := r.entries[request]
+	delete(r.entries, request)
+	if !ok || !isRetriedStatus(response.StatusCode) {
+		return
+	}
+
+	data, err := os.ReadFile(r.path())
+	if errors.Is(err, os.ErrNotExist) {
+		// The script removed the file after the request was sent.
+		return
+	}
+	require.NoError(r.t, err)
+
+	i := strings.LastIndex(string(data), entry)
+	if i < 0 {
+		return
+	}
+	data = append(data[:i:i], data[i+len(entry):]...)
+	require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
+	r.t.Logf("Dropped from out.requests.txt after %d response: %s %s", response.StatusCode, request.Method, request.URL.Path)
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
@@ -268,7 +331,7 @@ func startLocalServer(t *testing.T,
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		s.RequestCallback = newRequestRecorder(t, includeHeaders, outputDir, false).record
 	}
 
 	// Log API responses if the -logrequests flag is set.
@@ -322,14 +385,26 @@ func startProxyServer(t *testing.T,
 ) string {
 	s := testproxy.New(t, upstream)
 
+	var responseCallbacks []func(request *testserver.Request, response *testserver.EncodedResponse)
+
 	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		recorder := newRequestRecorder(t, includeHeaders, outputDir, true)
+		s.RequestCallback = recorder.record
+		responseCallbacks = append(responseCallbacks, recorder.dropRetried)
 	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = logResponseCallback(t)
+		responseCallbacks = append(responseCallbacks, logResponseCallback(t))
+	}
+
+	if len(responseCallbacks) > 0 {
+		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			for _, callback := range responseCallbacks {
+				callback(request, response)
+			}
+		}
 	}
 
 	return s.URL
