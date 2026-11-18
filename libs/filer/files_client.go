@@ -239,24 +239,6 @@ func newTransferClient(n int) *http.Client {
 	return &http.Client{Transport: transport}
 }
 
-// headersTransport applies a config.Config.Headers hook to each request.
-type headersTransport struct {
-	base    http.RoundTripper
-	headers func(*http.Request) error
-}
-
-func (t headersTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	if t.headers == nil {
-		return t.base.RoundTrip(r)
-	}
-	// A RoundTripper must not modify the caller's request.
-	r = r.Clone(r.Context())
-	if err := t.headers(r); err != nil {
-		return nil, err
-	}
-	return t.base.RoundTrip(r)
-}
-
 // newFilesAPIClient builds the files/v2 client from the CLI's already resolved
 // config, reusing its auth instead of re-reading a profile. cfg is passed by
 // pointer because config.Config embeds a sync.Mutex and must not be copied.
@@ -266,9 +248,6 @@ func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, 
 		client.WithCredentials(configCredentials{cfg: cfg}),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
-		// files/v2 doesn't call cfg.Headers, so apply it in the transport.
-		// http.DefaultTransport is what files/v2 uses by default.
-		client.WithHTTPClient(&http.Client{Transport: headersTransport{base: http.DefaultTransport, headers: cfg.Headers}}),
 	}
 	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
 	// "none" sentinel means "no workspace ID", so it is not forwarded.

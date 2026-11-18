@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +18,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/stretchr/testify/assert"
@@ -338,52 +336,4 @@ func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {
 	err := f.deleteFile(ctx, "hello")
 	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
 	assert.Equal(t, filesMaxRetries+1, requests)
-}
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-	return f(r)
-}
-
-func TestHeadersTransport(t *testing.T) {
-	tests := []struct {
-		name    string
-		headers func(*http.Request) error
-		want    string
-	}{
-		{"no hook", nil, ""},
-		{"hook sets header", config.StaticHeaders(map[string]string{"X-Test": "1"}), "1"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var sent *http.Request
-			base := roundTripFunc(func(r *http.Request) (*http.Response, error) {
-				sent = r
-				return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
-			})
-			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://example.test/api/2.0/fs/files", nil)
-			require.NoError(t, err)
-
-			resp, err := headersTransport{base: base, headers: tt.headers}.RoundTrip(req)
-			require.NoError(t, err)
-			resp.Body.Close()
-
-			assert.Equal(t, tt.want, sent.Header.Get("X-Test"))
-			assert.Empty(t, req.Header.Values("X-Test"), "caller's request must not be modified")
-		})
-	}
-}
-
-func TestHeadersTransportReturnsHookError(t *testing.T) {
-	base := roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		t.Fatal("base transport must not be called")
-		return nil, nil
-	})
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://example.test/api", nil)
-	require.NoError(t, err)
-
-	resp, err := headersTransport{base: base, headers: func(*http.Request) error { return errors.New("boom") }}.RoundTrip(req) //nolint:bodyclose // no response on error
-	assert.Nil(t, resp)
-	assert.EqualError(t, err, "boom")
 }

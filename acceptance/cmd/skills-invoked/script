@@ -1,32 +1,26 @@
-title "Env var sends the header on a workspace GET"
-DATABRICKS_SKILLS_INVOKED=databricks-core,databricks:databricks-jobs trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me
+# Experimental skill-usage tracking: DATABRICKS_SKILLS_INVOKED adds skill/<name> pairs to the user agent.
+# Only the pairs are asserted; the rest of the user agent varies by machine.
 
-title "Env var sends the header on a bundle-free GET"
-DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI clusters list > /dev/null
-trace print_requests.py --get //clusters/list
+title "Env var adds the skills to the user agent on a workspace GET"
+DATABRICKS_SKILLS_INVOKED=databricks-core,databricks-jobs trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-core skill/databricks-jobs" > /dev/null
 
-title "Env var sends the header on databricks api"
+title "Env var adds the skills on databricks api"
 DATABRICKS_SKILLS_INVOKED=databricks-core MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.1/clusters/list > /dev/null
-trace print_requests.py --get //clusters/list
+trace print_requests.py --get //clusters/list | contains.py " skill/databricks-core" > /dev/null
 
-title "Env var sends the header on the files API used by fs"
-trace $CLI fs mkdir dbfs:/Volumes/main/default/vol
-DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI fs ls dbfs:/Volumes/main/default/vol > /dev/null
-trace print_requests.py --get //fs/directories
-
-title "Env var sends the header from bundle commands"
-DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI bundle validate > /dev/null
-trace print_requests.py --get //scim/v2/Me
+title "Env var adds the skills from bundle commands"
+DATABRICKS_SKILLS_INVOKED=databricks-dabs trace $CLI bundle validate > /dev/null
+trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-dabs" > /dev/null
 
 title "Invalid entries are dropped and the rest is normalized"
 DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databricks:databricks-jobs ' trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me
+trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!bad" "!databricks:" > /dev/null
 
-title "No header when unset"
+title "No skills when unset"
 trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py "!X-Databricks-Skills-Invoked"
+trace print_requests.py --get //scim/v2/Me | contains.py "!skill/" > /dev/null
 
-title "No header when telemetry is disabled"
+title "No skills when telemetry is disabled"
 DATABRICKS_SKILLS_INVOKED=databricks-core DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py "!X-Databricks-Skills-Invoked"
+trace print_requests.py --get //scim/v2/Me | contains.py "!skill/" > /dev/null

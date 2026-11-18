@@ -293,8 +293,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// from the host shell would move the venv the localenv tests expect.
 	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
 
-	// Agent skills export DATABRICKS_SKILLS_INVOKED, so a host value would add
-	// the X-Databricks-Skills-Invoked header to recorded requests.
+	// Agent skills set DATABRICKS_SKILLS_INVOKED (experimental skill tracking),
+	// so a host value would add skill/ pairs to recorded user agents.
 	os.Unsetenv("DATABRICKS_SKILLS_INVOKED") //nolint:usetesting // t.Setenv cannot unset
 
 	if !requirePrerequisites(t) {

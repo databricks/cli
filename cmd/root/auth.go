@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/skillsinvoked"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -175,9 +174,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	pcfg := &config.Config{Profile: profile}
-	skillsinvoked.Apply(pcfg)
-	a, err = databricks.NewAccountClient((*databricks.Config)(pcfg))
+	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -242,7 +239,6 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
-	skillsinvoked.Apply(cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -360,9 +356,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	pcfg := &config.Config{Profile: profile}
-	skillsinvoked.Apply(pcfg)
-	w, err = databricks.NewWorkspaceClient((*databricks.Config)(pcfg))
+	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -378,7 +372,6 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
-	skillsinvoked.Apply(cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
