@@ -6,13 +6,13 @@ trace $CLI feature-engineering create-feature-spec --json "{
   \"features\": [{\"feature_lookup\": {\"table\": \"$SCHEMA_FULL_NAME.user_features\", \"lookup_keys\": [\"user_id\"], \"feature_names\": [\"age\"]}}]
 }" | jq '{name}'
 
-trace $CLI bundle deployment bind spec1 $SCHEMA_FULL_NAME.boundspec --auto-approve
+trace $CLI bundle deployment bind spec1 $SCHEMA_FULL_NAME.boundspec --auto-approve &> out.bind.$OUTPUT_MODE.txt
 trace $CLI bundle summary
 
 title "The bound feature spec matches the config, so there is nothing to change"
 trace $CLI bundle plan
 
-trace $CLI bundle deployment unbind spec1
+trace $CLI bundle deployment unbind spec1 &> out.unbind.$OUTPUT_MODE.txt
 trace $CLI bundle summary
 
 trace $CLI feature-engineering delete-feature-spec $SCHEMA_FULL_NAME.boundspec

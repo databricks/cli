@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+
+title "A version creation failure does not prevent binding"
+trace fault.py "POST /api/2.0/bundle/deployments/*/versions" 400 0 1
+trace $CLI bundle deployment bind create_failed "$job_id" --auto-approve
+rm -rf .databricks
+
+title "An operation recording failure does not prevent binding"
+trace fault.py "PATCH /api/2.0/bundle/**" 400 0 1
+trace $CLI bundle deployment bind record_failed "$job_id" --auto-approve
+rm -rf .databricks
+
+title "A version completion failure does not prevent binding"
+trace fault.py "POST /api/2.0/bundle/deployments/*/versions/*/complete" 400 0 1
+trace $CLI bundle deployment bind complete_failed "$job_id" --auto-approve
+
+title "All bindings survived the remote state round trips"
+trace jq '.state | map_values(.__id__)' .databricks/bundle/default/resources.json
+trace $CLI jobs get "$job_id" | jq '{job_id, name: .settings.name}'
+trace print_requests.py --dms //versions --oneline
+
+
+title "A remote state upload failure fails the bind version"
+trace fault.py "POST /api/2.0/workspace-files/import-file/**resources.json" 400 0 1
+trace musterr $CLI bundle deployment bind upload_failed "$job_id" --auto-approve
+trace print_requests.py --dms //versions --oneline
+
+rm -rf .databricks
+title "Remote state still contains only the successful bindings"
+trace $CLI bundle summary -o json | jq '.resources.jobs | map_values(.id // null)'
+rm -f "$OUT_REQUESTS"
