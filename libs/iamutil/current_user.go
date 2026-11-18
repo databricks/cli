@@ -43,12 +43,17 @@ type currentPrincipal struct {
 	group bool
 }
 
-// GetCurrentUser returns the authorizing principal of the current request as an
-// iam.User, read from GET /api/2.0/identity/me, which also resolves an assumed group.
-// Groups, Roles and Entitlements are not set; CurrentUserGroups reads the groups.
+// GetCurrentUser returns the current user, retrying on HTTP 500 responses. It reads the
+// authorizing principal of the current request from GET /api/2.0/identity/me, which also
+// resolves an assumed group. Groups, Roles and Entitlements are not set; CurrentUserGroups
+// reads the groups.
 //
-// The call retries HTTP 500 responses for up to meRetryTimeout. It runs at the
-// start of most CLI commands, and an unretried 500 would fail the whole command.
+// identity/me is a read-only endpoint, so retrying any 500 is safe. The Databricks SCIM
+// API intermittently returns "500 TEMPORARILY_UNAVAILABLE" (a condition it otherwise
+// serves as 503), and the SDK retries 503 but not 500 — see the "some API's recommend
+// retries on HTTP 500, but we'll add that later" comment on (*apierr.APIError).IsRetriable
+// in databricks-sdk-go/apierr. This call runs at the start of every bundle command, so an
+// unretried 500 fails the whole command; we close that gap here.
 func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
 	p, err := pollIdentityMe(ctx, w)
 	if err != nil {
@@ -118,15 +123,22 @@ func getIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*current
 }
 
 // meToUser maps a principal from identity/me onto an iam.User, setting Id, UserName,
-// DisplayName, Active, ExternalId and Emails. A service principal's UserName is its
-// application ID, not its name.
+// Name, DisplayName, Active, ExternalId and Emails. identity/me returns the given and
+// family names separately, so Name is taken as is (nil when both are empty) and
+// DisplayName joins them. A service principal's UserName is its application ID, not its
+// name.
 func meToUser(me *identityMe) (*iam.User, error) {
 	switch {
 	case me.User != nil:
 		u := me.User
+		var name *iam.Name
+		if u.FullName.GivenName != "" || u.FullName.FamilyName != "" {
+			name = &iam.Name{GivenName: u.FullName.GivenName, FamilyName: u.FullName.FamilyName}
+		}
 		return &iam.User{
 			Id:          u.UserId,
 			UserName:    u.Username,
+			Name:        name,
 			DisplayName: strings.TrimSpace(u.FullName.GivenName + " " + u.FullName.FamilyName),
 			Active:      u.AccountUserStatus == iamv2.StateActive,
 			ExternalId:  u.ExternalId,

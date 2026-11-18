@@ -46,6 +46,7 @@ func TestMeToUser(t *testing.T) {
 			want: &iam.User{
 				Id:          "1000012345",
 				UserName:    "alice@example.com",
+				Name:        &iam.Name{GivenName: "Alice", FamilyName: "Smith"},
 				DisplayName: "Alice Smith",
 				Active:      true,
 				ExternalId:  "ext-1",
@@ -248,3 +249,4 @@ func TestGetUserPrincipalReturnsUser(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test-user", user.UserName)
 }
+

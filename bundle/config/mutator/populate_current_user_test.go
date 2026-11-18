@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
@@ -68,4 +69,20 @@ func TestPopulateCurrentUserWarnsWhenGroupsFail(t *testing.T) {
 	assert.Contains(t, diags[0].Summary, "Could not read the groups of the current user")
 	assert.Nil(t, b.Config.Workspace.CurrentUser.Groups)
 	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
+}
+
+// An assumed group is not a user: bundle commands that deploy as the current user fail
+// early with a clear error rather than using the group name as a user name.
+func TestPopulateCurrentUserRejectsGroupPrincipal(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return map[string]any{"group": map[string]any{"group_id": "3000033333", "group_name": "data-engineers"}}
+	})
+	b := newPopulateBundle(t, server)
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, iamutil.ErrGroupPrincipal.Error(), diags[0].Summary)
+	assert.Nil(t, b.Config.Workspace.CurrentUser)
 }
