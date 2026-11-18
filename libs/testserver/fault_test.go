@@ -140,3 +140,47 @@ func TestServerFaultAfterHandlerKeepsTheHandlersEffect(t *testing.T) {
 
 	assert.Equal(t, int32(1), calls.Load())
 }
+
+func TestServerFaultHeaders(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("PUT", "/upload", func(req testserver.Request) any {
+		return map[string]string{}
+	})
+
+	body, err := json.Marshal(map[string]any{
+		"pattern":     "PUT /upload",
+		"status_code": 503,
+		"body":        `{"error_code": "INJECTED", "message": "Fault injected by test."}`,
+		"offset":      0,
+		"times":       1,
+		"headers":     map[string]string{"Retry-After": "3"},
+	})
+	require.NoError(t, err)
+	setReq, err := http.NewRequest(http.MethodPost, server.URL+"/__testserver/fault", bytes.NewReader(body))
+	require.NoError(t, err)
+	setReq.Header.Set("Authorization", "Bearer dbapi-fault-test")
+	setResp, err := http.DefaultClient.Do(setReq)
+	require.NoError(t, err)
+	require.Equal(t, 200, setResp.StatusCode)
+	setResp.Body.Close()
+
+	put := func() (int, http.Header) {
+		req, err := http.NewRequest(http.MethodPut, server.URL+"/upload", bytes.NewReader([]byte("{}")))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer dbapi-fault-test")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		return resp.StatusCode, resp.Header
+	}
+
+	status, header := put()
+	assert.Equal(t, 503, status)
+	assert.Equal(t, "3", header.Get("Retry-After"))
+	assert.Equal(t, "application/json", header.Get("Content-Type"))
+
+	// The header belongs to the fault response only.
+	status, header = put()
+	assert.Equal(t, 200, status)
+	assert.Empty(t, header.Get("Retry-After"))
+}

@@ -28,6 +28,9 @@ type FaultRule struct {
 	// every upload through the same method+path, so the only way to target a
 	// single file's upload is by matching its multipart "path" form field.
 	bodyContains string
+
+	// headers are added to the fault response, e.g. Retry-After.
+	headers map[string]string
 }
 
 // FaultRules holds the active fault injection rules for a test server.
@@ -43,15 +46,10 @@ func NewFaultRules() *FaultRules {
 
 // Set registers or replaces a fault rule for the given token and pattern.
 func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int, bodyContains string) {
-	fr.set(token, pattern, statusCode, body, offset, times, false, bodyContains)
+	fr.set(token, pattern, statusCode, body, offset, times, false, bodyContains, nil)
 }
 
-// SetAfterHandler is like Set, but the handler runs first so its effect is kept.
-func (fr *FaultRules) SetAfterHandler(token, pattern string, statusCode int, body string, offset, times int, bodyContains string) {
-	fr.set(token, pattern, statusCode, body, offset, times, true, bodyContains)
-}
-
-func (fr *FaultRules) set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool, bodyContains string) {
+func (fr *FaultRules) set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool, bodyContains string, headers map[string]string) {
 	// Escape regex characters so the pattern starts as literal text.
 	escapedPattern := regexp.QuoteMeta(pattern)
 
@@ -74,6 +72,7 @@ func (fr *FaultRules) set(token, pattern string, statusCode int, body string, of
 		times:        times,
 		pattern:      matcher,
 		bodyContains: bodyContains,
+		headers:      headers,
 	}
 }
 
@@ -122,22 +121,19 @@ func (fr *FaultRules) Check(method, path, token string, body []byte) *FaultRule 
 func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 	return func(req Request) any {
 		var body struct {
-			Pattern      string `json:"pattern"`
-			StatusCode   int    `json:"status_code"`
-			Body         string `json:"body"`
-			Offset       int    `json:"offset"`
-			Times        int    `json:"times"`
-			AfterHandler bool   `json:"after_handler"`
-			BodyContains string `json:"body_contains"`
+			Pattern      string            `json:"pattern"`
+			StatusCode   int               `json:"status_code"`
+			Body         string            `json:"body"`
+			Offset       int               `json:"offset"`
+			Times        int               `json:"times"`
+			AfterHandler bool              `json:"after_handler"`
+			BodyContains string            `json:"body_contains"`
+			Headers      map[string]string `json:"headers"`
 		}
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
 		}
-		if body.AfterHandler {
-			fr.SetAfterHandler(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
-		} else {
-			fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.BodyContains)
-		}
+		fr.set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.AfterHandler, body.BodyContains, body.Headers)
 		return Response{StatusCode: 200}
 	}
 }
