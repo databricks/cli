@@ -37,7 +37,7 @@ func newProfileCmd() *cobra.Command {
 			} {
 				r, color := cmdio.NewRenderer(ctx, s.out)
 				fmt.Fprintf(w, "%s: supports_color=%t profile=%s dark_background=%t\n",
-					s.name, color, r.ColorProfile().Name(), r.HasDarkBackground())
+					s.name, color, r.Profile(), cmdio.HasDarkBackground())
 			}
 			fmt.Fprintln(w, "env:")
 			for _, name := range profileEnvVars {

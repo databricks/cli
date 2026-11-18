@@ -5,22 +5,23 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
+
+	"github.com/databricks/cli/libs/cmdio"
 )
 
 // DuBois dark-first palette. Neutrals (n7..n12) carry structure; the state
 // colors are reserved for the Status column.
-const (
-	colN7      = lipgloss.Color("#69696B") // gutter / dim
-	colN9      = lipgloss.Color("#ABABAE") // secondary values
-	colN11     = lipgloss.Color("#E0E0E3") // body
-	colN12     = lipgloss.Color("#F1F1F4") // selected text
-	colOverlay = lipgloss.Color("#1F1F23") // selected-row fill
-	colRunID   = lipgloss.Color("#B7A8E8") // run id
-	colGreen   = lipgloss.Color("#4CD964") // success
-	colAmber   = lipgloss.Color("#E8B84A") // running / pending
-	colRed     = lipgloss.Color("#EB6B6B") // failed
-	colBlue    = lipgloss.Color("#6CA8F0") // MLflow link
+var (
+	colN7      cmdio.Color = lipgloss.Color("#69696B") // gutter / dim
+	colN9      cmdio.Color = lipgloss.Color("#ABABAE") // secondary values
+	colN11     cmdio.Color = lipgloss.Color("#E0E0E3") // body
+	colN12     cmdio.Color = lipgloss.Color("#F1F1F4") // selected text
+	colOverlay cmdio.Color = lipgloss.Color("#1F1F23") // selected-row fill
+	colRunID   cmdio.Color = lipgloss.Color("#B7A8E8") // run id
+	colGreen   cmdio.Color = lipgloss.Color("#4CD964") // success
+	colAmber   cmdio.Color = lipgloss.Color("#E8B84A") // running / pending
+	colRed     cmdio.Color = lipgloss.Color("#EB6B6B") // failed
+	colBlue    cmdio.Color = lipgloss.Color("#6CA8F0") // MLflow link
 )
 
 // mlflowColWidth is the MLflow column's width in a wide terminal, and the width
@@ -30,10 +31,10 @@ const mlflowColWidth = 22
 // listStyles renders the runs table. The renderer carries the color profile, so
 // styles render plain under --no-color / non-tty.
 type listStyles struct {
-	r *lipgloss.Renderer
+	r *cmdio.Renderer
 }
 
-func newListStyles(r *lipgloss.Renderer) listStyles {
+func newListStyles(r *cmdio.Renderer) listStyles {
 	return listStyles{r: r}
 }
 
@@ -257,7 +258,7 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 	if selected {
 		base = base.Background(colOverlay)
 	}
-	fg := func(c lipgloss.Color) lipgloss.Color {
+	fg := func(c cmdio.Color) cmdio.Color {
 		if selected {
 			return colN12
 		}
@@ -324,7 +325,7 @@ func listRowStatus(r listRow) string {
 // characters (it may come from the server, or from a cache written before this
 // stripping existed), truncated to width, then padded with (background-only)
 // spaces so columns align even when the text is styled or hyperlinked.
-func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipgloss.Color, right, underline bool, link string) string {
+func (s listStyles) cell(base lipgloss.Style, text string, width int, fg cmdio.Color, right, underline bool, link string) string {
 	text = truncate(stripControl(text), width)
 	style := base.Foreground(fg)
 	if underline {
@@ -332,7 +333,7 @@ func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipglos
 	}
 	rendered := style.Render(text)
 	if link != "" {
-		rendered = termenv.Hyperlink(link, rendered)
+		rendered = cmdio.Hyperlink(link, rendered)
 	}
 	gap := max(width-lipgloss.Width(text), 0)
 	padStr := base.Render(strings.Repeat(" ", gap))
@@ -370,7 +371,7 @@ func mlflowLabel(r listRow) string {
 }
 
 // statusColor maps an air run status word to its data color.
-func statusColor(status string) lipgloss.Color {
+func statusColor(status string) cmdio.Color {
 	switch status {
 	case "SUCCESS":
 		return colGreen
