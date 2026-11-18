@@ -45,9 +45,12 @@ type listData struct {
 // human-readable table.
 type listRow struct {
 	RunID string `json:"run_id"`
-	// TaskKey names the AI runtime task the row shows. A job with several AI
-	// runtime tasks has one row per task, all with the same RunID.
-	TaskKey         string  `json:"task_key"`
+	// TaskKey names the AI runtime task the row shows, or is null for a run
+	// without one (as in `air get`). A job with several AI runtime tasks has one
+	// row per task, all with the same RunID; ShowTask marks those rows so the
+	// table names the task.
+	TaskKey         *string `json:"task_key"`
+	ShowTask        bool    `json:"-"`
 	RunName         string  `json:"run_name"`
 	User            string  `json:"user"`
 	Status          string  `json:"status"`
@@ -71,6 +74,25 @@ type listRow struct {
 	RunURL        string `json:"-"`
 	ExperimentURL string `json:"-"`
 	Accelerators  string `json:"-"`
+}
+
+// taskKey returns the AI runtime task key the row shows, or "" for a run
+// without one.
+func (r listRow) taskKey() string {
+	if r.TaskKey == nil {
+		return ""
+	}
+	return *r.TaskKey
+}
+
+// runIDLabel is the Run ID cell: the run ID, followed by the task key when the
+// run has several AI runtime tasks, so each of its rows names the task to pass
+// to `air get --task-key`.
+func (r listRow) runIDLabel() string {
+	if r.ShowTask && r.TaskKey != nil {
+		return r.RunID + " " + *r.TaskKey
+	}
+	return r.RunID
 }
 
 // listedRun pairs a row with its parent run id and task runs, so the MLflow link
@@ -326,7 +348,9 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	var rows []listRow
+	// Start from an empty slice so a list with no matching runs prints
+	// "runs": [] rather than null.
+	rows := make([]listRow, 0, len(groups))
 	for _, g := range groups {
 		rows = append(rows, g...)
 	}

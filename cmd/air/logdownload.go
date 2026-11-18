@@ -29,10 +29,10 @@ func validateNodeIndex(node, numNodes int) error {
 	return fmt.Errorf("invalid --node %d: run has %d node(s), indexed 0 to %d", node, numNodes, numNodes-1)
 }
 
-// resolveNodeCount returns how many nodes a run used, read from its first AI
-// runtime task (see defaultTaskRun).
-func resolveNodeCount(run *jobs.Run) (int, error) {
-	accelType, count := jobCompute(defaultTaskRun(run))
+// resolveNodeCount returns how many nodes the task whose logs are read for the
+// requested retry used (see logTaskRun), so the node indices match the logs.
+func resolveNodeCount(run *jobs.Run, requestedAttempt int) (int, error) {
+	accelType, count := jobCompute(logTaskRun(run, requestedAttempt))
 	if accelType == "" {
 		return 0, fmt.Errorf("run %d has no AI runtime compute config", run.RunId)
 	}
@@ -55,12 +55,27 @@ func resolveNodeCount(run *jobs.Run) (int, error) {
 	return count / perNode, nil
 }
 
+// logTaskRun returns run narrowed to the AI runtime task whose logs `air logs`
+// reads for the requested retry: the task run resolveLogAttempt picks. It falls
+// back to the first AI runtime task (see defaultTaskRun) when that task run is
+// not an AI runtime task or the retry doesn't resolve.
+func logTaskRun(run *jobs.Run, requestedAttempt int) *jobs.Run {
+	if _, taskRunID, err := resolveLogAttempt(run, requestedAttempt); err == nil {
+		for i := range run.Tasks {
+			if t := &run.Tasks[i]; t.RunId == taskRunID && isAirTask(t) {
+				return taskRun(run, t.TaskKey)
+			}
+		}
+	}
+	return defaultTaskRun(run)
+}
+
 // downloadLogs writes each node's logs to <downloadTo>/logs/node_<n>.log and
 // prints a summary. An explicit --node downloads only that node; otherwise all of
 // them. Logs come from MLflow artifacts, since Bricklens only streams. The
 // returned bool is the run's outcome, so the exit code matches the streaming path.
 func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus, run *jobs.Run) (bool, error) {
-	numNodes, err := resolveNodeCount(run)
+	numNodes, err := resolveNodeCount(run, req.attempt)
 	if err != nil {
 		return false, err
 	}

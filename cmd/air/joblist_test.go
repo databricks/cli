@@ -338,14 +338,54 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			want: "RUNNING",
 		},
 		{
-			name:     "a queued task in a running run is waiting for compute",
+			name:     "a pending task in a running run is waiting for compute",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStatePending, ""),
+			},
+			key:  "train",
+			want: "PENDING",
+		},
+		{
+			name:     "a queued task is reported as queued",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 			tasks: []jobs.RunTask{
 				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
 				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateQueued, ""),
 			},
 			key:  "train",
-			want: "PENDING",
+			want: "QUEUED",
+		},
+		{
+			name:     "a task blocked on its upstream task is reported as blocked",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateRunning, ""),
+				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateBlocked, ""),
+			},
+			key:  "train",
+			want: "BLOCKED",
+		},
+		{
+			name:     "a skipped task keeps its state while another branch still runs",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateRunning, ""),
+				finished(notebookTask("prep_eval", 12), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+				finished(aiRuntimeTask("eval", 13, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateSkipped, jobs.RunResultStateUpstreamFailed),
+			},
+			key:  "eval",
+			want: "UPSTREAM_FAILED",
+		},
+		{
+			name:     "the run's only task keeps the run's state",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateTimedout},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+			},
+			key:  "train",
+			want: "TIMEDOUT",
 		},
 		{
 			name:     "a task without a state falls back to the run",
@@ -365,4 +405,71 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			assert.Same(t, tt.runState, run.State, "the source run keeps its state")
 		})
 	}
+}
+
+func TestTaskRunOfTheOnlyTaskKeepsTheRunsStatus(t *testing.T) {
+	// A single-task `air run` submission: the run's termination message carries
+	// the "Task <key> failed with message:" prefix, which must survive.
+	train := finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed)
+	train.Status = &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: "OOM"}}
+	run := &jobs.Run{
+		RunId:     1,
+		StartTime: 100,
+		EndTime:   300,
+		State:     &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
+		Status:    &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: "Task train failed with message: OOM"}},
+		Tasks:     []jobs.RunTask{train},
+	}
+	narrowed := taskRun(run, "train")
+	require.NotNil(t, terminationReason(narrowed))
+	assert.Equal(t, "Task train failed with message: OOM", *terminationReason(narrowed))
+	assert.Equal(t, int64(100), narrowed.StartTime, "the run's timing stands in for a task without its own")
+}
+
+func TestTaskRunOfASkippedTaskHasNoTiming(t *testing.T) {
+	train := finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed)
+	train.StartTime, train.EndTime = 200_000, 260_000
+	eval := finished(aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateSkipped, jobs.RunResultStateUpstreamFailed)
+	run := &jobs.Run{
+		RunId:     1,
+		StartTime: 100_000,
+		EndTime:   300_000,
+		State:     &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
+		Tasks:     []jobs.RunTask{train, eval},
+	}
+
+	skipped := taskRun(run, "eval")
+	assert.Nil(t, startedAt(skipped), "a task that never started reports no start, not the run's")
+	assert.Nil(t, durationSeconds(skipped))
+
+	ran := taskRun(run, "train")
+	require.NotNil(t, durationSeconds(ran))
+	assert.Equal(t, int64(60), *durationSeconds(ran), "train reports its own 60s, not the run's 200s")
+}
+
+func TestRunLevelWaitingStatesAreReportedAsSuch(t *testing.T) {
+	for _, life := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStateQueued, jobs.RunLifeCycleStateBlocked, jobs.RunLifeCycleStateWaitingForRetry,
+	} {
+		t.Run(string(life), func(t *testing.T) {
+			run := &jobs.Run{RunId: 1, State: &jobs.RunState{LifeCycleState: life}, Tasks: []jobs.RunTask{aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)}}
+			assert.False(t, runWaitingForCompute(run))
+			assert.Equal(t, string(life), displayRunStatus(run))
+			assert.NotEqual(t, waitingForComputeStatus, detailedDisplayRunStatus(run, ""))
+		})
+	}
+
+	pending := &jobs.Run{RunId: 1, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}
+	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(pending, ""))
+
+	// The notebook-first DAB shape: train waits on prep, not on compute.
+	blocked := &jobs.Run{
+		RunId: 1,
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{
+			finished(notebookTask("prep", 11), jobs.RunLifeCycleStateRunning, ""),
+			finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateBlocked, ""),
+		},
+	}
+	assert.Equal(t, "BLOCKED", detailedDisplayRunStatus(taskRun(blocked, "train"), ""))
 }

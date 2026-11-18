@@ -291,7 +291,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Run Details"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunDetail(runID, m.rows[m.cursor].TaskKey)
+				return m, m.fetchRunDetail(runID, m.rows[m.cursor].taskKey())
 			}
 		case "L", "l":
 			// Open the logs snapshot pane; the fetch fills it in.
@@ -300,7 +300,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Logs Snapshot"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunLogs(runID, m.rows[m.cursor].TaskKey)
+				return m, m.fetchRunLogs(runID, m.rows[m.cursor].taskKey())
 			}
 		}
 		m.offset = m.clampedOffset()

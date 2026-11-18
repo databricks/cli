@@ -131,11 +131,11 @@ func (s *indexStrategy) hydrate(ids []int64) ([]runGroup, error) {
 		}
 	}
 
-	// Concurrent hydration reorders runs, so re-sort the batch newest-first by
-	// each run's first row, keeping a run's rows together. The ISO start
-	// timestamp sorts lexicographically; a missing time ("") sorts last.
+	// Concurrent hydration reorders runs, so re-sort the batch newest-first,
+	// keeping a run's rows together. The ISO start timestamp sorts
+	// lexicographically; a missing time ("") sorts last.
 	slices.SortStableFunc(groups, func(a, b runGroup) int {
-		return cmp.Compare(rowStartKey(b.entries[0].row), rowStartKey(a.entries[0].row))
+		return cmp.Compare(groupStartKey(b), groupStartKey(a))
 	})
 	return groups, nil
 }
@@ -148,6 +148,18 @@ func (s *indexStrategy) cacheMLflowLinks(entries []listedRun) {
 			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.taskKey, entry.row)
 		}
 	}
+}
+
+// groupStartKey returns the start key of a run's first row that has started: a
+// task that hasn't started or was skipped has none (see taskRun), and shouldn't
+// sort its whole run last.
+func groupStartKey(g runGroup) string {
+	for _, e := range g.entries {
+		if k := rowStartKey(e.row); k != "" {
+			return k
+		}
+	}
+	return ""
 }
 
 // rowStartKey returns a row's ISO start timestamp for ordering, or "" when the

@@ -63,7 +63,7 @@ type cachedRun struct {
 
 func (c cachedRun) toRow() listRow {
 	return listRow{
-		RunID: c.RunID, TaskKey: c.TaskKey, RunName: c.RunName, User: c.User, Status: c.Status,
+		RunID: c.RunID, TaskKey: nilIfEmpty(c.TaskKey), RunName: c.RunName, User: c.User, Status: c.Status,
 		StartedAt: c.StartedAt, IsSweep: c.IsSweep, ExperimentName: c.ExperimentName,
 		DurationSeconds: c.DurationSeconds, AcceleratorType: c.AcceleratorType, NumAccelerators: c.NumAccelerators, DashboardURL: c.DashboardURL, Experiment: c.Experiment,
 		Duration: c.Duration, MLflowURL: c.MLflowURL, MLflowLabel: c.MLflowLabel,
@@ -73,7 +73,7 @@ func (c cachedRun) toRow() listRow {
 
 func cachedRunFromRow(r listRow, tasks []jobs.RunTask, fields filterFields, submitTimeMs int64) cachedRun {
 	return cachedRun{
-		RunID: r.RunID, TaskKey: r.TaskKey, RunName: r.RunName, User: r.User, Status: r.Status,
+		RunID: r.RunID, TaskKey: r.taskKey(), RunName: r.RunName, User: r.User, Status: r.Status,
 		StartedAt: r.StartedAt, IsSweep: r.IsSweep, ExperimentName: r.ExperimentName,
 		DurationSeconds: r.DurationSeconds, AcceleratorType: r.AcceleratorType, NumAccelerators: r.NumAccelerators, DashboardURL: r.DashboardURL, Experiment: r.Experiment,
 		Duration: r.Duration, MLflowURL: r.MLflowURL, MLflowLabel: r.MLflowLabel,

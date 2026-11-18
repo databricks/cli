@@ -176,13 +176,13 @@ func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
 	return t.GenAiComputeTask
 }
 
-// aiRuntimeEnvironment returns the serverless environment an ai_runtime run used,
-// read from the Jobs GetRun response's environments[] entry keyed by
-// aiRuntimeEnvironmentKey: a version (e.g. "4") or, for Databricks AI runtimes, a
-// base environment. The typed SDK Run has no environments field, so the value is
+// aiRuntimeEnvironment returns the serverless environment an ai_runtime task
+// used, read from the Jobs GetRun response's environments[] entry keyed by
+// envKey (see taskEnvironmentKey): a version (e.g. "4") or, for Databricks AI
+// runtimes, a base environment. The typed SDK Run has no environments field, so the value is
 // fetched with a raw request. Best-effort: returns empty strings (logged) on any
 // error or when the run declares no environment.
-func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (version, baseEnvironment string) {
+func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, runID int64, envKey string) (version, baseEnvironment string) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		enrichmentWarnf(ctx, "air get: could not create client to read environment: %v", err)
@@ -205,11 +205,27 @@ func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, ru
 		return "", ""
 	}
 	for _, e := range resp.Environments {
-		if e.EnvironmentKey == aiRuntimeEnvironmentKey {
+		if e.EnvironmentKey == envKey {
 			return e.Spec.EnvironmentVersion, e.Spec.BaseEnvironment
 		}
 	}
 	return "", ""
+}
+
+// taskEnvironmentKey returns the environment key of the run's lead task (the
+// selected AI runtime task once the run is narrowed, see taskRun), unwrapping a
+// foreach sweep to its iterated task. It falls back to aiRuntimeEnvironmentKey,
+// the key `air run` submits, when the task names none.
+func taskEnvironmentKey(run *jobs.Run) string {
+	if t := leadTask(run); t != nil {
+		if t.ForEachTask != nil && t.ForEachTask.Task.EnvironmentKey != "" {
+			return t.ForEachTask.Task.EnvironmentKey
+		}
+		if t.EnvironmentKey != "" {
+			return t.EnvironmentKey
+		}
+	}
+	return aiRuntimeEnvironmentKey
 }
 
 // environmentLabel is the text shown for the Environment cell: the environment

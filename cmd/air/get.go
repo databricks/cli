@@ -449,7 +449,7 @@ func enrichRunDetails(ctx context.Context, w *databricks.WorkspaceClient, run *j
 		raw           []byte
 		mlflowName    string
 	)
-	wg.Go(func() { version, base = aiRuntimeEnvironment(ctx, w, run.RunId) })
+	wg.Go(func() { version, base = aiRuntimeEnvironment(ctx, w, run.RunId, taskEnvironmentKey(run)) })
 	if readConfig {
 		wg.Go(func() { body, raw = resolveConfigYAML(ctx, w, run, data) })
 	}

@@ -113,15 +113,16 @@ func displayRunStatus(run *jobs.Run) string {
 	return status
 }
 
-// runWaitingForCompute reports whether a run has not started training yet: it
-// is pending itself, or running while its lead task waits. A run narrowed to one
-// task (see taskRun) carries that task's state, so the task's waiting states
-// count at run level too.
+// runWaitingForCompute reports whether a run is waiting for accelerator
+// compute: it is pending itself, or running while its lead task waits to start.
+// A run that is queued, blocked on an upstream task or waiting to retry at run
+// level reports that state instead; for a task of a multi-task run, which
+// carries the task's own state (see taskRun), that is the task's.
 func runWaitingForCompute(run *jobs.Run) bool {
 	if run.State == nil || run.State.ResultState != "" {
 		return false
 	}
-	if isWaitingState(run.State.LifeCycleState) {
+	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
 		return true
 	}
 	task := leadTask(run)
@@ -131,7 +132,7 @@ func runWaitingForCompute(run *jobs.Run) bool {
 	return isWaitingState(task.State.LifeCycleState)
 }
 
-// isWaitingState reports whether a run or task lifecycle state means it has not
+// isWaitingState reports whether a task lifecycle state means it has not
 // started running yet.
 func isWaitingState(s jobs.RunLifeCycleState) bool {
 	switch s {

@@ -48,23 +48,23 @@ func TestResolveNodeCount(t *testing.T) {
 		{"GPU_8xB300", 16, 2},
 	}
 	for _, tt := range tests {
-		n, err := resolveNodeCount(airRunWithCompute(tt.accelType, tt.count))
+		n, err := resolveNodeCount(airRunWithCompute(tt.accelType, tt.count), -1)
 		require.NoError(t, err)
 		assert.Equal(t, tt.want, n)
 	}
 
 	// A run with no AI runtime compute errors.
-	_, err := resolveNodeCount(&jobs.Run{RunId: 1})
+	_, err := resolveNodeCount(&jobs.Run{RunId: 1}, -1)
 	require.Error(t, err)
 
 	// A count that isn't a whole number of nodes can't be mapped to node indices,
 	// so it errors rather than truncating to 0.
-	_, err = resolveNodeCount(airRunWithCompute("GPU_8xH100", 4))
+	_, err = resolveNodeCount(airRunWithCompute("GPU_8xH100", 4), -1)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not a multiple of 8")
 
 	// A zero count is reported as such, not as a missing config.
-	_, err = resolveNodeCount(airRunWithCompute("GPU_1xA10", 0))
+	_, err = resolveNodeCount(airRunWithCompute("GPU_1xA10", 0), -1)
 	require.Error(t, err)
 }
 
@@ -513,4 +513,17 @@ func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to download logs from any of 2 node(s)")
 	assert.NotContains(t, stdout.String(), "No logs available")
+}
+
+func TestResolveNodeCountReadsTheTaskTheLogsComeFrom(t *testing.T) {
+	// A 1-node train before a 2-node eval: the logs come from eval, the last
+	// task, so the node count must too.
+	run := &jobs.Run{RunId: 1, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 2),
+	}}
+	n, err := resolveNodeCount(run, -1)
+	require.NoError(t, err)
+	assert.Equal(t, 2, n)
+	assert.NoError(t, validateNodeIndex(1, n), "--node 1 is a valid eval node")
 }

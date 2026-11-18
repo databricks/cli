@@ -57,22 +57,29 @@ func isAirRun(r *jobs.Run) bool {
 
 // taskRun returns a copy of r narrowed to the task runs (every attempt, in
 // order) of the task with the given key, one of airTaskKeys(r), so the display
-// helpers, which read a run's tasks, report that task alone. Its state is that
-// task's (see taskState).
+// helpers, which read a run's tasks, report that task alone. When the run has
+// other tasks too, the copy also takes that task's state (see taskState) and
+// drops the run's own start and end times, so a task that hasn't started (or
+// was skipped) reports no timing rather than the whole run's. A run whose only
+// task is this one keeps its run-level state and timing, as before.
 func taskRun(r *jobs.Run, key string) *jobs.Run {
 	narrowed := *r
 	narrowed.Tasks = nil
+	others := false
 	for i := range r.Tasks {
 		if r.Tasks[i].TaskKey == key {
 			narrowed.Tasks = append(narrowed.Tasks, r.Tasks[i])
+		} else {
+			others = true
 		}
 	}
-	if n := len(narrowed.Tasks); n > 0 {
+	if n := len(narrowed.Tasks); n > 0 && others {
 		latest := &narrowed.Tasks[n-1]
 		if state := taskState(r, latest); state != r.State {
 			narrowed.State = state
 			narrowed.Status = latest.Status
 		}
+		narrowed.StartTime, narrowed.EndTime = 0, 0
 	}
 	return &narrowed
 }
@@ -92,17 +99,26 @@ func defaultTaskRun(r *jobs.Run) *jobs.Run {
 // because its prep task failed). It keeps the run's state when the task has
 // none, and while the run is still active after a failed attempt, since the
 // task may be waiting to retry and runs/get doesn't reliably report how many
-// retries are left.
+// retries are left. A skipped task never retries, so it keeps its own state.
 func taskState(r *jobs.Run, latest *jobs.RunTask) *jobs.RunState {
 	s := latest.State
 	if s == nil {
 		return r.State
 	}
-	failed := isTerminalState(s) && s.ResultState != jobs.RunResultStateSuccess
+	failed := isTerminalState(s) && s.ResultState != jobs.RunResultStateSuccess && !isSkippedState(s)
 	if failed && !isTerminal(r) {
 		return r.State
 	}
 	return s
+}
+
+// isSkippedState reports whether a task was skipped without running: an
+// upstream task failed or was cancelled, or a condition excluded it.
+func isSkippedState(s *jobs.RunState) bool {
+	skipped := s.ResultState == jobs.RunResultStateUpstreamFailed ||
+		s.ResultState == jobs.RunResultStateUpstreamCanceled ||
+		s.ResultState == jobs.RunResultStateExcluded
+	return skipped || s.LifeCycleState == jobs.RunLifeCycleStateSkipped
 }
 
 // leadTask returns the task run a run reports: Tasks[0], which is the AI

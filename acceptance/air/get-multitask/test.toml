@@ -22,7 +22,8 @@ Response.Body = '''
   "end_time": 1700000020000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Task eval failed"},
   "environments": [
-    {"environment_key": "default", "spec": {"environment_version": "5"}}
+    {"environment_key": "default", "spec": {"environment_version": "5"}},
+    {"environment_key": "eval_env", "spec": {"environment_version": "6"}}
   ],
   "tasks": [
     {
@@ -60,7 +61,7 @@ Response.Body = '''
       "end_time": 1700000020000,
       "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "eval: loss is NaN"},
       "depends_on": [{"task_key": "train"}],
-      "environment_key": "default",
+      "environment_key": "eval_env",
       "ai_runtime_task": {
         "experiment": "/Users/user@example.com/eval-exp",
         "deployments": [

@@ -35,7 +35,7 @@ func TestListCacheRoundTrip(t *testing.T) {
 	require.False(t, ok, "miss before write")
 
 	row := listRow{
-		RunID: "42", TaskKey: "train", Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
+		RunID: "42", TaskKey: new("train"), Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
 		AcceleratorType: new("GPU_1xA10"), NumAccelerators: new(1), DashboardURL: "https://host.test/jobs/runs/42?o=1", Experiment: "exp",
 	}
 	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
@@ -76,13 +76,13 @@ func TestListCacheKeepsOneRowPerAirTask(t *testing.T) {
 	host := "https://host.test"
 
 	putEntries(ctx, c, host, 42, []taskEntry{
-		{entry: listedRun{row: listRow{RunID: "42", TaskKey: "train", Experiment: "exp-a"}, tasks: []jobs.RunTask{{RunId: 420, TaskKey: "train"}}}, fields: filterFields{Experiment: "exp-a"}},
-		{entry: listedRun{row: listRow{RunID: "42", TaskKey: "eval", Experiment: "exp-b"}, tasks: []jobs.RunTask{{RunId: 421, TaskKey: "eval"}}}, fields: filterFields{Experiment: "exp-b"}},
+		{entry: listedRun{row: listRow{RunID: "42", TaskKey: new("train"), Experiment: "exp-a"}, tasks: []jobs.RunTask{{RunId: 420, TaskKey: "train"}}}, fields: filterFields{Experiment: "exp-a"}},
+		{entry: listedRun{row: listRow{RunID: "42", TaskKey: new("eval"), Experiment: "exp-b"}, tasks: []jobs.RunTask{{RunId: 421, TaskKey: "eval"}}}, fields: filterFields{Experiment: "exp-b"}},
 	}, 1000)
 
 	// The MLflow link of one task updates that row alone.
-	updateCachedRow(ctx, c, host, 42, "eval", listRow{RunID: "42", TaskKey: "eval", Experiment: "exp-b", MLflowURL: "https://host.test/ml/x"})
-	updateCachedRow(ctx, c, host, 42, "missing", listRow{RunID: "42", TaskKey: "missing"})
+	updateCachedRow(ctx, c, host, 42, "eval", listRow{RunID: "42", TaskKey: new("eval"), Experiment: "exp-b", MLflowURL: "https://host.test/ml/x"})
+	updateCachedRow(ctx, c, host, 42, "missing", listRow{RunID: "42", TaskKey: new("missing")})
 
 	got := rawCached(t, ctx, c, host, 42).Rows
 	require.Len(t, got, 2)

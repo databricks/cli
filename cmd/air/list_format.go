@@ -42,18 +42,21 @@ func buildTaskEntries(run *jobs.Run, host string, workspaceID int64) []taskEntry
 func taskEntryFor(run *jobs.Run, host string, workspaceID int64) taskEntry {
 	row := buildListRow(run, host, workspaceID)
 	return taskEntry{
-		entry:  listedRun{row: row, runID: run.RunId, taskKey: row.TaskKey, tasks: retryTasks(run), terminal: isTerminal(run)},
+		entry:  listedRun{row: row, runID: run.RunId, taskKey: airTaskKey(run), tasks: retryTasks(run), terminal: isTerminal(run)},
 		fields: filterFieldsFromRun(run),
 	}
 }
 
 // matchingGroup returns the run's entries that pass f, each filtered on its own
-// task, or ok false when none do.
+// task, or ok false when none do. When the run has several AI runtime tasks,
+// every row is marked to show its task, even if the filter leaves one.
 func matchingGroup(runID int64, all []taskEntry, f listFilters) (runGroup, bool) {
 	g := runGroup{runID: runID}
 	for _, e := range all {
 		if f.matchesFields(e.fields) {
-			g.entries = append(g.entries, e.entry)
+			entry := e.entry
+			entry.row.ShowTask = len(all) > 1
+			g.entries = append(g.entries, entry)
 		}
 	}
 	return g, len(g.entries) > 0
@@ -102,7 +105,7 @@ func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 
 	return listRow{
 		RunID:           strconv.FormatInt(run.RunId, 10),
-		TaskKey:         taskKey,
+		TaskKey:         nilIfEmpty(taskKey),
 		RunName:         run.RunName,
 		User:            run.CreatorUserName,
 		Status:          displayRunStatus(run),

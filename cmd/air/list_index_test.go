@@ -403,7 +403,7 @@ func TestIndexStrategyKeepsARunsRowsTogether(t *testing.T) {
 	got := make([][]string, len(runs))
 	for i, run := range runs {
 		for _, r := range run {
-			got[i] = append(got[i], r.RunID+"/"+r.TaskKey)
+			got[i] = append(got[i], r.RunID+"/"+r.taskKey())
 		}
 	}
 	assert.Equal(t, [][]string{{"8/"}, {"7/train", "7/eval"}}, got)

@@ -40,7 +40,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 │  MLflow Run    matmul-smoke                                    │
 │  User          user@example.com                                │
 │  Accelerators  8x H100                                         │
-│  Environment   5                                               │
+│  Environment   6                                               │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
@@ -107,7 +107,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "user": "user@example.com",
     "accelerator_type": "GPU_8xH100",
     "num_accelerators": 8,
-    "environment_version": "5",
+    "environment_version": "6",
     "base_environment": null,
     "max_retries": {
       "limit": 2,

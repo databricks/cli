@@ -229,8 +229,8 @@ func cancelPreviewRows(runs [][]listRow) ([]listRow, map[string][]string) {
 	for _, run := range runs {
 		rows = append(rows, run[0])
 		for _, r := range run {
-			if r.TaskKey != "" {
-				taskKeys[r.RunID] = append(taskKeys[r.RunID], r.TaskKey)
+			if k := r.taskKey(); k != "" {
+				taskKeys[r.RunID] = append(taskKeys[r.RunID], k)
 			}
 		}
 	}
