@@ -423,6 +423,19 @@ func newDeviceCodeServer(t *testing.T) *testserver.Server {
 	return server
 }
 
+// newUnifiedDeviceCodeServer returns a server for a unified host of account
+// spog-acct-123.
+func newUnifiedDeviceCodeServer(t *testing.T) *testserver.Server {
+	server := newDeviceCodeServer(t)
+	server.Handle("GET", "/.well-known/databricks-config", func(_ testserver.Request) any {
+		return map[string]any{
+			"account_id":    "spog-acct-123",
+			"oidc_endpoint": server.URL + "/oidc/accounts/spog-acct-123",
+		}
+	})
+	return server
+}
+
 // A wrong or blank confirmation code leaves the device code valid, so the user
 // can enter it again. The code is accepted the way the browser displays it, in
 // any case.
@@ -510,6 +523,30 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	assert.Empty(t, profiles)
 }
 
+// The second step of an account-level login on a unified host does not open
+// the workspace picker, even in a terminal.
+func TestLoginDeviceCodeCompletionInTerminalSkipsWorkspacePicker(t *testing.T) {
+	server := newUnifiedDeviceCodeServer(t)
+	var workspaceRequests atomic.Int32
+	server.RequestCallback = func(req *testserver.Request) {
+		if strings.HasSuffix(req.URL.Path, "/workspaces") {
+			workspaceRequests.Add(1)
+		}
+	}
+	setUpDeviceCodeLogin(t, "")
+	host := server.URL + "?a=spog-acct-123"
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", host, "--profile", "account"))
+
+	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, runDeviceCodeLogin(ctx, "--host", host, "--profile", "account", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY")
+	})
+	tm.WaitFor("set workspace_id in your profile")
+	_, err := tm.Result()
+	require.NoError(t, err)
+	assert.Zero(t, workspaceRequests.Load())
+}
+
 // A user code that does not match the pending login fails before the token
 // exchange, so the confirmation code is not sent with the device code of
 // another login.
@@ -582,12 +619,7 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newDeviceCodeServer(t)
 			if tt.unifiedHost {
-				server.Handle("GET", "/.well-known/databricks-config", func(_ testserver.Request) any {
-					return map[string]any{
-						"account_id":    "spog-acct-123",
-						"oidc_endpoint": server.URL + "/oidc/accounts/spog-acct-123",
-					}
-				})
+				server = newUnifiedDeviceCodeServer(t)
 			}
 			var tokenRequests atomic.Int32
 			server.RequestCallback = func(req *testserver.Request) {

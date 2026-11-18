@@ -490,16 +490,22 @@ a new profile is created.
 		// 3. Saving the profile.
 
 		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
-			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
-			if wsErr != nil {
-				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
-			} else if wsID != "" {
-				authArguments.WorkspaceID = wsID
+			// The non-interactive login never prompts, even when its second
+			// step runs in a terminal.
+			if nonInteractive {
+				cmdio.LogString(ctx, workspaceIDHint)
+			} else {
+				wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
+				if wsErr != nil {
+					log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
+				} else if wsID != "" {
+					authArguments.WorkspaceID = wsID
+				}
+				// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
+				// SaveToProfile omits the workspace_id key entirely for account-level
+				// profiles; MatchAccountProfiles treats absent workspace_id the same
+				// as the legacy "none" sentinel.
 			}
-			// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
-			// SaveToProfile omits the workspace_id key entirely for account-level
-			// profiles; MatchAccountProfiles treats absent workspace_id the same
-			// as the legacy "none" sentinel.
 		}
 
 		var clusterID, serverlessComputeID string
@@ -1029,6 +1035,10 @@ func u2mResourcesFromProfile(p *profile.Profile) []string {
 	return splitScopes(p.Resources)
 }
 
+// workspaceIDHint tells the user how to use workspace commands after an
+// account-level login on a unified host.
+const workspaceIDHint = "To use workspace commands, set workspace_id in your profile or pass --workspace-id."
+
 // workspaceListTimeoutSeconds bounds the optional workspace lookup during login.
 // It is a variable only so tests can shorten it.
 var workspaceListTimeoutSeconds = 5
@@ -1039,7 +1049,7 @@ var workspaceListTimeoutSeconds = 5
 // to the user.
 func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, tokenSource oauth2.TokenSource) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
-		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
+		cmdio.LogString(ctx, workspaceIDHint)
 		return "", nil
 	}
 
