@@ -58,7 +58,7 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 	if !c.recursive {
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
-	return (&recursiveCopy{c: c}).run(ctx, sourceDir, targetDir)
+	return newRecursiveCopy(ctx, c).run(ctx, sourceDir, targetDir)
 }
 
 func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) error {

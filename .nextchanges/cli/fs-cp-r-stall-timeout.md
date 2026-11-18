@@ -1,0 +1,1 @@
+* `databricks fs cp -r` stops starting new files when files keep failing and none has been copied for 5 minutes, for example during an outage. It lets the files in progress finish and reports the rest as not attempted. A slow copy with no failures is not affected. ([#7785](https://github.com/databricks/cli/pull/7785))

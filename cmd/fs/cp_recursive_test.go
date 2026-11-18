@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
@@ -147,7 +148,8 @@ type copyResult struct {
 }
 
 // runCopy copies "src" to "dst", capturing stdout, stderr and the debug log.
-func runCopy(t *testing.T, ctx context.Context, c *copy, stdout io.Writer) copyResult {
+// opts adjust the copy before it runs.
+func runCopy(t *testing.T, ctx context.Context, c *copy, stdout io.Writer, opts ...func(*recursiveCopy)) copyResult {
 	var out, stderr, logs bytes.Buffer
 	if stdout == nil {
 		stdout = &out
@@ -158,7 +160,12 @@ func runCopy(t *testing.T, ctx context.Context, c *copy, stdout io.Writer) copyR
 	}
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, format, strings.NewReader(""), stdout, &stderr, "", ""))
 	ctx = log.NewContext(ctx, slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
-	r := &recursiveCopy{c: c}
+	// Ignore any override in the environment: tests assume the defaults.
+	ctx = env.Set(ctx, stallTimeoutEnvVar, "")
+	r := newRecursiveCopy(ctx, c)
+	for _, opt := range opts {
+		opt(r)
+	}
 
 	done := make(chan error, 1)
 	go func() { done <- r.run(ctx, "src", "dst") }()
@@ -430,4 +437,247 @@ func orDefault(v, def int) int {
 		return def
 	}
 	return v
+}
+
+// flakySource is a source filer whose ReadDir of dir returns what readDir
+// returns for the attempt, counting from 1.
+type flakySource struct {
+	*filer.FakeFiler
+	dir      string
+	readDir  func(attempt int) error
+	attempts int
+}
+
+func (f *flakySource) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+	if name == f.dir {
+		f.attempts++
+		if err := f.readDir(f.attempts); err != nil {
+			return nil, err
+		}
+	}
+	return f.FakeFiler.ReadDir(ctx, name)
+}
+
+// fakeClock is a clock that only moves when the test advances it.
+type fakeClock struct {
+	mu sync.Mutex
+	t  time.Time
+}
+
+func (c *fakeClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.t
+}
+
+func (c *fakeClock) Advance(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.t = c.t.Add(d)
+}
+
+func TestRecursiveCopyStall(t *testing.T) {
+	unavailable := apiError(503, nil, "")
+	stalledSix := func(notAttempted string) string {
+		var b strings.Builder
+		fmt.Fprintf(&b, "Copy incomplete: 0 copied, 0 skipped (already existed), 6 failed, %s not attempted.\n"+
+			"Stopped: files kept failing and none was copied for 5 minutes, so no new files were started.\nFailed:\n", notAttempted)
+		for _, f := range names(6) {
+			fmt.Fprintf(&b, "  src/%s -> dst/%s: HTTP 503 Service Unavailable\n", f, f)
+		}
+		return b.String()
+	}
+
+	tests := []struct {
+		name        string
+		files       []string
+		failListing string
+		listTime    time.Duration
+		mkdirTime   time.Duration
+		writeTime   time.Duration
+		fail        func(p string, attempt int) bool
+		wantErr     string
+		wantStderr  string
+	}{
+		{
+			// Each write fails after a minute. f00 fails at 1 minute, so the
+			// timeout runs to 6 minutes: f00 to f05 fail and are deferred,
+			// then no new files start, and the deferred files keep their
+			// errors.
+			name:       "an outage stops the copy",
+			files:      names(20),
+			writeTime:  time.Minute,
+			fail:       func(string, int) bool { return true },
+			wantErr:    "copy stopped: files kept failing and none was copied for 5 minutes",
+			wantStderr: stalledSix("14"),
+		},
+		{
+			// While the stalled copy only counts the files left, a failed
+			// listing ends the count but is not why the copy stopped.
+			name:        "a listing error while counting keeps the stall as the reason",
+			files:       append(names(20), "z/x.txt"),
+			failListing: "src/z",
+			writeTime:   time.Minute,
+			fail:        func(string, int) bool { return true },
+			wantErr:     "copy stopped: files kept failing and none was copied for 5 minutes",
+			wantStderr:  stalledSix("at least 14"),
+		},
+		{
+			// Writes take 2 minutes and every other one fails on its first
+			// attempt. The copy takes 12 minutes, but the gap between
+			// successes stays under 5.
+			name:      "a success resets the timer",
+			files:     names(4),
+			writeTime: 2 * time.Minute,
+			fail: func(p string, attempt int) bool {
+				return attempt == 1 && (p == "dst/f01.txt" || p == "dst/f03.txt")
+			},
+			wantStderr: "Copied 4 files.\n",
+		},
+		{
+			// Each Mkdir takes 6 minutes. a.txt and b.txt fail on their first
+			// attempt (with one worker, b.txt starts only after a.txt failed),
+			// so d1/c.txt starts 6 minutes after the first failure. Creating
+			// d1 in between counts as progress.
+			name:      "slow directories count as progress",
+			files:     []string{"a.txt", "b.txt", "d1/c.txt"},
+			mkdirTime: 6 * time.Minute,
+			fail: func(p string, attempt int) bool {
+				return attempt == 1 && (p == "dst/a.txt" || p == "dst/b.txt")
+			},
+			wantStderr: "Copied 3 files.\n",
+		},
+		{
+			// Listing sub and each write take 6 minutes, with no failures.
+			name:       "a slow copy with no failures never stalls",
+			files:      []string{"sub/a.txt", "sub/b.txt"},
+			listTime:   6 * time.Minute,
+			writeTime:  6 * time.Minute,
+			wantStderr: "Copied 2 files.\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			clock := &fakeClock{}
+			var startedLate []string
+			target := newScriptedTarget(t, cancel, func(ctx context.Context, p string, attempt int) error {
+				// In the stalling rows the first write fails after writeTime,
+				// and the timeout runs from that failure.
+				if clock.Now().Sub(time.Time{}) >= tt.writeTime+stallTimeout {
+					startedLate = append(startedLate, p)
+				}
+				clock.Advance(tt.writeTime)
+				if tt.fail != nil && tt.fail(p, attempt) {
+					return unavailable
+				}
+				return nil
+			})
+			target.mkdir = func(context.Context, string) error {
+				clock.Advance(tt.mkdirTime)
+				return nil
+			}
+			var source filer.Filer = testSource(tt.files...)
+			switch {
+			case tt.failListing != "":
+				source = &flakySource{FakeFiler: testSource(tt.files...), dir: tt.failListing, readDir: func(int) error { return unavailable }}
+			case tt.listTime > 0:
+				source = &flakySource{FakeFiler: testSource(tt.files...), dir: "src/sub", readDir: func(int) error {
+					clock.Advance(tt.listTime)
+					return nil
+				}}
+			}
+			c := &copy{recursive: true, concurrency: 1, sourceFiler: source, targetFiler: target}
+			res := runCopy(t, ctx, c, nil, func(r *recursiveCopy) { r.now = clock.Now })
+
+			if tt.wantErr == "" {
+				assert.NoError(t, res.err)
+				assert.NotContains(t, res.log, "starting no new files")
+			} else {
+				assert.EqualError(t, res.err, tt.wantErr)
+				assert.Contains(t, res.log, "level=INFO msg=\"fs cp: files kept failing and none was copied for 5 minutes; starting no new files\"")
+				assert.Empty(t, startedLate, "no file starts after the stall timeout")
+			}
+			assert.Equal(t, tt.wantStderr, res.stderr)
+		})
+	}
+}
+
+func TestPermanentErrorsDoNotStall(t *testing.T) {
+	// f00.txt fails with a 404, then listing sub takes 6 minutes with nothing
+	// completing. A permanent error is not an outage, so sub/a.txt still runs.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	// A real clock is never at the zero time, which failingSince uses to mean
+	// "not failing".
+	clock := &fakeClock{t: time.Time{}.Add(time.Hour)}
+	target := newScriptedTarget(t, cancel, func(ctx context.Context, p string, attempt int) error {
+		if p == "dst/f00.txt" {
+			return apiError(404, nil, `{"message": "gone"}`)
+		}
+		return nil
+	})
+	var r *recursiveCopy
+	source := &flakySource{FakeFiler: testSource("f00.txt", "sub/a.txt"), dir: "src/sub", readDir: func(int) error {
+		// The 404 is recorded on another goroutine; wait for it, so it comes
+		// before the slow listing.
+		for {
+			r.mu.Lock()
+			n := len(r.failures)
+			r.mu.Unlock()
+			if n > 0 {
+				break
+			}
+			time.Sleep(time.Millisecond)
+		}
+		clock.Advance(6 * time.Minute)
+		return nil
+	}}
+	c := &copy{recursive: true, concurrency: 1, sourceFiler: source, targetFiler: target}
+	res := runCopy(t, ctx, c, nil, func(rc *recursiveCopy) {
+		rc.now = clock.Now
+		r = rc
+	})
+
+	assert.EqualError(t, res.err, "1 file was not copied")
+	assert.Equal(t, 1, res.r.copied)
+	assert.NotContains(t, res.log, "starting no new files")
+}
+
+func TestStallTimesTheFailingPeriod(t *testing.T) {
+	// The last success was at 0, and a long healthy stretch with nothing
+	// completing ends in a failure at 6 minutes. That alone must not stall the
+	// copy: the timeout runs from the failure.
+	clock := &fakeClock{}
+	r := newRecursiveCopy(t.Context(), &copy{})
+	r.now = clock.Now
+	r.lastSuccess = clock.Now()
+	assert.False(t, r.stopping(t.Context()), "no failure, no stall")
+
+	clock.Advance(6 * time.Minute)
+	r.failingSince = clock.Now()
+	assert.False(t, r.stopping(t.Context()), "a failure just now")
+
+	clock.Advance(5 * time.Minute)
+	assert.True(t, r.stopping(t.Context()), "failing for the stall timeout")
+}
+
+func TestStallTimeoutFromEnv(t *testing.T) {
+	for value, want := range map[string]time.Duration{
+		"":     stallTimeout,
+		"1500": 1500 * time.Millisecond,
+		"0":    stallTimeout,
+		"5m":   stallTimeout,
+	} {
+		ctx := env.Set(t.Context(), stallTimeoutEnvVar, value)
+		assert.Equal(t, want, newRecursiveCopy(ctx, &copy{}).stallTimeout, "value %q", value)
+	}
+}
+
+func TestFormatDuration(t *testing.T) {
+	assert.Equal(t, "5 minutes", formatDuration(5*time.Minute))
+	assert.Equal(t, "1 minute", formatDuration(time.Minute))
+	assert.Equal(t, "90 seconds", formatDuration(90*time.Second))
+	assert.Equal(t, "1.5s", formatDuration(1500*time.Millisecond))
 }
