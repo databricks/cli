@@ -88,6 +88,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = installer.WithCallingAgentToolingInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
+		ctx = withSkillsInUserAgent(ctx)
 		cmd.SetContext(ctx)
 
 		// Recommend installing Databricks AI tooling to the calling coding agent

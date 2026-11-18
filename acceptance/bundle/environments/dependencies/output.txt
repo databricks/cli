@@ -13,7 +13,7 @@ Uploading dist/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
 Created jobs.test_job
 Created pipelines.test_pipeline
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
@@ -27,6 +27,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
         "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
         "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project[test]",
         "-i http://myindexurl.com",
         "--index-url http://myindexurl.com",
         "test_package",
@@ -68,6 +70,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
         "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project[test]",
         "-i http://myindexurl.com",
         "--index-url http://myindexurl.com",
         "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
@@ -96,6 +100,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
         "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
         "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project[test]",
         "-i http://myindexurl.com",
         "--index-url http://myindexurl.com",
         "test_package",
@@ -127,6 +133,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "dependencies": [
     "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
     "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project",
+    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/project[test]",
     "-i http://myindexurl.com",
     "--index-url http://myindexurl.com",
     "./dist/*.whl",

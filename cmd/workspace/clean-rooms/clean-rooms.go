@@ -76,7 +76,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
+	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, `Free-form description of the clean room.`)
 	cmd.Flags().BoolVar(&createReq.CleanRoom.EnableSharedOutput, "enable-shared-output", createReq.CleanRoom.EnableSharedOutput, `Whether allow task to write to shared output schema.`)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
@@ -88,11 +88,11 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a clean room.
 
   Create a new clean room with the specified collaborators. This method is
-  asynchronous; the returned name field inside the clean_room field can be used
-  to poll the clean room status, using the [cleanrooms/get] method. When this
-  method returns, the clean room will be in a PROVISIONING state, with only
-  name, owner, comment, created_at and status populated. The clean room will be
-  usable once it enters an ACTIVE state.
+  asynchronous; the name field of the returned clean room can be used to poll
+  the clean room status, using the [cleanrooms/get] method. When this method
+  returns, the clean room will be in a PROVISIONING state, with only name,
+  owner, comment, created_at and status populated. The clean room will be usable
+  once it enters an ACTIVE state.
 
   The caller must be a metastore admin or have the **CREATE_CLEAN_ROOM**
   privilege on the metastore.
@@ -182,7 +182,10 @@ func newCreateOutputCatalog() *cobra.Command {
 	cmd.Short = `Create an output catalog.`
 	cmd.Long = `Create an output catalog.
 
-  Create the output catalog of the clean room.
+  Create the output catalog of the clean room. The output catalog is a catalog
+  in the caller's metastore where the output tables of the clean room runs that
+  the caller triggers are made available. Each collaborator can create one
+  output catalog per clean room, and the clean room must be ACTIVE.
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.`
@@ -314,7 +317,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
 
-  Get the details of a clean room given its name.`
+  Get the details of a clean room given its name.
+
+  Arguments:
+    NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

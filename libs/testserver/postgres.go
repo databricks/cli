@@ -104,7 +104,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 
 	// Check for duplicate
 	if _, exists := s.PostgresProjects[name]; exists {
-		return postgresErrorResponse(409, "ALREADY_EXISTS", "project with such id already exists in the workspace")
+		return postgresErrorResponse(400, "BAD_REQUEST", "A project with this resource name already exists in the workspace.")
 	}
 
 	now := nowTime()

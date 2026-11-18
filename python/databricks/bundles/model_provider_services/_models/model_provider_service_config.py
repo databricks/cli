@@ -81,34 +81,39 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK`.
     """
 
     anthropic: VariableOrOptional[ModelProviderServiceConfigAnthropicProviderConfig] = (
         None
     )
     """
-    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
-    be set on Create; the two are mutually exclusive.
+    Configuration for Anthropic. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC`.
     """
 
     azure_openai: VariableOrOptional[
         ModelProviderServiceConfigAzureOpenAiProviderConfig
     ] = None
     """
-    Azure OpenAI provider configuration.
+    Configuration for Azure OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI`.
     """
 
     bedrock_mantle: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock Mantle, with the same fields as
+    `amazon_bedrock`. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE`.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
     """
-    Custom OpenAI-compatible provider configuration.
+    Configuration for a custom OpenAI-compatible provider. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM`.
     """
 
     forward_headers: VariableOrOptional[bool] = None
@@ -141,7 +146,8 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigGeminiEnterpriseProviderConfig
     ] = None
     """
-    Gemini Enterprise provider configuration.
+    Configuration for Google Gemini Enterprise. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE`.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfig] = None
@@ -155,12 +161,14 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigMicrosoftFoundryProviderConfig
     ] = None
     """
-    Microsoft Foundry provider configuration.
+    Configuration for Microsoft Foundry. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY`.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfig] = None
     """
-    OpenAI provider configuration.
+    Configuration for OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI`.
     """
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfig] = None
@@ -220,34 +228,39 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK`.
     """
 
     anthropic: VariableOrOptional[
         ModelProviderServiceConfigAnthropicProviderConfigParam
     ]
     """
-    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
-    be set on Create; the two are mutually exclusive.
+    Configuration for Anthropic. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC`.
     """
 
     azure_openai: VariableOrOptional[
         ModelProviderServiceConfigAzureOpenAiProviderConfigParam
     ]
     """
-    Azure OpenAI provider configuration.
+    Configuration for Azure OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI`.
     """
 
     bedrock_mantle: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock Mantle, with the same fields as
+    `amazon_bedrock`. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE`.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
-    Custom OpenAI-compatible provider configuration.
+    Configuration for a custom OpenAI-compatible provider. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM`.
     """
 
     forward_headers: VariableOrOptional[bool]
@@ -280,7 +293,8 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigGeminiEnterpriseProviderConfigParam
     ]
     """
-    Gemini Enterprise provider configuration.
+    Configuration for Google Gemini Enterprise. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE`.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfigParam]
@@ -294,12 +308,14 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigMicrosoftFoundryProviderConfigParam
     ]
     """
-    Microsoft Foundry provider configuration.
+    Configuration for Microsoft Foundry. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY`.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfigParam]
     """
-    OpenAI provider configuration.
+    Configuration for OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI`.
     """
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfigParam]

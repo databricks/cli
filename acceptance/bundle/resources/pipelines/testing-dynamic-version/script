@@ -1,0 +1,6 @@
+
+title "Test dependencies use the patched wheel, with extras kept"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/pipelines --nostamp | jq '.body.testing.environment.dependencies'
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

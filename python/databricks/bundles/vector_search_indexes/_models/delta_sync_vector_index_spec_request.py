@@ -46,14 +46,18 @@ class DeltaSyncVectorIndexSpecRequest:
         default_factory=list
     )
     """
-    The columns that contain the embedding source.
+    The source table column whose text Databricks embeds, together with the embedding model
+    endpoint to use. Set this for an index with Databricks-managed embeddings. Exactly one of
+    `embedding_source_columns` or `embedding_vector_columns` must be specified unless the index
+    subtype is `FULL_TEXT`, and only one column is supported.
     """
 
     embedding_vector_columns: VariableOrList[EmbeddingVectorColumn] = field(
         default_factory=list
     )
     """
-    The columns that contain the embedding vectors.
+    The source table column that contains precomputed embedding vectors. Set this instead of
+    `embedding_source_columns` for an index with self-managed embeddings.
     """
 
     embedding_writeback_table: VariableOrOptional[str] = None
@@ -70,7 +74,7 @@ class DeltaSyncVectorIndexSpecRequest:
 
     source_table: VariableOrOptional[str] = None
     """
-    The name of the source table.
+    Three-level Unity Catalog name of the source table that the index is synced from.
     """
 
     @classmethod
@@ -101,12 +105,16 @@ class DeltaSyncVectorIndexSpecRequestDict(TypedDict, total=False):
 
     embedding_source_columns: VariableOrList[EmbeddingSourceColumnParam]
     """
-    The columns that contain the embedding source.
+    The source table column whose text Databricks embeds, together with the embedding model
+    endpoint to use. Set this for an index with Databricks-managed embeddings. Exactly one of
+    `embedding_source_columns` or `embedding_vector_columns` must be specified unless the index
+    subtype is `FULL_TEXT`, and only one column is supported.
     """
 
     embedding_vector_columns: VariableOrList[EmbeddingVectorColumnParam]
     """
-    The columns that contain the embedding vectors.
+    The source table column that contains precomputed embedding vectors. Set this instead of
+    `embedding_source_columns` for an index with self-managed embeddings.
     """
 
     embedding_writeback_table: VariableOrOptional[str]
@@ -123,7 +131,7 @@ class DeltaSyncVectorIndexSpecRequestDict(TypedDict, total=False):
 
     source_table: VariableOrOptional[str]
     """
-    The name of the source table.
+    Three-level Unity Catalog name of the source table that the index is synced from.
     """
 
 

@@ -24,6 +24,10 @@ type fakeBackend struct {
 	setBlock    bool // if true, Set blocks forever (for timeout tests)
 	getBlock    bool
 	deleteBlock bool
+
+	// secretTooBig, when set, mirrors an OS backend's size check: Set rejects
+	// the secret with keyring.ErrSetDataTooBig before storing anything.
+	secretTooBig func(service, account, secret string) bool
 }
 
 func newFakeBackend() *fakeBackend {
@@ -35,6 +39,9 @@ func itemKey(service, account string) string { return service + ":" + account }
 func (f *fakeBackend) Set(service, account, secret string) error {
 	if f.setBlock {
 		select {}
+	}
+	if f.secretTooBig != nil && f.secretTooBig(service, account, secret) {
+		return keyring.ErrSetDataTooBig
 	}
 	if f.setErr != nil {
 		return f.setErr

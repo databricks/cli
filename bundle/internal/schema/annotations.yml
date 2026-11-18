@@ -1024,16 +1024,6 @@ resources:
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
-        "git_source":
-          "$fields":
-            "sparse_checkout":
-              "description": |-
-                PLACEHOLDER
-        "health":
-          "$fields":
-            "rules":
-              "description": |-
-                PLACEHOLDER
         "job_clusters":
           "$fields":
             "new_cluster":
@@ -1137,19 +1127,9 @@ resources:
                 "python_named_params":
                   "description": |-
                     PLACEHOLDER
-            "webhook_notifications":
-              "$fields":
-                "on_duration_warning_threshold_exceeded":
-                  "$fields":
-                    "id":
-                      "description": |-
-                        PLACEHOLDER
         "trigger":
           "$fields":
             "model":
-              "description": |-
-                PLACEHOLDER
-            "table_update":
               "description": |-
                 PLACEHOLDER
     "materialization_sets":
