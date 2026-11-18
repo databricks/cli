@@ -31,7 +31,7 @@
 
 === Env var sends the header on databricks api
 
->>> [CLI] api get /api/2.0/clusters/list
+>>> [CLI] api get /api/2.1/clusters/list
 
 >>> print_requests.py --get //clusters/list
 {
@@ -41,7 +41,7 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/clusters/list"
+  "path": "/api/2.1/clusters/list"
 }
 
 === Env var sends the header on the files API used by fs
@@ -80,21 +80,6 @@
   "path": "/api/2.0/preview/scim/v2/Me"
 }
 
-=== Flag wins over env var
-
->>> [CLI] current-user me --skills-invoked from-flag
-
->>> print_requests.py --get //scim/v2/Me
-{
-  "headers": {
-    "X-Databricks-Skills-Invoked": [
-      "from-flag"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-
 === Invalid entries are dropped and the rest is normalized
 
 >>> [CLI] current-user me
@@ -120,6 +105,12 @@
   "path": "/api/2.0/preview/scim/v2/Me"
 }
 
-=== Flag is hidden from help
+=== No header when telemetry is disabled
 
->>> [CLI] --help
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}

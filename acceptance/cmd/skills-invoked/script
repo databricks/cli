@@ -7,7 +7,7 @@ DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI clusters list > /dev/null
 trace print_requests.py --get //clusters/list
 
 title "Env var sends the header on databricks api"
-DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI api get /api/2.0/clusters/list > /dev/null
+DATABRICKS_SKILLS_INVOKED=databricks-core MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.1/clusters/list > /dev/null
 trace print_requests.py --get //clusters/list
 
 title "Env var sends the header on the files API used by fs"
@@ -19,10 +19,6 @@ title "Env var sends the header from bundle commands"
 DATABRICKS_SKILLS_INVOKED=databricks-core trace $CLI bundle validate > /dev/null
 trace print_requests.py --get //scim/v2/Me
 
-title "Flag wins over env var"
-DATABRICKS_SKILLS_INVOKED=from-env trace $CLI current-user me --skills-invoked from-flag > /dev/null
-trace print_requests.py --get //scim/v2/Me
-
 title "Invalid entries are dropped and the rest is normalized"
 DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databricks:databricks-jobs ' trace $CLI current-user me > /dev/null
 trace print_requests.py --get //scim/v2/Me
@@ -31,5 +27,6 @@ title "No header when unset"
 trace $CLI current-user me > /dev/null
 trace print_requests.py --get //scim/v2/Me | contains.py "!X-Databricks-Skills-Invoked"
 
-title "Flag is hidden from help"
-trace $CLI --help | contains.py "!skills-invoked" > /dev/null
+title "No header when telemetry is disabled"
+DATABRICKS_SKILLS_INVOKED=databricks-core DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me | contains.py "!X-Databricks-Skills-Invoked"

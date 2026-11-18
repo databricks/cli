@@ -5,35 +5,26 @@ import (
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/skillsinvoked"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestWithSkillsInvokedFlagAndEnvPrecedence(t *testing.T) {
+func TestWithSkillsInvoked(t *testing.T) {
 	tests := []struct {
-		name  string
-		env   string
-		flags []string
-		want  []string
+		name             string
+		skills           string
+		disableTelemetry string
+		want             []string
 	}{
-		{"neither", "", nil, nil},
-		{"env only", "from-env", nil, []string{"from-env"}},
-		{"flag only", "", []string{"--skills-invoked", "from-flag"}, []string{"from-flag"}},
-		{"flag wins over env", "from-env", []string{"--skills-invoked", "from-flag"}, []string{"from-flag"}},
-		{"invalid flag does not fall back to env", "from-env", []string{"--skills-invoked", "!!"}, nil},
+		{"unset", "", "", nil},
+		{"set", "databricks-core,databricks-jobs", "", []string{"databricks-core", "databricks-jobs"}},
+		{"telemetry disabled", "databricks-core", "1", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := &cobra.Command{Use: "test"}
-			initSkillsInvokedFlag(cmd)
-			require.NoError(t, cmd.ParseFlags(tt.flags))
-
-			ctx := t.Context()
-			if tt.env != "" {
-				ctx = env.Set(ctx, envSkillsInvoked, tt.env)
-			}
-			assert.Equal(t, tt.want, skillsinvoked.FromContext(withSkillsInvoked(ctx, cmd)))
+			// Always set both: an empty value in the context overrides the host environment.
+			ctx := env.Set(t.Context(), envSkillsInvoked, tt.skills)
+			ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", tt.disableTelemetry)
+			assert.Equal(t, tt.want, skillsinvoked.FromContext(withSkillsInvoked(ctx)))
 		})
 	}
 }

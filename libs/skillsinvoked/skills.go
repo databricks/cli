@@ -89,21 +89,3 @@ func Apply(cfg *config.Config) {
 		return nil
 	}
 }
-
-// Transport wraps base to set the header, for clients that don't use config.Config.Headers.
-func Transport(base http.RoundTripper) http.RoundTripper {
-	return roundTripper{base: base}
-}
-
-type roundTripper struct {
-	base http.RoundTripper
-}
-
-func (t roundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if skills := FromContext(r.Context()); len(skills) > 0 {
-		// A RoundTripper must not modify the caller's request.
-		r = r.Clone(r.Context())
-		r.Header.Set(Header, strings.Join(skills, ","))
-	}
-	return t.base.RoundTrip(r)
-}

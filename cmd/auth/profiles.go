@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skillsinvoked"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -60,6 +61,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		HTTPTimeoutSeconds:  timeoutSeconds,
 		RetryTimeoutSeconds: timeoutSeconds,
 	}
+	skillsinvoked.Apply(cfg)
 	if skipValidate {
 		// EnsureResolved fetches <host>/.well-known/databricks-config to enrich
 		// the config, so without this stub a skip-validate listing still makes

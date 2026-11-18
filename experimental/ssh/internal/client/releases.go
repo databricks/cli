@@ -69,6 +69,8 @@ func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, 
 		}
 	}
 	cfg.HTTPTransport = newHTTP11Transport(src)
+	// Headers is a func, not a config attribute, so the loop above doesn't copy it.
+	cfg.Headers = src.Headers
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
 
