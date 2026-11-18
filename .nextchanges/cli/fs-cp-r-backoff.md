@@ -1,0 +1,1 @@
+* `databricks fs cp -r` backs off when files keep failing. After as many failures in a row as `--concurrency`, it starts no new files and retries one failed file at a time, waiting 2 to 30 seconds between tries (or the server's Retry-After, up to 30 seconds), until one succeeds. ([#7786](https://github.com/databricks/cli/pull/7786))

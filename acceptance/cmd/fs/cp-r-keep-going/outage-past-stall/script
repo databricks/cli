@@ -1,0 +1,9 @@
+# Every upload fails for longer than the stall timeout. The first file fails
+# and is deferred, which opens the breaker. Its probes keep failing until no
+# file has been copied for the stall timeout. The copy then stops: the
+# deferred file is reported with its error, the other files as not attempted,
+# and the command exits 1.
+fault.py "PUT /api/2.0/fs/files/**" 500 0 1000
+
+errcode trace cp_r localdir ${TARGET} --concurrency 1
+print_requests.py //api/ > /dev/null

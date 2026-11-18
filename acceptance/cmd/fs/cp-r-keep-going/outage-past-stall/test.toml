@@ -1,0 +1,3 @@
+# Test-only overrides: a 2s stall timeout and breaker waits of 200ms.
+Env.DATABRICKS_FS_CP_STALL_TIMEOUT_MS = "2000"
+Env.DATABRICKS_FS_CP_PROBE_BACKOFF_MAX_MS = "200"
