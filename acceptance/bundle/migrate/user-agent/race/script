@@ -1,0 +1,10 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+
+title "Deploy where the local terraform state disappears between the pull and the migration"
+trace errcode $CLI bundle deploy 2>&1 | grep -E '^(Panic Payload|Exit code)'
+trace print_engines
