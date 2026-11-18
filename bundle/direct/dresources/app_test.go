@@ -357,6 +357,26 @@ func TestAppStartApp_RejectedStart(t *testing.T) {
 	}
 }
 
+// A failed read after a rejected start must stay retryable: the 400 alone is not transient.
+func TestAppStartApp_RejectedStartReadFailureIsTransient(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.0/apps/{name}/start", func(req testserver.Request) any {
+		return appBadRequest("Cannot start app test-app as its compute is in ACTIVE state.")
+	})
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: 500,
+			Body:       map[string]string{"error_code": "INTERNAL_ERROR", "message": "boom"},
+		}
+	})
+	r := newAppForServer(t, server)
+
+	_, err := r.startApp(t.Context(), "test-app")
+	require.ErrorContains(t, err, "Cannot start app test-app")
+	require.ErrorContains(t, err, "boom")
+	assert.True(t, retry.IsTransient(t.Context(), err))
+}
+
 const (
 	appComputeUpdatingDeleteMessage = "Cannot delete app test-app as it is not terminal with state UPDATING, " +
 		"and was updated less than 20 minutes ago. Please wait before trying again."

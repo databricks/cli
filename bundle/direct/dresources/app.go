@@ -318,7 +318,12 @@ func (r *ResourceApp) startApp(ctx context.Context, id string) (*apps.App, error
 		return nil, err
 	}
 	app, getErr := r.client.Apps.GetByName(ctx, id)
-	if getErr != nil || app.ComputeStatus == nil {
+	if getErr != nil {
+		// Wrap only getErr so that apply's retry sees it: a transient read failure leaves
+		// the compute state unknown, and the 400 alone would make the failure permanent.
+		return nil, fmt.Errorf("reading app after start was rejected (%s): %w", err, getErr)
+	}
+	if app.ComputeStatus == nil {
 		return nil, err
 	}
 	switch app.ComputeStatus.State {
