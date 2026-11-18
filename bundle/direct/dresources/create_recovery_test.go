@@ -99,14 +99,25 @@ func TestCreateRecoveryUsesResourceCreatedDespiteTimeout(t *testing.T) {
 func TestCreateRecoveryRejectsResourceThatPredatesRequest(t *testing.T) {
 	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{testFeature(time.Now().Add(-time.Hour))}}
 	_, _, err := createTestFeature(t, s, t.Context())
-	require.ErrorContains(t, err, "feature main.default.feat exists but was not created by this deployment")
+	// The 504 has an empty message, so nothing follows the explanation; the bundle error output
+	// appends the status code and details from the wrapped error.
+	require.EqualError(t, err, "feature main.default.feat exists but was not created by this deployment")
+	requireStatus(t, err, 504)
+}
+
+func TestCreateRecoveryKeepsCreateErrorMessage(t *testing.T) {
+	timeout := featureError(504, "DEADLINE_EXCEEDED", "The request timed out.")
+	s := &featureCreateScript{t: t, creates: []any{timeout}, gets: []any{testFeature(time.Now().Add(-time.Hour))}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was not created by this deployment: The request timed out.")
 	requireStatus(t, err, 504)
 }
 
 func TestCreateRecoveryRejectsResourceWithoutCreateTime(t *testing.T) {
 	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{ml.Feature{FullName: testFeatureName}}}
 	_, _, err := createTestFeature(t, s, t.Context())
-	require.ErrorContains(t, err, "exists but has no create time")
+	require.EqualError(t, err, "feature main.default.feat exists but has no create time, so it is not known to be created by this deployment")
+	requireStatus(t, err, 504)
 }
 
 func TestCreateRecoveryRepeatsCreateWhileMissing(t *testing.T) {

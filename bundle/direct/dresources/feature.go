@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -35,12 +36,14 @@ func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (str
 	start := time.Now()
 	response, err := create(ctx)
 	if err != nil {
-		// The feature is keyed by full_name, which the bundle chooses and the API keeps unique.
+		// The feature is keyed by full_name, which the bundle chooses and the API keeps unique. UC
+		// stores the name lowercased, which is also the id a successful create returns.
+		fullName := strings.ToLower(config.FullName)
 		response, err = recoverCreate(ctx, createRecovery[ml.Feature]{
-			name:  "feature " + config.FullName,
+			name:  "feature " + fullName,
 			start: start,
 			get: func(ctx context.Context) (*ml.Feature, error) {
-				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: config.FullName})
+				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: fullName})
 			},
 			createTime: func(found *ml.Feature) (time.Time, bool) {
 				if found.CreatedAt == nil {

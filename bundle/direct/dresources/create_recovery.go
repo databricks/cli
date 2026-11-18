@@ -3,9 +3,10 @@ package dresources
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -56,13 +57,13 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 			// our request would have failed with "already exists" only if it reached that check.
 			created, ok := rc.createTime(found)
 			if !ok {
-				return nil, fmt.Errorf("%w; %s exists but has no create time, so it is not known to be created by this deployment", createErr, rc.name)
+				return nil, &recoveryError{msg: rc.name + " exists but has no create time, so it is not known to be created by this deployment", err: createErr}
 			}
 			if created.Before(rc.start.Add(-createTimeSkew)) {
-				return nil, fmt.Errorf("%w; %s exists but was not created by this deployment", createErr, rc.name)
+				return nil, &recoveryError{msg: rc.name + " exists but was not created by this deployment", err: createErr}
 			}
 			// Info, not Warn: the deploy got the resource it asked for, so there is nothing to act on.
-			log.Infof(ctx, "using %s, created despite the failed create request: %s", rc.name, createErr)
+			log.Infof(ctx, "using %s, created despite the failed create request: %s", rc.name, strings.TrimSpace(diag.FormatAPIErrorSummary(createErr)))
 			return found, nil
 		}
 		if !apierr.IsMissing(err) {
@@ -85,6 +86,23 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 		lastErr = err
 	}
 }
+
+// recoveryError says why a resource found after a failed create request is not used, and wraps
+// that request's error so the bundle error output still shows its status code and details. The
+// 504s these requests get carry an empty message, so the message is left out when it is empty.
+type recoveryError struct {
+	msg string
+	err error
+}
+
+func (e *recoveryError) Error() string {
+	if m := e.err.Error(); m != "" {
+		return e.msg + ": " + m
+	}
+	return e.msg
+}
+
+func (e *recoveryError) Unwrap() error { return e.err }
 
 // isAlreadyExists reports whether a create request failed because the resource exists. Features,
 // dashboards and vector search endpoints answer with 409 ALREADY_EXISTS, serving endpoints with
