@@ -62,10 +62,10 @@ func parseSkills(ctx context.Context, raw string) []string {
 		switch {
 		case name == "":
 		case len(name) > maxSkillLength || !skillNamePattern().MatchString(name):
-			log.Debugf(ctx, "dropping invalid %s entry %q", skillsInvokedEnvVar, entry)
+			log.Debugf(ctx, "dropping invalid skill entry %q", entry)
 		case slices.Contains(skills, name):
 		case size+pairSize > maxSkillsUserAgentLength:
-			log.Debugf(ctx, "dropping %s entry %q: skills exceed %d user agent bytes", skillsInvokedEnvVar, name, maxSkillsUserAgentLength)
+			log.Debugf(ctx, "dropping skill entry %q: skills exceed %d user agent bytes", name, maxSkillsUserAgentLength)
 		default:
 			skills = append(skills, name)
 			size += pairSize
@@ -74,6 +74,7 @@ func parseSkills(ctx context.Context, raw string) []string {
 	return skills
 }
 
+// initSkillsInvokedFlag registers the hidden skillsInvokedFlag on cmd.
 func initSkillsInvokedFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(skillsInvokedFlag, "", "comma-separated agent skills that invoked this command")
 	cmd.PersistentFlags().MarkHidden(skillsInvokedFlag)
