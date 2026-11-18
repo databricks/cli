@@ -20,8 +20,9 @@ type capturePipelineDependencies struct{}
 
 // CapturePipelineDependencies makes a pipeline wait for the grants and permissions of the resources
 // it refers to, directly or through lifecycle.depends_on, so a pipeline is not created before the
-// privileges it depends on are in place. A dependency that would create a cycle is skipped, e.g.
-// when an app refers to the pipeline and its service principal is granted on the pipeline's schema.
+// privileges it depends on are in place. An entry that would make the pipeline wait on itself is
+// skipped, e.g. when an app refers to the pipeline and its service principal is granted on the
+// pipeline's schema.
 func CapturePipelineDependencies() bundle.Mutator {
 	return &capturePipelineDependencies{}
 }
@@ -31,22 +32,32 @@ func (m *capturePipelineDependencies) Name() string {
 }
 
 func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	graph, err := dependencyGraph(b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Pipelines are visited in a fixed order, so the same cycle-forming dependency is skipped on every run.
+	// Pipelines are visited in a fixed order, so the same entries are added on every run.
 	for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Pipelines)) {
 		p := b.Config.Resources.Pipelines[key]
+		// Python-generated configs can contain null resource entries.
+		if p == nil {
+			continue
+		}
 		node := "resources.pipelines." + key
-		for _, dep := range graph[node] {
+		deps, err := directDependencies(b, node)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		for _, dep := range deps {
 			for _, sub := range []string{".grants", ".permissions"} {
 				target := dep + sub
-				if _, ok := graph[target]; !ok || slices.Contains(graph[node], target) || reaches(graph, target, node) {
+				if !hasPrivileges(b, target) || slices.Contains(deps, target) {
 					continue
 				}
-				graph[node] = append(graph[node], target)
+				waits, err := reaches(b, target, node)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+				if waits {
+					continue
+				}
+				deps = append(deps, target)
 				p.Lifecycle.DependsOn = append(p.Lifecycle.DependsOn, resources.DependsOn{Resource: strings.TrimPrefix(target, "resources.")})
 			}
 		}
@@ -54,82 +65,93 @@ func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundl
 	return nil
 }
 
-// dependencyGraph returns, for every resource and its grants or permissions, the nodes it depends
-// on: those it refers to and those in its lifecycle.depends_on. Nodes are keyed as in the deployment
-// plan, e.g. "resources.schemas.foo.grants"; a node without dependencies maps to nil.
-func dependencyGraph(b *bundle.Bundle) (map[string][]string, error) {
-	graph := make(map[string][]string)
-
-	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
-		node, resourceType := config.GetNodeAndType(p)
-		if resourceType == "" {
-			return nil
-		}
-
-		src := node.String()
-		if len(p) == len(node) {
-			// Grants and permissions without entries are not deployed, so nothing can depend on them.
-			if seq, ok := v.AsSequence(); len(node) == 4 && (!ok || len(seq) == 0) {
-				return nil
-			}
-			if _, ok := graph[src]; !ok {
-				graph[src] = nil
-			}
-			return nil
-		}
-
-		ref, ok := dynvar.NewRef(v)
-		if !ok {
-			return nil
-		}
-		for _, r := range ref.References() {
-			path, err := dyn.NewPathFromString(r)
-			if err != nil {
-				return fmt.Errorf("parsing %q: %w", r, err)
-			}
-			if target, targetType := config.GetNodeAndType(path); targetType != "" {
-				graph[src] = append(graph[src], target.String())
-			}
-		}
-		return nil
-	})
+// hasPrivileges reports whether the node is a grants or permissions list with entries, which is the
+// only case where the deployment creates it.
+func hasPrivileges(b *bundle.Bundle, node string) bool {
+	path, err := dyn.NewPathFromString(node)
 	if err != nil {
-		return nil, err
+		return false
+	}
+	v, err := dyn.GetByPath(b.Config.Value(), path)
+	if err != nil {
+		return false
+	}
+	seq, ok := v.AsSequence()
+	return ok && len(seq) > 0
+}
+
+// directDependencies returns the nodes that the resource, or the grants or permissions, at node refers
+// to, plus the nodes in its lifecycle.depends_on. Nodes are named as in the deployment plan, e.g.
+// "resources.schemas.foo.grants". References from nested grants or permissions belong to those nodes,
+// not to the resource.
+func directDependencies(b *bundle.Bundle, node string) ([]string, error) {
+	path, err := dyn.NewPathFromString(node)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %q: %w", node, err)
 	}
 
-	for _, group := range b.Config.Resources.AllResources() {
-		for key, resource := range group.Resources {
-			// Python-generated configs can contain null resource entries.
-			if reflect.ValueOf(resource).IsNil() {
-				continue
+	var deps []string
+	if v, err := dyn.GetByPath(b.Config.Value(), path); err == nil {
+		err := dyn.WalkReadOnly(v, func(rel dyn.Path, val dyn.Value) error {
+			full := slices.Concat(path, rel)
+			if src, typ := config.GetNodeAndType(full); typ == "" || src.String() != node {
+				return nil
 			}
-			src := "resources." + group.Description.PluralName + "." + key
-			for _, dep := range resource.GetLifecycle().GetDependsOn() {
+			ref, ok := dynvar.NewRef(val)
+			if !ok {
+				return nil
+			}
+			for _, r := range ref.References() {
+				refPath, err := dyn.NewPathFromString(r)
+				if err != nil {
+					return fmt.Errorf("parsing %q: %w", r, err)
+				}
+				if target, typ := config.GetNodeAndType(refPath); typ != "" {
+					deps = append(deps, target.String())
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(path) == 3 {
+		res, _, err := b.Config.Resources.ResolveKey(strings.TrimPrefix(node, "resources."))
+		// Python-generated configs can contain null resource entries.
+		if err == nil && !reflect.ValueOf(res).IsNil() {
+			for _, dep := range res.GetLifecycle().GetDependsOn() {
 				// An entry that does not resolve is reported by validate.LifecycleDependsOn.
 				if target, err := b.Config.Resources.ResolveDependsOn(dep.Resource); err == nil {
-					graph[src] = append(graph[src], target)
+					deps = append(deps, target)
 				}
 			}
 		}
 	}
-	return graph, nil
+	return deps, nil
 }
 
-// reaches reports whether from is to or depends on it, directly or through other nodes.
-func reaches(graph map[string][]string, from, to string) bool {
+// reaches reports whether from is to or depends on it, directly or through other nodes. It is the
+// guard against a cycle: a pipeline must not wait on a node that waits on the pipeline.
+func reaches(b *bundle.Bundle, from, to string) (bool, error) {
 	visited := make(map[string]bool)
 	stack := []string{from}
 	for len(stack) > 0 {
 		n := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		if n == to {
-			return true
+			return true, nil
 		}
 		if visited[n] {
 			continue
 		}
 		visited[n] = true
-		stack = append(stack, graph[n]...)
+		next, err := directDependencies(b, n)
+		if err != nil {
+			return false, err
+		}
+		stack = append(stack, next...)
 	}
-	return false
+	return false, nil
 }
