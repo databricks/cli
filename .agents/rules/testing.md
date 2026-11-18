@@ -143,7 +143,7 @@ Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 - `musterr CMD...`: run CMD and fail the whole test if it *succeeds*; on the expected failure the script continues. Use to assert a command must error.
 - `withdir DIR CMD...`: run CMD with the working directory set to DIR, restoring it afterwards.
 - `git-repo-init`: initialize a deterministic git repo (fixed user/email, no hooks) and commit `databricks.yml`.
-- `uuid`, `sethome DIR`, `venv_activate`, `as-test-sp CMD...`, `readplanarg FILE`, `envsubst`: see `acceptance/script.prepare` for the full list and exact semantics.
+- `uuid`, `sethome DIR`, `venv_activate`, `as-test-sp CMD...`, `readplanarg FILE`, `envsubst`, `unset_ci_env`: see `acceptance/script.prepare` for the full list and exact semantics.
 
 **RULE: Wrap commands whose invocation should be visible in `output.txt` with `trace`.** The `>>> ...` line ties each block of output to the command that produced it; without it the output is an unlabeled wall of text.
 
