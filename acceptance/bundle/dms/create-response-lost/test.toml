@@ -1,0 +1,3 @@
+RecordRequests = false
+# Local only: the lost response is injected by fault.py, which a cloud run does not have.
+Cloud = false

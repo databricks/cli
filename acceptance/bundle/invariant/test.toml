@@ -8,7 +8,6 @@ Ignore = [
     "plan.json",
     "*.py",
     "*.json",
-    "*.err",
     "app",
 ]
 
