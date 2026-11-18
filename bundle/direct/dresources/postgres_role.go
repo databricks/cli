@@ -2,8 +2,12 @@ package dresources
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -123,7 +127,7 @@ func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*Postgres
 }
 
 func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
-	waiter, err := r.client.Postgres.CreateRole(ctx, postgres.CreateRoleRequest{
+	req := postgres.CreateRoleRequest{
 		RoleId: config.RoleId,
 		Parent: config.Parent,
 		Role: postgres.Role{
@@ -140,18 +144,60 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
-	if err != nil {
-		return "", nil, err
 	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateRole(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	return r.waitCreated(ctx, waiter)
+}
 
+// waitCreated waits for the create operation of a role that a create request returned.
+func (r *ResourcePostgresRole) waitCreated(ctx context.Context, waiter postgres.CreateRoleOperationInterface) (string, *PostgresRoleRemote, error) {
 	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
 		return "", nil, err
 	}
-
 	remote := makePostgresRoleRemote(result)
 	return remote.Name, remote, nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Role
+// creates on a just-created branch are answered with 500 INTERNAL_ERROR now and then, and the
+// request may have created the role anyway, so look for it before repeating the request.
+func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req postgres.CreateRoleRequest, start time.Time, createErr error) (string, *PostgresRoleRemote, error) {
+	if ctx.Err() != nil || !retry.IsTransient(ctx, createErr) || req.RoleId == "" {
+		return "", nil, createErr
+	}
+	// A role found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
+	}
+
+	name := req.Parent + "/roles/" + req.RoleId
+	return recoverPostgresCreate(ctx, postgresCreateRecovery[postgres.Role, *PostgresRoleRemote]{
+		name: name,
+		get: func(ctx context.Context) (*postgres.Role, error) {
+			return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
+		},
+		create: func(ctx context.Context) (func() (string, *PostgresRoleRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateRole(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (string, *PostgresRoleRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+		use: func(ctx context.Context, role *postgres.Role) (string, *PostgresRoleRemote, error) {
+			if !createdByRequestAt(role.CreateTime, start) {
+				return "", nil, fmt.Errorf("%w; role %s exists but was not created by this deployment", createErr, role.Name)
+			}
+			// Info, not Warn: the deploy got the role it asked for, so there is nothing to act on.
+			log.Infof(ctx, "using role %s, created despite the failed create request: %s", role.Name, createErr)
+			remote := makePostgresRoleRemote(role)
+			return remote.Name, remote, nil
+		},
+	}, createErr)
 }
 
 func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, entry *PlanEntry) (*PostgresRoleRemote, error) {
