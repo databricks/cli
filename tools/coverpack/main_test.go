@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -93,6 +94,9 @@ func TestPackMatchesCovdata(t *testing.T) {
 	head, err := exec.Command("git", "-C", src, "rev-parse", "HEAD").Output()
 	require.NoError(t, err)
 	bin := filepath.Join(t.TempDir(), "bin")
+	if runtime.GOOS == "windows" {
+		bin += ".exe" // exec only runs a file with an executable extension there
+	}
 	run(t, src, []string{"GOWORK=off", "GOFLAGS="}, "go", "build", "-cover", "-o", bin, ".")
 
 	acc, unit := t.TempDir(), t.TempDir()
