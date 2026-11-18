@@ -44,7 +44,7 @@ func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundl
 			continue
 		}
 
-		permissions = withoutCurrentUserManage(permissions, currentUserName(b))
+		permissions = withoutCurrentUserDefaults(permissions, currentUserName(b), config.GetResourceTypeFromKey(resourceKey))
 		if len(permissions) == 0 {
 			continue
 		}
@@ -268,14 +268,25 @@ func lookupDeployedField(b *bundle.Bundle, resourceKey, field string) (any, erro
 	return structaccess.Get(remote, path)
 }
 
-// withoutCurrentUserManage drops the current user's IS_OWNER and CAN_MANAGE, one of which
-// FixPermissions adds on deploy. Another principal's IS_OWNER is kept, so a transferred owner
-// stays the owner after the next deploy.
-func withoutCurrentUserManage(permissions []dresources.StatePermission, currentUser string) []dresources.StatePermission {
+// withoutCurrentUserDefaults drops the current user's grants that exist without being declared.
+// For most resources these are IS_OWNER and CAN_MANAGE, one of which FixPermissions adds on
+// deploy; another principal's IS_OWNER is kept, so a transferred owner stays the owner after the
+// next deploy. For a cluster policy it is the CAN_USE the backend grants its creator: only admins
+// create policies and admins can use every policy, so the grant is never needed in the config.
+func withoutCurrentUserDefaults(permissions []dresources.StatePermission, currentUser, resourceType string) []dresources.StatePermission {
 	return slices.DeleteFunc(permissions, func(p dresources.StatePermission) bool {
-		isCurrentUser := currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
-		return isCurrentUser && (p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage)
+		if !isCurrentUserPermission(p, currentUser) {
+			return false
+		}
+		if resourceType == "cluster_policies" {
+			return p.Level == iam.PermissionLevelCanUse
+		}
+		return p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage
 	})
+}
+
+func isCurrentUserPermission(p dresources.StatePermission, currentUser string) bool {
+	return currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
 }
 
 func currentUserName(b *bundle.Bundle) string {

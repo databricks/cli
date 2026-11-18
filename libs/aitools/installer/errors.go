@@ -57,6 +57,9 @@ const (
 	ReasonVersionIncompatible = "version-incompatible"
 	// ReasonExperimentalSkill: the named skill is experimental and --experimental was not set.
 	ReasonExperimentalSkill = "experimental-skill"
+	// ReasonUnportableSkill: the manifest lists the skill with a name or file
+	// path that is not portable, so it is never installed.
+	ReasonUnportableSkill = "unportable-skill"
 )
 
 func (e *SkillError) Error() string {
@@ -75,6 +78,11 @@ const maxFetchBodySize = 1 << 20
 // ErrManifestTooLarge reports a manifest response larger than maxFetchBodySize.
 // The command layer classifies it like a manifest that does not parse.
 var ErrManifestTooLarge = fmt.Errorf("skills manifest is larger than %d MiB", maxFetchBodySize>>20)
+
+// ErrUnsafeManifestPath reports a skills manifest that names a skill or file
+// outside the skills directory. The command layer classifies it like a
+// manifest that does not parse.
+var ErrUnsafeManifestPath = errors.New("skills manifest names a path outside the skills directory")
 
 // Stages of fetching skills content, recorded on FetchError so a failed
 // release lookup can be told apart from a failed download.

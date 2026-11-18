@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -114,13 +115,9 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
 	}
 
-	protoLogs := make([]string, len(l.logs))
-	for i, log := range l.logs {
-		b, err := json.Marshal(log)
-		if err != nil {
-			return fmt.Errorf("failed to marshal log: %w", err)
-		}
-		protoLogs[i] = string(b)
+	protoLogs, err := marshalLogs(l.logs)
+	if err != nil {
+		return err
 	}
 
 	if !cmdctx.HasConfigUsed(ctx) {
@@ -150,7 +147,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	apiClient, err := within(ctx, &l.running, func() (*client.DatabricksClient, error) {
-		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running)
+		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running, true)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
@@ -288,14 +285,24 @@ func within[T any](ctx context.Context, running *atomic.Int32, f func() (T, erro
 }
 
 // newAPIClient is client.New with authenticate as the auth visitor. The SDK
-// runs the auth visitor on every request, including its own retries.
-func newAPIClient(cfg *config.Config, running *atomic.Int32) (*client.DatabricksClient, error) {
+// runs the auth visitor on every request, including its own retries. Without
+// retries, the client makes a single attempt.
+func newAPIClient(cfg *config.Config, running *atomic.Int32, retries bool) (*client.DatabricksClient, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	clientCfg.AuthVisitor = func(r *http.Request) error {
 		return authenticate(r, cfg, running)
+	}
+	if !retries {
+		// The SDK retries some connection errors regardless of ErrorRetriable,
+		// so a minimal retry window is needed to stop after the first attempt.
+		// The attempt itself runs on the caller's context, so the window only
+		// ends the retrying; TestSendMakesOneAttempt fails if that changes.
+		clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
+		clientCfg.TransientErrors = nil
+		clientCfg.RetryTimeout = time.Nanosecond
 	}
 	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
 }
@@ -309,10 +316,92 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 		return struct{}{}, cfg.Authenticate(authReq)
 	})
 	if err != nil {
-		return fmt.Errorf("authenticating telemetry upload: %w", err)
+		// Authentication runs before the request is sent.
+		return &notSentError{fmt.Errorf("authenticating upload: %w", err)}
 	}
 	r.Header = authReq.Header
 	return nil
+}
+
+// Send uploads logs in a single request and returns an error unless all of them
+// were accepted. It is for events the user explicitly asked to send, so unlike
+// Upload it ignores DATABRICKS_CLI_DISABLE_TELEMETRY and never retries.
+func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) error {
+	protoLogs, err := marshalLogs(logs)
+	if err != nil {
+		return &notSentError{err}
+	}
+
+	var running atomic.Int32
+	apiClient, err := within(ctx, &running, func() (*client.DatabricksClient, error) {
+		return newAPIClient(cfg, &running, false)
+	})
+	if err != nil {
+		return &notSentError{fmt.Errorf("failed to create API client: %w", err)}
+	}
+
+	// A request is written only once its connection is set up, so a failure
+	// before then, such as a DNS, dial or TLS error, means nothing was sent.
+	var connected atomic.Bool
+	traceCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+		GotConn: func(httptrace.GotConnInfo) { connected.Store(true) },
+	})
+	resp, err := attempt(traceCtx, apiClient, protoLogs)
+	switch {
+	case err != nil && !connected.Load():
+		return &notSentError{err}
+	case err != nil:
+		return err
+	case resp.NumProtoSuccess < int64(len(protoLogs)):
+		return &notAcceptedError{Accepted: resp.NumProtoSuccess, Sent: int64(len(protoLogs))}
+	}
+	return nil
+}
+
+// notSentError marks a Send failure that happened before the request was sent,
+// so the server cannot have stored the logs.
+type notSentError struct {
+	err error
+}
+
+func (e *notSentError) Error() string { return e.err.Error() }
+func (e *notSentError) Unwrap() error { return e.err }
+
+// NotSent reports whether err, returned by Send, shows that the server stored
+// none of the logs: the request was never sent, the server rejected it, or it
+// accepted none of the logs. Any other error is ambiguous, because the server
+// may have stored the logs before the error.
+func NotSent(err error) bool {
+	if _, ok := errors.AsType[*notSentError](err); ok {
+		return true
+	}
+	if e, ok := errors.AsType[*notAcceptedError](err); ok {
+		return e.Accepted == 0
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500
+}
+
+// notAcceptedError is returned by Send when the server accepted fewer logs than
+// were sent, so the others were not stored.
+type notAcceptedError struct {
+	Accepted, Sent int64
+}
+
+func (e *notAcceptedError) Error() string {
+	return fmt.Sprintf("only %d of %d logs were accepted", e.Accepted, e.Sent)
+}
+
+func marshalLogs(logs []protos.FrontendLog) ([]string, error) {
+	protoLogs := make([]string, len(logs))
+	for i, log := range logs {
+		b, err := json.Marshal(log)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal log: %w", err)
+		}
+		protoLogs[i] = string(b)
+	}
+	return protoLogs, nil
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {

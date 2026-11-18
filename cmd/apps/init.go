@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
@@ -1964,11 +1965,18 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 		args = append(args, "--profile", profile)
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
-	cmd.Env = agents.SelfExecEnv(os.Environ())
+	cmd.Env = selfExecEnv(os.Environ())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	return cmd.Run()
+}
+
+// selfExecEnv returns environ for a CLI process apps init starts: it prints no
+// coding-agent hint (the parent's output already has one), and it does not
+// auto-install when the user turned the tools down in this process.
+func selfExecEnv(environ []string) []string {
+	return agents.SelfExecEnv(autoinstall.ChildEnv(environ))
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
@@ -1993,7 +2001,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(ctx, executable, args...)
-		cmd.Env = agents.SelfExecEnv(os.Environ())
+		cmd.Env = selfExecEnv(os.Environ())
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin

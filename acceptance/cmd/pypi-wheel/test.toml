@@ -1,0 +1,5 @@
+Cloud = false
+
+# uvx may need to create a Python environment.
+Timeout = '180s'
+TimeoutWindows = '240s'
