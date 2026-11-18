@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 // defaultConcurrency is the number of files copied in parallel. Each in-flight
@@ -44,77 +44,21 @@ type copy struct {
 	// would each fight for the spinner line).
 	showProgress bool
 
+	// outputJSON is set when the command renders JSON. A recursive copy then
+	// leaves out its one-line summary of a complete copy.
+	outputJSON bool
+
 	mu sync.Mutex // protect output from concurrent writes
 }
 
 // cpDirToDir recursively copies the content of a directory to another
-// directory.
-//
-// There is no guarantee on the order in which the files are copied.
-//
-// The method does not take care of retrying on error; this is considered to
-// be the responsibility of the Filer implementation. If a file copy fails,
-// the error is returned and the other copies are cancelled.
+// directory. There is no guarantee on the order in which the files are copied.
+// It keeps going past failed files; see [recursiveCopy].
 func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) error {
 	if !c.recursive {
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
-
-	// Create a cancellable context purely for the purpose of having a way to
-	// cancel the goroutines in case of error walking the directory.
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	// Pool of workers to process copy operations in parallel. The created
-	// context is the real context for this operation. It is shared by the
-	// walking function and the goroutines and can be cancelled manually
-	// by calling the cancel() function of its parent context.
-	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(c.concurrency)
-
-	// Walk the source directory, queueing file copy operations for processing.
-	sourceFs := filer.NewFS(ctx, c.sourceFiler)
-	err := fs.WalkDir(sourceFs, sourceDir, func(sourcePath string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Compute path relative to the source directory.
-		relPath, err := filepath.Rel(sourceDir, sourcePath)
-		if err != nil {
-			return err
-		}
-		relPath = filepath.ToSlash(relPath)
-
-		// Compute target path for the file.
-		targetPath := path.Join(targetDir, relPath)
-
-		// Create the directory synchronously. This must happen before files
-		// are copied into it, and WalkDir guarantees directories are visited
-		// before their contents.
-		if d.IsDir() {
-			return c.targetFiler.Mkdir(ctx, targetPath)
-		}
-
-		g.Go(func() error {
-			// Goroutines are queued and may start after the context is already
-			// cancelled (e.g. a prior copy failed). This check aims to avoid
-			// starting work that will inevitably fail.
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			// The walk already created the target directory, so skip the filer's
-			// per-file parent-directory check.
-			return c.cpFileToFile(ctx, sourcePath, targetPath, filer.CreateParentDirectories)
-		})
-		return nil
-	})
-	if err != nil {
-		cancel()     // cancel the goroutines
-		_ = g.Wait() // wait for the goroutines to finish
-		return err   // return the "real" error that led to cancellation
-	}
-	return g.Wait()
+	return (&recursiveCopy{c: c}).run(ctx, sourceDir, targetDir)
 }
 
 func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) error {
@@ -124,13 +68,22 @@ func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) er
 	return c.cpFileToFile(ctx, sourcePath, targetPath)
 }
 
-// cpFileToFile copies one file. extraModes are passed to Write, in addition to
-// OverwriteIfExists when --overwrite is set.
-func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string, extraModes ...filer.WriteMode) error {
+func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) error {
+	skipped, err := c.writeFile(ctx, sourcePath, targetPath)
+	if err != nil {
+		return err
+	}
+	return c.emitResult(ctx, sourcePath, targetPath, skipped)
+}
+
+// writeFile copies one file without printing its line, and reports whether it
+// was skipped because the target exists. extraModes are passed to Write, in
+// addition to OverwriteIfExists when --overwrite is set.
+func (c *copy) writeFile(ctx context.Context, sourcePath, targetPath string, extraModes ...filer.WriteMode) (bool, error) {
 	// Get reader for file at source path
 	r, err := c.sourceFiler.Read(ctx, sourcePath)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer r.Close()
 
@@ -154,25 +107,35 @@ func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string, 
 
 	// skip if file already exists
 	if !c.overwrite && writeErr != nil && errors.Is(writeErr, fs.ErrExist) {
+		return true, nil
+	}
+	return false, writeErr
+}
+
+// emitResult prints the line for a copied or skipped file.
+func (c *copy) emitResult(ctx context.Context, sourcePath, targetPath string, skipped bool) error {
+	if skipped {
 		return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
 	}
-	if writeErr != nil {
-		return writeErr
-	}
 	return c.emitFileCopiedEvent(ctx, sourcePath, targetPath)
+}
+
+// fullPaths returns the source and target paths with their scheme, as shown to
+// the user.
+func (c *copy) fullPaths(sourcePath, targetPath string) (string, string) {
+	if c.sourceScheme != "" {
+		sourcePath = path.Join(c.sourceScheme+":", sourcePath)
+	}
+	if c.targetScheme != "" {
+		targetPath = path.Join(c.targetScheme+":", targetPath)
+	}
+	return sourcePath, targetPath
 }
 
 // TODO: emit these events on stderr
 // TODO: add integration tests for these events
 func (c *copy) emitFileSkippedEvent(ctx context.Context, sourcePath, targetPath string) error {
-	fullSourcePath := sourcePath
-	if c.sourceScheme != "" {
-		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
-	}
-	fullTargetPath := targetPath
-	if c.targetScheme != "" {
-		fullTargetPath = path.Join(c.targetScheme+":", targetPath)
-	}
+	fullSourcePath, fullTargetPath := c.fullPaths(sourcePath, targetPath)
 
 	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
@@ -183,14 +146,7 @@ func (c *copy) emitFileSkippedEvent(ctx context.Context, sourcePath, targetPath 
 }
 
 func (c *copy) emitFileCopiedEvent(ctx context.Context, sourcePath, targetPath string) error {
-	fullSourcePath := sourcePath
-	if c.sourceScheme != "" {
-		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
-	}
-	fullTargetPath := targetPath
-	if c.targetScheme != "" {
-		fullTargetPath = path.Join(c.targetScheme+":", targetPath)
-	}
+	fullSourcePath, fullTargetPath := c.fullPaths(sourcePath, targetPath)
 
 	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
@@ -242,6 +198,7 @@ func newCpCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		c.outputJSON = root.OutputType(cmd) == flags.OutputJSON
 
 		// Get source filer and source path without scheme
 		fullSourcePath := args[0]

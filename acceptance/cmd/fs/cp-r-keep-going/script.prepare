@@ -1,0 +1,8 @@
+TARGET="dbfs:/Volumes/main/default/keep-going/dst"
+
+# cp_r runs fs cp -r with the given arguments and prints the per-file lines
+# sorted, since files are copied in parallel. It returns the exit code of fs cp.
+cp_r() {
+  $CLI fs cp -r "$@" | sort
+  return "${PIPESTATUS[0]}"
+}

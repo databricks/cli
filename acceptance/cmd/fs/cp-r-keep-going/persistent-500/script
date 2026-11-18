@@ -1,0 +1,7 @@
+# f3.txt contains INJECT_ERROR, so the testserver answers every upload of it
+# with a 500 whose body is not JSON. The file gets its retry after the walk,
+# then fails alone; the other files are copied and the command exits 1.
+errcode trace cp_r localdir ${TARGET} --concurrency 2
+
+title "Four uploads plus one retry of f3.txt"
+trace print_requests.py --summary --sort //api/2.0/fs/files/

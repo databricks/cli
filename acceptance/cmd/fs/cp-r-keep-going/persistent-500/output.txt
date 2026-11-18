@@ -1,0 +1,20 @@
+
+>>> cp_r localdir dbfs:/Volumes/main/default/keep-going/dst --concurrency 2
+Copy incomplete: 3 copied, 0 skipped (already existed), 1 failed, 0 not attempted.
+Failed:
+  localdir/f3.txt -> dbfs:/Volumes/main/default/keep-going/dst/f3.txt: HTTP 500 Internal Server Error
+Error: 1 file was not copied
+localdir/f1.txt -> dbfs:/Volumes/main/default/keep-going/dst/f1.txt
+localdir/f2.txt -> dbfs:/Volumes/main/default/keep-going/dst/f2.txt
+localdir/f4.txt -> dbfs:/Volumes/main/default/keep-going/dst/f4.txt
+
+Exit code: 1
+
+=== Four uploads plus one retry of f3.txt
+
+>>> print_requests.py --summary --sort //api/2.0/fs/files/
+PUT /api/2.0/fs/files/Volumes/main/default/keep-going/dst/f1.txt overwrite=false
+PUT /api/2.0/fs/files/Volumes/main/default/keep-going/dst/f2.txt overwrite=false
+PUT /api/2.0/fs/files/Volumes/main/default/keep-going/dst/f3.txt overwrite=false
+PUT /api/2.0/fs/files/Volumes/main/default/keep-going/dst/f3.txt overwrite=false
+PUT /api/2.0/fs/files/Volumes/main/default/keep-going/dst/f4.txt overwrite=false
