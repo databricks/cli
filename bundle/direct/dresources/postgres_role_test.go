@@ -69,7 +69,8 @@ var (
 	// What the cloud answers to a role create now and then, right after the branch is created.
 	roleInternalError = branchError(500, "INTERNAL_ERROR", "The request could not be processed. Please try again later and contact Databricks if the problem persists.")
 	roleNotFound      = branchError(404, "NOT_FOUND", "role not found")
-	roleAlreadyExists = branchError(409, "ALREADY_EXISTS", "role with such id already exists")
+	// The real API answers a duplicate role with 400, not 409 ALREADY_EXISTS.
+	roleAlreadyExists = branchError(400, "BAD_REQUEST", "role with that name already exists")
 )
 
 func testRole(created time.Time) postgres.Role {
