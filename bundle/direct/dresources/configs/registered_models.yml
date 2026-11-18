@@ -28,6 +28,11 @@ provided_id_fields:
     reason: id_field
   - field: schema_name
     reason: id_field
+parent_id_fields:
+  - field: catalog_name
+    reason: parent
+  - field: schema_name
+    reason: parent
 recreate_on_changes:
   - field: storage_location
     reason: immutable
