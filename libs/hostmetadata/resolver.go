@@ -84,13 +84,14 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, nil
 		}
-		// The raw error is env-dependent (DNS vs TLS vs HTTP) and would make
-		// acceptance goldens brittle, so keep it at Debug; the Warn text is
-		// stable (host only) for user visibility.
-		// A timeout is still cached, so the next commands don't wait on a
-		// hanging host again, but it says nothing about the host's config and
-		// the SDK falls back to the user config, so it is not worth a warning.
-		if isTimeout(err) {
+		// The Warn text is stable (host only) for user visibility. The raw
+		// error is env-dependent (DNS vs TLS vs HTTP) and would make
+		// acceptance goldens brittle, so it stays at Debug.
+		// A host that accepts the connection but doesn't answer in time is
+		// still cached, so the next commands don't wait on it again, but the
+		// timeout says nothing about the host's config and the SDK falls back
+		// to the user config, so it is logged at Debug too.
+		if isSDKInactivityTimeout(err) {
 			log.Debugf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
 		} else {
 			log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
@@ -101,13 +102,19 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 	}
 }
 
-// isTimeout reports whether err is an HTTP request timeout. The SDK replaces
-// the url.Error cause with an unwrapped "request timed out after ... of
-// inactivity" error, so its timeouts are matched by text.
-func isTimeout(err error) bool {
+// sdkInactivityTimeoutPrefix starts the error the SDK puts in a url.Error when
+// a request sees no activity for HTTPTimeout (httpclient/api_client.go).
+const sdkInactivityTimeoutPrefix = "request timed out after "
+
+// isSDKInactivityTimeout reports whether err is the SDK's HTTP inactivity
+// timeout. The SDK replaces the url.Error cause with a new unwrapped error, so
+// there is no sentinel or type to match and the message text is the only
+// signal; TestNewResolver_Timeout_LogsAtDebugAndCachesNegative runs the real
+// SDK client and catches a change in that wording.
+func isSDKInactivityTimeout(err error) bool {
 	uerr, ok := errors.AsType[*url.Error](err)
-	if !ok {
+	if !ok || uerr.Err == nil {
 		return false
 	}
-	return uerr.Timeout() || strings.HasPrefix(uerr.Err.Error(), "request timed out after ")
+	return strings.HasPrefix(uerr.Err.Error(), sdkInactivityTimeoutPrefix)
 }

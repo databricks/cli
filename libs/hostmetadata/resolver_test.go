@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sync/atomic"
 	"testing"
 
@@ -159,17 +160,16 @@ func TestNewResolver_Timeout_LogsAtDebugAndCachesNegative(t *testing.T) {
 	assert.Equal(t, first, hits.Load(), "a timeout must be negatively cached")
 }
 
-func TestNewResolver_ConnectionRefused_LogsWarn(t *testing.T) {
+func TestNewResolver_OtherFetchError_LogsWarn(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
-	server := httptest.NewServer(http.NotFoundHandler())
-	host := server.URL
-	server.Close()
-
-	r := hostmetadata.NewResolver(sdkFetch(t, host))
+	fetch := func(ctx context.Context, host string) (*config.HostMetadata, error) {
+		return nil, &url.Error{Op: "Get", URL: host, Err: errors.New("dial tcp: lookup example: no such host")}
+	}
+	r := hostmetadata.NewResolver(fetch)
 
 	ctx, buf := captureLog(t)
-	_, err := r(ctx, host)
+	_, err := r(ctx, "https://example")
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "Warn: [hostmetadata] failed to fetch host metadata for "+host)
+	assert.Contains(t, buf.String(), "Warn: [hostmetadata] failed to fetch host metadata for https://example")
 }
