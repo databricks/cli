@@ -1,0 +1,14 @@
+
+>>> cp_r localdir dbfs:/Volumes/main/default/keep-going/dst --concurrency 2
+Copied 6 files.
+localdir/f1.txt -> dbfs:/Volumes/main/default/keep-going/dst/f1.txt
+localdir/f2.txt -> dbfs:/Volumes/main/default/keep-going/dst/f2.txt
+localdir/f3.txt -> dbfs:/Volumes/main/default/keep-going/dst/f3.txt
+localdir/f4.txt -> dbfs:/Volumes/main/default/keep-going/dst/f4.txt
+localdir/f5.txt -> dbfs:/Volumes/main/default/keep-going/dst/f5.txt
+localdir/f6.txt -> dbfs:/Volumes/main/default/keep-going/dst/f6.txt
+
+=== Six uploads plus the six that hit the burst
+
+>>> print_requests.py --summary //api/2.0/fs/files/
+12

@@ -1,0 +1,9 @@
+
+>>> cp_r localdir dbfs:/Volumes/main/default/keep-going/dst --concurrency 1
+Copy incomplete: 0 copied, 0 skipped (already existed), 1 failed, 3 not attempted.
+Stopped: files kept failing and none was copied for 2 seconds, so no new files were started.
+Failed:
+  localdir/f1.txt -> dbfs:/Volumes/main/default/keep-going/dst/f1.txt: databricks-api error: Fault injected by test. (HTTP 500 Internal Server Error)
+Error: copy stopped: files kept failing and none was copied for 2 seconds
+
+Exit code: 1

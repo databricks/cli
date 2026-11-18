@@ -33,9 +33,20 @@ const maxListedFailures = 10
 // finish. It is internal, not a flag.
 const stallTimeout = 5 * time.Minute
 
-// stallTimeoutEnvVar is an undocumented, test-only override of stallTimeout in
-// milliseconds.
-const stallTimeoutEnvVar = "DATABRICKS_FS_CP_STALL_TIMEOUT_MS"
+// probeBackoffMin and probeBackoffMax bound the pause before each attempt made
+// while the circuit breaker is open. A Retry-After hint from the server is
+// honored, capped at probeBackoffMax.
+const (
+	probeBackoffMin = 2 * time.Second
+	probeBackoffMax = 30 * time.Second
+)
+
+// Undocumented, test-only overrides of stallTimeout and probeBackoffMax in
+// milliseconds. A probeBackoffMax below probeBackoffMin lowers the minimum too.
+const (
+	stallTimeoutEnvVar    = "DATABRICKS_FS_CP_STALL_TIMEOUT_MS"
+	probeBackoffMaxEnvVar = "DATABRICKS_FS_CP_PROBE_BACKOFF_MAX_MS"
+)
 
 // errorClass says what a recursive copy does after an error.
 type errorClass int
@@ -135,6 +146,11 @@ type copyJob struct {
 //     gets one more full attempt, with its source reopened.
 //   - A failure that is not retryable fails only that file, except that 401,
 //     403, cancellation and a failure to print stop the copy.
+//   - After --concurrency consecutive retryable failures, a circuit breaker
+//     opens. While it is open no new files are started. Instead, one deferred
+//     file at a time is tried, with a backoff between attempts. The first
+//     success closes it. A failed probe defers its file again, so during an
+//     outage a file can be tried more than twice, until the stall timeout.
 //   - If files keep failing and none has been copied for the stall timeout,
 //     no new files are started and in-flight ones finish. A slow copy with no
 //     failures never stalls.
@@ -145,9 +161,12 @@ type copyJob struct {
 type recursiveCopy struct {
 	c *copy
 
-	// now is the clock, injectable for tests.
-	now          func() time.Time
-	stallTimeout time.Duration
+	// now and sleep are the clock, injectable for tests.
+	now             func() time.Time
+	sleep           func(ctx context.Context, d time.Duration) error
+	stallTimeout    time.Duration
+	probeBackoffMin time.Duration
+	probeBackoffMax time.Duration
 
 	// cancel stops in-flight copies after a fatal error.
 	cancel context.CancelFunc
@@ -170,6 +189,13 @@ type recursiveCopy struct {
 	// lastSuccess. A permanent error such as a 404 is not a sign of an outage.
 	failingSince time.Time
 
+	// consecutiveRetryable counts retryable failures since the last success.
+	consecutiveRetryable int
+	breakerOpen          bool
+	probeBackoff         time.Duration
+	// lastRetryAfter is the largest Retry-After hint since the last success.
+	lastRetryAfter time.Duration
+
 	// fatalErr is the error that stopped the copy, if any.
 	fatalErr error
 	// stalled is set once no file succeeded for the stall timeout.
@@ -180,11 +206,15 @@ type recursiveCopy struct {
 }
 
 func newRecursiveCopy(ctx context.Context, c *copy) *recursiveCopy {
-	return &recursiveCopy{
-		c:            c,
-		now:          time.Now,
-		stallTimeout: durationFromEnv(ctx, stallTimeoutEnvVar, stallTimeout),
+	r := &recursiveCopy{
+		c:               c,
+		now:             time.Now,
+		sleep:           sleepContext,
+		stallTimeout:    durationFromEnv(ctx, stallTimeoutEnvVar, stallTimeout),
+		probeBackoffMax: durationFromEnv(ctx, probeBackoffMaxEnvVar, probeBackoffMax),
 	}
+	r.probeBackoffMin = min(probeBackoffMin, r.probeBackoffMax)
+	return r
 }
 
 // durationFromEnv reads a duration in milliseconds from the environment
@@ -195,6 +225,17 @@ func durationFromEnv(ctx context.Context, key string, def time.Duration) time.Du
 		return def
 	}
 	return time.Duration(ms) * time.Millisecond
+}
+
+func sleepContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }
 
 func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) error {
@@ -246,24 +287,92 @@ func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) er
 	return r.finish(ctx)
 }
 
-// start copies job in the background once a slot is free, or records it as not
-// started if the copy is stopping.
+// start copies job in the background once a slot is free and the breaker
+// admits it, or records it as not started if the copy is stopping.
 func (r *recursiveCopy) start(ctx context.Context, job copyJob) {
-	// Check again after waiting for a slot: the copy may have stopped.
 	if r.stopping(ctx) {
 		r.notStarted(job)
 		return
 	}
+	// Wait for a slot before checking the breaker, so the outcome of the
+	// file before is known.
 	r.slots <- struct{}{}
-	if r.stopping(ctx) {
+	if !r.admit(ctx, job) {
 		<-r.slots
-		r.notStarted(job)
 		return
 	}
 	r.inflight.Go(func() {
 		defer func() { <-r.slots }()
-		r.copyOne(ctx, job)
+		_ = r.copyOne(ctx, job)
 	})
+}
+
+// admit waits until job may start, and reports whether it should. It runs on
+// the walker goroutine, so probing while the breaker is open is serial by
+// construction. While the
+// breaker is open, it probes one deferred file at a time, after a backoff,
+// until one succeeds or the copy stops. On the deferred pass, or when nothing
+// is deferred, job itself is the probe, and then admit has copied it. If the
+// copy stops, admit records job as not started.
+func (r *recursiveCopy) admit(ctx context.Context, job copyJob) bool {
+	for {
+		if r.stopping(ctx) {
+			r.notStarted(job)
+			return false
+		}
+		delay, open := r.breakerDelay()
+		if !open {
+			return true
+		}
+		if r.sleep(ctx, delay) != nil || r.stopping(ctx) {
+			r.notStarted(job)
+			return false
+		}
+		probe, deferred := job, false
+		if !job.final {
+			if p, ok := r.popDeferred(); ok {
+				probe, deferred = p, true
+			}
+		}
+		log.Debugf(ctx, "fs cp: breaker open, probing with %s after waiting %s", probe.sourcePath, delay)
+		if err := r.copyOne(ctx, probe); err != nil {
+			log.Debugf(ctx, "fs cp: probe with %s failed: %s", probe.sourcePath, describeError(err))
+		} else {
+			log.Debugf(ctx, "fs cp: probe with %s succeeded", probe.sourcePath)
+		}
+		if !deferred {
+			return false
+		}
+	}
+}
+
+// breakerDelay reports whether the breaker is open and, if it is, how long to
+// wait before the next probe. Each call doubles the backoff for the next one.
+func (r *recursiveCopy) breakerDelay() (time.Duration, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.breakerOpen {
+		return 0, false
+	}
+	delay := r.probeBackoff
+	r.probeBackoff = min(r.probeBackoff*2, r.probeBackoffMax)
+	return min(max(delay, r.lastRetryAfter), r.probeBackoffMax), true
+}
+
+// retryAfter returns the server's Retry-After hint for err, or 0.
+func retryAfter(err error) time.Duration {
+	if d := apiretry.RetryDurationHint(err); d > 0 {
+		return d
+	}
+	aerr, ok := errors.AsType[*sdkapierr.APIError](err)
+	if !ok || aerr.ResponseWrapper == nil || aerr.ResponseWrapper.Response == nil {
+		return 0
+	}
+	seconds, err := strconv.Atoi(aerr.ResponseWrapper.Response.Header.Get("Retry-After"))
+	if err != nil || seconds <= 0 {
+		return 0
+	}
+	return time.Duration(seconds) * time.Second
 }
 
 // stopping reports whether the copy should start no new files: after a fatal
@@ -341,8 +450,8 @@ var errCancelledMidCopy = errors.New("cancelled: the copy stopped before this fi
 // errPartialTarget fails a retried file whose target exists with another size.
 var errPartialTarget = errors.New("target exists with a different size; an earlier attempt may have left a partial file. Rerun with --overwrite to replace it")
 
-// copyOne copies one file and records the outcome.
-func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) {
+// copyOne copies one file, records the outcome and returns its error.
+func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) error {
 	// The walk already created the target directory, so skip the filer's
 	// per-file parent-directory check.
 	skipped, err := r.c.writeFile(ctx, job.sourcePath, job.targetPath, filer.CreateParentDirectories)
@@ -382,7 +491,7 @@ func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) {
 			job.err = errCancelledMidCopy
 		}
 		r.notStarted(job)
-		return
+		return err
 	}
 
 	r.mu.Lock()
@@ -391,8 +500,23 @@ func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) {
 	case err == nil:
 		r.lastSuccess = r.now()
 		r.failingSince = time.Time{}
+		r.consecutiveRetryable = 0
+		r.lastRetryAfter = 0
+		if r.breakerOpen {
+			r.breakerOpen = false
+			log.Infof(ctx, "fs cp: breaker closed: %s was copied; starting new files again", job.sourcePath)
+		}
 	case class == classRetryable && r.failingSince.IsZero():
 		r.failingSince = r.now()
+	}
+	if class == classRetryable {
+		r.consecutiveRetryable++
+		r.lastRetryAfter = max(r.lastRetryAfter, retryAfter(err))
+		if !r.breakerOpen && r.consecutiveRetryable >= r.c.concurrency {
+			r.breakerOpen = true
+			r.probeBackoff = r.probeBackoffMin
+			log.Infof(ctx, "fs cp: breaker opened after %d retryable failures in a row (last: %s); trying one file at a time", r.consecutiveRetryable, describeError(err))
+		}
 	}
 	switch {
 	case err == nil && skipped:
@@ -414,6 +538,7 @@ func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) {
 			r.cancel()
 		}
 	}
+	return err
 }
 
 // checkExistingTarget returns errPartialTarget if the target's size differs from

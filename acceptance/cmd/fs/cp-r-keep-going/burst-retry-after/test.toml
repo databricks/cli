@@ -1,0 +1,2 @@
+# Test-only override: cap the breaker's wait at 1s.
+Env.DATABRICKS_FS_CP_PROBE_BACKOFF_MAX_MS = "1000"

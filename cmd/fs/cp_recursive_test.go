@@ -24,8 +24,10 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	sdkapierr "github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common"
 	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func apiError(status int, header http.Header, body string) error {
@@ -162,6 +164,7 @@ func runCopy(t *testing.T, ctx context.Context, c *copy, stdout io.Writer, opts 
 	ctx = log.NewContext(ctx, slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	// Ignore any override in the environment: tests assume the defaults.
 	ctx = env.Set(ctx, stallTimeoutEnvVar, "")
+	ctx = env.Set(ctx, probeBackoffMaxEnvVar, "")
 	r := newRecursiveCopy(ctx, c)
 	for _, opt := range opts {
 		opt(r)
@@ -458,10 +461,28 @@ func (f *flakySource) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	return f.FakeFiler.ReadDir(ctx, name)
 }
 
-// fakeClock is a clock that only moves when the test advances it.
+// fakeClock is a clock that only moves when the test advances it or the code
+// under test sleeps.
 type fakeClock struct {
-	mu sync.Mutex
-	t  time.Time
+	mu     sync.Mutex
+	t      time.Time
+	sleeps []time.Duration
+}
+
+func (c *fakeClock) install(r *recursiveCopy) {
+	r.now = c.Now
+	r.sleep = c.Sleep
+}
+
+func (c *fakeClock) Sleep(ctx context.Context, d time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.t = c.t.Add(d)
+	c.sleeps = append(c.sleeps, d)
+	return nil
 }
 
 func (c *fakeClock) Now() time.Time {
@@ -478,14 +499,10 @@ func (c *fakeClock) Advance(d time.Duration) {
 
 func TestRecursiveCopyStall(t *testing.T) {
 	unavailable := apiError(503, nil, "")
-	stalledSix := func(notAttempted string) string {
-		var b strings.Builder
-		fmt.Fprintf(&b, "Copy incomplete: 0 copied, 0 skipped (already existed), 6 failed, %s not attempted.\n"+
-			"Stopped: files kept failing and none was copied for 5 minutes, so no new files were started.\nFailed:\n", notAttempted)
-		for _, f := range names(6) {
-			fmt.Fprintf(&b, "  src/%s -> dst/%s: HTTP 503 Service Unavailable\n", f, f)
-		}
-		return b.String()
+	stalledOne := func(notAttempted string) string {
+		return "Copy incomplete: 0 copied, 0 skipped (already existed), 1 failed, " + notAttempted + " not attempted.\n" +
+			"Stopped: files kept failing and none was copied for 5 minutes, so no new files were started.\nFailed:\n" +
+			"  src/f00.txt -> dst/f00.txt: HTTP 503 Service Unavailable\n"
 	}
 
 	tests := []struct {
@@ -500,16 +517,15 @@ func TestRecursiveCopyStall(t *testing.T) {
 		wantStderr  string
 	}{
 		{
-			// Each write fails after a minute. f00 fails at 1 minute, so the
-			// timeout runs to 6 minutes: f00 to f05 fail and are deferred,
-			// then no new files start, and the deferred files keep their
-			// errors.
+			// Each write fails after a minute. f00 fails and opens the
+			// breaker, which probes it until files have kept failing for 5
+			// minutes. Then no new files start, and f00 keeps its error.
 			name:       "an outage stops the copy",
 			files:      names(20),
 			writeTime:  time.Minute,
 			fail:       func(string, int) bool { return true },
 			wantErr:    "copy stopped: files kept failing and none was copied for 5 minutes",
-			wantStderr: stalledSix("14"),
+			wantStderr: stalledOne("19"),
 		},
 		{
 			// While the stalled copy only counts the files left, a failed
@@ -520,7 +536,7 @@ func TestRecursiveCopyStall(t *testing.T) {
 			writeTime:   time.Minute,
 			fail:        func(string, int) bool { return true },
 			wantErr:     "copy stopped: files kept failing and none was copied for 5 minutes",
-			wantStderr:  stalledSix("at least 14"),
+			wantStderr:  stalledOne("at least 19"),
 		},
 		{
 			// Writes take 2 minutes and every other one fails on its first
@@ -589,7 +605,7 @@ func TestRecursiveCopyStall(t *testing.T) {
 				}}
 			}
 			c := &copy{recursive: true, concurrency: 1, sourceFiler: source, targetFiler: target}
-			res := runCopy(t, ctx, c, nil, func(r *recursiveCopy) { r.now = clock.Now })
+			res := runCopy(t, ctx, c, nil, clock.install)
 
 			if tt.wantErr == "" {
 				assert.NoError(t, res.err)
@@ -680,4 +696,151 @@ func TestFormatDuration(t *testing.T) {
 	assert.Equal(t, "1 minute", formatDuration(time.Minute))
 	assert.Equal(t, "90 seconds", formatDuration(90*time.Second))
 	assert.Equal(t, "1.5s", formatDuration(1500*time.Millisecond))
+}
+
+func TestRecursiveCopyBreakerBackoff(t *testing.T) {
+	tests := []struct {
+		name       string
+		retryAfter string
+		wantSleeps []time.Duration
+	}{
+		{
+			name:       "exponential from 2s",
+			wantSleeps: []time.Duration{2 * time.Second, 4 * time.Second, 8 * time.Second, 16 * time.Second},
+		},
+		{
+			name:       "Retry-After above the backoff is honored",
+			retryAfter: "5",
+			wantSleeps: []time.Duration{5 * time.Second, 5 * time.Second, 8 * time.Second, 16 * time.Second},
+		},
+		{
+			name:       "Retry-After is capped at 30s",
+			retryAfter: "120",
+			wantSleeps: []time.Duration{30 * time.Second, 30 * time.Second, 30 * time.Second, 30 * time.Second},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			header := http.Header{}
+			if tt.retryAfter != "" {
+				header.Set("Retry-After", tt.retryAfter)
+			}
+			// The first 4 writes fail with 503. With one worker the breaker
+			// opens after the first, and each probe retries the deferred f00
+			// until one succeeds.
+			var mu sync.Mutex
+			failuresLeft := 4
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			target := newScriptedTarget(t, cancel, func(context.Context, string, int) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if failuresLeft > 0 {
+					failuresLeft--
+					return apiError(503, header, "")
+				}
+				return nil
+			})
+			c := &copy{recursive: true, concurrency: 1, sourceFiler: testSource(names(3)...), targetFiler: target}
+			clock := &fakeClock{}
+			res := runCopy(t, ctx, c, nil, clock.install)
+
+			require.NoError(t, res.err)
+			assert.Equal(t, "Copied 3 files.\n", res.stderr)
+			assert.Equal(t, tt.wantSleeps, clock.sleeps)
+			assert.Equal(t, []string{"dst/f00.txt", "dst/f00.txt", "dst/f00.txt", "dst/f00.txt", "dst/f00.txt", "dst/f01.txt", "dst/f02.txt"}, target.order)
+			for _, line := range []string{
+				`level=INFO msg="fs cp: breaker opened after 1 retryable failures in a row (last: HTTP 503 Service Unavailable); trying one file at a time"`,
+				"fs cp: probe with src/f00.txt failed: HTTP 503 Service Unavailable",
+				"fs cp: probe with src/f00.txt succeeded",
+				`level=INFO msg="fs cp: breaker closed: src/f00.txt was copied; starting new files again"`,
+			} {
+				assert.Contains(t, res.log, line)
+			}
+		})
+	}
+}
+
+func TestRecursiveCopyBreakerOnDeferredPass(t *testing.T) {
+	// f00 and f01 fail on their first attempt, which opens the breaker
+	// (--concurrency 2). On the deferred pass, the first retry is the probe:
+	// it runs after a backoff, succeeds and closes the breaker, and the second
+	// retry starts normally.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	target := newScriptedTarget(t, cancel, func(ctx context.Context, p string, attempt int) error {
+		if attempt == 1 {
+			return apiError(503, nil, "")
+		}
+		return nil
+	})
+	c := &copy{recursive: true, concurrency: 2, sourceFiler: testSource(names(2)...), targetFiler: target}
+	clock := &fakeClock{}
+	res := runCopy(t, ctx, c, nil, clock.install)
+
+	require.NoError(t, res.err)
+	assert.Equal(t, "Copied 2 files.\n", res.stderr)
+	assert.Equal(t, []time.Duration{2 * time.Second}, clock.sleeps)
+	assert.Equal(t, map[string]int{"dst/f00.txt": 2, "dst/f01.txt": 2}, target.attempts)
+	assert.Contains(t, res.log, "fs cp: breaker open, probing with src/f0")
+	assert.Contains(t, res.log, "fs cp: breaker closed")
+}
+
+func TestBreakerOpensAndCloses(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	hint := http.Header{"Retry-After": []string{"9"}}
+	steps := []struct {
+		file     string
+		err      error
+		wantOpen bool
+	}{
+		// With --concurrency 2, a success between failures keeps it closed.
+		{"f00.txt", apiError(503, nil, ""), false},
+		{"f01.txt", nil, false},
+		{"f02.txt", apiError(500, nil, ""), false},
+		// Two in a row open it. A later failure without a hint keeps the
+		// Retry-After of the one before.
+		{"f03.txt", apiError(503, hint, ""), true},
+		{"f04.txt", apiError(500, nil, ""), true},
+		{"f05.txt", nil, false},
+	}
+	errs := map[string]error{}
+	var files []string
+	for _, step := range steps {
+		errs["dst/"+step.file] = step.err
+		files = append(files, step.file)
+	}
+	c := &copy{concurrency: 2, sourceFiler: testSource(files...)}
+	c.targetFiler = newScriptedTarget(t, nil, func(ctx context.Context, p string, attempt int) error { return errs[p] })
+	r := newRecursiveCopy(ctx, c)
+	r.cancel = func() {}
+
+	for _, step := range steps {
+		_ = r.copyOne(ctx, copyJob{sourcePath: "src/" + step.file, targetPath: "dst/" + step.file})
+		assert.Equal(t, step.wantOpen, r.breakerOpen, "after %s", step.file)
+		if step.file == "f04.txt" {
+			delay, open := r.breakerDelay()
+			assert.True(t, open)
+			assert.Equal(t, 9*time.Second, delay)
+		}
+	}
+	assert.Len(t, r.deferred, 4)
+}
+
+func TestRetryAfter(t *testing.T) {
+	header := http.Header{"Retry-After": []string{"7"}}
+	assert.Equal(t, 7*time.Second, retryAfter(apiError(503, header, "")))
+	assert.Equal(t, time.Duration(0), retryAfter(apiError(503, nil, "")))
+	dbfs := &sdkapierr.APIError{StatusCode: 503, ResponseWrapper: &common.ResponseWrapper{Response: &http.Response{Header: header}}}
+	assert.Equal(t, 7*time.Second, retryAfter(dbfs))
+}
+
+func TestProbeBackoffFromEnv(t *testing.T) {
+	r := newRecursiveCopy(t.Context(), &copy{})
+	assert.Equal(t, probeBackoffMin, r.probeBackoffMin)
+	assert.Equal(t, probeBackoffMax, r.probeBackoffMax)
+
+	r = newRecursiveCopy(env.Set(t.Context(), probeBackoffMaxEnvVar, "100"), &copy{})
+	assert.Equal(t, 100*time.Millisecond, r.probeBackoffMax)
+	assert.Equal(t, 100*time.Millisecond, r.probeBackoffMin, "a lower maximum lowers the minimum")
 }

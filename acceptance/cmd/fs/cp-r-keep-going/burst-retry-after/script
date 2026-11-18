@@ -1,0 +1,11 @@
+# A burst of six 500s with Retry-After. The burst is a 500 and not a 503: the
+# filer retries a 503 itself, ten times over about 75 seconds, before the copy
+# sees it. Two failures in a row open the breaker (--concurrency 2), so the
+# copy probes one deferred file at a time, waiting for Retry-After (capped by
+# the test override at 1s), until the burst ends. Every file is then copied.
+fault.py --header Retry-After:1 "PUT /api/2.0/fs/files/**" 500 0 6
+
+trace cp_r localdir ${TARGET} --concurrency 2
+
+title "Six uploads plus the six that hit the burst"
+trace print_requests.py --summary //api/2.0/fs/files/ | wc -l | tr -d ' '
