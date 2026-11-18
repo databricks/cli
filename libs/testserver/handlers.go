@@ -966,7 +966,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FeaturesCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.Features, strings.ToLower(req.Vars["full_name"]))
 	})
 	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
