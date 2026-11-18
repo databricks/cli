@@ -114,7 +114,7 @@ Examples:
 					// changes are restricted to the selected resources.
 					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
-						// Reported as skipped, not failed, so it must not count as a load failure.
+						// Reported as skipped in JSON output, so it must not count as a load failure.
 						if errors.Is(err, configsync.ErrNoMatchingSelector) {
 							stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryNoMatchingSelector
 						}

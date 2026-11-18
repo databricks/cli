@@ -123,7 +123,8 @@ type BundleConfigRemoteSyncEvent struct {
 	ErrorMessage string `json:"error_message,omitempty"`
 
 	// Category of the failure when the command exits with an error, or
-	// NO_MATCHING_SELECTOR for a run skipped because no selector matched.
+	// NO_MATCHING_SELECTOR when no selector matched (reported as skipped in JSON
+	// output).
 	// Unset on success.
 	ErrorCategory BundleConfigRemoteSyncErrorCategory `json:"error_category,omitempty"`
 }
