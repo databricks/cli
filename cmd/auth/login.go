@@ -663,14 +663,15 @@ func isHTTPScheme(scheme string) bool {
 	return scheme == "http" || scheme == "https"
 }
 
-// Sets the host in the persistentAuth object based on the provided arguments and flags.
-// Follows the following precedence:
+// setHostAndAccountId sets the host and, for account and unified hosts, the
+// account ID of authArguments.
+//
+// The host is taken in this precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
 // 2. Profile host, if available.
 // 3. Prompt the user for the host.
 //
-// Set the account in the persistentAuth object based on the flags.
-// Follows the following precedence:
+// The account ID is taken in this precedence:
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.

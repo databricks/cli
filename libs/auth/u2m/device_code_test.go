@@ -343,8 +343,8 @@ func TestNewDeviceCodeLogin_Resources(t *testing.T) {
 	assert.EqualError(t, err, "device code login does not support resource indicators")
 }
 
-// accountDeviceCodeEndpointSupplier serves the endpoints of account xyz, which
-// only its discovery document advertises the device authorization endpoint of.
+// accountDeviceCodeEndpointSupplier serves the endpoints of account xyz. Only
+// its discovery document advertises the device authorization endpoint.
 type accountDeviceCodeEndpointSupplier struct {
 	MockOAuthEndpointSupplier
 	deviceAuthAdvertise bool
