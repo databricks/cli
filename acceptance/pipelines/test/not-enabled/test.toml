@@ -1,0 +1,11 @@
+# The service rejects a request with test_options where the testing API is off. The test server
+# does not model that per-workspace setting, so the response is stubbed.
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '''
+{
+    "error_code": "INVALID_PARAMETER_VALUE",
+    "message": "Pipeline testing is not enabled for this pipeline. Contact your Databricks account team to join the preview."
+}
+'''
+Response.StatusCode = 400
