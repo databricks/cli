@@ -250,3 +250,15 @@ func TestGetUserPrincipalReturnsUser(t *testing.T) {
 	assert.Equal(t, "test-user", user.UserName)
 }
 
+// GetCurrentUserOnce makes a single attempt, so a probe fails fast on a transient 500.
+func TestGetCurrentUserOnceDoesNotRetryOn500(t *testing.T) {
+	var calls atomic.Int32
+	w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
+		calls.Add(1)
+		return testserver.Response{StatusCode: http.StatusInternalServerError, Body: map[string]any{"error_code": "TEMPORARILY_UNAVAILABLE"}}
+	})
+
+	_, err := GetCurrentUserOnce(t.Context(), w)
+	require.Error(t, err)
+	assert.Equal(t, int32(1), calls.Load())
+}

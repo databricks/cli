@@ -110,7 +110,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = iamutil.GetCurrentUser(callCtx, w)
+		_, err = iamutil.GetCurrentUserOnce(callCtx, w)
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {

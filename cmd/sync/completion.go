@@ -45,7 +45,7 @@ func completeRemotePath(
 	wsc *databricks.WorkspaceClient,
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
-	me, err := iamutil.GetCurrentUser(ctx, wsc)
+	me, err := iamutil.GetCurrentUserOnce(ctx, wsc)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

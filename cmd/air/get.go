@@ -151,7 +151,7 @@ func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err err
 	if !errors.Is(err, apierr.ErrUnauthenticated) && !errors.Is(err, apierr.ErrPermissionDenied) {
 		return nil
 	}
-	_, meErr := iamutil.GetCurrentUser(ctx, w)
+	_, meErr := iamutil.GetCurrentUserOnce(ctx, w)
 	return meErr
 }
 
