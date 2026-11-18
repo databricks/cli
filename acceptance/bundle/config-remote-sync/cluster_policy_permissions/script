@@ -25,7 +25,7 @@ trace $CLI bundle config-remote-sync --save
 # The deployer is a user locally and a service principal on cloud, so print principals only.
 trace $CLI bundle validate -o json | jq -c '[.resources.cluster_policies.policy.permissions[] | {principal: (.user_name // .service_principal_name // .group_name), level}] | sort_by(.principal)'
 
-title "Deploy keeps the creator's CAN_USE"
+title "Deploy applies the synced ACL"
 trace $CLI bundle deploy
 trace $CLI permissions get cluster-policies "$policy_id" | jq -c '[.access_control_list[] | select(.all_permissions[0].inherited | not) | {principal: (.user_name // .service_principal_name // .group_name), level: .all_permissions[0].permission_level}] | sort_by(.principal)'
 trace $CLI bundle plan

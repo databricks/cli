@@ -22,9 +22,9 @@ Resource: resources.cluster_policies.policy
 
 
 >>> [CLI] bundle validate -o json
-[{"principal":"[USERNAME]","level":"CAN_USE"},{"principal":"users","level":"CAN_USE"}]
+[{"principal":"users","level":"CAN_USE"}]
 
-=== Deploy keeps the creator's CAN_USE
+=== Deploy applies the synced ACL
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -33,7 +33,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] permissions get cluster-policies [POLICY_ID]
-[{"principal":"[USERNAME]","level":"CAN_USE"},{"principal":"users","level":"CAN_USE"}]
+[{"principal":"users","level":"CAN_USE"}]
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
