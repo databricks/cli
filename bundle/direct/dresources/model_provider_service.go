@@ -109,13 +109,8 @@ func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *res
 			get: func(ctx context.Context) (*catalog.ModelProviderService, error) {
 				return r.client.AiGateway.GetModelProviderService(ctx, catalog.GetModelProviderServiceRequest{Name: modelProviderServiceNamePrefix + id})
 			},
-			createTime: func(found *catalog.ModelProviderService) (time.Time, bool) {
-				if found.CreateTime == nil {
-					return time.Time{}, false
-				}
-				return found.CreateTime.AsTime(), true
-			},
-			create: create,
+			createTime: func(found *catalog.ModelProviderService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			create:     create,
 		}, err)
 		if err != nil {
 			return "", nil, err

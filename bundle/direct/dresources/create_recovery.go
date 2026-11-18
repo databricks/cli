@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 )
 
 // createTimeSkew is how much earlier than our first create request a found resource's create time
@@ -115,6 +116,14 @@ const statusCancelled = 499
 // isUncertainRead reports whether the lookup after a failed create is worth repeating.
 func isUncertainRead(ctx context.Context, err error) bool {
 	return retry.IsTransientRead(ctx, err) || isUncertainCreateError(ctx, err)
+}
+
+// sdkTime converts a create time from an SDK response for createRecovery.createTime.
+func sdkTime(t *sdktime.Time) (time.Time, bool) {
+	if t == nil {
+		return time.Time{}, false
+	}
+	return t.AsTime(), true
 }
 
 // recoveryError says why a resource found after a failed create request is not used, and wraps
