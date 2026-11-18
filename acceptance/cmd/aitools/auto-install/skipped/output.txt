@@ -93,4 +93,3 @@ Automatic installation of Databricks AI tools is enabled.
 >>> [CLI] jobs list
 
 >>> print_telemetry
-{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_NO_AGENTS","holdout_arm":"TREATMENT","interactive":false}}
