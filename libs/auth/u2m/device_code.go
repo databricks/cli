@@ -76,7 +76,7 @@ func (a *PersistentAuth) deviceCodeConfig(ctx context.Context) (*oauth2.Config, 
 	if arg, ok := a.oAuthArgument.(AccountOAuthArgument); ok {
 		endpoints, err := a.endpointSupplier.GetEndpointsFromURL(ctx, accountDiscoveryURL(arg.GetAccountHost(), arg.GetAccountId()))
 		if err != nil {
-			return nil, fmt.Errorf("fetching OAuth endpoints: %w", err)
+			return nil, fmt.Errorf("fetching the OIDC configuration of account %s: %w", arg.GetAccountId(), err)
 		}
 		cfg.Endpoint.DeviceAuthURL = endpoints.DeviceAuthorizationEndpoint
 	}

@@ -369,6 +369,23 @@ func (s accountDeviceCodeEndpointSupplier) GetUnifiedOAuthEndpoints(ctx context.
 	return s.GetEndpointsFromURL(ctx, accountDiscoveryURL(host, accountId))
 }
 
+// A mistyped account ID fails the discovery request, so the error names the
+// account rather than saying that the host does not support OAuth.
+func TestNewDeviceCodeLogin_UnknownAccount(t *testing.T) {
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "typo")
+	require.NoError(t, err)
+	p, err := NewPersistentAuth(t.Context(),
+		WithOAuthArgument(arg),
+		WithOAuthEndpointSupplier(accountDeviceCodeEndpointSupplier{deviceAuthAdvertise: true}),
+	)
+	require.NoError(t, err)
+	defer p.Close()
+
+	_, err = p.NewDeviceCodeLogin(t.Context())
+	assert.ErrorIs(t, err, ErrOAuthNotSupported)
+	assert.ErrorContains(t, err, "fetching the OIDC configuration of account typo: ")
+}
+
 func TestNewDeviceCodeLogin_AccountLevel(t *testing.T) {
 	account, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
 	require.NoError(t, err)
