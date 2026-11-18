@@ -319,12 +319,17 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 // filesReplayBufferSize is the largest non-seekable upload that is buffered in
 // memory so it can be retried. fs cp between remote paths (Volumes or DBFS to
 // Volumes) streams the source download into the upload, so without the buffer
-// a single 503 fails the copy. Larger streams get one attempt, so memory per
-// upload stays bounded. A variable so tests can lower it.
-var filesReplayBufferSize = 8 << 20
+// a single 503 fails the copy. Larger streams get one attempt.
+//
+// 8 MiB is not an API limit; it caps memory. With fs cp's default concurrency
+// of 8, at most 64 MiB is buffered at once, and most files copied with fs cp
+// (code, notebooks, configs) are well below it. A variable so tests can lower it.
+var filesReplayBufferSize = 8 * 1024 * 1024 // 8 MiB
 
-// filesReplayReadSize is the size of the reads replayable makes from the source.
-const filesReplayReadSize = 1 << 20
+// filesReplayReadSize is the size of the reads replayable makes from the
+// source. It matches the DBFS read limit: /api/2.0/dbfs/read returns at most
+// 1 MiB per call, and the SDK's DBFS read handle makes one call per Read.
+const filesReplayReadSize = 1024 * 1024 // 1 MiB
 
 // replayable returns a reader that can be rewound to start before each upload
 // attempt. A non-seekable reader (including a pipe, which is an *os.File whose
@@ -337,9 +342,8 @@ func replayable(reader io.Reader) (rs io.ReadSeeker, start int64, stream io.Read
 			return s, start, nil, nil
 		}
 	}
-	// io.ReadAll asks for small, growing chunks, and a DBFS read handle makes one
-	// API call per Read; a 1 MiB buffer (the DBFS block size) keeps that to one
-	// call per MiB.
+	// io.ReadAll asks for small, growing chunks; reading through
+	// filesReplayReadSize keeps a DBFS source to one API call per MiB.
 	br := bufio.NewReaderSize(reader, filesReplayReadSize)
 	head, err := io.ReadAll(io.LimitReader(br, int64(filesReplayBufferSize)+1))
 	if err != nil {
