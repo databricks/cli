@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCatCommand() *cobra.Command {
+func newCatCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cat FILE_PATH",
 		Short:   "Show file content.",
@@ -27,10 +27,12 @@ func newCatCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		defer r.Close()
 		return cmdio.Render(ctx, r)
 	}
 
 	v := newValidArgs()
+	v.filerForPathFunc = filerForPath
 	cmd.ValidArgsFunction = v.Validate
 
 	return cmd

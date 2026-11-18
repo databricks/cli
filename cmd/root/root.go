@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -102,6 +103,12 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
 		// Wait for any active Bubble Tea programs to finish and restore terminal state
 		cmdio.Wait(cmd.Context())
+
+		// On the first run of a new CLI version, install Databricks AI tools.
+		// Cobra runs post-run hooks only when the command succeeded.
+		if autoinstall.Run != nil {
+			autoinstall.Run(cmd)
+		}
 		return nil
 	}
 

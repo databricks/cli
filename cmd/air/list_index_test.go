@@ -143,6 +143,25 @@ func TestIndexStrategyDropsForbiddenAndMissing(t *testing.T) {
 	assert.Equal(t, "3", rows[1].RunID)
 }
 
+func TestIndexStrategyFillsLimitPastMissingRun(t *testing.T) {
+	refs := []workflowRef{
+		{jobRunID: 1, submitTimeMs: 3000_000},
+		{jobRunID: 2, submitTimeMs: 2000_000},
+	}
+	runs := map[int64]jobs.Run{2: indexRun(2, 2000_000)}
+	srv, _ := indexAndGetServer(t, refs, runs, nil, map[int64]bool{1: true})
+	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
+
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		currentUser: selfUser,
+		limit:       1,
+	})
+	rows, err := f.next(1)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "2", rows[0].RunID)
+}
+
 func TestIndexStrategyPropagatesServerError(t *testing.T) {
 	refs := []workflowRef{{jobRunID: 1, submitTimeMs: 1000_000}}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

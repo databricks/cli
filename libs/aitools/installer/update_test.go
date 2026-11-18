@@ -127,6 +127,42 @@ func TestUpdateVersionDiffDetected(t *testing.T) {
 	assert.Equal(t, "0.2.0", state.Skills["databricks-sql"])
 }
 
+func TestUpdateKeepModifiedKeepsEditedSkill(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// The user edits databricks-sql; a new release updates both skills.
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	edited := filepath.Join(globalDir, "databricks-sql", "SKILL.md")
+	require.NoError(t, os.WriteFile(edited, []byte("user edit"), 0o644))
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	updatedManifest := testManifest()
+	for name, meta := range updatedManifest.Skills {
+		meta.Version = "0.2.0"
+		updatedManifest.Skills[name] = meta
+	}
+
+	result, err := UpdateSkills(ctx, &mockManifestSource{manifest: updatedManifest}, []*agents.Agent{agent}, UpdateOptions{KeepModified: true})
+	require.NoError(t, err)
+
+	require.Len(t, result.Updated, 1)
+	assert.Equal(t, "databricks-jobs", result.Updated[0].Name)
+	assert.Contains(t, result.Unchanged, "databricks-sql")
+	data, err := os.ReadFile(edited)
+	require.NoError(t, err)
+	assert.Equal(t, "user edit", string(data))
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
+	assert.Equal(t, "0.2.0", state.Skills["databricks-jobs"])
+}
+
 func TestUpdateCheckDryRun(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
@@ -673,6 +709,39 @@ func TestUpdateSkipsMinCLIVersionSkills(t *testing.T) {
 
 	assert.Contains(t, result.Skipped, "databricks-future")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
+}
+
+// TestUpdateKeepsSkillThatBecomesUnportable checks that a skill whose new
+// release lists a file that is not portable is skipped, and its installed copy
+// is kept rather than pruned as gone from the release.
+func TestUpdateKeepsSkillThatBecomesUnportable(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx = log.NewContext(ctx, logger)
+
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{}))
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	updated := testManifest()
+	updated.Skills["databricks-sql"] = SkillMeta{Version: "0.2.0", Files: []string{"SKILL.md", "references/aux.md"}}
+
+	result, err := UpdateSkills(ctx, &mockManifestSource{manifest: updated}, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+
+	assert.Contains(t, result.Skipped, "databricks-sql")
+	assert.Empty(t, result.Removed)
+	assert.Contains(t, logBuf.String(), `Skipping skill \"databricks-sql\": file \"references/aux.md\" names a reserved Windows device`)
+	assert.FileExists(t, filepath.Join(tmp, ".databricks", "aitools", "skills", "databricks-sql", "SKILL.md"))
+
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 }
 
 func TestFormatUpdateResultCheckMode(t *testing.T) {

@@ -1,0 +1,22 @@
+# apps import of an app whose source has an app.yml with a plain env value, a
+# valueFrom reference and an unquoted value that YAML reads as a number.
+# MSYS_NO_PATHCONV keeps Git Bash on Windows from rewriting the /Workspace path.
+APP_PATH="/Workspace/Users/$CURRENT_USER_NAME/myapp"
+MSYS_NO_PATHCONV=1 $CLI workspace import-dir src "$APP_PATH" >> LOG.setup 2>&1
+$CLI apps create myapp >> LOG.setup 2>&1
+MSYS_NO_PATHCONV=1 $CLI apps deploy myapp --source-code-path "$APP_PATH" >> LOG.setup 2>&1
+
+trace $CLI apps import --name myapp --output-dir out
+
+trace ls out
+
+trace cat out/databricks.yml
+
+if [ -f out/app.yml ]; then
+    trace cat out/app.yml
+fi
+
+title "App config the bundle deploys (app.yml, if kept, is uploaded with the source)"
+withdir out trace $CLI bundle validate -o json | jq '.resources.apps.app.config'
+
+rm -rf out

@@ -14,7 +14,7 @@ trace $CLI jobs list
 trace print_telemetry
 
 title "hint printed on a command that resolves no auth: nothing is uploaded"
-trace $CLI version
+trace $CLI bundle schema > /dev/null
 trace print_telemetry
 
 title "plugin installed: no hint, no event"

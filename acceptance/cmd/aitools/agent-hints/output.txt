@@ -1,46 +1,36 @@
 
 === Codex is hinted once per thread
 
->>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] version
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
-Databricks CLI v[CLI_VERSION]
 
->>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
 
->>> CODEX_CI=1 CODEX_THREAD_ID=thread-2 [CLI] version
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-2 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
-Databricks CLI v[CLI_VERSION]
 
 === Cursor exposes no session id, so it is hinted once per machine
 
->>> CURSOR_AGENT=1 [CLI] version
+>>> CURSOR_AGENT=1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents cursor --scope global
-Databricks CLI v[CLI_VERSION]
 
->>> CURSOR_AGENT=1 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CURSOR_AGENT=1 [CLI] jobs list
 
 === Copilot CLI maps to the copilot registry agent
 
->>> COPILOT_CLI=1 [CLI] version
+>>> COPILOT_CLI=1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents copilot --scope global
-Databricks CLI v[CLI_VERSION]
 
 === Gemini CLI with its own Databricks skills is not hinted
 
->>> GEMINI_CLI=1 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> GEMINI_CLI=1 [CLI] jobs list
 
 === Agents the CLI cannot install for are not hinted
 
->>> WINDSURF_AGENT=1 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> WINDSURF_AGENT=1 [CLI] jobs list
 
->>> VSCODE_AGENT=1 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> VSCODE_AGENT=1 [CLI] jobs list
 
 === Nested agents are not hinted
 
->>> CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 [CLI] jobs list

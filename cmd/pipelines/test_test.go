@@ -2,11 +2,15 @@ package pipelines
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -14,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/testserver"
 	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 
@@ -292,4 +297,139 @@ func TestWaitForTestUpdate(t *testing.T) {
 	assert.Empty(t, run.incompleteReason(state))
 	assert.Equal(t, testRunSummary{Total: 2, Passed: 2}, run.counts())
 	assert.Contains(t, out.String(), "2 of 2 PASSED tests/test_a.py::test_b")
+}
+
+// The timeout ends the wait between polls of an update that is still running.
+func TestWaitForTestUpdateTimeout(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req testserver.Request) any {
+		return map[string]any{"update": map[string]any{"update_id": "u1", "state": "RUNNING"}}
+	})
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		return map[string]any{"events": []any{}}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, stop := withTestWaitTimeout(t.Context(), 20*time.Millisecond)
+	defer stop()
+	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
+	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
+	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
+// The timeout also interrupts a read in flight, so an update that ends after it is not reported.
+func TestWaitForTestUpdateTimeoutInterruptsRead(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req testserver.Request) any {
+		time.Sleep(180 * time.Millisecond)
+		return map[string]any{"update": map[string]any{"update_id": "u1", "state": "COMPLETED"}}
+	})
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		return map[string]any{"events": []any{}}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, stop := withTestWaitTimeout(t.Context(), 20*time.Millisecond)
+	defer stop()
+	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
+	state, err := waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
+	require.Error(t, err)
+	assert.Empty(t, state)
+	assert.ErrorIs(t, context.Cause(ctx), errTestWaitTimeout)
+}
+
+func TestTestTargetResumeCommand(t *testing.T) {
+	tests := []struct {
+		name   string
+		target testTarget
+		flags  map[string]string
+		want   string
+	}{
+		{
+			name:   "names that need quoting",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"target": "dev west", "profile": "CI West"},
+			want:   "databricks pipelines test my_pipeline --target 'dev west' --profile 'CI West' --resume u1",
+		},
+		{
+			name:   "bundle variables, which --resume needs to load the bundle again",
+			target: testTarget{key: "my_pipeline", pipelineID: "p1"},
+			flags:  map[string]string{"target": "dev", "var": "catalog=orders,schema=dev team"},
+			want:   "databricks pipelines test my_pipeline --target dev --var 'catalog=orders' --var 'schema=dev team' --resume u1",
+		},
+		{
+			name:   "pipeline ID with profile",
+			target: testTarget{pipelineID: "p1"},
+			flags:  map[string]string{"profile": "staging"},
+			want:   "databricks pipelines test --pipeline-id p1 --profile staging --resume u1",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rootCmd := &cobra.Command{Use: "databricks"}
+			rootCmd.PersistentFlags().StringP("profile", "p", "", "")
+			rootCmd.PersistentFlags().StringP("target", "t", "", "")
+			rootCmd.PersistentFlags().StringSlice("var", nil, "")
+			pipelinesCmd := &cobra.Command{Use: "pipelines"}
+			cmd := &cobra.Command{Use: "test"}
+			rootCmd.AddCommand(pipelinesCmd)
+			pipelinesCmd.AddCommand(cmd)
+			for name, value := range tc.flags {
+				require.NoError(t, cmd.Flag(name).Value.Set(value))
+			}
+			assert.Equal(t, tc.want, tc.target.resumeCommand(cmd, "u1"))
+		})
+	}
+}
+
+// Where the service cannot report test_only, as before pipeline testing is enabled, the update
+// may be a test update, so the command reads its results instead of rejecting it.
+func TestCheckTestUpdateWithoutTestOnly(t *testing.T) {
+	const updateID = "11111111-1111-1111-1111-111111111111"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/pipelines/p1/updates/"+updateID {
+			_, _ = w.Write([]byte(`{"update": {"state": "COMPLETED"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: srv.URL, Token: "token"})
+	require.NoError(t, err)
+
+	assert.NoError(t, checkTestUpdate(t.Context(), w, "p1", updateID))
+}
+
+func TestWithActiveUpdateHint(t *testing.T) {
+	parent := &cobra.Command{Use: "pipelines"}
+	cmd := &cobra.Command{Use: "test"}
+	parent.AddCommand(cmd)
+	conflict := &apierr.APIError{StatusCode: http.StatusConflict, ErrorCode: "RESOURCE_CONFLICT", Message: "An active update already exists."}
+
+	err := withActiveUpdateHint(cmd, testTarget{key: "my_pipeline"}, conflict)
+	assert.ErrorIs(t, err, conflict)
+	assert.EqualError(t, err, "An active update already exists.\nWait for it to finish, run 'pipelines stop my_pipeline' to cancel it, or pass its update ID to --resume to read its results")
+
+	// Other errors are returned as they are.
+	other := &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "bad request"}
+	assert.Same(t, other, withActiveUpdateHint(cmd, testTarget{key: "my_pipeline"}, other))
+}
+
+func TestTestRunProblem(t *testing.T) {
+	ev := newTestEvents(t)
+	passed := newTestRun()
+	passed.add(ev.testCase("t::a", "PASSED", ""))
+	passed.add(ev.summary(1, 1, 0, 0, 0))
+	assert.Empty(t, testRunProblem(passed, "", nil))
+	assert.Empty(t, testRunProblem(passed, "", root.ErrAlreadyPrinted))
+	assert.Equal(t, "update u1 is COMPLETED: result delivery failed", testRunProblem(passed, "", errors.New("update u1 is COMPLETED: result delivery failed")))
+
+	empty := newTestRun()
+	empty.add(ev.summary(0, 0, 0, 0, 0))
+	assert.Equal(t, "No tests were collected from the pipeline's test sources.", testRunProblem(empty, "", root.ErrAlreadyPrinted))
+
+	assert.Equal(t, "RUN INCOMPLETE: the update was canceled.\nupdate u1 is CANCELED",
+		testRunProblem(newTestRun(), "the update was canceled", errors.New("update u1 is CANCELED")))
 }

@@ -97,29 +97,37 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		Lifecycle: &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
-		// The source code path in active deployment is snapshotted version of the source code path in the app.
-		// We need to use the default source code path to get the correct source code path for drift detection.
-		remote.SourceCodePath = app.DefaultSourceCodePath
-		remote.GitSource = app.ActiveDeployment.GitSource
+		// config (command/env) is not part of apps.App, so it is read back from the
+		// active deployment for drift detection. source_code_path and git_source are
+		// classified input_only, so their remote value is ignored (see
+		// apps.generated.yml) and does not need populating here.
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
 	return remote, nil
 }
 
-// appRequestBody returns config.App with the deploy-only fields cleared. source_code_path
-// and git_source became part of apps.App in SDK v0.175, but DABs applies them through the
-// Deploy API (see manageLifecycle), so they must not ride along in create/update bodies.
-// ForceSendFields is cloned and stripped of SourceCodePath because the SDK's JSON
-// unmarshal (used when loading the plan) adds every present basic-type field to
-// ForceSendFields, which would otherwise force "source_code_path": "" into the body.
-func appRequestBody(config *AppState) apps.App {
+// appRequestBody returns app for the Create/Update request body. An empty source_code_path
+// is never sent: the SDK's JSON unmarshal (used when loading the plan) adds every present
+// basic-type field to ForceSendFields, which would otherwise force "source_code_path": ""
+// into the body, and the API rejects that (see #6401, fixed in #6404). ForceSendFields is
+// cloned so the plan entry is not modified.
+func appRequestBody(app apps.App) apps.App {
+	if app.SourceCodePath == "" {
+		app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
+			return s == "SourceCodePath"
+		})
+	}
+	return app
+}
+
+// appUpdateBody returns config.App for the Update request. UpdateApp rejects source_code_path
+// (400 INVALID_PARAMETER_VALUE: invalid update mask), so it is sent on Create only and is not
+// in UpdateMaskFields; a changed source_code_path reaches the app through the Deploy API
+// (see manageLifecycle). git_source is accepted on Update and stays in the body.
+func appUpdateBody(config *AppState) apps.App {
 	app := config.App
 	app.SourceCodePath = ""
-	app.GitSource = nil
-	app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
-		return s == "SourceCodePath"
-	})
-	return app
+	return appRequestBody(app)
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
@@ -127,7 +135,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
-		App:             appRequestBody(config),
+		App:             appRequestBody(config.App),
 		NoCompute:       noCompute,
 		ForceSendFields: nil,
 	}
@@ -163,6 +171,8 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
+// UpdateMaskFields lists the App fields UpdateApp may change. source_code_path is absent
+// because the API rejects it in the update mask; see appUpdateBody.
 var UpdateMaskFields = []string{
 	"description",
 	"budget_policy_id",
@@ -173,6 +183,7 @@ var UpdateMaskFields = []string{
 	"compute_min_instances",
 	"compute_max_instances",
 	"git_repository",
+	"git_source",
 	"telemetry_export_destinations",
 }
 
@@ -195,10 +206,11 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 }
 
 func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) error {
-	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
-	// from the request body; see appRequestBody.
+	// git_source is sent as part of the App body (in the update mask). source_code_path and
+	// config (command/env) are deploy-only on update and applied via manageLifecycle; see
+	// appUpdateBody.
 	if hasAppChanges(entry) {
-		app := appRequestBody(config)
+		app := appUpdateBody(config)
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
@@ -259,6 +271,9 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 				return err
 			}
 		}
+		// source_code_path is recorded on the app at Create and git_source at Create/Update,
+		// but the Deploy API requires a deployment source, so the deployment carries them
+		// too. This is also the only way a changed source_code_path reaches the app.
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
 			return err
@@ -279,20 +294,20 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	return nil
 }
 
-// hasAppChanges reports whether the plan entry contains any Update changes
-// to fields that belong to the App Update API (i.e., not deploy-only fields).
+// hasAppChanges reports whether the plan entry contains any Update changes to fields that
+// belong to the App Update API. source_code_path and config (command/env) are deploy-only
+// on update and applied via manageLifecycle; lifecycle drives compute start/stop.
 func hasAppChanges(entry *PlanEntry) bool {
-	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "lifecycle", "lifecycle.started")
 }
 
-// OverrideChangeDesc skips drift on the deploy-only fields (source_code_path, config,
-// git_source) while the app has no active deployment. DoRead reads them only from the
-// active deployment, so before the first deploy (or once a stop clears it) the remote
-// side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
+// OverrideChangeDesc skips drift on config (command/env) while the app has no active
+// deployment. config is read only from the active deployment (DoRead), so before the
+// first deploy (or once a stop clears it) the remote side is empty and the diff is
+// spurious; it applies on the next start (manageLifecycle).
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
-	switch path.Prefix(1).String() {
-	case "source_code_path", "config", "git_source":
+	if path.Prefix(1).String() == "config" {
 		if remote.ActiveDeployment == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "no active deployment"
@@ -414,8 +429,6 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		Lifecycle: &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
-		remote.SourceCodePath = app.DefaultSourceCodePath
-		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
 	return remote, nil
