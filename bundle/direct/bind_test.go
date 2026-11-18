@@ -100,3 +100,49 @@ func TestBindPreparesIsolatedState(t *testing.T) {
 	assert.True(t, prepared.HasChanges)
 	assert.Equal(t, deployplan.Update, prepared.Action)
 }
+
+func TestUnbindResourceKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		keys    []string
+		history bool
+	}{
+		{"resource", []string{"resources.jobs.foo"}, true},
+		{"children", []string{"resources.jobs.foo", "resources.jobs.foo.grants", "resources.jobs.foo.permissions", "resources.jobs.foo.permissions.child"}, true},
+		{"children_without_parent", []string{"resources.jobs.foo.permissions"}, true},
+		{"missing", nil, true},
+		{"history_disabled", []string{"resources.jobs.foo"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			statePath := filepath.Join(t.TempDir(), "resources.json")
+			var b direct.DeploymentBundle
+			require.NoError(t, b.StateDB.Open(ctx, statePath, dstate.ReadingFile, false, dstate.OpenDmsArgs{}))
+			require.NoError(t, b.StateDB.UpgradeToWrite())
+			for _, key := range append(tc.keys, "resources.jobs.foobar") {
+				require.NoError(t, b.StateDB.SaveState(ctx, key, "id", map[string]string{"name": key}, nil))
+			}
+			_, err := b.StateDB.Finalize(ctx)
+			require.NoError(t, err)
+
+			require.NoError(t, b.StateDB.Open(ctx, statePath, dstate.ReadingFile, false, dstate.OpenDmsArgs{}))
+			keys := b.UnbindResourceKeys("resources.jobs.foo")
+			assert.Equal(t, tc.keys, keys)
+			assert.Len(t, b.StateDB.Data.State, len(tc.keys)+1)
+			if tc.history {
+				b.StateDB.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
+			}
+			require.NoError(t, b.StateDB.UpgradeToWrite())
+			require.NoError(t, b.Unbind(ctx, "resources.jobs.foo", keys))
+			_, err = b.StateDB.Finalize(ctx)
+			require.NoError(t, err)
+
+			require.NoError(t, b.StateDB.Open(ctx, statePath, dstate.ReadingFile, false, dstate.OpenDmsArgs{}))
+			assert.Len(t, b.StateDB.Data.State, 1)
+			assert.Equal(t, 2, b.StateDB.Data.Serial)
+			assert.Equal(t, "id", b.StateDB.GetResourceID("resources.jobs.foobar"))
+			_, err = b.StateDB.Finalize(ctx)
+			require.NoError(t, err)
+		})
+	}
+}

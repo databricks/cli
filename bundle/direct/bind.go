@@ -147,39 +147,31 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	return result, nil
 }
 
-// Unbind removes a resource from direct engine state without deleting
-// the workspace resource. Also removes associated permissions/grants entries.
-func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	if err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
-		return err
-	}
-	if err := b.StateDB.UpgradeToWrite(); err != nil {
-		return err
-	}
-
-	// Delete the main resource
-	err := b.StateDB.DeleteState(ctx, resourceKey, false)
-	if err != nil {
-		return err
-	}
-
-	log.Infof(ctx, "Unbound %s", resourceKey)
-
+// UnbindResourceKeys returns the sorted resource and child keys present in the open state.
+func (b *DeploymentBundle) UnbindResourceKeys(resourceKey string) []string {
 	// Also delete associated permissions/grants if they exist
 	// These are stored as "resources.jobs.foo.permissions" or "resources.schemas.bar.grants"
-	permissionsKey := resourceKey + ".permissions"
-	grantsKey := resourceKey + ".grants"
-
+	var keys []string
 	for key := range b.StateDB.Data.State {
-		if key == permissionsKey || key == grantsKey || strings.HasPrefix(key, resourceKey+".") {
-			err = b.StateDB.DeleteState(ctx, key, false)
-			if err != nil {
-				return err
-			}
-			log.Infof(ctx, "Unbound %s", key)
+		if key == resourceKey || strings.HasPrefix(key, resourceKey+".") {
+			keys = append(keys, key)
 		}
 	}
+	slices.Sort(keys)
+	return keys
+}
 
-	_, err = b.StateDB.Finalize(ctx)
-	return err
+// Unbind removes the selected keys from open writable state without deleting workspace resources.
+func (b *DeploymentBundle) Unbind(ctx context.Context, resourceKey string, keys []string) error {
+	if len(keys) == 0 {
+		// Preserve the existing local transaction when the resource is already absent.
+		keys = []string{resourceKey}
+	}
+	for _, key := range keys {
+		if err := b.StateDB.DeleteState(ctx, key, false); err != nil {
+			return err
+		}
+		log.Infof(ctx, "Unbound %s", key)
+	}
+	return nil
 }
