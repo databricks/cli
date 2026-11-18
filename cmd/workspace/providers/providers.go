@@ -386,6 +386,7 @@ func newListProviderShareAssets() *cobra.Command {
 
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return.`)
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.SkillMaxResults, "skill-max-results", listProviderShareAssetsReq.SkillMaxResults, `Maximum number of skills to return.`)
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.TableMaxResults, "table-max-results", listProviderShareAssetsReq.TableMaxResults, `Maximum number of tables to return.`)
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", listProviderShareAssetsReq.VolumeMaxResults, `Maximum number of volumes to return.`)
 

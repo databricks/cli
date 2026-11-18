@@ -82,16 +82,16 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `The user-supplied short name for the Endpoint, per AIP-133.`)
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `Short name of the endpoint, which becomes the last segment of name.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.ReplicaCount, "replica-count", createEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.TargetQps, "target-qps", createEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Create an AI Search endpoint.`
@@ -540,7 +540,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Maximum number of endpoints to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -1012,15 +1012,15 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.ReplicaCount, "replica-count", updateEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.TargetQps, "target-qps", updateEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Update an AI Search endpoint.`
@@ -1028,19 +1028,19 @@ func newUpdateEndpoint() *cobra.Command {
 
 Update an AI Search endpoint.
 
-  Update an existing AI Search endpoint. Multi-bucket masks are supported and
-  dispatched in deterministic bucket order: budget policy, custom tags,
-  throughput, scaling/replicas, then metrics export. Per-bucket dispatch is not
-  atomic across buckets — if a later bucket fails, earlier buckets may already
-  have been applied.
+  Update an existing AI Search endpoint. Only the fields named in update_mask
+  change. The server applies a mask that spans several settings, such as
+  budget_policy_id and custom_tags, one setting at a time, so if a later
+  setting fails, the earlier ones may already have been applied.
 
   Arguments:
-    NAME: Name of the AI Search endpoint. Server-assigned full resource path
-      (workspaces/{workspace}/endpoints/{endpoint}) on output. On create, the
-      user-supplied short name is conveyed via
-      CreateEndpointRequest.endpoint_id; the server composes the full name
-      and returns it on the response.
-    UPDATE_MASK: The list of fields to update.
+    NAME: Full resource name of the endpoint, in the form
+      workspaces/{workspace_id}/endpoints/{endpoint_id}. On create, the server
+      composes it from parent and endpoint_id and ignores any value supplied
+      in the request body.
+    UPDATE_MASK: Comma-separated list of Endpoint fields to update. The updatable fields
+      are budget_policy_id, usage_policy_id, custom_tags, replica_count,
+      and target_qps. The server rejects nested paths and unknown fields.
     ENDPOINT_TYPE: Type of endpoint. Required on create and immutable thereafter.
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
