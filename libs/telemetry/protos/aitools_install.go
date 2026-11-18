@@ -84,8 +84,21 @@ type AitoolsAgentResult struct {
 	ErrorCategory AitoolsErrorCategory `json:"error_category"`
 }
 
+// AitoolsInstallTrigger mirrors AitoolsInstallTrigger.Type in the
+// databricks_cli lumberjack proto: what started an install other than the
+// `databricks aitools install` command. The command's own installs leave it
+// unset.
+type AitoolsInstallTrigger string
+
+const (
+	AitoolsInstallTriggerUnspecified AitoolsInstallTrigger = "TYPE_UNSPECIFIED"
+	// The install the CLI runs on its own on the first run of a new version.
+	AitoolsInstallTriggerAutoFirstRun AitoolsInstallTrigger = "AUTO_FIRST_RUN"
+)
+
 // AitoolsInstallEvent is emitted on every execution of the `databricks aitools
-// install` command.
+// install` command, and for the install the CLI runs on the first run of a new
+// version (Trigger AUTO_FIRST_RUN).
 type AitoolsInstallEvent struct {
 	// Agents the user targeted, deduplicated and sorted for stable output.
 	Agents []AitoolsAgentType `json:"agents,omitempty"`
@@ -105,4 +118,7 @@ type AitoolsInstallEvent struct {
 	// AgentResults records the per-agent failure/skip categories, one entry per
 	// non-successful agent. Empty when every targeted agent succeeded.
 	AgentResults []AitoolsAgentResult `json:"agent_results,omitempty"`
+
+	// Trigger is set when the install did not come from the command.
+	Trigger AitoolsInstallTrigger `json:"trigger,omitempty"`
 }

@@ -35,7 +35,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined TikTok Ads custom report: the connector synthesizes a report
     request from the dimensions, metrics, report type, and data level specified
     here. Supersedes the deprecated top-level dimensions/metrics/report_type/
@@ -110,7 +110,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined TikTok Ads custom report: the connector synthesizes a report
     request from the dimensions, metrics, report type, and data level specified
     here. Supersedes the deprecated top-level dimensions/metrics/report_type/

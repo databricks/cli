@@ -154,7 +154,8 @@ func TestGetValidArgsFunctionLocalCompletionWindows(t *testing.T) {
 
 	v, cmd, _ := setupTest(t)
 	completions, directive := v.Validate(cmd, []string{}, "dir/")
-	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dir\\fileA", "dbfs:/"}, completions)
+	// The typed "dir/" is kept so the shell's prefix match still accepts the candidates.
+	assert.Equal(t, []string{"dir/dirA\\", "dir/dirB\\", "dir/fileA", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -177,4 +178,20 @@ func TestGetValidArgsFunctionNotCompletedArgument(t *testing.T) {
 
 	assert.Nil(t, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+}
+
+func TestSplitPath(t *testing.T) {
+	cases := []struct{ input, scheme, name string }{
+		{"./local/file", "", "./local/file"},
+		{"dbfs:/foo", "dbfs", "/foo"},
+		{"my-sandbox:/foo:bar", "my-sandbox", "/foo:bar"},
+		{":/foo", "", "/foo"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			scheme, name := SplitPath(tc.input)
+			assert.Equal(t, tc.scheme, scheme)
+			assert.Equal(t, tc.name, name)
+		})
+	}
 }

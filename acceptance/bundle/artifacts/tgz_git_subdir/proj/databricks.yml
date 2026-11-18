@@ -1,0 +1,35 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  artifact_path: /Workspace/foo/bar/artifacts
+
+sync:
+  exclude:
+    - dist/**
+
+# The bundle lives in a subdirectory of the git repository (as in a monorepo).
+artifacts:
+  from_git:
+    type: tgz
+    path: src
+    git:
+      branch: main
+    files:
+      - source: dist/from_git.tgz
+  from_git_include:
+    type: tgz
+    path: src
+    include:
+      - main.py
+    git:
+      branch: main
+    files:
+      - source: dist/from_git_include.tgz
+  from_worktree:
+    type: tgz
+    path: src
+    include:
+      - .
+    files:
+      - source: dist/from_worktree.tgz

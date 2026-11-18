@@ -190,6 +190,7 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 		"TEST_DEFAULT_WAREHOUSE_ID",
 		"TEST_DEFAULT_CLUSTER_ID",
 		"TEST_INSTANCE_POOL_ID",
+		"TEST_SANDBOX_ID",
 	}
 	for _, envVar := range envVars {
 		if value := os.Getenv(envVar); value != "" {
@@ -255,7 +256,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
-	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go and
+	// listKnownMetaHarnesses() in useragent/meta_harness.go,
 	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
 	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
@@ -273,6 +275,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"GEMINI_CLI",
 		"GOOSE_TERMINAL",
 		"KIRO",
+		"OMNIGENT",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
 		"PI_CODING_AGENT",
@@ -281,6 +284,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
+
+	// Claude Code sets this in the commands it runs; it enables the native
+	// <claude-code-hint> line, so a host Claude Code session must not leak it.
+	os.Unsetenv("CLAUDE_CODE_CHILD_SESSION") //nolint:usetesting // t.Setenv cannot unset
 
 	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
 	// from the host shell would move the venv the localenv tests expect.
@@ -448,6 +455,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		}
 		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
 			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
+		}
+		if os.Getenv("TEST_SANDBOX_ID") == "" {
+			t.Setenv("TEST_SANDBOX_ID", testserver.TestDefaultSandboxId)
 		}
 	}
 

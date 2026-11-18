@@ -1,0 +1,19 @@
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '{"update_id": "00000000-0000-0000-0000-0000000000a1"}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '{"update": {"update_id": "00000000-0000-0000-0000-0000000000a1", "state": "FAILED"}}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{"events": [
+  {"id": "e1", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_compute.py::test_small_order"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e2", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_compute.py::test_large_order"}, "details": {"test_case_progress": {"status": "PENDING"}}},
+  {"id": "e3", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:01.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_compute.py::test_small_order"}, "details": {"test_case_progress": {"status": "PASSED"}}},
+  {"id": "e4", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:01.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_compute.py::test_large_order"}, "details": {"test_case_progress": {"status": "RUNNING"}}},
+  {"id": "e5", "event_type": "update_progress", "timestamp": "2026-01-01T00:00:02.000Z", "level": "ERROR", "error": {"fatal": true, "exceptions": [{"class_name": "ComputeTerminatedException", "message": "Compute terminated unexpectedly."}]}}
+]}
+'''

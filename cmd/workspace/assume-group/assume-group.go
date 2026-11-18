@@ -3,6 +3,7 @@
 package assume_group
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "assume-group",
-		Short:   `Manage the workspace's restricted sharing groups.`,
-		Long:    `Manage the workspace's restricted sharing groups.`,
-		GroupID: "iam",
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "assume-group",
+	Short:   `*Beta* Manage the workspace's restricted sharing groups.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Manage the workspace's restricted sharing groups.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateRestrictedSharingGroup())
@@ -43,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-restricted-sharing-group command
@@ -68,8 +70,10 @@ func newCreateRestrictedSharingGroup() *cobra.Command {
 	cmd.Flags().StringVar(&createRestrictedSharingGroupReq.RestrictedSharingGroup.Name, "name", createRestrictedSharingGroupReq.RestrictedSharingGroup.Name, `The resource name of the restricted sharing group.`)
 
 	cmd.Use = "create-restricted-sharing-group RESTRICTED_SHARING_GROUP_ID"
-	cmd.Short = `Create a restricted sharing group.`
-	cmd.Long = `Create a restricted sharing group.
+	cmd.Short = `*Beta* Create a restricted sharing group.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a restricted sharing group.
 
   Adds a group to the workspace's restricted list. The workspace allows at most
   100 restricted sharing groups. Requires workspace admin.
@@ -79,8 +83,8 @@ func newCreateRestrictedSharingGroup() *cobra.Command {
       and non-system workspace group.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -141,8 +145,10 @@ func newDeleteRestrictedSharingGroup() *cobra.Command {
 	var deleteRestrictedSharingGroupReq iam.DeleteRestrictedSharingGroupRequest
 
 	cmd.Use = "delete-restricted-sharing-group NAME"
-	cmd.Short = `Delete a restricted sharing group.`
-	cmd.Long = `Delete a restricted sharing group.
+	cmd.Short = `*Beta* Delete a restricted sharing group.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a restricted sharing group.
 
   Removes a group from the workspace's restricted list. Requires workspace
   admin.
@@ -152,8 +158,8 @@ func newDeleteRestrictedSharingGroup() *cobra.Command {
       restricted-sharing-groups/{restricted_sharing_group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -201,8 +207,10 @@ func newGetRestrictedSharingGroup() *cobra.Command {
 	var getRestrictedSharingGroupReq iam.GetRestrictedSharingGroupRequest
 
 	cmd.Use = "get-restricted-sharing-group NAME"
-	cmd.Short = `Get a restricted sharing group.`
-	cmd.Long = `Get a restricted sharing group.
+	cmd.Short = `*Beta* Get a restricted sharing group.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a restricted sharing group.
 
   Gets a restricted sharing group in the workspace. Use it to check whether a
   group is on the workspace's restricted list. Requires workspace admin.
@@ -212,8 +220,8 @@ func newGetRestrictedSharingGroup() *cobra.Command {
       restricted-sharing-groups/{restricted_sharing_group_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -275,15 +283,17 @@ func newListRestrictedSharingGroups() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-restricted-sharing-groups"
-	cmd.Short = `List restricted sharing groups.`
-	cmd.Long = `List restricted sharing groups.
+	cmd.Short = `*Beta* List restricted sharing groups.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List restricted sharing groups.
 
   Lists the restricted sharing groups in the workspace. Requires workspace
   admin.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

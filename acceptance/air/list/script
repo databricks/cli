@@ -9,3 +9,9 @@ trace $CLI air list --all-status
 
 title "list --all-status (json)"
 trace $CLI air list --all-status -o json
+
+title "invalid filter (text)"
+trace musterr $CLI air list --filter bogus=1
+
+title "invalid filter (json)"
+trace musterr $CLI air list --filter bogus=1 -o json

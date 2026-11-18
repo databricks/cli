@@ -72,6 +72,11 @@ func classifyInstallError(err error) protos.AitoolsErrorCategory {
 	if errors.Is(err, installer.ErrUnknownAgent) {
 		return protos.AitoolsErrorCategoryUnknownAgent
 	}
+	// The manifest arrived and parsed, but names a path outside the skills
+	// directory: content, not transport.
+	if errors.Is(err, installer.ErrUnsafeManifestPath) {
+		return protos.AitoolsErrorCategoryManifestInvalid
+	}
 	// Skills on disk without the install state that update and uninstall need.
 	if errors.Is(err, installer.ErrLegacyInstall) {
 		return protos.AitoolsErrorCategoryStateInvalid
@@ -137,6 +142,9 @@ func skillErrorCategory(e *installer.SkillError) protos.AitoolsErrorCategory {
 		return protos.AitoolsErrorCategoryVersionIncompatible
 	case installer.ReasonExperimentalSkill:
 		return protos.AitoolsErrorCategoryExperimentalSkill
+	// The manifest lists the skill in a form it cannot be installed in.
+	case installer.ReasonUnportableSkill:
+		return protos.AitoolsErrorCategoryManifestInvalid
 	default:
 		return protos.AitoolsErrorCategoryUncategorized
 	}

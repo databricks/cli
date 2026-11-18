@@ -3,6 +3,7 @@
 package secrets
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "secrets",
-		Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
-		Long: `The Secrets API allows you to manage secrets, secret scopes, and access
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "secrets",
+	Short:   `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Secrets API allows you to manage secrets, secret scopes, and access
   permissions.
 
   Sometimes accessing data requires that you authenticate to external data
@@ -33,14 +39,13 @@ func New() *cobra.Command {
   Administrators, secret creators, and users granted permission can read
   Databricks secrets. While Databricks makes an effort to redact secret values
   that might be displayed in notebooks, it is not possible to prevent such users
-  from reading secrets.`,
-		GroupID: "workspace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  from reading secrets.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateScope())
@@ -58,8 +63,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-scope command

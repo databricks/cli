@@ -62,7 +62,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		if task.JobClusterKey != "" {
 			for _, job := range b.Config.Resources.Jobs {
 				for _, cluster := range job.JobClusters {
-					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster.SparkVersion != "" {
+					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster != nil && cluster.NewCluster.SparkVersion != "" {
 						if lowerThanExpectedVersion(cluster.NewCluster.SparkVersion) {
 							diags = append(diags, diag.Diagnostic{
 								Severity: diag.Error,

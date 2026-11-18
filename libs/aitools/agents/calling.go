@@ -62,8 +62,8 @@ func (t Tooling) String() string {
 // record. For Codex and Copilot, pluginRecorded (the CLI install state) is the
 // only plugin source, so it misses plugins installed with the agent's own CLI
 // and includes plugins later removed with it. The shared skills store is not consulted: it cannot attribute skills.
-// The install hint's claudeToolingInstalled differs on purpose: it stays quiet
-// for any trace of an install, while this reports what the agent loads.
+// The install hint uses it too, so Claude Code is hinted exactly when it loads
+// no Databricks tooling.
 func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() bool) Tooling {
 	// An unknown working directory skips the project lookups below.
 	cwd := ""
@@ -92,6 +92,10 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 	}
 	return ToolingNone
 }
+
+// noRecordedPlugin is the pluginRecorded argument to DatabricksTooling for
+// callers that don't consult the CLI install record.
+func noRecordedPlugin() bool { return false }
 
 // projectDirs returns cwd and each of its parents up to the repository root,
 // the nearest directory holding .git (a file in a git worktree, so the walk

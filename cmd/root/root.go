@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -24,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
+func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -89,16 +90,25 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 
-		// Recommend installing Databricks AI tooling to Claude Code when it is
-		// driving the CLI without the tooling installed (best-effort: a stderr
-		// line and a telemetry event that is uploaded at exit).
-		agents.MaybeHint(ctx, cmd)
+		// Recommend installing Databricks AI tooling to the calling coding agent
+		// when it drives the CLI without the tooling installed (best-effort: a
+		// stderr line and a telemetry event that is uploaded at exit). Only the
+		// global install state is read, as for the calling-agent User-Agent.
+		agents.MaybeHint(ctx, cmd, func(ctx context.Context, agentName string) bool {
+			return installer.PluginRecorded(ctx, installer.ScopeGlobal, agentName)
+		})
 		return nil
 	}
 
 	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
 		// Wait for any active Bubble Tea programs to finish and restore terminal state
 		cmdio.Wait(cmd.Context())
+
+		// On the first run of a new CLI version, install Databricks AI tools.
+		// Cobra runs post-run hooks only when the command succeeded.
+		if autoinstall.Run != nil {
+			autoinstall.Run(cmd)
+		}
 		return nil
 	}
 
@@ -114,9 +124,10 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+// execute runs cmd with args, which select the subcommand to run. Unlike
+// [cobra.Command.SetArgs], nil args mean no arguments rather than the process
+// arguments.
+func execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
 	defer func() {
 		r := recover()
 
@@ -151,6 +162,12 @@ Stack Trace:
 
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
+
+	// Cobra runs with the process arguments if args are nil.
+	if args == nil {
+		args = []string{}
+	}
+	cmd.SetArgs(args)
 
 	startTime := time.Now()
 

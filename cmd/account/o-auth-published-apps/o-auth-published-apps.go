@@ -3,6 +3,7 @@
 package o_auth_published_apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -16,21 +17,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "o-auth-published-apps",
-		Short: `These APIs enable administrators to view all the available published OAuth applications in Databricks.`,
-		Long: `These APIs enable administrators to view all the available published OAuth
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "o-auth-published-apps",
+	Short:   `These APIs enable administrators to view all the available published OAuth applications in Databricks.`,
+	GroupID: "oauth2",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs enable administrators to view all the available published OAuth
   applications in Databricks. Administrators can add the published OAuth
   applications to their account through the OAuth Published App Integration
-  APIs.`,
-		GroupID: "oauth2",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  APIs.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -39,8 +44,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start list command

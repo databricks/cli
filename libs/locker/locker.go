@@ -105,6 +105,11 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return locker.checkHolder(activeLockState)
+}
+
+// checkHolder returns a descriptive error naming the holder if activeLockState is not ours.
+func (locker *Locker) checkHolder(activeLockState *LockState) error {
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
 		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
@@ -147,29 +152,45 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
-	modes := []filer.WriteMode{
-		// Always create parent directory if it doesn't yet exist.
-		filer.CreateParentDirectories,
-	}
-
-	// Only overwrite lock file if `isForced`.
 	if isForced {
-		modes = append(modes, filer.OverwriteIfExists)
+		// The retrying filer already retries overwrite writes, on the errors [retry.IsTransient]
+		// covers; an "unexpected EOF" is not retried there, only read back below.
+		err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories, filer.OverwriteIfExists)
+	} else {
+		// The retrying filer does not repeat writes that do not overwrite. Repeating this one is
+		// safe because the lock file carries our unique ID: if an attempt that failed with a
+		// transient error did create the file, the retry fails with fs.ErrExist and
+		// assertLockHeld below tells whether the lock is ours. That holds for a connection cut
+		// mid-response ("unexpected EOF") too, so this uses the wider check meant for reads.
+		_, err = retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {
+			return struct{}{}, locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories)
+		})
 	}
 
-	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
-	if err != nil {
-		// If the write failed because the lock file already exists, don't return
-		// the error and instead fall through to [assertLockHeld] below.
-		// This function will return a more descriptive error message that includes
-		// details about the current holder of the lock.
-		if !errors.Is(err, fs.ErrExist) {
+	switch {
+	case err == nil || errors.Is(err, fs.ErrExist):
+		// If the lock file already exists, [assertLockHeld] returns a more descriptive
+		// error that names the current holder of the lock.
+		if err := locker.assertLockHeld(ctx); err != nil {
 			return err
 		}
-	}
-
-	err = locker.assertLockHeld(ctx)
-	if err != nil {
+	case retry.IsTransientRead(ctx, err):
+		// The last attempt may have been applied even though its response was lost. Read the
+		// lock back so that such a write does not leave behind a lock nobody releases. This
+		// covers forced locks too.
+		activeLockState, readErr := locker.GetActiveLockState(ctx)
+		if readErr != nil {
+			// No lock, or the read failed too: the write error says more.
+			return err
+		}
+		if holderErr := locker.checkHolder(activeLockState); holderErr != nil {
+			if isForced {
+				// The holder error suggests --force-lock, which is already in use.
+				return err
+			}
+			return holderErr
+		}
+	default:
 		return err
 	}
 

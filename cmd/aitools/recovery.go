@@ -13,7 +13,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -53,7 +52,7 @@ func renderInstallCommand(goos string, inv installInvocation) (string, bool) {
 			// the backslashes. filepath.ToSlash follows the host OS, not goos.
 			path = strings.ReplaceAll(path, `\`, "/")
 		}
-		path, ok := quoteArg(goos, path)
+		path, ok := shellquote.Arg(goos, path)
 		if !ok {
 			return "", false
 		}
@@ -65,7 +64,7 @@ func renderInstallCommand(goos string, inv installInvocation) (string, bool) {
 	if inv.agents != "" {
 		// Quoted like --skills: PowerShell reads a bare comma as the array
 		// operator and would split the list into two arguments.
-		names, ok := quoteArg(goos, inv.agents)
+		names, ok := shellquote.Arg(goos, inv.agents)
 		if !ok {
 			return "", false
 		}
@@ -76,7 +75,7 @@ func renderInstallCommand(goos string, inv installInvocation) (string, bool) {
 	}
 	if inv.skills != "" {
 		// Normalized as install parses it, so "a, b" pastes as one value.
-		skills, ok := quoteArg(goos, strings.Join(splitAndTrim(inv.skills), ","))
+		skills, ok := shellquote.Arg(goos, strings.Join(splitAndTrim(inv.skills), ","))
 		if !ok {
 			return "", false
 		}
@@ -89,21 +88,6 @@ func renderInstallCommand(goos string, inv installInvocation) (string, bool) {
 		args = append(args, "--output json")
 	}
 	return strings.Join(args, " "), true
-}
-
-// quoteArg quotes a flag value for the shell a user on goos pastes the printed
-// command into, only when it needs it, so the common case stays readable:
-// cmd.exe or PowerShell on Windows, a POSIX shell elsewhere. It reports false
-// for a value no quoting keeps literal there, and for any value with a control
-// character: a line break in a pasted command runs what follows it.
-func quoteArg(goos, value string) (string, bool) {
-	if goos == "windows" {
-		return shellquote.WindowsArg(value)
-	}
-	if strings.ContainsFunc(value, unicode.IsControl) {
-		return "", false
-	}
-	return shellquote.BashArg(value), true
 }
 
 // commandText renders inv followed by extra flags, for printing after a colon.
@@ -238,6 +222,11 @@ func installRecovery(ctx context.Context, inv installInvocation, err error) stri
 		return "The skills release this CLI selected is missing. Set DATABRICKS_SKILLS_REF to a release tag from " + skillsReleasesURL + " and re-run " + rerun + ", and report it at " + cliIssuesURL + "."
 	case protos.AitoolsErrorCategoryManifestInvalid:
 		host := skillsHost(ctx)
+		// The manifest arrived and decoded, but lists a path outside the
+		// skills directory or a skill in a form it cannot be installed in.
+		if _, ok := errors.AsType[*installer.SkillError](err); ok || errors.Is(err, installer.ErrUnsafeManifestPath) {
+			return "No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from " + skillsReleasesURL + " and re-run " + rerun + ", and report the manifest from " + host + " at " + cliIssuesURL + "."
+		}
 		return host + " answered with something that is not a skills manifest (a proxy or captive portal page, or a broken mirror). Check what this machine gets from " + host + ", then re-run " + rerun + "."
 	case protos.AitoolsErrorCategorySkillsFetchFailed:
 		return downloadRecovery(ctx, inv, ferr)

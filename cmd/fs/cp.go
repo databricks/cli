@@ -206,7 +206,7 @@ func trimTrailingDirSeparators(path string) string {
 	return strings.TrimRight(path, string(os.PathSeparator))
 }
 
-func newCpCommand() *cobra.Command {
+func newCpCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
 		Short: "Copy files and directories.",
@@ -253,14 +253,8 @@ func newCpCommand() *cobra.Command {
 			return err
 		}
 
-		c.sourceScheme = ""
-		if isDbfsPath(fullSourcePath) {
-			c.sourceScheme = "dbfs"
-		}
-		c.targetScheme = ""
-		if isDbfsPath(fullTargetPath) {
-			c.targetScheme = "dbfs"
-		}
+		c.sourceScheme, _ = SplitPath(fullSourcePath)
+		c.targetScheme, _ = SplitPath(fullTargetPath)
 
 		c.sourceFiler = sourceFiler
 		c.targetFiler = targetFiler
@@ -296,6 +290,7 @@ func newCpCommand() *cobra.Command {
 	}
 
 	v := newValidArgs()
+	v.filerForPathFunc = filerForPath
 	// The copy command has two paths that can be completed (SOURCE_PATH & TARGET_PATH)
 	v.pathArgCount = 2
 	cmd.ValidArgsFunction = v.Validate

@@ -3,6 +3,7 @@ package agents
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
@@ -22,15 +23,16 @@ func PrintSkillsTip(ctx context.Context) {
 }
 
 // MaybeVersionCheckTip prints skillsTipText after `databricks version --check`
-// when a coding agent is detected without Databricks tooling. Claude Code
-// callers are skipped because MaybeHint already covers them, with its
-// per-session throttle. installedPlugins is a parameter because this package
+// when a coding agent is detected without Databricks tooling. Callers that
+// MaybeHint hints (Claude Code and the registry agents, see isHintedAgent) are
+// skipped: `version` is in hintExemptCommands, and the tip must not undo that
+// exemption for them. installedPlugins is a parameter because this package
 // cannot import the installer; callers pass installer.InstalledPluginAgents,
 // which counts a plugin recorded in the CLI install state with or without a
 // known version. No telemetry is logged: `databricks version` never resolves
 // auth, so the event would not be uploaded (see logHintShown).
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
-	if useragent.AgentProvider() == claudeAgentProvider {
+	if isHintedAgent(useragent.AgentProvider()) {
 		return
 	}
 	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {
@@ -42,7 +44,6 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 	// Recorded plugins are checked above, so DatabricksTooling only needs the
 	// agent's own manifest, its skills dir and the project dirs up to the
 	// repository root.
-	noRecordedPlugin := func() bool { return false }
 	for _, a := range Registry {
 		if a.DatabricksTooling(ctx, noRecordedPlugin) != ToolingNone {
 			return
@@ -53,7 +54,8 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 
 // RecommendSkillsInstall checks if coding agents are detected without Databricks tooling (skills
 // or the databricks plugin) installed.
-// In interactive mode, prompts the user to install now using installFn. In non-interactive mode, prints a hint.
+// In interactive mode, prompts the user to install now using installFn; a "no" also turns
+// auto-install off. In non-interactive mode, prints a hint.
 func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context) error) error {
 	if HasDatabricksToolingInstalled(ctx) {
 		return nil
@@ -70,6 +72,14 @@ func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context)
 		return err
 	}
 	if !yes {
+		// The automatic install after this command (and after later upgrades)
+		// must not install what the user just turned down.
+		if err := autoinstall.Decline(ctx); err != nil {
+			log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
+			return nil
+		}
+		// The prompt asked about now; say that the answer also holds later.
+		cmdio.LogString(ctx, "Databricks AI tools won't be installed automatically either. To turn that back on, run: databricks aitools auto-install enable")
 		return nil
 	}
 

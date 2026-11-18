@@ -3,6 +3,7 @@
 package access_control
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "access-control",
-		Short:   `Rule based Access Control for Databricks Resources.`,
-		Long:    `Rule based Access Control for Databricks Resources.`,
-		GroupID: "iam",
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "access-control",
+	Short:   `Rule based Access Control for Databricks Resources.`,
+	GroupID: "iam",
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Rule based Access Control for Databricks Resources.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCheckPolicy())
@@ -40,8 +45,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start check-policy command

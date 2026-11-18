@@ -5,7 +5,7 @@
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 >>> print_telemetry
 {"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
@@ -23,7 +23,7 @@ Installed 1 skill.
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 >>> print_telemetry
 {"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
@@ -41,7 +41,7 @@ Installed 1 skill.
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 >>> print_requests.py //oidc/v1/token //telemetry-ext
 

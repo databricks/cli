@@ -27,7 +27,7 @@ Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --unique --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {
@@ -56,7 +56,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-en
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
->>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --unique --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Update endpoint autoscaling and re-deploy
 
@@ -105,7 +105,7 @@ Updated postgres_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
->>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --unique --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {
@@ -139,7 +139,7 @@ Updated postgres_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
->>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --unique --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {

@@ -48,7 +48,7 @@ func RunPrompt(ctx context.Context, opts PromptOptions) (string, error) {
 	if !c.capabilities.SupportsPrompt() {
 		return "", fmt.Errorf("expected to have %s", opts.Label)
 	}
-	return c.runPromptModel(newPromptModel(opts))
+	return c.runPromptModel(newPromptModel(opts, c.capabilities.SupportsStderrColor()))
 }
 
 // Secret prompts the user for a value while masking input with '*' and
@@ -63,6 +63,7 @@ func Secret(ctx context.Context, label string) (string, error) {
 }
 
 type promptModel struct {
+	color       bool // emit color codes (bold etc. apply regardless)
 	label       string
 	mask        rune
 	hideEntered bool
@@ -86,8 +87,9 @@ type promptModel struct {
 	submitErr error
 }
 
-func newPromptModel(opts PromptOptions) *promptModel {
+func newPromptModel(opts PromptOptions, color bool) *promptModel {
 	return &promptModel{
+		color:       color,
 		label:       opts.Label,
 		mask:        opts.Mask,
 		hideEntered: opts.HideEntered,
@@ -104,12 +106,12 @@ func (m *promptModel) value() string {
 // blank before that.
 func (m *promptModel) glyph() string {
 	if m.validate == nil || m.validate(m.value()) == nil {
-		return ansiBold + ansiGreen + glyphValid + ansiReset
+		return ansiBold + colorCode(m.color, ansiGreen) + glyphValid + ansiReset
 	}
 	if !m.touched {
 		return glyphBlank
 	}
-	return ansiBold + ansiRed + glyphInvalid + ansiReset
+	return ansiBold + colorCode(m.color, ansiRed) + glyphInvalid + ansiReset
 }
 
 func (m *promptModel) Init() tea.Cmd { return nil }
@@ -246,7 +248,7 @@ func (m *promptModel) View() string {
 	if m.submitErr != nil {
 		// Validation error line captured at the failed Enter; cleared on
 		// the next edit.
-		line += "\n" + ansiRed + ">> " + m.submitErr.Error() + ansiReset
+		line += "\n" + colorCode(m.color, ansiRed) + ">> " + m.submitErr.Error() + ansiReset
 	}
 	return line
 }
