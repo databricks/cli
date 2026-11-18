@@ -2,3 +2,4 @@
 Cloud = false
 RecordRequests = true
 Ignore = [".databricks", "databricks.yml"]
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
