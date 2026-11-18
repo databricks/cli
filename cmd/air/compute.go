@@ -83,7 +83,7 @@ type computeConfig struct {
 	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"GPU Pools (optional)"`
-	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the GPU Pool. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the GPU Pool: NORMAL. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.

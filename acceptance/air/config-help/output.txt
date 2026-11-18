@@ -118,7 +118,7 @@ config.compute
 
   GPU Pools (optional):
     accelerator_pool_id  GPU Pool to run on, by ID.
-    priority_class       Scheduling priority within the GPU Pool.
+    priority_class       Scheduling priority within the GPU Pool: NORMAL.
 
 For details on a field, run "databricks air run -h config.compute.<field>".
 
@@ -140,7 +140,7 @@ config.compute.accelerator_pool_id
 
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the GPU Pool. Requires accelerator_pool_id.
+  Scheduling priority within the GPU Pool: NORMAL. Requires accelerator_pool_id.
 
   Type:     string
   Required: no
@@ -241,6 +241,6 @@ Error: "config.parameters" holds user-defined keys, so "learning_rate" is not pa
 === removed pool field is not in the schema
 
 >>> [CLI] air run -h config.compute.pool_id
-Error: unknown config field "config.compute.pool_id"
+Error: unknown config field "config.compute.pool_id"; did you mean "accelerator_pool_id"?
 
 fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, priority_class

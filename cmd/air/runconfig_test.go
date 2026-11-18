@@ -808,6 +808,11 @@ func TestResolveConfigField_Errors(t *testing.T) {
 			wantParts: []string{`unknown config field "config.compute.acclerator_type"`, `did you mean "accelerator_type"?`, "accelerator_type, num_accelerators"},
 		},
 		{
+			name:      "removed pool selector suggests new name",
+			path:      "config.compute.pool_id",
+			wantParts: []string{`unknown config field "config.compute.pool_id"`, `did you mean "accelerator_pool_id"?`},
+		},
+		{
 			name:      "unknown top-level field lists siblings",
 			path:      "config.bogus",
 			wantParts: []string{`unknown config field "config.bogus"`, "experiment_name"},
@@ -1224,9 +1229,9 @@ func TestLoadRunConfigAcceleratorPool(t *testing.T) {
 		name, fields, wantErr string
 	}{
 		{name: "explicit", fields: "  accelerator_pool_id: pool-1\n"},
-		{name: "legacy rejected", fields: "  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"`},
-		{name: "alias rejected alongside selector", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"`},
-		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: `unknown field "compute.pool_id"`},
+		{name: "legacy rejected", fields: "  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
+		{name: "alias rejected alongside selector", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
+		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tc.fields))

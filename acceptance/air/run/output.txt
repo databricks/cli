@@ -112,7 +112,7 @@ Exit code: 1
 === removed pool field is rejected
 
 >>> [CLI] air run -f removed-pool.yaml --dry-run
-Error: invalid config removed-pool.yaml: line 6: unknown field "compute.pool_id"; run "databricks air run -h config.compute" for the list of fields
+Error: invalid config removed-pool.yaml: line 6: unknown field "compute.pool_id"; did you mean "accelerator_pool_id"? Run "databricks air run -h config.compute" for the list of fields
 
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
