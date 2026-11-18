@@ -28,14 +28,21 @@ type Capabilities struct {
 
 // newCapabilities detects terminal capabilities from context and I/O streams.
 func newCapabilities(ctx context.Context, in io.Reader, out, err io.Writer) Capabilities {
+	noColor, dumb := colorFromEnv(ctx)
 	return Capabilities{
 		stdinIsTTY:      isTTY(in),
 		stdoutIsTTY:     isTTY(out),
 		stderrIsTTY:     isTTY(err),
-		noColor:         env.Get(ctx, "NO_COLOR") != "",
-		dumb:            env.Get(ctx, "TERM") == "dumb",
+		noColor:         noColor,
+		dumb:            dumb,
 		stdinIsMSYSPipe: isMSYSPipe(in),
 	}
+}
+
+// colorFromEnv reads the color preferences from ctx: whether NO_COLOR is set,
+// and whether TERM is "dumb". They are reported separately, see Capabilities.
+func colorFromEnv(ctx context.Context) (noColor, dumb bool) {
+	return env.Get(ctx, "NO_COLOR") != "", env.Get(ctx, "TERM") == "dumb"
 }
 
 // SupportsInteractive returns true if stderr can show output that redraws

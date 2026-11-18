@@ -1,0 +1,3 @@
+renderer color: false
+helpers: red green blue hiblack hiblue bold faint
+renderer: bold reverse
