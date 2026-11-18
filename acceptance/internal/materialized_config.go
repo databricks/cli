@@ -42,6 +42,7 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 
 	writeBool(&buf, "Cloud", config.Cloud)
 	writeBool(&buf, "CloudSlow", config.CloudSlow)
+	writeBool(&buf, "Litebox", config.Litebox)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)
