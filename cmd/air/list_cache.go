@@ -26,7 +26,7 @@ type listCacheKey struct {
 }
 
 // cachedRuns is the persisted value for a run: one cachedRun per AI runtime
-// task (see buildListRows).
+// task, before filtering (see buildTaskEntries), so a hit can be re-filtered.
 type cachedRuns struct {
 	Rows []cachedRun `json:"rows"`
 }
@@ -88,23 +88,33 @@ func newListCache(ctx context.Context) *cache.Cache {
 	return cache.NewCache(ctx, listCacheComponent, listCacheTTL, nil)
 }
 
-// cachedRows returns the cached rows of a run, one per AI runtime task. An
-// entry with a row that lacks task runs is treated as a miss.
-func cachedRows(ctx context.Context, c *cache.Cache, host string, runID int64) ([]cachedRun, bool) {
-	entry, ok := cache.Get[cachedRuns](ctx, c, listCacheKey{Host: host, RunID: runID})
-	if !ok || len(entry.Rows) == 0 {
+// cachedEntries returns the cached entries of a run, one per AI runtime task.
+// An entry whose row lacks task runs is treated as a miss.
+func cachedEntries(ctx context.Context, c *cache.Cache, host string, runID int64) ([]taskEntry, bool) {
+	cached, ok := cache.Get[cachedRuns](ctx, c, listCacheKey{Host: host, RunID: runID})
+	if !ok || len(cached.Rows) == 0 {
 		return nil, false
 	}
-	for _, row := range entry.Rows {
+	entries := make([]taskEntry, len(cached.Rows))
+	for i, row := range cached.Rows {
 		if len(row.Tasks) == 0 {
 			return nil, false
 		}
+		entries[i] = taskEntry{
+			entry:  listedRun{row: row.toRow(), runID: runID, taskKey: row.TaskKey, tasks: row.Tasks, terminal: true},
+			fields: row.Fields,
+		}
 	}
-	return entry.Rows, true
+	return entries, true
 }
 
-// putRows caches a terminal run's rows.
-func putRows(ctx context.Context, c *cache.Cache, host string, runID int64, rows []cachedRun) {
+// putEntries caches a terminal run's entries, all of them, so a later hit can
+// be re-filtered on every task.
+func putEntries(ctx context.Context, c *cache.Cache, host string, runID int64, entries []taskEntry, submitTimeMs int64) {
+	rows := make([]cachedRun, len(entries))
+	for i, e := range entries {
+		rows[i] = cachedRunFromRow(e.entry.row, e.entry.tasks, e.fields, submitTimeMs)
+	}
 	cache.Put(ctx, c, listCacheKey{Host: host, RunID: runID}, cachedRuns{Rows: rows})
 }
 

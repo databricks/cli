@@ -208,8 +208,10 @@ func TestAirTaskSelection(t *testing.T) {
 			run := &jobs.Run{RunId: 1, Tasks: tt.tasks}
 			assert.Equal(t, tt.air, isAirRun(run), "isAirRun")
 			assert.Equal(t, tt.keys, airTaskKeys(run), "airTaskKeys")
-			assert.Equal(t, tt.experiment, jobExperiment(run), "jobExperiment")
-			assert.Equal(t, tt.sweep, isSweep(run), "isSweep")
+			// Readers take the run narrowed to its AI Runtime task.
+			shown := defaultTaskRun(run)
+			assert.Equal(t, tt.experiment, jobExperiment(shown), "jobExperiment")
+			assert.Equal(t, tt.sweep, isSweep(shown), "isSweep")
 			if len(tt.tasks) == 0 {
 				assert.Nil(t, firstTask(run), "firstTask")
 			}
@@ -246,8 +248,13 @@ func TestTaskRunNarrowsToOneAirTask(t *testing.T) {
 	assert.Equal(t, 8, n)
 
 	assert.Len(t, run.Tasks, 4, "the source run is left intact")
-	assert.Nil(t, taskRun(run, "prep"), "a non-AIR task is not selectable")
-	assert.Nil(t, taskRun(run, "missing"))
+
+	first := defaultTaskRun(run)
+	assert.Equal(t, "a", first.Tasks[0].TaskKey, "the default is the first AI Runtime task, not the notebook")
+	assert.Equal(t, "a", airTaskKey(first))
+	notebookOnly := &jobs.Run{RunId: 2, Tasks: []jobs.RunTask{notebookTask("prep", 21)}}
+	assert.Same(t, notebookOnly, defaultTaskRun(notebookOnly), "a run without an AI Runtime task is not narrowed")
+	assert.Empty(t, airTaskKey(notebookOnly))
 }
 
 func TestJobTimingUsesTheAirTask(t *testing.T) {
@@ -257,7 +264,7 @@ func TestJobTimingUsesTheAirTask(t *testing.T) {
 	train.StartTime, train.EndTime = 200, 260
 	run := &jobs.Run{RunId: 1, StartTime: 90, EndTime: 300, Tasks: []jobs.RunTask{prep, train}}
 
-	start, end := jobTiming(run)
+	start, end := jobTiming(defaultTaskRun(run))
 	assert.Equal(t, int64(200), start)
 	assert.Equal(t, int64(260), end)
 }

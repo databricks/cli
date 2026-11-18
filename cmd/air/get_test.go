@@ -849,7 +849,7 @@ func TestAiRuntimeTaskOfSkipsNonAirTasks(t *testing.T) {
 		notebookTask("prep", 51),
 		aiRuntimeTask("train", 52, "/Users/me@example.com/exp", "GPU_1xA10", 1),
 	}}
-	task := aiRuntimeTaskOf(run)
+	task := aiRuntimeTaskOf(defaultTaskRun(run))
 	require.NotNil(t, task)
 	assert.Equal(t, "/Users/me@example.com/exp", task.Experiment)
 }
@@ -935,24 +935,44 @@ func TestGetRunSelectsAirTask(t *testing.T) {
 	})
 }
 
-func TestAnnotateTaskIsNullWithoutAnAirTask(t *testing.T) {
+func TestTaskViewTaskKey(t *testing.T) {
 	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{notebookTask("prep", 51)}}
-	selected, err := selectAirTask(run, "")
+	_, data, err := taskView(run, "")
 	require.NoError(t, err)
-	var data getData
-	annotateTask(selected, len(airTaskKeys(run)), &data)
 	assert.Nil(t, data.TaskKey, "matches air list, which reports no task, and --task-key prep, which errors")
 	assert.Empty(t, data.TaskDisplay)
 
-	two := &jobs.Run{RunId: 6, Tasks: []jobs.RunTask{
-		aiRuntimeTask("train", 61, "e", "GPU_1xA10", 1),
-		aiRuntimeTask("eval", 62, "e", "GPU_1xA10", 1),
-	}}
-	selected, err = selectAirTask(two, "eval")
+	single := &jobs.Run{RunId: 6, Tasks: []jobs.RunTask{notebookTask("prep", 60), aiRuntimeTask("train", 61, "e", "GPU_1xA10", 1)}}
+	_, data, err = taskView(single, "")
 	require.NoError(t, err)
-	data = getData{}
-	annotateTask(selected, len(airTaskKeys(two)), &data)
+	require.NotNil(t, data.TaskKey)
+	assert.Equal(t, "train", *data.TaskKey)
+	assert.Empty(t, data.TaskDisplay, "one AI Runtime task needs no Task line")
+
+	two := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 71, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 72, "e", "GPU_1xA10", 1),
+	}}
+	selected, data, err := taskView(two, "eval")
+	require.NoError(t, err)
+	assert.Equal(t, "eval", selected.Tasks[0].TaskKey)
 	require.NotNil(t, data.TaskKey)
 	assert.Equal(t, "eval", *data.TaskKey)
 	assert.Equal(t, "eval", data.TaskDisplay)
+}
+
+func TestSelectAirTaskErrors(t *testing.T) {
+	_, err := selectAirTask(&jobs.Run{RunId: 5, Tasks: []jobs.RunTask{notebookTask("prep", 51)}}, "prep")
+	assert.EqualError(t, err, "run 5 has no AI Runtime tasks")
+
+	two := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{
+		notebookTask("prep", 70),
+		aiRuntimeTask("train", 71, "e", "GPU_1xA10", 1),
+	}}
+	_, err = selectAirTask(two, "prep")
+	assert.EqualError(t, err, `run 7 has no AI Runtime task "prep"; its AI Runtime tasks are: train`)
+
+	run, err := selectAirTask(&jobs.Run{RunId: 8, Tasks: []jobs.RunTask{notebookTask("prep", 80)}}, "")
+	require.NoError(t, err)
+	assert.Len(t, run.Tasks, 1, "a run without an AI Runtime task is shown as is")
 }

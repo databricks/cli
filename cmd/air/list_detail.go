@@ -22,14 +22,11 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 		}
 		return "", fmt.Errorf("failed to fetch run: %w", err)
 	}
-	fullRun := run
-	run, err = selectAirTask(run, taskKey)
+	run, data, err := taskView(run, taskKey)
 	if err != nil {
 		return "", err
 	}
 
-	data := buildGetData(run)
-	annotateTask(run, len(airTaskKeys(fullRun)), &data)
 	// As in `air get`: an ai_runtime_task run keeps its experiment, accelerators
 	// and config path on the task.
 	if genAIComputeTask(run) == nil {

@@ -394,6 +394,7 @@ func TestLegacyExperimentAndAcceleratorsSkipNonAirTasks(t *testing.T) {
 			Compute:              &jobs.ComputeConfig{GpuType: "H100", NumGpus: 8},
 		}},
 	}}
+	run = defaultTaskRun(run)
 	name := experimentName(run)
 	require.NotNil(t, name)
 	assert.Equal(t, "legacy-exp", *name)

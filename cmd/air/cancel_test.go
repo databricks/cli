@@ -340,16 +340,15 @@ func TestDisplayCancelPreview(t *testing.T) {
 	assert.Contains(t, out, na)
 }
 
-func TestFirstRowPerRun(t *testing.T) {
-	rows := []listRow{
-		{RunID: "1", TaskKey: "train"},
-		{RunID: "1", TaskKey: "eval"},
-		{RunID: "2"},
-		{RunID: "3", TaskKey: "sweep"},
+func TestCancelPreviewRows(t *testing.T) {
+	runs := [][]listRow{
+		{{RunID: "1", TaskKey: "train"}, {RunID: "1", TaskKey: "eval"}},
+		{{RunID: "2"}},
+		{{RunID: "3", TaskKey: "sweep"}},
 	}
-	unique, taskKeys := firstRowPerRun(rows)
-	assert.Equal(t, []listRow{{RunID: "1", TaskKey: "train"}, {RunID: "2"}, {RunID: "3", TaskKey: "sweep"}}, unique)
-	assert.Equal(t, map[string][]string{"1": {"train", "eval"}, "2": nil, "3": {"sweep"}}, taskKeys)
+	rows, taskKeys := cancelPreviewRows(runs)
+	assert.Equal(t, []listRow{{RunID: "1", TaskKey: "train"}, {RunID: "2"}, {RunID: "3", TaskKey: "sweep"}}, rows)
+	assert.Equal(t, map[string][]string{"1": {"train", "eval"}, "3": {"sweep"}}, taskKeys)
 }
 
 func TestCancelAllCancelsAMultiTaskRunOnce(t *testing.T) {

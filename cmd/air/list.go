@@ -261,8 +261,8 @@ func validateEmptyAcceleratorFilter(ctx context.Context, w *databricks.Workspace
 // jobsScanStrategy pages runs/list; indexStrategy hydrates the AiTrainingService
 // index. The fetcher wraps whichever is chosen.
 type listStrategy interface {
-	// next returns up to want more matching runs (already row-built + task id).
-	next(want int) ([]listedRun, error)
+	// next returns up to want more matching runs, each as its group of rows.
+	next(want int) ([]runGroup, error)
 	// done reports whether the source has no more runs to yield.
 	done() bool
 	// truncated reports whether a safety cap stopped the scan short of the end.
@@ -322,15 +322,29 @@ func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQ
 // text output, and projects it to rows. It sets exhausted once the strategy is
 // drained so the interactive table knows to stop paging.
 func (f *runFetcher) next(want int) ([]listRow, error) {
-	entries, err := f.strategy.next(want)
+	groups, err := f.nextRuns(want)
+	if err != nil {
+		return nil, err
+	}
+	var rows []listRow
+	for _, g := range groups {
+		rows = append(rows, g...)
+	}
+	return rows, nil
+}
+
+// nextRuns is next with the rows kept grouped by run: one slice per run, one
+// row per AI runtime task.
+func (f *runFetcher) nextRuns(want int) ([][]listRow, error) {
+	groups, err := f.strategy.next(want)
 	if err != nil {
 		return nil, err
 	}
 	f.exhausted = f.strategy.done()
-	if len(entries) > 0 {
+	if len(groups) > 0 {
 		f.matchedAny = true
 	}
-	if len(entries) == 0 && f.exhausted && !f.matchedAny && f.validateEmpty != nil && !f.validatedEmpty {
+	if len(groups) == 0 && f.exhausted && !f.matchedAny && f.validateEmpty != nil && !f.validatedEmpty {
 		f.validatedEmpty = true
 		if err := f.validateEmpty(); err != nil {
 			return nil, err
@@ -338,19 +352,28 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	}
 
 	// MLflow links appear only in the text table, so the per-run get-output
-	// lookups are skipped for JSON output (which omits the column anyway).
+	// lookups are skipped for JSON output (which omits the column anyway). They
+	// run over all rows at once, then land back in their groups.
 	if f.fetchMLflow {
-		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, entries)
+		var flat []listedRun
+		for _, g := range groups {
+			flat = append(flat, g.entries...)
+		}
+		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, flat)
 		if s, ok := f.strategy.(*indexStrategy); ok {
-			s.cacheMLflowLinks(entries)
+			s.cacheMLflowLinks(flat)
+		}
+		for _, g := range groups {
+			n := copy(g.entries, flat)
+			flat = flat[n:]
 		}
 	}
 
-	rows := make([]listRow, len(entries))
-	for i, e := range entries {
-		rows[i] = e.row
+	out := make([][]listRow, len(groups))
+	for i, g := range groups {
+		out[i] = g.rows()
 	}
-	return rows, nil
+	return out, nil
 }
 
 // jobsScanStrategy pages Jobs runs/list, keeping the AIR runs that match the user
@@ -396,12 +419,11 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 	}
 }
 
-// next returns the rows of the next want matching runs. A run with several AI
-// runtime tasks yields one row per task, so want counts runs, not rows.
-func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
-	var entries []listedRun
-	runs := 0
-	for runs < want && s.scanned < s.maxScan && s.iter.HasNext(s.ctx) {
+// next returns the next want matching runs, each as its group of rows (see
+// runGroup).
+func (s *jobsScanStrategy) next(want int) ([]runGroup, error) {
+	var groups []runGroup
+	for len(groups) < want && s.scanned < s.maxScan && s.iter.HasNext(s.ctx) {
 		base, err := s.iter.Next(s.ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
@@ -422,28 +444,11 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
 			continue
 		}
-		// One row per AI runtime task, each filtered on its own task.
-		matched := false
-		for _, e := range buildListRows(run, s.host, s.workspaceID) {
-			if s.filters.matchesFields(e.fields) {
-				entries = append(entries, e.entry)
-				matched = true
-			}
-		}
-		if matched {
-			runs++
+		if g, ok := matchingGroup(run.RunId, buildTaskEntries(run, s.host, s.workspaceID), s.filters); ok {
+			groups = append(groups, g)
 		}
 	}
-	return entries, nil
-}
-
-// countRuns returns how many distinct runs the entries belong to.
-func countRuns(entries []listedRun) int {
-	seen := make(map[int64]bool, len(entries))
-	for _, e := range entries {
-		seen[e.runID] = true
-	}
-	return len(seen)
+	return groups, nil
 }
 
 func (s *jobsScanStrategy) done() bool {

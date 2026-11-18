@@ -103,7 +103,7 @@ any other task such as a notebook that prepares data.
 			// Fetch every active run (up to the scan bound) so --all cancels all
 			// of them, not just the first page.
 			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
-			rows, err := fetcher.next(maxListScan)
+			runs, err := fetcher.nextRuns(maxListScan)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to list active runs: %w", err))
@@ -111,8 +111,7 @@ any other task such as a notebook that prepares data.
 
 			// A job with several AI runtime tasks lists one row per task; the
 			// run is cancelled (and previewed) once, naming all its tasks.
-			var taskKeys map[string][]string
-			rows, taskKeys = firstRowPerRun(rows)
+			rows, taskKeys := cancelPreviewRows(runs)
 			runIDs = make([]string, 0, len(rows))
 			for i := range rows {
 				if rows[i].RunID != "" {
@@ -222,22 +221,20 @@ func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string, s
 	return err
 }
 
-// firstRowPerRun keeps the first row of each run id, in order, and returns the
-// task keys of every row by run id, so the preview can name all the AI runtime
-// tasks a cancel stops.
-func firstRowPerRun(rows []listRow) ([]listRow, map[string][]string) {
-	taskKeys := make(map[string][]string, len(rows))
-	unique := make([]listRow, 0, len(rows))
-	for _, row := range rows {
-		if _, seen := taskKeys[row.RunID]; !seen {
-			unique = append(unique, row)
-			taskKeys[row.RunID] = nil
-		}
-		if row.TaskKey != "" {
-			taskKeys[row.RunID] = append(taskKeys[row.RunID], row.TaskKey)
+// cancelPreviewRows returns the first row of each run, for the preview and the
+// cancel, and the AI runtime task keys of each run by run id.
+func cancelPreviewRows(runs [][]listRow) ([]listRow, map[string][]string) {
+	rows := make([]listRow, 0, len(runs))
+	taskKeys := make(map[string][]string, len(runs))
+	for _, run := range runs {
+		rows = append(rows, run[0])
+		for _, r := range run {
+			if r.TaskKey != "" {
+				taskKeys[r.RunID] = append(taskKeys[r.RunID], r.TaskKey)
+			}
 		}
 	}
-	return unique, taskKeys
+	return rows, taskKeys
 }
 
 // displayCancelPreview shows the runs that `cancel --all` is about to terminate.

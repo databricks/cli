@@ -29,9 +29,10 @@ func validateNodeIndex(node, numNodes int) error {
 	return fmt.Errorf("invalid --node %d: run has %d node(s), indexed 0 to %d", node, numNodes, numNodes-1)
 }
 
-// resolveNodeCount returns how many nodes a run used.
+// resolveNodeCount returns how many nodes a run used, read from its first AI
+// runtime task (see defaultTaskRun).
 func resolveNodeCount(run *jobs.Run) (int, error) {
-	accelType, count := jobCompute(run)
+	accelType, count := jobCompute(defaultTaskRun(run))
 	if accelType == "" {
 		return 0, fmt.Errorf("run %d has no AI runtime compute config", run.RunId)
 	}

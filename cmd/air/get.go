@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -227,8 +228,7 @@ one.`,
 
 		// From here on, run holds only the selected AI runtime task's task runs,
 		// so the status, timing, MLflow and config lookups all read that task.
-		fullRun := run
-		run, err = selectAirTask(run, taskKey)
+		run, data, err := taskView(run, taskKey)
 		if err != nil {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
@@ -245,8 +245,6 @@ one.`,
 				fmt.Errorf("configured workspace_id %q is not a numeric workspace ID", id))
 		}
 
-		data := buildGetData(run)
-		annotateTask(run, len(airTaskKeys(fullRun)), &data)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
 		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
 		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
@@ -324,35 +322,39 @@ one.`,
 // tasks when key is not one of them.
 func selectAirTask(run *jobs.Run, key string) (*jobs.Run, error) {
 	keys := airTaskKeys(run)
-	if key == "" {
-		if len(keys) == 0 {
+	if len(keys) == 0 {
+		if key == "" {
 			return run, nil
 		}
+		return nil, fmt.Errorf("run %d has no AI Runtime tasks", run.RunId)
+	}
+	if key == "" {
 		key = keys[0]
 	}
-	if narrowed := taskRun(run, key); narrowed != nil {
-		return narrowed, nil
+	if !slices.Contains(keys, key) {
+		return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))
 	}
-	if len(keys) == 0 {
-		return nil, fmt.Errorf("run %d has no AI Runtime task %q; it has no AI Runtime tasks", run.RunId, key)
-	}
-	return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))
+	return taskRun(run, key), nil
 }
 
-// annotateTask records which AI runtime task the view shows: selected is the
-// run narrowed to it (see selectAirTask), and airTasks is how many AI runtime
-// tasks the whole run has. TaskKey stays null for a run without one; the text
-// cell is set only when there are several to tell apart.
-func annotateTask(selected *jobs.Run, airTasks int, data *getData) {
-	t := airTask(selected)
-	if t == nil {
-		return
+// taskView narrows run to the AI runtime task named by key (see selectAirTask)
+// and builds its getData, recording the task shown: the shared start of
+// `air get` and the list picker's detail pane, so the two stay in step.
+// TaskKey stays null for a run without an AI runtime task; the Task cell is
+// set only when the run has several to tell apart.
+func taskView(run *jobs.Run, key string) (*jobs.Run, getData, error) {
+	selected, err := selectAirTask(run, key)
+	if err != nil {
+		return nil, getData{}, err
 	}
-	key := t.TaskKey
-	data.TaskKey = &key
-	if airTasks > 1 {
-		data.TaskDisplay = key
+	data := buildGetData(selected)
+	if k := airTaskKey(selected); k != "" {
+		data.TaskKey = &k
+		if len(airTaskKeys(run)) > 1 {
+			data.TaskDisplay = k
+		}
 	}
+	return selected, data, nil
 }
 
 // enrichFromAiRuntimeTask fills the config path, experiment, and accelerators

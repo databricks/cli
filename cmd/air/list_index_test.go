@@ -382,3 +382,29 @@ func TestListSelfUserFilterUsesIndex(t *testing.T) {
 	assert.Contains(t, stdout.String(), `"run_id": "7"`)
 	assert.Empty(t, warnings.String())
 }
+
+func TestIndexStrategyKeepsARunsRowsTogether(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Run 7's two AI Runtime tasks start before and after run 8. Sorting rows
+	// would split run 7 around run 8; sorting runs keeps its rows together, and
+	// --limit counts it once.
+	multi := indexRun(7, 3000_000)
+	train, eval := multi.Tasks[0], multi.Tasks[0]
+	train.TaskKey, train.RunId, train.StartTime = "train", 70, 1000_000
+	eval.TaskKey, eval.RunId, eval.StartTime = "eval", 71, 3000_000
+	multi.Tasks = []jobs.RunTask{train, eval}
+	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}, {jobRunID: 8, submitTimeMs: 2000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{7: multi, 8: indexRun(8, 2000_000)}, nil, nil)
+
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{currentUser: selfUser, limit: 10})
+	runs, err := f.nextRuns(10)
+	require.NoError(t, err)
+	got := make([][]string, len(runs))
+	for i, run := range runs {
+		for _, r := range run {
+			got[i] = append(got[i], r.RunID+"/"+r.TaskKey)
+		}
+	}
+	assert.Equal(t, [][]string{{"8/"}, {"7/train", "7/eval"}}, got)
+}

@@ -503,14 +503,14 @@ func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
 	}
 }
 
-func TestBuildListRowsOnePerAirTask(t *testing.T) {
+func TestBuildTaskEntriesOnePerAirTask(t *testing.T) {
 	run := jobs.Run{RunId: 7, RunName: "dag", CreatorUserName: "me@example.com", Tasks: []jobs.RunTask{
 		notebookTask("prep", 71),
 		aiRuntimeTask("train", 72, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
 		aiRuntimeTask("eval", 73, "/Users/me@example.com/exp-b", "GPU_8xH100", 8),
 	}}
 
-	rows := buildListRows(&run, "https://example.test", 0)
+	rows := buildTaskEntries(&run, "https://example.test", 0)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "7", rows[0].entry.row.RunID)
 	assert.Equal(t, "train", rows[0].entry.row.TaskKey)
