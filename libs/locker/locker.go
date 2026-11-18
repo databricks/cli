@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"slices"
 	"time"
 	"uuid"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -50,6 +53,20 @@ const LockFileName = "deploy.lock"
 //     locks might have
 type Locker struct {
 	filer filer.Filer
+
+	// lockFiler writes the lock file. Unlike filer it does not retry writes: Lock retries them
+	// itself, so that it knows when an attempt failed in a way that may still be applied later.
+	lockFiler filer.Filer
+
+	// createUncertain is set when a lock write failed without a definite answer from the server
+	// (a timeout, a 5xx, a cut connection, a cancelled request). The server may still apply such a
+	// write after we release the lock, leaving behind a lock with our ID.
+	createUncertain bool
+
+	// ReleasedLocksPath is a local file listing the IDs of locks released after an uncertain
+	// write (see createUncertain). A lock that carries one of these IDs is stale: its owner has
+	// already released it. Empty disables the list.
+	ReleasedLocksPath string
 
 	// scope of the locker
 	TargetDir string
@@ -141,6 +158,15 @@ func (locker *Locker) Read(ctx context.Context, path string) (io.ReadCloser, err
 }
 
 func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
+	err := locker.lock(ctx, isForced)
+	if err != nil && locker.createUncertain {
+		// We do not hold the lock, but a write that timed out may still create it later.
+		locker.recordReleased(ctx)
+	}
+	return err
+}
+
+func (locker *Locker) lock(ctx context.Context, isForced bool) error {
 	newLockerState := LockState{
 		ID:              locker.State.ID,
 		AcquisitionTime: time.Now(),
@@ -152,19 +178,29 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
+	// Repeating a create that does not overwrite is safe because the lock file carries our unique
+	// ID: if an attempt that failed with a transient error did create the file, the retry fails
+	// with fs.ErrExist and assertLockHeld below tells whether the lock is ours. That holds for a
+	// connection cut mid-response ("unexpected EOF") too, so this uses the wider check meant for
+	// reads. Forced writes overwrite and are idempotent.
+	mode := []filer.WriteMode{filer.CreateParentDirectories}
 	if isForced {
-		// The retrying filer already retries overwrite writes, on the errors [retry.IsTransient]
-		// covers; an "unexpected EOF" is not retried there, only read back below.
-		err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories, filer.OverwriteIfExists)
-	} else {
-		// The retrying filer does not repeat writes that do not overwrite. Repeating this one is
-		// safe because the lock file carries our unique ID: if an attempt that failed with a
-		// transient error did create the file, the retry fails with fs.ErrExist and
-		// assertLockHeld below tells whether the lock is ours. That holds for a connection cut
-		// mid-response ("unexpected EOF") too, so this uses the wider check meant for reads.
-		_, err = retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {
-			return struct{}{}, locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories)
+		mode = append(mode, filer.OverwriteIfExists)
+	}
+	write := func() error {
+		_, err := retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {
+			err := locker.lockFiler.Write(ctx, LockFileName, bytes.NewReader(buf), mode...)
+			if err != nil && !errors.Is(err, fs.ErrExist) && !errors.Is(err, fs.ErrPermission) && !errors.Is(err, fs.ErrNotExist) {
+				locker.createUncertain = true
+			}
+			return struct{}{}, err
 		})
+		return err
+	}
+
+	err = write()
+	if errors.Is(err, fs.ErrExist) && locker.removeStaleLock(ctx) {
+		err = write()
 	}
 
 	switch {
@@ -203,6 +239,10 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if !locker.Active {
 		return errors.New("unlock called when lock is not held")
 	}
+	if locker.createUncertain {
+		// Recorded even if the unlock fails: a lock with our ID left behind is stale either way.
+		defer locker.recordReleased(ctx)
+	}
 
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
 	// not exist. This is helpful when destroying a bundle in which case the lock
@@ -224,6 +264,73 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	return nil
 }
 
+// maxReleasedLocks bounds the list in ReleasedLocksPath. A late write lands within minutes, so
+// only the most recent entries matter.
+const maxReleasedLocks = 20
+
+func (locker *Locker) readReleased(ctx context.Context) []uuid.UUID {
+	if locker.ReleasedLocksPath == "" {
+		return nil
+	}
+	data, err := os.ReadFile(locker.ReleasedLocksPath)
+	var ids []uuid.UUID
+	if err == nil {
+		err = json.Unmarshal(data, &ids)
+	}
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Warnf(ctx, "Failed to read released deploy locks: %v", err)
+	}
+	return ids
+}
+
+// recordReleased adds our ID to ReleasedLocksPath. Failing to record it only means that a late
+// write, if one lands, needs --force-lock to clear, so errors are logged and not returned.
+func (locker *Locker) recordReleased(ctx context.Context) {
+	if locker.ReleasedLocksPath == "" {
+		return
+	}
+	ids := append(locker.readReleased(ctx), locker.State.ID)
+	if len(ids) > maxReleasedLocks {
+		ids = ids[len(ids)-maxReleasedLocks:]
+	}
+	data, err := json.Marshal(ids)
+	if err == nil {
+		err = os.MkdirAll(filepath.Dir(locker.ReleasedLocksPath), 0o700)
+	}
+	if err == nil {
+		// Write to a temporary file and rename it, so that a concurrent reader never sees a
+		// partial list.
+		tmp := locker.ReleasedLocksPath + "." + uuid.New().String() + ".tmp"
+		err = os.WriteFile(tmp, data, 0o600)
+		if err == nil {
+			err = os.Rename(tmp, locker.ReleasedLocksPath)
+		}
+		if err != nil {
+			_ = os.Remove(tmp)
+		}
+	}
+	if err != nil {
+		log.Warnf(ctx, "Failed to record released deploy lock: %v", err)
+	}
+}
+
+// removeStaleLock deletes the remote lock if it carries an ID from ReleasedLocksPath: a write
+// that timed out in an earlier command was applied after that command released the lock. It
+// reports whether it deleted the lock. A --force-lock from another client between the read and
+// the delete loses its lock here; forced locks already give up exclusive access.
+func (locker *Locker) removeStaleLock(ctx context.Context) bool {
+	released := locker.readReleased(ctx)
+	if len(released) == 0 {
+		return false
+	}
+	activeLockState, err := locker.GetActiveLockState(ctx)
+	if err != nil || !slices.Contains(released, activeLockState.ID) {
+		return false
+	}
+	log.Infof(ctx, "Removing stale deploy lock %s acquired at %v: it was released before", activeLockState.ID, activeLockState.AcquisitionTime)
+	return locker.filer.Delete(ctx, LockFileName) == nil
+}
+
 func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
 	filer, err := filer.NewWorkspaceFilesClient(w, targetDir)
 	if err != nil {
@@ -231,7 +338,8 @@ func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locke
 	}
 
 	locker := &Locker{
-		filer: retry.Filer(filer),
+		filer:     retry.Filer(filer),
+		lockFiler: filer,
 
 		TargetDir: targetDir,
 		Active:    false,
