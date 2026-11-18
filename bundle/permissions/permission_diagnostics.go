@@ -35,7 +35,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	canManageBundle, _ := analyzeBundlePermissions(ctx, b)
+	canManageBundle, _ := analyzeBundlePermissions(b)
 	if canManageBundle {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 // Returns:
 // - canManageBundle: true if the current user or one of their groups can manage the bundle resources.
 // - assistance: advice on who to contact as to manage this project
-func analyzeBundlePermissions(ctx context.Context, b *bundle.Bundle) (bool, string) {
+func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	canManageBundle := false
 	otherManagers := set.NewSet[string]()
 	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" && b.Config.RunAs.UserName != b.Config.Workspace.CurrentUser.UserName {

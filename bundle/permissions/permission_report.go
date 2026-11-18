@@ -22,7 +22,7 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 	if iamutil.IsServicePrincipal(me) {
 		userName = me.DisplayName
 	}
-	canManageBundle, assistance := analyzeBundlePermissions(ctx, b)
+	canManageBundle, assistance := analyzeBundlePermissions(b)
 
 	if !canManageBundle {
 		return diag.Diagnostics{{
