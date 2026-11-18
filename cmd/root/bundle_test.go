@@ -152,7 +152,9 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	diags := setupWithHost(t, cmd, "https://x.test")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)", diags[0].Summary)
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
@@ -175,7 +177,9 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 
 	diags := setupWithHost(t, cmd, "https://x.test")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)", diags[0].Summary)
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {

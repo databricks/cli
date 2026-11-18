@@ -1,0 +1,17 @@
+bundle:
+  name: result-file
+
+resources:
+  jobs:
+    foo:
+      name: foo
+
+targets:
+  default:
+    default: true
+  outage: {}
+  broken:
+    resources:
+      jobs:
+        foo:
+          name: ${var.missing}

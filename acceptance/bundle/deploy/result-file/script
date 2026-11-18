@@ -1,0 +1,18 @@
+title "A deploy that succeeds writes an empty result"
+trace $CLI bundle deploy
+trace jq -c . result.json
+
+title "A deploy that fails because the service does is SERVICE"
+# Enough faults to outlast the create's retries.
+fault.py "POST /api/2.2/jobs/create" 500 0 3 INTERNAL_ERROR
+trace musterr $CLI bundle deploy -t outage
+trace jq -c . result.json
+
+title "A deploy that fails because of the bundle is USER"
+trace musterr $CLI bundle deploy -t broken
+trace jq -c . result.json
+
+title "bundle validate does not write the file"
+rm result.json
+$CLI bundle validate &> LOG.validate
+trace assert_not_exists.py result.json
