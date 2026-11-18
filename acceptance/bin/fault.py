@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Set up a fault rule on the testserver for the current test token.
 
-Usage: fault.py [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
+Usage: fault.py [--after-handler] [--body-contains SUBSTR] [--header NAME:VALUE] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
 
   --after-handler  run the handler first; keep its effect and replace only the response
   --body-contains  only fire when the request body contains SUBSTR, e.g. to target one
                    file's /workspace/import upload (all uploads share that path)
+  --header         add a header to the fault response, e.g. Retry-After:1; repeat for
+                   more headers (a repeated name keeps the last value)
   PATTERN     HTTP method and path; * matches within one path segment, ** spans /,
               e.g. "POST /api/2.0/bundle/deployments/*/versions/*/complete"
               or "PATCH /api/2.0/bundle/**"
@@ -42,9 +44,19 @@ if "--body-contains" in args:
     body_contains = args[i + 1]
     del args[i : i + 2]
 
+headers = {}
+while "--header" in args:
+    i = args.index("--header")
+    name, sep, value = args[i + 1].partition(":") if i + 1 < len(args) else ("", "", "")
+    if not sep or not name.strip():
+        print("--header needs NAME:VALUE", file=sys.stderr)
+        sys.exit(1)
+    headers[name.strip()] = value.strip()
+    del args[i : i + 2]
+
 if len(args) not in (4, 5):
     print(
-        f"usage: {sys.argv[0]} [--after-handler] [--body-contains SUBSTR] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]",
+        f"usage: {sys.argv[0]} [--after-handler] [--body-contains SUBSTR] [--header NAME:VALUE] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -62,6 +74,7 @@ data = json.dumps(
         "times": times,
         "after_handler": after_handler,
         "body_contains": body_contains,
+        "headers": headers,
     }
 ).encode()
 

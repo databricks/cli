@@ -395,6 +395,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 			Body:       []byte(fault.Body),
 			Headers:    getJsonHeaders(),
 		}
+		for k, v := range fault.headers {
+			resp.Headers.Set(k, v)
+		}
 	}
 
 	maps.Copy(w.Header(), resp.Headers)
