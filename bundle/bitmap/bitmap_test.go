@@ -440,10 +440,10 @@ func TestToJSON(t *testing.T) {
 		"jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false",
 		"later",
 	}
-	tasks := func(leaf any) map[string]any {
-		return map[string]any{"jobs": map[string]any{"*": map[string]any{"tasks": leaf}}}
+	job := func(key string, leaf any) map[string]any {
+		return map[string]any{"jobs": map[string]any{"*": map[string]any{key: leaf}}}
 	}
-	enabled := tasks(map[string]any{"[*]": map[string]any{"enabled": true}})
+	enabled := job("tasks[*]", map[string]any{"enabled": true})
 	for _, tc := range []struct {
 		name                  string
 		set                   []string
@@ -460,7 +460,14 @@ func TestToJSON(t *testing.T) {
 		{
 			"a set field without set children is a leaf",
 			[]string{"jobs", "jobs.*", "jobs.*.tasks"},
-			tasks(true),
+			job("tasks", true),
+			map[string]any{},
+			map[string]any{},
+		},
+		{
+			"a list's elements replace its leaf",
+			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]"},
+			job("tasks[*]", true),
 			map[string]any{},
 			map[string]any{},
 		},
@@ -486,6 +493,10 @@ func TestToJSON(t *testing.T) {
 	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
 	got := ToJSON(schema, []bool{true}, 7)
 	assert.Equal(t, JSON{Size: 1, Context: 7, Presence: map[string]any{"bundle": true}, True: map[string]any{}, False: map[string]any{}}, got)
+
+	// The list field's leaf is left out whichever of the two comes first.
+	got = ToJSON([]string{"x[*]", "x"}, []bool{true, true}, ContextFullBundle)
+	assert.Equal(t, map[string]any{"x[*]": true}, got.Presence)
 }
 
 // TestToJSONIsLossless checks that every entry of the embedded schema maps to
@@ -516,9 +527,12 @@ func TestToJSONIsLossless(t *testing.T) {
 	assert.Equal(t, falseValues, countLeaves(got.False))
 }
 
+// countNodes counts the schema entries a tree stands for: a "tasks[*]" node
+// also stands for "tasks".
 func countNodes(tree map[string]any) int {
-	n := len(tree)
-	for _, v := range tree {
+	n := 0
+	for k, v := range tree {
+		n += 1 + strings.Count(k, listSuffix)
 		if child, ok := v.(map[string]any); ok {
 			n += countNodes(child)
 		}

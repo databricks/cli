@@ -375,10 +375,11 @@ func Text(schema []string, bits []bool, context uint16) []string {
 }
 
 // JSON is the JSON rendering of a bitmap. Presence, True and False are trees
-// keyed by path segment ("*" for any map key, "[*]" for any list element) with
-// true leaves: Presence holds every set field, True and False the bool fields
-// seen with that value. A field with set children is a subtree rather than a
-// leaf, since a child is only set when its parent is.
+// keyed by path segment ("*" for any map key, and a list field's name plus
+// "[*]" for its elements) with true leaves: Presence holds every set field,
+// True and False the bool fields seen with that value. A field with set
+// children is a subtree rather than a leaf, since a child is only set when its
+// parent is; likewise "tasks[*]" replaces the leaf of "tasks".
 type JSON struct {
 	Size     int            `json:"size"`
 	Context  uint16         `json:"context"`
@@ -406,37 +407,31 @@ func ToJSON(schema []string, bits []bool, context uint16) JSON {
 		} else if field, ok := strings.CutSuffix(p, falseSuffix); ok {
 			tree, p = out.False, field
 		}
-		insertPath(tree, treeKeys(p))
+		insertPath(tree, strings.Split(p, "."))
 	}
 	return out
 }
 
-// treeKeys splits a schema path into its segments: "a.*.b[*].c" becomes
-// a, *, b, [*], c. Schema paths only contain field names, ".*" and "[*]".
-func treeKeys(p string) []string {
-	var keys []string
-	for part := range strings.SplitSeq(p, ".") {
-		name, lists := strings.CutSuffix(part, listSuffix)
-		keys = append(keys, name)
-		if lists {
-			keys = append(keys, listSuffix)
-		}
-	}
-	return keys
-}
-
-// insertPath adds a true leaf at keys, turning a leaf on the way into a subtree.
+// insertPath adds a true leaf at keys, turning a leaf on the way into a
+// subtree. A "tasks[*]" key replaces the "tasks" leaf next to it, and a "tasks"
+// leaf is not added next to "tasks[*]".
 func insertPath(tree map[string]any, keys []string) {
-	for _, k := range keys[:len(keys)-1] {
+	for i, k := range keys {
+		if field, ok := strings.CutSuffix(k, listSuffix); ok {
+			delete(tree, field)
+		}
+		if i == len(keys)-1 {
+			if _, ok := tree[k]; !ok && tree[k+listSuffix] == nil {
+				tree[k] = true
+			}
+			return
+		}
 		child, ok := tree[k].(map[string]any)
 		if !ok {
 			child = map[string]any{}
 			tree[k] = child
 		}
 		tree = child
-	}
-	if _, ok := tree[keys[len(keys)-1]]; !ok {
-		tree[keys[len(keys)-1]] = true
 	}
 }
 
