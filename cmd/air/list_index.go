@@ -11,7 +11,7 @@ import (
 
 // indexStrategy serves the caller's own runs from the AiTrainingService index:
 // it fetches every run id up front (cheap id+timestamp pairs), orders them
-// newest-first, keeps the newest `limit`, then hydrates them into full rows in
+// newest-first, then hydrates them into full rows in
 // want-sized batches via Jobs runs/get. Terminal rows are cached so repeat calls
 // skip the network. Unlike the Jobs scan it can't lazy-page (it must sort the
 // whole id set first), but it still yields in batches so the table paints early.
@@ -25,9 +25,10 @@ type indexStrategy struct {
 	host        string
 	workspaceID int64
 
-	ids    []int64 // newest-first run ids to hydrate, resolved on first next()
-	pos    int
-	loaded bool
+	ids      []int64 // newest-first run ids to hydrate, resolved on first next()
+	pos      int
+	returned int
+	loaded   bool
 }
 
 func newIndexStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery, limit int) *indexStrategy {
@@ -51,12 +52,6 @@ func (s *indexStrategy) load() error {
 		return err
 	}
 	slices.SortFunc(refs, func(a, b workflowRef) int { return cmp.Compare(b.submitTimeMs, a.submitTimeMs) })
-	// Keep only the newest `limit` ids so hydration is bounded — but skip that when
-	// a task filter is active, since it drops matches post-hydration and we'd
-	// otherwise return fewer than `limit`. The caller stops pulling at `limit`.
-	if s.limit > 0 && len(refs) > s.limit && !s.filters.hasTaskFilter() {
-		refs = refs[:s.limit]
-	}
 	s.ids = make([]int64, len(refs))
 	for i, r := range refs {
 		s.ids[i] = r.jobRunID
@@ -71,6 +66,9 @@ func (s *indexStrategy) next(want int) ([]listedRun, error) {
 			return nil, err
 		}
 	}
+	if s.limit > 0 {
+		want = min(want, s.limit-s.returned)
+	}
 
 	var entries []listedRun
 	for len(entries) < want && s.pos < len(s.ids) {
@@ -84,14 +82,15 @@ func (s *indexStrategy) next(want int) ([]listedRun, error) {
 		}
 		entries = append(entries, rows...)
 	}
+	s.returned += len(entries)
 	return entries, nil
 }
 
 func (s *indexStrategy) done() bool {
-	return s.loaded && s.pos >= len(s.ids)
+	return s.loaded && ((s.limit > 0 && s.returned >= s.limit) || s.pos >= len(s.ids))
 }
 
-// truncated is always false: the index path is bounded by limit, not a scan cap.
+// truncated is always false: the index path stops at the requested limit, not a scan cap.
 func (s *indexStrategy) truncated() bool { return false }
 
 // hydrate turns a batch of run ids into rows, serving cached terminal rows

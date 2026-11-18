@@ -8,32 +8,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewCapabilities_Env(t *testing.T) {
+	// Pin both variables so the developer's shell can't leak in.
+	ctx := env.Set(env.Set(t.Context(), "NO_COLOR", ""), "TERM", "")
+	c := newCapabilities(ctx, nil, nil, nil)
+	assert.False(t, c.noColor)
+	assert.False(t, c.dumb)
+
+	c = newCapabilities(env.Set(ctx, "NO_COLOR", "1"), nil, nil, nil)
+	assert.True(t, c.noColor)
+	assert.False(t, c.dumb)
+
+	c = newCapabilities(env.Set(ctx, "TERM", "dumb"), nil, nil, nil)
+	assert.False(t, c.noColor)
+	assert.True(t, c.dumb)
+}
+
 func TestCapabilities_SupportsInteractive(t *testing.T) {
 	tests := []struct {
 		name     string
 		caps     Capabilities
 		expected bool
 	}{
-		{
-			name:     "normal terminal",
-			caps:     Capabilities{stderrIsTTY: true, color: true},
-			expected: true,
-		},
-		{
-			name:     "NO_COLOR set",
-			caps:     Capabilities{stderrIsTTY: true, color: false},
-			expected: false,
-		},
-		{
-			name:     "stderr not TTY",
-			caps:     Capabilities{stderrIsTTY: false, color: true},
-			expected: false,
-		},
-		{
-			name:     "both NO_COLOR and no TTY",
-			caps:     Capabilities{stderrIsTTY: false, color: false},
-			expected: false,
-		},
+		{"normal terminal", Capabilities{stderrIsTTY: true}, true},
+		{"NO_COLOR only removes color", Capabilities{stderrIsTTY: true, noColor: true}, true},
+		{"TERM=dumb can't redraw", Capabilities{stderrIsTTY: true, dumb: true}, false},
+		{"stderr not TTY", Capabilities{stderrIsTTY: false}, false},
 	}
 
 	for _, tt := range tests {
@@ -49,83 +49,14 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 		caps     Capabilities
 		expected bool
 	}{
-		{
-			name: "full TTY support",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: true,
-		},
-		{
-			name: "Git Bash blocks prompts",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   true,
-			},
-			expected: false,
-		},
-		{
-			name: "stdin not TTY",
-			caps: Capabilities{
-				stdinIsTTY:  false,
-				stdoutIsTTY: true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: false,
-		},
-		{
-			name: "stdout not TTY (prompts write to stderr, so this is OK)",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: false,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: true,
-		},
-		{
-			name: "stderr not TTY",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: true,
-				stderrIsTTY: false,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: false,
-		},
-		{
-			name: "NO_COLOR set",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stdoutIsTTY: true,
-				stderrIsTTY: true,
-				color:       false,
-				isGitBash:   false,
-			},
-			expected: false,
-		},
-		{
-			name: "no TTY support at all",
-			caps: Capabilities{
-				stdinIsTTY:  false,
-				stdoutIsTTY: false,
-				stderrIsTTY: false,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: false,
-		},
+		{"full TTY support", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}, true},
+		{"MSYS2 pipe stdin blocks prompts", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, stdinIsMSYSPipe: true}, false},
+		{"stdin not TTY", Capabilities{stdoutIsTTY: true, stderrIsTTY: true}, false},
+		{"stdout not TTY (prompts write to stderr, so this is OK)", Capabilities{stdinIsTTY: true, stderrIsTTY: true}, true},
+		{"stderr not TTY", Capabilities{stdinIsTTY: true, stdoutIsTTY: true}, false},
+		{"NO_COLOR still prompts", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, true},
+		{"TERM=dumb", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, dumb: true}, false},
+		{"no TTY support at all", Capabilities{}, false},
 	}
 
 	for _, tt := range tests {
@@ -135,14 +66,39 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 	}
 }
 
-func TestDetectGitBash(t *testing.T) {
-	ctx := t.Context()
-	assert.False(t, detectGitBash(ctx))
+func TestCapabilities_SupportsLinePrompt(t *testing.T) {
+	full := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}
+	assert.True(t, full.SupportsLinePrompt())
 
-	ctx = env.Set(ctx, "MSYSTEM", "MINGW64")
-	ctx = env.Set(ctx, "TERM", "xterm")
-	ctx = env.Set(ctx, "PS1", "\\[\033]0;$TITLEPREFIX:$PWD\007\\]\n\\[\033[32m\\]\\u@\\h \\[\033[35m\\]$MSYSTEM \\[\033[33m\\]\\w\\[\033[36m\\]`__git_ps1`\\[\033[0m\\]\n$")
-	assert.True(t, detectGitBash(ctx))
+	// A plain-text line needs no redraw, so TERM=dumb, which turns off the
+	// TUI prompts, still gets it.
+	dumb := full
+	dumb.dumb = true
+	assert.False(t, dumb.SupportsPrompt())
+	assert.True(t, dumb.SupportsLinePrompt())
+
+	assert.False(t, Capabilities{stdinIsTTY: false, stdoutIsTTY: true, stderrIsTTY: true}.SupportsLinePrompt(), "stdin not TTY")
+	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: false, stderrIsTTY: true}.SupportsLinePrompt(), "stdout not TTY")
+	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: false}.SupportsLinePrompt(), "stderr not TTY")
+}
+
+func TestCapabilities_SupportsPager(t *testing.T) {
+	tests := []struct {
+		name     string
+		caps     Capabilities
+		expected bool
+	}{
+		{"full TTY support", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}, true},
+		{"NO_COLOR keeps the pager (uncolored)", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, true},
+		{"TERM=dumb can't redraw", Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true, dumb: true}, false},
+		{"stdout redirected", Capabilities{stdinIsTTY: true, stderrIsTTY: true}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.caps.SupportsPager())
+		})
+	}
 }
 
 func TestCapabilities_SupportsColor(t *testing.T) {
@@ -152,36 +108,35 @@ func TestCapabilities_SupportsColor(t *testing.T) {
 		writer   io.Writer
 		expected bool
 	}{
-		{
-			name:     "TTY with no env restrictions",
-			caps:     Capabilities{color: true},
-			writer:   FakeTTY(io.Discard),
-			expected: true,
-		},
-		{
-			name:     "TTY with NO_COLOR set",
-			caps:     Capabilities{color: false},
-			writer:   FakeTTY(io.Discard),
-			expected: false,
-		},
-		{
-			name:     "non-TTY writer",
-			caps:     Capabilities{color: true},
-			writer:   io.Discard,
-			expected: false,
-		},
-		{
-			name:     "non-TTY with NO_COLOR",
-			caps:     Capabilities{color: false},
-			writer:   io.Discard,
-			expected: false,
-		},
+		{"TTY with no env restrictions", Capabilities{}, FakeTTY(io.Discard), true},
+		{"TTY with NO_COLOR set", Capabilities{noColor: true}, FakeTTY(io.Discard), false},
+		{"TTY with TERM=dumb", Capabilities{dumb: true}, FakeTTY(io.Discard), false},
+		{"non-TTY writer", Capabilities{}, io.Discard, false},
+		{"non-TTY with NO_COLOR", Capabilities{noColor: true}, io.Discard, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.caps.SupportsColor(tt.writer)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, tt.caps.SupportsColor(tt.writer))
+		})
+	}
+}
+
+func TestCapabilities_SupportsStreamColor(t *testing.T) {
+	tests := []struct {
+		name           string
+		caps           Capabilities
+		stdout, stderr bool
+	}{
+		{"both TTYs", Capabilities{stdoutIsTTY: true, stderrIsTTY: true}, true, true},
+		{"NO_COLOR", Capabilities{stdoutIsTTY: true, stderrIsTTY: true, noColor: true}, false, false},
+		{"only stdout TTY", Capabilities{stdoutIsTTY: true}, true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.stdout, tt.caps.SupportsStdoutColor())
+			assert.Equal(t, tt.stderr, tt.caps.SupportsStderrColor())
 		})
 	}
 }
@@ -192,66 +147,13 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 		caps     Capabilities
 		expected InteractiveMode
 	}{
-		{
-			name: "full interactive - all TTYs, color, no Git Bash",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: InteractiveModeFull,
-		},
-		{
-			name: "output only - stdin not TTY",
-			caps: Capabilities{
-				stdinIsTTY:  false,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: InteractiveModeOutputOnly,
-		},
-		{
-			name: "output only - Git Bash",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stderrIsTTY: true,
-				color:       true,
-				isGitBash:   true,
-			},
-			expected: InteractiveModeOutputOnly,
-		},
-		{
-			name: "none - stderr not TTY",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stderrIsTTY: false,
-				color:       true,
-				isGitBash:   false,
-			},
-			expected: InteractiveModeNone,
-		},
-		{
-			name: "none - NO_COLOR set",
-			caps: Capabilities{
-				stdinIsTTY:  true,
-				stderrIsTTY: true,
-				color:       false,
-				isGitBash:   false,
-			},
-			expected: InteractiveModeNone,
-		},
-		{
-			name: "none - no TTY support at all",
-			caps: Capabilities{
-				stdinIsTTY:  false,
-				stderrIsTTY: false,
-				color:       false,
-				isGitBash:   false,
-			},
-			expected: InteractiveModeNone,
-		},
+		{"full interactive", Capabilities{stdinIsTTY: true, stderrIsTTY: true}, InteractiveModeFull},
+		{"full interactive with NO_COLOR", Capabilities{stdinIsTTY: true, stderrIsTTY: true, noColor: true}, InteractiveModeFull},
+		{"output only - stdin not TTY", Capabilities{stdinIsTTY: false, stderrIsTTY: true}, InteractiveModeOutputOnly},
+		{"output only - MSYS2 pipe stdin", Capabilities{stdinIsTTY: true, stderrIsTTY: true, stdinIsMSYSPipe: true}, InteractiveModeOutputOnly},
+		{"none - stderr not TTY", Capabilities{stdinIsTTY: true, stderrIsTTY: false}, InteractiveModeNone},
+		{"none - TERM=dumb", Capabilities{stdinIsTTY: true, stderrIsTTY: true, dumb: true}, InteractiveModeNone},
+		{"none - no TTY support at all", Capabilities{}, InteractiveModeNone},
 	}
 
 	for _, tt := range tests {

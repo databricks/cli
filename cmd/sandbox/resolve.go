@@ -6,8 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
+
+// cacheProfile returns the key the local sandbox cache is stored under: the
+// profile name if set, else the host.
+func cacheProfile(w *databricks.WorkspaceClient) string {
+	if w.Config.Profile != "" {
+		return w.Config.Profile
+	}
+	return w.Config.Host
+}
 
 // resolveLocalID maps a user-typed argument to a sandbox ID using only
 // the local state cache — no API calls. Resolution order:
