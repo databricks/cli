@@ -36,11 +36,21 @@ type FakeOidc struct {
 }
 
 func (s *FakeOidc) OidcEndpoints() Response {
+	return oidcEndpoints(s.url + "/oidc")
+}
+
+// AccountOidcEndpoints returns the OIDC discovery document of an account,
+// which classic account hosts and unified hosts serve.
+func (s *FakeOidc) AccountOidcEndpoints(accountID string) Response {
+	return oidcEndpoints(s.url + "/oidc/accounts/" + accountID)
+}
+
+func oidcEndpoints(issuer string) Response {
 	return Response{
 		Body: map[string]string{
-			"authorization_endpoint":        s.url + "/oidc/v1/authorize",
-			"token_endpoint":                s.url + "/oidc/v1/token",
-			"device_authorization_endpoint": s.url + "/oidc/v1/device/auth",
+			"authorization_endpoint":        issuer + "/v1/authorize",
+			"token_endpoint":                issuer + "/v1/token",
+			"device_authorization_endpoint": issuer + "/v1/device/auth",
 		},
 	}
 }

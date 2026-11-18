@@ -62,7 +62,7 @@ func promptForHost(ctx context.Context) (string, error) {
 			if strings.TrimSpace(input) == "" {
 				return errors.New("host is required")
 			}
-			// Reject hosts that setHost would reject after the prompt,
+			// Reject hosts that setHostAndAccountId would reject after the prompt,
 			// e.g. "/" or "?o=123", while the user can still edit them.
 			_, err := parseLoginHost(input)
 			return err

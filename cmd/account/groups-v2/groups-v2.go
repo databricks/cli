@@ -72,9 +72,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `Sets the human-readable name of the group.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Sets the identifier of the group in an external identity provider.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Identifies the group within Databricks.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
@@ -357,7 +357,7 @@ func newPatch() *cobra.Command {
   Partially updates the details of a group.
 
   Arguments:
-    ID: Unique ID in the Databricks workspace.`
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -423,8 +423,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `Sets the human-readable name of the group.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Sets the identifier of the group in an external identity provider.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
@@ -436,7 +436,7 @@ func newUpdate() *cobra.Command {
   Updates the details of a group by replacing the entire group entity.
 
   Arguments:
-    ID: Databricks group ID`
+    ID: Identifies the group within Databricks.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

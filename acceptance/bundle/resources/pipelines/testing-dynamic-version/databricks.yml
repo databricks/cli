@@ -1,0 +1,25 @@
+bundle:
+  name: pipeline-testing-dynamic-version
+
+artifacts:
+  other_test_code:
+    type: whl
+    files:
+      - source: dist/other_test_code-0.0.1-py3-none-any.whl
+    dynamic_version: true
+
+resources:
+  pipelines:
+    orders:
+      name: orders
+      libraries:
+        - glob:
+            include: ./transformations/**
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**
+        environment:
+          dependencies:
+            - ./dist/other_test_code-0.0.1-py3-none-any.whl
+            - ./dist/other_test_code-0.0.1-py3-none-any.whl[test]

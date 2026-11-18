@@ -438,6 +438,10 @@ func (a *Adapter) validate() error {
 		a.internalIDPath = path
 	}
 
+	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
+		return errors.New("parent_id_fields requires IDFromState")
+	}
+
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID newState", a.doUpdateWithID.InTypes[2], stateType)
 		// DoUpdateWithID must return (string, remoteType, error)
