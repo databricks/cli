@@ -1,0 +1,13 @@
+title "The create request times out but the feature was created: deploy uses the feature"
+fault.py --after-handler "POST /api/2.0/feature-engineering/features" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //feature-engineering | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"
+
+title "The create request times out and the feature was not created: deploy repeats the create"
+fault.py "POST /api/2.0/feature-engineering/features" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //feature-engineering | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"

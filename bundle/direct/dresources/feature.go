@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -28,9 +29,30 @@ func (r *ResourceFeature) DoRead(ctx context.Context, id string) (*ml.Feature, e
 }
 
 func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (string, *ml.Feature, error) {
-	response, err := r.client.FeatureEngineering.CreateFeature(ctx, ml.CreateFeatureRequest{Feature: *config})
+	create := func(ctx context.Context) (*ml.Feature, error) {
+		return r.client.FeatureEngineering.CreateFeature(ctx, ml.CreateFeatureRequest{Feature: *config})
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The feature is keyed by full_name, which the bundle chooses and the API keeps unique.
+		response, err = recoverCreate(ctx, createRecovery[ml.Feature]{
+			name:  "feature " + config.FullName,
+			start: start,
+			get: func(ctx context.Context) (*ml.Feature, error) {
+				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: config.FullName})
+			},
+			createTime: func(found *ml.Feature) (time.Time, bool) {
+				if found.CreatedAt == nil {
+					return time.Time{}, false
+				}
+				return found.CreatedAt.AsTime(), true
+			},
+			create: create,
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	return response.FullName, response, nil
 }
