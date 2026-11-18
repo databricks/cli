@@ -2,10 +2,10 @@ title "A request answered with a transient error and repeated by the CLI is reco
 fault.py "GET /api/2.0/postgres/projects/*/operations/*" 500 0 1 INTERNAL_ERROR
 trace $CLI bundle deploy
 trace print_requests.py --get //postgres
-$CLI bundle destroy --auto-approve > /dev/null 2>&1
+$CLI bundle destroy --auto-approve &> LOG.destroy
 rm -f "$OUT_REQUESTS"
 
 title "A request answered with a transient error and not repeated stays recorded"
 fault.py "GET /api/2.0/preview/scim/v2/Me" 500 0 1 INTERNAL_ERROR
-errcode trace $CLI current-user me
+trace musterr $CLI current-user me
 trace print_requests.py --get //scim
