@@ -24,6 +24,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// longUploadTimeout replaces the default upload timeout in tests that check
+// something other than the timeout. On a stalled CI runner, creating the client
+// alone has taken over 3s, failing the upload with a timeout instead.
+const longUploadTimeout = "60"
+
+// uploadWatchdog is how long a test waits for an Upload or Send that must stop
+// at its deadline before failing as hung. A runner stall fires that deadline and
+// a short watchdog at the same moment, so it is far longer than any stall seen.
+const uploadWatchdog = 60 * time.Second
+
 func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -61,6 +71,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
@@ -110,6 +121,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
@@ -159,6 +171,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
@@ -281,7 +294,7 @@ func assertUploadTimesOut(t *testing.T, ctx context.Context) {
 	select {
 	case err := <-errc:
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
-	case <-time.After(10 * time.Second):
+	case <-time.After(uploadWatchdog):
 		t.Fatal("Upload did not return after its timeout")
 	}
 }
@@ -391,7 +404,7 @@ func TestTelemetryUploadHintOnlyWithUnresolvedConfig(t *testing.T) {
 	})
 
 	ctx := WithNewLogger(t.Context())
-	ctx = env.Set(ctx, timeoutEnvVar, "")
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 	Log(ctx, protos.DatabricksCliLog{
 		AitoolsHintEvent: &protos.AitoolsHintEvent{HintKind: protos.AitoolsHintKindInstallText},
 	})
@@ -622,7 +635,7 @@ func TestSendTimeoutBoundsTokenAcquisition(t *testing.T) {
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
 		// The token was never fetched, so nothing was sent.
 		assert.True(t, NotSent(err))
-	case <-time.After(10 * time.Second):
+	case <-time.After(uploadWatchdog):
 		t.Fatal("Send did not return after its context deadline")
 	}
 }
