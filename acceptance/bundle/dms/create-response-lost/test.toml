@@ -1,0 +1,6 @@
+RecordRequests = false
+# Local only: the lost responses are injected by fault.py, which a cloud run does not have.
+Cloud = false
+
+# The startup lookup is retried after the injected 500s; do not wait between attempts.
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "1"

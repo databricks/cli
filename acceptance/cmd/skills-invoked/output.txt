@@ -1,0 +1,36 @@
+
+=== Env var adds the skills to the user agent on a workspace GET
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Env var adds the skills on databricks api
+
+>>> [CLI] api get /api/2.1/clusters/list
+
+>>> print_requests.py --get //clusters/list
+
+=== Env var adds the skills from bundle commands
+
+>>> [CLI] bundle validate
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Invalid entries are dropped and the rest is normalized
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills when unset
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills when telemetry is disabled
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me

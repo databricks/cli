@@ -1041,6 +1041,7 @@ func TestHintForCommand(t *testing.T) {
 	require.NotNil(t, cursor)
 	assert.Equal(t, agentInstallHint(ByName(NameCursor), noPluginRecorded).text, cursor.text)
 }
+
 // writeProjectSkill creates a project-scoped Claude skill symlink.
 func writeProjectSkill(t *testing.T, project, name string) {
 	canonical := filepath.Join(project, ".databricks", "aitools", "skills", name)
