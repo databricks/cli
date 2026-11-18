@@ -14,7 +14,7 @@ trace update_file.py databricks.yml "#TO_ADD: " ""
 # The direct plan's "changes" map is the structdiff artifact: it records one
 # change at path default_endpoint_settings (the whole block) instead of descending
 # to its leaves. (The top-level plan verdict is 'update' on both engines.)
-$CLI bundle plan -o json | nostamp > out.plan.json
+$CLI bundle plan -o json | plan_filter.py > out.plan.json
 
 # The consequence shows up at deploy time, which diverges by engine, so route it to
 # per-engine files. Masking the whole message means the API requires the suspension

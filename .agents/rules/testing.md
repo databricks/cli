@@ -180,11 +180,14 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `find.py REGEX [--expect N]`: find files matching regex in current directory. `--expect N` asserts an exact count.
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2`: recursive diff with test replacements applied.
 - `print_state.py [-t TARGET] [--backup]`: print deployment state (`resources.json`, or a terraform state left by an older CLI).
+- `plan_filter.py [RESOURCE_KEY]`: filter `bundle plan -o json` on stdin for a golden: drops every entry's `remote_state` and the deployment stamp (as `nostamp` does); with RESOURCE_KEY, prints only that entry. Errors if the key is not in the plan.
 - `edit_resource.py TYPE ID < script.py`: fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
 
 **RULE: Prefer `gron.py | grep <field>` over inline `jq` paths for single-value lookups.** The gron output prints the JSON path inline, so the test log explains itself.
+
+**RULE: Record plans with `plan_filter.py` unless the test asserts on `remote_state` itself.** `remote_state` is the backend's GET payload as is (status, timestamps, sizes, fields the backend adds), so a golden that records it breaks on backend changes that leave the plan's action and changes untouched, on every cloud at once. `changes[*].remote` still records the remote value of each compared field.
 
 **RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
 
