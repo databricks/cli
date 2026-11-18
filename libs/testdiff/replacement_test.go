@@ -14,6 +14,13 @@ func TestReplacement_Literal(t *testing.T) {
 	assert.Equal(t, `[replacement]`, repls.Replace(`foobar`))
 }
 
+func TestReplacement_NumericLiteralIsWordBounded(t *testing.T) {
+	var repls ReplacementsContext
+
+	repls.Set(`21`, `[DEPLOYMENT_ID]`)
+	assert.Equal(t, `deployments/[DEPLOYMENT_ID] "[DEPLOYMENT_ID]" 1d2f21aa 3210`, repls.Replace(`deployments/21 "21" 1d2f21aa 3210`))
+}
+
 func TestReplacement_Encoded(t *testing.T) {
 	var repls ReplacementsContext
 
