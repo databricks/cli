@@ -142,7 +142,7 @@ SCHEMA_FOR_JSON = [
 ]
 TASKS = ["jobs", "jobs.*", "jobs.*.tasks"]
 ENABLED = [*TASKS, "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled"]
-ENABLED_TREE = {"jobs": {"*": {"tasks": {"[*]": {"enabled": True}}}}}
+ENABLED_TREE = {"jobs": {"*": {"tasks[*]": {"enabled": True}}}}
 
 
 @pytest.mark.parametrize(
@@ -153,6 +153,8 @@ ENABLED_TREE = {"jobs": {"*": {"tasks": {"[*]": {"enabled": True}}}}}
         (["bundle", "bundle.name"], {"bundle": {"name": True}}, {}, {}),
         # A set field without set children is a leaf.
         (TASKS, {"jobs": {"*": {"tasks": True}}}, {}, {}),
+        # A list's elements replace its leaf.
+        ([*TASKS, "jobs.*.tasks[*]"], {"jobs": {"*": {"tasks[*]": True}}}, {}, {}),
         ([*ENABLED, "jobs.*.tasks[*].enabled=false"], ENABLED_TREE, {}, ENABLED_TREE),
         # Both values under a wildcard.
         (
@@ -182,6 +184,11 @@ def test_to_json_older_bitmap():
         "true": {},
         "false": {},
     }
+
+
+def test_to_json_list_leaf_in_any_order():
+    out = to_json(["x[*]", "x"], [True, True], CONTEXT_FULL_BUNDLE)
+    assert out["presence"] == {"x[*]": True}
 
 
 def test_to_json_key_order():

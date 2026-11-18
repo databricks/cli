@@ -119,9 +119,10 @@ def to_json(schema: list[str], bits: list[bool], context: int) -> dict[str, Any]
     """Render the set bits as ``size``, ``context`` and three trees of set fields:
     ``presence``, ``true`` and ``false``.
 
-    The trees are keyed by path segment (``*`` for a map key, ``[*]`` for a list
-    element) with ``True`` leaves. A bool field is in ``presence`` and in the tree
-    of each value it holds. Keys are in the CLI's order, so ``json.dumps(...,
+    The trees are keyed by path segment (``*`` for a map key, and a list field's
+    name plus ``[*]`` for its elements) with ``True`` leaves; ``tasks[*]`` replaces
+    the leaf of ``tasks``. A bool field is in ``presence`` and in the tree of each
+    value it holds. Keys are in the CLI's order, so ``json.dumps(...,
     indent=2)`` prints what ``databricks bundle bitmap decode -o json`` prints.
     ``bits`` may be shorter than ``schema`` but not longer.
     """
@@ -136,7 +137,7 @@ def to_json(schema: list[str], bits: list[bool], context: int) -> dict[str, Any]
             tree, path = true_tree, path[: -len(_TRUE_SUFFIX)]
         elif path.endswith(_FALSE_SUFFIX):
             tree, path = false_tree, path[: -len(_FALSE_SUFFIX)]
-        _insert(tree, _tree_keys(path))
+        _insert(tree, path.split("."))
     return {
         "size": len(bits),
         "context": context,
@@ -146,25 +147,21 @@ def to_json(schema: list[str], bits: list[bool], context: int) -> dict[str, Any]
     }
 
 
-def _tree_keys(path: str) -> list[str]:
-    keys = []
-    for part in path.split("."):
-        if part.endswith(_LIST_SUFFIX):
-            keys += [part[: -len(_LIST_SUFFIX)], _LIST_SUFFIX]
-        else:
-            keys.append(part)
-    return keys
-
-
 def _insert(tree: dict[str, Any], keys: list[str]) -> None:
     # A field with set children is a subtree: a child replaces the field's True
-    # leaf, and a leaf never overwrites a subtree.
-    for key in keys[:-1]:
+    # leaf, and a leaf never overwrites a subtree. Likewise "tasks[*]" replaces
+    # the "tasks" leaf, and a "tasks" leaf is not added next to "tasks[*]".
+    for i, key in enumerate(keys):
+        if key.endswith(_LIST_SUFFIX):
+            tree.pop(key[: -len(_LIST_SUFFIX)], None)
+        if i == len(keys) - 1:
+            if key not in tree and key + _LIST_SUFFIX not in tree:
+                tree[key] = True
+            return
         child = tree.get(key)
         if not isinstance(child, dict):
             child = tree[key] = {}
         tree = child
-    tree.setdefault(keys[-1], True)
 
 
 def _sorted(tree: dict[str, Any]) -> dict[str, Any]:
