@@ -9,6 +9,8 @@ package hostmetadata
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -85,9 +87,27 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		// The raw error is env-dependent (DNS vs TLS vs HTTP) and would make
 		// acceptance goldens brittle, so keep it at Debug; the Warn text is
 		// stable (host only) for user visibility.
-		log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		// A timeout is still cached, so the next commands don't wait on a
+		// hanging host again, but it says nothing about the host's config and
+		// the SDK falls back to the user config, so it is not worth a warning.
+		if isTimeout(err) {
+			log.Debugf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		} else {
+			log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		}
 		log.Debugf(ctx, "[hostmetadata] fetch error for %s: %v", host, err)
 		cache.Put(ctx, negative, fp, &negativeSentinel{Error: true})
 		return nil, nil
 	}
+}
+
+// isTimeout reports whether err is an HTTP request timeout. The SDK replaces
+// the url.Error cause with an unwrapped "request timed out after ... of
+// inactivity" error, so its timeouts are matched by text.
+func isTimeout(err error) bool {
+	uerr, ok := errors.AsType[*url.Error](err)
+	if !ok {
+		return false
+	}
+	return uerr.Timeout() || strings.HasPrefix(uerr.Err.Error(), "request timed out after ")
 }
