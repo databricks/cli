@@ -49,6 +49,12 @@ const (
 // gateOn is autoinstall.GateOn; tests replace it.
 var gateOn = autoinstall.GateOn
 
+// notifyInterrupt returns a context that is canceled when the CLI receives
+// Ctrl+C or a request to terminate; tests replace it.
+var notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+}
+
 // autoInstallDisable is the opt-out command named in the notice.
 const autoInstallDisable = "databricks aitools auto-install disable"
 
@@ -167,13 +173,19 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	// what decides the run.
 	reason = autoinstall.Decide(in)
 	if reason == autoinstall.ReasonGateOff {
-		gateCtx, cancel := context.WithTimeout(ctx, gateTimeout)
 		// Ctrl+C or a request to terminate ends the lookup instead of killing
 		// a command that succeeded.
-		gateCtx, stop := signal.NotifyContext(gateCtx, os.Interrupt, syscall.SIGTERM)
+		sigCtx, stop := notifyInterrupt(ctx)
+		gateCtx, cancel := context.WithTimeout(sigCtx, gateTimeout)
 		in.GateOn, err = gateOn(gateCtx, version)
-		stop()
+		if err == nil && sigCtx.Err() != nil {
+			// An interrupted lookup can still answer, from a manifest cached
+			// earlier. The user asked the CLI to stop, so the run ends here
+			// like one whose lookup failed.
+			err = errors.New("interrupted")
+		}
 		cancel()
+		stop()
 		if err != nil {
 			// The gate is unknown. A machine that cannot reach the manifest
 			// (no route to GitHub) would wait for the lookup after every

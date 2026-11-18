@@ -6,8 +6,10 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -312,6 +314,36 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	run()
 	assert.Equal(t, 2, lookups, "a new version looks the gate up again")
+}
+
+// An interrupted lookup can still answer from a stale cached manifest that has
+// the gate on. The run stops instead of installing.
+func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
+	home := setupAutoInstallHome(t, "")
+	var interrupt context.CancelFunc
+	t.Cleanup(func() {
+		gateOn = autoinstall.GateOn
+		notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
+			return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		}
+	})
+	notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
+		ctx, interrupt = context.WithCancel(ctx)
+		return ctx, interrupt
+	}
+	gateOn = func(context.Context, string) (bool, error) {
+		interrupt()
+		return true, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	runAutoInstallHook(ctx)
+
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}, state)
 }
 
 // A machine with no coding agent has nothing to install, so it never looks the
