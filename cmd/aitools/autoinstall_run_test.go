@@ -3,6 +3,7 @@ package aitools
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -170,7 +171,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
-			// A failed gate lookup uses up an attempt without asking.
+			// A failed plan uses up an attempt without asking.
 			name:        "a retry that was never asked asks",
 			state:       `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1}`,
 			wantPrompt:  true,
@@ -281,6 +282,55 @@ func TestAutoInstallKeepsTheIDWhenItCannotAsk(t *testing.T) {
 	assert.Empty(t, first.LastVersion, "the version is not settled")
 	assert.Equal(t, first, run())
 	assert.NotContains(t, stderr.String(), "Install Databricks AI tools")
+}
+
+// A machine that cannot reach the compatibility manifest waits for the lookup
+// after one command of a version, not after each of them.
+func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
+	setupAutoInstallHome(t, "")
+	lookups := 0
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	gateOn = func(context.Context, string) (bool, error) {
+		lookups++
+		return false, errors.New("the compatibility manifest could not be fetched")
+	}
+	run := func() autoinstall.State {
+		ctx := cmdio.MockDiscard(t.Context())
+		ctx = telemetry.WithNewLogger(ctx)
+		runAutoInstallHook(ctx)
+		assert.Empty(t, telemetry.BufferedEvents(ctx))
+		state, err := autoinstall.Load(ctx)
+		require.NoError(t, err)
+		return state
+	}
+
+	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}
+	assert.Equal(t, want, run())
+	assert.Equal(t, want, run())
+	assert.Equal(t, 1, lookups)
+
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	run()
+	assert.Equal(t, 2, lookups, "a new version looks the gate up again")
+}
+
+// A machine with no coding agent has nothing to install, so it never looks the
+// gate up.
+func TestAutoInstallSkipsTheGateLookupWithoutAgents(t *testing.T) {
+	home := setupAutoInstallHome(t, "")
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	gateOn = func(context.Context, string) (bool, error) {
+		t.Error("the gate was looked up")
+		return false, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	runAutoInstallHook(ctx)
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
 }
 
 func TestToolsPlanNewAgents(t *testing.T) {

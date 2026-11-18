@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -30,9 +31,11 @@ import (
 
 const (
 	// gateTimeout bounds the gate lookup, one compatibility manifest fetch.
-	// Every machine pays it once per version while the gate is off, so it is
-	// kept short. A lookup that fails counts as a failed attempt.
-	gateTimeout = 3 * time.Second
+	// Every machine pays it once per version while the gate is off, and a
+	// machine that cannot reach the manifest waits this long after its
+	// command finished, so it is kept short. A version gets one lookup: one
+	// that fails is not repeated (see autoInstall).
+	gateTimeout = time.Second
 
 	// installTimeout bounds the install or update (its downloads and the
 	// agent CLIs it runs). One that runs out of time counts as a failed
@@ -42,6 +45,9 @@ const (
 	// promptTimeout bounds the wait for an answer at the install prompt.
 	promptTimeout = time.Minute
 )
+
+// gateOn is autoinstall.GateOn; tests replace it.
+var gateOn = autoinstall.GateOn
 
 // autoInstallDisable is the opt-out command named in the notice.
 const autoInstallDisable = "databricks aitools auto-install disable"
@@ -115,8 +121,19 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	// can ask. A holdout machine or a gate-off version would otherwise settle
 	// after the lookup; they wait for that run too, so holdout and treatment
 	// machines are counted alike.
-	if reason == autoinstall.ReasonGateOff && autoInstallAsks(ctx) && in.State.AcceptedVersion != version && !canAsk(ctx) {
-		if tools, err := planTools(quietContext(ctx), in.State); err == nil && len(tools.newAgents()) > 0 {
+	//
+	// A machine with no coding agent skips there as well: the gate changes
+	// nothing for it, and such machines (containers, job pods) often have no
+	// route to the manifest and a home directory that keeps no state, so they
+	// would wait for the lookup on every run. The version is not settled, so
+	// an agent set up later is still found.
+	if reason == autoinstall.ReasonGateOff {
+		tools, err := planTools(quietContext(ctx), in.State)
+		if err == nil && tools.skip == protos.AitoolsAutoInstallOutcomeSkippedNoAgents {
+			log.Debugf(ctx, "auto-install: skipped: %s", tools.skipWhy)
+			return
+		}
+		if err == nil && autoInstallAsks(ctx) && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
 			skipUnaskable(ctx, in.State.ID)
 			return
 		}
@@ -151,16 +168,20 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	reason = autoinstall.Decide(in)
 	if reason == autoinstall.ReasonGateOff {
 		gateCtx, cancel := context.WithTimeout(ctx, gateTimeout)
-		in.GateOn, err = autoinstall.GateOn(gateCtx, version)
+		// Ctrl+C or a request to terminate ends the lookup instead of killing
+		// a command that succeeded.
+		gateCtx, stop := signal.NotifyContext(gateCtx, os.Interrupt, syscall.SIGTERM)
+		in.GateOn, err = gateOn(gateCtx, version)
+		stop()
 		cancel()
 		if err != nil {
-			// The gate is unknown, so the version is not settled: a later run
-			// looks it up again. Like a failed install, the lookup uses up an
-			// attempt, so a machine that is offline stops paying for it. The
-			// feature may be off, so nothing is reported.
-			attempt := autoinstall.NextAttempt(in.State, version)
-			log.Debugf(ctx, "auto-install: attempt %d of %d: could not resolve the gate: %v", attempt, autoinstall.MaxAttempts, err)
-			if err := autoinstall.Record(ctx, version, attempt, id); err != nil {
+			// The gate is unknown. A machine that cannot reach the manifest
+			// (no route to GitHub) would wait for the lookup after every
+			// command, so the version gets no other attempt; the next version
+			// looks the gate up again. The feature may be off, so nothing is
+			// reported.
+			log.Debugf(ctx, "auto-install: could not resolve the gate, not trying again for this version: %v", err)
+			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id); err != nil {
 				log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 			}
 			return
