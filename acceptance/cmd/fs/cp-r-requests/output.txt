@@ -1,5 +1,6 @@
 
 >>> [CLI] fs cp -r localdir dbfs:/Volumes/main/default/fs-cp-r-requests/dst
+Copied 3 files.
 localdir/a.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/a.txt
 localdir/b.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/b.txt
 localdir/sub/c.txt -> dbfs:/Volumes/main/default/fs-cp-r-requests/dst/sub/c.txt

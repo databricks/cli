@@ -1,5 +1,6 @@
 
 >>> [CLI] fs cp -r localdir dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded-dir
+Copied 2 files.
 localdir/file1.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded-dir/file1.txt
 localdir/file2.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded-dir/file2.txt
 

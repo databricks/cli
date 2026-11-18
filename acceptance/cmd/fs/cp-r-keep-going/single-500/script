@@ -1,0 +1,9 @@
+# A 500 is not retried by the filer. The copy defers the file and retries it
+# once after the walk, so the copy still succeeds. The fault matches f3.txt by
+# its content, since files are uploaded in parallel.
+fault.py --body-contains "file 3" "PUT /api/2.0/fs/files/**" 500 0 1
+
+trace cp_r localdir ${TARGET} --concurrency 2
+
+title "Six uploads plus one retry"
+trace print_requests.py --summary --sort //api/2.0/fs/files/
