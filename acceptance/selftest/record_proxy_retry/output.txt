@@ -1,5 +1,5 @@
 
-=== A request answered with a transient error is left out of the recorded requests; the CLI's repeat is recorded
+=== A request answered with a transient error and repeated by the CLI is recorded once
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -26,7 +26,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/postgres/projects/test-pg-proj/operations/[UUID]"
 }
 
-=== A request still failing when the CLI gives up is left out as well; the output shows the error
+=== A request answered with a transient error and not repeated stays recorded
 
 >>> [CLI] current-user me
 Error: Fault injected by test.
@@ -34,3 +34,7 @@ Error: Fault injected by test.
 Exit code: 1
 
 >>> print_requests.py --get //scim
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}

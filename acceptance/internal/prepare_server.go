@@ -228,8 +228,10 @@ type requestRecorder struct {
 
 	mu sync.Mutex
 	// entries holds what was written for requests still waiting for a response; nil unless
-	// dropRetried is used.
+	// failed attempts are dropped.
 	entries map[*testserver.Request]string
+	// failed counts the entries answered with a transient error and not repeated yet.
+	failed map[string]int
 }
 
 func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
@@ -240,6 +242,7 @@ func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string,
 	}
 	if dropRetried {
 		r.entries = map[*testserver.Request]string{}
+		r.failed = map[string]int{}
 	}
 	return r
 }
@@ -257,6 +260,11 @@ func (r *requestRecorder) record(request *testserver.Request) {
 	assert.NoErrorf(r.t, err, "Failed to json-encode: %#v", req)
 	entry := string(reqJson) + "\n"
 
+	if r.failed[entry] > 0 {
+		r.failed[entry]--
+		r.dropFailedAttempt(request, entry)
+	}
+
 	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	assert.NoError(r.t, err)
 	defer f.Close()
@@ -268,29 +276,12 @@ func (r *requestRecorder) record(request *testserver.Request) {
 	}
 }
 
-// isRetriedStatus reports whether the CLI retries a request answered with status (see
-// libs/retry and the SDK's own retries).
-func isRetriedStatus(status int) bool {
-	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
-}
-
-// dropRetried removes a request answered with a transient error from out.requests.txt. A real
-// workspace answers with such errors now and then; the CLI repeats the request and the repeat is
-// recorded, so dropping the failed attempt keeps the goldens stable. Only the proxy uses it: the
-// testserver answers with an error only when a test injects one, and its goldens show that.
-func (r *requestRecorder) dropRetried(request *testserver.Request, response *testserver.EncodedResponse) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	entry, ok := r.entries[request]
-	delete(r.entries, request)
-	if !ok || !isRetriedStatus(response.StatusCode) {
-		return
-	}
-
+// dropFailedAttempt removes the last copy of entry from out.requests.txt: the attempt that
+// request repeats.
+func (r *requestRecorder) dropFailedAttempt(request *testserver.Request, entry string) {
 	data, err := os.ReadFile(r.path())
 	if errors.Is(err, os.ErrNotExist) {
-		// The script removed the file after the request was sent.
+		// The script consumed the file since the failed attempt.
 		return
 	}
 	require.NoError(r.t, err)
@@ -301,7 +292,29 @@ func (r *requestRecorder) dropRetried(request *testserver.Request, response *tes
 	}
 	data = append(data[:i:i], data[i+len(entry):]...)
 	require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
-	r.t.Logf("Dropped from out.requests.txt after %d response: %s %s", response.StatusCode, request.Method, request.URL.Path)
+	r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+}
+
+// isTransientStatus reports whether a response status is one the CLI may repeat a request after
+// (see libs/retry and the SDK's own retries).
+func isTransientStatus(status int) bool {
+	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
+}
+
+// noteResponse remembers a request answered with a transient error, so that if the CLI repeats
+// it, the failed attempt is dropped from out.requests.txt. A real workspace answers with such
+// errors now and then, so recording both attempts makes request goldens flaky. A request that is
+// not repeated stays recorded. Only the proxy uses this: the testserver answers with an error only
+// when a test injects one, and its goldens show that.
+func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	entry, ok := r.entries[request]
+	delete(r.entries, request)
+	if ok && isTransientStatus(response.StatusCode) {
+		r.failed[entry]++
+	}
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
@@ -391,7 +404,7 @@ func startProxyServer(t *testing.T,
 	if recordRequests {
 		recorder := newRequestRecorder(t, includeHeaders, outputDir, true)
 		s.RequestCallback = recorder.record
-		responseCallbacks = append(responseCallbacks, recorder.dropRetried)
+		responseCallbacks = append(responseCallbacks, recorder.noteResponse)
 	}
 
 	// Log API responses if the -logrequests flag is set.
