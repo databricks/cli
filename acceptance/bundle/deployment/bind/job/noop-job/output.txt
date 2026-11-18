@@ -5,6 +5,14 @@
 Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
+>>> jq {serial, resource_id: .state["resources.jobs.job_1"].__id__} .databricks/bundle/default/resources.json
+{
+  "serial": 1,
+  "resource_id": "[JOB_ID]"
+}
+
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.wal .databricks/bundle/default/resources.json.temp-bind
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
 Updated jobs.job_1
