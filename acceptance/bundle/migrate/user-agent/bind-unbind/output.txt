@@ -12,12 +12,12 @@ Run "databricks bundle deploy" to migrate the state to the direct engine, or ins
 
 
 >>> print_engines
-      2 MISSING GET /api/2.0/workspace/export
-      2 engine/terraform GET /api/2.0/workspace/export
-      3 engine/terraform GET /api/2.0/workspace/get-status
-      1 engine/terraform GET /api/2.2/jobs/get
-      1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
-      1 engine/terraform POST /api/2.0/workspace/delete
+2 MISSING GET /api/2.0/workspace/export
+2 engine/terraform GET /api/2.0/workspace/export
+3 engine/terraform GET /api/2.0/workspace/get-status
+1 engine/terraform GET /api/2.2/jobs/get
+1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+1 engine/terraform POST /api/2.0/workspace/delete
 
 === unbind on a terraform state
 
@@ -28,8 +28,8 @@ Run "databricks bundle deploy" to migrate the state to the direct engine, or ins
 
 
 >>> print_engines
-      2 MISSING GET /api/2.0/workspace/export
-      2 engine/terraform GET /api/2.0/workspace/export
-      3 engine/terraform GET /api/2.0/workspace/get-status
-      1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
-      1 engine/terraform POST /api/2.0/workspace/delete
+2 MISSING GET /api/2.0/workspace/export
+2 engine/terraform GET /api/2.0/workspace/export
+3 engine/terraform GET /api/2.0/workspace/get-status
+1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+1 engine/terraform POST /api/2.0/workspace/delete
