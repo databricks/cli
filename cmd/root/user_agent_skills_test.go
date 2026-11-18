@@ -1,15 +1,43 @@
-package root
+package root_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 )
 
+// skillNames returns n distinct skill names of exactly length bytes.
+func skillNames(n, length int) []string {
+	names := make([]string, 0, n)
+	for i := range n {
+		prefix := fmt.Sprintf("s%02d", i)
+		names = append(names, prefix+strings.Repeat("x", length-len(prefix)))
+	}
+	return names
+}
+
+// pairsSize is the length of " skill/<name>" for every name.
+func pairsSize(names []string) int {
+	size := 0
+	for _, name := range names {
+		size += len(" skill/") + len(name)
+	}
+	return size
+}
+
 func TestParseSkills(t *testing.T) {
+	// 22-byte names make 29-byte pairs: four fill 116 bytes, a fifth would make 145.
+	fourFit := skillNames(4, 22)
+	fiveTooMany := skillNames(5, 22)
+	// 57- and 49-byte names make 64- and 56-byte pairs (120 bytes), so " skill/c"
+	// lands exactly on 128 and nothing more fits.
+	exact := []string{strings.Repeat("a", 57), strings.Repeat("b", 49), "c"}
+
 	tests := []struct {
 		name string
 		raw  string
@@ -21,28 +49,23 @@ func TestParseSkills(t *testing.T) {
 		{"trims and lowercases", " Databricks-Core , JOBS ", []string{"databricks-core", "jobs"}},
 		{"drops empty entries", ",,a,,", []string{"a"}},
 		{"allows underscore and dot", "a_b.c-d", []string{"a_b.c-d"}},
-		{"drops characters the user agent rejects", "ok,bad name,a:b,a/b,a+b", []string{"ok"}},
+		{"drops disallowed skill-name characters", "ok,bad name,a:b,a/b,a+b", []string{"ok"}},
 		{"drops leading punctuation", "-a,.b,_c", nil},
 		{"dedupes preserving first occurrence", "b,a,b,a,c", []string{"b", "a", "c"}},
 		{"dedupes after normalization", "Core,core, CORE", []string{"core"}},
 		{"drops entry longer than 64 bytes", strings.Repeat("a", 65) + ",ok", []string{"ok"}},
 		{"keeps entry of exactly 64 bytes", strings.Repeat("a", 64), []string{strings.Repeat("a", 64)}},
-		{"caps at 20 entries", strings.Join(skillNames(25), ","), skillNames(20)},
+		{"keeps pairs within the budget", strings.Join(fourFit, ","), fourFit},
+		{"drops pairs over the budget", strings.Join(fiveTooMany, ","), fiveTooMany[:4]},
+		{"fills the budget exactly", strings.Join(exact, ",") + ",d", exact},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, parseSkills(t.Context(), tt.raw))
+			got := root.ParseSkills(t.Context(), tt.raw)
+			assert.Equal(t, tt.want, got)
+			assert.LessOrEqual(t, pairsSize(got), root.MaxSkillsUserAgentLength)
 		})
 	}
-}
-
-// skillNames returns n distinct valid skill names.
-func skillNames(n int) []string {
-	names := make([]string, 0, n)
-	for i := range n {
-		names = append(names, "skill"+strings.Repeat("x", i))
-	}
-	return names
 }
 
 func TestWithSkillsInUserAgent(t *testing.T) {
@@ -59,9 +82,9 @@ func TestWithSkillsInUserAgent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Always set both: an empty value in the context overrides the host environment.
-			ctx := env.Set(t.Context(), skillsInvokedEnvVar, tt.skills)
+			ctx := env.Set(t.Context(), root.SkillsInvokedEnvVar, tt.skills)
 			ctx = env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", tt.disableTelemetry)
-			ua := useragent.FromContext(withSkillsInUserAgent(ctx))
+			ua := useragent.FromContext(root.WithSkillsInUserAgent(ctx))
 			if tt.want == "" {
 				assert.NotContains(t, ua, "skill/")
 			} else {

@@ -13,19 +13,26 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// Experimental skill-usage tracking: agent skills prefix CLI calls with this
-// env var so their names reach the user agent. It may change or be removed
-// without notice. It is an env var rather than a flag so removing it doesn't
-// change the CLI's interface, and because older CLIs ignore unknown env vars
-// but reject unknown flags.
+// Experimental skill-usage tracking: the databricks-core agent skill
+// (https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-core)
+// tells agents to prefix CLI calls with this env var, set to the comma-separated
+// bare names of the skills they loaded. It may change or be removed without
+// notice. It is an env var rather than a flag so removing it doesn't change the
+// CLI's interface, and because older CLIs ignore unknown env vars but reject
+// unknown flags.
 const skillsInvokedEnvVar = "DATABRICKS_SKILLS_INVOKED"
 
 // skillUserAgentKey is repeated once per skill: "skill/databricks-core skill/databricks-jobs".
 const skillUserAgentKey = "skill"
 
 const (
-	maxSkills      = 20
 	maxSkillLength = 64
+
+	// maxSkillsUserAgentLength bounds all " skill/<name>" pairs together. The
+	// usage logs that feed skill analytics cap the user agent at 512 characters,
+	// and the SDK appends auth/, agent/ and other pairs after these, so the
+	// skills must leave room for them.
+	maxSkillsUserAgentLength = 128
 )
 
 // skillNamePattern is a subset of what the SDK accepts in a user agent value,
@@ -35,22 +42,25 @@ var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 })
 
 // parseSkills normalizes a comma-separated list of skill names: entries are
-// trimmed, lowercased and deduplicated, invalid ones are dropped, and at most
-// maxSkills are kept. Invalid input is only logged at debug level because this
+// trimmed, lowercased and deduplicated, invalid ones are dropped, and names are
+// kept in order while their pairs fit in maxSkillsUserAgentLength. Invalid input is only logged at debug level because this
 // is telemetry and must never fail or warn a command.
 func parseSkills(ctx context.Context, raw string) []string {
 	var skills []string
+	size := 0
 	for entry := range strings.SplitSeq(raw, ",") {
 		name := strings.ToLower(strings.TrimSpace(entry))
+		pairSize := len(" "+skillUserAgentKey+"/") + len(name)
 		switch {
 		case name == "":
 		case len(name) > maxSkillLength || !skillNamePattern().MatchString(name):
 			log.Debugf(ctx, "dropping invalid %s entry %q", skillsInvokedEnvVar, entry)
 		case slices.Contains(skills, name):
-		case len(skills) == maxSkills:
-			log.Debugf(ctx, "dropping %s entry %q: more than %d skills", skillsInvokedEnvVar, name, maxSkills)
+		case size+pairSize > maxSkillsUserAgentLength:
+			log.Debugf(ctx, "dropping %s entry %q: skills exceed %d user agent bytes", skillsInvokedEnvVar, name, maxSkillsUserAgentLength)
 		default:
 			skills = append(skills, name)
+			size += pairSize
 		}
 	}
 	return skills

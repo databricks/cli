@@ -1,26 +1,33 @@
 # Experimental skill-usage tracking: DATABRICKS_SKILLS_INVOKED adds skill/<name> pairs to the user agent.
-# Only the pairs are asserted; the rest of the user agent varies by machine.
+# The rest of the user agent varies by machine, so each request dump goes to a LOG.* file (kept for
+# diagnosis, excluded from the diff) and only the pairs are asserted.
 
 title "Env var adds the skills to the user agent on a workspace GET"
 DATABRICKS_SKILLS_INVOKED=databricks-core,databricks-jobs trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-core skill/databricks-jobs" > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.me
+contains.py " skill/databricks-core skill/databricks-jobs" < LOG.me > /dev/null
 
 title "Env var adds the skills on databricks api"
 DATABRICKS_SKILLS_INVOKED=databricks-core MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.1/clusters/list > /dev/null
-trace print_requests.py --get //clusters/list | contains.py " skill/databricks-core" > /dev/null
+trace print_requests.py --get //clusters/list > LOG.api
+contains.py " skill/databricks-core" < LOG.api > /dev/null
 
 title "Env var adds the skills from bundle commands"
 DATABRICKS_SKILLS_INVOKED=databricks-dabs trace $CLI bundle validate > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-dabs" > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.bundle
+contains.py " skill/databricks-dabs" < LOG.bundle > /dev/null
 
 title "Invalid entries are dropped and the rest is normalized"
 DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databricks:databricks-jobs ' trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!bad" "!databricks:" > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.normalized
+contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!bad" "!databricks:" < LOG.normalized > /dev/null
 
 title "No skills when unset"
 trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py "!skill/" > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.unset
+contains.py "!skill/" < LOG.unset > /dev/null
 
 title "No skills when telemetry is disabled"
 DATABRICKS_SKILLS_INVOKED=databricks-core DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me > /dev/null
-trace print_requests.py --get //scim/v2/Me | contains.py "!skill/" > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.disabled
+contains.py "!skill/" < LOG.disabled > /dev/null
