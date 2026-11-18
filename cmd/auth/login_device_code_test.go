@@ -543,12 +543,24 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 		completeArgs []string
 		// completeOnOtherHost completes the login on a second server.
 		completeOnOtherHost bool
-		wantChanged         string
+		// unifiedHost makes the server a unified host of an account.
+		unifiedHost bool
+		// startQuery and completeQuery are added to the host of each step.
+		startQuery    string
+		completeQuery string
+		wantChanged   string
 	}{
 		{
 			name:                "host",
 			completeOnOtherHost: true,
 			wantChanged:         "a different host",
+		},
+		{
+			name:          "account ID",
+			unifiedHost:   true,
+			startQuery:    "?a=spog-acct-123",
+			completeQuery: "?a=other-acct",
+			wantChanged:   "a different account ID",
 		},
 		{
 			name:         "client ID",
@@ -569,15 +581,23 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newDeviceCodeServer(t)
+			if tt.unifiedHost {
+				server.Handle("GET", "/.well-known/databricks-config", func(_ testserver.Request) any {
+					return map[string]any{
+						"account_id":    "spog-acct-123",
+						"oidc_endpoint": server.URL + "/oidc/accounts/spog-acct-123",
+					}
+				})
+			}
 			var tokenRequests atomic.Int32
 			server.RequestCallback = func(req *testserver.Request) {
-				if req.URL.Path == "/oidc/v1/token" {
+				if strings.HasSuffix(req.URL.Path, "/v1/token") {
 					tokenRequests.Add(1)
 				}
 			}
 			setUpDeviceCodeLogin(t, "")
 			ctx := cmdio.MockDiscard(t.Context())
-			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL, "--profile", "test"}, tt.startArgs...)...))
+			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL + tt.startQuery, "--profile", "test"}, tt.startArgs...)...))
 
 			host := server.URL
 			if tt.completeOnOtherHost {
@@ -585,10 +605,34 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 				other.RequestCallback = server.RequestCallback
 				host = other.URL
 			}
-			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
+			args := append([]string{"--host", host + tt.completeQuery, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
 			err := runDeviceCodeLogin(ctx, args...)
 			assert.EqualError(t, err, "the login for profile test was started with "+tt.wantChanged+". Complete it with the same command that started it. "+startNewLoginHint)
 			assert.Zero(t, tokenRequests.Load())
+		})
+	}
+}
+
+func TestOAuthAccountID(t *testing.T) {
+	workspace, err := u2m.NewBasicWorkspaceOAuthArgument("https://workspace.cloud.databricks.test")
+	require.NoError(t, err)
+	account, err := u2m.NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "acct-1")
+	require.NoError(t, err)
+	unified, err := u2m.NewBasicUnifiedOAuthArgument("https://unified.cloud.databricks.test", "acct-2")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name string
+		arg  u2m.OAuthArgument
+		want string
+	}{
+		{name: "workspace", arg: workspace, want: ""},
+		{name: "account", arg: account, want: "acct-1"},
+		{name: "unified", arg: unified, want: "acct-2"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, oauthAccountID(tt.arg))
 		})
 	}
 }
