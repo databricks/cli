@@ -17,7 +17,7 @@ echo INPUT_CONFIG_OK
 $CLI bundle bitmap bitmap -o text > LOG.bitmap_text 2> LOG.bitmap_text_err
 cat LOG.bitmap_text_err | contains.py '!panic:' '!internal error' > /dev/null
 # Every config names its bundle; guards against comparing two empty decodes.
-cat LOG.bitmap_text | contains.py '1 bundle.name' > /dev/null
+cat LOG.bitmap_text | contains.py 'P   bundle.name' > /dev/null
 
 $CLI bundle bitmap bitmap -o json > LOG.bitmap_json 2> LOG.bitmap_json_err
 cat LOG.bitmap_json_err | contains.py '!panic:' '!internal error' > /dev/null

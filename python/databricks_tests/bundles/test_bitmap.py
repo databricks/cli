@@ -87,14 +87,15 @@ SCHEMA_FOR_TEXT = [
     ("set_paths", "lines"),
     [
         ([], []),
-        (["bundle", "bundle.name"], ["1 bundle", "1 bundle.name"]),
-        (["flag", "flag=true"], ["T flag"]),
-        (["flag", "flag=false"], ["F flag"]),
+        (["bundle", "bundle.name"], ["P   bundle", "P   bundle.name"]),
+        (["flag", "flag=true"], ["PT  flag"]),
+        (["flag", "flag=false"], ["P F flag"]),
         (
             ["jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"],
-            ["T jobs.*.enabled", "F jobs.*.enabled"],
+            ["PTF jobs.*.enabled"],
         ),
-        (["ref"], ["1 ref"]),
+        (["ref"], ["P   ref"]),
+        (["flag=true"], [" T  flag"]),
     ],
 )
 def test_text(set_paths: list[str], lines: list[str]):
@@ -104,15 +105,15 @@ def test_text(set_paths: list[str], lines: list[str]):
 
 
 def test_text_older_bitmap():
-    assert text(SCHEMA_FOR_TEXT, [True], 7) == ["size=1 context=7", "1 bundle"]
+    assert text(SCHEMA_FOR_TEXT, [True], 7) == ["size=1 context=7", "P   bundle"]
 
 
 def test_decode():
     bits = [path in ("bundle", "bundle.name") for path in SCHEMA]
     assert decode(_encode(_payload(bits))) == [
         f"size={len(SCHEMA)} context=0",
-        "1 bundle",
-        "1 bundle.name",
+        "P   bundle",
+        "P   bundle.name",
     ]
 
 

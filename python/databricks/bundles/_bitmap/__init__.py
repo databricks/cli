@@ -83,30 +83,28 @@ def decode_bits(encoded: str) -> tuple[list[bool], int]:
 
 
 def text(schema: list[str], bits: list[bool], context: int) -> list[str]:
-    """Render a ``"size=N context=C"`` header and then the set bits as
-    ``"<value> <field>"`` lines in schema order.
+    """Render a ``"size=N context=C"`` header and then one ``"PTF <field>"`` line
+    per set field in schema order.
 
-    ``T`` or ``F`` is a bool field holding that value and ``1`` any other present
-    field. A bool shown as ``1`` holds an unresolved variable reference; one shown
-    as both ``T`` and ``F`` has both values under a wildcard. Unset fields are
-    omitted. ``bits`` may be shorter than ``schema`` but not longer.
+    ``P`` is a present field, ``T`` and ``F`` a bool field seen holding true and
+    false, and a space stands for each that is not set. A bool with ``P`` alone
+    holds an unresolved variable reference; one with both ``T`` and ``F`` has both
+    values under a wildcard. Unset fields are omitted. ``bits`` may be shorter
+    than ``schema`` but not longer.
     """
     schema = schema[: len(bits)]
     index = {path: i for i, path in enumerate(schema)}
     lines = [f"size={len(bits)} context={context}"]
     for i, path in enumerate(schema):
-        if not bits[i]:
+        if path.endswith((_TRUE_SUFFIX, _FALSE_SUFFIX)):
             continue
-        if path.endswith(_TRUE_SUFFIX):
-            lines.append("T " + path[: -len(_TRUE_SUFFIX)])
-        elif path.endswith(_FALSE_SUFFIX):
-            lines.append("F " + path[: -len(_FALSE_SUFFIX)])
-        elif not (
-            _is_set(index, bits, path + _TRUE_SUFFIX)
-            or _is_set(index, bits, path + _FALSE_SUFFIX)
-        ):
-            # A bool with a value bit is shown by its value line instead.
-            lines.append("1 " + path)
+        flags = (
+            ("P" if bits[i] else " ")
+            + ("T" if _is_set(index, bits, path + _TRUE_SUFFIX) else " ")
+            + ("F" if _is_set(index, bits, path + _FALSE_SUFFIX) else " ")
+        )
+        if flags != "   ":
+            lines.append(f"{flags} {path}")
     return lines
 
 

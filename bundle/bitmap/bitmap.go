@@ -345,33 +345,36 @@ func joinField(pattern, key string) string {
 }
 
 // Text renders the bitmap as a "size=N context=C" header followed by one
-// "<value> <path>" line per set field in schema order: "T" or "F" for a bool
-// field holding that value, "1" for any other present field. A bool shown as "1"
-// holds an unresolved variable reference; one shown as both "T" and "F" has both
-// values under a wildcard. Unset fields are omitted. bits may be shorter than
-// schema (a bitmap from an older CLI) but not longer.
+// "PTF <path>" line per set field in schema order: "P" for a present field, "T"
+// and "F" for a bool field seen holding true and false, and a space for each
+// that is not set. A bool with "P" alone holds an unresolved variable
+// reference; one with both "T" and "F" has both values under a wildcard. Unset
+// fields are omitted. bits may be shorter than schema (a bitmap from an older
+// CLI) but not longer.
 func Text(schema []string, bits []bool, context uint16) []string {
-	index := indexSchema(schema[:len(bits)])
+	schema = schema[:len(bits)]
+	index := indexSchema(schema)
 	lines := []string{fmt.Sprintf("size=%d context=%d", len(bits), context)}
-	for i, p := range schema[:len(bits)] {
-		if !bits[i] {
+	for i, p := range schema {
+		if strings.HasSuffix(p, trueSuffix) || strings.HasSuffix(p, falseSuffix) {
 			continue
 		}
-		if field, ok := strings.CutSuffix(p, trueSuffix); ok {
-			lines = append(lines, "T "+field)
+		isTrue := isSet(index, bits, p+trueSuffix)
+		isFalse := isSet(index, bits, p+falseSuffix)
+		if !bits[i] && !isTrue && !isFalse {
 			continue
 		}
-		if field, ok := strings.CutSuffix(p, falseSuffix); ok {
-			lines = append(lines, "F "+field)
-			continue
-		}
-		// A bool with a value bit is shown by its value line instead.
-		if isSet(index, bits, p+trueSuffix) || isSet(index, bits, p+falseSuffix) {
-			continue
-		}
-		lines = append(lines, "1 "+p)
+		lines = append(lines, fmt.Sprintf("%c%c%c %s", letter(bits[i], 'P'), letter(isTrue, 'T'), letter(isFalse, 'F'), p))
 	}
 	return lines
+}
+
+// letter returns c if set, and a space otherwise, so that Text's flags stay aligned.
+func letter(set bool, c byte) byte {
+	if set {
+		return c
+	}
+	return ' '
 }
 
 // JSON is the JSON rendering of a bitmap. Presence, True and False are trees
