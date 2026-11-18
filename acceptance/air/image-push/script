@@ -66,7 +66,8 @@ title "in a Claude Code session the auth docker configure child adds no install 
 # As in a Claude Code tool call, with no session id, so the session throttle
 # can't be what keeps the child quiet. The CI variables would drop the native
 # line in CI only.
-unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID CLAUDE_CODE_SESSION_ID
+unset_ci_env
+unset CLAUDE_CODE_SESSION_ID
 # A host CLAUDE_CONFIG_DIR would move the plugin lookup away from the isolated HOME.
 unset CLAUDE_CONFIG_DIR
 export CLAUDECODE=1 CLAUDE_CODE_CHILD_SESSION=1

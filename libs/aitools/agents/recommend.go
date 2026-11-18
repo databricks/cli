@@ -3,6 +3,7 @@ package agents
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
@@ -53,7 +54,8 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 
 // RecommendSkillsInstall checks if coding agents are detected without Databricks tooling (skills
 // or the databricks plugin) installed.
-// In interactive mode, prompts the user to install now using installFn. In non-interactive mode, prints a hint.
+// In interactive mode, prompts the user to install now using installFn; a "no" also turns
+// auto-install off. In non-interactive mode, prints a hint.
 func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context) error) error {
 	if HasDatabricksToolingInstalled(ctx) {
 		return nil
@@ -70,6 +72,14 @@ func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context)
 		return err
 	}
 	if !yes {
+		// The automatic install after this command (and after later upgrades)
+		// must not install what the user just turned down.
+		if err := autoinstall.Decline(ctx); err != nil {
+			log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
+			return nil
+		}
+		// The prompt asked about now; say that the answer also holds later.
+		cmdio.LogString(ctx, "Databricks AI tools won't be installed automatically either. To turn that back on, run: databricks aitools auto-install enable")
 		return nil
 	}
 

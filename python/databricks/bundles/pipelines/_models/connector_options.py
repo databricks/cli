@@ -196,9 +196,7 @@ class ConnectorOptions:
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] TikTok Ads specific options for ingestion
+    [Public Preview] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
@@ -328,9 +326,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] TikTok Ads specific options for ingestion
+    [Public Preview] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]

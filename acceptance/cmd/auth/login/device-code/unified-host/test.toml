@@ -1,0 +1,11 @@
+RecordRequests = true
+
+# Host metadata of a unified host: unlike the fake server's default, it has no
+# workspace ID, so the account login stays account-level.
+[[Server]]
+Pattern = "GET /.well-known/databricks-config"
+Response.Body = '''
+{
+    "account_id": "spog-acct-123"
+}
+'''

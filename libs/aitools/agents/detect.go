@@ -112,7 +112,7 @@ func (a *Agent) ProbePlugin(ctx context.Context) error {
 	cctx, cancel := context.WithTimeout(ctx, pluginProbeTimeout)
 	defer cancel()
 
-	if _, err := process.Background(cctx, []string{path, "plugin", "--help"}); err != nil {
+	if _, err := process.BackgroundInGroup(cctx, []string{path, "plugin", "--help"}); err != nil {
 		return fmt.Errorf("%s plugin subcommand unavailable: %w", a.Binary, errors.Join(ErrPluginUnsupported, err))
 	}
 	return nil

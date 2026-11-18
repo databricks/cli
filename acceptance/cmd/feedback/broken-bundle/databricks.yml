@@ -1,0 +1,10 @@
+bundle:
+  name: broken-bundle
+
+# Two targets both marked default is an invalid bundle. Feedback does not use
+# the bundle, so this error must not stop it.
+targets:
+  dev:
+    default: true
+  dev2:
+    default: true

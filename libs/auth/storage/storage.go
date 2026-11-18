@@ -44,13 +44,15 @@ type PendingLogin struct {
 	// login when a newer one replaced it under the same key.
 	UserCode string `json:"user_code"`
 
-	// Host, ClientID and Scopes are the settings the login was started with.
-	// The device code only works with the same host and client, and the
-	// token gets the scopes of the device authorization, so the login can
-	// only be completed with the same settings.
-	Host     string   `json:"host"`
-	ClientID string   `json:"client_id,omitempty"`
-	Scopes   []string `json:"scopes,omitempty"`
+	// Host, AccountID, ClientID and Scopes are the settings the login was
+	// started with. The device code only works with the same host, account
+	// and client, and the token gets the scopes of the device authorization,
+	// so the login can only be completed with the same settings. AccountID is
+	// empty for workspace hosts, which do not log in with account endpoints.
+	Host      string   `json:"host"`
+	AccountID string   `json:"account_id,omitempty"`
+	ClientID  string   `json:"client_id,omitempty"`
+	Scopes    []string `json:"scopes,omitempty"`
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no

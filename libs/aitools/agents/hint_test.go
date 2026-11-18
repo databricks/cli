@@ -260,6 +260,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}{
 		{"aitools install", true},
 		{"experimental aitools skills install", true},
+		{"feedback", true},
 		{"auth login", true},
 		{"auth token", true},
 		{"configure", true},
@@ -1039,4 +1040,40 @@ func TestHintForCommand(t *testing.T) {
 	cursor := hintForCommand(airCmd(), "cursor", noPluginRecorded)
 	require.NotNil(t, cursor)
 	assert.Equal(t, agentInstallHint(ByName(NameCursor), noPluginRecorded).text, cursor.text)
+}
+// writeProjectSkill creates a project-scoped Claude skill symlink.
+func writeProjectSkill(t *testing.T, project, name string) {
+	canonical := filepath.Join(project, ".databricks", "aitools", "skills", name)
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	link := filepath.Join(project, ".claude", "skills", name)
+	require.NoError(t, os.MkdirAll(filepath.Dir(link), 0o755))
+	rel, err := filepath.Rel(filepath.Dir(link), canonical)
+	require.NoError(t, err)
+	require.NoError(t, os.Symlink(rel, link))
+}
+
+func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		// subdir is where the command runs, relative to the project root.
+		subdir string
+	}{
+		{name: "project root"},
+		{name: "repo subdirectory", subdir: "train"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			home := t.TempDir()
+			ctx, stderr := claudeCtx(t, home)
+			project := t.TempDir()
+			require.NoError(t, os.Mkdir(filepath.Join(project, ".git"), 0o755))
+			writeProjectSkill(t, project, "databricks-ai-runtime")
+			cwd := filepath.Join(project, tc.subdir)
+			require.NoError(t, os.MkdirAll(cwd, 0o755))
+			t.Chdir(cwd)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Empty(t, stderr.String())
+		})
+	}
 }
