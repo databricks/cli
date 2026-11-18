@@ -2,7 +2,12 @@ package telemetry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -464,4 +469,160 @@ func TestWithinReturnsPanicAsError(t *testing.T) {
 	_, err := within(t.Context(), &running, func() (int, error) { panic("boom") })
 	assert.EqualError(t, err, "panic: boom")
 	assert.Eventually(t, func() bool { return running.Load() == 0 }, time.Second, time.Millisecond)
+}
+
+func TestNotSent(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "never sent", err: fmt.Errorf("wrapped: %w", &notSentError{errors.New("no client")}), want: true},
+		{name: "nothing accepted", err: &notAcceptedError{Accepted: 0, Sent: 1}, want: true},
+		{name: "some accepted", err: &notAcceptedError{Accepted: 1, Sent: 2}},
+		{name: "rejected", err: &apierr.APIError{StatusCode: 400}, want: true},
+		{name: "server error", err: &apierr.APIError{StatusCode: 500}},
+		{name: "connection reset", err: errors.New("connection reset by peer")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, NotSent(tt.err))
+		})
+	}
+}
+
+func testFeedbackLog() []protos.FrontendLog {
+	return []protos.FrontendLog{{
+		FrontendLogEventID: "id",
+		Entry: protos.FrontendLogEntry{
+			FastFeedbackLog: &protos.FastFeedbackLog{Text: "hello"},
+		},
+	}}
+}
+
+func TestSendMakesOneAttempt(t *testing.T) {
+	tests := []struct {
+		name            string
+		numProtoSuccess int64
+		statusCode      int
+		reset           bool
+		wantErr         bool
+		errContains     string
+		wantNotSent     bool
+	}{
+		{name: "all accepted", numProtoSuccess: 1},
+		{name: "none accepted", wantErr: true, errContains: "only 0 of 1 logs were accepted", wantNotSent: true},
+		{name: "server error", statusCode: 500, wantErr: true, errContains: "server error"},
+		{name: "SDK retryable error", statusCode: 503, wantErr: true, errContains: "server error"},
+		{name: "rejected", statusCode: 403, wantErr: true, errContains: "server error", wantNotSent: true},
+		{name: "connection reset", reset: true, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+			var count atomic.Int32
+			var body RequestBody
+			if tt.reset {
+				server.HandleRaw(http.MethodPost, "/telemetry-ext", func(w http.ResponseWriter, r *http.Request) {
+					count.Add(1)
+					conn, _, err := w.(http.Hijacker).Hijack()
+					if !assert.NoError(t, err) {
+						return
+					}
+					// A zero linger makes Close send a TCP reset, which the SDK
+					// retries unless retries are off.
+					assert.NoError(t, conn.(*net.TCPConn).SetLinger(0))
+					assert.NoError(t, conn.Close())
+				})
+			} else {
+				server.Handle(http.MethodPost, "/telemetry-ext", func(req testserver.Request) any {
+					count.Add(1)
+					assert.NoError(t, json.Unmarshal(req.Body, &body))
+					if tt.statusCode != 0 {
+						return testserver.Response{
+							StatusCode: tt.statusCode,
+							Body:       apierr.APIError{StatusCode: tt.statusCode, Message: "server error"},
+						}
+					}
+					return ResponseBody{NumProtoSuccess: tt.numProtoSuccess}
+				})
+			}
+
+			err := Send(t.Context(), &config.Config{Host: server.URL, Token: "token"}, testFeedbackLog())
+			if !tt.wantErr {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					assert.ErrorContains(t, err, tt.errContains)
+				}
+				assert.Equal(t, tt.wantNotSent, NotSent(err))
+			}
+			assert.Equal(t, int32(1), count.Load())
+			if !tt.reset {
+				assert.Equal(t, []string{`{"frontend_log_event_id":"id","entry":{"fast_feedback_log":{"can_be_contacted":false,"text":"hello"}}}`}, body.ProtoLogs)
+			}
+		})
+	}
+}
+
+func TestSendFailingBeforeConnectingIsNotSent(t *testing.T) {
+	// The client does not trust the certificate of this server. It starts
+	// first so that it cannot take the port of the closed listener below.
+	untrusted := httptest.NewTLSServer(http.NotFoundHandler())
+	t.Cleanup(untrusted.Close)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	refused := "http://" + listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	// The SDK retries its host metadata lookup for minutes when it fails.
+	noMetadata := func(context.Context, string) (*config.HostMetadata, error) {
+		return nil, nil
+	}
+
+	tests := []struct {
+		name string
+		host string
+	}{
+		{name: "connection refused", host: refused},
+		{name: "untrusted certificate", host: untrusted.URL},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{Host: tt.host, Token: "token", HostMetadataResolver: noMetadata}
+			err := Send(t.Context(), cfg, testFeedbackLog())
+			require.Error(t, err)
+			assert.True(t, NotSent(err), "error: %v", err)
+		})
+	}
+}
+
+func TestSendTimeoutBoundsTokenAcquisition(t *testing.T) {
+	server := testserver.New(t)
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	ts := auth.TokenSourceFn(func(context.Context) (*oauth2.Token, error) {
+		<-release
+		return nil, errors.New("token endpoint unavailable")
+	})
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+
+	errc := make(chan error, 1)
+	go func() {
+		errc <- Send(ctx, &config.Config{
+			Host:        server.URL,
+			Credentials: config.NewTokenSourceStrategy("blocking", ts),
+		}, testFeedbackLog())
+	}()
+	select {
+	case err := <-errc:
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+		// The token was never fetched, so nothing was sent.
+		assert.True(t, NotSent(err))
+	case <-time.After(10 * time.Second):
+		t.Fatal("Send did not return after its context deadline")
+	}
 }

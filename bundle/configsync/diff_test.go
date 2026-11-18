@@ -371,7 +371,7 @@ resources:
 	}, changes)
 }
 
-func TestWithoutCurrentUserManage(t *testing.T) {
+func TestWithoutCurrentUserDefaults(t *testing.T) {
 	permissions := []dresources.StatePermission{
 		{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
 		{Level: iam.PermissionLevelCanManage, ServicePrincipalName: "me@example.com"},
@@ -384,7 +384,25 @@ func TestWithoutCurrentUserManage(t *testing.T) {
 		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
 		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
 		{Level: iam.PermissionLevelCanView, GroupName: "users"},
-	}, withoutCurrentUserManage(permissions, "me@example.com"))
+	}, withoutCurrentUserDefaults(permissions, "me@example.com", "jobs"))
+}
+
+func TestWithoutCurrentUserDefaultsClusterPolicy(t *testing.T) {
+	permissions := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, ServicePrincipalName: "me@example.com"},
+		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
+	}
+
+	assert.Equal(t, []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
+	}, withoutCurrentUserDefaults(permissions, "me@example.com", "cluster_policies"))
+
+	creatorOnly := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, UserName: "me@example.com"},
+	}
+	assert.Empty(t, withoutCurrentUserDefaults(creatorOnly, "me@example.com", "cluster_policies"))
 }
 
 func TestPermissionsReadSkip(t *testing.T) {

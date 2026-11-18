@@ -104,15 +104,23 @@ func setupSyncTest(t *testing.T, args ...string) (context.Context, *syncTest) {
 	}
 }
 
+// The shared test workspace rate-limits workspace-files/import-file (429) when
+// several CI runs upload at once. The SDK retries 429 for up to 5 minutes, so
+// wait longer than that: a shorter timeout cancels sync while it is still retrying.
+const syncCompletionTimeout = 6 * time.Minute
+
 func (a *syncTest) waitForCompletionMarker() {
-	ctx, cancel := context.WithTimeout(a.t.Context(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(a.t.Context(), syncCompletionTimeout)
 	defer cancel()
 
 	for {
 		select {
 		case <-ctx.Done():
 			a.t.Fatal("timed out waiting for sync to complete")
-		case line := <-a.c.StdoutLines:
+		case line, ok := <-a.c.StdoutLines:
+			if !ok {
+				a.t.Fatal("sync exited before completing")
+			}
 			var event sync.EventBase
 			err := json.Unmarshal([]byte(line), &event)
 			require.NoError(a.t, err)

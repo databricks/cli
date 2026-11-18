@@ -28,7 +28,7 @@ func applyLifecycle(resourceKey, fieldPath string, cd *deployplan.ChangeDesc) (*
 		return nil, err
 	}
 	resourceType := config.GetResourceTypeFromKey(resourceKey)
-	backendDefault := cd.New == nil && cd.Remote != nil && !matchPattern(jobRunAsChildPattern, resourceKey+"."+fieldPath)
+	backendDefault := cd.New == nil && cd.Remote != nil && !isJobRunAsPath(resourceKey+"."+fieldPath)
 
 	var f nestedFieldFilter
 	for _, rc := range []*dresources.ResourceLifecycleConfig{

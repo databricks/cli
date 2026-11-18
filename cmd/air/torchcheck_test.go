@@ -107,4 +107,23 @@ func TestMissingTorchWarningScansPinnedCommit(t *testing.T) {
 
 		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(dir, "run.yaml")), "Warning: model/train.py contains a torch import")
 	})
+
+	t.Run("single file include", func(t *testing.T) {
+		repo := newTestRepo(t)
+		writeRepoFile(t, repo, "train.py", "import torch\n")
+		sha := commitAll(t, repo, "torch")
+		cfg := writeTorchRunConfig(t, repo, "  git:\n    commit: "+sha+"\n  include_paths:\n    - train.py\n")
+
+		assert.Contains(t, missingTorchWarning(t.Context(), cfg, filepath.Join(repo, "run.yaml")), "Warning: train.py contains a torch import")
+	})
+
+	t.Run("single file include excludes other imports", func(t *testing.T) {
+		repo := newTestRepo(t)
+		writeRepoFile(t, repo, "train.py", "print('hi')\n")
+		writeRepoFile(t, repo, "other.py", "import torch\n")
+		sha := commitAll(t, repo, "torch outside include")
+		cfg := writeTorchRunConfig(t, repo, "  git:\n    commit: "+sha+"\n  include_paths:\n    - train.py\n")
+
+		assert.Empty(t, missingTorchWarning(t.Context(), cfg, filepath.Join(repo, "run.yaml")))
+	})
 }

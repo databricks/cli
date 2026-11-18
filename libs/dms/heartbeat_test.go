@@ -8,6 +8,7 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,4 +92,28 @@ func TestHeartbeatStop(t *testing.T) {
 		synctest.Wait()
 		assert.Equal(t, int32(0), f.calls.Load())
 	})
+}
+
+func TestHeartbeatIntervalOverride(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		f := &fakeSend{}
+		ctx := env.Set(t.Context(), HeartbeatIntervalMsVariable, "100000")
+		h := startHeartbeat(ctx, f.send)
+		defer h.Stop()
+
+		time.Sleep(99 * time.Second)
+		synctest.Wait()
+		assert.Equal(t, int32(0), f.calls.Load())
+
+		time.Sleep(2 * time.Second)
+		synctest.Wait()
+		assert.Equal(t, int32(1), f.calls.Load())
+	})
+}
+
+func TestHeartbeatIntervalInvalidOverride(t *testing.T) {
+	for _, v := range []string{"", "abc", "0", "-5"} {
+		ctx := env.Set(t.Context(), HeartbeatIntervalMsVariable, v)
+		assert.Equal(t, heartbeatInterval, interval(ctx), v)
+	}
 }
