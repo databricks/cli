@@ -121,27 +121,35 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 
 // recoverCreatedDeployment returns the id of the deployment a failed CreateDeployment may still
 // have made, or "" if there is none. The server can apply the create and then lose the response
-// (an HTTP/2 stream reset while the body is read), and a repeated create is rejected as
-// ALREADY_EXISTS. Without the id the deploy would write its resources without it, and the next
-// plan, which finds the deployment, would report them as changed. A client error (4xx) means the
-// create was not applied, so there is nothing to look up.
+// (an HTTP/2 stream reset while the body is read, or a 504 the SDK retries into ALREADY_EXISTS).
+// Without the id the deploy would write its resources without it, and the next plan, which finds
+// the deployment, would report them as changed. Only a deployment with no versions is taken: one
+// with versions existed before this run, and its version chain is not ours to continue.
 func recoverCreatedDeployment(ctx context.Context, b *bundle.Bundle, createErr error) string {
-	if apiErr, ok := errors.AsType[*apierr.APIError](createErr); ok && isClientError(apiErr.StatusCode) {
+	if apiErr, ok := errors.AsType[*apierr.APIError](createErr); ok && !mayHaveCreated(apiErr) {
 		return ""
 	}
-	id, err := dms.LookupDeploymentID(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	id, deployment, err := dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		log.Debugf(ctx, "Could not look up the deployment after a failed create: %s", err)
 		return ""
 	}
-	if id != "" {
-		log.Debugf(ctx, "Deployment create failed (%s), but the deployment %s exists; using it", createErr, id)
+	if id == "" || deployment.LastVersionId != "" {
+		return ""
 	}
+	log.Debugf(ctx, "Deployment create failed (%s), but the deployment %s exists; using it", createErr, id)
 	return id
 }
 
-func isClientError(statusCode int) bool {
-	return statusCode >= 400 && statusCode < 500 && statusCode != http.StatusRequestTimeout && statusCode != http.StatusTooManyRequests
+// mayHaveCreated reports whether a create that failed with err may still have been applied: a
+// server error, a timeout, or a conflict with an earlier attempt. Other client errors mean the
+// request was rejected.
+func mayHaveCreated(err *apierr.APIError) bool {
+	switch err.StatusCode {
+	case http.StatusRequestTimeout, http.StatusConflict, http.StatusTooManyRequests:
+		return true
+	}
+	return err.StatusCode >= 500 || err.StatusCode < 400
 }
 
 // deleteDeployment deletes the deployment record. A retry that finds it missing succeeds: the
