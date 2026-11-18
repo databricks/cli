@@ -416,3 +416,20 @@ func TestWithActiveUpdateHint(t *testing.T) {
 	other := &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "bad request"}
 	assert.Same(t, other, withActiveUpdateHint(cmd, testTarget{key: "my_pipeline"}, other))
 }
+
+func TestTestRunProblem(t *testing.T) {
+	ev := newTestEvents(t)
+	passed := newTestRun()
+	passed.add(ev.testCase("t::a", "PASSED", ""))
+	passed.add(ev.summary(1, 1, 0, 0, 0))
+	assert.Empty(t, testRunProblem(passed, "", nil))
+	assert.Empty(t, testRunProblem(passed, "", root.ErrAlreadyPrinted))
+	assert.Equal(t, "update u1 is COMPLETED: result delivery failed", testRunProblem(passed, "", errors.New("update u1 is COMPLETED: result delivery failed")))
+
+	empty := newTestRun()
+	empty.add(ev.summary(0, 0, 0, 0, 0))
+	assert.Equal(t, "No tests were collected from the pipeline's test sources.", testRunProblem(empty, "", root.ErrAlreadyPrinted))
+
+	assert.Equal(t, "RUN INCOMPLETE: the update was canceled.\nupdate u1 is CANCELED",
+		testRunProblem(newTestRun(), "the update was canceled", errors.New("update u1 is CANCELED")))
+}

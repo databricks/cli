@@ -1,0 +1,6 @@
+Badness = "app.yml is meant to be inlined into databricks.yml as the app's config and removed (inlineAppConfigFile in cmd/apps/import.go), but the check runs before the source files are downloaded, so it never finds app.yml: databricks.yml gets no config and app.yml stays."
+
+# Fix path with reverse slashes in the output for Windows.
+[[Repls]]
+Old = 'TEST_TMP_DIR]\\out'
+New = 'TEST_TMP_DIR]/out'

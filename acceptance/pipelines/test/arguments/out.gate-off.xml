@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="1234" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it">pipelines test is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it</error>
+    </testcase>
+  </testsuite>
+</testsuites>

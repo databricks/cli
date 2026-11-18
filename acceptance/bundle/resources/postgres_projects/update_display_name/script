@@ -26,8 +26,10 @@ project_id_1=`read_id.py my_project`
 trace $CLI postgres get-project "${project_name}" | project_fields
 
 title "Verify no changes"
+# remote_state is the full GetProject payload, whose backend-computed status fields
+# (e.g. compute_last_active_time) come and go; changes[*].remote still records the remote value.
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.no_change.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state)' > out.plan.no_change.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
@@ -38,7 +40,7 @@ trace update_file.py databricks.yml "Original Name" "Updated Name"
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.update.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state)' > out.plan.update.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
@@ -50,7 +52,7 @@ trace $CLI postgres get-project "${project_name}" | project_fields
 title "Restore display_name to original value"
 trace update_file.py databricks.yml "Updated Name" "Original Name"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.restore.json
+trace $CLI bundle plan -o json | nostamp | jq '(.plan."resources.postgres_projects.my_project" // .) | del(.remote_state)' > out.plan.restore.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 

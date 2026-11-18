@@ -11,10 +11,9 @@ Databricks skills are not installed. To work with Databricks reliably, first run
 
 === hint printed on a command that resolves no auth: nothing is uploaded
 
->>> [CLI] version
+>>> [CLI] bundle schema
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
-Databricks CLI v[CLI_VERSION]
 
 >>> print_telemetry
 

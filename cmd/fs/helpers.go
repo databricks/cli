@@ -14,29 +14,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+// SplitPath separates a remote prefix from a path, preserving local Windows drive paths.
+func SplitPath(fullPath string) (scheme, name string) {
 	// Split path at : to detect any file schemes
 	parts := strings.SplitN(fullPath, ":", 2)
 
 	// If no scheme is specified, then local path
 	if len(parts) < 2 {
-		f, err := filer.NewLocalClient("")
-		return f, fullPath, err
+		return "", fullPath
 	}
 
 	// On windows systems, paths start with a drive letter. If the scheme
 	// is a single letter and the OS is windows, then we conclude the path
 	// is meant to be a local path.
 	if runtime.GOOS == "windows" && len(parts[0]) == 1 {
+		return "", fullPath
+	}
+	return parts[0], parts[1]
+}
+
+func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+	scheme, path := SplitPath(fullPath)
+	if scheme == "" && path == fullPath {
 		f, err := filer.NewLocalClient("")
-		return f, fullPath, err
+		return f, path, err
 	}
 
-	if parts[0] != "dbfs" {
-		return nil, "", fmt.Errorf("invalid scheme: %s", parts[0])
+	if scheme != "dbfs" {
+		return nil, "", fmt.Errorf("invalid scheme: %s", scheme)
 	}
 
-	path := parts[1]
 	w := cmdctx.WorkspaceClient(ctx)
 
 	// If the specified path has the "Volumes" or "Skills" prefix, use the Files API.
@@ -55,12 +62,6 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	// Writes are not retried: a write without overwrite may fail on the file its own earlier
 	// attempt created, and an overwrite would need to buffer the streamed source to replay it.
 	return retry.FilerExceptWrites(f), path, nil
-}
-
-const dbfsPrefix string = "dbfs:"
-
-func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, dbfsPrefix)
 }
 
 type validArgs struct {
@@ -99,9 +100,9 @@ func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete strin
 	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
 
 	// Dbfs should have a prefix and always use the "/" separator
-	isDbfsPath := isDbfsPath(toComplete)
-	if isDbfsPath {
-		completer.SetPrefix(dbfsPrefix)
+	scheme, _ := SplitPath(toComplete)
+	if scheme != "" {
+		completer.SetPrefix(scheme + ":")
 		completer.SetIsLocalPath(false)
 	}
 

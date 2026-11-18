@@ -26,26 +26,30 @@ const permissionsReadLimit = 10
 
 // addPermissionsChanges adds remote permission changes to the permissions field of their
 // resource: per principal where the config declares permissions, and as a whole for deployed
-// resources that declare none. It returns the resources whose permissions could not be read.
-func addPermissionsChanges(ctx context.Context, changes Changes, b *bundle.Bundle, plan *deployplan.Plan) ([]SkippedChange, error) {
+// resources that declare none. unmanaged holds the ACLs read by readUnmanagedPermissions.
+func addPermissionsChanges(changes Changes, b *bundle.Bundle, plan *deployplan.Plan, unmanaged map[string][]dresources.StatePermission) error {
 	for resourceKey, entry := range plan.Plan {
 		if err := addDeclaredPermissionsChanges(changes, b, resourceKey, entry); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	unmanaged, skipped := readUnmanagedPermissions(ctx, b, plan)
+	currentUser := currentUserName(b)
 	for resourceKey, permissions := range unmanaged {
+		permissions = withoutCurrentUserDefaults(slices.Clone(permissions), currentUser, config.GetResourceTypeFromKey(resourceKey))
+		if len(permissions) == 0 {
+			continue
+		}
 		value, err := normalizeValue(permissions)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
+			return fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
 		}
 		changes.set(resourceKey, "permissions", &ConfigChangeDesc{
 			Operation: OperationAdd,
 			Value:     value,
 		})
 	}
-	return skipped, nil
+	return nil
 }
 
 // addDeclaredPermissionsChanges turns the plan's changes to a resource's permissions into
@@ -82,7 +86,7 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 		}
 
 		fieldPath := "permissions" + path
-		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, b.Config.Presets.NamePrefix)
+		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, "", b.Config.Presets.NamePrefix)
 		if err != nil {
 			return fmt.Errorf("failed to compute config change for path %s: %w", resourceKey+"."+path, err)
 		}
@@ -133,7 +137,6 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 	g.SetLimit(permissionsReadLimit)
 	result := make(map[string][]dresources.StatePermission)
 	var skipped []SkippedChange
-	currentUser := currentUserName(b)
 
 	for resourceKey, adapter := range unmanagedPermissionsAdapters(b, plan) {
 		g.Go(func() error {
@@ -144,10 +147,7 @@ func readUnmanagedPermissions(ctx context.Context, b *bundle.Bundle, plan *deplo
 				skipped = append(skipped, permissionsReadSkip(resourceKey, err))
 				return nil
 			}
-			permissions = withoutCurrentUserManage(permissions, currentUser)
-			if len(permissions) > 0 {
-				result[resourceKey] = permissions
-			}
+			result[resourceKey] = permissions
 			return nil
 		})
 	}
@@ -234,14 +234,25 @@ func lookupDeployedField(b *bundle.Bundle, resourceKey, field string) (any, erro
 	return structaccess.Get(remote, path)
 }
 
-// withoutCurrentUserManage drops the current user's IS_OWNER and CAN_MANAGE, one of which
-// FixPermissions adds on deploy. Another principal's IS_OWNER is kept, so a transferred owner
-// stays the owner after the next deploy.
-func withoutCurrentUserManage(permissions []dresources.StatePermission, currentUser string) []dresources.StatePermission {
+// withoutCurrentUserDefaults drops the current user's grants that exist without being declared.
+// For most resources these are IS_OWNER and CAN_MANAGE, one of which FixPermissions adds on
+// deploy; another principal's IS_OWNER is kept, so a transferred owner stays the owner after the
+// next deploy. For a cluster policy it is the CAN_USE the backend grants its creator: only admins
+// create policies and admins can use every policy, so the grant is never needed in the config.
+func withoutCurrentUserDefaults(permissions []dresources.StatePermission, currentUser, resourceType string) []dresources.StatePermission {
 	return slices.DeleteFunc(permissions, func(p dresources.StatePermission) bool {
-		isCurrentUser := currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
-		return isCurrentUser && (p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage)
+		if !isCurrentUserPermission(p, currentUser) {
+			return false
+		}
+		if resourceType == "cluster_policies" {
+			return p.Level == iam.PermissionLevelCanUse
+		}
+		return p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage
 	})
+}
+
+func isCurrentUserPermission(p dresources.StatePermission, currentUser string) bool {
+	return currentUser != "" && (p.UserName == currentUser || p.ServicePrincipalName == currentUser)
 }
 
 func currentUserName(b *bundle.Bundle) string {

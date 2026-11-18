@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
@@ -1809,4 +1810,18 @@ func TestPackageManagerValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSelfExecEnvCarriesBothMarkers(t *testing.T) {
+	t.Cleanup(autoinstall.ResetDeclined)
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	// The child prints no coding-agent hint, as before a "no" was given.
+	assert.Equal(t, []string{"HOME=/home/user", "DATABRICKS_CLI_SELF_EXEC=1"}, selfExecEnv([]string{"HOME=/home/user"}))
+
+	// After a "no", the child also does not auto-install.
+	require.NoError(t, autoinstall.Decline(ctx))
+	environ := selfExecEnv([]string{"HOME=/home/user"})
+	assert.Contains(t, environ, "DATABRICKS_CLI_SELF_EXEC=1")
+	assert.Contains(t, environ, autoinstall.EnvVar+"=false")
 }
