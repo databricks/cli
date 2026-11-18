@@ -10,6 +10,9 @@ title "Redeploy: UpdateApp rejects source_code_path, so no app request is sent; 
 trace $CLI bundle deploy
 trace print_requests.py //apps
 
+title "The new source_code_path is still stored in the deployment state"
+trace print_state.py | grep source_code_path
+
 title "Change description: App Update omits source_code_path from the body and the update mask"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 trace $CLI bundle deploy
