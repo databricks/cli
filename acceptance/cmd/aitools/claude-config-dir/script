@@ -3,7 +3,6 @@ export CLAUDECODE=1
 # enables the native <claude-code-hint> line; CI suppresses it.
 export CLAUDE_CODE_CHILD_SESSION=1
 unset CLAUDE_CODE_SESSION_ID
-# CI and the CI/CD provider markers the SDK detects (GitHub Actions sets both).
 unset_ci_env
 
 # Hint-exempt commands (aitools, auth, one-shot lookups such as version and current-user me,
