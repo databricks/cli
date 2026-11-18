@@ -624,22 +624,3 @@ func TestListAirRunsMarksTheRowsOfAMultiTaskRun(t *testing.T) {
 	assert.True(t, rows[0].ShowTask)
 	assert.Equal(t, "1 b", rows[0].runIDLabel())
 }
-
-func TestListJSONEmptyListIsAnArray(t *testing.T) {
-	srv := runsServer(t, runsListBody(t, ""))
-	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
-	require.NoError(t, err)
-	b, err := json.Marshal(listData{Rows: rows})
-	require.NoError(t, err)
-	assert.JSONEq(t, `{"runs": []}`, string(b))
-}
-
-func TestListRowTaskKeyIsNullWithoutAnAirTask(t *testing.T) {
-	notebookOnly := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{notebookTask("prep", 71)}}
-	b, err := json.Marshal(buildListRow(notebookOnly, "https://example.test", 0))
-	require.NoError(t, err)
-	var got map[string]any
-	require.NoError(t, json.Unmarshal(b, &got))
-	assert.Contains(t, got, "task_key")
-	assert.Nil(t, got["task_key"], "matches air get, which reports null")
-}

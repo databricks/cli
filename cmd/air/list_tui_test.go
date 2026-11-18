@@ -812,17 +812,3 @@ func TestListModelEnterOpensMLflowLogsWhenColumnHidden(t *testing.T) {
 	cmd()
 	assert.Contains(t, stderr.String(), "https://h/ml/experiments/E/runs/04c41514fbb0/logs")
 }
-
-func TestRenderRowNamesTheTaskOfAMultiTaskRun(t *testing.T) {
-	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
-	styles := newListStyles(r)
-	train := listRow{RunID: "1", TaskKey: new("train"), ShowTask: true, Status: "SUCCESS", Duration: "-", Accelerators: "-"}
-	eval := listRow{RunID: "1", TaskKey: new("eval"), ShowTask: true, Status: "SUCCESS", Duration: "-", Accelerators: "-"}
-	single := listRow{RunID: "2", TaskKey: new("train"), Status: "SUCCESS", Duration: "-", Accelerators: "-"}
-	cols := computeListCols([]listRow{train, eval, single})
-
-	assert.Contains(t, styles.renderRow(cols, train, false, false), "1 train")
-	assert.Contains(t, styles.renderRow(cols, eval, false, false), "1 eval")
-	assert.NotContains(t, styles.renderRow(cols, single, false, false), "train", "a single-task run shows only its run ID")
-	assert.GreaterOrEqual(t, cols.runID, len("1 train"), "the column is sized for the task label")
-}

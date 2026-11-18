@@ -321,15 +321,12 @@ one.`,
 // returned unchanged when no key is given. The error names the run's AI runtime
 // tasks when key is not one of them.
 func selectAirTask(run *jobs.Run, key string) (*jobs.Run, error) {
+	if key == "" {
+		return defaultTaskRun(run), nil
+	}
 	keys := airTaskKeys(run)
 	if len(keys) == 0 {
-		if key == "" {
-			return run, nil
-		}
 		return nil, fmt.Errorf("run %d has no AI Runtime tasks", run.RunId)
-	}
-	if key == "" {
-		key = keys[0]
 	}
 	if !slices.Contains(keys, key) {
 		return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))

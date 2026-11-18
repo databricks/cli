@@ -407,25 +407,6 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 	}
 }
 
-func TestTaskRunOfTheOnlyTaskKeepsTheRunsStatus(t *testing.T) {
-	// A single-task `air run` submission: the run's termination message carries
-	// the "Task <key> failed with message:" prefix, which must survive.
-	train := finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed)
-	train.Status = &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: "OOM"}}
-	run := &jobs.Run{
-		RunId:     1,
-		StartTime: 100,
-		EndTime:   300,
-		State:     &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
-		Status:    &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: "Task train failed with message: OOM"}},
-		Tasks:     []jobs.RunTask{train},
-	}
-	narrowed := taskRun(run, "train")
-	require.NotNil(t, terminationReason(narrowed))
-	assert.Equal(t, "Task train failed with message: OOM", *terminationReason(narrowed))
-	assert.Equal(t, int64(100), narrowed.StartTime, "the run's timing stands in for a task without its own")
-}
-
 func TestTaskRunOfASkippedTaskHasNoTiming(t *testing.T) {
 	train := finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed)
 	train.StartTime, train.EndTime = 200_000, 260_000

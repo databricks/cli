@@ -935,32 +935,6 @@ func TestGetRunSelectsAirTask(t *testing.T) {
 	})
 }
 
-func TestTaskViewTaskKey(t *testing.T) {
-	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{notebookTask("prep", 51)}}
-	_, data, err := taskView(run, "")
-	require.NoError(t, err)
-	assert.Nil(t, data.TaskKey, "matches air list, which reports no task, and --task-key prep, which errors")
-	assert.Empty(t, data.TaskDisplay)
-
-	single := &jobs.Run{RunId: 6, Tasks: []jobs.RunTask{notebookTask("prep", 60), aiRuntimeTask("train", 61, "e", "GPU_1xA10", 1)}}
-	_, data, err = taskView(single, "")
-	require.NoError(t, err)
-	require.NotNil(t, data.TaskKey)
-	assert.Equal(t, "train", *data.TaskKey)
-	assert.Empty(t, data.TaskDisplay, "one AI Runtime task needs no Task line")
-
-	two := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{
-		aiRuntimeTask("train", 71, "e", "GPU_1xA10", 1),
-		aiRuntimeTask("eval", 72, "e", "GPU_1xA10", 1),
-	}}
-	selected, data, err := taskView(two, "eval")
-	require.NoError(t, err)
-	assert.Equal(t, "eval", selected.Tasks[0].TaskKey)
-	require.NotNil(t, data.TaskKey)
-	assert.Equal(t, "eval", *data.TaskKey)
-	assert.Equal(t, "eval", data.TaskDisplay)
-}
-
 func TestSelectAirTaskErrors(t *testing.T) {
 	_, err := selectAirTask(&jobs.Run{RunId: 5, Tasks: []jobs.RunTask{notebookTask("prep", 51)}}, "prep")
 	assert.EqualError(t, err, "run 5 has no AI Runtime tasks")

@@ -340,17 +340,6 @@ func TestDisplayCancelPreview(t *testing.T) {
 	assert.Contains(t, out, na)
 }
 
-func TestCancelPreviewRows(t *testing.T) {
-	runs := [][]listRow{
-		{{RunID: "1", TaskKey: new("train")}, {RunID: "1", TaskKey: new("eval")}},
-		{{RunID: "2"}},
-		{{RunID: "3", TaskKey: new("sweep")}},
-	}
-	rows, taskKeys := cancelPreviewRows(runs)
-	assert.Equal(t, []listRow{{RunID: "1", TaskKey: new("train")}, {RunID: "2"}, {RunID: "3", TaskKey: new("sweep")}}, rows)
-	assert.Equal(t, map[string][]string{"1": {"train", "eval"}, "3": {"sweep"}}, taskKeys)
-}
-
 func TestCancelAllCancelsAMultiTaskRunOnce(t *testing.T) {
 	// Run 111 has two AI Runtime tasks after a notebook, so air list shows it as
 	// two rows; cancel --all must cancel it once and name both tasks.

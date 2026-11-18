@@ -73,8 +73,8 @@ func taskRun(r *jobs.Run, key string) *jobs.Run {
 			others = true
 		}
 	}
-	if n := len(narrowed.Tasks); n > 0 && others {
-		latest := &narrowed.Tasks[n-1]
+	if others {
+		latest := &narrowed.Tasks[len(narrowed.Tasks)-1]
 		if state := taskState(r, latest); state != r.State {
 			narrowed.State = state
 			narrowed.Status = latest.Status
